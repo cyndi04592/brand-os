@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand OS v4 ｜廣告素材生產系統</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#09090F;--bg2:#0E0E1A;--bg3:#141426;--bg4:#1A1A30;
+  --gold:#E4B84A;--gold2:rgba(228,184,74,0.15);--gold3:rgba(228,184,74,0.06);
+  --red:#D4182E;--red2:rgba(212,24,46,0.12);
+  --sky:#4DC8F0;--sky2:rgba(77,200,240,0.12);
+  --mint:#3DD68C;--mint2:rgba(61,214,140,0.12);
+  --peach:#FF7F5C;--peach2:rgba(255,127,92,0.12);
+  --purple:#9D6EF8;--purple2:rgba(157,110,248,0.12);
+  --line:rgba(255,255,255,0.06);--line2:rgba(228,184,74,0.2);
+  --t1:#F0F0FF;--t2:#9090BB;--t3:#44446A;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;display:flex;flex-direction:column;}
+
+/* ══ NAV ══ */
+.nav{height:52px;background:rgba(9,9,15,0.98);border-bottom:1px solid var(--line2);
+  display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;z-index:100;}
+.nav-logo{font-family:'Bebas Neue';font-size:19px;letter-spacing:4px;
+  background:linear-gradient(90deg,var(--red),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-ver{font-size:9px;color:var(--t3);letter-spacing:2px;margin-left:6px;vertical-align:middle;}
+.nav-brands{display:flex;gap:5px;}
+.nb{padding:4px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;
+  font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;color:var(--t3);}
+.nb:hover,.nb.on{border-color:var(--gold);color:var(--gold);background:var(--gold2);}
+.nb.sky.on{border-color:var(--sky);color:var(--sky);background:var(--sky2);}
+.nb.red.on{border-color:var(--red);color:var(--red);background:var(--red2);}
+.nb.mint.on{border-color:var(--mint);color:var(--mint);background:var(--mint2);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.drive-dot{width:7px;height:7px;border-radius:50%;background:var(--t3);}
+.drive-dot.ok{background:var(--mint);box-shadow:0 0 6px var(--mint);}
+.drive-dot.busy{background:var(--gold);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.drive-label{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:0.5px;}
+
+/* ══ LAYOUT ══ */
+.workspace{flex:1;display:grid;grid-template-columns:260px 1fr 340px;overflow:hidden;}
+
+/* ══ LEFT ══ */
+.left{background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;}
+.l-head{padding:12px 14px 6px;flex-shrink:0;}
+.l-sec{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);text-transform:uppercase;
+  display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.l-sec::after{content:'';flex:1;height:1px;background:var(--line);}
+
+/* brand + sub-brand tree */
+.brand-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;
+  border:1.5px solid var(--line);background:var(--bg3);cursor:pointer;margin-bottom:5px;transition:all 0.2s;}
+.brand-row:hover{border-color:rgba(228,184,74,0.3);transform:translateX(2px);}
+.brand-row.on{border-color:var(--gold);background:var(--gold3);}
+.br-icon{font-size:17px;flex-shrink:0;}
+.br-info{flex:1;}
+.br-name{font-size:12px;font-weight:700;}
+.br-sub{font-size:9px;color:var(--t3);}
+.sub-brand-row{display:flex;align-items:center;gap:7px;padding:6px 10px 6px 26px;border-radius:6px;
+  border:1px dashed var(--line);cursor:pointer;margin-bottom:4px;transition:all 0.2s;font-size:11px;color:var(--t3);}
+.sub-brand-row:hover{border-color:var(--sky);color:var(--sky);}
+.sub-brand-row.on{border-color:var(--sky);color:var(--sky);background:var(--sky2);}
+.sub-brand-row .dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+/* product scroll */
+.prod-scroll{flex:1;overflow-y:auto;padding:12px 14px;}
+.prod-scroll::-webkit-scrollbar{width:3px;}
+.prod-scroll::-webkit-scrollbar-thumb{background:var(--line2);}
+.prod-grp-label{font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:6px;margin-top:2px;opacity:0.6;}
+.prod-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;
+  border:1px solid var(--line);background:var(--bg3);cursor:pointer;margin-bottom:5px;transition:all 0.2s;}
+.prod-row:hover{border-color:var(--gold);transform:translateX(2px);}
+.prod-row.on{border-color:var(--gold);background:var(--gold3);}
+.prod-dot{width:5px;height:5px;border-radius:50%;background:var(--t3);flex-shrink:0;}
+.prod-row.on .prod-dot{background:var(--gold);}
+.prod-name{font-size:11px;flex:1;}
+.prod-tag{font-size:9px;color:var(--t3);}
+
+/* ══ MIDDLE ══ */
+.mid{display:flex;flex-direction:column;overflow:hidden;}
+
+/* gen bar */
+.gen-bar{padding:12px 18px;border-bottom:1px solid var(--line);background:var(--bg2);flex-shrink:0;}
+.gb-row1{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.gb-ctx{flex:1;}
+.gb-brand{font-size:10px;font-weight:700;letter-spacing:1px;}
+.gb-prod{font-size:13px;color:var(--t1);margin-top:2px;font-weight:500;}
+.sel{background:var(--bg3);border:1px solid var(--line);border-radius:6px;
+  color:var(--t1);font-family:'Noto Sans TC';font-size:11px;padding:5px 8px;outline:none;}
+.sel:focus{border-color:var(--gold);}
+.sel-lbl{font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:3px;}
+.gen-btn{padding:9px 22px;background:linear-gradient(135deg,var(--gold),#B8900A);
+  border:none;border-radius:8px;color:#000;font-family:'Noto Sans TC';font-size:12px;
+  font-weight:900;cursor:pointer;letter-spacing:1px;transition:all 0.2s;white-space:nowrap;flex-shrink:0;}
+.gen-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(228,184,74,0.4);}
+.gen-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.prog{height:2px;background:var(--line);border-radius:1px;display:none;margin-top:6px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--gold));border-radius:1px;width:0%;transition:width 0.4s;}
+
+/* tabs */
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--bg2);flex-shrink:0;}
+.tab{padding:9px 14px;font-size:10px;font-weight:700;color:var(--t3);cursor:pointer;
+  border:none;border-bottom:2px solid transparent;background:none;font-family:'Noto Sans TC';
+  transition:all 0.2s;letter-spacing:0.5px;}
+.tab:hover{color:var(--t1);}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold);}
+.badge{font-size:9px;background:var(--gold2);color:var(--gold);border-radius:10px;
+  padding:1px 6px;margin-left:5px;font-weight:900;}
+
+/* scripts */
+.scripts-wrap{flex:1;overflow-y:auto;padding:14px 18px;}
+.scripts-wrap::-webkit-scrollbar{width:4px;}
+.scripts-wrap::-webkit-scrollbar-thumb{background:var(--line2);}
+.pane{display:none;}
+.pane.on{display:block;}
+
+/* ad card */
+.ad-card{background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+  margin-bottom:9px;overflow:hidden;animation:up 0.2s ease both;}
+@keyframes up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.ac-top{display:flex;align-items:center;justify-content:space-between;
+  padding:7px 12px;background:var(--bg3);border-bottom:1px solid var(--line);}
+.ac-id{font-family:'DM Mono';font-size:11px;color:var(--gold);}
+.ac-pill{font-size:9px;padding:2px 8px;border-radius:3px;font-weight:700;}
+.ac-btns{display:flex;gap:5px;}
+.ac-body{display:grid;grid-template-columns:1fr 1fr 1fr;}
+.seg{padding:9px 11px;border-right:1px solid var(--line);}
+.seg:last-child{border-right:none;}
+.seg-lbl{font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.seg-txt{font-size:11px;line-height:1.7;}
+.seg-badge{display:inline-block;font-size:8px;padding:1px 6px;border-radius:3px;margin-top:4px;font-weight:700;letter-spacing:1px;}
+.seg-hint{font-size:9px;color:var(--t3);margin-top:5px;}
+
+/* tiny btns */
+.tbtn{padding:3px 9px;border-radius:5px;cursor:pointer;font-size:9px;font-weight:700;
+  border:1px solid;background:transparent;transition:all 0.2s;font-family:'Noto Sans TC';}
+.tbtn-g{border-color:var(--line);color:var(--t3);}
+.tbtn-g:hover{border-color:var(--gold);color:var(--gold);}
+.tbtn-m{border-color:var(--mint);color:var(--mint);background:var(--mint2);}
+.tbtn-s{border-color:var(--sky);color:var(--sky);background:var(--sky2);}
+
+/* empty */
+.empty{text-align:center;padding:40px 20px;color:var(--t3);}
+.empty-ico{font-size:34px;opacity:0.2;margin-bottom:8px;}
+.empty-h{font-size:13px;color:rgba(240,240,255,0.08);font-family:'Bebas Neue';letter-spacing:2px;}
+.empty-p{font-size:10px;line-height:1.8;margin-top:6px;}
+
+/* spinner */
+.spin{display:inline-block;width:10px;height:10px;border:2px solid rgba(0,0,0,0.2);
+  border-top-color:#000;border-radius:50%;animation:sp 0.6s linear infinite;vertical-align:middle;margin-right:4px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ══ RIGHT: DRIVE + DELIVER ══ */
+.right{background:var(--bg2);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;}
+
+/* drive config */
+.drive-cfg{padding:14px 14px 10px;border-bottom:1px solid var(--line);flex-shrink:0;}
+.dcfg-row{display:flex;gap:5px;margin-bottom:6px;}
+.dcfg-input{flex:1;background:var(--bg3);border:1px solid var(--line);border-radius:6px;
+  color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 9px;outline:none;min-width:0;}
+.dcfg-input:focus{border-color:var(--sky);}
+.dcfg-input::placeholder{color:var(--t3);}
+.fetch-btn{padding:5px 10px;border-radius:6px;font-family:'Noto Sans TC';font-size:10px;
+  font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;border:1px solid;flex-shrink:0;}
+.fetch-sky{background:var(--sky2);color:var(--sky);border-color:var(--sky);}
+.fetch-sky:hover{background:rgba(77,200,240,0.22);}
+.fetch-sky:disabled{opacity:0.4;cursor:not-allowed;}
+.dcfg-hint{font-size:9px;color:var(--t3);line-height:1.6;}
+
+/* asset grid */
+.asset-grid{flex:1;overflow-y:auto;padding:10px 12px;}
+.asset-grid::-webkit-scrollbar{width:3px;}
+.asset-grid::-webkit-scrollbar-thumb{background:var(--line2);}
+.asset-sec{margin-bottom:12px;}
+.asset-sec-lbl{font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);
+  text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:6px;
+  display:flex;align-items:center;justify-content:space-between;}
+.asset-count{font-size:10px;font-weight:700;font-family:'DM Mono';}
+
+.asset-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;
+  border:1px solid var(--line);background:var(--bg3);cursor:pointer;margin-bottom:4px;transition:all 0.2s;}
+.asset-item:hover{border-color:var(--sky);}
+.asset-item.on.photo{border-color:var(--sky);background:var(--sky2);}
+.asset-item.on.video{border-color:var(--peach);background:var(--peach2);}
+.ai-thumb{width:34px;height:34px;border-radius:5px;overflow:hidden;flex-shrink:0;
+  background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.ai-thumb img,.ai-thumb video{width:100%;height:100%;object-fit:cover;}
+.ai-info{flex:1;min-width:0;}
+.ai-name{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ai-meta{font-size:9px;color:var(--t3);margin-top:1px;}
+.ai-check{font-size:12px;opacity:0;transition:opacity 0.15s;flex-shrink:0;}
+.asset-item.on .ai-check{opacity:1;}
+.asset-item.on.photo .ai-check{color:var(--sky);}
+.asset-item.on.video .ai-check{color:var(--peach);}
+
+/* ══ DELIVER ZONE (投手用) ══ */
+.deliver-zone{border-top:1.5px solid var(--line2);flex-shrink:0;background:var(--bg3);}
+.dz-head{padding:9px 12px;display:flex;align-items:center;justify-content:space-between;}
+.dz-title{font-size:10px;font-weight:900;color:var(--mint);letter-spacing:1.5px;}
+.dz-sub{font-size:9px;color:var(--t3);}
+.dz-body{max-height:210px;overflow-y:auto;}
+.dz-body::-webkit-scrollbar{width:3px;}
+.dz-body::-webkit-scrollbar-thumb{background:var(--line2);}
+
+/* deliver rows — THIS IS WHAT 投手 SEES */
+.dr{display:grid;grid-template-columns:30px 1fr auto auto auto;gap:6px;align-items:center;
+  padding:6px 10px;border-bottom:1px solid var(--line);transition:background 0.2s;}
+.dr:hover{background:rgba(255,255,255,0.02);}
+.dr-id{font-family:'DM Mono';font-size:9px;color:var(--gold);}
+.dr-script{font-size:10px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dr-photo-link,.dr-video-link{white-space:nowrap;}
+.asset-link{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;
+  padding:2px 8px;border-radius:4px;text-decoration:none;transition:all 0.2s;}
+.al-photo{color:var(--sky);background:var(--sky2);border:1px solid var(--sky);}
+.al-video{color:var(--peach);background:var(--peach2);border:1px solid var(--peach);}
+.al-none{color:var(--t3);background:transparent;border:1px solid var(--line);cursor:default;}
+.dr-status{font-size:8px;padding:2px 6px;border-radius:3px;font-weight:700;letter-spacing:1px;white-space:nowrap;}
+.ds-ready{color:var(--mint);background:var(--mint2);}
+.ds-missing{color:var(--peach);background:var(--peach2);}
+
+.dz-footer{padding:8px 10px;display:flex;gap:6px;}
+.dz-copy{flex:1;padding:7px;border-radius:7px;font-family:'Noto Sans TC';font-size:11px;
+  font-weight:900;cursor:pointer;background:var(--mint2);color:var(--mint);
+  border:1px solid var(--mint);transition:all 0.2s;letter-spacing:0.5px;}
+.dz-copy:hover{background:rgba(61,214,140,0.22);}
+.dz-clear{padding:7px 10px;border-radius:7px;font-family:'Noto Sans TC';font-size:11px;
+  font-weight:700;cursor:pointer;background:var(--red2);color:var(--red);
+  border:1px solid rgba(212,24,46,0.4);transition:all 0.2s;}
+
+/* loading overlay inside asset grid */
+.loading-overlay{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:30px 20px;gap:10px;}
+.loading-spin{width:24px;height:24px;border:3px solid var(--line);border-top-color:var(--sky);
+  border-radius:50%;animation:sp 0.7s linear infinite;}
+.loading-txt{font-size:11px;color:var(--sky);font-weight:700;}
+
+/* highlight new row */
+@keyframes hlNew{from{background:rgba(61,214,140,0.08)}to{background:transparent}}
+.dr.new{animation:hlNew 1.2s ease;}
+</style>
+</head>
+<body>
+
+<!-- ══ TOP NAV ══ -->
+<nav class="nav">
+  <div style="display:flex;align-items:center;">
+    <span class="nav-logo">Brand OS</span>
+    <span class="nav-ver">v4</span>
+  </div>
+  <!-- brand quick-switch -->
+  <div class="nav-brands" id="navBrands"></div>
+  <!-- drive status -->
+  <div class="nav-right">
+    <div class="drive-dot" id="driveDot"></div>
+    <span class="drive-label" id="driveLabel">Drive 未連結</span>
+  </div>
+</nav>
+
+<div class="workspace">
+
+<!-- ══ LEFT: BRANDS + PRODUCTS ══ -->
+<div class="left">
+  <div style="padding:12px 14px 6px;flex-shrink:0;">
+    <div class="l-sec">品牌 · 商品</div>
+  </div>
+  <div style="overflow-y:auto;padding:0 14px 10px;border-bottom:1px solid var(--line);flex-shrink:0;max-height:52%;">
+    <div id="brandTree"></div>
+  </div>
+  <div class="prod-scroll" id="prodList">
+    <div class="empty" style="padding:24px 10px;">
+      <div class="empty-ico">📦</div>
+      <div class="empty-p">← 選品牌 再選商品</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MIDDLE: GENERATOR + OUTPUT ══ -->
+<div class="mid">
+  <div class="gen-bar">
+    <div class="gb-row1">
+      <div class="gb-ctx">
+        <div class="gb-brand" id="gbBrand" style="color:var(--t3)">尚未選擇品牌</div>
+        <div class="gb-prod" id="gbProd" style="color:var(--t3)">← 先選商品</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <div class="sel-lbl">目標受眾</div>
+        <select class="sel" id="selAud">
+          <option>媽媽族群／家庭主婦</option>
+          <option>銀髮族／養生族</option>
+          <option>上班族／久坐族</option>
+          <option>健身運動族</option>
+          <option>Z世代零嘴族</option>
+          <option>一般消費者</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <div class="sel-lbl">組數</div>
+        <select class="sel" id="selN" style="width:72px">
+          <option>10組</option>
+          <option selected>20組</option>
+        </select>
+      </div>
+      <button class="gen-btn" id="genBtn" onclick="doGenerate()">⚡ 生成腳本</button>
+    </div>
+    <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="scripts" onclick="switchTab(this)">📝 廣告腳本 <span class="badge" id="scriptBadge">0</span></button>
+    <button class="tab" data-tab="deliver" onclick="switchTab(this)">🚀 投手交付表 <span class="badge" id="deliverBadge">0</span></button>
+  </div>
+
+  <div class="scripts-wrap">
+    <div class="pane on" id="pane-scripts">
+      <div id="scriptsOut">
+        <div class="empty">
+          <div class="empty-ico">◈</div>
+          <div class="empty-h">等待生成</div>
+          <div class="empty-p">選好品牌商品後<br>點「⚡ 生成腳本」<br><br>然後在右側選好<strong style="color:var(--t1)">照片＋影片</strong><br>點「＋加入交付」傳給投手</div>
+        </div>
+      </div>
+    </div>
+    <div class="pane" id="pane-deliver">
+      <div style="padding:10px 0 14px">
+        <div style="font-size:11px;color:var(--t2);line-height:1.9;padding:0 2px 12px;">
+          投手拿到的東西：<strong style="color:var(--t1)">廣告腳本</strong> ＋ <strong style="color:var(--sky)">🖼️ 照片連結</strong> ＋ <strong style="color:var(--peach)">🎬 影片連結</strong><br>
+          點連結直接打開 Drive 下載，不需要做任何其他事。
+        </div>
+        <div id="deliverOut">
+          <div class="empty"><div class="empty-p">腳本生成後，右側選好素材，點「＋加入交付」</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RIGHT: DRIVE ASSETS + DELIVER TABLE ══ -->
+<div class="right">
+
+  <!-- Drive Config -->
+  <div class="drive-cfg">
+    <div class="l-sec">Drive 素材庫</div>
+
+    <!-- 📁 PHOTO FOLDER -->
+    <div class="dcfg-row">
+      <input class="dcfg-input" id="inPhotoFolder" placeholder="🖼️ 貼入照片資料夾連結或 ID">
+      <button class="fetch-btn fetch-sky" id="fetchPhotoBtn" onclick="fetchDriveAssets('photo')">抓照片</button>
+    </div>
+    <!-- 🎬 VIDEO FOLDER -->
+    <div class="dcfg-row">
+      <input class="dcfg-input" id="inVideoFolder" placeholder="🎬 貼入影片資料夾連結或 ID">
+      <button class="fetch-btn fetch-sky" id="fetchVideoBtn" onclick="fetchDriveAssets('video')">抓影片</button>
+    </div>
+    <!-- one-click both -->
+    <div class="dcfg-row" style="margin-bottom:4px;">
+      <button class="fetch-btn fetch-sky" style="flex:1;font-size:11px;font-weight:900;"
+        onclick="fetchBoth()">⚡ 一鍵抓全部素材</button>
+    </div>
+    <div class="dcfg-hint">填好兩個資料夾後，點「一鍵抓全部素材」<br>系統自動列出照片＋影片，選好後加入交付</div>
+  </div>
+
+  <!-- Asset Grid -->
+  <div class="asset-grid" id="assetGrid">
+    <div class="empty">
+      <div class="empty-ico">☁️</div>
+      <div class="empty-p">貼上 Google Drive 資料夾連結<br>點「一鍵抓全部素材」</div>
+    </div>
+  </div>
+
+  <!-- ══ DELIVER TABLE (投手只看這裡) ══ -->
+  <div class="deliver-zone">
+    <div class="dz-head">
+      <span class="dz-title">📦 交付給投手</span>
+      <span class="dz-sub" id="dzSub">0 組素材</span>
+    </div>
+    <div class="dz-body">
+      <div class="dr" style="background:var(--bg4);font-size:8px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;">
+        <span>#</span><span>腳本預覽</span><span>照片</span><span>影片</span><span>狀態</span>
+      </div>
+      <div id="deliverRows">
+        <div style="text-align:center;padding:14px;font-size:10px;color:var(--t3);">尚無素材</div>
+      </div>
+    </div>
+    <div class="dz-footer">
+      <button class="dz-copy" onclick="copyTSV()">📋 複製全部 → 貼入 Google Sheet</button>
+      <button class="dz-clear" onclick="clearAll()">清空</button>
+    </div>
+  </div>
+
+</div><!-- end right -->
+</div><!-- end workspace -->
+
+<script>
+// ══════════════════════════════════════════════
+// BRAND DATA  v4.1  完整版
+// ══════════════════════════════════════════════
+const BRANDS = [
+  {
+    id:'cf', name:'巧福健康家電', icon:'🏠', navColor:'gold',
+    soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。語氣親切有溫度，強調讓每個家庭感受被照顧的生活升級感。廣告切入點：家人痛點（冬天怕冷/夏天悶熱/蚊蟲困擾/腰痠背痛）→ 巧福給你最省力的解法。',
+    adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊',
+    hashtags:'#居家健康 #巧福 #台灣品牌 #遠紅外線 #居家療癒',
+    subs:[
+      {
+        id:'cf-sauna', name:'桑拿機系列', color:'gold',
+        soul:'遠紅外線深層溫熱，在家就能享受SPA級桑拿。主打痛點：久坐族/寒性體質/代謝差/上班族疲勞。強調「不用出門、不用花大錢、每天在家泡」的便利感。',
+        adStyle:'在家SPA感、代謝循環、暖身排寒、療癒儀式感',
+        hashtags:'#桑拿機 #遠紅外線 #在家SPA #排寒 #代謝循環',
+        prods:[
+          {id:'cf-s01',name:'遠紅外線原木桑拿機 UC-856',tag:'主力旗艦'},
+          {id:'cf-s02',name:'遠紅外線桑拿機 UC-856A',tag:'升級款'},
+          {id:'cf-s03',name:'遠紅外線桑拿機 UC-858A',tag:'大空間'},
+          {id:'cf-s04',name:'溫熱垂直律動機 UC-997',tag:'律動健康'},
+        ]
+      },
+      {
+        id:'cf-warm', name:'暖器系列', color:'gold',
+        soul:'炭素纖維遠紅外線電暖器，不乾燥不燥熱，像陽光一樣溫暖。痛點：北部冬天潮濕冷、老人小孩怕感冒。強調安靜、安全、省電。',
+        adStyle:'溫暖冬日、安心守護、省電節能、不乾燥',
+        hashtags:'#電暖器 #炭素纖維 #遠紅外線暖器 #冬天必備',
+        prods:[
+          {id:'cf-w01',name:'炭素纖維電暖器 AS-900C（小）',tag:'小坪數/辦公室'},
+          {id:'cf-w02',name:'炭素纖維電暖器 AS-110C（大）',tag:'客廳/大空間'},
+          {id:'cf-w03',name:'遠紅外線暖屏風迷你款 UC-863X',tag:'腳部暖器'},
+          {id:'cf-w04',name:'腳底按摩器 UC-888',tag:'腳底舒壓'},
+        ]
+      },
+      {
+        id:'cf-mosquito', name:'捕蚊/防蚊系列', color:'gold',
+        soul:'吸入式物理捕蚊，無毒無味，安心守護全家。痛點：有寶寶/孕婦/老人的家庭不敢用化學藥劑。強調「物理吸入、無毒安心、寶寶也能用」。',
+        adStyle:'安心無毒、寶寶安全、物理捕蚊、家人守護',
+        hashtags:'#捕蚊器 #無毒捕蚊 #物理捕蚊 #寶寶安心 #防蚊',
+        prods:[
+          {id:'cf-m01',name:'吸入式捕蚊器 UC-700',tag:'經典款'},
+          {id:'cf-m02',name:'吸入式捕蚊器（小）UC-800LED',tag:'小空間'},
+          {id:'cf-m03',name:'吸入式捕蚊器（大）UC-850LED',tag:'大空間主力'},
+          {id:'cf-m04',name:'充電式電蚊拍 UC-723',tag:'戶外/露營'},
+        ]
+      },
+      {
+        id:'cf-fan', name:'風扇/空氣系列', color:'gold',
+        soul:'14吋磁吸式無線電風扇，時尚設計＋無線自由移動。痛點：傳統風扇礙手礙腳、插座不夠用。強調「無線自由、磁吸拆裝、質感有顏值」。',
+        adStyle:'質感生活、無線自由、夏日清爽、設計感',
+        hashtags:'#無線電風扇 #磁吸風扇 #質感風扇 #夏天必備',
+        prods:[
+          {id:'cf-f01',name:'森呼吸 14吋磁吸式無線電風扇 UC-614AP',tag:'主力夏季'},
+        ]
+      },
+      {
+        id:'cf-kids', name:'兒童遊樂系列', color:'gold',
+        soul:'安全無毒兒童遊戲空間，讓孩子在家盡情玩。痛點：家長怕孩子受傷、地板太硬、玩具散亂。強調「安全材質、好清洗、輕鬆收納」。',
+        adStyle:'親子互動、安全守護、輕鬆收納、媽媽省心',
+        hashtags:'#兒童遊戲墊 #遊戲圍欄 #寶寶安全 #親子空間',
+        prods:[
+          {id:'cf-k01',name:'童趣遊戲樂園 CF-014E',tag:'遊樂組合'},
+          {id:'cf-k02',name:'折疊地墊城堡 奶茶色 CF-1015M',tag:'城堡造型'},
+          {id:'cf-k03',name:'兒童遊戲圍欄 CF-1216 灰色',tag:'安全圍欄'},
+          {id:'cf-k04',name:'折疊兒童遊戲墊4cm UC-012EM 極簡灰白',tag:'地墊'},
+          {id:'cf-k05',name:'多功能學步車 CF-B02',tag:'學步輔助'},
+          {id:'cf-k06',name:'兒童成長椅 CF-B03',tag:'成長椅'},
+          {id:'cf-k07',name:'大巴士層架收納櫃 CF-C03',tag:'收納'},
+          {id:'cf-k08',name:'移動式收納櫃 CF-C04',tag:'收納'},
+        ]
+      },
+      {
+        id:'mc', name:'木澄製造所', color:'gold',
+        soul:'巧福旗下日系質感子品牌。日本檜木＋遠紅外線科技，頂級木質桑拿機。強調「日式工藝、天然檜木香、職人製作」。目標客群：注重質感生活、有消費力的族群。語氣：細膩、職人感、儀式感。',
+        adStyle:'日系職人感、檜木香氛、頂級質感、儀式生活',
+        hashtags:'#木澄製造所 #日本檜木 #遠紅外線桑拿 #職人工藝 #質感生活',
+        prods:[
+          {id:'mc01',name:'日本檜木遠紅外線桑拿機 UC-856AH',tag:'旗艦立式'},
+          {id:'mc02',name:'日本檜木桌型遠紅外線桑拿機 UC-858AH',tag:'桌型設計'},
+        ]
+      },
+      {
+        id:'gf', name:'Golden Fox 運動子品牌', color:'sky',
+        soul:'巧福旗下運動子品牌 Golden Fox。專業運動恢復、高效訓練輔助。語氣有力充滿能量，針對健身族、運動愛好者。強調「訓練後的恢復效率、肌肉放鬆科技」。',
+        adStyle:'專業科技感、訓練恢復、肌肉放鬆、運動生活',
+        hashtags:'#GoldenFox #健身 #筋膜放鬆 #運動恢復 #按摩滾筒',
+        prods:[
+          {id:'gf01',name:'震動按摩滾筒 GF-900SM（雪地/夢幻迷彩）',tag:'震動主力'},
+          {id:'gf02',name:'按摩滾筒 GF-003（深灰/酒紅/軍綠/海軍藍）',tag:'經典款4色'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'ww', name:'旺味米香腸', icon:'🌾', navColor:'red',
+    soul:'全台首創米香腸，傳承阿公「好的東西要守住」家訓。台灣認證豬肉＋台灣Q彈長糯米，黃金比例3:7手工灌製。充滿台灣人情味，強調真材實料、古早手藝。廣告切入：中秋烤肉/露營/家聚必備、一口咬下Q彈米粒爆滿感、送禮有面子。',
+    adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景、家鄉情感、中秋露營',
+    hashtags:'#旺味米香腸 #米香腸 #台灣豬 #手工香腸 #中秋烤肉 #露營美食 #古早味',
+    subs:[
+      {
+        id:'ww-main', name:'旺味主線', color:'red',
+        soul:'旺味米香腸。每一口都是台灣味。主打「一口咬下，米粒Q彈爆滿」的獨特口感。廣告要讓人直接垂涎欲滴。',
+        adStyle:'口感視覺化、烤肉場景、台灣人情味、家人同桌',
+        hashtags:'#旺味米香腸 #米香腸 #中秋烤肉 #露營 #台灣古早味',
+        prods:[
+          {id:'ww01',name:'原味米香腸',tag:'經典招牌'},
+          {id:'ww02',name:'麻辣米香腸',tag:'辣味首選'},
+          {id:'ww03',name:'壽喜牛肉米香腸',tag:'牛肉風味'},
+          {id:'ww04',name:'原味米香燒',tag:'傳統米腸'},
+          {id:'ww05',name:'麻辣米香燒',tag:'辣味米腸'},
+          {id:'ww06',name:'牛肉壽喜米香燒',tag:'牛肉米腸'},
+          {id:'ww07',name:'蜜汁香腸',tag:'甜口大人小孩都愛'},
+          {id:'ww08',name:'金門58度爆汁五香高粱香腸',tag:'大人口味'},
+          {id:'ww09',name:'剝皮辣椒香腸',tag:'特色口味'},
+          {id:'ww10',name:'三星蔥香腸',tag:'蔥香熱銷'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'ly', name:'琉宇醬選', icon:'🫙', navColor:'mint',
+    soul:'琉宇醬選主理頂級進口醬料，旗下兩大系列：好滋好滋零食＋PASSERI頂級松露。前者走「健康零嘴重返生活」路線，後者走「料理儀式感＋送禮首選」路線。',
+    adStyle:'精緻質感、食材溯源、料理升級、零食健康感',
+    hashtags:'#琉宇醬選 #好滋好滋 #PASSERI #松露 #頂級醬料',
+    subs:[
+      {
+        id:'hzh', name:'好滋好滋', color:'mint',
+        soul:'好滋好滋旗下零食系列。海苔主打「喀滋喀滋」酥脆聲感官衝擊，非油炸全素，健康無負擔。重回曙光策略：不走懷舊，走感官新鮮感。禁止說「以前很紅/懷念的滋味」。切入點：ASMR口感 / 非油炸反差 / 媽媽給孩子包飯 / Z世代追劇宵夜 / 健身低卡。',
+        adStyle:'ASMR酥脆感官、健康反差、孩子包飯場景、低卡追劇',
+        hashtags:'#好滋好滋 #海苔 #非油炸 #全素零食 #低卡 #追劇零食 #牛軋糖 #米果',
+        prods:[
+          {id:'hzh01',name:'焦香脆片海苔 經典原味',tag:'基礎款'},
+          {id:'hzh02',name:'厚切岩烤海苔 椒鹽風味',tag:'主力45g'},
+          {id:'hzh03',name:'焦香脆片海苔 梅子風味',tag:'酸甜口'},
+          {id:'hzh04',name:'焦香脆片海苔 哇沙米風味',tag:'刺激口味'},
+          {id:'hzh05',name:'經典海苔禮盒',tag:'送禮組合'},
+          {id:'hzh06',name:'幸福牛軋糖',tag:'節慶零食'},
+          {id:'hzh07',name:'元氣米果控',tag:'米果系列'},
+        ]
+      },
+      {
+        id:'passeri', name:'PASSERI 頂級松露', color:'purple',
+        soul:'PASSERI頂級進口松露系列。跨國聯名嚴選，義大利工藝。主打「一匙松露，讓平凡料理瞬間升級」的儀式感。廣告切入：送禮有品味、居家料理升級、朋友聚餐讓人驚艷。語氣：精緻、自信、有品味。',
+        adStyle:'精緻儀式感、料理升級、送禮有品味、頂級食材',
+        hashtags:'#PASSERI #松露 #黑松露 #頂級松露醬 #料理升級 #送禮首選',
+        prods:[
+          {id:'ps01',name:'頂級黑松露禮盒',tag:'送禮旗艦'},
+          {id:'ps02',name:'特級黑松露橄欖油',tag:'料理用油'},
+          {id:'ps03',name:'特級白松露橄欖油',tag:'白松露系列'},
+          {id:'ps04',name:'5%頂級黑松露醬（葷食）',tag:'葷食版'},
+          {id:'ps05',name:'5%頂級黑松露醬（全素）',tag:'全素版'},
+          {id:'ps06',name:'頂級黑松露鹽',tag:'調味鹽'},
+        ]
+      }
+    ]
+  }
+];
+
+const CMAP={
+  gold:{c:'var(--gold)',bg:'var(--gold2)'},
+  red:{c:'#FF8099',bg:'var(--red2)'},
+  sky:{c:'var(--sky)',bg:'var(--sky2)'},
+  mint:{c:'var(--mint)',bg:'var(--mint2)'},
+  purple:{c:'var(--purple)',bg:'var(--purple2)'},
+};
+
+// ══ STATE ══
+let S={
+  brandId:null, subId:null, prod:null,
+  photos:[], videos:[],
+  selPhoto:null, selVideo:null,
+  scripts:[], delivers:[],
+  openBrand:null,
+};
+
+// ══ INIT ══
+(function init(){
+  renderNavBrands();
+  renderBrandTree();
+})();
+
+function renderNavBrands(){
+  document.getElementById('navBrands').innerHTML=BRANDS.map(b=>
+    `<button class="nb ${b.navColor} ${S.brandId===b.id?'on':''}" onclick="clickBrand('${b.id}')">${b.icon} ${b.name}</button>`
+  ).join('');
+}
+
+function renderBrandTree(){
+  document.getElementById('brandTree').innerHTML=BRANDS.map(b=>{
+    const isOpen=S.openBrand===b.id;
+    return `<div>
+      <div class="brand-row ${S.brandId===b.id&&!S.subId?'on':''}" onclick="clickBrand('${b.id}')">
+        <span class="br-icon">${b.icon}</span>
+        <div class="br-info">
+          <div class="br-name">${b.name}</div>
+          <div class="br-sub">${b.subs.length}個系列</div>
+        </div>
+        <span style="color:var(--t3);font-size:11px;transition:transform 0.2s;${isOpen?'transform:rotate(90deg)':''}"  >›</span>
+      </div>
+      ${isOpen? b.subs.map(sb=>`
+        <div class="sub-brand-row ${S.subId===sb.id?'on':''}" onclick="clickSub('${b.id}','${sb.id}')">
+          <div class="dot"></div>${sb.name}
+        </div>`).join('') : ''}
+    </div>`;
+  }).join('');
+}
+
+function clickBrand(id){
+  S.openBrand = S.openBrand===id ? null : id;
+  S.brandId=id; S.subId=null; S.prod=null;
+  renderNavBrands(); renderBrandTree(); renderProds(); updateCtx();
+}
+
+function clickSub(brandId,subId){
+  S.brandId=brandId; S.subId=subId; S.prod=null;
+  S.openBrand=brandId;
+  renderNavBrands(); renderBrandTree(); renderProds(); updateCtx();
+}
+
+function renderProds(){
+  const el=document.getElementById('prodList');
+  const brand=BRANDS.find(b=>b.id===S.brandId);
+  if(!brand){el.innerHTML='<div class="empty" style="padding:24px 10px;"><div class="empty-ico">📦</div><div class="empty-p">← 先選品牌</div></div>';return;}
+  const subs=S.subId ? brand.subs.filter(s=>s.id===S.subId) : brand.subs;
+  let html='';
+  subs.forEach(sb=>{
+    const sc=CMAP[sb.color]||CMAP.gold;
+    html+=`<div style="margin-bottom:12px;">
+      <div class="prod-grp-label" style="color:${sc.c}">${sb.name}</div>
+      ${sb.prods.map(p=>`
+        <div class="prod-row ${S.prod?.id===p.id?'on':''}" onclick="clickProd('${sb.id}','${p.id}')">
+          <div class="prod-dot"></div>
+          <div><div class="prod-name">${p.name}</div><div class="prod-tag">${p.tag}</div></div>
+        </div>`).join('')}
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+function clickProd(subId,prodId){
+  const brand=BRANDS.find(b=>b.id===S.brandId);
+  const sub=brand?.subs.find(s=>s.id===subId);
+  const prod=sub?.prods.find(p=>p.id===prodId);
+  if(!prod) return;
+  S.subId=subId; S.prod=prod;
+  renderBrandTree(); renderProds(); updateCtx();
+}
+
+function updateCtx(){
+  const brand=BRANDS.find(b=>b.id===S.brandId);
+  const sub=brand?.subs.find(s=>s.id===S.subId);
+  const sc=CMAP[sub?.color||brand?.navColor]||CMAP.gold;
+  const bEl=document.getElementById('gbBrand');
+  const pEl=document.getElementById('gbProd');
+  if(!brand){bEl.textContent='尚未選擇品牌';bEl.style.color='var(--t3)';pEl.textContent='← 先選商品';pEl.style.color='var(--t3)';return;}
+  bEl.style.color=sc.c;
+  bEl.textContent=`${brand.icon} ${brand.name}${sub?' › '+sub.name:''}`;
+  pEl.style.color=S.prod?'var(--t1)':'var(--t3)';
+  pEl.textContent=S.prod?S.prod.name:'← 先選商品';
+}
+
+// ══════════════════════════════════════════
+// DRIVE INTEGRATION
+// ══════════════════════════════════════════
+function parseDriveId(raw){
+  if(!raw) return null;
+  const m=raw.match(/(?:folders\/|id=)([a-zA-Z0-9_\-]{15,})/);
+  if(m) return m[1];
+  if(/^[a-zA-Z0-9_\-]{15,}$/.test(raw.trim())) return raw.trim();
+  return null;
+}
+
+function setDriveStatus(state){
+  const dot=document.getElementById('driveDot');
+  const lbl=document.getElementById('driveLabel');
+  dot.className='drive-dot '+state;
+  if(state==='ok'){lbl.textContent='Drive 已連結';lbl.style.color='var(--mint)';}
+  else if(state==='busy'){lbl.textContent='載入中…';lbl.style.color='var(--gold)';}
+  else{lbl.textContent='Drive 未連結';lbl.style.color='var(--t3)';}
+}
+
+async function fetchDriveAssets(type){
+  const inputId=type==='photo'?'inPhotoFolder':'inVideoFolder';
+  const btnId=type==='photo'?'fetchPhotoBtn':'fetchVideoBtn';
+  const raw=document.getElementById(inputId).value.trim();
+  const folderId=parseDriveId(raw);
+  const btn=document.getElementById(btnId);
+
+  if(!raw){alert('請先貼上 Drive 資料夾連結');return;}
+  btn.disabled=true; btn.textContent='載入中…'; setDriveStatus('busy');
+
+  // 嘗試透過 Google Drive API (需要 OAuth)
+  // 實際部署時填入 access_token，或使用 service account proxy
+  const accessToken=window._driveToken||'';
+  if(accessToken && folderId){
+    await fetchFromDriveAPI(folderId, type, accessToken);
+  } else {
+    // Fallback: 用資料夾公開連結建立可點擊連結
+    await useFolderLink(raw, type, folderId);
+  }
+  btn.disabled=false; btn.textContent=type==='photo'?'抓照片':'抓影片';
+  renderAssets(); setDriveStatus('ok');
+}
+
+async function fetchFromDriveAPI(folderId, type, token){
+  // Google Drive API v3 — list files in folder
+  const mimeFilter=type==='photo'
+    ? "mimeType contains 'image/'"
+    : "mimeType contains 'video/'";
+  const q=encodeURIComponent(`'${folderId}' in parents and (${mimeFilter}) and trashed=false`);
+  const url=`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,modifiedTime,thumbnailLink,webViewLink)&pageSize=100`;
+  try{
+    const r=await fetch(url,{headers:{Authorization:'Bearer '+token}});
+    const d=await r.json();
+    if(d.files){
+      d.files.forEach(f=>{
+        const arr=type==='photo'?S.photos:S.videos;
+        if(!arr.find(x=>x.driveId===f.id)){
+          arr.push({
+            driveId:f.id,
+            name:f.name,
+            thumb:f.thumbnailLink||'',
+            driveUrl:f.webViewLink||`https://drive.google.com/file/d/${f.id}/view`,
+            directUrl:`https://drive.google.com/uc?id=${f.id}&export=download`,
+            src:'',
+            type
+          });
+        }
+      });
+    }
+  }catch(e){console.warn('Drive API error',e);}
+}
+
+async function useFolderLink(raw, type, folderId){
+  // No token — store folder reference + guide user to open
+  // We create virtual entries that link to the folder itself
+  const folderUrl = folderId
+    ? `https://drive.google.com/drive/folders/${folderId}`
+    : (raw.startsWith('http') ? raw : `https://drive.google.com/drive/folders/${raw}`);
+
+  const arr=type==='photo'?S.photos:S.videos;
+  // Add a folder reference entry
+  const existing=arr.find(x=>x.isFolder);
+  if(!existing){
+    arr.push({
+      isFolder:true,
+      name:(type==='photo'?'🗂️ 照片資料夾（點開連結選取）':'🗂️ 影片資料夾（點開連結選取）'),
+      driveUrl:folderUrl,
+      directUrl:folderUrl,
+      src:'',type,thumb:''
+    });
+  }
+
+  // Show setup guide
+  showTokenGuide(type, folderUrl);
+}
+
+function showTokenGuide(type, folderUrl){
+  // Non-intrusive inline notice
+  const existing=document.getElementById('driveNotice');
+  if(!existing){
+    const notice=document.createElement('div');
+    notice.id='driveNotice';
+    notice.style.cssText='padding:8px 12px;background:rgba(77,200,240,0.08);border:1px solid rgba(77,200,240,0.2);border-radius:6px;margin:8px 14px;font-size:10px;line-height:1.7;color:var(--t2);';
+    notice.innerHTML=`<strong style="color:var(--sky)">💡 完整串接 Drive API</strong><br>
+      在瀏覽器 Console 輸入：<br>
+      <code style="font-family:DM Mono;color:var(--gold)">window._driveToken = "你的 OAuth token"</code><br>
+      然後再點「抓${type==='photo'?'照片':'影片'}」，系統自動列出所有檔案。<br>
+      <a href="${folderUrl}" target="_blank" style="color:var(--sky)">或點此直接開啟 Drive 資料夾 →</a>`;
+    document.getElementById('assetGrid').prepend(notice);
+  }
+}
+
+async function fetchBoth(){
+  const photoRaw=document.getElementById('inPhotoFolder').value.trim();
+  const videoRaw=document.getElementById('inVideoFolder').value.trim();
+  if(!photoRaw && !videoRaw){alert('請先填入照片或影片資料夾連結');return;}
+  if(photoRaw) await fetchDriveAssets('photo');
+  if(videoRaw) await fetchDriveAssets('video');
+}
+
+// ══ RENDER ASSETS ══
+function renderAssets(){
+  const grid=document.getElementById('assetGrid');
+  let html='';
+
+  // existing notice if any
+  const notice=document.getElementById('driveNotice');
+  const noticeHtml=notice?notice.outerHTML:'';
+  grid.innerHTML='';
+
+  if(S.photos.length){
+    html+=`<div class="asset-sec">
+      <div class="asset-sec-lbl">🖼️ 照片素材 <span class="asset-count" style="color:var(--sky)">${S.photos.length}</span></div>`;
+    S.photos.forEach((f,i)=>{
+      const sel=S.selPhoto===i;
+      html+=assetItemHtml(f,i,'photo',sel);
+    });
+    html+='</div>';
+  }
+
+  if(S.videos.length){
+    html+=`<div class="asset-sec">
+      <div class="asset-sec-lbl">🎬 影片素材 <span class="asset-count" style="color:var(--peach)">${S.videos.length}</span></div>`;
+    S.videos.forEach((f,i)=>{
+      const sel=S.selVideo===i;
+      html+=assetItemHtml(f,i,'video',sel);
+    });
+    html+='</div>';
+  }
+
+  if(!html) html='<div class="empty"><div class="empty-ico">☁️</div><div class="empty-p">貼上 Drive 資料夾連結<br>點「一鍵抓全部素材」</div></div>';
+
+  grid.innerHTML=(noticeHtml||'')+html;
+}
+
+function assetItemHtml(f,i,type,sel){
+  const fallback=type==='photo'?'🖼️':'🎬';
+  const errHandler='this.textContent=\'' + fallback + '\'';
+  const thumb=f.src?('<img src="'+f.src+'" onerror="'+errHandler+'">')
+    :(f.thumb?('<img src="'+f.thumb+'" onerror="'+errHandler+'">')
+    :fallback);
+  return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})">
+    <div class="ai-thumb">${thumb}</div>
+    <div class="ai-info">
+      <div class="ai-name">${f.name}</div>
+      <div class="ai-meta">${f.isFolder?'<a href="'+f.driveUrl+'" target="_blank" style="color:var(--sky)">開啟資料夾 →</a>':'Drive 素材'}</div>
+    </div>
+    <span class="ai-check">✓</span>
+  </div>`;
+}
+
+function selectAsset(type,i){
+  if(type==='photo') S.selPhoto = S.selPhoto===i?null:i;
+  else S.selVideo = S.selVideo===i?null:i;
+  renderAssets();
+}
+
+// ══ GENERATE ══
+async function doGenerate(){
+  if(!S.brandId){alert('請先選擇品牌！');return;}
+  if(!S.prod){alert('請先選擇商品！');return;}
+
+  const brand=BRANDS.find(b=>b.id===S.brandId);
+  const sub=brand?.subs.find(s=>s.id===S.subId);
+  const soul=sub?.soul||brand?.soul||'';
+  const style=sub?.adStyle||brand?.adStyle||'';
+  const tags=sub?.hashtags||brand?.hashtags||'';
+  const aud=document.getElementById('selAud').value;
+  const count=parseInt(document.getElementById('selN').value)||20;
+
+  // Brand display
+  const isGF=S.subId==='gf';
+  const brandDisplay=isGF
+    ?'巧福健康家電 旗下運動子品牌 Golden Fox'
+    :`${brand.name}${sub&&sub.id!==brand.id?' › '+sub.name:''}`;
+
+  const btn=document.getElementById('genBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>生成中';
+  const prog=document.getElementById('prog');
+  const fill=document.getElementById('progFill');
+  prog.style.display='block'; fill.style.width='10%';
+
+  const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣方法論。
+
+【品牌】${brandDisplay}
+【品牌靈魂與策略】${soul}
+【廣告風格】${style}
+【商品】${S.prod.name}（${S.prod.tag}）
+【目標受眾】${aud}
+【Hashtag】${tags}
+
+【任務】用 Hormozi 三段結構，生成 ${count} 組最強廣告組合。
+
+三段結構：
+1. 黃金3秒鉤子（15字內）：含方向標記（痛點/好奇心/反常識/社群證明/數字衝擊）
+2. 核心段落（50-80字）：只溝通一件事「為什麼此商品能解決你的問題」，含類型標記（產品展示/客戶見證/教育型/故事型/純素材）
+3. CTA（15字內）：含風格標記（緊迫感/利益驅動/社群感）
+
+要求：
+- 繁體中文、台灣用語、不同組合風格明顯不同
+- 語氣100%符合品牌靈魂，Golden Fox=科技有力、巧福主線=溫暖親切
+- 提供畫面場景建議（給拍攝/選圖參考）
+
+只回傳純JSON，格式：
+{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子文字","visual":"畫面場景"},"core":{"type":"類型","script":"核心段落","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA文字"}}]}`;
+
+  try{
+    fill.style.width='40%';
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:5000,messages:[{role:'user',content:prompt}]})
+    });
+    fill.style.width='80%';
+    const data=await res.json();
+    const raw=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(raw);
+    S.scripts=parsed.combos||[];
+    renderScripts(brandDisplay, sub?.color||brand?.navColor);
+    document.getElementById('scriptBadge').textContent=S.scripts.length;
+    fill.style.width='100%';
+    setTimeout(()=>{prog.style.display='none';},400);
+  }catch(e){
+    prog.style.display='none';
+    alert('生成失敗：'+e.message);
+  }finally{
+    btn.disabled=false; btn.innerHTML='⚡ 生成腳本';
+  }
+}
+
+function renderScripts(brandDisplay, colorKey){
+  const sc=CMAP[colorKey]||CMAP.gold;
+  document.getElementById('scriptsOut').innerHTML=S.scripts.map((s,i)=>`
+    <div class="ad-card" style="animation-delay:${i*18}ms">
+      <div class="ac-top">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="ac-id">${s.id}</span>
+          <span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span>
+        </div>
+        <div class="ac-btns">
+          <button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付</button>
+          <button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button>
+        </div>
+      </div>
+      <div class="ac-body">
+        <div class="seg">
+          <div class="seg-lbl" style="color:var(--sky)">🪝 黃金3秒</div>
+          <div class="seg-txt">${s.hook.script}</div>
+          <span class="seg-badge" style="background:var(--sky2);color:var(--sky)">${s.hook.method}</span>
+          <div class="seg-hint">📸 ${s.hook.visual}</div>
+        </div>
+        <div class="seg">
+          <div class="seg-lbl" style="color:var(--mint)">💎 核心段落</div>
+          <div class="seg-txt">${s.core.script}</div>
+          <span class="seg-badge" style="background:var(--mint2);color:var(--mint)">${s.core.type}</span>
+          <div class="seg-hint">💡 ${s.core.solve}</div>
+        </div>
+        <div class="seg">
+          <div class="seg-lbl" style="color:var(--peach)">🚀 CTA</div>
+          <div class="seg-txt">${s.cta.script}</div>
+          <span class="seg-badge" style="background:var(--peach2);color:var(--peach)">${s.cta.style}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function copyOne(i,btn){
+  const s=S.scripts[i];
+  const t=`【${s.id}】${S.prod?.name}\n🪝 ${s.hook.method}：${s.hook.script}\n📸 畫面：${s.hook.visual}\n\n💎 ${s.core.type}：\n${s.core.script}\n💡 ${s.core.solve}\n\n🚀 ${s.cta.style}：${s.cta.script}`;
+  navigator.clipboard.writeText(t).then(()=>{
+    btn.textContent='✅ 已複製'; setTimeout(()=>btn.textContent='複製腳本',2000);
+  });
+}
+
+// ══ ADD TO DELIVER ══  ← 核心動作
+function addDeliver(scriptIdx){
+  const s=S.scripts[scriptIdx];
+  const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
+  const video=S.selVideo!==null?S.videos[S.selVideo]:null;
+  const row={
+    id:s.id,
+    product:S.prod?.name||'',
+    hookScript:s.hook.script,
+    coreScript:s.core.script,
+    ctaScript:s.cta.script,
+    photoName:photo?.name||'',
+    photoUrl:photo?.driveUrl||'',
+    videoName:video?.name||'',
+    videoUrl:video?.driveUrl||'',
+    ready:!!(photo||video),
+  };
+  S.delivers.push(row);
+  renderDeliverRows();
+  renderDeliverOut();
+  // auto switch to deliver tab
+  const deliverTab=document.querySelector('[data-tab="deliver"]');
+  switchTab(deliverTab);
+}
+
+function renderDeliverRows(){
+  document.getElementById('dzSub').textContent=S.delivers.length+' 組素材';
+  document.getElementById('deliverBadge').textContent=S.delivers.length;
+  const tbody=document.getElementById('deliverRows');
+  if(!S.delivers.length){
+    tbody.innerHTML='<div style="text-align:center;padding:14px;font-size:10px;color:var(--t3);">尚無素材</div>';
+    return;
+  }
+  tbody.innerHTML=S.delivers.map((r,i)=>{
+    const photoLink=r.photoUrl
+      ?`<a class="asset-link al-photo" href="${r.photoUrl}" target="_blank">🖼️ 照片</a>`
+      :`<span class="asset-link al-none">🖼️ 無</span>`;
+    const videoLink=r.videoUrl
+      ?`<a class="asset-link al-video" href="${r.videoUrl}" target="_blank">🎬 影片</a>`
+      :`<span class="asset-link al-none">🎬 無</span>`;
+    const isNew=i===S.delivers.length-1;
+    return `<div class="dr ${isNew?'new':''}">
+      <span class="dr-id">${r.id}</span>
+      <span class="dr-script" title="${r.hookScript}">${r.hookScript.slice(0,16)}…</span>
+      <span class="dr-photo-link">${photoLink}</span>
+      <span class="dr-video-link">${videoLink}</span>
+      <span class="dr-status ${r.ready?'ds-ready':'ds-missing'}">${r.ready?'✅ 備妥':'⚠️ 缺素材'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderDeliverOut(){
+  const el=document.getElementById('deliverOut');
+  if(!S.delivers.length){
+    el.innerHTML='<div class="empty"><div class="empty-p">加入交付後顯示</div></div>';
+    return;
+  }
+  el.innerHTML=S.delivers.map((r,i)=>`
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;
+      padding:11px 13px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+        <span style="font-family:'DM Mono';font-size:11px;color:var(--gold)">${r.id}</span>
+        <span style="font-size:10px;color:var(--t3)">${r.product}</span>
+        <button class="tbtn tbtn-g" onclick="removeDeliver(${i})" style="font-size:9px">移除</button>
+      </div>
+      <div style="font-size:11px;line-height:1.8;margin-bottom:8px;">
+        <span style="color:var(--sky)">🪝</span> ${r.hookScript}<br>
+        <span style="color:var(--t3)">💎 ${r.coreScript.slice(0,50)}…</span><br>
+        <span style="color:var(--peach)">🚀</span> ${r.ctaScript}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${r.photoUrl?'<a href="'+r.photoUrl+'" target="_blank" class="asset-link al-photo">🖼️ '+(r.photoName||'照片')+'</a>':'<span class="asset-link al-none">🖼️ 無照片</span>'}
+        ${r.videoUrl?'<a href="'+r.videoUrl+'" target="_blank" class="asset-link al-video">🎬 '+(r.videoName||'影片')+'</a>':'<span class="asset-link al-none">🎬 無影片</span>'}
+        <span class="dr-status ${r.ready?'ds-ready':'ds-missing'}" style="font-size:9px">${r.ready?'✅ 素材已備妥':'⚠️ 缺素材'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function removeDeliver(i){
+  S.delivers.splice(i,1);
+  renderDeliverRows(); renderDeliverOut();
+}
+
+function clearAll(){
+  if(S.delivers.length && confirm(`清空所有 ${S.delivers.length} 組交付素材？`)){
+    S.delivers=[]; renderDeliverRows(); renderDeliverOut();
+  }
+}
+
+// ══ TSV EXPORT ══
+function copyTSV(){
+  if(!S.delivers.length){alert('尚無素材');return;}
+  const h=['編號','商品','黃金3秒鉤子','核心段落','CTA','照片檔名','📎 照片連結','影片檔名','🎬 影片連結','狀態'];
+  const rows=S.delivers.map(r=>[
+    r.id,r.product,
+    r.hookScript,r.coreScript,r.ctaScript,
+    r.photoName,r.photoUrl,
+    r.videoName,r.videoUrl,
+    r.ready?'素材已備妥':'缺素材'
+  ].join('\t'));
+  navigator.clipboard.writeText([h.join('\t'),...rows].join('\n')).then(()=>{
+    const btn=event.target;
+    btn.textContent='✅ 已複製！開 Google Sheet 按 Ctrl+V';
+    setTimeout(()=>btn.textContent='📋 複製全部 → 貼入 Google Sheet',3500);
+  });
+}
+
+// ══ TABS ══
+function switchTab(btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('pane-'+btn.dataset.tab).classList.add('on');
+}
+</script>
+</body>
+</html>
