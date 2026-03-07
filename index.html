@@ -922,6 +922,10 @@ async function doGenerate(){
     });
     fill.style.width='80%';
     const data=await res.json();
+    if(!data.content){
+      const errMsg=data.error?.message||JSON.stringify(data);
+      throw new Error('API錯誤：'+errMsg);
+    }
     const raw=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
     const parsed=JSON.parse(raw);
     S.scripts=parsed.combos||[];
