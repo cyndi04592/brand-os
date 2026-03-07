@@ -255,6 +255,14 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   <!-- brand quick-switch -->
   <div class="nav-brands" id="navBrands"></div>
   <!-- drive status -->
+  <!-- API Key -->
+  <div style="display:flex;align-items:center;gap:6px;">
+    <input id="apiKeyInput" type="password" placeholder="貼上 Anthropic API Key"
+      style="background:#1a1a2a;border:1px solid var(--line2);border-radius:6px;
+      color:var(--t1);font-family:'DM Mono';font-size:10px;padding:5px 10px;
+      outline:none;width:220px;" oninput="saveKey(this.value)">
+    <span id="keyStatus" style="font-size:10px;color:var(--t3);">未設定</span>
+  </div>
   <div class="nav-right">
     <div class="drive-dot" id="driveDot"></div>
     <span class="drive-label" id="driveLabel">Drive 未連結</span>
@@ -575,7 +583,26 @@ let S={
 (function init(){
   renderNavBrands();
   renderBrandTree();
+  const saved=localStorage.getItem('brandos_apikey');
+  if(saved){
+    document.getElementById('apiKeyInput').value=saved;
+    document.getElementById('keyStatus').textContent='✅ 已設定';
+    document.getElementById('keyStatus').style.color='var(--mint)';
+  }
 })();
+
+function saveKey(val){
+  const st=document.getElementById('keyStatus');
+  if(val&&val.startsWith('sk-ant')){
+    localStorage.setItem('brandos_apikey',val);
+    st.textContent='✅ 已儲存'; st.style.color='var(--mint)';
+  } else if(val.length>0){
+    st.textContent='⚠️ 格式錯誤'; st.style.color='var(--peach)';
+  } else {
+    localStorage.removeItem('brandos_apikey');
+    st.textContent='未設定'; st.style.color='var(--t3)';
+  }
+}
 
 function renderNavBrands(){
   document.getElementById('navBrands').innerHTML=BRANDS.map(b=>
@@ -884,10 +911,16 @@ async function doGenerate(){
 {"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子文字","visual":"畫面場景"},"core":{"type":"類型","script":"核心段落","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA文字"}}]}`;
 
   try{
+    const apiKey=localStorage.getItem('brandos_apikey')||document.getElementById('apiKeyInput').value;
+    if(!apiKey||!apiKey.startsWith('sk-ant')){
+      alert('請先在右上角輸入 Anthropic API Key！');
+      btn.disabled=false; btn.innerHTML='⚡ 生成腳本';
+      prog.style.display='none'; return;
+    }
     fill.style.width='40%';
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:5000,messages:[{role:'user',content:prompt}]})
     });
     fill.style.width='80%';
