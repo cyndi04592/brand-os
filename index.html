@@ -500,11 +500,14 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       </div>
 
       <!-- 下載 -->
-      <button onclick="downloadAd()"
+      <button id="adDownloadBtn" onclick="downloadAd()"
         style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,var(--purple),#6A3FD8);
         border:none;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">
         ⬇️ 下載廣告圖 JPG
       </button>
+      <div style="text-align:center;font-size:11px;color:var(--t3);margin-top:4px;">
+        ☁️ 已連結 Drive 時同步自動存入「Brand OS 廣告圖」資料夾
+      </div>
     </div>
 
     <!-- Right: canvas preview -->
@@ -1805,16 +1808,86 @@ async function renderAdCanvasWithPR(){
 function downloadAd(){
   const canvas = document.getElementById('adCanvas');
   const brand = BRANDS.find(b=>b.id===S.brandId);
-  const filename = `${brand?.name||'ad'}_${S.prod?.name||'img'}_${AM.tpl}_${AM.w}x${AM.h}.jpg`;
+  const filename = `${brand?.name||'ad'}_${S.prod?.name||'img'}_${AM.tpl}_${AM.w}x${AM.h}.jpg`
+    .replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
+
+  // 1. 本機下載
   const link = document.createElement('a');
-  link.download = filename.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
+  link.download = filename;
   link.href = canvas.toDataURL('image/jpeg', 0.92);
   link.click();
+
+  // 2. 自動上傳到 Drive（如果已授權）
+  if(window._driveToken){
+    uploadAdToDrive(canvas, filename);
+  }
+}
+
+async function uploadAdToDrive(canvas, filename){
+  const dlBtn = document.getElementById('adDownloadBtn');
+  const origText = dlBtn ? dlBtn.textContent : '';
+  if(dlBtn) { dlBtn.textContent = '☁️ 上傳中...'; dlBtn.disabled = true; }
+
+  try {
+    // Canvas → Blob
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+
+    // 決定上傳目標資料夾
+    let folderId = DRIVE_OUTPUT_FOLDER_ID;
+    if(!folderId){
+      // 用 Drive 根目錄，並在根目錄建立「Brand OS 廣告圖」資料夾（只建一次）
+      folderId = await getOrCreateAdFolder();
+      DRIVE_OUTPUT_FOLDER_ID = folderId;
+    }
+
+    // 上傳
+    const meta = JSON.stringify({ name: filename, parents: folderId ? [folderId] : [] });
+    const form = new FormData();
+    form.append('metadata', new Blob([meta], {type:'application/json'}));
+    form.append('file', blob, filename);
+
+    const resp = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+      { method:'POST', headers:{'Authorization':'Bearer '+window._driveToken}, body:form }
+    );
+    if(!resp.ok) throw new Error('上傳失敗 ' + resp.status);
+    const data = await resp.json();
+    if(dlBtn) {
+      dlBtn.textContent = '✅ 已存到 Drive！';
+      setTimeout(()=>{ dlBtn.textContent = origText; dlBtn.disabled = false; }, 3000);
+    }
+    console.log('✅ 廣告圖已上傳 Drive:', data.webViewLink);
+  } catch(e){
+    console.error('Drive 上傳失敗:', e);
+    if(dlBtn) { dlBtn.textContent = origText; dlBtn.disabled = false; }
+    // 靜默失敗，本機下載已完成不影響使用者
+  }
+}
+
+async function getOrCreateAdFolder(){
+  const token = window._driveToken;
+  // 搜尋是否已存在
+  const search = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=name%3D'Brand+OS+廣告圖'+and+mimeType%3D'application%2Fvnd.google-apps.folder'+and+trashed%3Dfalse&fields=files(id,name)`,
+    { headers:{'Authorization':'Bearer '+token} }
+  );
+  const sdata = await search.json();
+  if(sdata.files && sdata.files.length > 0) return sdata.files[0].id;
+
+  // 建立新資料夾
+  const create = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+    body: JSON.stringify({ name:'Brand OS 廣告圖', mimeType:'application/vnd.google-apps.folder' })
+  });
+  const cdata = await create.json();
+  return cdata.id;
 }
 
 // ══ GOOGLE OAUTH (GIS) ══
 const GOOG_CLIENT_ID='513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
-const GOOG_SCOPE='https://www.googleapis.com/auth/drive.readonly';
+const GOOG_SCOPE='https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
+let DRIVE_OUTPUT_FOLDER_ID = null; // 廣告圖上傳目的資料夾
 let tokenClient=null;
 
 function initGoogleAuth(){
