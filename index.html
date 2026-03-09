@@ -1229,6 +1229,9 @@ function copyTSV(btn){
 let AM = { w:1080, h:1080, tpl:'classic', scriptIdx:null };
 
 function openAdMaker(idx){
+  PR_BG_IMG = null;  // 重設 AI 背景
+  setPrStatus('', '');
+
   const s = S.scripts[idx];
   AM.scriptIdx = idx;
   document.getElementById('amTitle').value = s.hook.script;
@@ -1798,14 +1801,6 @@ async function renderAdCanvasWithPR(){
   if(AM.tpl === 'classic') drawClassic(ctx, title, sub, cta, accentColor);
   else if(AM.tpl === 'modern') drawModern(ctx, title, sub, cta, accentColor);
   else if(AM.tpl === 'bold') drawBold(ctx, title, sub, cta, accentColor);
-}
-
-// 修改 openAdMaker：每次開啟重設 PR_BG_IMG
-const _origOpenAdMaker = openAdMaker;
-function openAdMaker(idx){
-  PR_BG_IMG = null;  // 重設 AI 背景
-  setPrStatus('', '');
-  _origOpenAdMaker(idx);
 }
 
 function downloadAd(){
