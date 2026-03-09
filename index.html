@@ -264,6 +264,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <span id="keyStatus" style="font-size:10px;white-space:nowrap;">未設定</span>
   </div>
   <div class="nav-right">
+    <button id="driveLoginBtn" onclick="driveLogin()"
+      style="padding:4px 12px;border-radius:6px;border:1px solid var(--sky);background:var(--sky2);
+      color:var(--sky);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">
+      🔗 連結 Drive
+    </button>
     <div class="drive-dot" id="driveDot"></div>
     <span class="drive-label" id="driveLabel">Drive 未連結</span>
   </div>
@@ -1110,6 +1115,38 @@ function copyTSV(btn){
     .catch(()=>{});
 }
 
+// ══ GOOGLE OAUTH (GIS) ══
+const GOOG_CLIENT_ID='513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
+const GOOG_SCOPE='https://www.googleapis.com/auth/drive.readonly';
+let tokenClient=null;
+
+function initGoogleAuth(){
+  if(!window.google) return;
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:GOOG_CLIENT_ID,
+    scope:GOOG_SCOPE,
+    callback:(resp)=>{
+      if(resp.access_token){
+        window._driveToken=resp.access_token;
+        setDriveStatus('ok');
+        const btn=document.getElementById('driveLoginBtn');
+        btn.textContent='✅ Drive 已連結';
+        btn.style.borderColor='var(--mint)';
+        btn.style.color='var(--mint)';
+        btn.style.background='var(--mint2)';
+      }
+    }
+  });
+}
+
+function driveLogin(){
+  if(!tokenClient){
+    alert('Google 授權尚未載入，請稍後再試');
+    return;
+  }
+  tokenClient.requestAccessToken({prompt:'select_account'});
+}
+
 // ══ TABS ══
 function switchTab(btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
@@ -1118,5 +1155,6 @@ function switchTab(btn){
   document.getElementById('pane-'+btn.dataset.tab).classList.add('on');
 }
 </script>
+<script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
 </body>
 </html>
