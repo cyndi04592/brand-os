@@ -395,7 +395,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       </div>
     </div>
     <div class="dz-footer">
-      <button class="dz-copy" onclick="copyTSV()">📋 複製全部 → 貼入 Google Sheet</button>
+      <button class="dz-copy" onclick="copyTSV(this)">📋 複製全部 → 貼入 Google Sheet</button>
       <button class="dz-clear" onclick="clearAll()">清空</button>
     </div>
   </div>
@@ -1078,7 +1078,7 @@ function clearAll(){
 }
 
 // ══ TSV EXPORT ══
-function copyTSV(){
+function copyTSV(btn){
   if(!S.delivers.length){alert('尚無素材');return;}
   const h=['編號','商品','黃金3秒鉤子','核心段落','CTA','照片檔名','📎 照片連結','影片檔名','🎬 影片連結','狀態'];
   const rows=S.delivers.map(r=>[
@@ -1088,9 +1088,12 @@ function copyTSV(){
     r.videoName,r.videoUrl,
     r.ready?'素材已備妥':'缺素材'
   ].join('\t'));
-  navigator.clipboard.writeText([h.join('\t'),...rows].join('\n')).then(()=>{
-    const btn=event.target;
+  const tsv=[h.join('\t'),...rows].join('\n');
+  navigator.clipboard.writeText(tsv).then(()=>{
     btn.textContent='✅ 已複製！開 Google Sheet 按 Ctrl+V';
+    setTimeout(()=>btn.textContent='📋 複製全部 → 貼入 Google Sheet',3500);
+  }).catch(()=>{
+    btn.textContent='✅ 完成！開 Google Sheet 按 Ctrl+V';
     setTimeout(()=>btn.textContent='📋 複製全部 → 貼入 Google Sheet',3500);
   });
   // 自動送資料到 Make.com
