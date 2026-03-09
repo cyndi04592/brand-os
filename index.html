@@ -419,7 +419,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 </div><!-- end right -->
 <!-- ══ AD MAKER MODAL ══ -->
 <div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;overflow:auto;">
-  <div style="max-width:900px;margin:30px auto;padding:20px;display:flex;gap:20px;flex-wrap:wrap;">
+  <div style="max-width:1100px;margin:30px auto;padding:20px;display:flex;gap:20px;flex-wrap:wrap;">
     <!-- Left: controls -->
     <div style="flex:1;min-width:260px;background:var(--bg2);border-radius:14px;border:1px solid var(--line2);padding:18px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -513,7 +513,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <!-- Right: canvas preview -->
     <div style="flex:1;min-width:280px;display:flex;flex-direction:column;align-items:center;gap:10px;">
       <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);">預覽</div>
-      <canvas id="adCanvas" style="border-radius:10px;max-width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.6);"></canvas>
+      <canvas id="adCanvas" style="border-radius:10px;max-width:100%;width:540px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);image-rendering:auto;"></canvas>
     </div>
   </div>
 </div>
@@ -1380,11 +1380,12 @@ function drawClassic(ctx, title, sub, cta, accent){
   ctx.fillStyle = '#1A0A05';
   ctx.fill();
 
-  // ── 上方標題區：半透明黑色遮罩
-  const titleAreaH = Math.round(H * 0.38);
+  // ── 上方標題區：半透明黑色遮罩（加深確保文字清晰）
+  const titleAreaH = Math.round(H * 0.42);
   const titleGrad = ctx.createLinearGradient(0,0,0,titleAreaH);
-  titleGrad.addColorStop(0,'rgba(0,0,0,0.78)');
-  titleGrad.addColorStop(1,'rgba(0,0,0,0.02)');
+  titleGrad.addColorStop(0,'rgba(0,0,0,0.88)');
+  titleGrad.addColorStop(0.6,'rgba(0,0,0,0.55)');
+  titleGrad.addColorStop(1,'rgba(0,0,0,0.0)');
   ctx.fillStyle = titleGrad;
   ctx.fillRect(0,0,W,titleAreaH);
 
@@ -1459,6 +1460,15 @@ function drawModern(ctx, title, sub, cta, accent){
   fadeGrad.addColorStop(1,'rgba(248,248,248,1)');
   ctx.fillStyle = fadeGrad;
   ctx.fillRect(0, splitY-80, W, 100);
+
+  // ── 上方照片區：黑色漸層遮罩（確保標題文字清晰）
+  const topMaskH = Math.round(splitY * 0.65);
+  const topMask = ctx.createLinearGradient(0, 0, 0, topMaskH);
+  topMask.addColorStop(0, 'rgba(0,0,0,0.82)');
+  topMask.addColorStop(0.55, 'rgba(0,0,0,0.45)');
+  topMask.addColorStop(1, 'rgba(0,0,0,0.0)');
+  ctx.fillStyle = topMask;
+  ctx.fillRect(0, 0, W, topMaskH);
 
   // ── 上方標題（照片上，左對齊）
   const ts = Math.round(82*S2);
@@ -1722,6 +1732,8 @@ async function applyPhotoroomBg(){
     formData.append('outputSize', `${AM.w}x${AM.h}`);
     formData.append('padding', '0.08');
     formData.append('shadow.mode', 'ai.soft');
+    formData.append('export.format', 'jpg');
+    formData.append('export.quality', '95');
 
     const resp = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
