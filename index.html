@@ -1716,14 +1716,13 @@ async function applyPhotoroomBg(){
     const formData = new FormData();
     formData.append('imageFile', blob, 'product.jpg');
     formData.append('background.prompt', prompt);
-    formData.append('outputSize.width', String(AM.w));
-    formData.append('outputSize.height', String(AM.h));
-    formData.append('outputSize.fit', 'cover');
+    formData.append('outputSize', `${AM.w}x${AM.h}`);
     formData.append('padding', '0.08');
+    formData.append('shadow.mode', 'ai.soft');
 
     const resp = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
-      headers: { 'x-api-key': PR_API_KEY },
+      headers: { 'x-api-key': PR_API_KEY, 'Accept': 'image/png, application/json' },
       body: formData
     });
 
