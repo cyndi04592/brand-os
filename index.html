@@ -1093,6 +1093,18 @@ function copyTSV(){
     btn.textContent='✅ 已複製！開 Google Sheet 按 Ctrl+V';
     setTimeout(()=>btn.textContent='📋 複製全部 → 貼入 Google Sheet',3500);
   });
+  // 自動送資料到 Make.com
+  const makeUrl='https://hook.us2.make.com/31016o9y3dbi2ih864tq1jwdly2widmx';
+  const payload=S.delivers.map(r=>({
+    id:r.id,product:r.product,
+    hook:r.hookScript,core:r.coreScript,cta:r.ctaScript,
+    photoName:r.photoName,photoUrl:r.photoUrl,
+    videoName:r.videoName,videoUrl:r.videoUrl,
+    status:r.ready?'素材已備妥':'缺素材',
+    timestamp:new Date().toISOString()
+  }));
+  fetch(makeUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scripts:payload})})
+    .catch(()=>{});
 }
 
 // ══ TABS ══
