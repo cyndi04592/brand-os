@@ -850,7 +850,7 @@ async function fetchFromDriveAPI(folderId, type, token){
     ? "mimeType contains 'image/'"
     : "mimeType contains 'video/'";
   const q=encodeURIComponent(`'${folderId}' in parents and (${mimeFilter}) and trashed=false`);
-  const url=`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,modifiedTime,thumbnailLink,webViewLink)&pageSize=100`;
+  const url=`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,modifiedTime,thumbnailLink,webViewLink,webContentLink)&pageSize=100`;
   try{
     const r=await fetch(url,{headers:{Authorization:'Bearer '+token}});
     const d=await r.json();
@@ -858,10 +858,19 @@ async function fetchFromDriveAPI(folderId, type, token){
       d.files.forEach(f=>{
         const arr=type==='photo'?S.photos:S.videos;
         if(!arr.find(x=>x.driveId===f.id)){
+          // 高清原圖來源：lh3 URL（支援 =s1600 參數取高解析度）
+          // thumbnailLink 格式：https://lh3.googleusercontent.com/...=s220 → 換成 =s1600
+          const hiResThumb = f.thumbnailLink
+            ? f.thumbnailLink.replace(/=s\d+$/, '=s1600').replace(/=s\d+&/, '=s1600&')
+            : '';
+          // 直接讀取高清圖（需 token）
+          const directHiRes = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`;
+
           arr.push({
             driveId:f.id,
             name:f.name,
-            thumb:f.thumbnailLink||'',
+            thumb: hiResThumb || f.thumbnailLink || '',  // 顯示縮圖用（列表小圖）
+            hiRes: directHiRes,                           // ← 高清原圖（canvas 用）
             driveUrl:f.webViewLink||`https://drive.google.com/file/d/${f.id}/view`,
             directUrl:`https://drive.google.com/uc?id=${f.id}&export=download`,
             src:'',
@@ -1307,25 +1316,51 @@ async function renderAdCanvas(){
 
   const photo = S.selPhoto !== null ? S.photos[S.selPhoto] : null;
 
-  // Draw background
-  if(photo && (photo.src || photo.thumb)){
-    const imgSrc = photo.src || photo.thumb;
-    await new Promise(resolve => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        // Cover fill
-        const scale = Math.max(AM.w/img.width, AM.h/img.height);
-        const sw = img.width * scale;
-        const sh = img.height * scale;
-        const sx = (AM.w - sw) / 2;
-        const sy = (AM.h - sh) / 2;
-        ctx.drawImage(img, sx, sy, sw, sh);
-        resolve();
-      };
-      img.onerror = () => { drawBgFallback(ctx, accentColor); resolve(); };
-      img.src = imgSrc;
+  // Draw background — 優先使用高清原圖
+  if(photo){
+    // 來源優先順序：
+    // 1. photo.src (本機上傳 / base64)
+    // 2. hiRes via Drive API (需 token，最高清)
+    // 3. lh3 高清縮圖 (thumbnailLink =s1600)
+    // 4. 原始 thumbnailLink (fallback)
+    const token = window._driveToken;
+    const tryLoad = (src, authHeader) => new Promise(resolve => {
+      if(!src){ resolve(false); return; }
+      // 若需要 token，用 fetch → blob → objectURL
+      if(authHeader && token){
+        fetch(src, { headers:{ Authorization:'Bearer '+token } })
+          .then(r => r.ok ? r.blob() : Promise.reject())
+          .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+              const scale = Math.max(AM.w/img.width, AM.h/img.height);
+              ctx.drawImage(img, (AM.w-img.width*scale)/2, (AM.h-img.height*scale)/2, img.width*scale, img.height*scale);
+              URL.revokeObjectURL(url);
+              resolve(true);
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
+            img.src = url;
+          })
+          .catch(() => resolve(false));
+      } else {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const scale = Math.max(AM.w/img.width, AM.h/img.height);
+          ctx.drawImage(img, (AM.w-img.width*scale)/2, (AM.h-img.height*scale)/2, img.width*scale, img.height*scale);
+          resolve(true);
+        };
+        img.onerror = () => resolve(false);
+        img.src = src;
+      }
     });
+
+    let drawn = false;
+    if(!drawn && photo.src)                          drawn = await tryLoad(photo.src, false);
+    if(!drawn && photo.hiRes && token)               drawn = await tryLoad(photo.hiRes, true);
+    if(!drawn && photo.thumb)                        drawn = await tryLoad(photo.thumb, false);
+    if(!drawn)                                       drawBgFallback(ctx, accentColor);
   } else {
     drawBgFallback(ctx, accentColor);
   }
@@ -1688,20 +1723,36 @@ async function applyPhotoroomBg(){
     setPrStatus('⚠️ 請先選擇產品照片！', 'var(--red)');
     return;
   }
-  const imgSrc = photo.src || photo.thumb;
-  if(!imgSrc){
-    setPrStatus('⚠️ 照片無法讀取', 'var(--red)');
-    return;
-  }
 
   const btn = document.getElementById('prApplyBtn');
   btn.disabled = true;
   btn.textContent = '⏳ AI 處理中...';
-  setPrStatus('正在呼叫 Photoroom AI，請稍候...', 'var(--t3)');
+  setPrStatus('正在載入高清原圖...', 'var(--t3)');
+
+  let blob = null;
+  const token = window._driveToken;
 
   try {
-    // 1. 把圖片轉成 blob
-    const blob = await urlToBlob(imgSrc);
+    // 來源優先順序：本機上傳 > Drive 高清 API > lh3 高清縮圖
+    if(photo.src){
+      // 本機上傳（data URL 或 blob URL）
+      blob = await urlToBlob(photo.src);
+    } else if(photo.hiRes && token){
+      // Drive 高清原圖（需授權）
+      setPrStatus('載入 Drive 高清原圖中...', 'var(--t3)');
+      const r = await fetch(photo.hiRes, { headers:{ Authorization:'Bearer '+token } });
+      if(!r.ok) throw new Error('Drive 高清圖載入失敗 '+r.status);
+      blob = await r.blob();
+    } else if(photo.thumb){
+      // lh3 高清縮圖（=s1600）
+      blob = await urlToBlob(photo.thumb);
+    } else {
+      setPrStatus('⚠️ 照片無法讀取', 'var(--red)');
+      btn.disabled = false; btn.textContent = '✨ AI 換背景';
+      return;
+    }
+
+    setPrStatus('正在呼叫 Photoroom AI，請稍候...', 'var(--t3)');
 
     // 2. 決定 prompt
     let prompt = PR_SCENE_PROMPTS[PR_SCENE];
@@ -1780,7 +1831,7 @@ async function renderAdCanvasWithPR(){
   const colorMap = { gold:'#E4B84A', red:'#FF4D6A', sky:'#4DC8F0', mint:'#3DD68C', purple:'#9D6EF8' };
   const accentColor = colorMap[colorKey] || '#E4B84A';
 
-  // 畫 Photoroom 處理後的圖作背景
+  // 畫 Photoroom 處理後的圖作背景（PR_BG_IMG 已是處理後結果，直接用）
   await new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
@@ -1792,7 +1843,14 @@ async function renderAdCanvasWithPR(){
       ctx.drawImage(img, sx, sy, sw, sh);
       resolve();
     };
-    img.onerror = () => { drawBgFallback(ctx, accentColor); resolve(); };
+    img.onerror = () => {
+      const brand2 = BRANDS.find(b=>b.id===S.brandId);
+      const subBrand2 = brand2?.subs.find(s=>s.id===S.subId);
+      const colorKey2 = subBrand2?.color || brand2?.navColor || 'gold';
+      const colorMap2 = { gold:'#E4B84A', red:'#FF4D6A', sky:'#4DC8F0', mint:'#3DD68C', purple:'#9D6EF8' };
+      drawBgFallback(ctx, colorMap2[colorKey2]||'#E4B84A');
+      resolve();
+    };
     img.src = PR_BG_IMG;
   });
 
