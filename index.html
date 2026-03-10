@@ -432,7 +432,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <div class="sel-lbl">尺寸</div>
         <div style="display:flex;gap:6px;margin-top:4px;">
           <button class="am-size-btn on" data-w="1080" data-h="1080" onclick="setSize(this,1080,1080)">1:1 方形</button>
-
+          <button class="am-size-btn" data-w="1080" data-h="1920" onclick="setSize(this,1080,1920)">9:16 直式</button>
         </div>
       </div>
 
@@ -1314,11 +1314,8 @@ async function renderAdCanvas(){
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        // 先畫深色背景，再用 contain 讓圖片不超過原始解析度
-        ctx.fillStyle = '#111';
-        ctx.fillRect(0, 0, AM.w, AM.h);
-        // contain: 不放大超過原尺寸，只縮不放
-        const scale = Math.min(AM.w/img.width, AM.h/img.height, 1);
+        // Cover fill
+        const scale = Math.max(AM.w/img.width, AM.h/img.height);
         const sw = img.width * scale;
         const sh = img.height * scale;
         const sx = (AM.w - sw) / 2;
@@ -1447,98 +1444,91 @@ function drawClassic(ctx, title, sub, cta, accent){
   ctx.fillText(brand?.name||'', W-Math.round(30*S2), H-Math.round(22*S2));
 }
 
-// ══ 模板二：巧福白底風格（白底底部，照片上有大標題，小標籤裝飾）
+// ══ 模板二：現代分割（照片全版＋底部漸層深色區＋標題在上）
 function drawModern(ctx, title, sub, cta, accent){
   const W=AM.w, H=AM.h;
   const S2 = AM.h===1920 ? 1.78 : 1;
-  const splitY = Math.round(H * (AM.h===1920 ? 0.60 : 0.56));
 
-  // ── 底部區塊改為深色半透明，不蓋死照片
-  const botGrad = ctx.createLinearGradient(0, splitY-60, 0, H);
-  botGrad.addColorStop(0, 'rgba(10,10,20,0)');
-  botGrad.addColorStop(0.3, 'rgba(10,10,20,0.85)');
-  botGrad.addColorStop(1, 'rgba(10,10,20,0.97)');
+  // ── 底部深色漸層遮罩（從55%開始，照片仍然可見）
+  const botGrad = ctx.createLinearGradient(0, H*0.42, 0, H);
+  botGrad.addColorStop(0, 'rgba(5,5,15,0)');
+  botGrad.addColorStop(0.35, 'rgba(5,5,15,0.80)');
+  botGrad.addColorStop(1, 'rgba(5,5,15,0.97)');
   ctx.fillStyle = botGrad;
-  ctx.fillRect(0, splitY-60, W, H-(splitY-60));
+  ctx.fillRect(0, 0, W, H);
 
-  // ── 上方照片區：黑色漸層遮罩（確保標題文字清晰）
-  const topMaskH = Math.round(splitY * 0.65);
-  const topMask = ctx.createLinearGradient(0, 0, 0, topMaskH);
-  topMask.addColorStop(0, 'rgba(0,0,0,0.82)');
-  topMask.addColorStop(0.55, 'rgba(0,0,0,0.45)');
-  topMask.addColorStop(1, 'rgba(0,0,0,0.0)');
-  ctx.fillStyle = topMask;
-  ctx.fillRect(0, 0, W, topMaskH);
+  // ── 上方標題漸層（確保文字清晰）
+  const topGrad = ctx.createLinearGradient(0, 0, 0, H*0.38);
+  topGrad.addColorStop(0, 'rgba(0,0,0,0.75)');
+  topGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, 0, W, H*0.38);
 
-  // ── 上方標題（照片上，左對齊）
-  const ts = Math.round(82*S2);
+  // ── 上方主標題（左對齊，大字）
+  const ts = Math.round(88*S2);
   ctx.font = `900 ${ts}px 'Noto Sans TC'`;
   ctx.textAlign = 'left';
   ctx.lineJoin = 'round';
-  const tx = Math.round(W*0.07), ty = Math.round(ts*1.1);
-  ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+  const tx = Math.round(W*0.07);
+  const ty = Math.round(ts*1.05);
+  // 強調色描邊
+  ctx.strokeStyle = accent;
   ctx.lineWidth = Math.round(8*S2);
-  ctx.strokeText(title.slice(0,8), tx, ty);
+  const line1 = title.slice(0,8);
+  const line2 = title.length>8 ? title.slice(8,16) : '';
+  ctx.strokeText(line1, tx, ty);
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillText(title.slice(0,8), tx, ty);
-  if(title.length>8){
-    ctx.strokeText(title.slice(8,16), tx, ty+ts*1.15);
+  ctx.fillText(line1, tx, ty);
+  if(line2){
+    ctx.strokeText(line2, tx, ty+ts*1.18);
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(title.slice(8,16), tx, ty+ts*1.15);
+    ctx.fillText(line2, tx, ty+ts*1.18);
   }
 
-  // ── 副標題（照片上，小字）
-  const subOnPhoto = sub.slice(0,22);
-  ctx.font = `400 ${Math.round(26*S2)}px 'Noto Sans TC'`;
-  ctx.fillStyle = 'rgba(255,255,255,0.88)';
-  ctx.textAlign = 'left';
-  ctx.fillText(subOnPhoto, tx, ty + ts*2.35);
+  // ── 副標語（上方，標題下方小字）
+  const subY = ty + ts*(line2 ? 2.45 : 1.55);
+  ctx.font = `400 ${Math.round(27*S2)}px 'Noto Sans TC'`;
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.fillText(sub.slice(0,24), tx, subY);
 
-  // ── 白底區塊：商品名稱（大黑字）
-  const bx=W/2, by=splitY+Math.round(botPad(S2)*0.55);
-  const ps=Math.round(50*S2);
+  // ── 底部：左側強調線 + 商品名稱
+  const prodY = Math.round(H * 0.74);
+  // 左側強調色豎線
+  ctx.fillStyle = accent;
+  ctx.fillRect(tx, prodY - Math.round(36*S2), Math.round(5*S2), Math.round(48*S2));
+  // 商品名稱
+  const ps = Math.round(44*S2);
   ctx.font = `900 ${ps}px 'Noto Sans TC'`;
   ctx.fillStyle = '#FFFFFF';
-  ctx.textAlign = 'center';
-  ctx.fillText((S.prod?.name||'').slice(0,14), bx, by+ps);
+  ctx.textAlign = 'left';
+  ctx.fillText((S.prod?.name||'').slice(0,16), tx + Math.round(18*S2), prodY);
 
-  // ── 小標籤（仿巧福的圓角標籤）
-  const tags = cta ? cta.split(/[，,、·]/).slice(0,3) : [];
-  if(tags.length>0){
-    let tagX = Math.round(W*0.08);
-    const tagY = by + ps + Math.round(55*S2);
-    const tagH = Math.round(44*S2);
-    const tagFs = Math.round(22*S2);
-    tags.forEach(tag=>{
-      tag = tag.trim().slice(0,8);
-      if(!tag) return;
-      ctx.font = `700 ${tagFs}px 'Noto Sans TC'`;
-      const tw = ctx.measureText(tag).width + Math.round(40*S2);
+  // ── CTA 按鈕（底部）
+  if(cta){
+    const ctaY = prodY + Math.round(60*S2);
+    const tags = cta.split(/[，,、·]/).map(t=>t.trim()).filter(Boolean).slice(0,3);
+    const items = tags.length > 1 ? tags : [cta.slice(0,14)];
+    let bx2 = tx;
+    const bh = Math.round(52*S2);
+    const tagFs = Math.round(24*S2);
+    ctx.font = `900 ${tagFs}px 'Noto Sans TC'`;
+    items.forEach(tag => {
+      const tw = ctx.measureText(tag).width + Math.round(48*S2);
       ctx.fillStyle = accent;
-      roundRect(ctx, tagX, tagY, tw, tagH, tagH/2);
+      roundRect(ctx, bx2, ctaY, tw, bh, Math.round(8*S2));
       ctx.fill();
       ctx.fillStyle = colorIsDark(accent)?'#fff':'#111';
-      ctx.fillText(tag, tagX+tw/2, tagY+tagH/2+Math.round(8*S2));
-      tagX += tw + Math.round(16*S2);
+      ctx.fillText(tag, bx2 + tw/2, ctaY + bh/2 + Math.round(9*S2));
+      bx2 += tw + Math.round(14*S2);
     });
-  } else if(cta){
-    // 單一CTA
-    const bw=Math.round(280*S2), bh=Math.round(56*S2);
-    const bx2=bx-bw/2, by2=by+ps+Math.round(50*S2);
-    ctx.fillStyle = accent;
-    roundRect(ctx,bx2,by2,bw,bh,bh/2);
-    ctx.fill();
-    ctx.font=`900 ${Math.round(26*S2)}px 'Noto Sans TC'`;
-    ctx.fillStyle=colorIsDark(accent)?'#fff':'#111';
-    ctx.fillText(cta.slice(0,14), bx, by2+bh/2+Math.round(9*S2));
   }
 
   // ── 右上角品牌名
   ctx.font=`700 ${Math.round(20*S2)}px 'Noto Sans TC'`;
-  ctx.fillStyle=accent;
+  ctx.fillStyle='rgba(255,255,255,0.5)';
   ctx.textAlign='right';
   const brand=BRANDS.find(b=>b.id===S.brandId);
-  ctx.fillText(brand?.name||'', W-Math.round(30*S2), Math.round(40*S2));
+  ctx.fillText(brand?.name||'', W-Math.round(28*S2), Math.round(38*S2));
 }
 function botPad(s){return 60*s;}
 
@@ -1794,10 +1784,7 @@ async function renderAdCanvasWithPR(){
   await new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
-      ctx.fillStyle = '#111';
-      ctx.fillRect(0, 0, AM.w, AM.h);
-      // contain: 不放大超過原尺寸
-      const scale = Math.min(AM.w/img.width, AM.h/img.height, 1);
+      const scale = Math.max(AM.w/img.width, AM.h/img.height);
       const sw = img.width * scale;
       const sh = img.height * scale;
       const sx = (AM.w - sw) / 2;
