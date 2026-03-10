@@ -1555,11 +1555,11 @@ function drawBold(ctx, title, sub, cta, accent){
   ctx.fillStyle = sideGrad;
   ctx.fillRect(0, 0, sideW, H);
 
-  // ── 全版底部黑色漸層
-  const grad = ctx.createLinearGradient(0, H*0.38, 0, H);
+  // ── 全版底部黑色漸層（從50%開始，讓下半部更暗）
+  const grad = ctx.createLinearGradient(0, H*0.45, 0, H);
   grad.addColorStop(0,'rgba(0,0,0,0)');
-  grad.addColorStop(0.6,'rgba(0,0,0,0.72)');
-  grad.addColorStop(1,'rgba(0,0,0,0.95)');
+  grad.addColorStop(0.45,'rgba(0,0,0,0.78)');
+  grad.addColorStop(1,'rgba(0,0,0,0.97)');
   ctx.fillStyle = grad;
   ctx.fillRect(sideW, 0, W-sideW, H);
 
@@ -1578,32 +1578,26 @@ function drawBold(ctx, title, sub, cta, accent){
   ctx.fillText(engWord, 0, 0);
   ctx.restore();
 
-  // ── 右側右上角副英文裝飾
-  ctx.save();
-  ctx.font = `900 ${Math.round(120*S2)}px 'Bebas Neue'`;
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
-  ctx.textAlign = 'right';
-  ctx.fillText('SPORT', W-20, Math.round(200*S2));
-  ctx.restore();
-
-  // ── 主標題（左對齊，在照片下方深色區）
-  const ts = Math.round(90*S2);
+  // ── 主標題（下方深色區，字體縮小確保不超出）
+  const ts = Math.round(72*S2);
   const tx = sideW + Math.round(30*S2);
-  const ty = Math.round(H * (AM.h===1920 ? 0.60 : 0.56));
+  const ty = Math.round(H * 0.64); // 往下移到64%
 
   // 強調色左邊豎線
   ctx.fillStyle = accent;
-  ctx.fillRect(tx-Math.round(14*S2), ty-ts+Math.round(10*S2), Math.round(6*S2), ts);
+  ctx.fillRect(tx-Math.round(14*S2), ty-ts+Math.round(10*S2), Math.round(6*S2), ts*2.2);
 
   ctx.font = `900 ${ts}px 'Noto Sans TC'`;
   ctx.textAlign = 'left';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = 'rgba(0,0,0,0.3)';
   ctx.lineWidth = Math.round(6*S2);
-  // 拆兩行，第一行有顏色強調
-  const line1 = title.slice(0,6);
-  const line2 = title.slice(6,12);
-  // 第一行：部分字白色、部分字accent
+
+  // 自動換行，每行最多8個字
+  const maxChars = 8;
+  const line1 = title.slice(0, maxChars);
+  const line2 = title.slice(maxChars, maxChars*2);
+  // 第一行白色
   ctx.fillStyle = '#FFFFFF';
   ctx.strokeText(line1, tx, ty);
   ctx.fillText(line1, tx, ty);
