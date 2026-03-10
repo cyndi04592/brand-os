@@ -432,7 +432,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <div class="sel-lbl">尺寸</div>
         <div style="display:flex;gap:6px;margin-top:4px;">
           <button class="am-size-btn on" data-w="1080" data-h="1080" onclick="setSize(this,1080,1080)">1:1 方形</button>
-          <button class="am-size-btn" data-w="1080" data-h="1920" onclick="setSize(this,1080,1920)">9:16 直式</button>
+
         </div>
       </div>
 
@@ -1314,8 +1314,11 @@ async function renderAdCanvas(){
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        // Cover fill
-        const scale = Math.max(AM.w/img.width, AM.h/img.height);
+        // 先畫深色背景，再用 contain 讓圖片不超過原始解析度
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, AM.w, AM.h);
+        // contain: 不放大超過原尺寸，只縮不放
+        const scale = Math.min(AM.w/img.width, AM.h/img.height, 1);
         const sw = img.width * scale;
         const sh = img.height * scale;
         const sx = (AM.w - sw) / 2;
@@ -1450,16 +1453,13 @@ function drawModern(ctx, title, sub, cta, accent){
   const S2 = AM.h===1920 ? 1.78 : 1;
   const splitY = Math.round(H * (AM.h===1920 ? 0.60 : 0.56));
 
-  // ── 底部白色區塊
-  ctx.fillStyle = '#F8F8F8';
-  ctx.fillRect(0, splitY, W, H-splitY);
-
-  // ── 照片到白底的過渡
-  const fadeGrad = ctx.createLinearGradient(0, splitY-80, 0, splitY+20);
-  fadeGrad.addColorStop(0,'rgba(248,248,248,0)');
-  fadeGrad.addColorStop(1,'rgba(248,248,248,1)');
-  ctx.fillStyle = fadeGrad;
-  ctx.fillRect(0, splitY-80, W, 100);
+  // ── 底部區塊改為深色半透明，不蓋死照片
+  const botGrad = ctx.createLinearGradient(0, splitY-60, 0, H);
+  botGrad.addColorStop(0, 'rgba(10,10,20,0)');
+  botGrad.addColorStop(0.3, 'rgba(10,10,20,0.85)');
+  botGrad.addColorStop(1, 'rgba(10,10,20,0.97)');
+  ctx.fillStyle = botGrad;
+  ctx.fillRect(0, splitY-60, W, H-(splitY-60));
 
   // ── 上方照片區：黑色漸層遮罩（確保標題文字清晰）
   const topMaskH = Math.round(splitY * 0.65);
@@ -1498,7 +1498,7 @@ function drawModern(ctx, title, sub, cta, accent){
   const bx=W/2, by=splitY+Math.round(botPad(S2)*0.55);
   const ps=Math.round(50*S2);
   ctx.font = `900 ${ps}px 'Noto Sans TC'`;
-  ctx.fillStyle = '#1a1a2a';
+  ctx.fillStyle = '#FFFFFF';
   ctx.textAlign = 'center';
   ctx.fillText((S.prod?.name||'').slice(0,14), bx, by+ps);
 
@@ -1794,7 +1794,10 @@ async function renderAdCanvasWithPR(){
   await new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
-      const scale = Math.max(AM.w/img.width, AM.h/img.height);
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, AM.w, AM.h);
+      // contain: 不放大超過原尺寸
+      const scale = Math.min(AM.w/img.width, AM.h/img.height, 1);
       const sw = img.width * scale;
       const sh = img.height * scale;
       const sx = (AM.w - sw) / 2;
