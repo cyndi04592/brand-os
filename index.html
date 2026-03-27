@@ -447,6 +447,22 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyXQp5nB4t8iJJigZH559UrOPGti1BvFtiyp27vuSpU_hFaBZ3imOqp09KNDzBLPYvTDA/exec';
 const GAS_PASSWORD = 'raby2026';
 
+// ══ 品牌素材資料夾（寫死版，切換品牌自動填入）══
+const BRAND_FOLDERS = {
+  'cf': {
+    photo: '1tHV_loHiUcZx8MVrpnUwTWUge74GIwE7',
+    video: '132xtz0XebJV-gGXObV4UtanmwyZd9Awc',
+  },
+  'ww': {
+    photo: '1dhCLr4tKrfV0RLHp454pzyJjytZFb92m',
+    video: '12LsKHCZQkDhT_FhzYWFw7rN4KJyvAD46',
+  },
+  'ly': {
+    photo: '1u9n-NpnQjjzU3GnpT15ERanCEky_m6bP',
+    video: '1lSvqYV28lgqN2xZ6640glMTssYhUKMoD',
+  },
+};
+
 // ══ BRAND DATA ══
 const BRANDS = [
   {
@@ -525,7 +541,17 @@ function renderBrandTree(){
   }).join('');
 }
 
-function clickBrand(id){S.openBrand=S.openBrand===id?null:id;S.brandId=id;S.subId=null;S.prod=null;renderNavBrands();renderBrandTree();renderProds();updateCtx();}
+function clickBrand(id){
+  S.openBrand=S.openBrand===id?null:id;
+  S.brandId=id;S.subId=null;S.prod=null;
+  renderNavBrands();renderBrandTree();renderProds();updateCtx();
+  // 自動填入素材資料夾
+  const f=BRAND_FOLDERS[id];
+  if(f){
+    document.getElementById('inPhotoFolder').value=f.photo;
+    document.getElementById('inVideoFolder').value=f.video;
+  }
+}
 function clickSub(brandId,subId){S.brandId=brandId;S.subId=subId;S.prod=null;S.openBrand=brandId;renderNavBrands();renderBrandTree();renderProds();updateCtx();}
 
 function renderProds(){
