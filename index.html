@@ -779,17 +779,25 @@ function copyOne(i,btn){
   navigator.clipboard.writeText(t).then(()=>{btn.textContent='✅ 已複製';setTimeout(()=>btn.textContent='複製腳本',2000);});
 }
 
-function addDeliver(scriptIdx){
+async function addDeliver(scriptIdx){
   const s=S.scripts[scriptIdx];
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   const video=S.selVideo!==null?S.videos[S.selVideo]:null;
-  S.delivers.push({
-    id:s.id,product:S.prod?.name||'',
-    hookScript:s.hook.script,coreScript:s.core.script,ctaScript:s.cta.script,
-    photoName:photo?.name||'',photoUrl:photo?.driveUrl||'',
-    videoName:video?.name||'',videoUrl:video?.driveUrl||'',
-    ready:!!(photo||video)
-  });
+  const brand=BRANDS.find(b=>b.id===S.brandId);
+  const row={
+    id:s.id, brand:S.brandId||'', product:S.prod?.name||'',
+    hookScript:s.hook.script, coreScript:s.core.script, ctaScript:s.cta.script,
+    photoName:photo?.name||'', photoUrl:photo?.driveUrl||'',
+    videoName:video?.name||'', videoUrl:video?.driveUrl||'',
+    status:!!(photo||video)?'素材已備妥':'缺素材',
+    createdAt:new Date().toISOString()
+  };
+  // 寫入 Sheets
+  try {
+    await fetch(`${GAS_URL}?action=addDeliver&password=${GAS_PASSWORD}&row=${encodeURIComponent(JSON.stringify(row))}`);
+  } catch(e) { console.warn('寫入交付表失敗',e); }
+  // 本地也保留
+  S.delivers.push({...row, ready:!!(photo||video)});
   renderDeliverRows();renderDeliverOut();
   switchTab(document.querySelector('[data-tab="deliver"]'));
 }
