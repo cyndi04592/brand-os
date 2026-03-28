@@ -516,8 +516,11 @@ async function doGenerate(){
   try{
     fill.style.width='40%';
     // ★ GET 方式，解決 CORS
-    const params=new URLSearchParams({action:'claude_generate',password:GAS_PASSWORD,prompt});
-    const res=await fetch(GAS_URL+'?'+params.toString());
+    const res=await fetch(GAS_URL,{
+  method:'POST',
+  headers:{'Content-Type':'text/plain'},
+  body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt})
+});
     fill.style.width='80%';
     const data=await res.json();
     if(!data.ok)throw new Error('GAS錯誤：'+(data.error||JSON.stringify(data)));
