@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brand OS v4 ｜廣告素材生產系統</title>
+<title>Brand OS v5 ｜廣告素材生產系統</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -209,21 +209,37 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .pr-scene-btn.on{background:rgba(157,110,248,0.18);border-color:var(--purple);color:var(--purple);font-weight:700;}
 @keyframes hlNew{from{background:rgba(61,214,140,0.08)}to{background:transparent}}
 .dr.new{animation:hlNew 1.2s ease;}
+/* 載入中遮罩 */
+#initOverlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:9999;gap:16px;}
+#initOverlay .spin2{width:32px;height:32px;border:3px solid var(--line2);border-top-color:var(--gold);
+  border-radius:50%;animation:sp 0.8s linear infinite;}
+#initOverlay p{font-size:13px;color:var(--t3);}
 </style>
 </head>
 <body>
 
+<!-- 初始載入遮罩 -->
+<div id="initOverlay">
+  <div class="spin2"></div>
+  <p id="initMsg">從 Google Sheets 載入品牌資料...</p>
+</div>
+
 <nav class="nav">
   <div style="display:flex;align-items:center;">
     <span class="nav-logo">Brand OS</span>
-    <span class="nav-ver">v4</span>
+    <span class="nav-ver">v5</span>
   </div>
   <div class="nav-brands" id="navBrands"></div>
-  <!-- ✅ 改動1：移除 API Key 輸入框，改成狀態顯示 -->
   <div style="display:flex;align-items:center;gap:6px;">
     <span id="gasStatus" style="font-size:10px;color:var(--mint);white-space:nowrap;">⚡ Brand OS 就緒</span>
   </div>
   <div class="nav-right">
+    <!-- ★ 後台入口按鈕 -->
+    <a href="admin.html" target="_blank"
+      style="padding:4px 12px;border-radius:6px;border:1px solid var(--gold);background:var(--gold2);
+      color:var(--gold);font-family:'Noto Sans TC';font-size:10px;font-weight:700;
+      cursor:pointer;text-decoration:none;letter-spacing:0.5px;">⚙️ 後台</a>
     <button id="driveLoginBtn" onclick="driveLogin()"
       style="padding:4px 12px;border-radius:6px;border:1px solid var(--sky);background:var(--sky2);
       color:var(--sky);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">
@@ -325,7 +341,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       <button class="fetch-btn fetch-sky" style="flex:1;font-size:11px;font-weight:900;"
         onclick="fetchBoth()">⚡ 一鍵抓全部素材</button>
     </div>
-    <div class="dcfg-hint">填好兩個資料夾後，點「一鍵抓全部素材」<br>系統自動列出照片＋影片，選好後加入交付</div>
+    <div class="dcfg-hint">切換品牌自動填入資料夾，點「一鍵抓全部素材」</div>
   </div>
 
   <div class="asset-grid" id="assetGrid">
@@ -353,9 +369,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       <button class="dz-clear" onclick="clearAll()">清空</button>
     </div>
   </div>
-
 </div>
 
+<!-- Ad Maker Modal -->
 <div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;overflow:auto;">
   <div style="max-width:1100px;margin:30px auto;padding:20px;display:flex;gap:20px;flex-wrap:wrap;">
     <div style="flex:1;min-width:260px;background:var(--bg2);border-radius:14px;border:1px solid var(--line2);padding:18px;">
@@ -381,18 +397,16 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       <div style="margin-bottom:12px;padding:10px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);">
         <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:6px;">目前選擇的照片</div>
         <div id="amPhotoName" style="font-size:11px;color:var(--sky);">尚未選擇</div>
-        <div style="font-size:9px;color:var(--t3);margin-top:4px;">若要換照片，請關閉此視窗在右側重新選擇</div>
       </div>
       <div style="margin-bottom:10px;">
-        <div class="sel-lbl">主標題（可修改）</div>
+        <div class="sel-lbl">主標題</div>
         <textarea id="amTitle" rows="2"
           style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;
           color:var(--t1);font-family:'Noto Sans TC';font-size:11px;padding:7px;outline:none;
-          resize:none;margin-top:4px;line-height:1.6;"
-          oninput="renderAdCanvas()"></textarea>
+          resize:none;margin-top:4px;line-height:1.6;" oninput="renderAdCanvas()"></textarea>
       </div>
       <div style="margin-bottom:10px;">
-        <div class="sel-lbl">副標語（可修改）</div>
+        <div class="sel-lbl">副標語</div>
         <input id="amSub" type="text"
           style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;
           color:var(--t1);font-family:'Noto Sans TC';font-size:11px;padding:6px 8px;outline:none;margin-top:4px;"
@@ -407,7 +421,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       </div>
       <div style="margin-bottom:14px;padding:12px;background:linear-gradient(135deg,rgba(157,110,248,0.12),rgba(77,200,240,0.08));border-radius:10px;border:1px solid rgba(157,110,248,0.3);">
         <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--purple);margin-bottom:8px;">✨ PHOTOROOM AI 換背景</div>
-        <div style="font-size:9px;color:var(--t3);margin-bottom:8px;">選擇場景風格，AI 自動去背＋換背景，每張都不同！</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;" id="prSceneGrid">
           <button class="pr-scene-btn on" data-scene="studio" onclick="setPrScene(this,'studio')">🎨 乾淨白底</button>
           <button class="pr-scene-btn" data-scene="lifestyle" onclick="setPrScene(this,'lifestyle')">🏡 生活情境</button>
@@ -416,8 +429,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
           <button class="pr-scene-btn" data-scene="luxury" onclick="setPrScene(this,'luxury')">💎 質感黑金</button>
           <button class="pr-scene-btn" data-scene="random" onclick="setPrScene(this,'random')">🎲 隨機驚喜</button>
         </div>
-        <button onclick="applyPhotoroomBg()"
-          id="prApplyBtn"
+        <button onclick="applyPhotoroomBg()" id="prApplyBtn"
           style="width:100%;padding:8px;border-radius:7px;background:linear-gradient(135deg,var(--purple),#4DC8F0);
           border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;">
           ✨ AI 換背景
@@ -429,13 +441,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         border:none;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">
         ⬇️ 下載廣告圖 JPG
       </button>
-      <div style="text-align:center;font-size:11px;color:var(--t3);margin-top:4px;">
-        ☁️ 已連結 Drive 時同步自動存入「Brand OS 廣告圖」資料夾
-      </div>
     </div>
     <div style="flex:1;min-width:280px;display:flex;flex-direction:column;align-items:center;gap:10px;">
       <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);">預覽</div>
-      <canvas id="adCanvas" style="border-radius:10px;max-width:100%;width:540px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);image-rendering:auto;"></canvas>
+      <canvas id="adCanvas" style="border-radius:10px;max-width:100%;width:540px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);"></canvas>
     </div>
   </div>
 </div>
@@ -443,136 +452,148 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 </div>
 
 <script>
-// ✅ 改動2：GAS URL 集中在這裡，只需改這一行
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyXQp5nB4t8iJJigZH559UrOPGti1BvFtiyp27vuSpU_hFaBZ3imOqp09KNDzBLPYvTDA/exec';
+// ══ 設定 ══
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2_fRfbYY6m42yzzWQHqKeLnSlZ9hMGBBeMoTOI7yFG4kcZg/exec';
 const GAS_PASSWORD = 'raby2026';
 
-// ══ 品牌素材資料夾（寫死版，切換品牌自動填入）══
-const BRAND_FOLDERS = {
-  'cf': {
-    photo: '1tHV_loHiUcZx8MVrpnUwTWUge74GIwE7',
-    video: '132xtz0XebJV-gGXObV4UtanmwyZd9Awc',
-  },
-  'ww': {
-    photo: '1dhCLr4tKrfV0RLHp454pzyJjytZFb92m',
-    video: '12LsKHCZQkDhT_FhzYWFw7rN4KJyvAD46',
-  },
-  'ly': {
-    photo: '1u9n-NpnQjjzU3GnpT15ERanCEky_m6bP',
-    video: '1lSvqYV28lgqN2xZ6640glMTssYhUKMoD',
-  },
+// ══ 全域資料（從 Sheets 載入）══
+let BRANDS = [];
+let BRAND_FOLDERS = {};
+
+// ══ 狀態 ══
+const S = {
+  brandId:null, subId:null, prod:null,
+  photos:[], videos:[], selPhoto:null, selVideo:null,
+  scripts:[], delivers:[], openBrand:null
 };
 
-// ══ BRAND DATA ══
-const BRANDS = [
-  {
-    id:'cf', name:'巧福健康家電', icon:'🏠', navColor:'gold',
-    soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。語氣親切有溫度，強調讓每個家庭感受被照顧的生活升級感。廣告切入點：家人痛點（冬天怕冷/夏天悶熱/蚊蟲困擾/腰痠背痛）→ 巧福給你最省力的解法。',
-    adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊',
-    hashtags:'#居家健康 #巧福 #台灣品牌 #遠紅外線 #居家療癒',
-    subs:[
-      {id:'cf-sauna', name:'桑拿機系列', color:'gold',soul:'遠紅外線深層溫熱，在家就能享受SPA級桑拿。主打痛點：久坐族/寒性體質/代謝差/上班族疲勞。強調「不用出門、不用花大錢、每天在家泡」的便利感。',adStyle:'在家SPA感、代謝循環、暖身排寒、療癒儀式感',hashtags:'#桑拿機 #遠紅外線 #在家SPA #排寒 #代謝循環',
-        prods:[{id:'cf-s01',name:'遠紅外線原木桑拿機 UC-856',tag:'主力旗艦'},{id:'cf-s02',name:'遠紅外線桑拿機 UC-856A',tag:'升級款'},{id:'cf-s03',name:'遠紅外線桑拿機 UC-858A',tag:'大空間'},{id:'cf-s04',name:'溫熱垂直律動機 UC-997',tag:'律動健康'}]},
-      {id:'cf-warm', name:'暖器系列', color:'gold',soul:'炭素纖維遠紅外線電暖器，不乾燥不燥熱，像陽光一樣溫暖。',adStyle:'溫暖冬日、安心守護、省電節能、不乾燥',hashtags:'#電暖器 #炭素纖維 #遠紅外線暖器 #冬天必備',
-        prods:[{id:'cf-w01',name:'炭素纖維電暖器 AS-900C（小）',tag:'小坪數/辦公室'},{id:'cf-w02',name:'炭素纖維電暖器 AS-110C（大）',tag:'客廳/大空間'},{id:'cf-w03',name:'遠紅外線暖屏風迷你款 UC-863X',tag:'腳部暖器'},{id:'cf-w04',name:'腳底按摩器 UC-888',tag:'腳底舒壓'}]},
-      {id:'cf-mosquito', name:'捕蚊/防蚊系列', color:'gold',soul:'吸入式物理捕蚊，無毒無味，安心守護全家。',adStyle:'安心無毒、寶寶安全、物理捕蚊、家人守護',hashtags:'#捕蚊器 #無毒捕蚊 #物理捕蚊 #寶寶安心 #防蚊',
-        prods:[{id:'cf-m01',name:'吸入式捕蚊器 UC-700',tag:'經典款'},{id:'cf-m02',name:'吸入式捕蚊器（小）UC-800LED',tag:'小空間'},{id:'cf-m03',name:'吸入式捕蚊器（大）UC-850LED',tag:'大空間主力'},{id:'cf-m04',name:'充電式電蚊拍 UC-723',tag:'戶外/露營'}]},
-      {id:'cf-fan', name:'風扇/空氣系列', color:'gold',soul:'14吋磁吸式無線電風扇，時尚設計＋無線自由移動。',adStyle:'質感生活、無線自由、夏日清爽、設計感',hashtags:'#無線電風扇 #磁吸風扇 #質感風扇 #夏天必備',
-        prods:[{id:'cf-f01',name:'森呼吸 14吋磁吸式無線電風扇 UC-614AP',tag:'主力夏季'}]},
-      {id:'cf-kids', name:'兒童遊樂系列', color:'gold',soul:'安全無毒兒童遊戲空間，讓孩子在家盡情玩。',adStyle:'親子互動、安全守護、輕鬆收納、媽媽省心',hashtags:'#兒童遊戲墊 #遊戲圍欄 #寶寶安全 #親子空間',
-        prods:[{id:'cf-k01',name:'童趣遊戲樂園 CF-014E',tag:'遊樂組合'},{id:'cf-k02',name:'折疊地墊城堡 奶茶色 CF-1015M',tag:'城堡造型'},{id:'cf-k03',name:'兒童遊戲圍欄 CF-1216 灰色',tag:'安全圍欄'},{id:'cf-k04',name:'折疊兒童遊戲墊4cm UC-012EM 極簡灰白',tag:'地墊'},{id:'cf-k05',name:'多功能學步車 CF-B02',tag:'學步輔助'},{id:'cf-k06',name:'兒童成長椅 CF-B03',tag:'成長椅'},{id:'cf-k07',name:'大巴士層架收納櫃 CF-C03',tag:'收納'},{id:'cf-k08',name:'移動式收納櫃 CF-C04',tag:'收納'}]},
-      {id:'mc', name:'木澄製造所', color:'gold',soul:'巧福旗下日系質感子品牌。日本檜木＋遠紅外線科技，頂級木質桑拿機。',adStyle:'日系職人感、檜木香氛、頂級質感、儀式生活',hashtags:'#木澄製造所 #日本檜木 #遠紅外線桑拿 #職人工藝 #質感生活',
-        prods:[{id:'mc01',name:'日本檜木遠紅外線桑拿機 UC-856AH',tag:'旗艦立式'},{id:'mc02',name:'日本檜木桌型遠紅外線桑拿機 UC-858AH',tag:'桌型設計'}]},
-      {id:'gf', name:'Golden Fox 運動子品牌', color:'sky',soul:'巧福旗下運動子品牌 Golden Fox。專業運動恢復、高效訓練輔助。',adStyle:'專業科技感、訓練恢復、肌肉放鬆、運動生活',hashtags:'#GoldenFox #健身 #筋膜放鬆 #運動恢復 #按摩滾筒',
-        prods:[{id:'gf01',name:'震動按摩滾筒 GF-900SM（雪地/夢幻迷彩）',tag:'震動主力'},{id:'gf02',name:'按摩滾筒 GF-003（深灰/酒紅/軍綠/海軍藍）',tag:'經典款4色'}]}
-    ]
-  },
-  {
-    id:'ww', name:'旺味米香腸', icon:'🌾', navColor:'red',
-    soul:'全台首創米香腸，傳承阿公「好的東西要守住」家訓。台灣認證豬肉＋台灣Q彈長糯米，黃金比例3:7手工灌製。',
-    adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景、家鄉情感、中秋露營',
-    hashtags:'#旺味米香腸 #米香腸 #台灣豬 #手工香腸 #中秋烤肉 #露營美食 #古早味',
-    subs:[
-      {id:'ww-main', name:'旺味主線', color:'red',soul:'旺味米香腸。每一口都是台灣味。',adStyle:'口感視覺化、烤肉場景、台灣人情味、家人同桌',hashtags:'#旺味米香腸 #米香腸 #中秋烤肉 #露營 #台灣古早味',
-        prods:[{id:'ww01',name:'原味米香腸',tag:'經典招牌'},{id:'ww02',name:'麻辣米香腸',tag:'辣味首選'},{id:'ww03',name:'壽喜牛肉米香腸',tag:'牛肉風味'},{id:'ww04',name:'原味米香燒',tag:'傳統米腸'},{id:'ww05',name:'麻辣米香燒',tag:'辣味米腸'},{id:'ww06',name:'牛肉壽喜米香燒',tag:'牛肉米腸'},{id:'ww07',name:'蜜汁香腸',tag:'甜口大人小孩都愛'},{id:'ww08',name:'金門58度爆汁五香高粱香腸',tag:'大人口味'},{id:'ww09',name:'剝皮辣椒香腸',tag:'特色口味'},{id:'ww10',name:'三星蔥香腸',tag:'蔥香熱銷'}]}
-    ]
-  },
-  {
-    id:'ly', name:'琉宇醬選', icon:'🫙', navColor:'mint',
-    soul:'琉宇醬選主理頂級進口醬料，旗下兩大系列：好滋好滋零食＋PASSERI頂級松露。',
-    adStyle:'精緻質感、食材溯源、料理升級、零食健康感',
-    hashtags:'#琉宇醬選 #好滋好滋 #PASSERI #松露 #頂級醬料',
-    subs:[
-      {id:'hzh', name:'好滋好滋', color:'mint',soul:'好滋好滋旗下零食系列。海苔主打「喀滋喀滋」酥脆聲感官衝擊，非油炸全素，健康無負擔。',adStyle:'ASMR酥脆感官、健康反差、孩子包飯場景、低卡追劇',hashtags:'#好滋好滋 #海苔 #非油炸 #全素零食 #低卡 #追劇零食 #牛軋糖 #米果',
-        prods:[{id:'hzh01',name:'焦香脆片海苔 經典原味',tag:'基礎款'},{id:'hzh02',name:'厚切岩烤海苔 椒鹽風味',tag:'主力45g'},{id:'hzh03',name:'焦香脆片海苔 梅子風味',tag:'酸甜口'},{id:'hzh04',name:'焦香脆片海苔 哇沙米風味',tag:'刺激口味'},{id:'hzh05',name:'經典海苔禮盒',tag:'送禮組合'},{id:'hzh06',name:'幸福牛軋糖',tag:'節慶零食'},{id:'hzh07',name:'元氣米果控',tag:'米果系列'}]},
-      {id:'passeri', name:'PASSERI 頂級松露', color:'purple',soul:'PASSERI頂級進口松露系列。跨國聯名嚴選，義大利工藝。主打「一匙松露，讓平凡料理瞬間升級」的儀式感。',adStyle:'精緻儀式感、料理升級、送禮有品味、頂級食材',hashtags:'#PASSERI #松露 #黑松露 #頂級松露醬 #料理升級 #送禮首選',
-        prods:[{id:'ps01',name:'頂級黑松露禮盒',tag:'送禮旗艦'},{id:'ps02',name:'特級黑松露橄欖油',tag:'料理用油'},{id:'ps03',name:'特級白松露橄欖油',tag:'白松露系列'},{id:'ps04',name:'5%頂級黑松露醬（葷食）',tag:'葷食版'},{id:'ps05',name:'5%頂級黑松露醬（全素）',tag:'全素版'},{id:'ps06',name:'頂級黑松露鹽',tag:'調味鹽'}]}
-    ]
+const CMAP = {
+  gold:{c:'var(--gold)',bg:'var(--gold2)'},
+  red:{c:'#FF8099',bg:'var(--red2)'},
+  sky:{c:'var(--sky)',bg:'var(--sky2)'},
+  mint:{c:'var(--mint)',bg:'var(--mint2)'},
+  purple:{c:'var(--purple)',bg:'var(--purple2)'}
+};
+
+// ══ 啟動：從 GAS 載入 Sheets 資料 ══
+(async function init(){
+  try {
+    const res = await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}`);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    buildDataFromSheets(json.data);
+    document.getElementById('initMsg').textContent = '✅ 載入完成！';
+  } catch(e) {
+    document.getElementById('initMsg').textContent = '❌ 載入失敗：' + e.message;
+    await new Promise(r => setTimeout(r, 2000));
   }
-];
-
-const CMAP={gold:{c:'var(--gold)',bg:'var(--gold2)'},red:{c:'#FF8099',bg:'var(--red2)'},sky:{c:'var(--sky)',bg:'var(--sky2)'},mint:{c:'var(--mint)',bg:'var(--mint2)'},purple:{c:'var(--purple)',bg:'var(--purple2)'}};
-
-let S={brandId:null,subId:null,prod:null,photos:[],videos:[],selPhoto:null,selVideo:null,scripts:[],delivers:[]};
-
-// ✅ 改動3：init 移除 API Key 讀取
-(function init(){
+  document.getElementById('initOverlay').style.display = 'none';
   renderNavBrands();
   renderBrandTree();
 })();
 
+// ══ 把 Sheets 三個分頁組合成 BRANDS 結構 ══
+function buildDataFromSheets(data) {
+  const { brands, products, folders } = data;
+
+  // 建立 BRAND_FOLDERS
+  BRAND_FOLDERS = {};
+  folders.forEach(f => {
+    BRAND_FOLDERS[f.brandId] = { photo: f.photoFolderId, video: f.videoFolderId };
+  });
+
+  // 把 products 依 brandId 分組，再依 subId 分組
+  const prodByBrand = {};
+  products.forEach(p => {
+    if (!prodByBrand[p.brandId]) prodByBrand[p.brandId] = {};
+    const key = p.subId;
+    if (!prodByBrand[p.brandId][key]) {
+      prodByBrand[p.brandId][key] = {
+        id: p.subId, name: p.subName, color: p.subColor,
+        soul: p.subSoul, adStyle: p.subAdStyle, hashtags: p.subHashtags,
+        prods: []
+      };
+    }
+    prodByBrand[p.brandId][key].prods.push({
+      id: p.prodId, name: p.prodName, tag: p.prodTag
+    });
+  });
+
+  // 組合 BRANDS
+  BRANDS = brands.map(b => ({
+    id: b.id, name: b.name, icon: b.icon, navColor: b.navColor,
+    soul: b.soul, adStyle: b.adStyle, hashtags: b.hashtags,
+    subs: Object.values(prodByBrand[b.id] || {})
+  }));
+}
+
+// ══ UI 渲染 ══
 function renderNavBrands(){
-  document.getElementById('navBrands').innerHTML=BRANDS.map(b=>
+  document.getElementById('navBrands').innerHTML = BRANDS.map(b =>
     `<button class="nb ${b.navColor} ${S.brandId===b.id?'on':''}" onclick="clickBrand('${b.id}')">${b.icon} ${b.name}</button>`
   ).join('');
 }
 
 function renderBrandTree(){
-  document.getElementById('brandTree').innerHTML=BRANDS.map(b=>{
-    const isOpen=S.openBrand===b.id;
+  document.getElementById('brandTree').innerHTML = BRANDS.map(b => {
+    const isOpen = S.openBrand === b.id;
     return `<div>
       <div class="brand-row ${S.brandId===b.id&&!S.subId?'on':''}" onclick="clickBrand('${b.id}')">
         <span class="br-icon">${b.icon}</span>
         <div class="br-info"><div class="br-name">${b.name}</div><div class="br-sub">${b.subs.length}個系列</div></div>
         <span style="color:var(--t3);font-size:11px;transition:transform 0.2s;${isOpen?'transform:rotate(90deg)':''}">›</span>
       </div>
-      ${isOpen?b.subs.map(sb=>`<div class="sub-brand-row ${S.subId===sb.id?'on':''}" onclick="clickSub('${b.id}','${sb.id}')"><div class="dot"></div>${sb.name}</div>`).join(''):''}
+      ${isOpen ? b.subs.map(sb =>
+        `<div class="sub-brand-row ${S.subId===sb.id?'on':''}" onclick="clickSub('${b.id}','${sb.id}')"><div class="dot"></div>${sb.name}</div>`
+      ).join('') : ''}
     </div>`;
   }).join('');
 }
 
 function clickBrand(id){
-  S.openBrand=S.openBrand===id?null:id;
-  S.brandId=id;S.subId=null;S.prod=null;
-  renderNavBrands();renderBrandTree();renderProds();updateCtx();
-  // 自動填入素材資料夾
-  const f=BRAND_FOLDERS[id];
+  S.openBrand = S.openBrand===id ? null : id;
+  S.brandId=id; S.subId=null; S.prod=null;
+  renderNavBrands(); renderBrandTree(); renderProds(); updateCtx();
+  // 自動填入素材資料夾（從 Sheets 讀到的）
+  const f = BRAND_FOLDERS[id];
   if(f){
-    document.getElementById('inPhotoFolder').value=f.photo;
-    document.getElementById('inVideoFolder').value=f.video;
+    document.getElementById('inPhotoFolder').value = f.photo || '';
+    document.getElementById('inVideoFolder').value = f.video || '';
   }
 }
-function clickSub(brandId,subId){S.brandId=brandId;S.subId=subId;S.prod=null;S.openBrand=brandId;renderNavBrands();renderBrandTree();renderProds();updateCtx();}
+
+function clickSub(brandId, subId){
+  S.brandId=brandId; S.subId=subId; S.prod=null; S.openBrand=brandId;
+  renderNavBrands(); renderBrandTree(); renderProds(); updateCtx();
+}
 
 function renderProds(){
-  const el=document.getElementById('prodList');
-  const brand=BRANDS.find(b=>b.id===S.brandId);
-  if(!brand){el.innerHTML='<div class="empty" style="padding:24px 10px;"><div class="empty-ico">📦</div><div class="empty-p">← 先選品牌</div></div>';return;}
-  const subs=S.subId?brand.subs.filter(s=>s.id===S.subId):brand.subs;
+  const el = document.getElementById('prodList');
+  const brand = BRANDS.find(b=>b.id===S.brandId);
+  if(!brand){
+    el.innerHTML='<div class="empty" style="padding:24px 10px;"><div class="empty-ico">📦</div><div class="empty-p">← 先選品牌</div></div>';
+    return;
+  }
+  const subs = S.subId ? brand.subs.filter(s=>s.id===S.subId) : brand.subs;
   let html='';
   subs.forEach(sb=>{
     const sc=CMAP[sb.color]||CMAP.gold;
-    html+=`<div style="margin-bottom:12px;"><div class="prod-grp-label" style="color:${sc.c}">${sb.name}</div>${sb.prods.map(p=>`<div class="prod-row ${S.prod?.id===p.id?'on':''}" onclick="clickProd('${sb.id}','${p.id}')"><div class="prod-dot"></div><div><div class="prod-name">${p.name}</div><div class="prod-tag">${p.tag}</div></div></div>`).join('')}</div>`;
+    html+=`<div style="margin-bottom:12px;"><div class="prod-grp-label" style="color:${sc.c}">${sb.name}</div>
+    ${sb.prods.map(p=>`<div class="prod-row ${S.prod?.id===p.id?'on':''}" onclick="clickProd('${sb.id}','${p.id}')">
+      <div class="prod-dot"></div>
+      <div><div class="prod-name">${p.name}</div><div class="prod-tag">${p.tag}</div></div>
+    </div>`).join('')}</div>`;
   });
   el.innerHTML=html;
 }
 
-function clickProd(subId,prodId){
+function clickProd(subId, prodId){
   const brand=BRANDS.find(b=>b.id===S.brandId);
   const sub=brand?.subs.find(s=>s.id===subId);
   const prod=sub?.prods.find(p=>p.id===prodId);
   if(!prod)return;
-  S.subId=subId;S.prod=prod;renderBrandTree();renderProds();updateCtx();
+  S.subId=subId; S.prod=prod;
+  renderBrandTree(); renderProds(); updateCtx();
 }
 
 function updateCtx(){
@@ -582,8 +603,10 @@ function updateCtx(){
   const bEl=document.getElementById('gbBrand');
   const pEl=document.getElementById('gbProd');
   if(!brand){bEl.textContent='尚未選擇品牌';bEl.style.color='var(--t3)';pEl.textContent='← 先選商品';pEl.style.color='var(--t3)';return;}
-  bEl.style.color=sc.c;bEl.textContent=`${brand.icon} ${brand.name}${sub?' › '+sub.name:''}`;
-  pEl.style.color=S.prod?'var(--t1)':'var(--t3)';pEl.textContent=S.prod?S.prod.name:'← 先選商品';
+  bEl.style.color=sc.c;
+  bEl.textContent=`${brand.icon} ${brand.name}${sub?' › '+sub.name:''}`;
+  pEl.style.color=S.prod?'var(--t1)':'var(--t3)';
+  pEl.textContent=S.prod?S.prod.name:'← 先選商品';
 }
 
 // ══ DRIVE ══
@@ -619,17 +642,24 @@ async function fetchDriveAssets(type){
 async function fetchFromDriveAPI(folderId,type,token){
   const mimeFilter=type==='photo'?"mimeType contains 'image/'":"mimeType contains 'video/'";
   const q=encodeURIComponent(`'${folderId}' in parents and (${mimeFilter}) and trashed=false`);
-  const url=`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,modifiedTime,thumbnailLink,webViewLink)&pageSize=100`;
+  const url=`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,thumbnailLink,webViewLink)&pageSize=100`;
   try{
     const r=await fetch(url,{headers:{Authorization:'Bearer '+token}});
     const d=await r.json();
-    if(d.files){d.files.forEach(f=>{const arr=type==='photo'?S.photos:S.videos;if(!arr.find(x=>x.driveId===f.id)){arr.push({driveId:f.id,name:f.name,thumb:f.thumbnailLink||'',driveUrl:f.webViewLink||`https://drive.google.com/file/d/${f.id}/view`,directUrl:`https://drive.google.com/uc?id=${f.id}&export=download`,src:'',type});}});}
+    if(d.files){d.files.forEach(f=>{
+      const arr=type==='photo'?S.photos:S.videos;
+      if(!arr.find(x=>x.driveId===f.id)){
+        arr.push({driveId:f.id,name:f.name,thumb:f.thumbnailLink||'',driveUrl:f.webViewLink||`https://drive.google.com/file/d/${f.id}/view`,directUrl:`https://drive.google.com/uc?id=${f.id}&export=download`,src:'',type});
+      }
+    });}
   }catch(e){console.warn('Drive API error',e);}
 }
 async function useFolderLink(raw,type,folderId){
   const folderUrl=folderId?`https://drive.google.com/drive/folders/${folderId}`:(raw.startsWith('http')?raw:`https://drive.google.com/drive/folders/${raw}`);
   const arr=type==='photo'?S.photos:S.videos;
-  if(!arr.find(x=>x.isFolder)){arr.push({isFolder:true,name:(type==='photo'?'🗂️ 照片資料夾（點開連結選取）':'🗂️ 影片資料夾（點開連結選取）'),driveUrl:folderUrl,directUrl:folderUrl,src:'',type,thumb:''});}
+  if(!arr.find(x=>x.isFolder)){
+    arr.push({isFolder:true,name:(type==='photo'?'🗂️ 照片資料夾（點開連結選取）':'🗂️ 影片資料夾（點開連結選取）'),driveUrl:folderUrl,directUrl:folderUrl,src:'',type,thumb:''});
+  }
 }
 async function fetchBoth(){
   const photoRaw=document.getElementById('inPhotoFolder').value.trim();
@@ -641,16 +671,32 @@ async function fetchBoth(){
 function renderAssets(){
   const grid=document.getElementById('assetGrid');
   let html='';
-  if(S.photos.length){html+=`<div class="asset-sec"><div class="asset-sec-lbl">🖼️ 照片素材 <span class="asset-count" style="color:var(--sky)">${S.photos.length}</span></div>`;S.photos.forEach((f,i)=>{html+=assetItemHtml(f,i,'photo',S.selPhoto===i);});html+='</div>';}
-  if(S.videos.length){html+=`<div class="asset-sec"><div class="asset-sec-lbl">🎬 影片素材 <span class="asset-count" style="color:var(--peach)">${S.videos.length}</span></div>`;S.videos.forEach((f,i)=>{html+=assetItemHtml(f,i,'video',S.selVideo===i);});html+='</div>';}
+  if(S.photos.length){
+    html+=`<div class="asset-sec"><div class="asset-sec-lbl">🖼️ 照片素材 <span class="asset-count" style="color:var(--sky)">${S.photos.length}</span></div>`;
+    S.photos.forEach((f,i)=>{html+=assetItemHtml(f,i,'photo',S.selPhoto===i);});
+    html+='</div>';
+  }
+  if(S.videos.length){
+    html+=`<div class="asset-sec"><div class="asset-sec-lbl">🎬 影片素材 <span class="asset-count" style="color:var(--peach)">${S.videos.length}</span></div>`;
+    S.videos.forEach((f,i)=>{html+=assetItemHtml(f,i,'video',S.selVideo===i);});
+    html+='</div>';
+  }
   if(!html)html='<div class="empty"><div class="empty-ico">☁️</div><div class="empty-p">貼上 Drive 資料夾連結<br>點「一鍵抓全部素材」</div></div>';
   grid.innerHTML=html;
 }
 function assetItemHtml(f,i,type,sel){
   const fallback=type==='photo'?'🖼️':'🎬';
-  const errHandler='this.textContent=\''+fallback+'\'';
-  const thumb=f.src?('<img src="'+f.src+'" onerror="'+errHandler+'">'):(f.thumb?('<img src="'+f.thumb+'" onerror="'+errHandler+'">'):fallback);
-  return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})"><div class="ai-thumb">${thumb}</div><div class="ai-info"><div class="ai-name">${f.name}</div><div class="ai-meta">${f.isFolder?'<a href="'+f.driveUrl+'" target="_blank" style="color:var(--sky)">開啟資料夾 →</a>':'Drive 素材'}</div></div><span class="ai-check">✓</span></div>`;
+  const errHandler="this.textContent='"+fallback+"'";
+  const thumb=f.src?('<img src="'+f.src+'" onerror="'+errHandler+'">'):
+    (f.thumb?('<img src="'+f.thumb+'" onerror="'+errHandler+'">'):fallback);
+  return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})">
+    <div class="ai-thumb">${thumb}</div>
+    <div class="ai-info">
+      <div class="ai-name">${f.name}</div>
+      <div class="ai-meta">${f.isFolder?'<a href="'+f.driveUrl+'" target="_blank" style="color:var(--sky)">開啟資料夾 →</a>':'Drive 素材'}</div>
+    </div>
+    <span class="ai-check">✓</span>
+  </div>`;
 }
 function selectAsset(type,i){
   if(type==='photo')S.selPhoto=S.selPhoto===i?null:i;
@@ -658,7 +704,7 @@ function selectAsset(type,i){
   renderAssets();
 }
 
-// ✅ 改動4：doGenerate 改走 GAS
+// ══ 生成腳本（POST 走 GAS，避免 URL 長度限制）══
 async function doGenerate(){
   if(!S.brandId){alert('請先選擇品牌！');return;}
   if(!S.prod){alert('請先選擇商品！');return;}
@@ -669,22 +715,26 @@ async function doGenerate(){
   const tags=sub?.hashtags||brand?.hashtags||'';
   const aud=document.getElementById('selAud').value;
   const count=parseInt(document.getElementById('selN').value)||20;
-  const isGF=S.subId==='gf';
-  const brandDisplay=isGF?'巧福健康家電 旗下運動子品牌 Golden Fox':`${brand.name}${sub&&sub.id!==brand.id?' › '+sub.name:''}`;
+  const brandDisplay=`${brand.name}${sub&&sub.id!==brand.id?' › '+sub.name:''}`;
   const btn=document.getElementById('genBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spin"></span>生成中';
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>生成中';
   const prog=document.getElementById('prog');
   const fill=document.getElementById('progFill');
-  prog.style.display='block';fill.style.width='10%';
+  prog.style.display='block'; fill.style.width='10%';
+
   const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣方法論。\n\n【品牌】${brandDisplay}\n【品牌靈魂與策略】${soul}\n【廣告風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【目標受眾】${aud}\n【Hashtag】${tags}\n\n【任務】用 Hormozi 三段結構，生成 ${count} 組最強廣告組合。\n\n三段結構：\n1. 黃金3秒鉤子（15字內）：含方向標記（痛點/好奇心/反常識/社群證明/數字衝擊）\n2. 核心段落（50-80字）：只溝通一件事「為什麼此商品能解決你的問題」，含類型標記（產品展示/客戶見證/教育型/故事型/純素材）\n3. CTA（15字內）：含風格標記（緊迫感/利益驅動/社群感）\n\n要求：\n- 繁體中文、台灣用語、不同組合風格明顯不同\n- 語氣100%符合品牌靈魂\n- 提供畫面場景建議（給拍攝/選圖參考）\n\n只回傳純JSON，格式：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子文字","visual":"畫面場景"},"core":{"type":"類型","script":"核心段落","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA文字"}}]}`;
+
   try{
     fill.style.width='40%';
-    // ✅ 解法A：改用 GET，避免 CORS 問題
-    const params=new URLSearchParams({action:'claude_generate',password:GAS_PASSWORD,prompt:prompt});
-    const res=await fetch(GAS_URL+'?'+params.toString());
+    // POST 走 GAS（prompt 太長不能 GET）
+    const res=await fetch(GAS_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt})
+    });
     fill.style.width='80%';
     const data=await res.json();
-    if(!data.ok){throw new Error('GAS錯誤：'+(data.error||JSON.stringify(data)));}
+    if(!data.ok)throw new Error('GAS錯誤：'+(data.error||JSON.stringify(data)));
     const raw=data.text.replace(/```json|```/g,'').trim();
     const parsed=JSON.parse(raw);
     S.scripts=parsed.combos||[];
@@ -696,7 +746,7 @@ async function doGenerate(){
     prog.style.display='none';
     alert('生成失敗：'+e.message);
   }finally{
-    btn.disabled=false;btn.innerHTML='⚡ 生成腳本';
+    btn.disabled=false; btn.innerHTML='⚡ 生成腳本';
   }
 }
 
@@ -705,10 +755,13 @@ function renderScripts(brandDisplay,colorKey){
   document.getElementById('scriptsOut').innerHTML=S.scripts.map((s,i)=>`
     <div class="ad-card" style="animation-delay:${i*18}ms">
       <div class="ac-top">
-        <div style="display:flex;align-items:center;gap:8px;"><span class="ac-id">${s.id}</span><span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="ac-id">${s.id}</span>
+          <span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span>
+        </div>
         <div class="ac-btns">
           <button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付</button>
-          <button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">🎨 產生廣告圖</button>
+          <button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">🎨 廣告圖</button>
           <button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button>
         </div>
       </div>
@@ -730,10 +783,15 @@ function addDeliver(scriptIdx){
   const s=S.scripts[scriptIdx];
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   const video=S.selVideo!==null?S.videos[S.selVideo]:null;
-  S.delivers.push({id:s.id,product:S.prod?.name||'',hookScript:s.hook.script,coreScript:s.core.script,ctaScript:s.cta.script,photoName:photo?.name||'',photoUrl:photo?.driveUrl||'',videoName:video?.name||'',videoUrl:video?.driveUrl||'',ready:!!(photo||video)});
+  S.delivers.push({
+    id:s.id,product:S.prod?.name||'',
+    hookScript:s.hook.script,coreScript:s.core.script,ctaScript:s.cta.script,
+    photoName:photo?.name||'',photoUrl:photo?.driveUrl||'',
+    videoName:video?.name||'',videoUrl:video?.driveUrl||'',
+    ready:!!(photo||video)
+  });
   renderDeliverRows();renderDeliverOut();
-  const deliverTab=document.querySelector('[data-tab="deliver"]');
-  switchTab(deliverTab);
+  switchTab(document.querySelector('[data-tab="deliver"]'));
 }
 
 function renderDeliverRows(){
@@ -766,7 +824,7 @@ function renderDeliverOut(){
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         ${r.photoUrl?'<a href="'+r.photoUrl+'" target="_blank" class="asset-link al-photo">🖼️ '+(r.photoName||'照片')+'</a>':'<span class="asset-link al-none">🖼️ 無照片</span>'}
         ${r.videoUrl?'<a href="'+r.videoUrl+'" target="_blank" class="asset-link al-video">🎬 '+(r.videoName||'影片')+'</a>':'<span class="asset-link al-none">🎬 無影片</span>'}
-        <span class="dr-status ${r.ready?'ds-ready':'ds-missing'}" style="font-size:9px">${r.ready?'✅ 素材已備妥':'⚠️ 缺素材'}</span>
+        <span class="dr-status ${r.ready?'ds-ready':'ds-missing'}">${r.ready?'✅ 素材已備妥':'⚠️ 缺素材'}</span>
       </div>
     </div>`).join('');
 }
@@ -779,7 +837,10 @@ function copyTSV(btn){
   const h=['編號','商品','黃金3秒鉤子','核心段落','CTA','照片檔名','📎 照片連結','影片檔名','🎬 影片連結','狀態'];
   const rows=S.delivers.map(r=>[r.id,r.product,r.hookScript,r.coreScript,r.ctaScript,r.photoName,r.photoUrl,r.videoName,r.videoUrl,r.ready?'素材已備妥':'缺素材'].join('\t'));
   const tsv=[h.join('\t'),...rows].join('\n');
-  navigator.clipboard.writeText(tsv).then(()=>{btn.textContent='✅ 已複製！開 Google Sheet 按 Ctrl+V';setTimeout(()=>btn.textContent='📋 複製全部 → 貼入 Google Sheet',3500);});
+  navigator.clipboard.writeText(tsv).then(()=>{
+    btn.textContent='✅ 已複製！開 Google Sheet 按 Ctrl+V';
+    setTimeout(()=>btn.textContent='📋 複製全部 → 貼入 Google Sheet',3500);
+  });
   const makeUrl='https://hook.us2.make.com/7hiqiin98rlh61t9a56a9t7w6tcm3i4s';
   const payload=S.delivers.map(r=>({id:r.id,product:r.product,hook:r.hookScript,core:r.coreScript,cta:r.ctaScript,photoName:r.photoName,photoUrl:r.photoUrl,videoName:r.videoName,videoUrl:r.videoUrl,status:r.ready?'素材已備妥':'缺素材',timestamp:new Date().toISOString()}));
   fetch(makeUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scripts:payload})}).catch(()=>{});
@@ -789,8 +850,15 @@ function copyTSV(btn){
 let AM={w:1080,h:1080,tpl:'classic',scriptIdx:null};
 let PR_BG_IMG=null;
 let PR_SCENE='studio';
-const PR_SCENE_PROMPTS={studio:'clean white studio background, minimal, professional product photography',lifestyle:'cozy home interior, warm living room, natural light, lifestyle photography',nature:'lush green nature, fresh botanical background, outdoor light, organic feel',food:'elegant dining table, wooden surface, soft food photography lighting, warm tones',luxury:'black marble surface, gold accents, luxury dark background, premium product shot',random:null};
-const PR_RANDOM_PROMPTS=['bright kitchen counter, morning light, fresh and clean','rustic wooden table, warm bokeh background, cozy atmosphere','modern minimalist concrete surface, cool tones, studio light','pastel gradient background, soft light, trendy aesthetic','outdoor market, vibrant colors, lively background','night city lights bokeh, dark moody atmosphere, premium feel','spring garden, cherry blossoms, soft pink bokeh','gym and fitness environment, energetic blue tones'];
+const PR_SCENE_PROMPTS={
+  studio:'clean white studio background, minimal, professional product photography',
+  lifestyle:'cozy home interior, warm living room, natural light, lifestyle photography',
+  nature:'lush green nature, fresh botanical background, outdoor light, organic feel',
+  food:'elegant dining table, wooden surface, soft food photography lighting, warm tones',
+  luxury:'black marble surface, gold accents, luxury dark background, premium product shot',
+  random:null
+};
+const PR_RANDOM_PROMPTS=['bright kitchen counter, morning light, fresh and clean','rustic wooden table, warm bokeh background, cozy atmosphere','modern minimalist concrete surface, cool tones, studio light','pastel gradient background, soft light, trendy aesthetic','outdoor market, vibrant colors, lively background'];
 
 function openAdMaker(idx){
   PR_BG_IMG=null;setPrStatus('','');
@@ -809,7 +877,6 @@ function setTpl(btn,tpl){document.querySelectorAll('.am-tpl-btn').forEach(b=>b.c
 function setPrScene(btn,scene){document.querySelectorAll('.pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
 function setPrStatus(msg,color){const el=document.getElementById('prStatus');if(el){el.textContent=msg;el.style.color=color||'var(--t3)';}}
 
-// ✅ 改動5：Photoroom 改走 GAS
 async function applyPhotoroomBg(){
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   if(!photo){setPrStatus('⚠️ 請先選擇產品照片！','var(--red)');return;}
@@ -822,14 +889,12 @@ async function applyPhotoroomBg(){
     const blob=await urlToBlob(imgSrc);
     let prompt=PR_SCENE_PROMPTS[PR_SCENE];
     if(!prompt){prompt=PR_RANDOM_PROMPTS[Math.floor(Math.random()*PR_RANDOM_PROMPTS.length)];}
-    // 轉 base64
     const base64=await new Promise((resolve,reject)=>{
       const reader=new FileReader();
       reader.onload=()=>resolve(reader.result);
       reader.onerror=reject;
       reader.readAsDataURL(blob);
     });
-    // ✅ 改走 GAS，不再直接呼叫 Photoroom
     const resp=await fetch(GAS_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -841,7 +906,6 @@ async function applyPhotoroomBg(){
     await renderAdCanvasWithPR();
     setPrStatus('✅ AI 換背景成功！','var(--mint)');
   }catch(e){
-    console.error('Photoroom error:',e);
     setPrStatus('❌ '+(e.message||'發生錯誤'),'var(--red)');
   }
   btn.disabled=false;btn.textContent='✨ AI 換背景';
@@ -878,7 +942,7 @@ async function renderAdCanvas(){
   }else{drawBgFallback(ctx,accentColor);}
   if(AM.tpl==='classic')drawClassic(ctx,title,sub,cta,accentColor);
   else if(AM.tpl==='modern')drawModern(ctx,title,sub,cta,accentColor);
-  else if(AM.tpl==='bold')drawBold(ctx,title,sub,cta,accentColor);
+  else drawBold(ctx,title,sub,cta,accentColor);
 }
 
 async function renderAdCanvasWithPR(){
@@ -900,7 +964,7 @@ async function renderAdCanvasWithPR(){
   });
   if(AM.tpl==='classic')drawClassic(ctx,title,sub,cta,accentColor);
   else if(AM.tpl==='modern')drawModern(ctx,title,sub,cta,accentColor);
-  else if(AM.tpl==='bold')drawBold(ctx,title,sub,cta,accentColor);
+  else drawBold(ctx,title,sub,cta,accentColor);
 }
 
 function drawBgFallback(ctx,accent){const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);grad.addColorStop(0,'#1a1020');grad.addColorStop(1,'#0d0d1a');ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);}
@@ -917,7 +981,6 @@ function drawClassic(ctx,title,sub,cta,accent){
   const lineBottom=ty+(lines.length-1)*lineH+Math.round(14*S2);ctx.fillStyle=accent;ctx.fillRect(tx,lineBottom,Math.round(60*S2),Math.round(4*S2));
   drawBrandSig(ctx,W,H,S2);
 }
-
 function drawModern(ctx,title,sub,cta,accent){
   const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
   const topGrad=ctx.createLinearGradient(0,0,0,H*0.5);topGrad.addColorStop(0,'rgba(0,0,0,0.82)');topGrad.addColorStop(0.55,'rgba(0,0,0,0.35)');topGrad.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=topGrad;ctx.fillRect(0,0,W,H*0.5);
@@ -929,7 +992,6 @@ function drawModern(ctx,title,sub,cta,accent){
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
   const brand=BRANDS.find(b=>b.id===S.brandId);ctx.font=`300 ${Math.round(22*S2)}px 'Noto Sans TC'`;ctx.fillStyle='rgba(255,255,255,0.6)';ctx.textAlign='left';ctx.fillText((S.prod?.name||brand?.name||''),tx,H-Math.round(28*S2));
 }
-
 function drawBold(ctx,title,sub,cta,accent){
   const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
   const grad=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.72);grad.addColorStop(0,'rgba(0,0,0,0.1)');grad.addColorStop(0.6,'rgba(0,0,0,0.45)');grad.addColorStop(1,'rgba(0,0,0,0.82)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
@@ -964,7 +1026,6 @@ async function uploadAdToDrive(canvas,filename){
     if(dlBtn){dlBtn.textContent='✅ 已存到 Drive！';setTimeout(()=>{dlBtn.textContent=origText;dlBtn.disabled=false;},3000);}
   }catch(e){console.error('Drive 上傳失敗:',e);if(dlBtn){dlBtn.textContent=origText;dlBtn.disabled=false;}}
 }
-
 async function getOrCreateAdFolder(){
   const token=window._driveToken;
   const search=await fetch(`https://www.googleapis.com/drive/v3/files?q=name%3D'Brand+OS+廣告圖'+and+mimeType%3D'application%2Fvnd.google-apps.folder'+and+trashed%3Dfalse&fields=files(id,name)`,{headers:{'Authorization':'Bearer '+token}});
@@ -974,18 +1035,28 @@ async function getOrCreateAdFolder(){
   const cdata=await create.json();return cdata.id;
 }
 
+// ══ Google Drive OAuth ══
 const GOOG_CLIENT_ID='513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
 const GOOG_SCOPE='https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
 let DRIVE_OUTPUT_FOLDER_ID=null;
 let tokenClient=null;
-
 function initGoogleAuth(){
   if(!window.google)return;
-  tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOG_CLIENT_ID,scope:GOOG_SCOPE,callback:(resp)=>{if(resp.access_token){window._driveToken=resp.access_token;setDriveStatus('ok');const btn=document.getElementById('driveLoginBtn');btn.textContent='✅ Drive 已連結';btn.style.borderColor='var(--mint)';btn.style.color='var(--mint)';btn.style.background='var(--mint2)';}}});
+  tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOG_CLIENT_ID,scope:GOOG_SCOPE,callback:(resp)=>{
+    if(resp.access_token){
+      window._driveToken=resp.access_token;setDriveStatus('ok');
+      const btn=document.getElementById('driveLoginBtn');
+      btn.textContent='✅ Drive 已連結';btn.style.borderColor='var(--mint)';btn.style.color='var(--mint)';btn.style.background='var(--mint2)';
+    }
+  }});
 }
-
 function driveLogin(){if(!tokenClient){alert('Google 授權尚未載入，請稍後再試');return;}tokenClient.requestAccessToken({prompt:'select_account'});}
-function switchTab(btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));btn.classList.add('on');document.getElementById('pane-'+btn.dataset.tab).classList.add('on');}
+function switchTab(btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('pane-'+btn.dataset.tab).classList.add('on');
+}
 </script>
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
 </body>
