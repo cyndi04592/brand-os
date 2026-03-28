@@ -456,15 +456,31 @@ async function fetchDriveAssets(type){
   btn.disabled=false;btn.textContent=type==='photo'?'抓照片':'抓影片';
   renderAssets();setDriveStatus('ok');
 }
+
+// ★ 關鍵：用 token 下載原始高清圖
 async function fetchFromDriveAPI(folderId,type,token){
   const mimeFilter=type==='photo'?"mimeType contains 'image/'":"mimeType contains 'video/'";
   const q=encodeURIComponent(`'${folderId}' in parents and (${mimeFilter}) and trashed=false`);
   try{
     const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,thumbnailLink,webViewLink)&pageSize=100`,{headers:{Authorization:'Bearer '+token}});
     const d=await r.json();
-    if(d.files){d.files.forEach(f=>{const arr=type==='photo'?S.photos:S.videos;if(!arr.find(x=>x.driveId===f.id)){arr.push({driveId:f.id,name:f.name,thumb:f.thumbnailLink||'',driveUrl:f.webViewLink||`https://drive.google.com/file/d/${f.id}/view`,directUrl:`https://drive.google.com/uc?id=${f.id}&export=download`,src:'',type});}});}
+    if(d.files){
+      d.files.forEach(f=>{
+        const arr=type==='photo'?S.photos:S.videos;
+        if(!arr.find(x=>x.driveId===f.id)){
+          const item={driveId:f.id,name:f.name,thumb:f.thumbnailLink||'',driveUrl:f.webViewLink||`https://drive.google.com/file/d/${f.id}/view`,directUrl:`https://drive.google.com/uc?id=${f.id}&export=download`,src:'',type};
+          arr.push(item);
+          // 背景下載原始高清圖
+          fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{headers:{Authorization:'Bearer '+token}})
+            .then(r=>r.blob())
+            .then(blob=>{const reader=new FileReader();reader.onload=()=>{item.src=reader.result;renderAssets();};reader.readAsDataURL(blob);})
+            .catch(()=>{});
+        }
+      });
+    }
   }catch(e){console.warn('Drive API error',e);}
 }
+
 async function useFolderLink(raw,type,folderId){
   const folderUrl=folderId?`https://drive.google.com/drive/folders/${folderId}`:(raw.startsWith('http')?raw:`https://drive.google.com/drive/folders/${raw}`);
   const arr=type==='photo'?S.photos:S.videos;
@@ -496,7 +512,7 @@ function selectAsset(type,i){
   renderAssets();
 }
 
-// ══ 生成腳本（GET 走 GAS，解決 CORS）══
+// ══ 生成腳本 POST + text/plain 解決 CORS ══
 async function doGenerate(){
   if(!S.brandId){alert('請先選擇品牌！');return;}
   if(!S.prod){alert('請先選擇商品！');return;}
@@ -515,12 +531,7 @@ async function doGenerate(){
   const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣方法論。\n\n【品牌】${brandDisplay}\n【品牌靈魂與策略】${soul}\n【廣告風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【目標受眾】${aud}\n【Hashtag】${tags}\n\n【任務】用 Hormozi 三段結構，生成 ${count} 組最強廣告組合。\n\n三段結構：\n1. 黃金3秒鉤子（15字內）：含方向標記（痛點/好奇心/反常識/社群證明/數字衝擊）\n2. 核心段落（50-80字）：只溝通一件事「為什麼此商品能解決你的問題」，含類型標記（產品展示/客戶見證/教育型/故事型/純素材）\n3. CTA（15字內）：含風格標記（緊迫感/利益驅動/社群感）\n\n要求：\n- 繁體中文、台灣用語、不同組合風格明顯不同\n- 語氣100%符合品牌靈魂\n- 提供畫面場景建議（給拍攝/選圖參考）\n\n只回傳純JSON，格式：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子文字","visual":"畫面場景"},"core":{"type":"類型","script":"核心段落","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA文字"}}]}`;
   try{
     fill.style.width='40%';
-    // ★ GET 方式，解決 CORS
-    const res=await fetch(GAS_URL,{
-  method:'POST',
-  headers:{'Content-Type':'text/plain'},
-  body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt})
-});
+    const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt})});
     fill.style.width='80%';
     const data=await res.json();
     if(!data.ok)throw new Error('GAS錯誤：'+(data.error||JSON.stringify(data)));
@@ -651,7 +662,7 @@ async function applyPhotoroomBg(){
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   if(!photo){setPrStatus('⚠️ 請先選擇產品照片！','var(--red)');return;}
   const imgSrc=photo.src||photo.thumb;
-  if(!imgSrc){setPrStatus('⚠️ 照片無法讀取，請先連結 Drive 並選取照片','var(--red)');return;}
+  if(!imgSrc){setPrStatus('⚠️ 照片尚未載入完成，請稍後再試','var(--red)');return;}
   const btn=document.getElementById('prApplyBtn');
   btn.disabled=true;btn.textContent='⏳ AI 處理中...';
   setPrStatus('正在呼叫 Photoroom AI，請稍候...','var(--t3)');
@@ -660,7 +671,8 @@ async function applyPhotoroomBg(){
     let prompt=PR_SCENE_PROMPTS[PR_SCENE];
     if(!prompt)prompt=PR_RANDOM_PROMPTS[Math.floor(Math.random()*PR_RANDOM_PROMPTS.length)];
     const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
-    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,width:AM.w,height:AM.h})});
+    // Photoroom 用 text/plain 避免 CORS preflight
+    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,width:AM.w,height:AM.h})});
     const prData=await resp.json();
     if(!prData.ok)throw new Error(prData.error||'Photoroom 失敗');
     PR_BG_IMG=prData.imageBase64;
@@ -717,7 +729,6 @@ async function renderAdCanvasWithPR(){
 function drawBgFallback(ctx,accent){const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);grad.addColorStop(0,'#1a1020');grad.addColorStop(1,'#0d0d1a');ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);}
 function autoLines(ctx,text,maxWidth){const chars=text.split('');const lines=[];let cur='';for(const c of chars){if(ctx.measureText(cur+c).width>maxWidth&&cur){lines.push(cur);cur=c;}else cur+=c;}if(cur)lines.push(cur);return lines;}
 function drawBrandSig(ctx,W,H,S2){const brand=BRANDS.find(b=>b.id===S.brandId);ctx.font=`400 ${Math.round(18*S2)}px 'Noto Sans TC'`;ctx.fillStyle='rgba(255,255,255,0.35)';ctx.textAlign='right';ctx.fillText(brand?.name||'',W-Math.round(32*S2),H-Math.round(24*S2));}
-
 function drawClassic(ctx,title,accent){
   const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
   const grad=ctx.createLinearGradient(0,H*0.38,0,H);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(0.4,'rgba(0,0,0,0.65)');grad.addColorStop(1,'rgba(0,0,0,0.92)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
