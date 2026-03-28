@@ -7,142 +7,84 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f0f13; color: #e8e0d0; min-height: 100vh; }
-
-/* TOP BAR */
-.top-bar {
-  background: #1a1a24; border-bottom: 1px solid #2a2a3a;
-  padding: 14px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100;
-}
-.top-bar h1 { font-size: 17px; color: #d4af6a; font-weight: 700; letter-spacing: 0.5px; }
-.top-bar .badge { font-size: 11px; background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a44; border-radius: 20px; padding: 2px 10px; }
-.top-bar .spacer { flex: 1; }
-.btn-save-all {
-  background: #d4af6a; color: #0f0f13; border: none; border-radius: 8px;
-  padding: 8px 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-}
-.btn-save-all:hover { background: #e8c87a; transform: translateY(-1px); }
-.btn-save-all:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; }
+.top-bar { background: #1a1a24; border-bottom: 1px solid #2a2a3a; padding: 14px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+.top-bar h1 { font-size: 17px; color: #d4af6a; font-weight: 700; }
+.badge { font-size: 11px; background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a44; border-radius: 20px; padding: 2px 10px; }
+.spacer { flex: 1; }
+.btn-save-all { background: #d4af6a; color: #0f0f13; border: none; border-radius: 8px; padding: 8px 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.btn-save-all:hover { background: #e8c87a; }
+.btn-save-all:disabled { background: #555; color: #888; cursor: not-allowed; }
 .status-msg { font-size: 13px; color: #888; }
 .status-msg.ok { color: #4caf50; }
 .status-msg.err { color: #f44336; }
-
-/* TABS */
 .tabs { display: flex; background: #1a1a24; border-bottom: 1px solid #2a2a3a; padding: 0 24px; }
-.tab {
-  padding: 12px 20px; cursor: pointer; font-size: 14px; color: #666;
-  border-bottom: 3px solid transparent; transition: all 0.2s; user-select: none;
-}
+.tab { padding: 12px 20px; cursor: pointer; font-size: 14px; color: #666; border-bottom: 3px solid transparent; transition: all 0.2s; user-select: none; }
 .tab:hover { color: #aaa; }
 .tab.active { color: #d4af6a; border-bottom-color: #d4af6a; }
-
-/* MAIN */
-.main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.main { padding: 24px; max-width: 1300px; margin: 0 auto; }
 .section { display: none; }
 .section.active { display: block; }
-
-/* CARDS */
 .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.section-header h2 { font-size: 16px; color: #e8e0d0; }
-.btn-add {
-  background: #2a2a3a; color: #d4af6a; border: 1px solid #d4af6a44;
-  border-radius: 8px; padding: 6px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s;
-}
+.section-header h2 { font-size: 16px; }
+.btn-add { background: #2a2a3a; color: #d4af6a; border: 1px solid #d4af6a44; border-radius: 8px; padding: 6px 16px; font-size: 13px; cursor: pointer; }
 .btn-add:hover { background: #d4af6a22; }
-
-/* BRAND CARDS */
 .brands-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
-.brand-card {
-  background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 18px;
-  transition: border-color 0.2s;
-}
-.brand-card:hover { border-color: #3a3a4a; }
+.brand-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 18px; }
 .brand-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.brand-icon-input {
-  width: 40px; text-align: center; font-size: 22px; background: #0f0f13;
-  border: 1px solid #2a2a3a; border-radius: 8px; padding: 4px; color: #e8e0d0;
-}
+.brand-icon-input { width: 40px; text-align: center; font-size: 22px; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px; padding: 4px; color: #e8e0d0; }
 .field-row { margin-bottom: 10px; }
 .field-row label { display: block; font-size: 11px; color: #666; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-.field-input, .field-textarea, .field-select {
-  width: 100%; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px;
-  padding: 8px 10px; color: #e8e0d0; font-size: 13px; transition: border-color 0.2s;
-  font-family: inherit;
-}
+.field-input, .field-textarea { width: 100%; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px; padding: 8px 10px; color: #e8e0d0; font-size: 13px; font-family: inherit; }
 .field-input:focus, .field-textarea:focus { outline: none; border-color: #d4af6a66; }
 .field-textarea { resize: vertical; min-height: 60px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .card-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
-.btn-delete { background: none; border: 1px solid #f4433633; color: #f44336; border-radius: 6px; padding: 4px 12px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.btn-delete { background: none; border: 1px solid #f4433633; color: #f44336; border-radius: 6px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
 .btn-delete:hover { background: #f4433622; }
-
-/* PRODUCTS TABLE */
-.products-filter { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-.filter-select, .filter-input {
-  background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px;
-  padding: 8px 12px; color: #e8e0d0; font-size: 13px;
-}
+.filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-select, .filter-input { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px; padding: 8px 12px; color: #e8e0d0; font-size: 13px; }
 .filter-input { flex: 1; min-width: 200px; }
 .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #2a2a3a; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead { background: #1a1a24; }
 th { padding: 10px 12px; text-align: left; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
-td { padding: 8px 12px; border-top: 1px solid #1a1a24; }
+td { padding: 8px 12px; border-top: 1px solid #1a1a24; vertical-align: middle; }
 tr:hover td { background: #1a1a2488; }
-.td-input {
-  background: transparent; border: 1px solid transparent; border-radius: 6px;
-  color: #e8e0d0; font-size: 13px; padding: 4px 6px; width: 100%; min-width: 80px;
-  font-family: inherit;
-}
+.td-input { background: transparent; border: 1px solid transparent; border-radius: 6px; color: #e8e0d0; font-size: 13px; padding: 4px 6px; width: 100%; min-width: 80px; font-family: inherit; }
 .td-input:focus { outline: none; border-color: #d4af6a66; background: #0f0f13; }
 .btn-row-del { background: none; border: none; color: #f4433666; cursor: pointer; font-size: 16px; padding: 0 4px; }
 .btn-row-del:hover { color: #f44336; }
 .color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
-
-/* FOLDERS */
 .folders-list { display: grid; gap: 12px; }
-.folder-card {
-  background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 16px;
-}
+.folder-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 16px; }
 .folder-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.folder-brand-badge {
-  background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a33;
-  border-radius: 6px; padding: 2px 10px; font-size: 12px; font-weight: 600;
-}
-
-/* LOADING */
-.loading-overlay {
-  position: fixed; inset: 0; background: #0f0f13cc; display: flex;
-  align-items: center; justify-content: center; z-index: 999; display: none;
-}
+.folder-brand-badge { background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a33; border-radius: 6px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+/* delivers */
+.stat-label { font-size: 12px; color: #888; margin-left: auto; }
+.btn-refresh { background: #2a2a3a; color: #888; border: 1px solid #3a3a4a; border-radius: 8px; padding: 6px 14px; font-size: 12px; cursor: pointer; }
+.btn-refresh:hover { color: #d4af6a; border-color: #d4af6a44; }
+.asset-link { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-decoration: none; }
+.al-photo { color: #4dc8f0; background: rgba(77,200,240,0.12); border: 1px solid #4dc8f0; }
+.al-video { color: #ff7f5c; background: rgba(255,127,92,0.12); border: 1px solid #ff7f5c; }
+.al-none { color: #44446a; border: 1px solid #2a2a3a; cursor: default; }
+.status-select { background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 6px; color: #e8e0d0; font-size: 11px; padding: 3px 6px; cursor: pointer; }
+/* loading */
+.loading-overlay { position: fixed; inset: 0; background: #0f0f13cc; display: none; align-items: center; justify-content: center; z-index: 999; }
 .loading-overlay.show { display: flex; }
 .loading-box { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 16px; padding: 32px 48px; text-align: center; }
 .loading-box p { color: #888; margin-top: 12px; font-size: 14px; }
 .spinner { width: 36px; height: 36px; border: 3px solid #2a2a3a; border-top-color: #d4af6a; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* EMPTY STATE */
 .empty-state { text-align: center; padding: 60px 20px; color: #444; }
-.empty-state p { margin-top: 8px; font-size: 14px; }
-
-/* COLOR MAP */
-.color-gold { background: #d4af6a; }
-.color-red { background: #e05555; }
-.color-mint { background: #5db8a0; }
-.color-purple { background: #9b7fd4; }
-.color-sky { background: #5ba8d4; }
-.color-brown { background: #a07850; }
+.color-gold{background:#d4af6a}.color-red{background:#e05555}.color-mint{background:#5db8a0}.color-purple{background:#9b7fd4}.color-sky{background:#5ba8d4}.color-brown{background:#a07850}
 </style>
 </head>
 <body>
 
 <div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-box">
-    <div class="spinner"></div>
-    <p id="loadingMsg">載入中...</p>
-  </div>
+  <div class="loading-box"><div class="spinner"></div><p id="loadingMsg">載入中...</p></div>
 </div>
 
-<!-- TOP BAR -->
 <div class="top-bar">
   <h1>⚙️ Brand OS 後台</h1>
   <span class="badge">芮比廣告行銷</span>
@@ -151,57 +93,58 @@ tr:hover td { background: #1a1a2488; }
   <button class="btn-save-all" id="btnSaveAll" onclick="saveAll()">💾 儲存全部</button>
 </div>
 
-<!-- TABS -->
 <div class="tabs">
   <div class="tab active" onclick="switchTab('brands')">🏷️ 品牌管理</div>
   <div class="tab" onclick="switchTab('products')">📦 商品管理</div>
   <div class="tab" onclick="switchTab('folders')">📁 素材資料夾</div>
+  <div class="tab" onclick="switchTab('delivers')">🚀 投手交付表</div>
 </div>
 
-<!-- MAIN -->
 <div class="main">
 
-  <!-- BRANDS -->
   <div class="section active" id="sec-brands">
-    <div class="section-header">
-      <h2>品牌列表</h2>
-      <button class="btn-add" onclick="addBrand()">＋ 新增品牌</button>
-    </div>
+    <div class="section-header"><h2>品牌列表</h2><button class="btn-add" onclick="addBrand()">＋ 新增品牌</button></div>
     <div class="brands-grid" id="brandsGrid"></div>
   </div>
 
-  <!-- PRODUCTS -->
   <div class="section" id="sec-products">
-    <div class="section-header">
-      <h2>商品列表</h2>
-      <button class="btn-add" onclick="addProduct()">＋ 新增商品</button>
-    </div>
-    <div class="products-filter">
-      <select class="filter-select" id="filterBrand" onchange="renderProducts()">
-        <option value="">全部品牌</option>
-      </select>
+    <div class="section-header"><h2>商品列表</h2><button class="btn-add" onclick="addProduct()">＋ 新增商品</button></div>
+    <div class="filter-row">
+      <select class="filter-select" id="filterBrand" onchange="renderProducts()"><option value="">全部品牌</option></select>
       <input class="filter-input" id="filterSearch" placeholder="搜尋商品名稱..." oninput="renderProducts()">
     </div>
     <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>品牌</th><th>子系列ID</th><th>子系列名</th><th>顏色</th>
-            <th>商品ID</th><th>商品名稱</th><th>標籤</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="productsBody"></tbody>
-      </table>
+      <table><thead><tr><th>品牌</th><th>子系列ID</th><th>子系列名</th><th>顏色</th><th>商品ID</th><th>商品名稱</th><th>標籤</th><th></th></tr></thead>
+      <tbody id="productsBody"></tbody></table>
     </div>
   </div>
 
-  <!-- FOLDERS -->
   <div class="section" id="sec-folders">
-    <div class="section-header">
-      <h2>素材資料夾連結</h2>
-      <button class="btn-add" onclick="addFolder()">＋ 新增品牌資料夾</button>
-    </div>
+    <div class="section-header"><h2>素材資料夾連結</h2><button class="btn-add" onclick="addFolder()">＋ 新增</button></div>
     <div class="folders-list" id="foldersList"></div>
+  </div>
+
+  <div class="section" id="sec-delivers">
+    <div class="section-header">
+      <h2>投手交付表</h2>
+      <button class="btn-refresh" onclick="loadDelivers()">🔄 重新整理</button>
+    </div>
+    <div class="filter-row">
+      <select class="filter-select" id="deliverFilterBrand" onchange="renderDelivers()"><option value="">全部品牌</option></select>
+      <select class="filter-select" id="deliverFilterStatus" onchange="renderDelivers()">
+        <option value="">全部狀態</option>
+        <option value="素材已備妥">✅ 素材已備妥</option>
+        <option value="缺素材">⚠️ 缺素材</option>
+        <option value="已投放">🚀 已投放</option>
+      </select>
+      <span class="stat-label" id="deliverStat">共 0 筆</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>時間</th><th>編號</th><th>品牌</th><th>商品</th><th>鉤子腳本</th><th>照片</th><th>影片</th><th>狀態</th><th></th></tr></thead>
+        <tbody id="deliversBody"></tbody>
+      </table>
+    </div>
   </div>
 
 </div>
@@ -209,136 +152,72 @@ tr:hover td { background: #1a1a2488; }
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2_fRfbYY6m42yzzWQHqKeLnSlZ9hMGBBeMoTOI7yFG4kcZg/exec';
 const PASSWORD = 'raby2026';
-
 let DB = { brands: [], products: [], folders: [] };
+let DELIVERS = [];
 
-// ══ INIT ══
 window.onload = async () => {
-  showLoading('從 Google Sheets 載入資料...');
+  showLoading('載入品牌資料...');
   try {
-    const res = await fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}`);
-    const json = await res.json();
-    if (json.ok) {
-      DB = json.data;
-      renderAll();
-      setStatus('✅ 載入完成', 'ok');
-    } else {
-      setStatus('❌ ' + json.error, 'err');
-    }
-  } catch(e) {
-    setStatus('❌ 連線失敗: ' + e.message, 'err');
-  }
+    const r = await fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}`);
+    const j = await r.json();
+    if (j.ok) { DB = j.data; renderAll(); setStatus('✅ 載入完成', 'ok'); }
+    else setStatus('❌ ' + j.error, 'err');
+  } catch(e) { setStatus('❌ 連線失敗', 'err'); }
   hideLoading();
 };
 
-// ══ TABS ══
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['brands','products','folders'][i] === name);
-  });
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['brands','products','folders','delivers'][i]===name));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById('sec-' + name).classList.add('active');
+  document.getElementById('sec-'+name).classList.add('active');
+  if (name==='delivers') loadDelivers();
 }
 
-// ══ RENDER ALL ══
-function renderAll() {
-  renderBrands();
-  renderProducts();
-  renderFolders();
-  updateFilterOptions();
-}
+function renderAll() { renderBrands(); renderProducts(); renderFolders(); updateFilters(); }
 
-// ══ BRANDS ══
 function renderBrands() {
-  const grid = document.getElementById('brandsGrid');
-  if (!DB.brands.length) {
-    grid.innerHTML = '<div class="empty-state"><p>尚無品牌，點「新增品牌」開始</p></div>';
-    return;
-  }
-  grid.innerHTML = DB.brands.map((b, i) => `
+  const g = document.getElementById('brandsGrid');
+  if (!DB.brands.length) { g.innerHTML='<div class="empty-state"><p>尚無品牌</p></div>'; return; }
+  g.innerHTML = DB.brands.map((b,i) => `
     <div class="brand-card">
       <div class="brand-card-header">
-        <input class="brand-icon-input" value="${b.icon||''}" oninput="DB.brands[${i}].icon=this.value" placeholder="🏠">
-        <input class="field-input" style="font-weight:700;font-size:15px;" value="${esc(b.name)}" oninput="DB.brands[${i}].name=this.value" placeholder="品牌名稱">
+        <input class="brand-icon-input" value="${b.icon||''}" oninput="DB.brands[${i}].icon=this.value">
+        <input class="field-input" style="font-weight:700;font-size:15px" value="${esc(b.name)}" oninput="DB.brands[${i}].name=this.value">
       </div>
       <div class="two-col">
-        <div class="field-row">
-          <label>品牌ID</label>
-          <input class="field-input" value="${esc(b.id)}" oninput="DB.brands[${i}].id=this.value" placeholder="cf">
-        </div>
-        <div class="field-row">
-          <label>主色</label>
-          <select class="field-input" onchange="DB.brands[${i}].navColor=this.value">
-            ${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${b.navColor===c?'selected':''}>${c}</option>`).join('')}
-          </select>
-        </div>
+        <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(b.id)}" oninput="DB.brands[${i}].id=this.value"></div>
+        <div class="field-row"><label>主色</label><select class="field-input" onchange="DB.brands[${i}].navColor=this.value">${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${b.navColor===c?'selected':''}>${c}</option>`).join('')}</select></div>
       </div>
-      <div class="field-row">
-        <label>品牌靈魂（廣告風格說明）</label>
-        <textarea class="field-textarea" oninput="DB.brands[${i}].soul=this.value" placeholder="品牌核心價值、廣告切入點...">${esc(b.soul)}</textarea>
-      </div>
-      <div class="field-row">
-        <label>廣告風格</label>
-        <input class="field-input" value="${esc(b.adStyle)}" oninput="DB.brands[${i}].adStyle=this.value" placeholder="溫暖生活感、家人守護...">
-      </div>
-      <div class="field-row">
-        <label>Hashtags</label>
-        <input class="field-input" value="${esc(b.hashtags)}" oninput="DB.brands[${i}].hashtags=this.value" placeholder="#標籤1 #標籤2">
-      </div>
-      <div class="card-actions">
-        <button class="btn-delete" onclick="deleteBrand(${i})">🗑 刪除品牌</button>
-      </div>
-    </div>
-  `).join('');
+      <div class="field-row"><label>品牌靈魂</label><textarea class="field-textarea" oninput="DB.brands[${i}].soul=this.value">${esc(b.soul)}</textarea></div>
+      <div class="field-row"><label>廣告風格</label><input class="field-input" value="${esc(b.adStyle)}" oninput="DB.brands[${i}].adStyle=this.value"></div>
+      <div class="field-row"><label>Hashtags</label><input class="field-input" value="${esc(b.hashtags)}" oninput="DB.brands[${i}].hashtags=this.value"></div>
+      <div class="card-actions"><button class="btn-delete" onclick="deleteBrand(${i})">🗑 刪除品牌</button></div>
+    </div>`).join('');
 }
+function addBrand() { DB.brands.push({id:'',name:'新品牌',icon:'🏷️',navColor:'gold',soul:'',adStyle:'',hashtags:''}); renderBrands(); }
+function deleteBrand(i) { if(!confirm(`確定刪除「${DB.brands[i].name}」？`))return; DB.brands.splice(i,1); renderBrands(); }
 
-function addBrand() {
-  DB.brands.push({ id: '', name: '新品牌', icon: '🏷️', navColor: 'gold', soul: '', adStyle: '', hashtags: '' });
-  renderBrands();
-}
-
-function deleteBrand(i) {
-  if (!confirm(`確定刪除「${DB.brands[i].name}」？`)) return;
-  DB.brands.splice(i, 1);
-  renderBrands();
-}
-
-// ══ PRODUCTS ══
-function updateFilterOptions() {
-  const sel = document.getElementById('filterBrand');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">全部品牌</option>' +
-    DB.brands.map(b => `<option value="${b.id}" ${cur===b.id?'selected':''}>${b.icon||''} ${b.name}</option>`).join('');
+function updateFilters() {
+  ['filterBrand','deliverFilterBrand'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">全部品牌</option>' + DB.brands.map(b=>`<option value="${b.id}" ${cur===b.id?'selected':''}>${b.icon||''} ${b.name}</option>`).join('');
+  });
 }
 
 function renderProducts() {
-  const brandFilter = document.getElementById('filterBrand').value;
-  const search = document.getElementById('filterSearch').value.toLowerCase();
+  const bf = document.getElementById('filterBrand').value;
+  const sf = document.getElementById('filterSearch').value.toLowerCase();
+  const filtered = DB.products.filter(p => (!bf||p.brandId===bf) && (!sf||p.prodName?.toLowerCase().includes(sf)));
   const tbody = document.getElementById('productsBody');
-
-  const filtered = DB.products.filter(p => {
-    if (brandFilter && p.brandId !== brandFilter) return false;
-    if (search && !p.prodName?.toLowerCase().includes(search) && !p.prodId?.toLowerCase().includes(search)) return false;
-    return true;
-  });
-
-  if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#444">沒有符合的商品</td></tr>';
-    return;
-  }
-
+  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:#444">沒有符合的商品</td></tr>'; return; }
   tbody.innerHTML = filtered.map(p => {
     const i = DB.products.indexOf(p);
-    const colorClass = 'color-' + (p.subColor || 'gold');
     return `<tr>
-      <td><span class="color-dot ${colorClass}"></span>${esc(p.brandId)}</td>
+      <td><span class="color-dot color-${p.subColor||'gold'}"></span>${esc(p.brandId)}</td>
       <td><input class="td-input" value="${esc(p.subId)}" oninput="DB.products[${i}].subId=this.value" style="min-width:90px"></td>
       <td><input class="td-input" value="${esc(p.subName)}" oninput="DB.products[${i}].subName=this.value" style="min-width:100px"></td>
-      <td>
-        <select class="td-input" onchange="DB.products[${i}].subColor=this.value" style="min-width:70px">
-          ${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${p.subColor===c?'selected':''}>${c}</option>`).join('')}
-        </select>
-      </td>
+      <td><select class="td-input" onchange="DB.products[${i}].subColor=this.value" style="min-width:70px">${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${p.subColor===c?'selected':''}>${c}</option>`).join('')}</select></td>
       <td><input class="td-input" value="${esc(p.prodId)}" oninput="DB.products[${i}].prodId=this.value" style="min-width:80px"></td>
       <td><input class="td-input" value="${esc(p.prodName)}" oninput="DB.products[${i}].prodName=this.value" style="min-width:160px"></td>
       <td><input class="td-input" value="${esc(p.prodTag)}" oninput="DB.products[${i}].prodTag=this.value" style="min-width:80px"></td>
@@ -346,46 +225,26 @@ function renderProducts() {
     </tr>`;
   }).join('');
 }
-
 function addProduct() {
-  const brandId = document.getElementById('filterBrand').value || (DB.brands[0]?.id || '');
-  DB.products.push({ brandId, subId: '', subName: '', subColor: 'gold', subSoul: '', subAdStyle: '', subHashtags: '', prodId: '', prodName: '新商品', prodTag: '' });
+  const brandId = document.getElementById('filterBrand').value||(DB.brands[0]?.id||'');
+  DB.products.push({brandId,subId:'',subName:'',subColor:'gold',subSoul:'',subAdStyle:'',subHashtags:'',prodId:'',prodName:'新商品',prodTag:''});
   renderProducts();
 }
+function deleteProduct(i) { if(!confirm(`確定刪除「${DB.products[i].prodName}」？`))return; DB.products.splice(i,1); renderProducts(); }
 
-function deleteProduct(i) {
-  if (!confirm(`確定刪除「${DB.products[i].prodName}」？`)) return;
-  DB.products.splice(i, 1);
-  renderProducts();
-}
-
-// ══ FOLDERS ══
 function renderFolders() {
   const list = document.getElementById('foldersList');
-  if (!DB.folders.length) {
-    list.innerHTML = '<div class="empty-state"><p>尚無資料夾設定</p></div>';
-    return;
-  }
-  list.innerHTML = DB.folders.map((f, i) => {
-    const brand = DB.brands.find(b => b.id === f.brandId);
-    return `
-    <div class="folder-card">
+  if (!DB.folders.length) { list.innerHTML='<div class="empty-state"><p>尚無資料夾設定</p></div>'; return; }
+  list.innerHTML = DB.folders.map((f,i) => {
+    const brand = DB.brands.find(b=>b.id===f.brandId);
+    return `<div class="folder-card">
       <div class="folder-card-header">
         <span class="folder-brand-badge">${brand?.icon||''} ${brand?.name||f.brandId}</span>
         <button class="btn-delete" onclick="deleteFolder(${i})" style="margin-left:auto">🗑 刪除</button>
       </div>
-      <div class="field-row">
-        <label>品牌ID</label>
-        <input class="field-input" value="${esc(f.brandId)}" oninput="DB.folders[${i}].brandId=this.value">
-      </div>
-      <div class="field-row">
-        <label>📷 照片資料夾 ID（Google Drive）</label>
-        <input class="field-input" value="${esc(f.photoFolderId)}" oninput="DB.folders[${i}].photoFolderId=this.value" placeholder="Google Drive 資料夾 ID">
-      </div>
-      <div class="field-row">
-        <label>🎬 影片資料夾 ID（Google Drive）</label>
-        <input class="field-input" value="${esc(f.videoFolderId)}" oninput="DB.folders[${i}].videoFolderId=this.value" placeholder="Google Drive 資料夾 ID">
-      </div>
+      <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(f.brandId)}" oninput="DB.folders[${i}].brandId=this.value"></div>
+      <div class="field-row"><label>📷 照片資料夾 ID</label><input class="field-input" value="${esc(f.photoFolderId)}" oninput="DB.folders[${i}].photoFolderId=this.value"></div>
+      <div class="field-row"><label>🎬 影片資料夾 ID</label><input class="field-input" value="${esc(f.videoFolderId)}" oninput="DB.folders[${i}].videoFolderId=this.value"></div>
       <div style="margin-top:8px;display:flex;gap:10px;">
         <a href="https://drive.google.com/drive/folders/${f.photoFolderId}" target="_blank" style="font-size:12px;color:#d4af6a;text-decoration:none;">📷 開啟照片資料夾 ↗</a>
         <a href="https://drive.google.com/drive/folders/${f.videoFolderId}" target="_blank" style="font-size:12px;color:#d4af6a;text-decoration:none;">🎬 開啟影片資料夾 ↗</a>
@@ -393,56 +252,97 @@ function renderFolders() {
     </div>`;
   }).join('');
 }
+function addFolder() { DB.folders.push({brandId:'',photoFolderId:'',videoFolderId:''}); renderFolders(); }
+function deleteFolder(i) { if(!confirm('確定刪除？'))return; DB.folders.splice(i,1); renderFolders(); }
 
-function addFolder() {
-  DB.folders.push({ brandId: '', photoFolderId: '', videoFolderId: '' });
-  renderFolders();
+// ══ DELIVERS ══
+async function loadDelivers() {
+  showLoading('載入投手交付表...');
+  try {
+    const r = await fetch(`${GAS_URL}?action=getDelivers&password=${PASSWORD}`);
+    const j = await r.json();
+    if (j.ok) { DELIVERS = j.delivers; renderDelivers(); }
+    else setStatus('❌ ' + j.error, 'err');
+  } catch(e) { setStatus('❌ 載入失敗', 'err'); }
+  hideLoading();
 }
 
-function deleteFolder(i) {
-  if (!confirm('確定刪除這個資料夾設定？')) return;
-  DB.folders.splice(i, 1);
-  renderFolders();
+function renderDelivers() {
+  const bf = document.getElementById('deliverFilterBrand').value;
+  const sf = document.getElementById('deliverFilterStatus').value;
+  const filtered = DELIVERS.filter(d => (!bf||d.brand===bf) && (!sf||d.status===sf));
+  document.getElementById('deliverStat').textContent = `共 ${filtered.length} 筆`;
+  const tbody = document.getElementById('deliversBody');
+  if (!filtered.length) {
+    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:#444">尚無交付記錄</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(d => {
+    const brand = DB.brands.find(b=>b.id===d.brand);
+    const date = d.createdAt ? new Date(d.createdAt).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+    return `<tr>
+      <td style="font-size:11px;color:#666;white-space:nowrap">${date}</td>
+      <td style="font-family:monospace;color:#d4af6a;font-size:11px">${esc(d.id)}</td>
+      <td style="font-size:12px;white-space:nowrap">${brand?.icon||''} ${brand?.name||esc(d.brand)}</td>
+      <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(d.product)}">${esc(d.product)}</td>
+      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#aaa" title="${esc(d.hookScript)}">${esc(d.hookScript)}</td>
+      <td>${d.photoUrl?`<a class="asset-link al-photo" href="${d.photoUrl}" target="_blank">🖼️ 看</a>`:'<span class="asset-link al-none">無</span>'}</td>
+      <td>${d.videoUrl?`<a class="asset-link al-video" href="${d.videoUrl}" target="_blank">🎬 看</a>`:'<span class="asset-link al-none">無</span>'}</td>
+      <td>
+        <select class="status-select" onchange="updateStatus(${d._rowIndex},this.value)">
+          <option value="素材已備妥" ${d.status==='素材已備妥'?'selected':''}>✅ 素材已備妥</option>
+          <option value="缺素材" ${d.status==='缺素材'?'selected':''}>⚠️ 缺素材</option>
+          <option value="已投放" ${d.status==='已投放'?'selected':''}>🚀 已投放</option>
+        </select>
+      </td>
+      <td><button class="btn-row-del" onclick="deleteDeliverRow(${d._rowIndex})" title="刪除">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateStatus(rowIndex, status) {
+  try {
+    await fetch(`${GAS_URL}?action=updateDeliverStatus&password=${PASSWORD}&rowIndex=${rowIndex}&status=${encodeURIComponent(status)}`);
+    const d = DELIVERS.find(x=>x._rowIndex===rowIndex);
+    if (d) d.status = status;
+    setStatus('✅ 狀態已更新', 'ok');
+  } catch(e) { setStatus('❌ 更新失敗', 'err'); }
+}
+
+async function deleteDeliverRow(rowIndex) {
+  if (!confirm('確定刪除這筆交付記錄？')) return;
+  try {
+    await fetch(`${GAS_URL}?action=deleteDeliver&password=${PASSWORD}&rowIndex=${rowIndex}`);
+    DELIVERS = DELIVERS.filter(d=>d._rowIndex!==rowIndex);
+    DELIVERS.forEach(d => { if(d._rowIndex>rowIndex) d._rowIndex--; });
+    renderDelivers();
+    setStatus('✅ 已刪除', 'ok');
+  } catch(e) { setStatus('❌ 刪除失敗', 'err'); }
 }
 
 // ══ SAVE ══
 async function saveAll() {
   showLoading('儲存中...');
-  setStatus('儲存中...', '');
   document.getElementById('btnSaveAll').disabled = true;
-
   try {
     const data = encodeURIComponent(JSON.stringify(DB));
-    const res = await fetch(`${GAS_URL}?action=saveBrandOS&password=${PASSWORD}&data=${data}`);
-    const json = await res.json();
-    if (json.ok) {
-      setStatus('✅ 儲存成功！', 'ok');
-    } else {
-      setStatus('❌ 儲存失敗: ' + json.error, 'err');
-    }
-  } catch(e) {
-    setStatus('❌ 連線失敗: ' + e.message, 'err');
-  }
-
+    const r = await fetch(`${GAS_URL}?action=saveBrandOS&password=${PASSWORD}&data=${data}`);
+    const j = await r.json();
+    if (j.ok) setStatus('✅ 儲存成功！', 'ok');
+    else setStatus('❌ ' + j.error, 'err');
+  } catch(e) { setStatus('❌ 連線失敗', 'err'); }
   document.getElementById('btnSaveAll').disabled = false;
   hideLoading();
 }
 
-// ══ UTILS ══
 function esc(str) { return (str||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
-function setStatus(msg, type) {
-  const el = document.getElementById('statusMsg');
-  el.textContent = msg;
-  el.className = 'status-msg ' + type;
-  if (type === 'ok') setTimeout(() => { el.textContent = ''; el.className = 'status-msg'; }, 3000);
+function setStatus(msg,type) {
+  const el=document.getElementById('statusMsg');
+  el.textContent=msg; el.className='status-msg '+type;
+  if(type==='ok') setTimeout(()=>{el.textContent='';el.className='status-msg';},3000);
 }
-function showLoading(msg) {
-  document.getElementById('loadingMsg').textContent = msg;
-  document.getElementById('loadingOverlay').classList.add('show');
-}
-function hideLoading() {
-  document.getElementById('loadingOverlay').classList.remove('show');
-}
+function showLoading(msg) { document.getElementById('loadingMsg').textContent=msg; document.getElementById('loadingOverlay').classList.add('show'); }
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
 </script>
 </body>
 </html>
