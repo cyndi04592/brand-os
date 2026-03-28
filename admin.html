@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand OS 後台管理</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f0f13; color: #e8e0d0; min-height: 100vh; }
+
+/* TOP BAR */
+.top-bar {
+  background: #1a1a24; border-bottom: 1px solid #2a2a3a;
+  padding: 14px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100;
+}
+.top-bar h1 { font-size: 17px; color: #d4af6a; font-weight: 700; letter-spacing: 0.5px; }
+.top-bar .badge { font-size: 11px; background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a44; border-radius: 20px; padding: 2px 10px; }
+.top-bar .spacer { flex: 1; }
+.btn-save-all {
+  background: #d4af6a; color: #0f0f13; border: none; border-radius: 8px;
+  padding: 8px 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.btn-save-all:hover { background: #e8c87a; transform: translateY(-1px); }
+.btn-save-all:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; }
+.status-msg { font-size: 13px; color: #888; }
+.status-msg.ok { color: #4caf50; }
+.status-msg.err { color: #f44336; }
+
+/* TABS */
+.tabs { display: flex; background: #1a1a24; border-bottom: 1px solid #2a2a3a; padding: 0 24px; }
+.tab {
+  padding: 12px 20px; cursor: pointer; font-size: 14px; color: #666;
+  border-bottom: 3px solid transparent; transition: all 0.2s; user-select: none;
+}
+.tab:hover { color: #aaa; }
+.tab.active { color: #d4af6a; border-bottom-color: #d4af6a; }
+
+/* MAIN */
+.main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* CARDS */
+.section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.section-header h2 { font-size: 16px; color: #e8e0d0; }
+.btn-add {
+  background: #2a2a3a; color: #d4af6a; border: 1px solid #d4af6a44;
+  border-radius: 8px; padding: 6px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+.btn-add:hover { background: #d4af6a22; }
+
+/* BRAND CARDS */
+.brands-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.brand-card {
+  background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 18px;
+  transition: border-color 0.2s;
+}
+.brand-card:hover { border-color: #3a3a4a; }
+.brand-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.brand-icon-input {
+  width: 40px; text-align: center; font-size: 22px; background: #0f0f13;
+  border: 1px solid #2a2a3a; border-radius: 8px; padding: 4px; color: #e8e0d0;
+}
+.field-row { margin-bottom: 10px; }
+.field-row label { display: block; font-size: 11px; color: #666; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.field-input, .field-textarea, .field-select {
+  width: 100%; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px;
+  padding: 8px 10px; color: #e8e0d0; font-size: 13px; transition: border-color 0.2s;
+  font-family: inherit;
+}
+.field-input:focus, .field-textarea:focus { outline: none; border-color: #d4af6a66; }
+.field-textarea { resize: vertical; min-height: 60px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.card-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.btn-delete { background: none; border: 1px solid #f4433633; color: #f44336; border-radius: 6px; padding: 4px 12px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.btn-delete:hover { background: #f4433622; }
+
+/* PRODUCTS TABLE */
+.products-filter { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-select, .filter-input {
+  background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px;
+  padding: 8px 12px; color: #e8e0d0; font-size: 13px;
+}
+.filter-input { flex: 1; min-width: 200px; }
+.table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #2a2a3a; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { background: #1a1a24; }
+th { padding: 10px 12px; text-align: left; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+td { padding: 8px 12px; border-top: 1px solid #1a1a24; }
+tr:hover td { background: #1a1a2488; }
+.td-input {
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  color: #e8e0d0; font-size: 13px; padding: 4px 6px; width: 100%; min-width: 80px;
+  font-family: inherit;
+}
+.td-input:focus { outline: none; border-color: #d4af6a66; background: #0f0f13; }
+.btn-row-del { background: none; border: none; color: #f4433666; cursor: pointer; font-size: 16px; padding: 0 4px; }
+.btn-row-del:hover { color: #f44336; }
+.color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+
+/* FOLDERS */
+.folders-list { display: grid; gap: 12px; }
+.folder-card {
+  background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 16px;
+}
+.folder-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.folder-brand-badge {
+  background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a33;
+  border-radius: 6px; padding: 2px 10px; font-size: 12px; font-weight: 600;
+}
+
+/* LOADING */
+.loading-overlay {
+  position: fixed; inset: 0; background: #0f0f13cc; display: flex;
+  align-items: center; justify-content: center; z-index: 999; display: none;
+}
+.loading-overlay.show { display: flex; }
+.loading-box { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 16px; padding: 32px 48px; text-align: center; }
+.loading-box p { color: #888; margin-top: 12px; font-size: 14px; }
+.spinner { width: 36px; height: 36px; border: 3px solid #2a2a3a; border-top-color: #d4af6a; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 60px 20px; color: #444; }
+.empty-state p { margin-top: 8px; font-size: 14px; }
+
+/* COLOR MAP */
+.color-gold { background: #d4af6a; }
+.color-red { background: #e05555; }
+.color-mint { background: #5db8a0; }
+.color-purple { background: #9b7fd4; }
+.color-sky { background: #5ba8d4; }
+.color-brown { background: #a07850; }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p id="loadingMsg">載入中...</p>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <h1>⚙️ Brand OS 後台</h1>
+  <span class="badge">芮比廣告行銷</span>
+  <div class="spacer"></div>
+  <span class="status-msg" id="statusMsg"></span>
+  <button class="btn-save-all" id="btnSaveAll" onclick="saveAll()">💾 儲存全部</button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('brands')">🏷️ 品牌管理</div>
+  <div class="tab" onclick="switchTab('products')">📦 商品管理</div>
+  <div class="tab" onclick="switchTab('folders')">📁 素材資料夾</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- BRANDS -->
+  <div class="section active" id="sec-brands">
+    <div class="section-header">
+      <h2>品牌列表</h2>
+      <button class="btn-add" onclick="addBrand()">＋ 新增品牌</button>
+    </div>
+    <div class="brands-grid" id="brandsGrid"></div>
+  </div>
+
+  <!-- PRODUCTS -->
+  <div class="section" id="sec-products">
+    <div class="section-header">
+      <h2>商品列表</h2>
+      <button class="btn-add" onclick="addProduct()">＋ 新增商品</button>
+    </div>
+    <div class="products-filter">
+      <select class="filter-select" id="filterBrand" onchange="renderProducts()">
+        <option value="">全部品牌</option>
+      </select>
+      <input class="filter-input" id="filterSearch" placeholder="搜尋商品名稱..." oninput="renderProducts()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>品牌</th><th>子系列ID</th><th>子系列名</th><th>顏色</th>
+            <th>商品ID</th><th>商品名稱</th><th>標籤</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="productsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FOLDERS -->
+  <div class="section" id="sec-folders">
+    <div class="section-header">
+      <h2>素材資料夾連結</h2>
+      <button class="btn-add" onclick="addFolder()">＋ 新增品牌資料夾</button>
+    </div>
+    <div class="folders-list" id="foldersList"></div>
+  </div>
+
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2_fRfbYY6m42yzzWQHqKeLnSlZ9hMGBBeMoTOI7yFG4kcZg/exec';
+const PASSWORD = 'raby2026';
+
+let DB = { brands: [], products: [], folders: [] };
+
+// ══ INIT ══
+window.onload = async () => {
+  showLoading('從 Google Sheets 載入資料...');
+  try {
+    const res = await fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}`);
+    const json = await res.json();
+    if (json.ok) {
+      DB = json.data;
+      renderAll();
+      setStatus('✅ 載入完成', 'ok');
+    } else {
+      setStatus('❌ ' + json.error, 'err');
+    }
+  } catch(e) {
+    setStatus('❌ 連線失敗: ' + e.message, 'err');
+  }
+  hideLoading();
+};
+
+// ══ TABS ══
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['brands','products','folders'][i] === name);
+  });
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+}
+
+// ══ RENDER ALL ══
+function renderAll() {
+  renderBrands();
+  renderProducts();
+  renderFolders();
+  updateFilterOptions();
+}
+
+// ══ BRANDS ══
+function renderBrands() {
+  const grid = document.getElementById('brandsGrid');
+  if (!DB.brands.length) {
+    grid.innerHTML = '<div class="empty-state"><p>尚無品牌，點「新增品牌」開始</p></div>';
+    return;
+  }
+  grid.innerHTML = DB.brands.map((b, i) => `
+    <div class="brand-card">
+      <div class="brand-card-header">
+        <input class="brand-icon-input" value="${b.icon||''}" oninput="DB.brands[${i}].icon=this.value" placeholder="🏠">
+        <input class="field-input" style="font-weight:700;font-size:15px;" value="${esc(b.name)}" oninput="DB.brands[${i}].name=this.value" placeholder="品牌名稱">
+      </div>
+      <div class="two-col">
+        <div class="field-row">
+          <label>品牌ID</label>
+          <input class="field-input" value="${esc(b.id)}" oninput="DB.brands[${i}].id=this.value" placeholder="cf">
+        </div>
+        <div class="field-row">
+          <label>主色</label>
+          <select class="field-input" onchange="DB.brands[${i}].navColor=this.value">
+            ${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${b.navColor===c?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <label>品牌靈魂（廣告風格說明）</label>
+        <textarea class="field-textarea" oninput="DB.brands[${i}].soul=this.value" placeholder="品牌核心價值、廣告切入點...">${esc(b.soul)}</textarea>
+      </div>
+      <div class="field-row">
+        <label>廣告風格</label>
+        <input class="field-input" value="${esc(b.adStyle)}" oninput="DB.brands[${i}].adStyle=this.value" placeholder="溫暖生活感、家人守護...">
+      </div>
+      <div class="field-row">
+        <label>Hashtags</label>
+        <input class="field-input" value="${esc(b.hashtags)}" oninput="DB.brands[${i}].hashtags=this.value" placeholder="#標籤1 #標籤2">
+      </div>
+      <div class="card-actions">
+        <button class="btn-delete" onclick="deleteBrand(${i})">🗑 刪除品牌</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addBrand() {
+  DB.brands.push({ id: '', name: '新品牌', icon: '🏷️', navColor: 'gold', soul: '', adStyle: '', hashtags: '' });
+  renderBrands();
+}
+
+function deleteBrand(i) {
+  if (!confirm(`確定刪除「${DB.brands[i].name}」？`)) return;
+  DB.brands.splice(i, 1);
+  renderBrands();
+}
+
+// ══ PRODUCTS ══
+function updateFilterOptions() {
+  const sel = document.getElementById('filterBrand');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部品牌</option>' +
+    DB.brands.map(b => `<option value="${b.id}" ${cur===b.id?'selected':''}>${b.icon||''} ${b.name}</option>`).join('');
+}
+
+function renderProducts() {
+  const brandFilter = document.getElementById('filterBrand').value;
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+  const tbody = document.getElementById('productsBody');
+
+  const filtered = DB.products.filter(p => {
+    if (brandFilter && p.brandId !== brandFilter) return false;
+    if (search && !p.prodName?.toLowerCase().includes(search) && !p.prodId?.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#444">沒有符合的商品</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => {
+    const i = DB.products.indexOf(p);
+    const colorClass = 'color-' + (p.subColor || 'gold');
+    return `<tr>
+      <td><span class="color-dot ${colorClass}"></span>${esc(p.brandId)}</td>
+      <td><input class="td-input" value="${esc(p.subId)}" oninput="DB.products[${i}].subId=this.value" style="min-width:90px"></td>
+      <td><input class="td-input" value="${esc(p.subName)}" oninput="DB.products[${i}].subName=this.value" style="min-width:100px"></td>
+      <td>
+        <select class="td-input" onchange="DB.products[${i}].subColor=this.value" style="min-width:70px">
+          ${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${p.subColor===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </td>
+      <td><input class="td-input" value="${esc(p.prodId)}" oninput="DB.products[${i}].prodId=this.value" style="min-width:80px"></td>
+      <td><input class="td-input" value="${esc(p.prodName)}" oninput="DB.products[${i}].prodName=this.value" style="min-width:160px"></td>
+      <td><input class="td-input" value="${esc(p.prodTag)}" oninput="DB.products[${i}].prodTag=this.value" style="min-width:80px"></td>
+      <td><button class="btn-row-del" onclick="deleteProduct(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function addProduct() {
+  const brandId = document.getElementById('filterBrand').value || (DB.brands[0]?.id || '');
+  DB.products.push({ brandId, subId: '', subName: '', subColor: 'gold', subSoul: '', subAdStyle: '', subHashtags: '', prodId: '', prodName: '新商品', prodTag: '' });
+  renderProducts();
+}
+
+function deleteProduct(i) {
+  if (!confirm(`確定刪除「${DB.products[i].prodName}」？`)) return;
+  DB.products.splice(i, 1);
+  renderProducts();
+}
+
+// ══ FOLDERS ══
+function renderFolders() {
+  const list = document.getElementById('foldersList');
+  if (!DB.folders.length) {
+    list.innerHTML = '<div class="empty-state"><p>尚無資料夾設定</p></div>';
+    return;
+  }
+  list.innerHTML = DB.folders.map((f, i) => {
+    const brand = DB.brands.find(b => b.id === f.brandId);
+    return `
+    <div class="folder-card">
+      <div class="folder-card-header">
+        <span class="folder-brand-badge">${brand?.icon||''} ${brand?.name||f.brandId}</span>
+        <button class="btn-delete" onclick="deleteFolder(${i})" style="margin-left:auto">🗑 刪除</button>
+      </div>
+      <div class="field-row">
+        <label>品牌ID</label>
+        <input class="field-input" value="${esc(f.brandId)}" oninput="DB.folders[${i}].brandId=this.value">
+      </div>
+      <div class="field-row">
+        <label>📷 照片資料夾 ID（Google Drive）</label>
+        <input class="field-input" value="${esc(f.photoFolderId)}" oninput="DB.folders[${i}].photoFolderId=this.value" placeholder="Google Drive 資料夾 ID">
+      </div>
+      <div class="field-row">
+        <label>🎬 影片資料夾 ID（Google Drive）</label>
+        <input class="field-input" value="${esc(f.videoFolderId)}" oninput="DB.folders[${i}].videoFolderId=this.value" placeholder="Google Drive 資料夾 ID">
+      </div>
+      <div style="margin-top:8px;display:flex;gap:10px;">
+        <a href="https://drive.google.com/drive/folders/${f.photoFolderId}" target="_blank" style="font-size:12px;color:#d4af6a;text-decoration:none;">📷 開啟照片資料夾 ↗</a>
+        <a href="https://drive.google.com/drive/folders/${f.videoFolderId}" target="_blank" style="font-size:12px;color:#d4af6a;text-decoration:none;">🎬 開啟影片資料夾 ↗</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addFolder() {
+  DB.folders.push({ brandId: '', photoFolderId: '', videoFolderId: '' });
+  renderFolders();
+}
+
+function deleteFolder(i) {
+  if (!confirm('確定刪除這個資料夾設定？')) return;
+  DB.folders.splice(i, 1);
+  renderFolders();
+}
+
+// ══ SAVE ══
+async function saveAll() {
+  showLoading('儲存中...');
+  setStatus('儲存中...', '');
+  document.getElementById('btnSaveAll').disabled = true;
+
+  try {
+    const data = encodeURIComponent(JSON.stringify(DB));
+    const res = await fetch(`${GAS_URL}?action=saveBrandOS&password=${PASSWORD}&data=${data}`);
+    const json = await res.json();
+    if (json.ok) {
+      setStatus('✅ 儲存成功！', 'ok');
+    } else {
+      setStatus('❌ 儲存失敗: ' + json.error, 'err');
+    }
+  } catch(e) {
+    setStatus('❌ 連線失敗: ' + e.message, 'err');
+  }
+
+  document.getElementById('btnSaveAll').disabled = false;
+  hideLoading();
+}
+
+// ══ UTILS ══
+function esc(str) { return (str||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function setStatus(msg, type) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+  if (type === 'ok') setTimeout(() => { el.textContent = ''; el.className = 'status-msg'; }, 3000);
+}
+function showLoading(msg) {
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+</script>
+</body>
+</html>
