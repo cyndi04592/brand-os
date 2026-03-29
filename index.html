@@ -721,7 +721,7 @@ async function applyPhotoroomBg(){
     let prompt=customInput||PR_SCENE_PROMPTS[PR_SCENE];
     if(!prompt)prompt=PR_RANDOM_PROMPTS[Math.floor(Math.random()*PR_RANDOM_PROMPTS.length)];
     const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
-    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,width:AM.w,height:AM.h})});
+    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,mode:PR_MODE,width:AM.w,height:AM.h})});
     const prData=await resp.json();
     if(!prData.ok)throw new Error(prData.error||'AI 處理失敗');
     PR_BG_IMG=prData.imageBase64;
