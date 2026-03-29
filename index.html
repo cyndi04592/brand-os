@@ -282,48 +282,34 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   </div>
 </div>
 
-<!-- Ad Maker Modal -->
-<div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;overflow:auto;">
-  <div style="max-width:1100px;margin:30px auto;padding:20px;display:flex;gap:20px;flex-wrap:wrap;">
-    <div style="flex:1;min-width:260px;background:var(--bg2);border-radius:14px;border:1px solid var(--line2);padding:18px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <span style="font-family:'Bebas Neue';font-size:18px;letter-spacing:3px;color:var(--purple)">🎨 廣告圖產生器</span>
-        <button onclick="closeAdMaker()" style="background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer;">✕</button>
+<!-- Ad Maker Modal — 極簡版 v2 -->
+<div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999;overflow:auto;">
+  <div style="max-width:960px;margin:24px auto;padding:16px;display:flex;gap:18px;flex-wrap:wrap;">
+
+    <!-- 左側控制面板 -->
+    <div style="width:280px;flex-shrink:0;background:var(--bg2);border-radius:14px;border:1px solid var(--line2);padding:18px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-family:'Bebas Neue';font-size:17px;letter-spacing:3px;color:var(--purple)">🎨 廣告圖產生器</span>
+        <button onclick="closeAdMaker()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;line-height:1;">✕</button>
       </div>
-      <div style="margin-bottom:12px;">
-        <div class="sel-lbl">尺寸</div>
-        <div style="display:flex;gap:6px;margin-top:4px;">
-          <button class="am-size-btn on" onclick="setSize(this,1080,1080)">1:1 方形</button>
-          <button class="am-size-btn" onclick="setSize(this,1080,1920)">9:16 直式</button>
-        </div>
+
+      <!-- 目前照片 -->
+      <div style="padding:9px 11px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);">
+        <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:4px;">目前照片</div>
+        <div id="amPhotoName" style="font-size:11px;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">尚未選擇</div>
+        <div id="amPhotoStatus" style="font-size:9px;margin-top:3px;color:var(--t3);"></div>
       </div>
-      <div style="margin-bottom:12px;">
-        <div class="sel-lbl">廣告風格</div>
-        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
-          <button class="am-tpl-btn on" onclick="setTpl(this,'classic')">底部大字</button>
-          <button class="am-tpl-btn" onclick="setTpl(this,'modern')">頂部大字</button>
-          <button class="am-tpl-btn" onclick="setTpl(this,'bold')">置中大字</button>
-        </div>
-      </div>
-      <div style="margin-bottom:12px;padding:10px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);">
-        <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:6px;">目前選擇的照片</div>
-        <div id="amPhotoName" style="font-size:11px;color:var(--sky);">尚未選擇</div>
-      </div>
-      <div style="margin-bottom:10px;">
+
+      <!-- 主標題 -->
+      <div>
         <div class="sel-lbl">主標題</div>
-        <textarea id="amTitle" rows="2" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:11px;padding:7px;outline:none;resize:none;margin-top:4px;line-height:1.6;" oninput="renderAdCanvas()"></textarea>
+        <textarea id="amTitle" rows="3" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:8px;outline:none;resize:none;margin-top:4px;line-height:1.6;" placeholder="輸入廣告主標題" oninput="renderAdCanvas()"></textarea>
       </div>
-      <div style="margin-bottom:10px;">
-        <div class="sel-lbl">副標語</div>
-        <input id="amSub" type="text" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:11px;padding:6px 8px;outline:none;margin-top:4px;" oninput="renderAdCanvas()">
-      </div>
-      <div style="margin-bottom:14px;">
-        <div class="sel-lbl">CTA 按鈕文字</div>
-        <input id="amCta" type="text" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:11px;padding:6px 8px;outline:none;margin-top:4px;" oninput="renderAdCanvas()">
-      </div>
-      <div style="margin-bottom:14px;padding:12px;background:linear-gradient(135deg,rgba(157,110,248,0.12),rgba(77,200,240,0.08));border-radius:10px;border:1px solid rgba(157,110,248,0.3);">
-        <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--purple);margin-bottom:8px;">✨ PHOTOROOM AI 換背景</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;">
+
+      <!-- Photoroom AI 換背景 -->
+      <div style="padding:12px;background:linear-gradient(135deg,rgba(157,110,248,0.1),rgba(77,200,240,0.06));border-radius:10px;border:1px solid rgba(157,110,248,0.3);">
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--purple);margin-bottom:9px;">✨ PHOTOROOM AI 換背景</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px;">
           <button class="pr-scene-btn on" onclick="setPrScene(this,'studio')">🎨 乾淨白底</button>
           <button class="pr-scene-btn" onclick="setPrScene(this,'lifestyle')">🏡 生活情境</button>
           <button class="pr-scene-btn" onclick="setPrScene(this,'nature')">🌿 自然清新</button>
@@ -331,15 +317,20 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
           <button class="pr-scene-btn" onclick="setPrScene(this,'luxury')">💎 質感黑金</button>
           <button class="pr-scene-btn" onclick="setPrScene(this,'random')">🎲 隨機驚喜</button>
         </div>
-        <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:8px;border-radius:7px;background:linear-gradient(135deg,var(--purple),#4DC8F0);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;">✨ AI 換背景</button>
-        <div id="prStatus" style="font-size:9px;color:var(--t3);text-align:center;margin-top:5px;min-height:14px;"></div>
+        <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:9px;border-radius:7px;background:linear-gradient(135deg,var(--purple),#4DC8F0);border:none;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">✨ AI 換背景</button>
+        <div id="prStatus" style="font-size:9px;color:var(--t3);text-align:center;margin-top:6px;min-height:14px;"></div>
       </div>
-      <button id="adDownloadBtn" onclick="downloadAd()" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,var(--purple),#6A3FD8);border:none;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">⬇️ 下載廣告圖 JPG</button>
+
+      <!-- 下載 -->
+      <button id="adDownloadBtn" onclick="downloadAd()" style="width:100%;padding:11px;border-radius:8px;background:linear-gradient(135deg,var(--purple),#6A3FD8);border:none;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">⬇️ 下載廣告圖 JPG</button>
     </div>
-    <div style="flex:1;min-width:280px;display:flex;flex-direction:column;align-items:center;gap:10px;">
-      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);">預覽</div>
-      <canvas id="adCanvas" style="border-radius:10px;max-width:100%;width:540px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);"></canvas>
+
+    <!-- 右側預覽 -->
+    <div style="flex:1;min-width:280px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);">預覽 1080×1080</div>
+      <canvas id="adCanvas" style="border-radius:10px;max-width:100%;width:100%;max-width:540px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);display:block;"></canvas>
     </div>
+
   </div>
 </div>
 
@@ -634,138 +625,250 @@ function copyTSV(btn){
   fetch('https://hook.us2.make.com/7hiqiin98rlh61t9a56a9t7w6tcm3i4s',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scripts:S.delivers.map(r=>({id:r.id,product:r.product,hook:r.hookScript,core:r.coreScript,cta:r.ctaScript,photoName:r.photoName,photoUrl:r.photoUrl,videoName:r.videoName,videoUrl:r.videoUrl,status:r.ready?'素材已備妥':'缺素材',timestamp:new Date().toISOString()}))})}).catch(()=>{});
 }
 
-// ══ AD MAKER ══
-let AM={w:1080,h:1080,tpl:'classic',scriptIdx:null};
+// ══ AD MAKER v2 — 極簡版，修畫質 ══
+const AM={w:1080,h:1080,scriptIdx:null};
 let PR_BG_IMG=null;
 let PR_SCENE='studio';
-const PR_SCENE_PROMPTS={studio:'clean white studio background, minimal, professional product photography',lifestyle:'cozy home interior, warm living room, natural light, lifestyle photography',nature:'lush green nature, fresh botanical background, outdoor light, organic feel',food:'elegant dining table, wooden surface, soft food photography lighting, warm tones',luxury:'black marble surface, gold accents, luxury dark background, premium product shot',random:null};
-const PR_RANDOM_PROMPTS=['bright kitchen counter, morning light, fresh and clean','rustic wooden table, warm bokeh background, cozy atmosphere','modern minimalist concrete surface, cool tones, studio light','pastel gradient background, soft light, trendy aesthetic','outdoor market, vibrant colors, lively background'];
+const PR_SCENE_PROMPTS={
+  studio:'clean white studio background, minimal, professional product photography, pure white seamless backdrop',
+  lifestyle:'cozy home interior, warm living room, natural light, soft bokeh, lifestyle photography',
+  nature:'lush green nature, fresh botanical leaves background, outdoor soft light, organic feel',
+  food:'elegant dining table, wooden surface, soft food photography lighting, warm tones, natural props',
+  luxury:'dark black marble surface, gold accents, luxury dark background, premium product shot, moody lighting',
+  random:null
+};
+const PR_RANDOM_PROMPTS=[
+  'bright kitchen counter, morning light, fresh and clean, white tile',
+  'rustic wooden table, warm bokeh background, cozy cafe atmosphere',
+  'modern minimalist concrete surface, cool tones, studio light',
+  'pastel gradient background, soft diffused light, trendy aesthetic',
+  'scandinavian interior, white walls, oak wood shelf, minimalist'
+];
 
 function openAdMaker(idx){
-  PR_BG_IMG=null;setPrStatus('','');
-  const s=S.scripts[idx];AM.scriptIdx=idx;
+  PR_BG_IMG=null;
+  setPrStatus('','');
+  const s=S.scripts[idx];
+  AM.scriptIdx=idx;
   document.getElementById('amTitle').value=s.hook.script;
-  document.getElementById('amSub').value=s.core.script.slice(0,40)+(s.core.script.length>40?'…':'');
-  document.getElementById('amCta').value=s.cta.script;
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
-  document.getElementById('amPhotoName').textContent=photo?photo.name:'⚠️ 尚未選擇照片，將使用純色背景';
+  const nameEl=document.getElementById('amPhotoName');
+  const statusEl=document.getElementById('amPhotoStatus');
+  if(photo){
+    nameEl.textContent=photo.name;
+    nameEl.style.color='var(--sky)';
+    if(photo.src){
+      statusEl.textContent='✅ 高清圖已就緒';statusEl.style.color='var(--mint)';
+    }else{
+      statusEl.textContent='⏳ 高清圖載入中，稍後可用…';statusEl.style.color='var(--gold)';
+      // 持續等待高清圖
+      waitForHQ(photo,statusEl);
+    }
+  }else{
+    nameEl.textContent='⚠️ 尚未選擇照片';nameEl.style.color='var(--t3)';
+    statusEl.textContent='';
+  }
   document.getElementById('adMakerModal').style.display='block';
   renderAdCanvas();
 }
+
+function waitForHQ(photo,statusEl){
+  const timer=setInterval(()=>{
+    if(photo.src){
+      clearInterval(timer);
+      statusEl.textContent='✅ 高清圖已就緒';statusEl.style.color='var(--mint)';
+      renderAdCanvas();
+    }
+  },800);
+  // 最多等 30 秒
+  setTimeout(()=>clearInterval(timer),30000);
+}
+
 function closeAdMaker(){document.getElementById('adMakerModal').style.display='none';}
-function setSize(btn,w,h){document.querySelectorAll('.am-size-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');AM.w=w;AM.h=h;renderAdCanvas();}
-function setTpl(btn,tpl){document.querySelectorAll('.am-tpl-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');AM.tpl=tpl;renderAdCanvas();}
 function setPrScene(btn,scene){document.querySelectorAll('.pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
 function setPrStatus(msg,color){const el=document.getElementById('prStatus');if(el){el.textContent=msg;el.style.color=color||'var(--t3)';}}
 
+// ★ 取高清圖（優先 src，其次等待，最後才用 thumb）
+async function getPhotoBase64(){
+  const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
+  if(!photo)throw new Error('請先選擇產品照片');
+  // 高清圖已下載完成
+  if(photo.src&&photo.src.startsWith('data:'))return photo.src;
+  // 還在下載中 → 等最多 15 秒
+  if(!photo.src){
+    setPrStatus('⏳ 等待高清圖載入（最多15秒）…','var(--gold)');
+    await new Promise((resolve,reject)=>{
+      const start=Date.now();
+      const t=setInterval(()=>{
+        if(photo.src&&photo.src.startsWith('data:')){clearInterval(t);resolve();}
+        else if(Date.now()-start>15000){clearInterval(t);reject(new Error('高清圖載入逾時，請確認 Drive 已連結'));}
+      },500);
+    });
+    return photo.src;
+  }
+  // 最後嘗試用 thumbnail（畫質差但至少能跑）
+  if(photo.thumb){
+    setPrStatus('⚠️ 使用縮圖品質，建議連結 Drive 取高清','var(--gold)');
+    const res=await fetch(photo.thumb);
+    if(!res.ok)throw new Error('圖片無法載入');
+    const blob=await res.blob();
+    return await blobToBase64(blob);
+  }
+  throw new Error('照片無法取得，請確認已連結 Google Drive');
+}
+
+function blobToBase64(blob){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob);
+  });
+}
+
 async function applyPhotoroomBg(){
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
-  if(!photo){setPrStatus('⚠️ 請先選擇產品照片！','var(--red)');return;}
-  const imgSrc=photo.src||photo.thumb;
-  if(!imgSrc){setPrStatus('⚠️ 照片尚未載入完成，請稍後再試','var(--red)');return;}
+  if(!photo){setPrStatus('⚠️ 請先在右側選擇產品照片！','var(--red)');return;}
   const btn=document.getElementById('prApplyBtn');
   btn.disabled=true;btn.textContent='⏳ AI 處理中...';
-  setPrStatus('正在呼叫 Photoroom AI，請稍候...','var(--t3)');
+  setPrStatus('準備高清圖…','var(--t3)');
   try{
-    const blob=await urlToBlob(imgSrc);
+    const base64=await getPhotoBase64();
     let prompt=PR_SCENE_PROMPTS[PR_SCENE];
     if(!prompt)prompt=PR_RANDOM_PROMPTS[Math.floor(Math.random()*PR_RANDOM_PROMPTS.length)];
-    const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
-    // Photoroom 用 text/plain 避免 CORS preflight
-    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,width:AM.w,height:AM.h})});
+    setPrStatus('呼叫 Photoroom AI，請稍候（約15-30秒）…','var(--t3)');
+    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,width:AM.w,height:AM.h})});
     const prData=await resp.json();
-    if(!prData.ok)throw new Error(prData.error||'Photoroom 失敗');
+    if(!prData.ok)throw new Error(prData.error||'Photoroom API 回傳錯誤');
     PR_BG_IMG=prData.imageBase64;
     await renderAdCanvasWithPR();
     setPrStatus('✅ AI 換背景成功！','var(--mint)');
   }catch(e){
     setPrStatus('❌ '+(e.message||'發生錯誤'),'var(--red)');
+    console.error('[Photoroom]',e);
   }
   btn.disabled=false;btn.textContent='✨ AI 換背景';
 }
 
-async function urlToBlob(src){
-  if(src.startsWith('data:')){const res=await fetch(src);return res.blob();}
-  const res=await fetch(src);
-  if(!res.ok)throw new Error('圖片載入失敗');
-  return res.blob();
+// ══ Canvas 渲染 ══
+function autoLines(ctx,text,maxW){
+  const chars=[...text];let lines=[];let cur='';
+  for(const c of chars){
+    if(ctx.measureText(cur+c).width>maxW&&cur){lines.push(cur);cur=c;}else cur+=c;
+  }
+  if(cur)lines.push(cur);
+  return lines;
+}
+
+function getAccentColor(){
+  const brand=BRANDS.find(b=>b.id===S.brandId);
+  const sub=brand?.subs.find(s=>s.id===S.subId);
+  const key=sub?.color||brand?.navColor||'gold';
+  return {gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'}[key]||'#E4B84A';
+}
+
+async function drawImageOnCanvas(ctx,src){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const W=AM.w,H=AM.h;
+      const scale=Math.max(W/img.width,H/img.height);
+      const sw=img.width*scale,sh=img.height*scale;
+      ctx.drawImage(img,(W-sw)/2,(H-sh)/2,sw,sh);
+      resolve(true);
+    };
+    img.onerror=()=>resolve(false);
+    img.src=src;
+  });
+}
+
+// 極簡文字排版：底部大漸層 + 左對齊大標題 + 品牌名
+function drawCleanTitle(ctx,title,accent){
+  const W=AM.w,H=AM.h;
+  // 底部漸層遮罩
+  const grad=ctx.createLinearGradient(0,H*0.45,0,H);
+  grad.addColorStop(0,'rgba(0,0,0,0)');
+  grad.addColorStop(0.35,'rgba(0,0,0,0.55)');
+  grad.addColorStop(1,'rgba(0,0,0,0.88)');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+
+  if(!title.trim())return;
+
+  const pad=Math.round(W*0.07);
+  const maxW=W*0.86;
+  // 動態字級：根據字數縮放，最大96最小52
+  let fs=Math.max(52,Math.min(96,Math.round(96-(title.length>8?(title.length-8)*2.5:0))));
+  ctx.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;
+  // 確保不超過兩行
+  let lines=autoLines(ctx,title,maxW);
+  while(lines.length>3&&fs>52){fs-=4;ctx.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;lines=autoLines(ctx,title,maxW);}
+
+  const lineH=fs*1.22;
+  const totalH=lines.length*lineH;
+  const baseY=H-Math.round(H*0.09)-totalH+fs;
+
+  lines.forEach((line,i)=>{
+    ctx.shadowColor='rgba(0,0,0,0.85)';ctx.shadowBlur=22;ctx.shadowOffsetY=3;
+    ctx.fillStyle='#FFFFFF';ctx.textAlign='left';
+    ctx.fillText(line,pad,baseY+i*lineH);
+  });
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+
+  // 色彩底線
+  const lineY=baseY+(lines.length-1)*lineH+Math.round(16);
+  ctx.fillStyle=accent;ctx.fillRect(pad,lineY,Math.round(56),Math.round(4));
+
+  // 品牌名（右下角，輕量）
+  const brand=BRANDS.find(b=>b.id===S.brandId);
+  if(brand?.name){
+    ctx.font=`400 ${Math.round(20)}px 'Noto Sans TC',sans-serif`;
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.textAlign='right';
+    ctx.fillText(brand.name,W-pad,H-Math.round(28));
+  }
 }
 
 async function renderAdCanvas(){
   if(PR_BG_IMG){await renderAdCanvasWithPR();return;}
-  const canvas=document.getElementById('adCanvas');const ctx=canvas.getContext('2d');
+  const canvas=document.getElementById('adCanvas');
+  const ctx=canvas.getContext('2d');
   canvas.width=AM.w;canvas.height=AM.h;
   const title=document.getElementById('amTitle').value||'';
-  const brand=BRANDS.find(b=>b.id===S.brandId);
-  const subBrand=brand?.subs.find(s=>s.id===S.subId);
-  const colorKey=subBrand?.color||brand?.navColor||'gold';
-  const colorMap={gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'};
-  const accentColor=colorMap[colorKey]||'#E4B84A';
+  const accent=getAccentColor();
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
-  if(photo&&(photo.src||photo.thumb)){
-    const imgSrc=photo.src||photo.thumb;
-    await new Promise(resolve=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{const scale=Math.max(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=imgSrc;});
-  }else drawBgFallback(ctx,accentColor);
-  if(AM.tpl==='classic')drawClassic(ctx,title,accentColor);
-  else if(AM.tpl==='modern')drawModern(ctx,title,accentColor);
-  else drawBold(ctx,title,accentColor);
+  // 優先用高清 base64，其次 thumb
+  const src=photo?.src||photo?.thumb||null;
+  if(src){
+    const ok=await drawImageOnCanvas(ctx,src);
+    if(!ok)drawBgFallback(ctx,accent);
+  }else{
+    drawBgFallback(ctx,accent);
+  }
+  drawCleanTitle(ctx,title,accent);
 }
 
 async function renderAdCanvasWithPR(){
-  const canvas=document.getElementById('adCanvas');const ctx=canvas.getContext('2d');
+  const canvas=document.getElementById('adCanvas');
+  const ctx=canvas.getContext('2d');
   canvas.width=AM.w;canvas.height=AM.h;
   const title=document.getElementById('amTitle').value||'';
-  const brand=BRANDS.find(b=>b.id===S.brandId);
-  const subBrand=brand?.subs.find(s=>s.id===S.subId);
-  const colorKey=subBrand?.color||brand?.navColor||'gold';
-  const colorMap={gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'};
-  const accentColor=colorMap[colorKey]||'#E4B84A';
-  await new Promise(resolve=>{const img=new Image();img.onload=()=>{const scale=Math.max(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=PR_BG_IMG;});
-  if(AM.tpl==='classic')drawClassic(ctx,title,accentColor);
-  else if(AM.tpl==='modern')drawModern(ctx,title,accentColor);
-  else drawBold(ctx,title,accentColor);
+  const accent=getAccentColor();
+  const ok=await drawImageOnCanvas(ctx,PR_BG_IMG);
+  if(!ok)drawBgFallback(ctx,accent);
+  drawCleanTitle(ctx,title,accent);
 }
 
-function drawBgFallback(ctx,accent){const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);grad.addColorStop(0,'#1a1020');grad.addColorStop(1,'#0d0d1a');ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);}
-function autoLines(ctx,text,maxWidth){const chars=text.split('');const lines=[];let cur='';for(const c of chars){if(ctx.measureText(cur+c).width>maxWidth&&cur){lines.push(cur);cur=c;}else cur+=c;}if(cur)lines.push(cur);return lines;}
-function drawBrandSig(ctx,W,H,S2){const brand=BRANDS.find(b=>b.id===S.brandId);ctx.font=`400 ${Math.round(18*S2)}px 'Noto Sans TC'`;ctx.fillStyle='rgba(255,255,255,0.35)';ctx.textAlign='right';ctx.fillText(brand?.name||'',W-Math.round(32*S2),H-Math.round(24*S2));}
-function drawClassic(ctx,title,accent){
-  const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
-  const grad=ctx.createLinearGradient(0,H*0.38,0,H);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(0.4,'rgba(0,0,0,0.65)');grad.addColorStop(1,'rgba(0,0,0,0.92)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-  const ts=Math.round(94*S2);ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;ctx.textAlign='left';
-  const tx=Math.round(W*0.07);const lines=autoLines(ctx,title,W*0.86);const lineH=ts*1.18;const totalH=lines.length*lineH;const ty=H-Math.round(H*0.12)-totalH+ts;
-  lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=Math.round(18*S2);ctx.shadowOffsetY=Math.round(4*S2);ctx.fillStyle='#FFF';ctx.fillText(line,tx,ty+i*lineH);});
-  ctx.shadowColor='transparent';ctx.shadowBlur=0;
-  ctx.fillStyle=accent;ctx.fillRect(tx,ty+(lines.length-1)*lineH+Math.round(14*S2),Math.round(60*S2),Math.round(4*S2));
-  drawBrandSig(ctx,W,H,S2);
-}
-function drawModern(ctx,title,accent){
-  const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
-  const topGrad=ctx.createLinearGradient(0,0,0,H*0.5);topGrad.addColorStop(0,'rgba(0,0,0,0.82)');topGrad.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=topGrad;ctx.fillRect(0,0,W,H*0.5);
-  const botGrad=ctx.createLinearGradient(0,H*0.78,0,H);botGrad.addColorStop(0,'rgba(0,0,0,0)');botGrad.addColorStop(1,'rgba(0,0,0,0.72)');ctx.fillStyle=botGrad;ctx.fillRect(0,H*0.78,W,H*0.22);
-  ctx.fillStyle=accent;ctx.fillRect(0,0,W,Math.round(5*S2));
-  const ts=Math.round(90*S2);ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;ctx.textAlign='left';
-  const tx=Math.round(W*0.07);const lines=autoLines(ctx,title,W*0.86);const lineH=ts*1.2;
-  lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=Math.round(20*S2);ctx.fillStyle='#FFF';ctx.fillText(line,tx,Math.round(ts*1.1)+i*lineH);});
-  ctx.shadowColor='transparent';ctx.shadowBlur=0;
-  const brand=BRANDS.find(b=>b.id===S.brandId);ctx.font=`300 ${Math.round(22*S2)}px 'Noto Sans TC'`;ctx.fillStyle='rgba(255,255,255,0.6)';ctx.textAlign='left';ctx.fillText(S.prod?.name||brand?.name||'',tx,H-Math.round(28*S2));
-}
-function drawBold(ctx,title,accent){
-  const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
-  const grad=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.72);grad.addColorStop(0,'rgba(0,0,0,0.1)');grad.addColorStop(1,'rgba(0,0,0,0.82)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-  const ts=Math.round(88*S2);ctx.textAlign='center';ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;
-  const lines=autoLines(ctx,title,W*0.80);const lineH=ts*1.22;const totalH=lines.length*lineH;const startY=(H-totalH)/2+ts*0.5;
-  lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowBlur=Math.round(28*S2);ctx.fillStyle='#FFF';ctx.fillText(line,W/2,startY+i*lineH);});
-  ctx.shadowColor='transparent';ctx.shadowBlur=0;
-  const afterTitle=startY+(lines.length-1)*lineH+Math.round(20*S2);const lineW=Math.round(80*S2);ctx.fillStyle=accent;ctx.fillRect(W/2-lineW/2,afterTitle,lineW,Math.round(3*S2));
-  drawBrandSig(ctx,W,H,S2);
+function drawBgFallback(ctx,accent){
+  const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);
+  grad.addColorStop(0,'#16102a');grad.addColorStop(1,'#0a0a18');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);
+  // 輕微紋理感
+  ctx.fillStyle='rgba(255,255,255,0.015)';
+  for(let y=0;y<AM.h;y+=4){ctx.fillRect(0,y,AM.w,2);}
 }
 
 function downloadAd(){
   const canvas=document.getElementById('adCanvas');
   const brand=BRANDS.find(b=>b.id===S.brandId);
-  const filename=`${brand?.name||'ad'}_${S.prod?.name||'img'}_${AM.tpl}_${AM.w}x${AM.h}.jpg`.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
-  const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/jpeg',0.92);link.click();
+  const filename=`${brand?.name||'ad'}_${S.prod?.name||'img'}_${AM.w}x${AM.h}.jpg`.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
+  const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/jpeg',0.95);link.click();
   if(window._driveToken)uploadAdToDrive(canvas,filename);
 }
 async function uploadAdToDrive(canvas,filename){
