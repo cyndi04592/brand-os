@@ -163,9 +163,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .am-size-btn,.am-tpl-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg3);color:var(--t3);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;transition:all 0.2s;}
 .am-size-btn.on,.am-tpl-btn.on{border-color:var(--purple);color:var(--purple);background:var(--purple2);}
 .am-size-btn:hover,.am-tpl-btn:hover{border-color:var(--purple);color:var(--purple);}
-.pr-mode-btn{padding:5px 4px;border-radius:6px;border:1px solid var(--line2);background:var(--bg3);color:var(--t2);font-family:'Noto Sans TC';font-size:9px;cursor:pointer;transition:.15s;text-align:center;}
-.pr-mode-btn:hover{border-color:var(--purple);color:var(--purple);}
-.pr-mode-btn.on{background:rgba(157,110,248,0.2);border-color:var(--purple);color:var(--purple);font-weight:700;}
 .pr-scene-btn{padding:5px 4px;border-radius:6px;border:1px solid var(--line2);background:var(--bg3);color:var(--t2);font-family:'Noto Sans TC';font-size:9px;cursor:pointer;transition:.15s;text-align:center;}
 .pr-scene-btn:hover{border-color:var(--purple);color:var(--purple);}
 .pr-scene-btn.on{background:rgba(157,110,248,0.18);border-color:var(--purple);color:var(--purple);font-weight:700;}
@@ -226,7 +223,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;">
         <div class="sel-lbl">組數</div>
-        <select class="sel" id="selN" style="width:72px"><option>1組</option><option>5組</option><option>10組</option><option selected>20組</option></select>
+        <select class="sel" id="selN" style="width:72px"><option>10組</option><option selected>20組</option></select>
       </div>
       <button class="gen-btn" id="genBtn" onclick="doGenerate()">⚡ 生成腳本</button>
     </div>
@@ -286,54 +283,54 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 </div>
 
 <!-- Ad Maker Modal v4 — 全功能 Photoroom -->
-<div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999;overflow:auto;">
-  <div style="max-width:1080px;margin:20px auto;padding:16px;display:flex;gap:16px;flex-wrap:wrap;">
+<div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999;overflow-y:auto;">
+  <div style="max-width:1080px;margin:20px auto;padding:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
 
     <!-- 左側控制面板 -->
-    <div style="width:300px;flex-shrink:0;background:var(--bg2);border-radius:14px;border:1px solid var(--line2);padding:16px;display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;">
+    <div style="width:300px;flex-shrink:0;background:var(--bg2);border-radius:14px;border:1px solid var(--line2);padding:16px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 56px);overflow-y:auto;">
 
       <!-- 標題 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <span style="font-family:'Bebas Neue';font-size:17px;letter-spacing:3px;color:var(--purple)">🎨 廣告圖產生器</span>
         <button onclick="closeAdMaker()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;">✕</button>
       </div>
 
       <!-- 照片狀態 -->
-      <div style="padding:8px 10px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);">
+      <div style="padding:8px 10px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);flex-shrink:0;">
         <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:3px;">目前照片</div>
         <div id="amPhotoName" style="font-size:11px;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">尚未選擇</div>
         <div id="amPhotoStatus" style="font-size:9px;margin-top:3px;color:var(--t3);"></div>
       </div>
 
       <!-- 主標題 -->
-      <div>
+      <div style="flex-shrink:0;">
         <div class="sel-lbl">主標題文字</div>
         <textarea id="amTitle" rows="2" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:7px;outline:none;resize:none;margin-top:4px;line-height:1.6;" placeholder="廣告主標題" oninput="renderAdCanvas()"></textarea>
       </div>
 
       <!-- PHOTOROOM 功能選擇 -->
-      <div style="border:1px solid rgba(157,110,248,0.3);border-radius:10px;overflow:hidden;">
-        <div style="padding:8px 12px;background:rgba(157,110,248,0.12);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--purple);">✨ PHOTOROOM AI 功能</div>
+      <div style="border:1px solid rgba(157,110,248,0.3);border-radius:10px;overflow:hidden;flex-shrink:0;">
+        <div style="padding:7px 12px;background:rgba(157,110,248,0.12);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--purple);">✨ PHOTOROOM AI 功能</div>
 
         <!-- 模式選擇 -->
-        <div style="padding:10px 12px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">功能模式</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;" id="prModeGrid">
-            <button class="pr-mode-btn on" onclick="setPrMode(this,'ai_bg')" data-mode="ai_bg">🌄 AI情境背景</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'white_bg')" data-mode="white_bg">⬜ 純白去背</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'relight')" data-mode="relight">💡 AI重新打光</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'shadow_only')" data-mode="shadow_only">🌑 加陰影</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'remove_text')" data-mode="remove_text">🔤 去文字/浮水印</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'expand')" data-mode="expand">↔️ AI擴展畫布</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'beautify')" data-mode="beautify">✨ AI美顏人像</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'transparent_bg')" data-mode="transparent_bg">🔲 透明去背PNG</button>
+        <div style="padding:8px 10px;border-bottom:1px solid var(--line);">
+          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:5px;">功能模式</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+            <button class="pr-mode-btn on" onclick="setPrMode(this,'ai_bg')">🌄 AI情境背景</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'white_bg')">⬜ 純白去背</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'relight')">💡 AI重新打光</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'shadow_only')">🌑 加陰影</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'remove_text')">🔤 去文字/浮水印</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'expand')">↔️ AI擴展畫布</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'beautify')">✨ AI美顏人像</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'transparent_bg')">🔲 透明去背PNG</button>
           </div>
         </div>
 
-        <!-- AI背景 場景選擇（只有 ai_bg 顯示）-->
-        <div id="prSceneSection" style="padding:10px 12px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">AI 背景場景</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <!-- AI背景場景 -->
+        <div id="prSceneSection" style="padding:8px 10px;border-bottom:1px solid var(--line);">
+          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:5px;">AI 背景場景</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
             <button class="pr-scene-btn on" onclick="setPrScene(this,'studio')">🎨 乾淨白底</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'lifestyle')">🏡 生活情境</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'nature')">🌿 自然清新</button>
@@ -343,26 +340,21 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
             <button class="pr-scene-btn" onclick="setPrScene(this,'minimal')">◻️ 極簡灰調</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'random')">🎲 隨機驚喜</button>
           </div>
-          <!-- 自訂 prompt -->
-          <div style="margin-top:6px;">
-            <input id="prCustomPrompt" type="text" placeholder="或輸入自訂場景描述（英文效果更好）" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;">
-          </div>
+          <input id="prCustomPrompt" type="text" placeholder="或輸入自訂場景（英文效果更好）" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;margin-top:5px;">
         </div>
 
         <!-- 模式說明 -->
-        <div id="prModeDesc" style="padding:8px 12px;font-size:9px;color:var(--t3);line-height:1.6;">
-          選擇 AI 情境背景：自動去背，生成逼真情境背景，加柔和陰影
-        </div>
+        <div id="prModeDesc" style="padding:6px 10px;font-size:9px;color:var(--t3);line-height:1.5;">選擇 AI 情境背景：自動去背，生成逼真情境背景，加柔和陰影</div>
 
         <!-- 執行按鈕 -->
-        <div style="padding:10px 12px;">
-          <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:10px;border-radius:7px;background:linear-gradient(135deg,var(--purple),#4DC8F0);border:none;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">✨ 套用 AI 效果</button>
-          <div id="prStatus" style="font-size:9px;color:var(--t3);text-align:center;margin-top:5px;min-height:14px;"></div>
+        <div style="padding:8px 10px;">
+          <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:9px;border-radius:7px;background:linear-gradient(135deg,var(--purple),#4DC8F0);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;">✨ 套用 AI 效果</button>
+          <div id="prStatus" style="font-size:9px;color:var(--t3);text-align:center;margin-top:4px;min-height:14px;"></div>
         </div>
       </div>
 
       <!-- 下載 -->
-      <button id="adDownloadBtn" onclick="downloadAd()" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,var(--purple),#6A3FD8);border:none;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">⬇️ 下載廣告圖</button>
+      <button id="adDownloadBtn" onclick="downloadAd()" style="width:100%;padding:9px;border-radius:8px;background:linear-gradient(135deg,var(--purple),#6A3FD8);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;flex-shrink:0;">⬇️ 下載廣告圖</button>
     </div>
 
     <!-- 右側預覽 -->
@@ -373,7 +365,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 
   </div>
 </div>
-
 </div>
 
 <script>
@@ -665,201 +656,138 @@ function copyTSV(btn){
   fetch('https://hook.us2.make.com/7hiqiin98rlh61t9a56a9t7w6tcm3i4s',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scripts:S.delivers.map(r=>({id:r.id,product:r.product,hook:r.hookScript,core:r.coreScript,cta:r.ctaScript,photoName:r.photoName,photoUrl:r.photoUrl,videoName:r.videoName,videoUrl:r.videoUrl,status:r.ready?'素材已備妥':'缺素材',timestamp:new Date().toISOString()}))})}).catch(()=>{});
 }
 
-// ══ AD MAKER v4 — 全功能 Photoroom ══
-const AM={w:1080,h:1080,scriptIdx:null};
+// ══ AD MAKER ══
+let AM={w:1080,h:1080,tpl:'classic',scriptIdx:null};
 let PR_BG_IMG=null;
 let PR_SCENE='studio';
-let PR_MODE='ai_bg';
-
-const PR_MODE_DESC={
-  ai_bg:          '選擇 AI 情境背景：自動去背，生成逼真情境背景，加柔和陰影',
-  white_bg:       '純白去背：乾淨白色背景，適合電商/Google Shopping',
-  relight:        'AI重新打光：重新模擬專業攝影棚打光，讓產品更有質感',
-  shadow_only:    '加陰影：保留原背景，只加逼真AI柔和陰影',
-  remove_text:    '去文字/浮水印：AI自動移除圖片上的文字或浮水印',
-  expand:         'AI擴展畫布：智慧填充延伸畫面，把直圖變方圖',
-  beautify:       'AI美顏人像：自動美顏優化，適合人物照片',
-  transparent_bg: '透明去背PNG：輸出透明背景PNG，方便設計師後製'
-};
-
-const PR_SCENE_PROMPTS={
-  studio:   'clean white studio background, minimal, professional product photography, pure white seamless backdrop',
-  lifestyle:'cozy home interior, warm living room, natural light, soft bokeh, lifestyle photography',
-  nature:   'lush green nature, fresh botanical leaves, outdoor soft light, organic fresh feel',
-  food:     'elegant dining table, wooden surface, soft food photography lighting, warm tones, restaurant props',
-  luxury:   'dark black marble surface, gold accents, luxury moody dark background, premium editorial',
-  outdoor:  'modern city street, bokeh background, outdoor daylight, lifestyle urban photography',
-  minimal:  'clean light grey gradient background, soft studio light, minimalist product shot',
-  random:   null
-};
-const PR_RANDOM_PROMPTS=[
-  'bright Scandinavian kitchen, morning light, white tiles, fresh and clean',
-  'rustic wooden table, warm bokeh, cozy cafe atmosphere, coffee shop',
-  'modern minimalist concrete surface, cool grey tones, studio light',
-  'pastel gradient background, soft diffused light, trendy aesthetic',
-  'japanese minimal interior, white walls, oak wood, warm afternoon light'
-];
+const PR_SCENE_PROMPTS={studio:'clean white studio background, minimal, professional product photography',lifestyle:'cozy home interior, warm living room, natural light, lifestyle photography',nature:'lush green nature, fresh botanical background, outdoor light, organic feel',food:'elegant dining table, wooden surface, soft food photography lighting, warm tones',luxury:'black marble surface, gold accents, luxury dark background, premium product shot',random:null};
+const PR_RANDOM_PROMPTS=['bright kitchen counter, morning light, fresh and clean','rustic wooden table, warm bokeh background, cozy atmosphere','modern minimalist concrete surface, cool tones, studio light','pastel gradient background, soft light, trendy aesthetic','outdoor market, vibrant colors, lively background'];
 
 function openAdMaker(idx){
   PR_BG_IMG=null;setPrStatus('','');
   const s=S.scripts[idx];AM.scriptIdx=idx;
   document.getElementById('amTitle').value=s.hook.script;
+  document.getElementById('amSub').value=s.core.script.slice(0,40)+(s.core.script.length>40?'…':'');
+  document.getElementById('amCta').value=s.cta.script;
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
-  const nameEl=document.getElementById('amPhotoName');
-  const statusEl=document.getElementById('amPhotoStatus');
-  if(photo){
-    nameEl.textContent=photo.name;nameEl.style.color='var(--sky)';
-    if(photo.hqReady){statusEl.textContent='✅ 高清圖已就緒';statusEl.style.color='var(--mint)';}
-    else if(photo.hqError){statusEl.textContent='⚠️ 高清圖失敗';statusEl.style.color='var(--red)';}
-    else if(photo.thumb){statusEl.textContent='⏳ 高清圖下載中…';statusEl.style.color='var(--gold)';waitForHQ(photo,statusEl);}
-    else{statusEl.textContent='⚠️ 請確認 Drive 已連結';statusEl.style.color='var(--red)';}
-  }else{
-    nameEl.textContent='⚠️ 尚未選擇照片';nameEl.style.color='var(--t3)';
-    statusEl.textContent='← 請先在右側點選一張照片';statusEl.style.color='var(--t3)';
-  }
+  document.getElementById('amPhotoName').textContent=photo?photo.name:'⚠️ 尚未選擇照片，將使用純色背景';
   document.getElementById('adMakerModal').style.display='block';
   renderAdCanvas();
 }
-function waitForHQ(photo,statusEl){
-  const timer=setInterval(()=>{
-    if(photo.hqReady){clearInterval(timer);statusEl.textContent='✅ 高清圖已就緒';statusEl.style.color='var(--mint)';renderAdCanvas();}
-    else if(photo.hqError){clearInterval(timer);statusEl.textContent='⚠️ 失敗：'+photo.hqError;statusEl.style.color='var(--red)';}
-  },600);
-  setTimeout(()=>{clearInterval(timer);if(!photo.hqReady&&!photo.hqError){photo.hqReady=true;photo.src=photo.src||photo.thumb;statusEl.textContent='⚠️ 較慢，改用縮圖';statusEl.style.color='var(--gold)';renderAdCanvas();}},60000);
-}
 function closeAdMaker(){document.getElementById('adMakerModal').style.display='none';}
-function setPrMode(btn,mode){
-  document.querySelectorAll('.pr-mode-btn').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');PR_MODE=mode;
-  const desc=document.getElementById('prModeDesc');
-  if(desc)desc.textContent=PR_MODE_DESC[mode]||'';
-  // ai_bg 才顯示場景選擇
-  const sceneSection=document.getElementById('prSceneSection');
-  if(sceneSection)sceneSection.style.display=(mode==='ai_bg')?'block':'none';
-}
+function setSize(btn,w,h){document.querySelectorAll('.am-size-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');AM.w=w;AM.h=h;renderAdCanvas();}
+function setTpl(btn,tpl){document.querySelectorAll('.am-tpl-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');AM.tpl=tpl;renderAdCanvas();}
 function setPrScene(btn,scene){document.querySelectorAll('.pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
 function setPrStatus(msg,color){const el=document.getElementById('prStatus');if(el){el.textContent=msg;el.style.color=color||'var(--t3)';}}
-
-async function getPhotoBase64(){
-  const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
-  if(!photo)throw new Error('請先選擇產品照片');
-  if(photo.hqReady&&photo.src&&photo.src.startsWith('data:'))return photo.src;
-  if(!photo.hqReady&&!photo.hqError){
-    setPrStatus('⏳ 等待高清圖（最多60秒）…','var(--gold)');
-    await new Promise((resolve,reject)=>{
-      const start=Date.now();
-      const t=setInterval(()=>{
-        if(photo.hqReady){clearInterval(t);resolve();}
-        else if(photo.hqError){clearInterval(t);reject(new Error('高清圖失敗：'+photo.hqError));}
-        else if(Date.now()-start>60000){clearInterval(t);photo.hqReady=true;photo.src=photo.src||photo.thumb;resolve();}
-      },500);
-    });
-    return photo.src;
-  }
-  return photo.src||photo.thumb;
-}
 
 async function applyPhotoroomBg(){
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   if(!photo){setPrStatus('⚠️ 請先選擇產品照片！','var(--red)');return;}
+  const imgSrc=photo.src||photo.thumb;
+  if(!imgSrc){setPrStatus('⚠️ 照片尚未載入完成，請稍後再試','var(--red)');return;}
   const btn=document.getElementById('prApplyBtn');
   btn.disabled=true;btn.textContent='⏳ AI 處理中...';
-  setPrStatus('準備高清圖…','var(--t3)');
+  setPrStatus('正在呼叫 Photoroom AI，請稍候...','var(--t3)');
   try{
-    const base64=await getPhotoBase64();
-    // 取得 bgPrompt（自訂或預設）
-    const customPrompt=document.getElementById('prCustomPrompt')?.value?.trim();
-    let bgPrompt=customPrompt||PR_SCENE_PROMPTS[PR_SCENE];
-    if(!bgPrompt)bgPrompt=PR_RANDOM_PROMPTS[Math.floor(Math.random()*PR_RANDOM_PROMPTS.length)];
-    setPrStatus(`套用 ${PR_MODE_DESC[PR_MODE]?.split('：')[0]}…`,'var(--t3)');
-    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,
-        imageBase64:base64,mode:PR_MODE,bgPrompt:bgPrompt,width:AM.w,height:AM.h})});
+    const blob=await urlToBlob(imgSrc);
+    let prompt=PR_SCENE_PROMPTS[PR_SCENE];
+    if(!prompt)prompt=PR_RANDOM_PROMPTS[Math.floor(Math.random()*PR_RANDOM_PROMPTS.length)];
+    const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
+    // Photoroom 用 text/plain 避免 CORS preflight
+    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,width:AM.w,height:AM.h})});
     const prData=await resp.json();
     if(!prData.ok)throw new Error(prData.error||'Photoroom 失敗');
     PR_BG_IMG=prData.imageBase64;
     await renderAdCanvasWithPR();
-    setPrStatus('✅ AI 效果套用成功！','var(--mint)');
+    setPrStatus('✅ AI 換背景成功！','var(--mint)');
   }catch(e){
     setPrStatus('❌ '+(e.message||'發生錯誤'),'var(--red)');
-    console.error('[Photoroom]',e);
   }
-  btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
+  btn.disabled=false;btn.textContent='✨ AI 換背景';
 }
 
-// Canvas 渲染
-function getAccentColor(){
-  const brand=BRANDS.find(b=>b.id===S.brandId);
-  const sub=brand?.subs.find(s=>s.id===S.subId);
-  const key=sub?.color||brand?.navColor||'gold';
-  return {gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'}[key]||'#E4B84A';
+async function urlToBlob(src){
+  if(src.startsWith('data:')){const res=await fetch(src);return res.blob();}
+  const res=await fetch(src);
+  if(!res.ok)throw new Error('圖片載入失敗');
+  return res.blob();
 }
-async function drawImg(ctx,src){
-  return new Promise(resolve=>{
-    const img=new Image();
-    img.onload=()=>{
-      const W=AM.w,H=AM.h;
-      const bgS=Math.max(W/img.width,H/img.height);
-      ctx.save();ctx.filter='blur(28px) brightness(0.45) saturate(0.7)';
-      ctx.drawImage(img,(W-img.width*bgS)/2,(H-img.height*bgS)/2,img.width*bgS,img.height*bgS);
-      ctx.restore();
-      const fgS=Math.min(W/img.width,H/img.height);
-      ctx.drawImage(img,(W-img.width*fgS)/2,(H-img.height*fgS)/2,img.width*fgS,img.height*fgS);
-      resolve(true);
-    };
-    img.onerror=()=>resolve(false);
-    img.src=src;
-  });
-}
-function drawTitle(ctx,title,accent){
-  const W=AM.w,H=AM.h;
-  const grad=ctx.createLinearGradient(0,H*0.42,0,H);
-  grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(0.3,'rgba(0,0,0,0.55)');grad.addColorStop(1,'rgba(0,0,0,0.9)');
-  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-  if(!title.trim())return;
-  const pad=Math.round(W*0.07),maxW=W*0.85;
-  let fs=Math.max(52,Math.min(96,Math.round(96-(title.length>7?(title.length-7)*3:0))));
-  ctx.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;
-  const autoLines=(t,mw)=>{const chars=[...t];let lines=[],cur='';for(const c of chars){if(ctx.measureText(cur+c).width>mw&&cur){lines.push(cur);cur=c;}else cur+=c;}if(cur)lines.push(cur);return lines;};
-  let lines=autoLines(title,maxW);
-  while(lines.length>3&&fs>52){fs-=4;ctx.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;lines=autoLines(title,maxW);}
-  const lineH=fs*1.22,baseY=H-Math.round(H*0.09)-(lines.length-1)*lineH;
-  lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=24;ctx.shadowOffsetY=3;ctx.fillStyle='#FFF';ctx.textAlign='left';ctx.fillText(line,pad,baseY+i*lineH);});
-  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-  ctx.fillStyle=accent;ctx.fillRect(pad,baseY+(lines.length-1)*lineH+16,52,4);
-  const brand=BRANDS.find(b=>b.id===S.brandId);
-  if(brand?.name){ctx.font=`400 19px 'Noto Sans TC'`;ctx.fillStyle='rgba(255,255,255,0.36)';ctx.textAlign='right';ctx.fillText(brand.name,W-pad,H-26);}
-}
-function drawFallback(ctx){
-  const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);grad.addColorStop(0,'#16102a');grad.addColorStop(1,'#0a0a18');
-  ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);
-}
+
 async function renderAdCanvas(){
   if(PR_BG_IMG){await renderAdCanvasWithPR();return;}
   const canvas=document.getElementById('adCanvas');const ctx=canvas.getContext('2d');
   canvas.width=AM.w;canvas.height=AM.h;
   const title=document.getElementById('amTitle').value||'';
-  const accent=getAccentColor();
+  const brand=BRANDS.find(b=>b.id===S.brandId);
+  const subBrand=brand?.subs.find(s=>s.id===S.subId);
+  const colorKey=subBrand?.color||brand?.navColor||'gold';
+  const colorMap={gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'};
+  const accentColor=colorMap[colorKey]||'#E4B84A';
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
-  const src=photo?.src||photo?.thumb||null;
-  if(src){const ok=await drawImg(ctx,src);if(!ok)drawFallback(ctx);}else drawFallback(ctx);
-  drawTitle(ctx,title,accent);
+  if(photo&&(photo.src||photo.thumb)){
+    const imgSrc=photo.src||photo.thumb;
+    await new Promise(resolve=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{const scale=Math.max(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=imgSrc;});
+  }else drawBgFallback(ctx,accentColor);
+  if(AM.tpl==='classic')drawClassic(ctx,title,accentColor);
+  else if(AM.tpl==='modern')drawModern(ctx,title,accentColor);
+  else drawBold(ctx,title,accentColor);
 }
+
 async function renderAdCanvasWithPR(){
   const canvas=document.getElementById('adCanvas');const ctx=canvas.getContext('2d');
   canvas.width=AM.w;canvas.height=AM.h;
   const title=document.getElementById('amTitle').value||'';
-  const accent=getAccentColor();
-  const ok=await drawImg(ctx,PR_BG_IMG);
-  if(!ok)drawFallback(ctx);
-  drawTitle(ctx,title,accent);
+  const brand=BRANDS.find(b=>b.id===S.brandId);
+  const subBrand=brand?.subs.find(s=>s.id===S.subId);
+  const colorKey=subBrand?.color||brand?.navColor||'gold';
+  const colorMap={gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'};
+  const accentColor=colorMap[colorKey]||'#E4B84A';
+  await new Promise(resolve=>{const img=new Image();img.onload=()=>{const scale=Math.max(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=PR_BG_IMG;});
+  if(AM.tpl==='classic')drawClassic(ctx,title,accentColor);
+  else if(AM.tpl==='modern')drawModern(ctx,title,accentColor);
+  else drawBold(ctx,title,accentColor);
+}
+
+function drawBgFallback(ctx,accent){const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);grad.addColorStop(0,'#1a1020');grad.addColorStop(1,'#0d0d1a');ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);}
+function autoLines(ctx,text,maxWidth){const chars=text.split('');const lines=[];let cur='';for(const c of chars){if(ctx.measureText(cur+c).width>maxWidth&&cur){lines.push(cur);cur=c;}else cur+=c;}if(cur)lines.push(cur);return lines;}
+function drawBrandSig(ctx,W,H,S2){const brand=BRANDS.find(b=>b.id===S.brandId);ctx.font=`400 ${Math.round(18*S2)}px 'Noto Sans TC'`;ctx.fillStyle='rgba(255,255,255,0.35)';ctx.textAlign='right';ctx.fillText(brand?.name||'',W-Math.round(32*S2),H-Math.round(24*S2));}
+function drawClassic(ctx,title,accent){
+  const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
+  const grad=ctx.createLinearGradient(0,H*0.38,0,H);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(0.4,'rgba(0,0,0,0.65)');grad.addColorStop(1,'rgba(0,0,0,0.92)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+  const ts=Math.round(94*S2);ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;ctx.textAlign='left';
+  const tx=Math.round(W*0.07);const lines=autoLines(ctx,title,W*0.86);const lineH=ts*1.18;const totalH=lines.length*lineH;const ty=H-Math.round(H*0.12)-totalH+ts;
+  lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=Math.round(18*S2);ctx.shadowOffsetY=Math.round(4*S2);ctx.fillStyle='#FFF';ctx.fillText(line,tx,ty+i*lineH);});
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;
+  ctx.fillStyle=accent;ctx.fillRect(tx,ty+(lines.length-1)*lineH+Math.round(14*S2),Math.round(60*S2),Math.round(4*S2));
+  drawBrandSig(ctx,W,H,S2);
+}
+function drawModern(ctx,title,accent){
+  const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
+  const topGrad=ctx.createLinearGradient(0,0,0,H*0.5);topGrad.addColorStop(0,'rgba(0,0,0,0.82)');topGrad.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=topGrad;ctx.fillRect(0,0,W,H*0.5);
+  const botGrad=ctx.createLinearGradient(0,H*0.78,0,H);botGrad.addColorStop(0,'rgba(0,0,0,0)');botGrad.addColorStop(1,'rgba(0,0,0,0.72)');ctx.fillStyle=botGrad;ctx.fillRect(0,H*0.78,W,H*0.22);
+  ctx.fillStyle=accent;ctx.fillRect(0,0,W,Math.round(5*S2));
+  const ts=Math.round(90*S2);ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;ctx.textAlign='left';
+  const tx=Math.round(W*0.07);const lines=autoLines(ctx,title,W*0.86);const lineH=ts*1.2;
+  lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=Math.round(20*S2);ctx.fillStyle='#FFF';ctx.fillText(line,tx,Math.round(ts*1.1)+i*lineH);});
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;
+  const brand=BRANDS.find(b=>b.id===S.brandId);ctx.font=`300 ${Math.round(22*S2)}px 'Noto Sans TC'`;ctx.fillStyle='rgba(255,255,255,0.6)';ctx.textAlign='left';ctx.fillText(S.prod?.name||brand?.name||'',tx,H-Math.round(28*S2));
+}
+function drawBold(ctx,title,accent){
+  const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
+  const grad=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.72);grad.addColorStop(0,'rgba(0,0,0,0.1)');grad.addColorStop(1,'rgba(0,0,0,0.82)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+  const ts=Math.round(88*S2);ctx.textAlign='center';ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;
+  const lines=autoLines(ctx,title,W*0.80);const lineH=ts*1.22;const totalH=lines.length*lineH;const startY=(H-totalH)/2+ts*0.5;
+  lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowBlur=Math.round(28*S2);ctx.fillStyle='#FFF';ctx.fillText(line,W/2,startY+i*lineH);});
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;
+  const afterTitle=startY+(lines.length-1)*lineH+Math.round(20*S2);const lineW=Math.round(80*S2);ctx.fillStyle=accent;ctx.fillRect(W/2-lineW/2,afterTitle,lineW,Math.round(3*S2));
+  drawBrandSig(ctx,W,H,S2);
 }
 
 function downloadAd(){
   const canvas=document.getElementById('adCanvas');
   const brand=BRANDS.find(b=>b.id===S.brandId);
   const filename=`${brand?.name||'ad'}_${S.prod?.name||'img'}_${AM.tpl}_${AM.w}x${AM.h}.jpg`.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
-  const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/jpeg',0.95);link.click();
+  const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/jpeg',0.92);link.click();
   if(window._driveToken)uploadAdToDrive(canvas,filename);
 }
 async function uploadAdToDrive(canvas,filename){
