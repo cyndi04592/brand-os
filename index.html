@@ -318,6 +318,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       <!-- PHOTOROOM 功能選擇 -->
       <div style="border:1px solid rgba(157,110,248,0.3);border-radius:10px;overflow:hidden;flex-shrink:0;">
         <div style="padding:7px 12px;background:rgba(232,96,58,0.1);font-size:9px;font-weight:700;letter-spacing:2px;color:#E8603A;">✨ PHOTOROOM AI 功能</div>
+        <div style="padding:5px 12px;background:rgba(255,200,0,0.06);border-bottom:1px solid var(--line);font-size:9px;color:#A08040;line-height:1.5;">⚠️ 目前為 Sandbox 模式：僅支援去背功能。換背景場景需升級 Photoroom 正式 API Key。</div>
 
         <!-- 模式選擇 -->
         <div style="padding:8px 10px;border-bottom:1px solid var(--line);">
@@ -662,12 +663,18 @@ function copyTSV(btn){
 // ══ AD MAKER ══
 let AM={w:1080,h:1080,tpl:'classic',scriptIdx:null};
 let PR_BG_IMG=null;
+let PR_MODE='ai_bg';
 let PR_SCENE='studio';
 const PR_SCENE_PROMPTS={studio:'clean white studio background, minimal, professional product photography',lifestyle:'cozy home interior, warm living room, natural light, lifestyle photography',nature:'lush green nature, fresh botanical background, outdoor light, organic feel',food:'elegant dining table, wooden surface, soft food photography lighting, warm tones',luxury:'black marble surface, gold accents, luxury dark background, premium product shot',outdoor:'urban city street background, modern architecture, outdoor natural light, lifestyle',minimal:'soft gray gradient background, minimal clean studio, neutral tones, product photography',random:null};
 const PR_RANDOM_PROMPTS=['bright kitchen counter, morning light, fresh and clean','rustic wooden table, warm bokeh background, cozy atmosphere','modern minimalist concrete surface, cool tones, studio light','pastel gradient background, soft light, trendy aesthetic','outdoor market, vibrant colors, lively background'];
 
 function openAdMaker(idx){
-  PR_BG_IMG=null;setPrStatus('','');
+  PR_BG_IMG=null;PR_MODE='ai_bg';setPrStatus('','');
+  // 重置所有模式按鈕
+  document.querySelectorAll('.pr-mode-btn').forEach(b=>b.classList.remove('on'));
+  const firstModeBtn=document.querySelector('.pr-mode-btn');
+  if(firstModeBtn)firstModeBtn.classList.add('on');
+  document.querySelectorAll('.pr-mode-btn,.pr-scene-btn').forEach(b=>b.disabled=false);
   const s=S.scripts[idx];AM.scriptIdx=idx;
   document.getElementById('amTitle').value=s.hook.script;
   document.getElementById('amPhotoName').textContent=S.selPhoto!==null?S.photos[S.selPhoto].name:'⚠️ 尚未選擇照片，將使用純色背景';
@@ -675,6 +682,27 @@ function openAdMaker(idx){
   renderAdCanvas();
 }
 function closeAdMaker(){document.getElementById('adMakerModal').style.display='none';}
+function setPrMode(btn,mode){
+  document.querySelectorAll('.pr-mode-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  PR_MODE=mode;
+  // 只有 ai_bg 模式才顯示場景選擇區
+  const sceneSection=document.getElementById('prSceneSection');
+  if(sceneSection)sceneSection.style.display=(mode==='ai_bg'?'block':'none');
+  // 更新說明文字
+  const desc=document.getElementById('prModeDesc');
+  const descs={
+    ai_bg:'AI 情境背景：自動去背，套用場景背景（需正式API Key）',
+    white_bg:'純白去背：移除背景，換成乾淨白色底',
+    relight:'AI 重新打光：調整產品光影效果（需正式API Key）',
+    shadow_only:'加陰影：為產品加自然落影',
+    remove_text:'去文字/浮水印：移除圖片上的文字（需正式API Key）',
+    expand:'AI 擴展畫布：向外延伸擴展圖片（需正式API Key）',
+    beautify:'AI 美顏人像：人像美化處理（需正式API Key）',
+    transparent_bg:'透明去背 PNG：去背輸出透明底 PNG'
+  };
+  if(desc)desc.textContent=descs[mode]||'';
+}
 function setPrScene(btn,scene){document.querySelectorAll('.pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
 function setPrStatus(msg,color){const el=document.getElementById('prStatus');if(el){el.textContent=msg;el.style.color=color||'var(--t3)';}}
 
@@ -685,6 +713,7 @@ async function applyPhotoroomBg(){
   if(!imgSrc){setPrStatus('⚠️ 照片尚未載入完成，請稍後再試','var(--red)');return;}
   const btn=document.getElementById('prApplyBtn');
   btn.disabled=true;btn.textContent='⏳ AI 處理中...';
+  document.querySelectorAll('.pr-mode-btn,.pr-scene-btn').forEach(b=>b.disabled=false);
   setPrStatus('正在呼叫 Photoroom AI，請稍候...','var(--t3)');
   try{
     const blob=await urlToBlob(imgSrc);
@@ -702,6 +731,8 @@ async function applyPhotoroomBg(){
     setPrStatus('❌ '+(e.message||'發生錯誤'),'var(--red)');
   }
   btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
+  // 解除所有 mode/scene btn 的 disabled
+  document.querySelectorAll('.pr-mode-btn,.pr-scene-btn').forEach(b=>b.disabled=false);
 }
 
 async function urlToBlob(src){
@@ -724,7 +755,7 @@ async function renderAdCanvas(){
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   if(photo&&(photo.src||photo.thumb)){
     const imgSrc=photo.src||photo.thumb;
-    await new Promise(resolve=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{const scale=Math.max(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=imgSrc;});
+    await new Promise(resolve=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{const scale=Math.min(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=imgSrc;});
   }else drawBgFallback(ctx,accentColor);
   drawClassic(ctx,title,accentColor);
 }
@@ -738,7 +769,7 @@ async function renderAdCanvasWithPR(){
   const colorKey=subBrand?.color||brand?.navColor||'gold';
   const colorMap={gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'};
   const accentColor=colorMap[colorKey]||'#E4B84A';
-  await new Promise(resolve=>{const img=new Image();img.onload=()=>{const scale=Math.max(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=PR_BG_IMG;});
+  await new Promise(resolve=>{const img=new Image();img.onload=()=>{const scale=Math.min(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=PR_BG_IMG;});
   drawClassic(ctx,title,accentColor);
 }
 
