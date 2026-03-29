@@ -224,8 +224,20 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       <div style="display:flex;flex-direction:column;gap:2px;">
         <div class="sel-lbl">目標受眾</div>
         <select class="sel" id="selAud">
-          <option>媽媽族群／家庭主婦</option><option>銀髮族／養生族</option><option>上班族／久坐族</option>
-          <option>健身運動族</option><option>Z世代零嘴族</option><option>一般消費者</option>
+          <option>媽媽族群／家庭主婦</option>
+          <option>新手爸媽／育兒家庭</option>
+          <option>銀髮族／養生族</option>
+          <option>上班族／久坐族</option>
+          <option>健身運動族</option>
+          <option>Z世代零嘴族</option>
+          <option>學生族群</option>
+          <option>小資族／省錢族</option>
+          <option>寵物主人</option>
+          <option>居家生活愛好者</option>
+          <option>戶外露營族</option>
+          <option>美食饕客</option>
+          <option>科技愛好者</option>
+          <option>一般消費者</option>
         </select>
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;">
@@ -313,12 +325,29 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       <div style="flex-shrink:0;">
         <div class="sel-lbl">主標題文字</div>
         <textarea id="amTitle" rows="2" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:7px;outline:none;resize:none;margin-top:4px;line-height:1.6;" placeholder="廣告主標題" oninput="renderAdCanvas()"></textarea>
+        <!-- 文字控制 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
+          <div>
+            <div class="sel-lbl">文字大小</div>
+            <input type="range" id="amFontSize" min="40" max="160" value="94" style="width:100%;accent-color:#E8603A;" oninput="document.getElementById('amFontSizeVal').textContent=this.value+'px';renderAdCanvas()">
+            <span id="amFontSizeVal" style="font-size:9px;color:var(--t3);">94px</span>
+          </div>
+          <div>
+            <div class="sel-lbl">垂直位置</div>
+            <input type="range" id="amTextY" min="10" max="90" value="80" style="width:100%;accent-color:#E8603A;" oninput="document.getElementById('amTextYVal').textContent=this.value+'%';renderAdCanvas()">
+            <span id="amTextYVal" style="font-size:9px;color:var(--t3);">80%</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px;">
+          <button onclick="setTextAlign('left',this)" class="pr-scene-btn on" id="alignLeft">⬅ 靠左</button>
+          <button onclick="setTextAlign('center',this)" class="pr-scene-btn" id="alignCenter">⬛ 置中</button>
+          <button onclick="setTextAlign('right',this)" class="pr-scene-btn" id="alignRight">➡ 靠右</button>
+        </div>
       </div>
 
       <!-- PHOTOROOM 功能選擇 -->
       <div style="border:1px solid rgba(157,110,248,0.3);border-radius:10px;overflow:hidden;flex-shrink:0;">
         <div style="padding:7px 12px;background:rgba(232,96,58,0.1);font-size:9px;font-weight:700;letter-spacing:2px;color:#E8603A;">✨ AI 影像處理功能</div>
-        <div style="padding:5px 12px;background:rgba(255,200,0,0.06);border-bottom:1px solid var(--line);font-size:9px;color:#A08040;line-height:1.5;">⚠️ AI 背景功能啟用中，部分進階效果需升級方案。</div>
 
         <!-- 模式選擇 -->
         <div style="padding:8px 10px;border-bottom:1px solid var(--line);">
@@ -342,10 +371,18 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
             <button class="pr-scene-btn on" onclick="setPrScene(this,'studio')">🎨 乾淨白底</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'lifestyle')">🏡 生活情境</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'nature')">🌿 自然清新</button>
+            <button class="pr-scene-btn" onclick="setPrScene(this,'forest')">🌲 森林秘境</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'food')">🍽️ 美食桌面</button>
+            <button class="pr-scene-btn" onclick="setPrScene(this,'kitchen')">🫕 溫馨廚房</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'luxury')">💎 質感黑金</button>
+            <button class="pr-scene-btn" onclick="setPrScene(this,'marble')">🪨 大理石紋</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'outdoor')">🏙️ 戶外城市</button>
+            <button class="pr-scene-btn" onclick="setPrScene(this,'beach')">🏖️ 海邊沙灘</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'minimal')">◻️ 極簡灰調</button>
+            <button class="pr-scene-btn" onclick="setPrScene(this,'night')">🌃 夜景霓虹</button>
+            <button class="pr-scene-btn" onclick="setPrScene(this,'garden')">🌸 花園庭院</button>
+            <button class="pr-scene-btn" onclick="setPrScene(this,'camping')">⛺ 露營戶外</button>
+            <button class="pr-scene-btn" onclick="setPrScene(this,'office')">💼 現代辦公</button>
             <button class="pr-scene-btn" onclick="setPrScene(this,'random')">🎲 隨機驚喜</button>
           </div>
           <input id="prCustomPrompt" type="text" placeholder="或輸入自訂場景（英文效果更好）" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;margin-top:5px;">
@@ -472,6 +509,12 @@ function setDriveStatus(state){
   else{lbl.textContent='Drive 未連結';lbl.style.color='var(--t3)';}
 }
 async function fetchDriveAssets(type){
+  if(!window._driveToken){
+    // 顯示紅色警示
+    const grid=document.getElementById('assetGrid');
+    grid.innerHTML='<div style="margin:12px;padding:14px 16px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;"><div style="font-size:22px;margin-bottom:8px;">🔴</div><div style="font-size:13px;font-weight:900;color:#FF4D6A;margin-bottom:6px;">尚未連結 Google Drive！</div><div style="font-size:11px;color:#FF8099;line-height:1.7;">請先點右上角「🔗 連結 Drive」<br>授權後才能抓取素材</div><button onclick="driveLogin()" style="margin-top:10px;padding:8px 20px;background:#D4182E;border:none;border-radius:8px;color:#fff;font-family:Noto Sans TC,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">🔗 立即連結 Drive</button></div>';
+    return;
+  }
   const inputId=type==='photo'?'inPhotoFolder':'inVideoFolder';
   const btnId=type==='photo'?'fetchPhotoBtn':'fetchVideoBtn';
   const raw=document.getElementById(inputId).value.trim();
@@ -514,6 +557,11 @@ async function useFolderLink(raw,type,folderId){
   if(!arr.find(x=>x.isFolder)){arr.push({isFolder:true,name:(type==='photo'?'🗂️ 照片資料夾（點開連結選取）':'🗂️ 影片資料夾（點開連結選取）'),driveUrl:folderUrl,directUrl:folderUrl,src:'',type,thumb:''});}
 }
 async function fetchBoth(){
+  if(!window._driveToken){
+    const grid=document.getElementById('assetGrid');
+    grid.innerHTML='<div style="margin:12px;padding:14px 16px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;"><div style="font-size:22px;margin-bottom:8px;">🔴</div><div style="font-size:13px;font-weight:900;color:#FF4D6A;margin-bottom:6px;">尚未連結 Google Drive！</div><div style="font-size:11px;color:#FF8099;line-height:1.7;">請先點右上角「🔗 連結 Drive」<br>授權後才能抓取素材</div><button onclick="driveLogin()" style="margin-top:10px;padding:8px 20px;background:#D4182E;border:none;border-radius:8px;color:#fff;font-family:Noto Sans TC,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">🔗 立即連結 Drive</button></div>';
+    return;
+  }
   const photoRaw=document.getElementById('inPhotoFolder').value.trim();
   const videoRaw=document.getElementById('inVideoFolder').value.trim();
   if(!photoRaw&&!videoRaw){alert('請先填入照片或影片資料夾連結');return;}
@@ -554,7 +602,10 @@ async function doGenerate(){
   btn.disabled=true;btn.innerHTML='<span class="spin"></span>生成中';
   const prog=document.getElementById('prog');const fill=document.getElementById('progFill');
   prog.style.display='block';fill.style.width='10%';
-  const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣方法論。\n\n【品牌】${brandDisplay}\n【品牌靈魂與策略】${soul}\n【廣告風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【目標受眾】${aud}\n【Hashtag】${tags}\n\n【任務】用 Hormozi 三段結構，生成「剛好 ${count} 組」最強廣告組合。\n⚠️ 嚴格規定：combos 陣列必須剛好 ${count} 個元素，不多不少。\n\n三段結構：\n1. 黃金3秒鉤子（15字內）：含方向標記（痛點/好奇心/反常識/社群證明/數字衝擊）\n2. 核心段落（50-80字）：只溝通一件事「為什麼此商品能解決你的問題」，含類型標記（產品展示/客戶見證/教育型/故事型/純素材）\n3. CTA（15字內）：含風格標記（緊迫感/利益驅動/社群感）\n\n要求：\n- 繁體中文、台灣用語、不同組合風格明顯不同\n- 語氣100%符合品牌靈魂\n- 提供畫面場景建議（給拍攝/選圖參考）\n\n只回傳純JSON，格式：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子文字","visual":"畫面場景"},"core":{"type":"類型","script":"核心段落","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA文字"}}]}`;
+  // 隨機種子避免重複
+  const randSeeds=['火力全開','突破框架','顛覆傳統','大膽創新','出其不意','極度差異化','風格強烈對比','完全不同角度'];
+  const todaySeed=randSeeds[Math.floor(Math.random()*randSeeds.length)];
+  const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣方法論。\n\n【品牌】${brandDisplay}\n【品牌靈魂與策略】${soul}\n【廣告風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【目標受眾】${aud}\n【Hashtag】${tags}\n\n【任務】用 Hormozi 三段結構，生成「剛好 ${count} 組」最強廣告組合。\n⚠️ 嚴格規定：combos 陣列必須剛好 ${count} 個元素，不多不少。\n\n三段結構：\n1. 黃金3秒鉤子（15字內）：含方向標記（痛點/好奇心/反常識/社群證明/數字衝擊）\n2. 核心段落（50-80字）：只溝通一件事「為什麼此商品能解決你的問題」，含類型標記（產品展示/客戶見證/教育型/故事型/純素材）\n3. CTA（15字內）：含風格標記（緊迫感/利益驅動/社群感）\n\n要求：\n- 繁體中文、台灣用語、每組風格必須截然不同絕對不可出現相似句子或重複結構\n- 語氣100%符合品牌靈魂\n- 提供畫面場景建議（給拍攝/選圖參考）\n\n只回傳純JSON，格式：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子文字","visual":"畫面場景"},"core":{"type":"類型","script":"核心段落","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA文字"}}]}`;
   try{
     fill.style.width='40%';
     const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt})});
@@ -665,7 +716,7 @@ let AM={w:1080,h:1080,tpl:'classic',scriptIdx:null};
 let PR_BG_IMG=null;
 let PR_MODE='ai_bg';
 let PR_SCENE='studio';
-const PR_SCENE_PROMPTS={studio:'clean white studio background, minimal, professional product photography',lifestyle:'cozy home interior, warm living room, natural light, lifestyle photography',nature:'lush green nature, fresh botanical background, outdoor light, organic feel',food:'elegant dining table, wooden surface, soft food photography lighting, warm tones',luxury:'black marble surface, gold accents, luxury dark background, premium product shot',outdoor:'urban city street background, modern architecture, outdoor natural light, lifestyle',minimal:'soft gray gradient background, minimal clean studio, neutral tones, product photography',random:null};
+const PR_SCENE_PROMPTS={studio:'clean white studio background, minimal, professional product photography',lifestyle:'cozy home interior, warm living room, natural light, lifestyle photography',nature:'lush green nature, fresh botanical background, outdoor light, organic feel',forest:'dense forest path, morning light filtering through tall trees, mystical green atmosphere',food:'elegant dining table, wooden surface, soft food photography lighting, warm tones',kitchen:'warm cozy kitchen interior, wooden countertop, soft morning light, homey atmosphere',luxury:'black marble surface, gold accents, luxury dark background, premium product shot',marble:'white marble texture background, elegant veining, soft studio lighting, premium feel',outdoor:'urban city street background, modern architecture, outdoor natural light, lifestyle',beach:'tropical beach, golden sand, turquoise ocean water, bright sunny day, summer vibes',minimal:'soft gray gradient background, minimal clean studio, neutral tones, product photography',night:'city night scene, neon lights, bokeh background, urban nightlife atmosphere',garden:'beautiful flower garden, cherry blossoms, soft bokeh, spring natural light',camping:'outdoor camping scene, campfire, forest trees, starry night sky, adventure lifestyle',office:'modern office interior, clean desk, professional environment, natural window light',random:null};
 const PR_RANDOM_PROMPTS=['bright kitchen counter, morning light, fresh and clean','rustic wooden table, warm bokeh background, cozy atmosphere','modern minimalist concrete surface, cool tones, studio light','pastel gradient background, soft light, trendy aesthetic','outdoor market, vibrant colors, lively background'];
 
 function openAdMaker(idx){
@@ -704,6 +755,16 @@ function setPrMode(btn,mode){
   if(desc)desc.textContent=descs[mode]||'';
 }
 function setPrScene(btn,scene){document.querySelectorAll('.pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
+let TEXT_ALIGN='left';
+function setTextAlign(align,btn){
+  TEXT_ALIGN=align;
+  ['alignLeft','alignCenter','alignRight'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.classList.remove('on');
+  });
+  btn.classList.add('on');
+  renderAdCanvas();
+}
 function setPrStatus(msg,color){const el=document.getElementById('prStatus');if(el){el.textContent=msg;el.style.color=color||'var(--t3)';}}
 
 async function applyPhotoroomBg(){
@@ -788,9 +849,8 @@ async function renderAdCanvasWithPR(){
   await new Promise(resolve=>{
     const img=new Image();
     img.onload=()=>{
-      const scale=Math.max(AM.w/img.width,AM.h/img.height);
-      const sw=img.width*scale;const sh=img.height*scale;
-      ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);
+      // Photoroom 已輸出正確尺寸，直接填滿不縮放
+      ctx.drawImage(img,0,0,AM.w,AM.h);
       resolve();
     };
     img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};
@@ -805,11 +865,31 @@ function drawBrandSig(ctx,W,H,S2){const brand=BRANDS.find(b=>b.id===S.brandId);c
 function drawClassic(ctx,title,accent){
   const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
   const grad=ctx.createLinearGradient(0,H*0.38,0,H);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(0.4,'rgba(0,0,0,0.65)');grad.addColorStop(1,'rgba(0,0,0,0.92)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-  const ts=Math.round(94*S2);ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;ctx.textAlign='left';
-  const tx=Math.round(W*0.07);const lines=autoLines(ctx,title,W*0.86);const lineH=ts*1.18;const totalH=lines.length*lineH;const ty=H-Math.round(H*0.12)-totalH+ts;
+  // 讀取使用者設定
+  const fontSizeSlider=document.getElementById('amFontSize');
+  const textYSlider=document.getElementById('amTextY');
+  const baseFontSize=fontSizeSlider?parseInt(fontSizeSlider.value):94;
+  const textYPct=textYSlider?parseInt(textYSlider.value)/100:0.8;
+  const align=TEXT_ALIGN||'left';
+  const ts=Math.round(baseFontSize*S2);
+  ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;
+  ctx.textAlign=align;
+  const maxW=W*0.86;
+  const lines=autoLines(ctx,title,maxW);
+  const lineH=ts*1.18;
+  const totalH=lines.length*lineH;
+  // 計算 X 位置
+  let tx;
+  if(align==='left')tx=Math.round(W*0.07);
+  else if(align==='right')tx=Math.round(W*0.93);
+  else tx=W/2;
+  // 計算 Y 位置（根據滑桿）
+  const ty=Math.round(H*textYPct)-totalH+ts;
   lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=Math.round(18*S2);ctx.shadowOffsetY=Math.round(4*S2);ctx.fillStyle='#FFF';ctx.fillText(line,tx,ty+i*lineH);});
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
-  ctx.fillStyle=accent;ctx.fillRect(tx,ty+(lines.length-1)*lineH+Math.round(14*S2),Math.round(60*S2),Math.round(4*S2));
+  // 底線裝飾
+  const lineStartX=align==='right'?tx-60*S2:align==='center'?tx-30*S2:tx;
+  ctx.fillStyle=accent;ctx.fillRect(lineStartX,ty+(lines.length-1)*lineH+Math.round(14*S2),Math.round(60*S2),Math.round(4*S2));
   drawBrandSig(ctx,W,H,S2);
 }
 
