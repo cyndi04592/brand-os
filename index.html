@@ -171,10 +171,119 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .pr-mode-btn.on{background:rgba(232,96,58,0.18);border-color:#E8603A;color:#E8603A;font-weight:700;}
 .pr-scene-btn.on{background:rgba(232,96,58,0.18);border-color:#E8603A;color:#E8603A;font-weight:700;}
 @keyframes hlNew{from{background:rgba(61,214,140,0.08)}to{background:transparent}}
+@keyframes drivePulse{0%,100%{box-shadow:0 0 0 0 rgba(212,24,46,0.6)}50%{box-shadow:0 0 0 8px rgba(212,24,46,0)}}
+@keyframes driveFlash{0%,100%{opacity:1}50%{opacity:0.4}}
+.drive-warning{animation:drivePulse 1.5s ease infinite;}
+.drive-warning-text{animation:driveFlash 1.5s ease infinite;}
 .dr.new{animation:hlNew 1.2s ease;}
 #initOverlay{position:fixed;inset:0;background:#1C1C1E;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
 #initOverlay .spin2{width:32px;height:32px;border:3px solid var(--line2);border-top-color:#E8603A;border-radius:50%;animation:sp 0.8s linear infinite;}
 #initOverlay p{font-size:13px;color:var(--t3);}
+
+/* ══ 手機版 RWD ══ */
+@media (max-width: 768px) {
+  html,body{overflow:auto;}
+  .workspace{
+    display:flex;
+    flex-direction:column;
+    overflow:visible;
+    height:auto;
+  }
+  .left{
+    width:100%;
+    max-height:none;
+    border-right:none;
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .left > div:nth-child(2){
+    max-height:160px;
+    overflow-y:auto;
+  }
+  .prod-scroll{
+    max-height:180px;
+  }
+  .mid{
+    width:100%;
+    min-height:60vh;
+    flex-shrink:0;
+  }
+  .right{
+    width:100%;
+    border-left:none;
+    border-top:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .nav{
+    height:auto;
+    flex-wrap:wrap;
+    padding:8px 14px;
+    gap:8px;
+  }
+  .nav-brands{
+    flex-wrap:wrap;
+    width:100%;
+    order:3;
+  }
+  .nav-right{
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .gb-row1{
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .gb-ctx{
+    width:100%;
+  }
+  .gen-btn{
+    width:100%;
+    padding:12px;
+    font-size:14px;
+  }
+  .sel{
+    font-size:13px;
+    padding:8px;
+  }
+  .ac-body{
+    grid-template-columns:1fr;
+  }
+  .seg{
+    border-right:none;
+    border-bottom:1px solid var(--line);
+  }
+  .seg:last-child{
+    border-bottom:none;
+  }
+  .scripts-wrap{
+    max-height:none;
+    overflow-y:visible;
+  }
+  .ac-btns{
+    flex-wrap:wrap;
+    gap:4px;
+  }
+  .tbtn{
+    font-size:11px;
+    padding:5px 10px;
+  }
+  .deliver-zone{
+    position:static;
+  }
+  .dz-body{
+    max-height:300px;
+  }
+  /* 廣告圖 Modal 手機版 */
+  #adMakerModal > div{
+    flex-direction:column;
+    margin:10px;
+    padding:10px;
+  }
+  #adMakerModal > div > div:first-child{
+    width:100% !important;
+    max-height:none;
+  }
+}
 </style>
 </head>
 <body>
@@ -200,7 +309,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <a href="admin.html" target="_blank" style="padding:4px 12px;border-radius:6px;border:1px solid #E8603A;background:rgba(232,96,58,0.12);color:#E8603A;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;text-decoration:none;letter-spacing:0.5px;">⚙️ 後台</a>
     <button id="driveLoginBtn" onclick="driveLogin()" style="padding:4px 12px;border-radius:6px;border:1px solid var(--sky);background:var(--sky2);color:var(--sky);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">🔗 連結 Drive</button>
     <div class="drive-dot" id="driveDot"></div>
-    <span class="drive-label" id="driveLabel">Drive 未連結</span>
+    <span class="drive-label drive-warning-text" id="driveLabel">⚠️ 請先連結 Drive</span>
   </div>
 </nav>
 
@@ -270,6 +379,12 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 <div class="right">
   <div class="drive-cfg">
     <div class="l-sec">Drive 素材庫</div>
+    <!-- Drive未連結警示 -->
+    <div id="driveWarningBanner" style="display:block;margin-bottom:8px;padding:10px 12px;background:rgba(212,24,46,0.15);border:1.5px solid #D4182E;border-radius:8px;text-align:center;">
+      <div class="drive-warning-text" style="font-size:12px;font-weight:900;color:#FF4D6A;margin-bottom:4px;">🔴 尚未連結 Google Drive</div>
+      <div style="font-size:10px;color:#FF8099;margin-bottom:8px;">必須先連結才能抓取素材庫</div>
+      <button onclick="driveLogin()" class="drive-warning" style="padding:6px 16px;background:#D4182E;border:none;border-radius:6px;color:#fff;font-family:'Noto Sans TC';font-size:11px;font-weight:900;cursor:pointer;letter-spacing:0.5px;">🔗 立即連結 Drive</button>
+    </div>
     <div class="dcfg-row">
       <input class="dcfg-input" id="inPhotoFolder" placeholder="🖼️ 貼入照片資料夾連結或 ID">
       <button class="fetch-btn fetch-sky" id="fetchPhotoBtn" onclick="fetchDriveAssets('photo')">抓照片</button>
@@ -388,8 +503,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
           <input id="prCustomPrompt" type="text" placeholder="或輸入自訂場景（英文效果更好）" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;margin-top:5px;">
         </div>
 
-        <!-- 模式說明 -->
-        <div id="prModeDesc" style="padding:6px 10px;font-size:9px;color:var(--t3);line-height:1.5;">選擇 AI 情境背景：自動去背，生成逼真情境背景，加柔和陰影</div>
 
         <!-- 執行按鈕 -->
         <div style="padding:8px 10px;">
@@ -861,7 +974,7 @@ async function renderAdCanvasWithPR(){
 
 function drawBgFallback(ctx,accent){const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);grad.addColorStop(0,'#1a1020');grad.addColorStop(1,'#0d0d1a');ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);}
 function autoLines(ctx,text,maxWidth){const chars=text.split('');const lines=[];let cur='';for(const c of chars){if(ctx.measureText(cur+c).width>maxWidth&&cur){lines.push(cur);cur=c;}else cur+=c;}if(cur)lines.push(cur);return lines;}
-function drawBrandSig(ctx,W,H,S2){const brand=BRANDS.find(b=>b.id===S.brandId);ctx.font=`400 ${Math.round(18*S2)}px 'Noto Sans TC'`;ctx.fillStyle='rgba(255,255,255,0.35)';ctx.textAlign='right';ctx.fillText(brand?.name||'',W-Math.round(32*S2),H-Math.round(24*S2));}
+function drawBrandSig(ctx,W,H,S2){}
 function drawClassic(ctx,title,accent){
   const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
   const grad=ctx.createLinearGradient(0,H*0.38,0,H);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(0.4,'rgba(0,0,0,0.65)');grad.addColorStop(1,'rgba(0,0,0,0.92)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
@@ -890,7 +1003,6 @@ function drawClassic(ctx,title,accent){
   // 底線裝飾
   const lineStartX=align==='right'?tx-60*S2:align==='center'?tx-30*S2:tx;
   ctx.fillStyle=accent;ctx.fillRect(lineStartX,ty+(lines.length-1)*lineH+Math.round(14*S2),Math.round(60*S2),Math.round(4*S2));
-  drawBrandSig(ctx,W,H,S2);
 }
 
 function downloadAd(){
@@ -929,7 +1041,7 @@ let DRIVE_OUTPUT_FOLDER_ID=null;let tokenClient=null;
 function initGoogleAuth(){
   if(!window.google)return;
   tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOG_CLIENT_ID,scope:GOOG_SCOPE,callback:(resp)=>{
-    if(resp.access_token){window._driveToken=resp.access_token;setDriveStatus('ok');const btn=document.getElementById('driveLoginBtn');btn.textContent='✅ Drive 已連結';btn.style.borderColor='var(--mint)';btn.style.color='var(--mint)';btn.style.background='var(--mint2)';}
+    if(resp.access_token){window._driveToken=resp.access_token;setDriveStatus('ok');const btn=document.getElementById('driveLoginBtn');btn.textContent='✅ Drive 已連結';btn.style.borderColor='var(--mint)';btn.style.color='var(--mint)';btn.style.background='var(--mint2)';const warn=document.getElementById('driveWarningBanner');if(warn)warn.style.display='none';const lbl=document.getElementById('driveLabel');if(lbl){lbl.classList.remove('drive-warning-text');lbl.textContent='Drive 已連結';};}
   }});
 }
 function driveLogin(){if(!tokenClient){alert('Google 授權尚未載入，請稍後再試');return;}tokenClient.requestAccessToken({prompt:'select_account'});}
