@@ -744,32 +744,58 @@ async function urlToBlob(src){
 
 async function renderAdCanvas(){
   if(PR_BG_IMG){await renderAdCanvasWithPR();return;}
-  const canvas=document.getElementById('adCanvas');const ctx=canvas.getContext('2d');
+  const canvas=document.getElementById('adCanvas');
   canvas.width=AM.w;canvas.height=AM.h;
+  canvas.style.imageRendering='pixelated';
+  const ctx=canvas.getContext('2d',{willReadFrequently:false});
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const title=document.getElementById('amTitle').value||'';
   const brand=BRANDS.find(b=>b.id===S.brandId);
   const subBrand=brand?.subs.find(s=>s.id===S.subId);
   const colorKey=subBrand?.color||brand?.navColor||'gold';
-  const colorMap={gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'};
-  const accentColor=colorMap[colorKey]||'#E4B84A';
+  const colorMap={gold:'#E8603A',red:'#E8603A',sky:'#5BC8C8',mint:'#7ED4B0',purple:'#B89ED4'};
+  const accentColor=colorMap[colorKey]||'#E8603A';
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   if(photo&&(photo.src||photo.thumb)){
     const imgSrc=photo.src||photo.thumb;
-    await new Promise(resolve=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{const scale=Math.min(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=imgSrc;});
+    await new Promise(resolve=>{
+      const img=new Image();img.crossOrigin='anonymous';
+      img.onload=()=>{
+        // cover: 填滿畫布不留白，但保留比例
+        const scale=Math.max(AM.w/img.width,AM.h/img.height);
+        const sw=img.width*scale;const sh=img.height*scale;
+        ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);
+        resolve();
+      };
+      img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};
+      img.src=imgSrc;
+    });
   }else drawBgFallback(ctx,accentColor);
   drawClassic(ctx,title,accentColor);
 }
 
 async function renderAdCanvasWithPR(){
-  const canvas=document.getElementById('adCanvas');const ctx=canvas.getContext('2d');
+  const canvas=document.getElementById('adCanvas');
   canvas.width=AM.w;canvas.height=AM.h;
+  const ctx=canvas.getContext('2d',{willReadFrequently:false});
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const title=document.getElementById('amTitle').value||'';
   const brand=BRANDS.find(b=>b.id===S.brandId);
   const subBrand=brand?.subs.find(s=>s.id===S.subId);
   const colorKey=subBrand?.color||brand?.navColor||'gold';
-  const colorMap={gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'};
-  const accentColor=colorMap[colorKey]||'#E4B84A';
-  await new Promise(resolve=>{const img=new Image();img.onload=()=>{const scale=Math.min(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=PR_BG_IMG;});
+  const colorMap={gold:'#E8603A',red:'#E8603A',sky:'#5BC8C8',mint:'#7ED4B0',purple:'#B89ED4'};
+  const accentColor=colorMap[colorKey]||'#E8603A';
+  await new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const scale=Math.max(AM.w/img.width,AM.h/img.height);
+      const sw=img.width*scale;const sh=img.height*scale;
+      ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);
+      resolve();
+    };
+    img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};
+    img.src=PR_BG_IMG;
+  });
   drawClassic(ctx,title,accentColor);
 }
 
