@@ -282,31 +282,23 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   </div>
 </div>
 
-<!-- Ad Maker Modal — 極簡版 v2 -->
+<!-- Ad Maker Modal v3 — 極簡＋高清 -->
 <div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999;overflow:auto;">
   <div style="max-width:960px;margin:24px auto;padding:16px;display:flex;gap:18px;flex-wrap:wrap;">
-
-    <!-- 左側控制面板 -->
     <div style="width:280px;flex-shrink:0;background:var(--bg2);border-radius:14px;border:1px solid var(--line2);padding:18px;display:flex;flex-direction:column;gap:14px;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-family:'Bebas Neue';font-size:17px;letter-spacing:3px;color:var(--purple)">🎨 廣告圖產生器</span>
         <button onclick="closeAdMaker()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;line-height:1;">✕</button>
       </div>
-
-      <!-- 目前照片 -->
       <div style="padding:9px 11px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);">
         <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:4px;">目前照片</div>
         <div id="amPhotoName" style="font-size:11px;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">尚未選擇</div>
-        <div id="amPhotoStatus" style="font-size:9px;margin-top:3px;color:var(--t3);"></div>
+        <div id="amPhotoStatus" style="font-size:9px;margin-top:4px;color:var(--t3);line-height:1.5;"></div>
       </div>
-
-      <!-- 主標題 -->
       <div>
         <div class="sel-lbl">主標題</div>
         <textarea id="amTitle" rows="3" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:8px;outline:none;resize:none;margin-top:4px;line-height:1.6;" placeholder="輸入廣告主標題" oninput="renderAdCanvas()"></textarea>
       </div>
-
-      <!-- Photoroom AI 換背景 -->
       <div style="padding:12px;background:linear-gradient(135deg,rgba(157,110,248,0.1),rgba(77,200,240,0.06));border-radius:10px;border:1px solid rgba(157,110,248,0.3);">
         <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--purple);margin-bottom:9px;">✨ PHOTOROOM AI 換背景</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px;">
@@ -320,17 +312,12 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:9px;border-radius:7px;background:linear-gradient(135deg,var(--purple),#4DC8F0);border:none;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">✨ AI 換背景</button>
         <div id="prStatus" style="font-size:9px;color:var(--t3);text-align:center;margin-top:6px;min-height:14px;"></div>
       </div>
-
-      <!-- 下載 -->
       <button id="adDownloadBtn" onclick="downloadAd()" style="width:100%;padding:11px;border-radius:8px;background:linear-gradient(135deg,var(--purple),#6A3FD8);border:none;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">⬇️ 下載廣告圖 JPG</button>
     </div>
-
-    <!-- 右側預覽 -->
     <div style="flex:1;min-width:280px;display:flex;flex-direction:column;align-items:center;gap:8px;">
       <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);">預覽 1080×1080</div>
-      <canvas id="adCanvas" style="border-radius:10px;max-width:100%;width:100%;max-width:540px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);display:block;"></canvas>
+      <canvas id="adCanvas" style="border-radius:10px;width:100%;max-width:540px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);display:block;"></canvas>
     </div>
-
   </div>
 </div>
 
@@ -463,8 +450,16 @@ async function fetchFromDriveAPI(folderId,type,token){
           arr.push(item);
           // 背景下載原始高清圖
           fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{headers:{Authorization:'Bearer '+token}})
-            .then(r=>r.blob())
-            .then(blob=>{const reader=new FileReader();reader.onload=()=>{item.src=reader.result;renderAssets();};reader.readAsDataURL(blob);})
+            .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.blob();})
+            .then(blob=>{const reader=new FileReader();reader.onload=()=>{item.src=reader.result;item.hqReady=true;renderAssets();
+              // 如果這張照片正好是 Ad Maker 裡選中的，更新狀態提示
+              const statusEl=document.getElementById('amPhotoStatus');
+              if(statusEl&&S.selPhoto!==null&&S.photos[S.selPhoto]===item){
+                statusEl.textContent='✅ 高清圖已就緒';statusEl.style.color='var(--mint)';
+                renderAdCanvas();
+              }
+            };reader.readAsDataURL(blob);})
+            .catch(e=>{ item.hqReady=false; item.hqError=e.message; renderAssets(); })
             .catch(()=>{});
         }
       });
@@ -495,7 +490,14 @@ function assetItemHtml(f,i,type,sel){
   const fallback=type==='photo'?'🖼️':'🎬';
   const errHandler="this.textContent='"+fallback+"'";
   const thumb=f.src?('<img src="'+f.src+'" onerror="'+errHandler+'">'):f.thumb?('<img src="'+f.thumb+'" onerror="'+errHandler+'">'):fallback;
-  return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})"><div class="ai-thumb">${thumb}</div><div class="ai-info"><div class="ai-name">${f.name}</div><div class="ai-meta">${f.isFolder?'<a href="'+f.driveUrl+'" target="_blank" style="color:var(--sky)">開啟資料夾 →</a>':'Drive 素材'}</div></div><span class="ai-check">✓</span></div>`;
+  // 高清狀態角標（只對照片顯示）
+  let hqBadge='';
+  if(type==='photo'&&!f.isFolder){
+    if(f.hqReady)hqBadge='<span style="font-size:8px;color:var(--mint);font-weight:700;margin-left:4px;">✅HQ</span>';
+    else if(f.hqError)hqBadge='<span style="font-size:8px;color:var(--red);font-weight:700;margin-left:4px;" title="'+f.hqError+'">⚠️HQ</span>';
+    else if(f.thumb)hqBadge='<span style="font-size:8px;color:var(--gold);font-weight:700;margin-left:4px;">⏳HQ</span>';
+  }
+  return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})"><div class="ai-thumb">${thumb}</div><div class="ai-info"><div class="ai-name">${f.name}${hqBadge}</div><div class="ai-meta">${f.isFolder?'<a href="'+f.driveUrl+'" target="_blank" style="color:var(--sky)">開啟資料夾 →</a>':'Drive 素材'}</div></div><span class="ai-check">✓</span></div>`;
 }
 function selectAsset(type,i){
   if(type==='photo')S.selPhoto=S.selPhoto===i?null:i;
@@ -625,7 +627,7 @@ function copyTSV(btn){
   fetch('https://hook.us2.make.com/7hiqiin98rlh61t9a56a9t7w6tcm3i4s',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scripts:S.delivers.map(r=>({id:r.id,product:r.product,hook:r.hookScript,core:r.coreScript,cta:r.ctaScript,photoName:r.photoName,photoUrl:r.photoUrl,videoName:r.videoName,videoUrl:r.videoUrl,status:r.ready?'素材已備妥':'缺素材',timestamp:new Date().toISOString()}))})}).catch(()=>{});
 }
 
-// ══ AD MAKER v2 — 極簡版，修畫質 ══
+// ══ AD MAKER v3 — 高清畫質 + 極簡版面 ══
 const AM={w:1080,h:1080,scriptIdx:null};
 let PR_BG_IMG=null;
 let PR_SCENE='studio';
@@ -646,27 +648,27 @@ const PR_RANDOM_PROMPTS=[
 ];
 
 function openAdMaker(idx){
-  PR_BG_IMG=null;
-  setPrStatus('','');
-  const s=S.scripts[idx];
-  AM.scriptIdx=idx;
+  PR_BG_IMG=null;setPrStatus('','');
+  const s=S.scripts[idx];AM.scriptIdx=idx;
   document.getElementById('amTitle').value=s.hook.script;
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   const nameEl=document.getElementById('amPhotoName');
   const statusEl=document.getElementById('amPhotoStatus');
   if(photo){
-    nameEl.textContent=photo.name;
-    nameEl.style.color='var(--sky)';
-    if(photo.src){
-      statusEl.textContent='✅ 高清圖已就緒';statusEl.style.color='var(--mint)';
-    }else{
-      statusEl.textContent='⏳ 高清圖載入中，稍後可用…';statusEl.style.color='var(--gold)';
-      // 持續等待高清圖
+    nameEl.textContent=photo.name;nameEl.style.color='var(--sky)';
+    if(photo.hqReady){
+      statusEl.textContent='✅ 高清圖已就緒，可直接按 AI 換背景！';statusEl.style.color='var(--mint)';
+    }else if(photo.hqError){
+      statusEl.textContent='⚠️ 高清圖下載失敗（'+photo.hqError+'）\n請確認 Drive 已連結或重新抓照片';statusEl.style.color='var(--red)';
+    }else if(photo.thumb){
+      statusEl.textContent='⏳ 高清圖下載中，請稍候…完成後可按 AI 換背景';statusEl.style.color='var(--gold)';
       waitForHQ(photo,statusEl);
+    }else{
+      statusEl.textContent='⚠️ 圖片未載入，請確認 Drive 已連結';statusEl.style.color='var(--red)';
     }
   }else{
     nameEl.textContent='⚠️ 尚未選擇照片';nameEl.style.color='var(--t3)';
-    statusEl.textContent='';
+    statusEl.textContent='← 請先在右側點選一張照片';statusEl.style.color='var(--t3)';
   }
   document.getElementById('adMakerModal').style.display='block';
   renderAdCanvas();
@@ -674,53 +676,44 @@ function openAdMaker(idx){
 
 function waitForHQ(photo,statusEl){
   const timer=setInterval(()=>{
-    if(photo.src){
+    if(photo.hqReady){
       clearInterval(timer);
-      statusEl.textContent='✅ 高清圖已就緒';statusEl.style.color='var(--mint)';
+      statusEl.textContent='✅ 高清圖已就緒，可按 AI 換背景！';statusEl.style.color='var(--mint)';
       renderAdCanvas();
+    }else if(photo.hqError){
+      clearInterval(timer);
+      statusEl.textContent='⚠️ 高清圖下載失敗：'+photo.hqError;statusEl.style.color='var(--red)';
     }
-  },800);
-  // 最多等 30 秒
-  setTimeout(()=>clearInterval(timer),30000);
+  },600);
+  setTimeout(()=>{clearInterval(timer);if(!photo.hqReady&&!photo.hqError){statusEl.textContent='⚠️ 等待超時，嘗試用縮圖品質繼續';statusEl.style.color='var(--red)';}},30000);
 }
 
 function closeAdMaker(){document.getElementById('adMakerModal').style.display='none';}
 function setPrScene(btn,scene){document.querySelectorAll('.pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
 function setPrStatus(msg,color){const el=document.getElementById('prStatus');if(el){el.textContent=msg;el.style.color=color||'var(--t3)';}}
 
-// ★ 取高清圖（優先 src，其次等待，最後才用 thumb）
 async function getPhotoBase64(){
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   if(!photo)throw new Error('請先選擇產品照片');
-  // 高清圖已下載完成
-  if(photo.src&&photo.src.startsWith('data:'))return photo.src;
-  // 還在下載中 → 等最多 15 秒
-  if(!photo.src){
-    setPrStatus('⏳ 等待高清圖載入（最多15秒）…','var(--gold)');
+  if(photo.hqReady&&photo.src&&photo.src.startsWith('data:'))return photo.src;
+  if(!photo.hqReady&&!photo.hqError){
+    setPrStatus('⏳ 等待高清圖（最多20秒）…','var(--gold)');
     await new Promise((resolve,reject)=>{
       const start=Date.now();
       const t=setInterval(()=>{
-        if(photo.src&&photo.src.startsWith('data:')){clearInterval(t);resolve();}
-        else if(Date.now()-start>15000){clearInterval(t);reject(new Error('高清圖載入逾時，請確認 Drive 已連結'));}
+        if(photo.hqReady){clearInterval(t);resolve();}
+        else if(photo.hqError){clearInterval(t);reject(new Error('高清圖下載失敗：'+photo.hqError));}
+        else if(Date.now()-start>20000){clearInterval(t);reject(new Error('高清圖等待逾時，請確認 Drive 已連結'));}
       },500);
     });
     return photo.src;
   }
-  // 最後嘗試用 thumbnail（畫質差但至少能跑）
-  if(photo.thumb){
-    setPrStatus('⚠️ 使用縮圖品質，建議連結 Drive 取高清','var(--gold)');
-    const res=await fetch(photo.thumb);
-    if(!res.ok)throw new Error('圖片無法載入');
-    const blob=await res.blob();
-    return await blobToBase64(blob);
-  }
+  if(photo.hqError)throw new Error('高清圖無法取得，請重新抓照片');
   throw new Error('照片無法取得，請確認已連結 Google Drive');
 }
 
 function blobToBase64(blob){
-  return new Promise((resolve,reject)=>{
-    const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob);
-  });
+  return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob);});
 }
 
 async function applyPhotoroomBg(){
@@ -733,7 +726,7 @@ async function applyPhotoroomBg(){
     const base64=await getPhotoBase64();
     let prompt=PR_SCENE_PROMPTS[PR_SCENE];
     if(!prompt)prompt=PR_RANDOM_PROMPTS[Math.floor(Math.random()*PR_RANDOM_PROMPTS.length)];
-    setPrStatus('呼叫 Photoroom AI，請稍候（約15-30秒）…','var(--t3)');
+    setPrStatus('呼叫 Photoroom AI（約15-30秒）…','var(--t3)');
     const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,width:AM.w,height:AM.h})});
     const prData=await resp.json();
@@ -748,14 +741,10 @@ async function applyPhotoroomBg(){
   btn.disabled=false;btn.textContent='✨ AI 換背景';
 }
 
-// ══ Canvas 渲染 ══
 function autoLines(ctx,text,maxW){
   const chars=[...text];let lines=[];let cur='';
-  for(const c of chars){
-    if(ctx.measureText(cur+c).width>maxW&&cur){lines.push(cur);cur=c;}else cur+=c;
-  }
-  if(cur)lines.push(cur);
-  return lines;
+  for(const c of chars){if(ctx.measureText(cur+c).width>maxW&&cur){lines.push(cur);cur=c;}else cur+=c;}
+  if(cur)lines.push(cur);return lines;
 }
 
 function getAccentColor(){
@@ -769,10 +758,9 @@ async function drawImageOnCanvas(ctx,src){
   return new Promise(resolve=>{
     const img=new Image();
     img.onload=()=>{
-      const W=AM.w,H=AM.h;
-      const scale=Math.max(W/img.width,H/img.height);
+      const scale=Math.max(AM.w/img.width,AM.h/img.height);
       const sw=img.width*scale,sh=img.height*scale;
-      ctx.drawImage(img,(W-sw)/2,(H-sh)/2,sw,sh);
+      ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);
       resolve(true);
     };
     img.onerror=()=>resolve(false);
@@ -780,49 +768,41 @@ async function drawImageOnCanvas(ctx,src){
   });
 }
 
-// 極簡文字排版：底部大漸層 + 左對齊大標題 + 品牌名
 function drawCleanTitle(ctx,title,accent){
   const W=AM.w,H=AM.h;
-  // 底部漸層遮罩
-  const grad=ctx.createLinearGradient(0,H*0.45,0,H);
+  const grad=ctx.createLinearGradient(0,H*0.42,0,H);
   grad.addColorStop(0,'rgba(0,0,0,0)');
-  grad.addColorStop(0.35,'rgba(0,0,0,0.55)');
+  grad.addColorStop(0.3,'rgba(0,0,0,0.52)');
   grad.addColorStop(1,'rgba(0,0,0,0.88)');
   ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-
   if(!title.trim())return;
-
   const pad=Math.round(W*0.07);
-  const maxW=W*0.86;
-  // 動態字級：根據字數縮放，最大96最小52
-  let fs=Math.max(52,Math.min(96,Math.round(96-(title.length>8?(title.length-8)*2.5:0))));
+  const maxW=W*0.85;
+  let fs=Math.max(54,Math.min(96,Math.round(96-(title.length>7?(title.length-7)*3:0))));
   ctx.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;
-  // 確保不超過兩行
   let lines=autoLines(ctx,title,maxW);
-  while(lines.length>3&&fs>52){fs-=4;ctx.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;lines=autoLines(ctx,title,maxW);}
-
+  while(lines.length>3&&fs>54){fs-=4;ctx.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;lines=autoLines(ctx,title,maxW);}
   const lineH=fs*1.22;
-  const totalH=lines.length*lineH;
-  const baseY=H-Math.round(H*0.09)-totalH+fs;
-
+  const baseY=H-Math.round(H*0.09)-(lines.length-1)*lineH;
   lines.forEach((line,i)=>{
-    ctx.shadowColor='rgba(0,0,0,0.85)';ctx.shadowBlur=22;ctx.shadowOffsetY=3;
+    ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=24;ctx.shadowOffsetY=3;
     ctx.fillStyle='#FFFFFF';ctx.textAlign='left';
     ctx.fillText(line,pad,baseY+i*lineH);
   });
   ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-
-  // 色彩底線
-  const lineY=baseY+(lines.length-1)*lineH+Math.round(16);
-  ctx.fillStyle=accent;ctx.fillRect(pad,lineY,Math.round(56),Math.round(4));
-
-  // 品牌名（右下角，輕量）
+  ctx.fillStyle=accent;ctx.fillRect(pad,baseY+(lines.length-1)*lineH+18,56,4);
   const brand=BRANDS.find(b=>b.id===S.brandId);
   if(brand?.name){
-    ctx.font=`400 ${Math.round(20)}px 'Noto Sans TC',sans-serif`;
-    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.textAlign='right';
-    ctx.fillText(brand.name,W-pad,H-Math.round(28));
+    ctx.font=`400 20px 'Noto Sans TC',sans-serif`;
+    ctx.fillStyle='rgba(255,255,255,0.38)';ctx.textAlign='right';
+    ctx.fillText(brand.name,W-pad,H-28);
   }
+}
+
+function drawBgFallback(ctx,accent){
+  const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);
+  grad.addColorStop(0,'#16102a');grad.addColorStop(1,'#0a0a18');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);
 }
 
 async function renderAdCanvas(){
@@ -833,14 +813,9 @@ async function renderAdCanvas(){
   const title=document.getElementById('amTitle').value||'';
   const accent=getAccentColor();
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
-  // 優先用高清 base64，其次 thumb
   const src=photo?.src||photo?.thumb||null;
-  if(src){
-    const ok=await drawImageOnCanvas(ctx,src);
-    if(!ok)drawBgFallback(ctx,accent);
-  }else{
-    drawBgFallback(ctx,accent);
-  }
+  if(src){const ok=await drawImageOnCanvas(ctx,src);if(!ok)drawBgFallback(ctx,accent);}
+  else drawBgFallback(ctx,accent);
   drawCleanTitle(ctx,title,accent);
 }
 
@@ -855,55 +830,14 @@ async function renderAdCanvasWithPR(){
   drawCleanTitle(ctx,title,accent);
 }
 
-function drawBgFallback(ctx,accent){
-  const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);
-  grad.addColorStop(0,'#16102a');grad.addColorStop(1,'#0a0a18');
-  ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);
-  // 輕微紋理感
-  ctx.fillStyle='rgba(255,255,255,0.015)';
-  for(let y=0;y<AM.h;y+=4){ctx.fillRect(0,y,AM.w,2);}
-}
-
 function downloadAd(){
   const canvas=document.getElementById('adCanvas');
   const brand=BRANDS.find(b=>b.id===S.brandId);
-  const filename=`${brand?.name||'ad'}_${S.prod?.name||'img'}_${AM.w}x${AM.h}.jpg`.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
+  const filename=`${brand?.name||'ad'}_${S.prod?.name||'img'}_1080x1080.jpg`.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
   const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/jpeg',0.95);link.click();
   if(window._driveToken)uploadAdToDrive(canvas,filename);
 }
-async function uploadAdToDrive(canvas,filename){
-  const dlBtn=document.getElementById('adDownloadBtn');const origText=dlBtn?.textContent||'';
-  if(dlBtn){dlBtn.textContent='☁️ 上傳中...';dlBtn.disabled=true;}
-  try{
-    const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',0.92));
-    let folderId=DRIVE_OUTPUT_FOLDER_ID;
-    if(!folderId){folderId=await getOrCreateAdFolder();DRIVE_OUTPUT_FOLDER_ID=folderId;}
-    const meta=JSON.stringify({name:filename,parents:folderId?[folderId]:[]});
-    const form=new FormData();form.append('metadata',new Blob([meta],{type:'application/json'}));form.append('file',blob,filename);
-    const resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{'Authorization':'Bearer '+window._driveToken},body:form});
-    if(!resp.ok)throw new Error('上傳失敗');
-    if(dlBtn){dlBtn.textContent='✅ 已存到 Drive！';setTimeout(()=>{dlBtn.textContent=origText;dlBtn.disabled=false;},3000);}
-  }catch(e){console.error(e);if(dlBtn){dlBtn.textContent=origText;dlBtn.disabled=false;}}
-}
-async function getOrCreateAdFolder(){
-  const token=window._driveToken;
-  const search=await fetch(`https://www.googleapis.com/drive/v3/files?q=name%3D'Brand+OS+廣告圖'+and+mimeType%3D'application%2Fvnd.google-apps.folder'+and+trashed%3Dfalse&fields=files(id,name)`,{headers:{'Authorization':'Bearer '+token}});
-  const sdata=await search.json();
-  if(sdata.files?.length>0)return sdata.files[0].id;
-  const create=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({name:'Brand OS 廣告圖',mimeType:'application/vnd.google-apps.folder'})});
-  return (await create.json()).id;
-}
 
-const GOOG_CLIENT_ID='513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
-const GOOG_SCOPE='https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
-let DRIVE_OUTPUT_FOLDER_ID=null;let tokenClient=null;
-function initGoogleAuth(){
-  if(!window.google)return;
-  tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOG_CLIENT_ID,scope:GOOG_SCOPE,callback:(resp)=>{
-    if(resp.access_token){window._driveToken=resp.access_token;setDriveStatus('ok');const btn=document.getElementById('driveLoginBtn');btn.textContent='✅ Drive 已連結';btn.style.borderColor='var(--mint)';btn.style.color='var(--mint)';btn.style.background='var(--mint2)';}
-  }});
-}
-function driveLogin(){if(!tokenClient){alert('Google 授權尚未載入，請稍後再試');return;}tokenClient.requestAccessToken({prompt:'select_account'});}
 function switchTab(btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));btn.classList.add('on');document.getElementById('pane-'+btn.dataset.tab).classList.add('on');}
 </script>
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
