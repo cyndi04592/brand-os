@@ -286,32 +286,18 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 <div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;overflow:auto;">
   <div style="max-width:1100px;margin:30px auto;padding:20px;display:flex;gap:20px;flex-wrap:wrap;">
     <div style="flex:1;min-width:260px;background:var(--bg2);border-radius:14px;border:1px solid var(--line2);padding:18px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <span style="font-family:'Bebas Neue';font-size:18px;letter-spacing:3px;color:var(--purple)">🎨 廣告圖產生器</span>
         <button onclick="closeAdMaker()" style="background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer;">✕</button>
       </div>
-      <div style="margin-bottom:12px;">
-        <div class="sel-lbl">尺寸</div>
-        <div style="display:flex;gap:6px;margin-top:4px;">
-          <button class="am-size-btn on" onclick="setSize(this,1080,1080)">1:1 方形</button>
-          <button class="am-size-btn" onclick="setSize(this,1080,1920)">9:16 直式</button>
-        </div>
-      </div>
-      <div style="margin-bottom:12px;">
-        <div class="sel-lbl">廣告風格</div>
-        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
-          <button class="am-tpl-btn on" onclick="setTpl(this,'classic')">底部大字</button>
-          <button class="am-tpl-btn" onclick="setTpl(this,'modern')">頂部大字</button>
-          <button class="am-tpl-btn" onclick="setTpl(this,'bold')">置中大字</button>
-        </div>
-      </div>
-      <div style="margin-bottom:12px;padding:10px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);">
-        <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:6px;">目前選擇的照片</div>
-        <div id="amPhotoName" style="font-size:11px;color:var(--sky);">尚未選擇</div>
+      <div style="padding:9px 11px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);margin-bottom:10px;">
+        <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:4px;">目前照片</div>
+        <div id="amPhotoName" style="font-size:11px;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">尚未選擇</div>
+        <div id="amPhotoStatus" style="font-size:9px;margin-top:4px;color:var(--t3);line-height:1.5;"></div>
       </div>
       <div style="margin-bottom:10px;">
         <div class="sel-lbl">主標題</div>
-        <textarea id="amTitle" rows="2" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:11px;padding:7px;outline:none;resize:none;margin-top:4px;line-height:1.6;" oninput="renderAdCanvas()"></textarea>
+        <textarea id="amTitle" rows="3" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:8px;outline:none;resize:none;margin-top:4px;line-height:1.6;" placeholder="輸入廣告主標題" oninput="renderAdCanvas()"></textarea>
       </div>
 
       <div style="margin-bottom:14px;padding:12px;background:linear-gradient(135deg,rgba(157,110,248,0.12),rgba(77,200,240,0.08));border-radius:10px;border:1px solid rgba(157,110,248,0.3);">
@@ -650,6 +636,7 @@ function openAdMaker(idx){
   PR_BG_IMG=null;setPrStatus('','');
   const s=S.scripts[idx];AM.scriptIdx=idx;
   document.getElementById('amTitle').value=s.hook.script;
+
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   document.getElementById('amPhotoName').textContent=photo?photo.name:'⚠️ 尚未選擇照片，將使用純色背景';
   document.getElementById('adMakerModal').style.display='block';
@@ -673,9 +660,7 @@ function setPrStatus(msg,color){const el=document.getElementById('prStatus');if(
 async function getPhotoBase64(){
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   if(!photo)throw new Error('請先選擇產品照片');
-  // 優先用高清，已就緒直接返回
   if(photo.hqReady&&photo.src&&photo.src.startsWith('data:'))return photo.src;
-  // 還在下載中，等待最多60秒
   if(!photo.hqReady&&!photo.hqError){
     setPrStatus('⏳ 等待高清圖（最多60秒）…','var(--gold)');
     await new Promise((resolve,reject)=>{
@@ -683,20 +668,12 @@ async function getPhotoBase64(){
       const t=setInterval(()=>{
         if(photo.hqReady){clearInterval(t);resolve();}
         else if(photo.hqError){clearInterval(t);reject(new Error('高清圖失敗：'+photo.hqError));}
-        else if(Date.now()-start>60000){
-          clearInterval(t);
-          // 逾時用縮圖繼續，不擋住流程
-          if(photo.thumb){photo.hqReady=true;photo.src=photo.src||photo.thumb;resolve();}
-          else reject(new Error('高清圖等待逾時'));
-        }
+        else if(Date.now()-start>60000){clearInterval(t);photo.hqReady=true;photo.src=photo.src||photo.thumb;resolve();}
       },500);
     });
     return photo.src;
   }
-  if(photo.hqError)throw new Error('高清圖無法取得，請重新抓照片');
-  // 沒有 src 但有 thumb，直接用
-  if(photo.thumb)return photo.thumb;
-  throw new Error('照片無法取得，請確認已連結 Google Drive');
+  return photo.src||photo.thumb;
 }
 async function applyPhotoroomBg(){
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
@@ -748,8 +725,7 @@ async function renderAdCanvas(){
       ctx.drawImage(img,(W-img.width*bgS)/2,(H-img.height*bgS)/2,img.width*bgS,img.height*bgS);
       ctx.restore();
       const fgS=Math.min(W/img.width,H/img.height);
-      const fw=img.width*fgS,fh=img.height*fgS;
-      ctx.drawImage(img,(W-fw)/2,(H-fh)/2,fw,fh);
+      ctx.drawImage(img,(W-img.width*fgS)/2,(H-img.height*fgS)/2,img.width*fgS,img.height*fgS);
       resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=imgSrc;});
   }else drawBgFallback(ctx,accentColor);
   if(AM.tpl==='classic')drawClassic(ctx,title,accentColor);
@@ -773,8 +749,7 @@ async function renderAdCanvasWithPR(){
     ctx.drawImage(img,(W-img.width*bgS)/2,(H-img.height*bgS)/2,img.width*bgS,img.height*bgS);
     ctx.restore();
     const fgS=Math.min(W/img.width,H/img.height);
-    const fw=img.width*fgS,fh=img.height*fgS;
-    ctx.drawImage(img,(W-fw)/2,(H-fh)/2,fw,fh);
+    ctx.drawImage(img,(W-img.width*fgS)/2,(H-img.height*fgS)/2,img.width*fgS,img.height*fgS);
     resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=PR_BG_IMG;});
   if(AM.tpl==='classic')drawClassic(ctx,title,accentColor);
   else if(AM.tpl==='modern')drawModern(ctx,title,accentColor);
