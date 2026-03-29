@@ -289,7 +289,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   </div>
 </div>
 
-<!-- Ad Maker Modal v4 — 全功能 Photoroom -->
+<!-- Ad Maker Modal v4 -->
 <div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999;overflow-y:auto;">
   <div style="max-width:1080px;margin:20px auto;padding:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
 
@@ -317,8 +317,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 
       <!-- PHOTOROOM 功能選擇 -->
       <div style="border:1px solid rgba(157,110,248,0.3);border-radius:10px;overflow:hidden;flex-shrink:0;">
-        <div style="padding:7px 12px;background:rgba(232,96,58,0.1);font-size:9px;font-weight:700;letter-spacing:2px;color:#E8603A;">✨ PHOTOROOM AI 功能</div>
-        <div style="padding:5px 12px;background:rgba(255,200,0,0.06);border-bottom:1px solid var(--line);font-size:9px;color:#A08040;line-height:1.5;">⚠️ 目前為 Sandbox 模式：僅支援去背功能。換背景場景需升級 Photoroom 正式 API Key。</div>
+        <div style="padding:7px 12px;background:rgba(232,96,58,0.1);font-size:9px;font-weight:700;letter-spacing:2px;color:#E8603A;">✨ AI 影像處理功能</div>
+        <div style="padding:5px 12px;background:rgba(255,200,0,0.06);border-bottom:1px solid var(--line);font-size:9px;color:#A08040;line-height:1.5;">⚠️ AI 背景功能啟用中，部分進階效果需升級方案。</div>
 
         <!-- 模式選擇 -->
         <div style="padding:8px 10px;border-bottom:1px solid var(--line);">
@@ -692,13 +692,13 @@ function setPrMode(btn,mode){
   // 更新說明文字
   const desc=document.getElementById('prModeDesc');
   const descs={
-    ai_bg:'AI 情境背景：自動去背，套用場景背景（需正式API Key）',
+    ai_bg:'AI 情境背景：自動去背並生成逼真情境背景',
     white_bg:'純白去背：移除背景，換成乾淨白色底',
-    relight:'AI 重新打光：調整產品光影效果（需正式API Key）',
+    relight:'AI 重新打光：智慧調整產品光影效果',
     shadow_only:'加陰影：為產品加自然落影',
-    remove_text:'去文字/浮水印：移除圖片上的文字（需正式API Key）',
-    expand:'AI 擴展畫布：向外延伸擴展圖片（需正式API Key）',
-    beautify:'AI 美顏人像：人像美化處理（需正式API Key）',
+    remove_text:'去文字/浮水印：移除圖片上多餘的文字',
+    expand:'AI 擴展畫布：向外延伸擴展圖片範圍',
+    beautify:'AI 美顏人像：智慧人像美化處理',
     transparent_bg:'透明去背 PNG：去背輸出透明底 PNG'
   };
   if(desc)desc.textContent=descs[mode]||'';
@@ -714,7 +714,7 @@ async function applyPhotoroomBg(){
   const btn=document.getElementById('prApplyBtn');
   btn.disabled=true;btn.textContent='⏳ AI 處理中...';
   document.querySelectorAll('.pr-mode-btn,.pr-scene-btn').forEach(b=>b.disabled=false);
-  setPrStatus('正在呼叫 Photoroom AI，請稍候...','var(--t3)');
+  setPrStatus('AI 處理中，請稍候...','var(--t3)');
   try{
     const blob=await urlToBlob(imgSrc);
     const customInput=document.getElementById('prCustomPrompt')?.value?.trim();
@@ -723,7 +723,7 @@ async function applyPhotoroomBg(){
     const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
     const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,width:AM.w,height:AM.h})});
     const prData=await resp.json();
-    if(!prData.ok)throw new Error(prData.error||'Photoroom 失敗');
+    if(!prData.ok)throw new Error(prData.error||'AI 處理失敗');
     PR_BG_IMG=prData.imageBase64;
     await renderAdCanvasWithPR();
     setPrStatus('✅ AI 換背景成功！','var(--mint)');
