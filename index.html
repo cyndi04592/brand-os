@@ -223,7 +223,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;">
         <div class="sel-lbl">組數</div>
-        <select class="sel" id="selN" style="width:72px"><option>10組</option><option selected>20組</option></select>
+        <select class="sel" id="selN" style="width:72px"><option>1組</option><option>5組</option><option>10組</option><option selected>20組</option></select>
       </div>
       <button class="gen-btn" id="genBtn" onclick="doGenerate()">⚡ 生成腳本</button>
     </div>
@@ -449,7 +449,6 @@ function updateCtx(){
   pEl.style.color=S.prod?'var(--t1)':'var(--t3)';pEl.textContent=S.prod?S.prod.name:'← 先選商品';
 }
 
-// ══ DRIVE ══
 function parseDriveId(raw){
   if(!raw)return null;
   const m=raw.match(/(?:folders\/|id=)([a-zA-Z0-9_\-]{15,})/);
@@ -479,7 +478,6 @@ async function fetchDriveAssets(type){
   renderAssets();setDriveStatus('ok');
 }
 
-// ★ 關鍵：用 token 下載原始高清圖
 async function fetchFromDriveAPI(folderId,type,token){
   const mimeFilter=type==='photo'?"mimeType contains 'image/'":"mimeType contains 'video/'";
   const q=encodeURIComponent(`'${folderId}' in parents and (${mimeFilter}) and trashed=false`);
@@ -492,7 +490,6 @@ async function fetchFromDriveAPI(folderId,type,token){
         if(!arr.find(x=>x.driveId===f.id)){
           const item={driveId:f.id,name:f.name,thumb:f.thumbnailLink||'',driveUrl:f.webViewLink||`https://drive.google.com/file/d/${f.id}/view`,directUrl:`https://drive.google.com/uc?id=${f.id}&export=download`,src:'',type};
           arr.push(item);
-          // 背景下載原始高清圖
           fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{headers:{Authorization:'Bearer '+token}})
             .then(r=>r.blob())
             .then(blob=>{const reader=new FileReader();reader.onload=()=>{item.src=reader.result;renderAssets();};reader.readAsDataURL(blob);})
@@ -534,7 +531,6 @@ function selectAsset(type,i){
   renderAssets();
 }
 
-// ══ 生成腳本 POST + text/plain 解決 CORS ══
 async function doGenerate(){
   if(!S.brandId){alert('請先選擇品牌！');return;}
   if(!S.prod){alert('請先選擇商品！');return;}
@@ -667,16 +663,11 @@ function openAdMaker(idx){
   PR_BG_IMG=null;setPrStatus('','');
   const s=S.scripts[idx];AM.scriptIdx=idx;
   document.getElementById('amTitle').value=s.hook.script;
-  document.getElementById('amSub').value=s.core.script.slice(0,40)+(s.core.script.length>40?'…':'');
-  document.getElementById('amCta').value=s.cta.script;
-  const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
-  document.getElementById('amPhotoName').textContent=photo?photo.name:'⚠️ 尚未選擇照片，將使用純色背景';
+  document.getElementById('amPhotoName').textContent=S.selPhoto!==null?S.photos[S.selPhoto].name:'⚠️ 尚未選擇照片，將使用純色背景';
   document.getElementById('adMakerModal').style.display='block';
   renderAdCanvas();
 }
 function closeAdMaker(){document.getElementById('adMakerModal').style.display='none';}
-function setSize(btn,w,h){document.querySelectorAll('.am-size-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');AM.w=w;AM.h=h;renderAdCanvas();}
-function setTpl(btn,tpl){document.querySelectorAll('.am-tpl-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');AM.tpl=tpl;renderAdCanvas();}
 function setPrScene(btn,scene){document.querySelectorAll('.pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
 function setPrStatus(msg,color){const el=document.getElementById('prStatus');if(el){el.textContent=msg;el.style.color=color||'var(--t3)';}}
 
@@ -693,7 +684,6 @@ async function applyPhotoroomBg(){
     let prompt=PR_SCENE_PROMPTS[PR_SCENE];
     if(!prompt)prompt=PR_RANDOM_PROMPTS[Math.floor(Math.random()*PR_RANDOM_PROMPTS.length)];
     const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
-    // Photoroom 用 text/plain 避免 CORS preflight
     const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,width:AM.w,height:AM.h})});
     const prData=await resp.json();
     if(!prData.ok)throw new Error(prData.error||'Photoroom 失敗');
@@ -703,7 +693,7 @@ async function applyPhotoroomBg(){
   }catch(e){
     setPrStatus('❌ '+(e.message||'發生錯誤'),'var(--red)');
   }
-  btn.disabled=false;btn.textContent='✨ AI 換背景';
+  btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
 }
 
 async function urlToBlob(src){
@@ -728,9 +718,7 @@ async function renderAdCanvas(){
     const imgSrc=photo.src||photo.thumb;
     await new Promise(resolve=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{const scale=Math.max(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=imgSrc;});
   }else drawBgFallback(ctx,accentColor);
-  if(AM.tpl==='classic')drawClassic(ctx,title,accentColor);
-  else if(AM.tpl==='modern')drawModern(ctx,title,accentColor);
-  else drawBold(ctx,title,accentColor);
+  drawClassic(ctx,title,accentColor);
 }
 
 async function renderAdCanvasWithPR(){
@@ -743,9 +731,7 @@ async function renderAdCanvasWithPR(){
   const colorMap={gold:'#E4B84A',red:'#FF4D6A',sky:'#4DC8F0',mint:'#3DD68C',purple:'#9D6EF8'};
   const accentColor=colorMap[colorKey]||'#E4B84A';
   await new Promise(resolve=>{const img=new Image();img.onload=()=>{const scale=Math.max(AM.w/img.width,AM.h/img.height);const sw=img.width*scale;const sh=img.height*scale;ctx.drawImage(img,(AM.w-sw)/2,(AM.h-sh)/2,sw,sh);resolve();};img.onerror=()=>{drawBgFallback(ctx,accentColor);resolve();};img.src=PR_BG_IMG;});
-  if(AM.tpl==='classic')drawClassic(ctx,title,accentColor);
-  else if(AM.tpl==='modern')drawModern(ctx,title,accentColor);
-  else drawBold(ctx,title,accentColor);
+  drawClassic(ctx,title,accentColor);
 }
 
 function drawBgFallback(ctx,accent){const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);grad.addColorStop(0,'#1a1020');grad.addColorStop(1,'#0d0d1a');ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);}
@@ -761,32 +747,11 @@ function drawClassic(ctx,title,accent){
   ctx.fillStyle=accent;ctx.fillRect(tx,ty+(lines.length-1)*lineH+Math.round(14*S2),Math.round(60*S2),Math.round(4*S2));
   drawBrandSig(ctx,W,H,S2);
 }
-function drawModern(ctx,title,accent){
-  const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
-  const topGrad=ctx.createLinearGradient(0,0,0,H*0.5);topGrad.addColorStop(0,'rgba(0,0,0,0.82)');topGrad.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=topGrad;ctx.fillRect(0,0,W,H*0.5);
-  const botGrad=ctx.createLinearGradient(0,H*0.78,0,H);botGrad.addColorStop(0,'rgba(0,0,0,0)');botGrad.addColorStop(1,'rgba(0,0,0,0.72)');ctx.fillStyle=botGrad;ctx.fillRect(0,H*0.78,W,H*0.22);
-  ctx.fillStyle=accent;ctx.fillRect(0,0,W,Math.round(5*S2));
-  const ts=Math.round(90*S2);ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;ctx.textAlign='left';
-  const tx=Math.round(W*0.07);const lines=autoLines(ctx,title,W*0.86);const lineH=ts*1.2;
-  lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=Math.round(20*S2);ctx.fillStyle='#FFF';ctx.fillText(line,tx,Math.round(ts*1.1)+i*lineH);});
-  ctx.shadowColor='transparent';ctx.shadowBlur=0;
-  const brand=BRANDS.find(b=>b.id===S.brandId);ctx.font=`300 ${Math.round(22*S2)}px 'Noto Sans TC'`;ctx.fillStyle='rgba(255,255,255,0.6)';ctx.textAlign='left';ctx.fillText(S.prod?.name||brand?.name||'',tx,H-Math.round(28*S2));
-}
-function drawBold(ctx,title,accent){
-  const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
-  const grad=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.72);grad.addColorStop(0,'rgba(0,0,0,0.1)');grad.addColorStop(1,'rgba(0,0,0,0.82)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-  const ts=Math.round(88*S2);ctx.textAlign='center';ctx.font=`900 ${ts}px 'Noto Sans TC',sans-serif`;
-  const lines=autoLines(ctx,title,W*0.80);const lineH=ts*1.22;const totalH=lines.length*lineH;const startY=(H-totalH)/2+ts*0.5;
-  lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowBlur=Math.round(28*S2);ctx.fillStyle='#FFF';ctx.fillText(line,W/2,startY+i*lineH);});
-  ctx.shadowColor='transparent';ctx.shadowBlur=0;
-  const afterTitle=startY+(lines.length-1)*lineH+Math.round(20*S2);const lineW=Math.round(80*S2);ctx.fillStyle=accent;ctx.fillRect(W/2-lineW/2,afterTitle,lineW,Math.round(3*S2));
-  drawBrandSig(ctx,W,H,S2);
-}
 
 function downloadAd(){
   const canvas=document.getElementById('adCanvas');
   const brand=BRANDS.find(b=>b.id===S.brandId);
-  const filename=`${brand?.name||'ad'}_${S.prod?.name||'img'}_${AM.tpl}_${AM.w}x${AM.h}.jpg`.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
+  const filename=`${brand?.name||'ad'}_${S.prod?.name||'img'}_${AM.w}x${AM.h}.jpg`.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
   const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/jpeg',0.92);link.click();
   if(window._driveToken)uploadAdToDrive(canvas,filename);
 }
