@@ -176,7 +176,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .drive-warning{animation:drivePulse 1.5s ease infinite;}
 .drive-warning-text{animation:driveFlash 1.5s ease infinite;}
 .dr.new{animation:hlNew 1.2s ease;}
-#initOverlay{position:fixed;inset:0;background:#1C1C1E;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
+#initOverlay{position:fixed;inset:0;background:#1C1C1E;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
 #initOverlay .spin2{width:32px;height:32px;border:3px solid var(--line2);border-top-color:#E8603A;border-radius:50%;animation:sp 0.8s linear infinite;}
 #initOverlay p{font-size:13px;color:var(--t3);}
 
@@ -337,7 +337,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <span id="gasStatus" style="font-size:10px;color:#E8603A;white-space:nowrap;font-weight:700;letter-spacing:1px;">✦ RABY BRAND OS</span>
   </div>
   <div class="nav-right">
-    <a href="admin.html" target="_blank" style="padding:4px 12px;border-radius:6px;border:1px solid #E8603A;background:rgba(232,96,58,0.12);color:#E8603A;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;text-decoration:none;letter-spacing:0.5px;">⚙️ 後台</a>
+    <button onclick="goAdmin()" style="padding:4px 12px;border-radius:6px;border:1px solid #E8603A;background:rgba(232,96,58,0.12);color:#E8603A;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">⚙️ 後台</button>
     <button id="driveLoginBtn" onclick="driveLogin()" style="padding:4px 12px;border-radius:6px;border:1px solid var(--sky);background:var(--sky2);color:var(--sky);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">🔗 連結 Drive</button>
     <div class="drive-dot" id="driveDot"></div>
     <span class="drive-label drive-warning-text" id="driveLabel">⚠️ 請先連結 Drive</span>
@@ -1505,6 +1505,13 @@ function doGoogleLogin(){
   tokenClient.requestAccessToken({prompt:'select_account'});
 }
 
+function goAdmin(){
+  if(_userEmail===ADMIN_EMAIL){
+    window.open('admin.html','_blank');
+  }else{
+    alert('⚠️ 後台僅限管理員使用\n目前帳號：'+(_userEmail||'未登入'));
+  }
+}
 function driveLogin(){
   if(!tokenClient){alert('Google 授權尚未載入，請稍後再試');return;}
   tokenClient.requestAccessToken({});
