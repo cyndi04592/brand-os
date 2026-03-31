@@ -696,19 +696,41 @@ const S={brandId:null,subId:null,prod:null,photos:[],videos:[],selPhoto:null,sel
 const CMAP={gold:{c:'var(--gold)',bg:'var(--gold2)'},red:{c:'#FF8099',bg:'var(--red2)'},sky:{c:'var(--sky)',bg:'var(--sky2)'},mint:{c:'var(--mint)',bg:'var(--mint2)'},purple:{c:'var(--purple)',bg:'var(--purple2)'}};
 
 // 系統初始化（登入後才執行）
+// 本地備份品牌資料（GAS 掛掉時使用）
+const LOCAL_FALLBACK_DATA = {
+  brands:[
+    {id:'cf',name:'巧福健康家電',icon:'🏠',navColor:'gold',soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。',adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊',hashtags:'#居家健康 #巧福 #台灣品牌'},
+    {id:'ww',name:'旺味米香腸',icon:'🌾',navColor:'red',soul:'全台首創米香腸，傳承阿公家訓。',adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景',hashtags:'#旺味米香腸 #米香腸 #台灣豬'},
+    {id:'ly',name:'琉宇醬選',icon:'🫙',navColor:'mint',soul:'琉宇醬選主理頂級進口醬料。',adStyle:'精緻質感、食材溯源、料理升級',hashtags:'#琉宇醬選 #好滋好滋 #PASSERI'},
+  ],
+  products:[],
+  folders:[
+    {brandId:'cf',photoFolderId:'1tHV_loHiUcZx8MVrpnUwTWUge74GIwE7',videoFolderId:'132xtz0XebJV-gGXObV4UtanmwyZd9Awc'},
+    {brandId:'ww',photoFolderId:'1dhCLr4tKrfV0RLHp454pzyJjytZFb92m',videoFolderId:'12LsKHCZQkDhT_FhzYWFw7rN4KJyvAD46'},
+    {brandId:'ly',photoFolderId:'1u9n-NpnQjjzU3GnpT15ERanCEky_m6bP',videoFolderId:'1lSvqYV28lgqN2xZ6640glMTssYhUKMoD'},
+  ]
+};
+
 async function startSystem(){
   document.getElementById('initOverlay').style.display='flex';
   document.getElementById('initMsg').textContent='從 Google Sheets 載入品牌資料...';
   try{
-    const res=await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}`);
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),8000); // 8秒超時
+    const res=await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}`,{signal:controller.signal});
+    clearTimeout(timer);
     const json=await res.json();
     if(!json.ok)throw new Error(json.error);
     buildDataFromSheets(json.data);
     document.getElementById('initMsg').textContent='✅ 載入完成！';
   }catch(e){
-    document.getElementById('initMsg').textContent='❌ 載入失敗：'+e.message;
-    await new Promise(r=>setTimeout(r,2000));
+    // GAS 失敗 → 立即用本地備份，不卡住
+    console.warn('GAS 載入失敗，使用本地備份：',e.message);
+    buildDataFromSheets(LOCAL_FALLBACK_DATA);
+    document.getElementById('initMsg').textContent='✅ 使用本地資料載入完成';
   }
+  // 短暫顯示成功訊息再進入
+  await new Promise(r=>setTimeout(r,600));
   document.getElementById('initOverlay').style.display='none';
   renderNavBrands();renderBrandTree();
 }
@@ -1399,12 +1421,18 @@ function initGoogleAuth(){
 
 async function checkWhitelist(email){
   if(!email)return false;
-  if(email===ADMIN_EMAIL)return true; // 老闆永遠通過
+  if(email===ADMIN_EMAIL)return true; // 老闆永遠通過，不需查 GAS
   try{
-    const r=await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}&password=${GAS_PASSWORD}`);
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),8000); // 8秒超時
+    const r=await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}`,{signal:controller.signal});
+    clearTimeout(timer);
     const j=await r.json();
     return j.ok && j.allowed;
-  }catch(e){return false;}
+  }catch(e){
+    console.warn('checkWhitelist 失敗：',e.message);
+    return false;
+  }
 }
 
 function doGoogleLogin(){
