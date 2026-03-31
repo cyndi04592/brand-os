@@ -180,6 +180,19 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 #initOverlay .spin2{width:32px;height:32px;border:3px solid var(--line2);border-top-color:#E8603A;border-radius:50%;animation:sp 0.8s linear infinite;}
 #initOverlay p{font-size:13px;color:var(--t3);}
 
+/* ══ 登入頁面 ══ */
+#loginOverlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:0;}
+.login-card{background:var(--bg2);border:1px solid rgba(232,96,58,0.3);border-radius:20px;padding:40px 44px;text-align:center;width:360px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px;}
+.login-title{font-family:'Bebas Neue';font-size:28px;letter-spacing:5px;background:linear-gradient(90deg,#E8603A,#F4A07A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-sub{font-size:10px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';margin-top:2px;}
+.login-desc{font-size:12px;color:var(--t3);margin-bottom:28px;line-height:1.8;}
+.login-btn{width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#E8603A,#C44020);color:#fff;font-family:'Noto Sans TC';font-size:14px;font-weight:900;cursor:pointer;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s;}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(232,96,58,0.4);}
+.login-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.login-err{font-size:11px;color:#FF4D6A;margin-top:12px;min-height:18px;}
+.login-footer{font-size:9px;color:var(--t3);margin-top:20px;letter-spacing:1px;}
+
 /* ══ 手機版 RWD ══ */
 @media (max-width: 768px) {
   html,body{overflow:auto;}
@@ -288,6 +301,26 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 </head>
 <body>
 
+<!-- 登入頁面 -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAIkSURBVHgB7ZjBTcMwFIbfSwcgG5AN2AA2YAQ2YATYgBEYgREYgREYgREYgREYgRM5kQMnAieSk5BKSVX1UMeJ7bz3J6tS3fT5289O0goAAAAAAAAAAAAAAAAAAAAAAADwv9i27URVrxDRBhGtEtECES0T0QoRnRHROhGtEdEqES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0T0QoRnRHROhGtEtEyES0R0QoRnRHROhGtEtEyES0R0QoRnRHROhGtEtEyES0R0QoRnRHROhGtEtEyES0R0QoRnRHROhGtEtEyES0R0QoRnRHROhGtEtEyES0R0QoRnRHROhGtEtEyES0R0QoRnRHROhGtEtEyES0R0QoRnRHROhGtEtEyES0R0QoRnRHROhGtEtEy" style="width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4));">
+      <div>
+        <div class="login-title">Brand OS</div>
+        <div class="login-sub">RABY D&C · v5</div>
+      </div>
+    </div>
+    <div class="login-desc">芮比廣告行銷內部系統<br>請使用公司 Google 帳號登入</div>
+    <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+      使用 Google 帳號登入
+    </button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-footer">僅限授權帳號 · 系統自動驗證身份</div>
+  </div>
+</div>
+
 <div id="initOverlay">
   <div class="spin2"></div>
   <p id="initMsg">從 Google Sheets 載入品牌資料...</p>
@@ -355,7 +388,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       </div>
       <button class="gen-btn" id="genBtn" onclick="doGenerate()">⚡ 生成腳本</button>
     </div>
-    <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog" id="prog" style="position:relative;height:6px;">
+      <div class="prog-fill" id="progFill"></div>
+      <span id="progPct" style="position:absolute;right:0;top:-16px;font-size:10px;font-weight:900;color:#E8603A;font-family:'DM Mono';"></span>
+    </div>
   </div>
   <div class="tabs">
     <button class="tab on" data-tab="scripts" onclick="switchTab(this)">📝 廣告腳本 <span class="badge" id="scriptBadge">0</span></button>
@@ -597,7 +633,15 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <!-- 執行按鈕 -->
         <div style="padding:8px 10px;">
           <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:9px;border-radius:7px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;">✨ 套用 AI 效果</button>
-          <div id="prStatus" style="font-size:9px;color:var(--t3);text-align:center;margin-top:4px;min-height:14px;"></div>
+          <div style="margin-top:5px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+              <div id="prStatus" style="font-size:9px;color:var(--t3);min-height:14px;"></div>
+              <span id="prPct" style="font-size:10px;font-weight:900;color:#E8603A;font-family:'DM Mono';"></span>
+            </div>
+            <div id="prProgBar" style="display:none;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+              <div id="prProgFill" style="height:100%;background:linear-gradient(90deg,var(--sky),#E8603A);border-radius:2px;width:0%;transition:width 0.5s ease;"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -623,7 +667,10 @@ let BRAND_FOLDERS={};
 const S={brandId:null,subId:null,prod:null,photos:[],videos:[],selPhoto:null,selVideo:null,scripts:[],delivers:[],openBrand:null};
 const CMAP={gold:{c:'var(--gold)',bg:'var(--gold2)'},red:{c:'#FF8099',bg:'var(--red2)'},sky:{c:'var(--sky)',bg:'var(--sky2)'},mint:{c:'var(--mint)',bg:'var(--mint2)'},purple:{c:'var(--purple)',bg:'var(--purple2)'}};
 
-(async function init(){
+// 系統初始化（登入後才執行）
+async function startSystem(){
+  document.getElementById('initOverlay').style.display='flex';
+  document.getElementById('initMsg').textContent='從 Google Sheets 載入品牌資料...';
   try{
     const res=await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}`);
     const json=await res.json();
@@ -636,7 +683,7 @@ const CMAP={gold:{c:'var(--gold)',bg:'var(--gold2)'},red:{c:'#FF8099',bg:'var(--
   }
   document.getElementById('initOverlay').style.display='none';
   renderNavBrands();renderBrandTree();
-})();
+}
 
 function buildDataFromSheets(data){
   const{brands,products,folders}=data;
@@ -804,15 +851,15 @@ async function doGenerate(){
   const btn=document.getElementById('genBtn');
   btn.disabled=true;btn.innerHTML='<span class="spin"></span>生成中';
   const prog=document.getElementById('prog');const fill=document.getElementById('progFill');
-  prog.style.display='block';fill.style.width='10%';
+  prog.style.display='block';fill.style.width='10%';document.getElementById('progPct').textContent='10%';btn.innerHTML='<span class="spin"></span>準備中...';
   // 隨機種子避免重複
   const randSeeds=['火力全開','突破框架','顛覆傳統','大膽創新','出其不意','極度差異化','風格強烈對比','完全不同角度'];
   const todaySeed=randSeeds[Math.floor(Math.random()*randSeeds.length)];
   const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣方法論。\n\n【品牌】${brandDisplay}\n【品牌靈魂與策略】${soul}\n【廣告風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【目標受眾】${aud}\n【Hashtag】${tags}\n\n【任務】用 Hormozi 三段結構，生成「剛好 ${count} 組」最強廣告組合。\n⚠️ 嚴格規定：combos 陣列必須剛好 ${count} 個元素，不多不少。\n\n三段結構：\n1. 黃金3秒鉤子（15字內）：含方向標記（痛點/好奇心/反常識/社群證明/數字衝擊）\n2. 核心段落（FB貼文風格）：短句斷行+emoji，像真人在聊天不像廣告，條列產品特點但用故事感包裝，每行一個概念，結尾有力讓人「就是它了」，含類型標記（產品展示/客戶見證/教育型/故事型/純素材）\n3. CTA（15字內）：含風格標記（緊迫感/利益驅動/社群感）\n\n要求：\n- 繁體中文、台灣用語、每組風格必須截然不同絕對不可出現相似句子或重複結構\n- 語氣100%符合品牌靈魂\n- 提供畫面場景建議（給拍攝/選圖參考）\n\n只回傳純JSON，格式：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子文字","visual":"畫面場景"},"core":{"type":"類型","script":"核心段落（用\\n換行，每行一個概念+emoji）","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA文字"}}]}`;
   try{
-    fill.style.width='40%';
+    fill.style.width='40%';document.getElementById('progPct').textContent='40%';btn.innerHTML='<span class="spin"></span>Claude 思考中...';
     const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt})});
-    fill.style.width='80%';
+    fill.style.width='80%';document.getElementById('progPct').textContent='80%';btn.innerHTML='<span class="spin"></span>整理腳本中...';
     const data=await res.json();
     if(!data.ok)throw new Error('GAS錯誤：'+(data.error||JSON.stringify(data)));
     const raw=data.text.replace(/```json|```/g,'').trim();
@@ -820,8 +867,8 @@ async function doGenerate(){
     S.scripts=parsed.combos||[];
     renderScripts(brandDisplay,sub?.color||brand?.navColor);
     document.getElementById('scriptBadge').textContent=S.scripts.length;
-    fill.style.width='100%';
-    setTimeout(()=>{prog.style.display='none';},400);
+    fill.style.width='100%';document.getElementById('progPct').textContent='99%';btn.innerHTML='<span class="spin"></span>即將完成...';
+    document.getElementById('progPct').textContent='✅';setTimeout(()=>{prog.style.display='none';document.getElementById('progPct').textContent='';},800);
   }catch(e){
     prog.style.display='none';
     alert('生成失敗：'+e.message);
@@ -980,7 +1027,32 @@ async function applyPhotoroomBg(){
   const btn=document.getElementById('prApplyBtn');
   btn.disabled=true;btn.textContent='⏳ AI 處理中...';
   document.querySelectorAll('.pr-mode-btn,.pr-scene-btn').forEach(b=>b.disabled=false);
-  setPrStatus('AI 處理中，請稍候...','var(--t3)');
+  // 模擬進度條
+  const prBar=document.getElementById('prProgBar');
+  const prFill=document.getElementById('prProgFill');
+  const prPct=document.getElementById('prPct');
+  if(prBar)prBar.style.display='block';
+  let fakePct=0;
+  const prSteps=[
+    {pct:8,msg:'📤 上傳圖片中...',delay:300},
+    {pct:20,msg:'✂️ AI 去背中...',delay:1200},
+    {pct:40,msg:'🎨 生成背景中...',delay:2500},
+    {pct:65,msg:'🖌️ 細節優化中...',delay:2000},
+    {pct:85,msg:'💡 光影調整中...',delay:1500},
+    {pct:95,msg:'⚡ 最終處理中...',delay:1000},
+  ];
+  let stepIdx=0;
+  function runStep(){
+    if(stepIdx>=prSteps.length)return;
+    const s=prSteps[stepIdx++];
+    setTimeout(()=>{
+      if(prFill)prFill.style.width=s.pct+'%';
+      if(prPct)prPct.textContent=s.pct+'%';
+      setPrStatus(s.msg,'var(--t3)');
+      runStep();
+    },s.delay);
+  }
+  runStep();
   try{
     const blob=await urlToBlob(imgSrc);
     const customInput=document.getElementById('prCustomPrompt')?.value?.trim();
@@ -999,8 +1071,13 @@ async function applyPhotoroomBg(){
     if(!prData.ok)throw new Error(prData.error||'AI 處理失敗');
     PR_BG_IMG=prData.imageBase64;
     await renderAdCanvasWithPR();
+    if(prFill)prFill.style.width='100%';
+    if(prPct)prPct.textContent='100%';
     setPrStatus('✅ AI 換背景成功！','var(--mint)');
+    setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
   }catch(e){
+    if(prBar)prBar.style.display='none';
+    if(prPct)prPct.textContent='';
     setPrStatus('❌ '+(e.message||'發生錯誤'),'var(--red)');
   }
   btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
@@ -1137,13 +1214,83 @@ async function getOrCreateAdFolder(){
 const GOOG_CLIENT_ID='513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
 const GOOG_SCOPE='https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
 let DRIVE_OUTPUT_FOLDER_ID=null;let tokenClient=null;
+// ══ Google 登入 + 白名單驗證 ══
+const ADMIN_EMAIL = 'cyndi04592@gmail.com'; // 永久管理員
+let _userEmail = null;
+
 function initGoogleAuth(){
   if(!window.google)return;
-  tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOG_CLIENT_ID,scope:GOOG_SCOPE,callback:(resp)=>{
-    if(resp.access_token){window._driveToken=resp.access_token;setDriveStatus('ok');const btn=document.getElementById('driveLoginBtn');btn.textContent='✅ Drive 已連結';btn.style.borderColor='var(--mint)';btn.style.color='var(--mint)';btn.style.background='var(--mint2)';const warn=document.getElementById('driveWarningBanner');if(warn)warn.style.display='none';const lbl=document.getElementById('driveLabel');if(lbl){lbl.classList.remove('drive-warning-text');lbl.textContent='Drive 已連結';};}
-  }});
+  // 登入用 tokenClient（含 userinfo scope 用於取得 email）
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:GOOG_CLIENT_ID,
+    scope:GOOG_SCOPE+' https://www.googleapis.com/auth/userinfo.email',
+    callback: async (resp)=>{
+      if(!resp.access_token) return;
+      window._driveToken=resp.access_token;
+      // 取得使用者 email
+      try{
+        const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
+        const info=await r.json();
+        _userEmail=info.email||'';
+        // 驗證白名單
+        const ok=await checkWhitelist(_userEmail);
+        if(ok){
+          // 登入成功：隱藏登入頁，開始載入系統
+          document.getElementById('loginOverlay').style.display='none';
+          setDriveStatus('ok');
+          const btn=document.getElementById('driveLoginBtn');
+          btn.textContent='✅ '+(_userEmail||'已連結');
+          btn.style.borderColor='var(--mint)';btn.style.color='var(--mint)';btn.style.background='var(--mint2)';
+          const warn=document.getElementById('driveWarningBanner');if(warn)warn.style.display='none';
+          const lbl=document.getElementById('driveLabel');
+          if(lbl){lbl.classList.remove('drive-warning-text');lbl.textContent='Drive 已連結';}
+          // 啟動系統初始化
+          startSystem();
+        }else{
+          // 不在白名單
+          document.getElementById('loginErr').textContent='❌ 此帳號無使用權限，請聯絡管理員';
+          document.getElementById('loginBtn').disabled=false;
+          document.getElementById('loginBtn').textContent='使用 Google 帳號登入';
+          window._driveToken=null;
+        }
+      }catch(e){
+        document.getElementById('loginErr').textContent='❌ 驗證失敗，請重試';
+        document.getElementById('loginBtn').disabled=false;
+      }
+    }
+  });
 }
-function driveLogin(){if(!tokenClient){alert('Google 授權尚未載入，請稍後再試');return;}tokenClient.requestAccessToken({prompt:'select_account'});}
+
+async function checkWhitelist(email){
+  if(!email)return false;
+  if(email===ADMIN_EMAIL)return true; // 老闆永遠通過
+  try{
+    const r=await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}&password=${GAS_PASSWORD}`);
+    const j=await r.json();
+    return j.ok && j.allowed;
+  }catch(e){return false;}
+}
+
+function doGoogleLogin(){
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin" style="border-top-color:#fff"></span> 登入中...';
+  document.getElementById('loginErr').textContent='';
+  if(!tokenClient){
+    // google 尚未載入，等一下再試
+    setTimeout(()=>{
+      if(tokenClient)tokenClient.requestAccessToken({prompt:'select_account'});
+      else{document.getElementById('loginErr').textContent='❌ Google 載入失敗，請重新整理頁面';btn.disabled=false;}
+    },1500);
+    return;
+  }
+  tokenClient.requestAccessToken({prompt:'select_account'});
+}
+
+function driveLogin(){
+  if(!tokenClient){alert('Google 授權尚未載入，請稍後再試');return;}
+  tokenClient.requestAccessToken({});
+}
 function switchTab(btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));btn.classList.add('on');document.getElementById('pane-'+btn.dataset.tab).classList.add('on');}
 </script>
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
