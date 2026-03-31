@@ -59,7 +59,6 @@ tr:hover td { background: #1a1a2488; }
 .folder-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 16px; }
 .folder-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .folder-brand-badge { background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a33; border-radius: 6px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
-/* delivers */
 .stat-label { font-size: 12px; color: #888; margin-left: auto; }
 .btn-refresh { background: #2a2a3a; color: #888; border: 1px solid #3a3a4a; border-radius: 8px; padding: 6px 14px; font-size: 12px; cursor: pointer; }
 .btn-refresh:hover { color: #d4af6a; border-color: #d4af6a44; }
@@ -68,6 +67,21 @@ tr:hover td { background: #1a1a2488; }
 .al-video { color: #ff7f5c; background: rgba(255,127,92,0.12); border: 1px solid #ff7f5c; }
 .al-none { color: #44446a; border: 1px solid #2a2a3a; cursor: default; }
 .status-select { background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 6px; color: #e8e0d0; font-size: 11px; padding: 3px 6px; cursor: pointer; }
+/* 員工管理 */
+.staff-grid { display: grid; gap: 10px; }
+.staff-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+.staff-avatar { width: 40px; height: 40px; border-radius: 50%; background: #d4af6a22; border: 2px solid #d4af6a44; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.staff-info { flex: 1; }
+.staff-name { font-size: 14px; font-weight: 700; color: #e8e0d0; }
+.staff-email { font-size: 11px; color: #888; margin-top: 2px; }
+.staff-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+.badge-admin { background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a44; }
+.badge-staff { background: #4dc8f022; color: #4dc8f0; border: 1px solid #4dc8f044; }
+.add-staff-form { background: #1a1a24; border: 1px solid #d4af6a33; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+.add-staff-form h3 { font-size: 14px; color: #d4af6a; margin-bottom: 14px; }
+.add-staff-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+.btn-add-staff { background: #d4af6a; color: #0f0f13; border: none; border-radius: 8px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-add-staff:hover { background: #e8c87a; }
 /* loading */
 .loading-overlay { position: fixed; inset: 0; background: #0f0f13cc; display: none; align-items: center; justify-content: center; z-index: 999; }
 .loading-overlay.show { display: flex; }
@@ -98,6 +112,7 @@ tr:hover td { background: #1a1a2488; }
   <div class="tab" onclick="switchTab('products')">📦 商品管理</div>
   <div class="tab" onclick="switchTab('folders')">📁 素材資料夾</div>
   <div class="tab" onclick="switchTab('delivers')">🚀 投手交付表</div>
+  <div class="tab" onclick="switchTab('staff')">👥 員工管理</div>
 </div>
 
 <div class="main">
@@ -147,13 +162,46 @@ tr:hover td { background: #1a1a2488; }
     </div>
   </div>
 
+  <!-- ★ 員工管理 -->
+  <div class="section" id="sec-staff">
+    <div class="section-header">
+      <h2>👥 員工白名單管理</h2>
+      <button class="btn-refresh" onclick="loadStaff()">🔄 重新整理</button>
+    </div>
+    <div style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.8;">
+      只有在白名單內的 Google 帳號才能登入 Brand OS。<br>
+      新增員工後立即生效，刪除後立即失效。
+    </div>
+    <!-- 新增員工表單 -->
+    <div class="add-staff-form">
+      <h3>＋ 新增員工</h3>
+      <div class="add-staff-row">
+        <div>
+          <label style="font-size:11px;color:#666;display:block;margin-bottom:4px;">Google Email</label>
+          <input class="field-input" id="newStaffEmail" placeholder="staff@gmail.com" type="email">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#666;display:block;margin-bottom:4px;">姓名備註</label>
+          <input class="field-input" id="newStaffName" placeholder="員工姓名（選填）">
+        </div>
+        <button class="btn-add-staff" onclick="addStaff()">＋ 加入</button>
+      </div>
+    </div>
+    <!-- 員工列表 -->
+    <div class="staff-grid" id="staffGrid">
+      <div class="empty-state"><p>載入中...</p></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2_fRfbYY6m42yzzWQHqKeLnSlZ9hMGBBeMoTOI7yFG4kcZg/exec';
 const PASSWORD = 'raby2026';
+const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 let DB = { brands: [], products: [], folders: [] };
 let DELIVERS = [];
+let STAFF = [];
 
 window.onload = async () => {
   showLoading('載入品牌資料...');
@@ -167,10 +215,12 @@ window.onload = async () => {
 };
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['brands','products','folders','delivers'][i]===name));
+  const tabs = ['brands','products','folders','delivers','staff'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
   if (name==='delivers') loadDelivers();
+  if (name==='staff') loadStaff();
 }
 
 function renderAll() { renderBrands(); renderProducts(); renderFolders(); updateFilters(); }
@@ -318,6 +368,69 @@ async function deleteDeliverRow(rowIndex) {
     renderDelivers();
     setStatus('✅ 已刪除', 'ok');
   } catch(e) { setStatus('❌ 刪除失敗', 'err'); }
+}
+
+// ══ 員工白名單管理 ══
+async function loadStaff() {
+  showLoading('載入員工名單...');
+  try {
+    const r = await fetch(`${GAS_URL}?action=getWhitelist&password=${PASSWORD}`);
+    const j = await r.json();
+    if (j.ok) { STAFF = j.whitelist; renderStaff(); }
+    else setStatus('❌ ' + j.error, 'err');
+  } catch(e) { setStatus('❌ 載入失敗', 'err'); }
+  hideLoading();
+}
+
+function renderStaff() {
+  const grid = document.getElementById('staffGrid');
+  if (!STAFF.length) { grid.innerHTML='<div class="empty-state"><p>尚無員工</p></div>'; return; }
+  grid.innerHTML = STAFF.map(s => {
+    const isAdmin = s.email === ADMIN_EMAIL;
+    const initials = (s.name||s.email||'?')[0].toUpperCase();
+    const date = s.addedAt ? new Date(s.addedAt).toLocaleDateString('zh-TW') : '-';
+    return `<div class="staff-card">
+      <div class="staff-avatar">${initials}</div>
+      <div class="staff-info">
+        <div class="staff-name">${esc(s.name||'未設定姓名')}</div>
+        <div class="staff-email">${esc(s.email)}</div>
+      </div>
+      <span class="staff-badge ${isAdmin?'badge-admin':'badge-staff'}">${isAdmin?'👑 管理員':'👤 員工'}</span>
+      <span style="font-size:11px;color:#555;margin-left:8px;">${date}</span>
+      ${isAdmin?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" title="移除" style="margin-left:8px;font-size:18px;">✕</button>`}
+    </div>`;
+  }).join('');
+}
+
+async function addStaff() {
+  const email = document.getElementById('newStaffEmail').value.trim();
+  const name  = document.getElementById('newStaffName').value.trim();
+  if (!email) { setStatus('❌ 請輸入 Email', 'err'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setStatus('❌ Email 格式不正確', 'err'); return; }
+  showLoading('新增中...');
+  try {
+    const r = await fetch(`${GAS_URL}?action=addWhitelist&password=${PASSWORD}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`);
+    const j = await r.json();
+    if (j.ok) {
+      setStatus('✅ 已加入白名單', 'ok');
+      document.getElementById('newStaffEmail').value = '';
+      document.getElementById('newStaffName').value = '';
+      await loadStaff();
+    } else setStatus('❌ ' + j.error, 'err');
+  } catch(e) { setStatus('❌ 新增失敗', 'err'); }
+  hideLoading();
+}
+
+async function removeStaff(email) {
+  if (!confirm(`確定移除 ${email}？\n移除後該員工立即無法登入。`)) return;
+  showLoading('移除中...');
+  try {
+    const r = await fetch(`${GAS_URL}?action=deleteWhitelist&password=${PASSWORD}&email=${encodeURIComponent(email)}`);
+    const j = await r.json();
+    if (j.ok) { setStatus('✅ 已移除', 'ok'); await loadStaff(); }
+    else setStatus('❌ ' + j.error, 'err');
+  } catch(e) { setStatus('❌ 移除失敗', 'err'); }
+  hideLoading();
 }
 
 // ══ SAVE ══
