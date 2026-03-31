@@ -384,6 +384,14 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <div class="sel-lbl">組數</div>
         <select class="sel" id="selN" style="width:72px"><option>1組</option><option>5組</option><option>10組</option><option selected>20組</option></select>
       </div>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <div class="sel-lbl">文案長度</div>
+        <select class="sel" id="selCopyLength" style="width:80px">
+          <option value="short">短文案</option>
+          <option value="medium" selected>中等</option>
+          <option value="long">長文案</option>
+        </select>
+      </div>
       <button class="gen-btn" id="genBtn" onclick="doGenerate()">⚡ 生成腳本</button>
     </div>
     <div class="prog" id="prog" style="position:relative;height:6px;">
@@ -463,11 +471,12 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <button onclick="closeAdMaker()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;">✕</button>
       </div>
 
-      <!-- 照片狀態 -->
+      <!-- 照片狀態 + 快速切換 -->
       <div style="padding:8px 10px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);flex-shrink:0;">
-        <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:3px;">目前照片</div>
-        <div id="amPhotoName" style="font-size:11px;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">尚未選擇</div>
-        <div id="amPhotoStatus" style="font-size:9px;margin-top:3px;color:var(--t3);"></div>
+        <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:5px;">🖼️ 選擇產品照片</div>
+        <div id="amPhotoThumbRow" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;max-height:80px;overflow-y:auto;"></div>
+        <div id="amPhotoName" style="font-size:10px;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">尚未選擇</div>
+        <div id="amPhotoStatus" style="font-size:9px;margin-top:2px;color:var(--t3);"></div>
       </div>
 
       <!-- 主標題 -->
@@ -482,9 +491,19 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
             <span id="amFontSizeVal" style="font-size:9px;color:var(--t3);">94px</span>
           </div>
           <div>
-            <div class="sel-lbl">垂直位置</div>
-            <input type="range" id="amTextY" min="10" max="90" value="80" style="width:100%;accent-color:#E8603A;" oninput="document.getElementById('amTextYVal').textContent=this.value+'%';renderAdCanvas()">
+            <div class="sel-lbl">文字 Y 位置</div>
+            <input type="range" id="amTextY" min="10" max="95" value="80" style="width:100%;accent-color:#E8603A;" oninput="document.getElementById('amTextYVal').textContent=this.value+'%';renderAdCanvas()">
             <span id="amTextYVal" style="font-size:9px;color:var(--t3);">80%</span>
+          </div>
+          <div>
+            <div class="sel-lbl">暗化起始點</div>
+            <input type="range" id="amGradStart" min="0" max="80" value="38" style="width:100%;accent-color:#5BC8C8;" oninput="document.getElementById('amGradStartVal').textContent=this.value+'%';renderAdCanvas()">
+            <span id="amGradStartVal" style="font-size:9px;color:var(--t3);">38%</span>
+          </div>
+          <div>
+            <div class="sel-lbl">暗化強度</div>
+            <input type="range" id="amGradStrength" min="20" max="98" value="85" style="width:100%;accent-color:#5BC8C8;" oninput="document.getElementById('amGradStrengthVal').textContent=this.value+'%';renderAdCanvas()">
+            <span id="amGradStrengthVal" style="font-size:9px;color:var(--t3);">85%</span>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px;">
@@ -874,6 +893,12 @@ function selectAsset(type,i){
   if(type==='photo')S.selPhoto=S.selPhoto===i?null:i;
   else S.selVideo=S.selVideo===i?null:i;
   renderAssets();
+  // 如果已有腳本，更新腳本區的素材提示
+  if(S.scripts.length>0){
+    const brand=BRANDS.find(b=>b.id===S.brandId);
+    const sub=brand?.subs.find(s=>s.id===S.subId);
+    renderScripts(`${brand?.name||''}${sub?' › '+sub.name:''}`,sub?.color||brand?.navColor);
+  }
 }
 
 async function doGenerate(){
@@ -910,7 +935,14 @@ async function doGenerate(){
   // 隨機種子避免重複
   const randSeeds=['火力全開','突破框架','顛覆傳統','大膽創新','出其不意','極度差異化','風格強烈對比','完全不同角度'];
   const todaySeed=randSeeds[Math.floor(Math.random()*randSeeds.length)];
-  const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣方法論。\n\n【品牌】${brandDisplay}\n【品牌靈魂與策略】${soul}\n【廣告風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【目標受眾】${aud}\n【Hashtag】${tags}\n\n【任務】用 Hormozi 三段結構，生成「剛好 ${count} 組」最強廣告組合。\n⚠️ 嚴格規定：combos 陣列必須剛好 ${count} 個元素，不多不少。\n\n三段結構：\n1. 黃金3秒鉤子（15字內）：含方向標記（痛點/好奇心/反常識/社群證明/數字衝擊）\n2. 核心段落（FB貼文風格）：短句斷行+emoji，像真人在聊天不像廣告，條列產品特點但用故事感包裝，每行一個概念，結尾有力讓人「就是它了」，含類型標記（產品展示/客戶見證/教育型/故事型/純素材）\n3. CTA（15字內）：含風格標記（緊迫感/利益驅動/社群感）\n\n要求：\n- 繁體中文、台灣用語、每組風格必須截然不同絕對不可出現相似句子或重複結構\n- 語氣100%符合品牌靈魂\n- 提供畫面場景建議（給拍攝/選圖參考）\n\n只回傳純JSON，格式：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子文字","visual":"畫面場景"},"core":{"type":"類型","script":"核心段落（用\\n換行，每行一個概念+emoji）","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA文字"}}]}`;
+  const copyLength=document.getElementById('selCopyLength')?.value||'medium';
+  const copyLengthGuide={
+    short:`核心段落字數限制：3-5行，每行10-15字，精簡有力，重點突出，快速傳遞核心價值`,
+    medium:`核心段落字數限制：6-10行，每行10-20字，故事感包裝+條列特點，節奏明快`,
+    long:`核心段落字數限制：12-18行，每行10-25字，深入鋪陳場景+情感共鳴+多層次利益點，最後強烈結尾`
+  }[copyLength];
+  const copyLengthLabel={'short':'【短文案版 - 快狠準】','medium':'【中等文案版 - 故事感】','long':'【長文案版 - 深度共鳴】'}[copyLength];
+  const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣方法論。\n\n【品牌】${brandDisplay}\n【品牌靈魂與策略】${soul}\n【廣告風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【目標受眾】${aud}\n【Hashtag】${tags}\n【文案規格】${copyLengthLabel}\n\n【任務】用 Hormozi 三段結構，生成「剛好 ${count} 組」最強廣告組合。\n⚠️ 嚴格規定：combos 陣列必須剛好 ${count} 個元素，不多不少。\n\n三段結構：\n1. 黃金3秒鉤子（15字內）：含方向標記（痛點/好奇心/反常識/社群證明/數字衝擊）\n2. 核心段落（FB貼文風格）：短句斷行+emoji，像真人在聊天不像廣告，${copyLengthGuide}，結尾有力讓人「就是它了」，含類型標記（產品展示/客戶見證/教育型/故事型/純素材）\n3. CTA（15字內）：含風格標記（緊迫感/利益驅動/社群感）\n\n要求：\n- 繁體中文、台灣用語、每組風格必須截然不同絕對不可出現相似句子或重複結構\n- 語氣100%符合品牌靈魂\n- 提供畫面場景建議（給拍攝/選圖參考）\n\n只回傳純JSON，格式：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子文字","visual":"畫面場景"},"core":{"type":"類型","script":"核心段落（用\\n換行，每行一個概念+emoji）","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA文字"}}]}`;
   try{
     fill.style.width='40%';document.getElementById('progPct').textContent='40%';btn.innerHTML='<span class="spin"></span>AI 思考中...';
     const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt})});
@@ -922,6 +954,8 @@ async function doGenerate(){
     S.scripts=parsed.combos||[];
     renderScripts(brandDisplay,sub?.color||brand?.navColor);
     document.getElementById('scriptBadge').textContent=S.scripts.length;
+  const lenLabel={'short':'短文案','medium':'中文案','long':'長文案'}[document.getElementById('selCopyLength')?.value||'medium'];
+  document.querySelector('[data-tab="scripts"]').innerHTML='📝 廣告腳本 <span class="badge" id="scriptBadge">'+S.scripts.length+'</span> <span style="font-size:8px;background:rgba(232,96,58,0.15);color:#E8603A;padding:1px 5px;border-radius:3px;font-weight:700;">'+lenLabel+'</span>';
     clearInterval(progInterval);fill.style.width='100%';document.getElementById('progPct').textContent='100%';btn.innerHTML='<span class="spin"></span>完成！';
     document.getElementById('progPct').textContent='✅';setTimeout(()=>{prog.style.display='none';document.getElementById('progPct').textContent='';},800);
   }catch(e){
@@ -934,13 +968,22 @@ async function doGenerate(){
 
 function renderScripts(brandDisplay,colorKey){
   const sc=CMAP[colorKey]||CMAP.gold;
-  document.getElementById('scriptsOut').innerHTML=S.scripts.map((s,i)=>`
+  document.getElementById('scriptsOut').innerHTML=`
+    <div style="background:rgba(91,200,200,0.08);border:1px dashed rgba(91,200,200,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--sky);line-height:1.8;">
+      💡 <strong>使用流程：</strong>右側選好 <span style="color:var(--sky)">🖼️ 照片</span> 再選好 <span style="color:var(--peach)">🎬 影片</span>，然後點每張腳本的「＋ 加入交付」或「🎨 廣告圖」
+      <br>📌 目前選中：${S.selPhoto!==null?'<span style="background:rgba(91,200,200,0.2);padding:1px 6px;border-radius:3px;color:var(--sky)">🖼️ '+S.photos[S.selPhoto]?.name+'</span>':'<span style="color:var(--t3)">🖼️ 未選照片</span>'}&nbsp;&nbsp;${S.selVideo!==null?'<span style="background:rgba(232,96,58,0.2);padding:1px 6px;border-radius:3px;color:var(--peach)">🎬 '+S.videos[S.selVideo]?.name+'</span>':'<span style="color:var(--t3)">🎬 未選影片</span>'}
+    </div>
+  `+S.scripts.map((s,i)=>`
     <div class="ad-card" style="animation-delay:${i*18}ms">
       <div class="ac-top">
-        <div style="display:flex;align-items:center;gap:8px;"><span class="ac-id">${s.id}</span><span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+          <span class="ac-id">${s.id}</span>
+          <span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span>
+          <span style="font-size:9px;color:var(--t3);">${s.core.type}</span>
+        </div>
         <div class="ac-btns">
-          <button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付</button>
-          <button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">🎨 廣告圖</button>
+          <button class="tbtn tbtn-s" onclick="addDeliver(${i})" title="將此腳本＋目前選中素材加入交付表">＋ 加入交付 ${S.selPhoto!==null?'🖼️':''}${S.selVideo!==null?'🎬':''}</button>
+          <button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})" title="用此腳本標題＋目前選中照片做廣告圖">🎨 廣告圖 ${S.selPhoto!==null?'✓':''}</button>
           <button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button>
         </div>
       </div>
@@ -1105,8 +1148,35 @@ function openAdMaker(idx){
   document.querySelectorAll('.pr-mode-btn,.pr-scene-btn').forEach(b=>b.disabled=false);
   const s=S.scripts[idx];AM.scriptIdx=idx;
   document.getElementById('amTitle').value=s.hook.script;
-  document.getElementById('amPhotoName').textContent=S.selPhoto!==null?S.photos[S.selPhoto].name:'⚠️ 尚未選擇照片，將使用純色背景';
+  // 渲染照片快速切換列
+  renderAmPhotoRow();
   document.getElementById('adMakerModal').style.display='block';
+  renderAdCanvas();
+}
+
+function renderAmPhotoRow(){
+  const row=document.getElementById('amPhotoThumbRow');
+  const nameEl=document.getElementById('amPhotoName');
+  if(!row)return;
+  if(!S.photos.length){
+    row.innerHTML='<span style="font-size:10px;color:var(--t3);">尚無照片素材，請先到右側抓取</span>';
+    if(nameEl)nameEl.textContent='⚠️ 尚未選擇照片';
+    return;
+  }
+  row.innerHTML=S.photos.map((f,i)=>{
+    const isSelected=S.selPhoto===i;
+    const thumb=f.src||f.thumb;
+    const imgHtml=thumb?'<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;border-radius:3px;">':'<span style="font-size:16px;">🖼️</span>';
+    return '<div onclick="selectPhotoInAM('+i+')" title="'+f.name+'" style="width:36px;height:36px;border-radius:5px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid '+(isSelected?'#5BC8C8':'rgba(255,255,255,0.1)')+';background:var(--bg4);display:flex;align-items:center;justify-content:center;transition:border-color 0.15s;">'+imgHtml+'</div>';
+  }).join('');
+  if(nameEl)nameEl.textContent=S.selPhoto!==null?('✅ '+S.photos[S.selPhoto].name):'← 點選上方照片';
+}
+
+function selectPhotoInAM(i){
+  S.selPhoto=i;
+  PR_BG_IMG=null; // 清除上一張的 AI 結果
+  renderAmPhotoRow();
+  renderAssets(); // 同步右側素材列
   renderAdCanvas();
 }
 function closeAdMaker(){document.getElementById('adMakerModal').style.display='none';}
@@ -1288,7 +1358,14 @@ function autoLines(ctx,text,maxWidth){const chars=text.split('');const lines=[];
 function drawBrandSig(ctx,W,H,S2){}
 function drawClassic(ctx,title,accent){
   const W=AM.w,H=AM.h,S2=AM.h===1920?1.78:1;
-  const grad=ctx.createLinearGradient(0,H*0.38,0,H);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(0.4,'rgba(0,0,0,0.65)');grad.addColorStop(1,'rgba(0,0,0,0.92)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+  // 動態漸層：根據滑桿控制起始點和強度
+  const gradStartPct=(parseInt(document.getElementById('amGradStart')?.value||38))/100;
+  const gradStrength=(parseInt(document.getElementById('amGradStrength')?.value||85))/100;
+  const grad=ctx.createLinearGradient(0,H*gradStartPct,0,H);
+  grad.addColorStop(0,'rgba(0,0,0,0)');
+  grad.addColorStop(0.35,'rgba(0,0,0,'+Math.round(gradStrength*0.65*100)/100+')');
+  grad.addColorStop(1,'rgba(0,0,0,'+gradStrength+')');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
   // 讀取使用者設定
   const fontSizeSlider=document.getElementById('amFontSize');
   const textYSlider=document.getElementById('amTextY');
