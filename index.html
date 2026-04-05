@@ -919,14 +919,6 @@ async function applyPhotoroomBg(){
       }
       throw new Error('Try-On 超時，請稍後再試');
     }
-      const prData=await resp.json();
-      if(!prData.ok)throw new Error(prData.error||'MD試穿失敗');
-      PR_BG_IMG=prData.imageBase64;await renderAdCanvasWithPR();
-      clearInterval(prInterval);if(prFill)prFill.style.width='100%';if(prPct)prPct.textContent='100%';
-      setPrStatus('✅ MD試穿完成！','var(--mint)');setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
-      btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
-      return;
-    }
 
     const vmPrompt='';
     const resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,mode:PR_MODE,width:AM.w,height:AM.h,vmPrompt})});
