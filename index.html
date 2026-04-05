@@ -823,7 +823,7 @@ function onMdPhotoSelected(input){
     // ★ 壓縮圖片到最大 1200px，品質 85%
     const img=new Image();
     img.onload=()=>{
-      const MAX=1200;
+      const MAX=1500;
       let w=img.width,h=img.height;
       if(w>MAX||h>MAX){
         if(w>h){h=Math.round(h*MAX/w);w=MAX;}
@@ -879,17 +879,46 @@ async function applyPhotoroomBg(){
     if(!prompt)prompt=PR_RANDOM_PROMPTS[0];
     const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
 
-    // ★ 真人MD試穿 → 呼叫 fal.ai Kling
+    // ★ 真人MD試穿 → 兩步驟：先送出，前端輪詢
     if(PR_MODE==='kling_tryon'){
       const mdImg=document.getElementById('mdPhotoImg');
       if(!mdImg||!mdImg.src||mdImg.style.display==='none'){
         throw new Error('請先上傳 MD 照片！');
       }
-      // ★ 壓縮商品圖到 1200px
-      const compressedGarment = await compressImageBase64(base64, 1200, 0.85);
-      // MD 照片已在上傳時壓縮，直接用
+      const compressedGarment = await compressImageBase64(base64, 1500, 0.90);
       const mdBase64 = mdImg.src;
-      const resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'kling_tryon',password:GAS_PASSWORD,humanImageBase64:mdBase64,garmentImageBase64:compressedGarment})});
+
+      // Step 1: 送出任務
+      setPrStatus('📤 送出任務中...','var(--t3)');
+      const submitResp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'kling_tryon_submit',password:GAS_PASSWORD,humanImageBase64:mdBase64,garmentImageBase64:compressedGarment})});
+      const submitData=await submitResp.json();
+      if(!submitData.ok)throw new Error(submitData.error||'任務提交失敗');
+      const requestId=submitData.requestId;
+
+      // Step 2: 前端輪詢（每5秒一次，最多60次=5分鐘）
+      setPrStatus('⏳ AI 處理中，請稍候...','var(--t3)');
+      for(let i=0;i<60;i++){
+        await new Promise(r=>setTimeout(r,5000));
+        const pollResp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'kling_tryon_poll',password:GAS_PASSWORD,requestId})});
+        const pollData=await pollResp.json();
+        if(pollData.status==='COMPLETED'&&pollData.imageBase64){
+          PR_BG_IMG=pollData.imageBase64;await renderAdCanvasWithPR();
+          clearInterval(prInterval);if(prFill)prFill.style.width='100%';if(prPct)prPct.textContent='100%';
+          setPrStatus('✅ MD試穿完成！','var(--mint)');
+          setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
+          btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
+          return;
+        }
+        if(pollData.status==='FAILED'||(!pollData.ok&&pollData.status!=='IN_QUEUE'&&pollData.status!=='IN_PROGRESS')){
+          throw new Error(pollData.error||'Try-On 失敗');
+        }
+        // 更新進度顯示
+        const pct=Math.min(90,10+i*1.5);
+        if(prFill)prFill.style.width=pct+'%';
+        if(prPct)prPct.textContent=Math.round(pct)+'%';
+      }
+      throw new Error('Try-On 超時，請稍後再試');
+    }
       const prData=await resp.json();
       if(!prData.ok)throw new Error(prData.error||'MD試穿失敗');
       PR_BG_IMG=prData.imageBase64;await renderAdCanvasWithPR();
