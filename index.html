@@ -6,91 +6,64 @@
 <title>Brand OS ｜ RABY D&C</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap');
-:root{
-  --bg:#1C1C1E;--bg2:#242426;--bg3:#2C2C2E;
-  --gold:#E8603A;--gold2:rgba(232,96,58,0.15);
-  --mint:#7ED4B0;--mint2:rgba(126,212,176,0.12);
-  --sky:#5BC8C8;--sky2:rgba(91,200,200,0.12);
-  --line:rgba(255,255,255,0.08);
-  --t1:#F5F5F5;--t2:#A0A0A8;--t3:#606068;
-}
+:root{--bg:#1C1C1E;--bg2:#242426;--bg3:#2C2C2E;--gold:#E8603A;--mint:#7ED4B0;--sky:#5BC8C8;--line:rgba(255,255,255,0.08);--t1:#F5F5F5;--t2:#A0A0A8;--t3:#606068;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;}
 .card{background:var(--bg2);border:1px solid rgba(232,96,58,0.3);border-radius:24px;padding:44px 48px 36px;text-align:center;width:420px;max-width:92vw;box-shadow:0 24px 80px rgba(0,0,0,0.6);}
-.logo-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:24px;}
-.logo-wrap img{height:72px;width:auto;object-fit:contain;margin-bottom:12px;}
+.logo-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;}
+.logo-wrap img{height:90px;width:auto;object-fit:contain;margin-bottom:10px;}
 .brand-title{font-family:'Bebas Neue';font-size:34px;letter-spacing:6px;color:#E8603A;}
 .brand-sub{font-size:11px;color:#A08040;letter-spacing:3px;font-family:'DM Mono';margin-top:4px;}
-.desc{font-size:13px;color:var(--t2);margin-bottom:32px;line-height:2;}
-
-/* 登入按鈕 */
+.desc{font-size:13px;color:var(--t2);margin:20px 0 28px;line-height:2;}
 .login-btn{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#E8603A,#C44020);color:#fff;font-family:'Noto Sans TC';font-size:14px;font-weight:900;cursor:pointer;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s;}
 .login-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(232,96,58,0.45);}
 .login-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
 .login-err{font-size:12px;color:#FF4D6A;margin-top:14px;min-height:20px;font-weight:700;}
-.footer{font-size:10px;color:var(--t3);margin-top:24px;letter-spacing:1px;}
-
-/* 登入後選單 */
-.user-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(126,212,176,0.08);border:1px solid rgba(126,212,176,0.2);border-radius:10px;margin-bottom:16px;}
+.footer{font-size:10px;color:var(--t3);margin-top:20px;letter-spacing:1px;}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:sp 0.6s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(126,212,176,0.08);border:1px solid rgba(126,212,176,0.2);border-radius:10px;margin-bottom:14px;}
 .user-email{font-size:11px;color:var(--mint);font-family:'DM Mono';}
 .logout-btn{font-size:11px;color:var(--t3);background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:'Noto Sans TC';}
 .logout-btn:hover{color:#FF4D6A;border-color:#FF4D6A;}
-.menu{display:none;flex-direction:column;gap:8px;margin-top:4px;}
+.menu{display:flex;flex-direction:column;gap:8px;}
 .menu-btn{width:100%;padding:13px 16px;border-radius:12px;border:1px solid var(--line);background:var(--bg3);color:var(--t1);font-family:'Noto Sans TC';font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.2s;text-decoration:none;}
 .menu-btn:hover{border-color:var(--gold);background:rgba(232,96,58,0.08);color:var(--gold);}
-.menu-btn .ico{font-size:20px;}
+.menu-btn .ico{font-size:20px;flex-shrink:0;}
 .menu-btn .info{text-align:left;}
 .menu-btn .info small{display:block;font-size:11px;color:var(--t3);font-weight:400;margin-top:2px;}
 .menu-btn.admin{border-color:rgba(232,96,58,0.25);color:#E8603A;}
-
-.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:sp 0.6s linear infinite;}
-@keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="logo-wrap">
-    <img id="logoImg" src="logo.webp" alt="RB Design & Creative"
-      style="height:90px;width:auto;object-fit:contain;margin-bottom:12px;"
-      onerror="this.style.display='none'">
+    <img src="logo.webp" alt="RB Design & Creative" onerror="this.style.display='none'">
     <div class="brand-title">Brand OS</div>
     <div class="brand-sub">RABY D&amp;C · v5</div>
   </div>
-
-  <!-- 登入區 -->
   <div id="loginSection">
     <div class="desc">芮比廣告行銷內部系統<br>請使用公司 Google 帳號登入</div>
     <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
-      <svg width="18" height="18" viewBox="0 0 48 48">
-        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
-        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
-        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
-        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
-      </svg>
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
       使用 Google 帳號登入
     </button>
     <div class="login-err" id="loginErr"></div>
     <div class="footer">僅限授權帳號 · 系統自動驗證身份</div>
   </div>
-
-  <!-- 登入後選單 -->
   <div id="menuSection" style="display:none;">
     <div class="user-row">
-      <span class="user-email" id="userEmail"></span>
+      <span class="user-email" id="userEmailShow"></span>
       <button class="logout-btn" onclick="doLogout()">登出</button>
     </div>
-    <div class="menu" id="menuList">
+    <div class="menu">
       <a class="menu-btn" href="copy.html">
         <span class="ico">⚡</span>
-        <div class="info">文案生成系統<small>廣告腳本 · Hook · CTA · 素材交付</small></div>
+        <div class="info">文案 + 廣告圖系統<small>腳本生成 · 廣告圖 · 素材交付</small></div>
       </a>
       <a class="menu-btn" href="video.html">
         <span class="ico">🎬</span>
         <div class="info">短影音 OMNI 腳本<small>Kling 四段15秒提示詞生成</small></div>
-      </a>
-      <a class="menu-btn" href="admaker.html">
-        <span class="ico">🖼️</span>
-        <div class="info">廣告圖產生器<small>AI 換背景 · 試穿 · Canvas 合成</small></div>
       </a>
       <button class="menu-btn admin" onclick="goAdmin()">
         <span class="ico">⚙️</span>
@@ -99,46 +72,66 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     </div>
   </div>
 </div>
-
-<script src="shared.js"></script>
 <script>
-// LOGO 從 GitHub 載入（避免 base64 塞爆）
-// LOGO 直接在 img src 設定
+const GAS_URL='https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2_fRfbYY6m42yzzWQHqKeLnSlZ9hMGBBeMoTOI7yFG4kcZg/exec';
+const ADMIN_EMAIL='cyndi04592@gmail.com';
+const GOOG_CLIENT_ID='513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
+const GOOG_SCOPE='https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
+let tokenClient=null;let _isInitializing=false;
 
-// 頁面載入：先看有沒有 session
-window.addEventListener('load', () => {
-  if (loadSession()) {
-    showMenu();
-  }
-  // initGoogleAuth 等 GSI 載入後才跑
+window.addEventListener('load',()=>{
+  const token=sessionStorage.getItem('bs_token');
+  const email=sessionStorage.getItem('bs_email');
+  if(token&&email)showMenu(email);
 });
 
-function showMenu() {
-  document.getElementById('loginSection').style.display = 'none';
-  document.getElementById('menuSection').style.display = 'block';
-  document.getElementById('menuList').style.display = 'flex';
-  document.getElementById('userEmail').textContent = BS.userEmail || '';
+function showMenu(email){
+  document.getElementById('loginSection').style.display='none';
+  document.getElementById('menuSection').style.display='block';
+  document.getElementById('userEmailShow').textContent=email||'';
 }
-
-function goAdmin() {
-  if (BS.userEmail === 'cyndi04592@gmail.com') window.open('admin.html', '_blank');
-  else alert('⚠️ 後台僅限管理員\n目前帳號：' + (BS.userEmail || '未登入'));
-}
-
-function doLogout() {
-  if (!confirm('確定要登出嗎？')) return;
-  clearSession();
+function doLogout(){
+  if(!confirm('確定要登出嗎？'))return;
+  sessionStorage.removeItem('bs_token');sessionStorage.removeItem('bs_email');
   location.reload();
 }
-
-// Google Auth 初始化（GSI 載入後觸發）
-function onGSILoad() {
-  initGoogleAuth(async () => {
-    // 登入成功
-    showMenu();
-  });
+function goAdmin(){
+  const email=sessionStorage.getItem('bs_email');
+  if(email===ADMIN_EMAIL)window.open('admin.html','_blank');
+  else alert('⚠️ 後台僅限管理員');
 }
+function initGSI(){
+  if(!window.google)return;
+  tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOG_CLIENT_ID,scope:GOOG_SCOPE,callback:async(resp)=>{
+    if(!resp.access_token||_isInitializing)return;
+    _isInitializing=true;
+    try{
+      const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
+      const info=await r.json();const email=info.email||'';
+      const ok=await checkWhitelist(email);
+      if(ok){
+        sessionStorage.setItem('bs_token',resp.access_token);
+        sessionStorage.setItem('bs_email',email);
+        showMenu(email);
+      }else{
+        document.getElementById('loginErr').textContent='❌ 此帳號無使用權限';resetBtn();
+      }
+    }catch(e){document.getElementById('loginErr').textContent='❌ 驗證失敗，請重試';resetBtn();}
+    finally{_isInitializing=false;}
+  }});
+}
+async function checkWhitelist(email){
+  if(!email)return false;if(email===ADMIN_EMAIL)return true;
+  try{const r=await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}`);const j=await r.json();return j.ok&&j.allowed;}catch(e){return false;}
+}
+function doGoogleLogin(){
+  const btn=document.getElementById('loginBtn');btn.disabled=true;btn.innerHTML='<span class="spin"></span> 登入中...';
+  document.getElementById('loginErr').textContent='';
+  if(!tokenClient){setTimeout(()=>{if(tokenClient)tokenClient.requestAccessToken({prompt:'select_account'});else{document.getElementById('loginErr').textContent='❌ Google 載入失敗';resetBtn();}},1500);return;}
+  tokenClient.requestAccessToken({prompt:'select_account'});
+}
+function resetBtn(){const btn=document.getElementById('loginBtn');btn.disabled=false;btn.innerHTML='<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/></svg> 使用 Google 帳號登入';}
 </script>
-<script src="https://accounts.google.com/gsi/client" onload="onGSILoad()" async defer></script>
+<script src="https://accounts.google.com/gsi/client" onload="initGSI()" async defer></script>
 </body>
 </html>
