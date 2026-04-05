@@ -894,12 +894,14 @@ async function applyPhotoroomBg(){
       const submitData=await submitResp.json();
       if(!submitData.ok)throw new Error(submitData.error||'任務提交失敗');
       const requestId=submitData.requestId;
+      const statusUrl=submitData.statusUrl;
+      const responseUrl=submitData.responseUrl;
 
       // Step 2: 前端輪詢（每5秒一次，最多60次=5分鐘）
       setPrStatus('⏳ AI 處理中，請稍候...','var(--t3)');
       for(let i=0;i<60;i++){
         await new Promise(r=>setTimeout(r,5000));
-        const pollResp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'kling_tryon_poll',password:GAS_PASSWORD,requestId})});
+        const pollResp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'kling_tryon_poll',password:GAS_PASSWORD,requestId,statusUrl,responseUrl})});
         const pollData=await pollResp.json();
         if(pollData.status==='COMPLETED'&&pollData.imageBase64){
           PR_BG_IMG=pollData.imageBase64;await renderAdCanvasWithPR();
