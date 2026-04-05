@@ -574,8 +574,13 @@ function renderAssets(){
 }
 function assetItemHtml(f,i,type,sel){
   const fallback=type==='photo'?'🖼️':'🎬';
-  const thumb=f.src?`<img src="${f.src}" onerror="this.parentNode.textContent='${fallback}'">`:(f.thumb?`<img src="${f.thumb}" onerror="this.parentNode.textContent='${fallback}'">`):fallback;
-  return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})"><div class="ai-thumb">${thumb}</div><div class="ai-info"><div class="ai-name">${f.name}</div><div class="ai-meta">${f.isFolder?`<a href="${f.driveUrl}" target="_blank" style="color:var(--sky)">開啟資料夾 →</a>`:'Drive 素材'}</div></div><span class="ai-check">✓</span></div>`;
+  const errHandler='this.parentNode.innerHTML=\''+fallback+'\'';
+  let thumb;
+  if(f.src)thumb='<img src="'+f.src+'" onerror="'+errHandler+'">';
+  else if(f.thumb)thumb='<img src="'+f.thumb+'" onerror="'+errHandler+'">';
+  else thumb=fallback;
+  const meta=f.isFolder?'<a href="'+f.driveUrl+'" target="_blank" style="color:var(--sky)">開啟資料夾 →</a>':'Drive 素材';
+  return '<div class="asset-item '+(sel?'on':'')+' '+type+'" onclick="selectAsset(\''+type+'\','+i+')"><div class="ai-thumb">'+thumb+'</div><div class="ai-info"><div class="ai-name">'+f.name+'</div><div class="ai-meta">'+meta+'</div></div><span class="ai-check">✓</span></div>';
 }
 function selectAsset(type,i){
   if(type==='photo')S.selPhoto=S.selPhoto===i?null:i;else S.selVideo=S.selVideo===i?null:i;
@@ -719,7 +724,12 @@ function renderAmPhotoRow(){
   const row=document.getElementById('amPhotoThumbRow');const nameEl=document.getElementById('amPhotoName');
   if(!row)return;
   if(!S.photos.length){row.innerHTML='<span style="font-size:10px;color:var(--t3);">請先到右側抓取照片</span>';if(nameEl)nameEl.textContent='⚠️ 尚未選擇';return;}
-  row.innerHTML=S.photos.map((f,i)=>{const isSelected=S.selPhoto===i;const thumb=f.src||f.thumb;const imgHtml=thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:contain;border-radius:3px;">`:'<span style="font-size:16px;">🖼️</span>';return `<div onclick="selectPhotoInAM(${i})" title="${f.name}" style="width:36px;height:36px;border-radius:5px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid ${isSelected?'#5BC8C8':'rgba(255,255,255,0.1)'};background:var(--bg4);display:flex;align-items:center;justify-content:center;">${imgHtml}</div>`;}).join('');
+  row.innerHTML=S.photos.map((f,i)=>{
+    const isSelected=S.selPhoto===i;const thumb=f.src||f.thumb;
+    const imgHtml=thumb?('<img src="'+thumb+'" style="width:100%;height:100%;object-fit:contain;border-radius:3px;">'):'<span style="font-size:16px;">\u{1F5BC}\uFE0F</span>';
+    const border=isSelected?'#5BC8C8':'rgba(255,255,255,0.1)';
+    return '<div onclick="selectPhotoInAM('+i+')" title="'+f.name+'" style="width:36px;height:36px;border-radius:5px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid '+border+';background:var(--bg4);display:flex;align-items:center;justify-content:center;">'+imgHtml+'</div>';
+  }).join('');
   if(nameEl)nameEl.textContent=S.selPhoto!==null?('✅ '+S.photos[S.selPhoto].name):'← 點選上方照片';
 }
 function selectPhotoInAM(i){S.selPhoto=i;PR_BG_IMG=null;renderAmPhotoRow();renderAssets();renderAdCanvas();}
