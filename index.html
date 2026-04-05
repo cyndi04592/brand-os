@@ -21,7 +21,7 @@
 html,body{height:100%;overflow:hidden;}
 body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;display:flex;flex-direction:column;font-size:14px;}
 .nav{height:52px;background:rgba(20,20,20,0.98);border-bottom:1px solid rgba(232,96,58,0.3);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;z-index:100;}
-.nav-logo{font-family:'Bebas Neue';font-size:19px;letter-spacing:4px;background:linear-gradient(90deg,#E8603A,#F4A07A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;}
+.nav-logo{font-family:'Bebas Neue';font-size:19px;letter-spacing:4px;background:linear-gradient(90deg,#E8603A,#F4A07A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .nav-brands{display:flex;gap:5px;}
 .nb{padding:4px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;color:var(--t3);}
 .nb:hover,.nb.on{border-color:var(--gold);color:var(--gold);background:var(--gold2);}
@@ -161,20 +161,18 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .dz-clear{padding:8px 12px;border-radius:7px;font-family:'Noto Sans TC';font-size:12px;font-weight:700;cursor:pointer;background:var(--red2);color:var(--red);border:1px solid rgba(212,24,46,0.4);transition:all 0.2s;}
 .pr-scene-btn{padding:5px 4px;border-radius:6px;border:1px solid var(--line2);background:var(--bg3);color:var(--t2);font-family:'Noto Sans TC';font-size:9px;cursor:pointer;transition:.15s;text-align:center;}
 .pr-mode-btn{padding:5px 4px;border-radius:6px;border:1px solid var(--line2);background:var(--bg3);color:var(--t2);font-family:'Noto Sans TC';font-size:9px;cursor:pointer;transition:.15s;text-align:center;width:100%;}
-.pr-scene-btn:hover{border-color:#E8603A;color:#E8603A;}
-.pr-mode-btn:hover{border-color:#E8603A;color:#E8603A;}
-.pr-mode-btn.on{background:rgba(232,96,58,0.18);border-color:#E8603A;color:#E8603A;font-weight:700;}
-.pr-scene-btn.on{background:rgba(232,96,58,0.18);border-color:#E8603A;color:#E8603A;font-weight:700;}
+.pr-scene-btn:hover,.pr-mode-btn:hover{border-color:#E8603A;color:#E8603A;}
+.pr-mode-btn.on,.pr-scene-btn.on{background:rgba(232,96,58,0.18);border-color:#E8603A;color:#E8603A;font-weight:700;}
 @keyframes hlNew{from{background:rgba(61,214,140,0.08)}to{background:transparent}}
-@keyframes drivePulse{0%,100%{box-shadow:0 0 0 0 rgba(212,24,46,0.6)}50%{box-shadow:0 0 0 8px rgba(212,24,46,0)}}
-@keyframes driveFlash{0%,100%{opacity:1}50%{opacity:0.4}}
 .drive-warning{animation:drivePulse 1.5s ease infinite;}
+@keyframes drivePulse{0%,100%{box-shadow:0 0 0 0 rgba(212,24,46,0.6)}50%{box-shadow:0 0 0 8px rgba(212,24,46,0)}}
 .drive-warning-text{animation:driveFlash 1.5s ease infinite;}
+@keyframes driveFlash{0%,100%{opacity:1}50%{opacity:0.4}}
 .dr.new{animation:hlNew 1.2s ease;}
 #initOverlay{position:fixed;inset:0;background:#1C1C1E;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
 #initOverlay .spin2{width:32px;height:32px;border:3px solid var(--line2);border-top-color:#E8603A;border-radius:50%;animation:sp 0.8s linear infinite;}
 #initOverlay p{font-size:13px;color:var(--t3);}
-#loginOverlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:0;}
+#loginOverlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;}
 .login-card{background:var(--bg2);border:1px solid rgba(232,96,58,0.3);border-radius:24px;padding:44px 48px 36px;text-align:center;width:400px;max-width:92vw;box-shadow:0 24px 80px rgba(0,0,0,0.6);}
 .login-title{font-family:'Bebas Neue';font-size:34px;letter-spacing:6px;background:linear-gradient(90deg,#E8603A,#F4A07A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:block;}
 .login-sub{font-size:11px;color:#A08040;letter-spacing:3px;font-family:'DM Mono';display:block;margin-top:4px;}
@@ -184,32 +182,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .login-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
 .login-err{font-size:12px;color:#FF4D6A;margin-top:14px;min-height:20px;font-weight:700;}
 .login-footer{font-size:10px;color:var(--t3);margin-top:24px;letter-spacing:1px;}
-@media (max-width: 768px) {
-  html,body{overflow:auto;}
-  .workspace{display:flex;flex-direction:column;overflow:visible;height:auto;}
-  .left{width:100%;max-height:none;border-right:none;border-bottom:1px solid var(--line);flex-shrink:0;}
-  .left > div:nth-child(2){max-height:160px;overflow-y:auto;}
-  .prod-scroll{max-height:180px;}
-  .mid{width:100%;min-height:60vh;flex-shrink:0;}
-  .right{width:100%;border-left:none;border-top:1px solid var(--line);flex-shrink:0;}
-  .nav{height:auto;flex-wrap:wrap;padding:8px 14px;gap:8px;}
-  .nav-brands{flex-wrap:wrap;width:100%;order:3;}
-  .nav-right{gap:6px;flex-wrap:wrap;}
-  .gb-row1{flex-wrap:wrap;gap:8px;}
-  .gb-ctx{width:100%;}
-  .gen-btn{width:100%;padding:12px;font-size:14px;}
-  .sel{font-size:13px;padding:8px;}
-  .ac-body{grid-template-columns:1fr;}
-  .seg{border-right:none;border-bottom:1px solid var(--line);}
-  .seg:last-child{border-bottom:none;}
-  .scripts-wrap{max-height:none;overflow-y:visible;}
-  .ac-btns{flex-wrap:wrap;gap:4px;}
-  .tbtn{font-size:11px;padding:5px 10px;}
-  .deliver-zone{position:static;}
-  .dz-body{max-height:300px;}
-  #adMakerModal > div{flex-direction:column;margin:10px;padding:10px;}
-  #adMakerModal > div > div:first-child{width:100% !important;max-height:none;}
-}
+@media(max-width:768px){html,body{overflow:auto;}.workspace{display:flex;flex-direction:column;overflow:visible;height:auto;}.left,.mid,.right{width:100%;}.left{border-right:none;border-bottom:1px solid var(--line);}.right{border-left:none;border-top:1px solid var(--line);}.nav{height:auto;flex-wrap:wrap;padding:8px 14px;gap:8px;}.nav-brands{flex-wrap:wrap;width:100%;order:3;}.gb-row1{flex-wrap:wrap;gap:8px;}.gen-btn{width:100%;}.ac-body{grid-template-columns:1fr;}.seg{border-right:none;border-bottom:1px solid var(--line);}.seg:last-child{border-bottom:none;}.dz-body{max-height:300px;}}
 </style>
 </head>
 <body>
@@ -222,7 +195,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     </div>
     <div class="login-desc">芮比廣告行銷內部系統<br>請使用公司 Google 帳號登入</div>
     <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
       使用 Google 帳號登入
     </button>
     <div class="login-err" id="loginErr"></div>
@@ -244,10 +217,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   </div>
   <div class="nav-brands" id="navBrands"></div>
   <div style="display:flex;align-items:center;gap:6px;">
-    <span id="gasStatus" style="font-size:10px;color:#E8603A;white-space:nowrap;font-weight:700;letter-spacing:1px;">✦ RABY BRAND OS</span>
+    <span style="font-size:10px;color:#E8603A;white-space:nowrap;font-weight:700;letter-spacing:1px;">✦ RABY BRAND OS</span>
   </div>
   <div class="nav-right">
-    <button onclick="goAdmin()" style="padding:4px 12px;border-radius:6px;border:1px solid #E8603A;background:rgba(232,96,58,0.12);color:#E8603A;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">⚙️ 後台</button>
+    <button onclick="goAdmin()" style="padding:4px 12px;border-radius:6px;border:1px solid #E8603A;background:rgba(232,96,58,0.12);color:#E8603A;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">⚙️ 後台</button>
     <button id="driveLoginBtn" onclick="driveLogin()" style="padding:4px 12px;border-radius:6px;border:1px solid var(--sky);background:var(--sky2);color:var(--sky);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">🔗 連結 Drive</button>
     <div class="drive-dot" id="driveDot"></div>
     <span class="drive-label drive-warning-text" id="driveLabel">⚠️ 請先連結 Drive</span>
@@ -302,17 +275,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <button class="tab" data-tab="deliver" onclick="switchTab(this)">🚀 投手交付表 <span class="badge" id="deliverBadge">0</span></button>
   </div>
   <div class="scripts-wrap">
-    <div class="pane on" id="pane-scripts">
-      <div id="scriptsOut">
-        <div class="empty"><div class="empty-ico">◈</div><div class="empty-h">等待生成</div><div class="empty-p">選好品牌商品後<br>點「⚡ 生成腳本」<br><br>然後在右側選好<strong style="color:var(--t1)">照片＋影片</strong><br>點「＋加入交付」傳給投手</div></div>
-      </div>
-    </div>
-    <div class="pane" id="pane-deliver">
-      <div style="padding:10px 0 14px">
-        <div style="font-size:11px;color:var(--t2);line-height:1.9;padding:0 2px 12px;">投手拿到的東西：<strong style="color:var(--t1)">廣告腳本</strong> ＋ <strong style="color:var(--sky)">🖼️ 照片連結</strong> ＋ <strong style="color:var(--peach)">🎬 影片連結</strong></div>
-        <div id="deliverOut"><div class="empty"><div class="empty-p">腳本生成後，右側選好素材，點「＋加入交付」</div></div></div>
-      </div>
-    </div>
+    <div class="pane on" id="pane-scripts"><div id="scriptsOut"><div class="empty"><div class="empty-ico">◈</div><div class="empty-h">等待生成</div><div class="empty-p">選好品牌商品後<br>點「⚡ 生成腳本」</div></div></div></div>
+    <div class="pane" id="pane-deliver"><div style="padding:10px 0 14px"><div id="deliverOut"><div class="empty"><div class="empty-p">腳本生成後，右側選好素材，點「＋加入交付」</div></div></div></div></div>
   </div>
 </div>
 
@@ -322,7 +286,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div id="driveWarningBanner" style="display:block;margin-bottom:8px;padding:10px 12px;background:rgba(212,24,46,0.15);border:1.5px solid #D4182E;border-radius:8px;text-align:center;">
       <div class="drive-warning-text" style="font-size:12px;font-weight:900;color:#FF4D6A;margin-bottom:4px;">🔴 尚未連結 Google Drive</div>
       <div style="font-size:10px;color:#FF8099;margin-bottom:8px;">必須先連結才能抓取素材庫</div>
-      <button onclick="driveLogin()" class="drive-warning" style="padding:6px 16px;background:#D4182E;border:none;border-radius:6px;color:#fff;font-family:'Noto Sans TC';font-size:11px;font-weight:900;cursor:pointer;letter-spacing:0.5px;">🔗 立即連結 Drive</button>
+      <button onclick="driveLogin()" class="drive-warning" style="padding:6px 16px;background:#D4182E;border:none;border-radius:6px;color:#fff;font-family:'Noto Sans TC';font-size:11px;font-weight:900;cursor:pointer;">🔗 立即連結 Drive</button>
     </div>
     <div class="dcfg-row">
       <input class="dcfg-input" id="inPhotoFolder" placeholder="🖼️ 貼入照片資料夾連結或 ID">
@@ -335,10 +299,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div class="dcfg-row" style="margin-bottom:4px;">
       <button class="fetch-btn fetch-sky" style="flex:1;font-size:11px;font-weight:900;" onclick="fetchBoth()">⚡ 一鍵抓全部素材</button>
     </div>
-    <div class="dcfg-hint">切換品牌自動填入資料夾，點「一鍵抓全部素材」</div>
+    <div class="dcfg-hint">切換品牌自動填入資料夾</div>
   </div>
   <div class="asset-grid" id="assetGrid">
-    <div class="empty"><div class="empty-ico">☁️</div><div class="empty-p">貼上 Google Drive 資料夾連結<br>點「一鍵抓全部素材」</div></div>
+    <div class="empty"><div class="empty-ico">☁️</div><div class="empty-p">貼上 Drive 資料夾連結<br>點「一鍵抓全部素材」</div></div>
   </div>
   <div class="deliver-zone">
     <div class="dz-head"><span class="dz-title">📦 交付給投手</span><span class="dz-sub" id="dzSub">0 組素材</span></div>
@@ -355,18 +319,18 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   </div>
 </div>
 
-<!-- Ad Maker Modal -->
-<div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999;overflow-y:auto;">
+<!-- ★ 修正3：Ad Maker Modal 加上明顯 X 關閉按鈕（固定右上角） -->
+<div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999;overflow-y:auto;">
+  <button onclick="closeAdMaker()" style="position:fixed;top:16px;right:20px;z-index:1001;background:rgba(40,40,40,0.95);border:2px solid #E8603A;color:#E8603A;font-size:20px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;line-height:1;transition:all 0.2s;" onmouseover="this.style.background='#E8603A';this.style.color='#fff'" onmouseout="this.style.background='rgba(40,40,40,0.95)';this.style.color='#E8603A'">✕</button>
   <div style="max-width:1080px;margin:20px auto;padding:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
     <div style="width:300px;flex-shrink:0;background:var(--bg2);border-radius:14px;border:1px solid rgba(232,96,58,0.3);padding:16px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 56px);overflow-y:auto;">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="display:flex;align-items:center;flex-shrink:0;">
         <span style="font-family:'Bebas Neue';font-size:17px;letter-spacing:3px;color:#E8603A">🎨 廣告圖產生器</span>
-        <button onclick="closeAdMaker()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;">✕</button>
       </div>
       <div style="padding:8px 10px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);flex-shrink:0;">
         <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:5px;">🖼️ 選擇產品照片</div>
         <div id="amPhotoThumbRow" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;max-height:80px;overflow-y:auto;"></div>
-        <div id="amPhotoName" style="font-size:10px;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">尚未選擇</div>
+        <div id="amPhotoName" style="font-size:10px;color:var(--sky);">尚未選擇</div>
       </div>
       <div style="flex-shrink:0;">
         <div class="sel-lbl">主標題文字</div>
@@ -386,8 +350,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       <div style="border:1px solid rgba(157,110,248,0.3);border-radius:10px;overflow:hidden;flex-shrink:0;">
         <div style="padding:7px 12px;background:rgba(232,96,58,0.1);font-size:9px;font-weight:700;letter-spacing:2px;color:#E8603A;">✨ AI 影像處理功能</div>
         <div style="padding:8px 10px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:5px;">功能模式</div>
-          <div style="font-size:9px;color:var(--t3);margin-bottom:4px;">通用功能</div>
+          <div style="font-size:9px;color:var(--t3);margin-bottom:4px;font-weight:700;">通用功能</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:8px;">
             <button class="pr-mode-btn on" onclick="setPrMode(this,'ai_bg')">🌄 AI情境背景</button>
             <button class="pr-mode-btn" onclick="setPrMode(this,'white_bg')">⬜ 純白去背</button>
@@ -404,8 +367,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
             <button class="pr-mode-btn" onclick="setPrMode(this,'virtual_model')">🧍 虛擬模型（歐美）</button>
             <button class="pr-mode-btn" onclick="setPrMode(this,'clothing')">👕 服飾電商圖</button>
           </div>
-          <div id="virtualModelNote" style="display:none;font-size:9px;color:#E8A03A;background:rgba(232,160,58,0.1);border:1px solid rgba(232,160,58,0.3);border-radius:5px;padding:5px 7px;line-height:1.5;">⚠️ 虛擬模型對內衣/泳衣有平台限制<br>建議改用「幽靈模特兒」效果更好！</div>
-          <div style="font-size:9px;color:#3AE8A0;margin-bottom:4px;margin-top:8px;">🍱 食品專用</div>
+          <div id="virtualModelNote" style="display:none;font-size:9px;color:#E8A03A;background:rgba(232,160,58,0.1);border:1px solid rgba(232,160,58,0.3);border-radius:5px;padding:5px 7px;line-height:1.5;margin-bottom:4px;">⚠️ 虛擬模型對內衣/泳衣有平台限制<br>建議改用「幽靈模特兒」效果更好！</div>
+          <div style="font-size:9px;color:#3AE8A0;margin-bottom:4px;">🍱 食品專用</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
             <button class="pr-mode-btn" onclick="setPrMode(this,'food_delivery')">🍱 食品外送圖</button>
           </div>
@@ -437,31 +400,18 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px;">
             <div><div class="sel-lbl">模特兒</div>
               <select id="vmModel" class="sel" style="width:100%;font-size:10px;">
-                <option value="avery">Avery（女）</option><option value="sam">Sam（中性）</option><option value="taylor">Taylor（女）</option>
-                <option value="kendall">Kendall（女）</option><option value="jordan">Jordan（男）</option><option value="casey">Casey（中性）</option>
-                <option value="maya">Maya（女）</option><option value="reece">Reece（男）</option><option value="lena">Lena（女）</option>
-                <option value="julia">Julia（女）</option><option value="jackson">Jackson（男）</option><option value="sophia">Sophia（女）</option>
-                <option value="emma">Emma（女）</option><option value="ava">Ava（女）</option><option value="zoe">Zoe（女）</option><option value="fiona">Fiona（女）</option>
+                <option value="avery">Avery（女）</option><option value="sam">Sam（中性）</option><option value="taylor">Taylor（女）</option><option value="kendall">Kendall（女）</option><option value="jordan">Jordan（男）</option><option value="maya">Maya（女）</option><option value="lena">Lena（女）</option><option value="julia">Julia（女）</option><option value="sophia">Sophia（女）</option><option value="emma">Emma（女）</option>
               </select>
             </div>
             <div><div class="sel-lbl">姿勢</div>
               <select id="vmPose" class="sel" style="width:100%;font-size:10px;">
-                <option value="random">隨機</option><option value="standing">站立</option><option value="34turn">3/4 側身</option>
-                <option value="powerstance">自信站姿</option><option value="walkingforward">行走</option><option value="handinpocket">手插口袋</option>
-                <option value="crossedarms">交叉手臂</option><option value="back">背面</option><option value="overtheshoulder">回眸</option>
-                <option value="seated">坐姿</option><option value="adjustingclothing">整理衣物</option><option value="playfulspin">旋轉</option>
+                <option value="random">隨機</option><option value="standing">站立</option><option value="34turn">3/4 側身</option><option value="powerstance">自信站姿</option><option value="walkingforward">行走</option><option value="handinpocket">手插口袋</option><option value="crossedarms">交叉手臂</option><option value="seated">坐姿</option>
               </select>
             </div>
           </div>
           <div><div class="sel-lbl">場景</div>
             <select id="vmScene" class="sel" style="width:100%;font-size:10px;">
-              <option value="random">隨機</option><option value="street">街道</option><option value="bedroom">臥室</option><option value="sunset">夕陽</option>
-              <option value="factory">工廠</option><option value="studio">攝影棚</option><option value="coloredstudio">彩色攝影棚</option>
-              <option value="concretestudio">混凝土攝影棚</option><option value="beach">海灘</option><option value="tropical">熱帶</option>
-              <option value="library">圖書館</option><option value="forest">森林</option><option value="businessdistrict">商業區</option>
-              <option value="countryside">鄉村</option><option value="flowers">花田</option><option value="goldenlight">金色光線</option>
-              <option value="mountain">山脈</option><option value="pool">泳池</option><option value="latincity">拉丁城市</option>
-              <option value="cafe">咖啡廳</option><option value="asiancity">亞洲城市</option><option value="nightlights">夜燈</option><option value="desert">沙漠</option>
+              <option value="random">隨機</option><option value="street">街道</option><option value="bedroom">臥室</option><option value="studio">攝影棚</option><option value="beach">海灘</option><option value="forest">森林</option><option value="cafe">咖啡廳</option><option value="asiancity">亞洲城市</option>
             </select>
           </div>
         </div>
@@ -479,11 +429,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <div style="padding:8px 10px;">
           <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:9px;border-radius:7px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;">✨ 套用 AI 效果</button>
           <div style="margin-top:5px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
               <div id="prStatus" style="font-size:9px;color:var(--t3);min-height:14px;white-space:pre-line;"></div>
               <span id="prPct" style="font-size:10px;font-weight:900;color:#E8603A;font-family:'DM Mono';"></span>
             </div>
-            <div id="prProgBar" style="display:none;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+            <div id="prProgBar" style="display:none;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-top:3px;">
               <div id="prProgFill" style="height:100%;background:linear-gradient(90deg,var(--sky),#E8603A);border-radius:2px;width:0%;transition:width 0.5s ease;"></div>
             </div>
           </div>
@@ -504,50 +454,30 @@ const GAS_URL='https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2_f
 const GAS_PASSWORD='raby2026';
 const CF_WORKER_URL='https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 
-let BRANDS=[];
-let BRAND_FOLDERS={};
+let BRANDS=[];let BRAND_FOLDERS={};
 const S={brandId:null,subId:null,prod:null,photos:[],videos:[],selPhoto:null,selVideo:null,scripts:[],delivers:[],openBrand:null};
 const CMAP={gold:{c:'var(--gold)',bg:'var(--gold2)'},red:{c:'#FF8099',bg:'var(--red2)'},sky:{c:'var(--sky)',bg:'var(--sky2)'},mint:{c:'var(--mint)',bg:'var(--mint2)'},purple:{c:'var(--purple)',bg:'var(--purple2)'}};
 
-const LOCAL_FALLBACK_DATA = {
-  brands:[
-    {id:'cf',name:'巧福健康家電',icon:'🏠',navColor:'gold',soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。',adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊',hashtags:'#居家健康 #巧福 #台灣品牌'},
-    {id:'ww',name:'旺味米香腸',icon:'🌾',navColor:'red',soul:'全台首創米香腸，傳承阿公家訓。',adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景',hashtags:'#旺味米香腸 #米香腸 #台灣豬'},
-    {id:'ly',name:'琉宇醬選',icon:'🫙',navColor:'mint',soul:'琉宇醬選主理頂級進口醬料。',adStyle:'精緻質感、食材溯源、料理升級',hashtags:'#琉宇醬選 #好滋好滋 #PASSERI'},
-  ],
-  products:[],
-  folders:[
-    {brandId:'cf',photoFolderId:'1tHV_loHiUcZx8MVrpnUwTWUge74GIwE7',videoFolderId:'132xtz0XebJV-gGXObV4UtanmwyZd9Awc'},
-    {brandId:'ww',photoFolderId:'1dhCLr4tKrfV0RLHp454pzyJjytZFb92m',videoFolderId:'12LsKHCZQkDhT_FhzYWFw7rN4KJyvAD46'},
-    {brandId:'ly',photoFolderId:'1u9n-NpnQjjzU3GnpT15ERanCEky_m6bP',videoFolderId:'1lSvqYV28lgqN2xZ6640glMTssYhUKMoD'},
-  ]
-};
+const LOCAL_FALLBACK_DATA={brands:[{id:'cf',name:'巧福健康家電',icon:'🏠',navColor:'gold',soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。',adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊',hashtags:'#居家健康 #巧福 #台灣品牌'},{id:'ww',name:'旺味米香腸',icon:'🌾',navColor:'red',soul:'全台首創米香腸，傳承阿公家訓。',adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景',hashtags:'#旺味米香腸 #米香腸 #台灣豬'},{id:'ly',name:'琉宇醬選',icon:'🫙',navColor:'mint',soul:'琉宇醬選主理頂級進口醬料。',adStyle:'精緻質感、食材溯源、料理升級',hashtags:'#琉宇醬選 #好滋好滋 #PASSERI'}],products:[],folders:[{brandId:'cf',photoFolderId:'1tHV_loHiUcZx8MVrpnUwTWUge74GIwE7',videoFolderId:'132xtz0XebJV-gGXObV4UtanmwyZd9Awc'},{brandId:'ww',photoFolderId:'1dhCLr4tKrfV0RLHp454pzyJjytZFb92m',videoFolderId:'12LsKHCZQkDhT_FhzYWFw7rN4KJyvAD46'},{brandId:'ly',photoFolderId:'1u9n-NpnQjjzU3GnpT15ERanCEky_m6bP',videoFolderId:'1lSvqYV28lgqN2xZ6640glMTssYhUKMoD'}]};
 
 async function startSystem(){
   document.getElementById('initOverlay').style.display='flex';
   document.getElementById('initMsg').textContent='初始化 Brand OS 系統...';
   try{
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),8000);
+    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8000);
     const res=await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}`,{signal:controller.signal});
-    clearTimeout(timer);
-    const json=await res.json();
+    clearTimeout(timer);const json=await res.json();
     if(!json.ok)throw new Error(json.error);
     buildDataFromSheets(json.data);
     document.getElementById('initMsg').textContent='✅ 系統就緒！';
-  }catch(e){
-    console.warn('System fallback:',e.message);
-    buildDataFromSheets(LOCAL_FALLBACK_DATA);
-    document.getElementById('initMsg').textContent='✅ 系統就緒！';
-  }
+  }catch(e){console.warn('fallback:',e.message);buildDataFromSheets(LOCAL_FALLBACK_DATA);document.getElementById('initMsg').textContent='✅ 系統就緒！';}
   await new Promise(r=>setTimeout(r,600));
   document.getElementById('initOverlay').style.display='none';
   renderNavBrands();renderBrandTree();
 }
 
 function buildDataFromSheets(data){
-  const{brands,products,folders}=data;
-  BRAND_FOLDERS={};
+  const{brands,products,folders}=data;BRAND_FOLDERS={};
   folders.forEach(f=>{BRAND_FOLDERS[f.brandId]={photo:f.photoFolderId,video:f.videoFolderId};});
   const prodByBrand={};
   products.forEach(p=>{
@@ -559,17 +489,15 @@ function buildDataFromSheets(data){
   BRANDS=brands.map(b=>({id:b.id,name:b.name,icon:b.icon,navColor:b.navColor,soul:b.soul,adStyle:b.adStyle,hashtags:b.hashtags,subs:Object.values(prodByBrand[b.id]||{})}));
 }
 
-function renderNavBrands(){
-  document.getElementById('navBrands').innerHTML=BRANDS.map(b=>`<button class="nb ${b.navColor} ${S.brandId===b.id?'on':''}" onclick="clickBrand('${b.id}')">${b.name}</button>`).join('');
-}
+function renderNavBrands(){document.getElementById('navBrands').innerHTML=BRANDS.map(b=>`<button class="nb ${b.navColor} ${S.brandId===b.id?'on':''}" onclick="clickBrand('${b.id}')">${b.name}</button>`).join('');}
 function renderBrandTree(){
   document.getElementById('brandTree').innerHTML=BRANDS.map(b=>{
     const isOpen=S.openBrand===b.id;
-    return `<div><div class="brand-row ${S.brandId===b.id&&!S.subId?'on':''}" onclick="clickBrand('${b.id}')"><span class="br-icon">${b.icon}</span><div class="br-info"><div class="br-name">${b.name}</div><div class="br-sub">${b.subs.length}個系列</div></div><span style="color:var(--t3);font-size:11px;transition:transform 0.2s;${isOpen?'transform:rotate(90deg)':''}">›</span></div>${isOpen?b.subs.map(sb=>`<div class="sub-brand-row ${S.subId===sb.id?'on':''}" onclick="clickSub('${b.id}','${sb.id}')"><div class="dot"></div>${sb.name}</div>`).join(''):''}</div>`;
+    return `<div><div class="brand-row ${S.brandId===b.id&&!S.subId?'on':''}" onclick="clickBrand('${b.id}')"><span class="br-icon">${b.icon}</span><div class="br-info"><div class="br-name">${b.name}</div><div class="br-sub">${b.subs.length}個系列</div></div><span style="color:var(--t3);font-size:11px;${isOpen?'transform:rotate(90deg);display:inline-block':''}">›</span></div>${isOpen?b.subs.map(sb=>`<div class="sub-brand-row ${S.subId===sb.id?'on':''}" onclick="clickSub('${b.id}','${sb.id}')"><div class="dot"></div>${sb.name}</div>`).join(''):''}</div>`;
   }).join('');
 }
 
-// ★ 修正1：切換品牌時清空素材，防止跨品牌污染
+// ★ 修正1：切換品牌清空素材
 function clickBrand(id){
   S.openBrand=S.openBrand===id?null:id;S.brandId=id;S.subId=null;S.prod=null;
   S.photos=[];S.videos=[];S.selPhoto=null;S.selVideo=null;
@@ -579,27 +507,18 @@ function clickBrand(id){
 }
 function clickSub(brandId,subId){S.brandId=brandId;S.subId=subId;S.prod=null;S.openBrand=brandId;renderNavBrands();renderBrandTree();renderProds();updateCtx();}
 function renderProds(){
-  const el=document.getElementById('prodList');
-  const brand=BRANDS.find(b=>b.id===S.brandId);
+  const el=document.getElementById('prodList');const brand=BRANDS.find(b=>b.id===S.brandId);
   if(!brand){el.innerHTML='<div class="empty" style="padding:24px 10px;"><div class="empty-ico">📦</div><div class="empty-p">← 先選品牌</div></div>';return;}
-  const subs=S.subId?brand.subs.filter(s=>s.id===S.subId):brand.subs;
-  let html='';
-  subs.forEach(sb=>{
-    const sc=CMAP[sb.color]||CMAP.gold;
-    html+=`<div style="margin-bottom:12px;"><div class="prod-grp-label" style="color:${sc.c}">${sb.name}</div>${sb.prods.map(p=>`<div class="prod-row ${S.prod?.id===p.id?'on':''}" onclick="clickProd('${sb.id}','${p.id}')"><div class="prod-dot"></div><div><div class="prod-name">${p.name}</div><div class="prod-tag">${p.tag}</div></div></div>`).join('')}</div>`;
-  });
+  const subs=S.subId?brand.subs.filter(s=>s.id===S.subId):brand.subs;let html='';
+  subs.forEach(sb=>{const sc=CMAP[sb.color]||CMAP.gold;html+=`<div style="margin-bottom:12px;"><div class="prod-grp-label" style="color:${sc.c}">${sb.name}</div>${sb.prods.map(p=>`<div class="prod-row ${S.prod?.id===p.id?'on':''}" onclick="clickProd('${sb.id}','${p.id}')"><div class="prod-dot"></div><div><div class="prod-name">${p.name}</div><div class="prod-tag">${p.tag}</div></div></div>`).join('')}</div>`;});
   el.innerHTML=html;
 }
 function clickProd(subId,prodId){
-  const brand=BRANDS.find(b=>b.id===S.brandId);
-  const sub=brand?.subs.find(s=>s.id===subId);
-  const prod=sub?.prods.find(p=>p.id===prodId);
-  if(!prod)return;
-  S.subId=subId;S.prod=prod;renderBrandTree();renderProds();updateCtx();
+  const brand=BRANDS.find(b=>b.id===S.brandId);const sub=brand?.subs.find(s=>s.id===subId);const prod=sub?.prods.find(p=>p.id===prodId);
+  if(!prod)return;S.subId=subId;S.prod=prod;renderBrandTree();renderProds();updateCtx();
 }
 function updateCtx(){
-  const brand=BRANDS.find(b=>b.id===S.brandId);
-  const sub=brand?.subs.find(s=>s.id===S.subId);
+  const brand=BRANDS.find(b=>b.id===S.brandId);const sub=brand?.subs.find(s=>s.id===S.subId);
   const sc=CMAP[sub?.color||brand?.navColor]||CMAP.gold;
   const bEl=document.getElementById('gbBrand');const pEl=document.getElementById('gbProd');
   if(!brand){bEl.textContent='尚未選擇品牌';bEl.style.color='var(--t3)';pEl.textContent='← 先選商品';pEl.style.color='var(--t3)';return;}
@@ -608,36 +527,24 @@ function updateCtx(){
 }
 
 function parseDriveId(raw){
-  if(!raw)return null;
-  const m=raw.match(/(?:folders\/|id=)([a-zA-Z0-9_\-]{15,})/);
-  if(m)return m[1];
-  if(/^[a-zA-Z0-9_\-]{15,}$/.test(raw.trim()))return raw.trim();
-  return null;
+  if(!raw)return null;const m=raw.match(/(?:folders\/|id=)([a-zA-Z0-9_\-]{15,})/);
+  if(m)return m[1];if(/^[a-zA-Z0-9_\-]{15,}$/.test(raw.trim()))return raw.trim();return null;
 }
 function setDriveStatus(state){
   const dot=document.getElementById('driveDot');const lbl=document.getElementById('driveLabel');
   dot.className='drive-dot '+state;
-  if(state==='ok'){lbl.textContent='Drive 已連結';lbl.style.color='var(--mint)';}
+  if(state==='ok'){lbl.textContent='Drive 已連結';lbl.style.color='var(--mint)';lbl.classList.remove('drive-warning-text');}
   else if(state==='busy'){lbl.textContent='載入中…';lbl.style.color='var(--gold)';}
   else{lbl.textContent='Drive 未連結';lbl.style.color='var(--t3)';}
 }
 async function fetchDriveAssets(type){
-  if(!window._driveToken){
-    const grid=document.getElementById('assetGrid');
-    grid.innerHTML='<div style="margin:12px;padding:14px 16px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;"><div style="font-size:22px;margin-bottom:8px;">🔴</div><div style="font-size:13px;font-weight:900;color:#FF4D6A;margin-bottom:6px;">尚未連結 Google Drive！</div><div style="font-size:11px;color:#FF8099;line-height:1.7;">請先點右上角「🔗 連結 Drive」</div><button onclick="driveLogin()" style="margin-top:10px;padding:8px 20px;background:#D4182E;border:none;border-radius:8px;color:#fff;font-family:Noto Sans TC,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">🔗 立即連結 Drive</button></div>';
-    return;
-  }
-  const inputId=type==='photo'?'inPhotoFolder':'inVideoFolder';
-  const btnId=type==='photo'?'fetchPhotoBtn':'fetchVideoBtn';
-  const raw=document.getElementById(inputId).value.trim();
-  const folderId=parseDriveId(raw);
-  const btn=document.getElementById(btnId);
+  if(!window._driveToken){document.getElementById('assetGrid').innerHTML='<div style="margin:12px;padding:14px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;"><div style="font-size:13px;font-weight:900;color:#FF4D6A;">🔴 尚未連結 Google Drive！</div><button onclick="driveLogin()" style="margin-top:10px;padding:8px 20px;background:#D4182E;border:none;border-radius:8px;color:#fff;font-family:Noto Sans TC,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">🔗 立即連結 Drive</button></div>';return;}
+  const inputId=type==='photo'?'inPhotoFolder':'inVideoFolder';const btnId=type==='photo'?'fetchPhotoBtn':'fetchVideoBtn';
+  const raw=document.getElementById(inputId).value.trim();const folderId=parseDriveId(raw);const btn=document.getElementById(btnId);
   if(!raw){alert('請先貼上 Drive 資料夾連結');return;}
   btn.disabled=true;btn.textContent='載入中…';setDriveStatus('busy');
-  if(window._driveToken&&folderId)await fetchFromDriveAPI(folderId,type,window._driveToken);
-  else await useFolderLink(raw,type,folderId);
-  btn.disabled=false;btn.textContent=type==='photo'?'抓照片':'抓影片';
-  renderAssets();setDriveStatus('ok');
+  if(window._driveToken&&folderId)await fetchFromDriveAPI(folderId,type,window._driveToken);else await useFolderLink(raw,type,folderId);
+  btn.disabled=false;btn.textContent=type==='photo'?'抓照片':'抓影片';renderAssets();setDriveStatus('ok');
 }
 async function fetchFromDriveAPI(folderId,type,token){
   const mimeFilter=type==='photo'?"mimeType contains 'image/'":"mimeType contains 'video/'";
@@ -645,34 +552,18 @@ async function fetchFromDriveAPI(folderId,type,token){
   try{
     const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,thumbnailLink,webViewLink)&pageSize=100`,{headers:{Authorization:'Bearer '+token}});
     const d=await r.json();
-    if(d.files){
-      d.files.forEach(f=>{
-        const arr=type==='photo'?S.photos:S.videos;
-        if(!arr.find(x=>x.driveId===f.id)){
-          const item={driveId:f.id,name:f.name,thumb:f.thumbnailLink||'',driveUrl:f.webViewLink||`https://drive.google.com/file/d/${f.id}/view`,src:'',type};
-          arr.push(item);
-          fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{headers:{Authorization:'Bearer '+token}})
-            .then(r=>r.blob()).then(blob=>{const reader=new FileReader();reader.onload=()=>{item.src=reader.result;renderAssets();};reader.readAsDataURL(blob);}).catch(()=>{});
-        }
-      });
-    }
+    if(d.files){d.files.forEach(f=>{const arr=type==='photo'?S.photos:S.videos;if(!arr.find(x=>x.driveId===f.id)){const item={driveId:f.id,name:f.name,thumb:f.thumbnailLink||'',driveUrl:f.webViewLink||`https://drive.google.com/file/d/${f.id}/view`,src:'',type};arr.push(item);fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{headers:{Authorization:'Bearer '+token}}).then(r=>r.blob()).then(blob=>{const reader=new FileReader();reader.onload=()=>{item.src=reader.result;renderAssets();};reader.readAsDataURL(blob);}).catch(()=>{});}});}
   }catch(e){console.warn('Drive API error',e);}
 }
 async function useFolderLink(raw,type,folderId){
   const folderUrl=folderId?`https://drive.google.com/drive/folders/${folderId}`:(raw.startsWith('http')?raw:`https://drive.google.com/drive/folders/${raw}`);
-  const arr=type==='photo'?S.photos:S.videos;
-  if(!arr.find(x=>x.isFolder)){arr.push({isFolder:true,name:(type==='photo'?'🗂️ 照片資料夾':'🗂️ 影片資料夾'),driveUrl:folderUrl,src:'',type,thumb:''});}
+  const arr=type==='photo'?S.photos:S.videos;if(!arr.find(x=>x.isFolder)){arr.push({isFolder:true,name:(type==='photo'?'🗂️ 照片資料夾':'🗂️ 影片資料夾'),driveUrl:folderUrl,src:'',type,thumb:''});}
 }
 async function fetchBoth(){
-  if(!window._driveToken){
-    document.getElementById('assetGrid').innerHTML='<div style="margin:12px;padding:14px 16px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;"><div style="font-size:13px;font-weight:900;color:#FF4D6A;">🔴 尚未連結 Google Drive！</div><button onclick="driveLogin()" style="margin-top:10px;padding:8px 20px;background:#D4182E;border:none;border-radius:8px;color:#fff;font-family:Noto Sans TC,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">🔗 立即連結 Drive</button></div>';
-    return;
-  }
-  const photoRaw=document.getElementById('inPhotoFolder').value.trim();
-  const videoRaw=document.getElementById('inVideoFolder').value.trim();
+  if(!window._driveToken){document.getElementById('assetGrid').innerHTML='<div style="margin:12px;padding:14px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;"><div style="font-size:13px;font-weight:900;color:#FF4D6A;">🔴 尚未連結 Drive！</div><button onclick="driveLogin()" style="margin-top:10px;padding:8px 20px;background:#D4182E;border:none;border-radius:8px;color:#fff;font-family:Noto Sans TC,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">🔗 連結</button></div>';return;}
+  const photoRaw=document.getElementById('inPhotoFolder').value.trim();const videoRaw=document.getElementById('inVideoFolder').value.trim();
   if(!photoRaw&&!videoRaw){alert('請先填入照片或影片資料夾連結');return;}
-  if(photoRaw)await fetchDriveAssets('photo');
-  if(videoRaw)await fetchDriveAssets('video');
+  if(photoRaw)await fetchDriveAssets('photo');if(videoRaw)await fetchDriveAssets('video');
 }
 function renderAssets(){
   const grid=document.getElementById('assetGrid');let html='';
@@ -683,157 +574,68 @@ function renderAssets(){
 }
 function assetItemHtml(f,i,type,sel){
   const fallback=type==='photo'?'🖼️':'🎬';
-  const errHandler="this.style.display='none';this.parentNode.textContent='"+fallback+"'";
-  const thumb=f.src?(`<img src="${f.src}" onerror="${errHandler}">`):f.thumb?(`<img src="${f.thumb}" onerror="${errHandler}">`):fallback;
+  const thumb=f.src?`<img src="${f.src}" onerror="this.parentNode.textContent='${fallback}'">`:(f.thumb?`<img src="${f.thumb}" onerror="this.parentNode.textContent='${fallback}'">`):fallback;
   return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})"><div class="ai-thumb">${thumb}</div><div class="ai-info"><div class="ai-name">${f.name}</div><div class="ai-meta">${f.isFolder?`<a href="${f.driveUrl}" target="_blank" style="color:var(--sky)">開啟資料夾 →</a>`:'Drive 素材'}</div></div><span class="ai-check">✓</span></div>`;
 }
 function selectAsset(type,i){
-  if(type==='photo')S.selPhoto=S.selPhoto===i?null:i;
-  else S.selVideo=S.selVideo===i?null:i;
+  if(type==='photo')S.selPhoto=S.selPhoto===i?null:i;else S.selVideo=S.selVideo===i?null:i;
   renderAssets();
-  if(S.scripts.length>0){
-    const brand=BRANDS.find(b=>b.id===S.brandId);
-    const sub=brand?.subs.find(s=>s.id===S.subId);
-    renderScripts(`${brand?.name||''}${sub?' › '+sub.name:''}`,sub?.color||brand?.navColor);
-  }
+  if(S.scripts.length>0){const brand=BRANDS.find(b=>b.id===S.brandId);const sub=brand?.subs.find(s=>s.id===S.subId);renderScripts(`${brand?.name||''}${sub?' › '+sub.name:''}`,sub?.color||brand?.navColor);}
 }
 
 async function doGenerate(){
-  if(!S.brandId){alert('請先選擇品牌！');return;}
-  if(!S.prod){alert('請先選擇商品！');return;}
-  const brand=BRANDS.find(b=>b.id===S.brandId);
-  const sub=brand?.subs.find(s=>s.id===S.subId);
-  const soul=sub?.soul||brand?.soul||'';
-  const style=sub?.adStyle||brand?.adStyle||'';
-  const tags=sub?.hashtags||brand?.hashtags||'';
-  const aud=document.getElementById('selAud').value;
-  const count=parseInt(document.getElementById('selN').value)||20;
+  if(!S.brandId){alert('請先選擇品牌！');return;}if(!S.prod){alert('請先選擇商品！');return;}
+  const brand=BRANDS.find(b=>b.id===S.brandId);const sub=brand?.subs.find(s=>s.id===S.subId);
+  const soul=sub?.soul||brand?.soul||'';const style=sub?.adStyle||brand?.adStyle||'';const tags=sub?.hashtags||brand?.hashtags||'';
+  const aud=document.getElementById('selAud').value;const count=parseInt(document.getElementById('selN').value)||20;
   const brandDisplay=`${brand.name}${sub&&sub.id!==brand.id?' › '+sub.name:''}`;
-  const btn=document.getElementById('genBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spin"></span>生成中';
-  const prog=document.getElementById('prog');const fill=document.getElementById('progFill');
-  prog.style.display='block';
-  const progEl=document.getElementById('progPct');
-  const totalMs=count<=1?6000:count<=5?12000:count<=10?18000:28000;
-  let progVal=0;
-  const progInterval=setInterval(()=>{
-    if(progVal>=92)return;
-    const speed=progVal<30?2.5:progVal<60?1.2:0.5;
-    progVal=Math.min(92,progVal+speed);
-    fill.style.width=progVal+'%';
-    progEl.textContent=Math.round(progVal)+'%';
-    if(progVal<20)btn.innerHTML='<span class="spin"></span>AI 準備中...';
-    else if(progVal<50)btn.innerHTML='<span class="spin"></span>AI 思考中...';
-    else if(progVal<80)btn.innerHTML='<span class="spin"></span>AI 撰寫中...';
-    else btn.innerHTML='<span class="spin"></span>AI 整理中...';
-  },totalMs/100);
+  const btn=document.getElementById('genBtn');btn.disabled=true;btn.innerHTML='<span class="spin"></span>生成中';
+  const prog=document.getElementById('prog');const fill=document.getElementById('progFill');prog.style.display='block';
+  const progEl=document.getElementById('progPct');let progVal=0;
+  const progInterval=setInterval(()=>{if(progVal>=92)return;progVal=Math.min(92,progVal+(progVal<30?2.5:progVal<60?1.2:0.5));fill.style.width=progVal+'%';progEl.textContent=Math.round(progVal)+'%';},300);
   const copyLength=document.getElementById('selCopyLength')?.value||'medium';
-  const copyLengthGuide={short:'核心段落3-5行，每行10-15字，精簡有力',medium:'核心段落6-10行，每行10-20字，故事感包裝',long:'核心段落12-18行，每行10-25字，深入鋪陳場景'}[copyLength];
-  const copyLengthLabel={short:'【短文案版 - 快狠準】',medium:'【中等文案版 - 故事感】',long:'【長文案版 - 深度共鳴】'}[copyLength];
-  const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣方法論。\n\n【品牌】${brandDisplay}\n【品牌靈魂與策略】${soul}\n【廣告風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【目標受眾】${aud}\n【Hashtag】${tags}\n【文案規格】${copyLengthLabel}\n\n【任務】用 Hormozi 三段結構，生成「剛好 ${count} 組」最強廣告組合。\n⚠️ 嚴格規定：combos 陣列必須剛好 ${count} 個元素，不多不少。\n\n三段結構：\n1. 黃金3秒鉤子（15字內）：含方向標記\n2. 核心段落（FB貼文風格）：短句斷行+emoji，${copyLengthGuide}，含類型標記\n3. CTA（15字內）：含風格標記\n\n要求：繁體中文、台灣用語、每組風格截然不同\n\n只回傳純JSON：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子","visual":"畫面"},"core":{"type":"類型","script":"段落","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA"}}]}`;
+  const copyLengthGuide={short:'核心段落3-5行',medium:'核心段落6-10行',long:'核心段落12-18行'}[copyLength];
+  const copyLengthLabel={short:'【短文案版】',medium:'【中等文案版】',long:'【長文案版】'}[copyLength];
+  const prompt=`你是台灣頂尖FB廣告策略師，精通Hormozi廣告矩陣。\n【品牌】${brandDisplay}\n【靈魂】${soul}\n【風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【受眾】${aud}\n【Hashtag】${tags}\n【規格】${copyLengthLabel}\n\n生成「剛好${count}組」廣告。combos陣列必須剛好${count}個。\n${copyLengthGuide}，繁體中文台灣用語，每組風格截然不同。\n只回傳純JSON：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子","visual":"畫面"},"core":{"type":"類型","script":"段落","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA"}}]}`;
   try{
-    fill.style.width='40%';progEl.textContent='40%';
+    fill.style.width='40%';
     const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt})});
-    fill.style.width='80%';progEl.textContent='80%';btn.innerHTML='<span class="spin"></span>整理腳本中...';
-    const data=await res.json();
-    if(!data.ok)throw new Error(data.error||JSON.stringify(data));
-    const raw=data.text.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(raw);
-    S.scripts=parsed.combos||[];
-    renderScripts(brandDisplay,sub?.color||brand?.navColor);
+    fill.style.width='80%';btn.innerHTML='<span class="spin"></span>整理中...';
+    const data=await res.json();if(!data.ok)throw new Error(data.error||JSON.stringify(data));
+    const raw=data.text.replace(/```json|```/g,'').trim();const parsed=JSON.parse(raw);
+    S.scripts=parsed.combos||[];renderScripts(brandDisplay,sub?.color||brand?.navColor);
     document.getElementById('scriptBadge').textContent=S.scripts.length;
     const lenLabel={short:'短文案',medium:'中文案',long:'長文案'}[copyLength];
-    document.querySelector('[data-tab="scripts"]').innerHTML='📝 廣告腳本 <span class="badge">'+S.scripts.length+'</span> <span style="font-size:8px;background:rgba(232,96,58,0.15);color:#E8603A;padding:1px 5px;border-radius:3px;font-weight:700;">'+lenLabel+'</span>';
-    clearInterval(progInterval);fill.style.width='100%';progEl.textContent='✅';
-    setTimeout(()=>{prog.style.display='none';progEl.textContent='';},800);
-  }catch(e){
-    clearInterval(progInterval);prog.style.display='none';
-    alert('生成失敗：'+e.message);
-  }finally{
-    btn.disabled=false;btn.innerHTML='⚡ 生成腳本';
-  }
+    document.querySelector('[data-tab="scripts"]').innerHTML='📝 廣告腳本 <span class="badge">'+S.scripts.length+'</span> <span style="font-size:8px;background:rgba(232,96,58,0.15);color:#E8603A;padding:1px 5px;border-radius:3px;">'+lenLabel+'</span>';
+    clearInterval(progInterval);fill.style.width='100%';progEl.textContent='✅';setTimeout(()=>{prog.style.display='none';progEl.textContent='';},800);
+  }catch(e){clearInterval(progInterval);prog.style.display='none';alert('生成失敗：'+e.message);}
+  finally{btn.disabled=false;btn.innerHTML='⚡ 生成腳本';}
 }
 
 function renderScripts(brandDisplay,colorKey){
   const sc=CMAP[colorKey]||CMAP.gold;
-  document.getElementById('scriptsOut').innerHTML=`
-    <div style="background:rgba(91,200,200,0.08);border:1px dashed rgba(91,200,200,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--sky);line-height:1.8;">
-      💡 右側選好 🖼️ 照片 + 🎬 影片，點「＋加入交付」或「🎨廣告圖」
-      <br>📌 選中：${S.selPhoto!==null?`<span style="color:var(--sky)">🖼️ ${S.photos[S.selPhoto]?.name}</span>`:'<span style="color:var(--t3)">🖼️ 未選</span>'}&nbsp;&nbsp;${S.selVideo!==null?`<span style="color:var(--peach)">🎬 ${S.videos[S.selVideo]?.name}</span>`:'<span style="color:var(--t3)">🎬 未選</span>'}
-    </div>
-  `+S.scripts.map((s,i)=>`
-    <div class="ad-card" style="animation-delay:${i*18}ms">
-      <div class="ac-top">
-        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
-          <span class="ac-id">${s.id}</span>
-          <span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span>
-          <span style="font-size:9px;color:var(--t3);">${s.core.type}</span>
-        </div>
-        <div class="ac-btns">
-          <button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付 ${S.selPhoto!==null?'🖼️':''}${S.selVideo!==null?'🎬':''}</button>
-          <button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">🎨 廣告圖</button>
-          <button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button>
-        </div>
-      </div>
-      <div class="ac-body">
-        <div class="seg"><div class="seg-lbl" style="color:var(--sky)">🪝 黃金3秒</div><div class="seg-txt">${s.hook.script}</div><span class="seg-badge" style="background:var(--sky2);color:var(--sky)">${s.hook.method}</span><div class="seg-hint">📸 ${s.hook.visual}</div></div>
-        <div class="seg"><div class="seg-lbl" style="color:var(--mint)">💎 核心段落</div><div class="seg-txt" style="white-space:pre-line">${s.core.script}</div><span class="seg-badge" style="background:var(--mint2);color:var(--mint)">${s.core.type}</span><div class="seg-hint">💡 ${s.core.solve}</div></div>
-        <div class="seg"><div class="seg-lbl" style="color:var(--peach)">🚀 CTA</div><div class="seg-txt">${s.cta.script}</div><span class="seg-badge" style="background:var(--peach2);color:var(--peach)">${s.cta.style}</span></div>
-      </div>
-    </div>`).join('');
+  document.getElementById('scriptsOut').innerHTML=`<div style="background:rgba(91,200,200,0.08);border:1px dashed rgba(91,200,200,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--sky);line-height:1.8;">💡 右側選好 🖼️ 照片 + 🎬 影片，點「＋加入交付」或「🎨廣告圖」<br>📌 選中：${S.selPhoto!==null?`<span style="color:var(--sky)">🖼️ ${S.photos[S.selPhoto]?.name}</span>`:'<span style="color:var(--t3)">🖼️ 未選</span>'}&nbsp;&nbsp;${S.selVideo!==null?`<span style="color:var(--peach)">🎬 ${S.videos[S.selVideo]?.name}</span>`:'<span style="color:var(--t3)">🎬 未選</span>'}</div>`+S.scripts.map((s,i)=>`<div class="ad-card" style="animation-delay:${i*18}ms"><div class="ac-top"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;"><span class="ac-id">${s.id}</span><span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span><span style="font-size:9px;color:var(--t3);">${s.core.type}</span></div><div class="ac-btns"><button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付 ${S.selPhoto!==null?'🖼️':''}${S.selVideo!==null?'🎬':''}</button><button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">🎨 廣告圖</button><button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button></div></div><div class="ac-body"><div class="seg"><div class="seg-lbl" style="color:var(--sky)">🪝 黃金3秒</div><div class="seg-txt">${s.hook.script}</div><span class="seg-badge" style="background:var(--sky2);color:var(--sky)">${s.hook.method}</span><div class="seg-hint">📸 ${s.hook.visual}</div></div><div class="seg"><div class="seg-lbl" style="color:var(--mint)">💎 核心段落</div><div class="seg-txt" style="white-space:pre-line">${s.core.script}</div><span class="seg-badge" style="background:var(--mint2);color:var(--mint)">${s.core.type}</span><div class="seg-hint">💡 ${s.core.solve}</div></div><div class="seg"><div class="seg-lbl" style="color:var(--peach)">🚀 CTA</div><div class="seg-txt">${s.cta.script}</div><span class="seg-badge" style="background:var(--peach2);color:var(--peach)">${s.cta.style}</span></div></div></div>`).join('');
 }
-
-function copyOne(i,btn){
-  const s=S.scripts[i];
-  const t=`【${s.id}】${S.prod?.name}\n🪝 ${s.hook.method}：${s.hook.script}\n📸 ${s.hook.visual}\n\n💎 ${s.core.type}：\n${s.core.script}\n💡 ${s.core.solve}\n\n🚀 ${s.cta.style}：${s.cta.script}`;
-  navigator.clipboard.writeText(t).then(()=>{btn.textContent='✅ 已複製';setTimeout(()=>btn.textContent='複製腳本',2000);});
-}
-
+function copyOne(i,btn){const s=S.scripts[i];const t=`【${s.id}】${S.prod?.name}\n🪝 ${s.hook.method}：${s.hook.script}\n📸 ${s.hook.visual}\n\n💎 ${s.core.type}：\n${s.core.script}\n💡 ${s.core.solve}\n\n🚀 ${s.cta.style}：${s.cta.script}`;navigator.clipboard.writeText(t).then(()=>{btn.textContent='✅ 已複製';setTimeout(()=>btn.textContent='複製腳本',2000);});}
 async function addDeliver(scriptIdx){
-  const s=S.scripts[scriptIdx];
-  const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
-  const video=S.selVideo!==null?S.videos[S.selVideo]:null;
+  const s=S.scripts[scriptIdx];const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;const video=S.selVideo!==null?S.videos[S.selVideo]:null;
   const row={id:s.id,brand:S.brandId||'',product:S.prod?.name||'',hookScript:s.hook.script,coreScript:s.core.script,ctaScript:s.cta.script,photoName:photo?.name||'',photoUrl:photo?.driveUrl||'',videoName:video?.name||'',videoUrl:video?.driveUrl||'',status:!!(photo||video)?'素材已備妥':'缺素材',createdAt:new Date().toISOString()};
   try{await fetch(`${GAS_URL}?action=addDeliver&password=${GAS_PASSWORD}&row=${encodeURIComponent(JSON.stringify(row))}`);}catch(e){}
-  S.delivers.push({...row,ready:!!(photo||video)});
-  renderDeliverRows();renderDeliverOut();
-  switchTab(document.querySelector('[data-tab="deliver"]'));
+  S.delivers.push({...row,ready:!!(photo||video)});renderDeliverRows();renderDeliverOut();switchTab(document.querySelector('[data-tab="deliver"]'));
 }
-
 function renderDeliverRows(){
-  document.getElementById('dzSub').textContent=S.delivers.length+' 組素材';
-  document.getElementById('deliverBadge').textContent=S.delivers.length;
+  document.getElementById('dzSub').textContent=S.delivers.length+' 組素材';document.getElementById('deliverBadge').textContent=S.delivers.length;
   const tbody=document.getElementById('deliverRows');
   if(!S.delivers.length){tbody.innerHTML='<div style="text-align:center;padding:14px;font-size:10px;color:var(--t3);">尚無素材</div>';return;}
-  tbody.innerHTML=S.delivers.map((r,i)=>{
-    const pLink=r.photoUrl?`<a class="asset-link al-photo" href="${r.photoUrl}" target="_blank">🖼️</a>`:`<span class="asset-link al-none">🖼️</span>`;
-    const vLink=r.videoUrl?`<a class="asset-link al-video" href="${r.videoUrl}" target="_blank">🎬</a>`:`<span class="asset-link al-none">🎬</span>`;
-    return `<div class="dr ${i===S.delivers.length-1?'new':''}"><span class="dr-id">${r.id}</span><span class="dr-script" title="${r.hookScript}">${r.hookScript.slice(0,16)}…</span><span>${pLink}</span><span>${vLink}</span><span class="dr-status ${r.ready?'ds-ready':'ds-missing'}">${r.ready?'✅':'⚠️'}</span></div>`;
-  }).join('');
+  tbody.innerHTML=S.delivers.map((r,i)=>{const pLink=r.photoUrl?`<a class="asset-link al-photo" href="${r.photoUrl}" target="_blank">🖼️</a>`:`<span class="asset-link al-none">🖼️</span>`;const vLink=r.videoUrl?`<a class="asset-link al-video" href="${r.videoUrl}" target="_blank">🎬</a>`:`<span class="asset-link al-none">🎬</span>`;return `<div class="dr ${i===S.delivers.length-1?'new':''}"><span class="dr-id">${r.id}</span><span class="dr-script" title="${r.hookScript}">${r.hookScript.slice(0,16)}…</span><span>${pLink}</span><span>${vLink}</span><span class="dr-status ${r.ready?'ds-ready':'ds-missing'}">${r.ready?'✅':'⚠️'}</span></div>`;}).join('');
 }
 function renderDeliverOut(){
   const el=document.getElementById('deliverOut');
   if(!S.delivers.length){el.innerHTML='<div class="empty"><div class="empty-p">加入交付後顯示</div></div>';return;}
-  el.innerHTML=S.delivers.map((r,i)=>`
-    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:11px 13px;margin-bottom:8px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
-        <span style="font-family:'DM Mono';font-size:11px;color:var(--gold)">${r.id}</span>
-        <span style="font-size:10px;color:var(--t3)">${r.product}</span>
-        <button class="tbtn tbtn-g" onclick="removeDeliver(${i})" style="font-size:9px">移除</button>
-      </div>
-      <div style="font-size:11px;line-height:1.8;margin-bottom:8px;">
-        <span style="color:var(--sky)">🪝</span> ${r.hookScript}<br>
-        <span style="color:var(--peach)">🚀</span> ${r.ctaScript}
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${r.photoUrl?`<a href="${r.photoUrl}" target="_blank" class="asset-link al-photo">🖼️ ${r.photoName||'照片'}</a>`:'<span class="asset-link al-none">🖼️ 無</span>'}
-        ${r.videoUrl?`<a href="${r.videoUrl}" target="_blank" class="asset-link al-video">🎬 ${r.videoName||'影片'}</a>`:'<span class="asset-link al-none">🎬 無</span>'}
-        <span class="dr-status ${r.ready?'ds-ready':'ds-missing'}">${r.ready?'✅ 備妥':'⚠️ 缺素材'}</span>
-      </div>
-    </div>`).join('');
+  el.innerHTML=S.delivers.map((r,i)=>`<div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:11px 13px;margin-bottom:8px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;"><span style="font-family:'DM Mono';font-size:11px;color:var(--gold)">${r.id}</span><span style="font-size:10px;color:var(--t3)">${r.product}</span><button class="tbtn tbtn-g" onclick="removeDeliver(${i})" style="font-size:9px">移除</button></div><div style="font-size:11px;line-height:1.8;margin-bottom:8px;"><span style="color:var(--sky)">🪝</span> ${r.hookScript}<br><span style="color:var(--peach)">🚀</span> ${r.ctaScript}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${r.photoUrl?`<a href="${r.photoUrl}" target="_blank" class="asset-link al-photo">🖼️ ${r.photoName||'照片'}</a>`:'<span class="asset-link al-none">🖼️ 無</span>'}${r.videoUrl?`<a href="${r.videoUrl}" target="_blank" class="asset-link al-video">🎬 ${r.videoName||'影片'}</a>`:'<span class="asset-link al-none">🎬 無</span>'}<span class="dr-status ${r.ready?'ds-ready':'ds-missing'}">${r.ready?'✅ 備妥':'⚠️ 缺素材'}</span></div></div>`).join('');
 }
 function removeDeliver(i){S.delivers.splice(i,1);renderDeliverRows();renderDeliverOut();}
-function clearAll(){if(S.delivers.length&&confirm(`清空所有 ${S.delivers.length} 組？`)){S.delivers=[];renderDeliverRows();renderDeliverOut();}}
+function clearAll(){if(S.delivers.length&&confirm(`清空所有${S.delivers.length}組？`)){S.delivers=[];renderDeliverRows();renderDeliverOut();}}
 function copyTSV(btn){
   if(!S.delivers.length){alert('尚無素材');return;}
   const h=['編號','商品','黃金3秒','核心段落','CTA','照片檔名','照片連結','影片檔名','影片連結','狀態'];
@@ -842,16 +644,54 @@ function copyTSV(btn){
 }
 
 // ══ AD MAKER ══
-let AM={w:1080,h:1080,scriptIdx:null};
-let PR_BG_IMG=null;
-let PR_MODE='ai_bg';
-let PR_SCENE='studio';
+let AM={w:1080,h:1080,scriptIdx:null};let PR_BG_IMG=null;let PR_MODE='ai_bg';let PR_SCENE='studio';
 
-const BRAND_SCENE_PROMPTS={cf:{studio:'clean white studio, soft product photography lighting, minimal background, professional',lifestyle:'cozy taiwanese family living room, warm evening lamp light, family atmosphere, soft bokeh',nature:'fresh outdoor garden at dusk, green plants, warm sunset glow, natural breeze',forest:'quiet forest path at night, moonlight filtering through trees, peaceful atmosphere',food:'warm family dining table, evening meal setting, cozy home atmosphere, soft lighting',kitchen:'cozy home kitchen at night, warm light, family cooking together, homey taiwanese interior',luxury:'modern premium apartment interior, dark elegant tones, gold accent lighting, upscale',marble:'clean marble surface, soft studio light, minimalist product photography, premium feel',outdoor:'suburban neighborhood at dusk, residential area, warm street lights, family community',beach:'outdoor summer evening, open air, warm ambient light, relaxing family setting',minimal:'soft gray gradient, minimal clean background, neutral tones, professional product shot',night:'taiwanese bedroom at night, dim warm light, peaceful sleeping atmosphere',garden:'taiwanese home garden at night, potted plants, warm porch light, summer evening',camping:'outdoor camping at night, campfire glow, starry sky, family gathering',office:'modern home office, clean desk setup, natural window light, productive atmosphere',random:null},ww:{studio:'clean white background, traditional taiwanese food photography, warm natural lighting',lifestyle:'taiwanese family BBQ gathering, outdoor grill, joyful atmosphere, weekend cookout',nature:'outdoor picnic on green grass, sunny day, taiwanese countryside, fresh air food scene',forest:'outdoor forest barbecue, campfire grill, rustic wooden table, nature food photography',food:'sizzling grill plate, charcoal BBQ setup, smoke rising, authentic taiwanese street food',kitchen:'traditional taiwanese kitchen, wooden cutting board, rustic home cooking, warm tones',luxury:'premium food presentation, elegant dark plate, fine dining interpretation of street food',marble:'white marble surface, artisan food styling, fresh ingredients around, clean food photography',outdoor:'vibrant taiwan night market, colorful vendor lights, busy food stalls, authentic street food',beach:'outdoor beach BBQ, seaside grill party, summer evening, friends and family gathering',minimal:'clean white plate, minimal food photography, soft natural light, traditional taiwanese style',night:'taiwan night market at night, glowing lanterns, busy stalls, nostalgic atmosphere',garden:'outdoor garden barbecue, wooden deck, string lights, warm summer evening gathering',camping:'camping BBQ scene, outdoor fire grill, nature background, taiwanese outdoor food culture',office:'casual office lunch setting, taiwanese takeout box, warm and approachable food photo',random:null},ly:{studio:'elegant white studio, premium product photography, soft diffused lighting, luxury feel',lifestyle:'upscale home dining table, wine glass beside, sophisticated meal setting, warm ambiance',nature:'fresh herb garden, morning light on ingredients, organic premium food sourcing, natural',forest:'dark forest floor, black truffle hunting atmosphere, earthy tones, premium ingredient',food:'fine dining plate presentation, truffle shaved on top, elegant restaurant style, gourmet',kitchen:'luxury kitchen interior, marble countertop, professional chef setup, high-end cooking',luxury:'black marble surface, gold spoon, dark moody lighting, premium luxury sauce bottle',marble:'white marble with gold veining, premium sauce bottle, elegant minimalist styling',outdoor:'upscale outdoor dining terrace, city view background, evening ambiance, sophisticated',beach:'mediterranean coastal dining, white tablecloth, sea view, sophisticated outdoor meal',minimal:'pure white background, single sauce bottle, dramatic side lighting, luxury minimal',night:'candlelit dinner table, dark romantic atmosphere, fine dining experience, premium feel',garden:'beautiful flower garden dining, afternoon tea setting, elegant outdoor table, premium',camping:'glamping setup, premium outdoor dining, quality ingredients, sophisticated outdoor food',office:'modern kitchen counter, premium sauce styling, professional food blogger aesthetic',random:null}};
+// ★ 修正5+6：LACEZ/MOZ 升級專屬高質感場景 Prompt
+const BRAND_SCENE_PROMPTS={
+  lacez:{
+    studio:'pure white seamless studio backdrop, soft professional lighting, high-end lingerie product photography, minimal elegant, luxury intimate apparel brand',
+    lifestyle:'luxury boutique boudoir interior, soft morning light, silk sheets, premium feminine atmosphere, elegant intimate setting',
+    nature:'ethereal white garden, soft natural light, delicate flowers, romantic feminine atmosphere, premium quality feeling',
+    forest:'misty morning forest, dappled sunlight, dreamy soft bokeh, romantic natural setting, premium intimate brand',
+    food:'elegant marble vanity table, perfume bottles, rose petals, luxury feminine product styling',
+    kitchen:'bright airy Scandinavian interior, white and gold accents, luxury home lifestyle, premium brand quality',
+    luxury:'deep navy velvet background, gold accent lighting, premium luxury product shot, high-end intimate fashion',
+    marble:'white Carrara marble surface, soft diffused studio light, minimal luxury lingerie photography, premium brand',
+    outdoor:'upscale rooftop terrace, city skyline blur, golden hour light, premium lifestyle brand atmosphere',
+    beach:'pristine white sand beach, turquoise water, soft golden light, luxury coastal lifestyle, premium intimate brand',
+    minimal:'soft gradient grey background, clean minimal studio, premium product photography, high-end fashion brand',
+    night:'candlelit luxury interior, warm intimate glow, premium boutique atmosphere, elegant feminine brand',
+    garden:'romantic English rose garden, soft afternoon light, delicate floral bokeh, luxury intimate brand lifestyle',
+    camping:'chic glamping setup, luxury canvas tent, warm string lights, premium lifestyle, feminine and elegant',
+    office:'luxury dressing room, large mirror, soft vanity lighting, high-end boutique interior, premium intimate brand',
+    random:null
+  },
+  moz:{
+    studio:'clean white studio with subtle texture, soft diffused lighting, premium Scandinavian accessories product shot, MOZ Sweden brand quality',
+    lifestyle:'modern minimalist Scandinavian cafe interior, wooden accents, warm afternoon light, premium lifestyle accessories brand',
+    nature:'Nordic forest clearing, morning mist, natural wood textures, premium Scandinavian outdoor lifestyle, MOZ Sweden',
+    forest:'Swedish forest path, pine trees, soft filtered light, Nordic nature, premium outdoor accessories lifestyle',
+    food:'elegant Nordic dining setup, clean wooden table, minimalist Scandinavian interior, premium lifestyle accessories',
+    kitchen:'bright Scandinavian kitchen, white and oak wood, clean minimal design, premium Nordic lifestyle brand',
+    luxury:'dark marble surface, matte black accents, premium minimalist luxury, Scandinavian premium accessories brand',
+    marble:'light grey marble surface, soft studio lighting, premium minimal product photography, Scandinavian design quality',
+    outdoor:'Stockholm city street, cobblestone, autumn light, urban Nordic lifestyle, premium accessories brand',
+    beach:'Scandinavian coastal lifestyle, clean white beach, grey sea, premium Nordic outdoor brand',
+    minimal:'pure white minimal background, clean studio, premium product photography, Scandinavian design simplicity',
+    night:'modern Nordic bar interior, warm ambient light, premium urban lifestyle, Scandinavian accessories brand',
+    garden:'Swedish countryside garden, wildflowers, soft daylight, premium Nordic lifestyle, natural Scandinavian setting',
+    camping:'Nordic outdoor camping, forest background, premium outdoor lifestyle, Scandinavian brand quality and functionality',
+    office:'modern Scandinavian workspace, clean white desk, premium minimal design, MOZ Sweden professional lifestyle',
+    random:null
+  },
+  cf:{studio:'clean white studio, soft product photography lighting, minimal background, professional',lifestyle:'cozy taiwanese family living room, warm evening lamp light, family atmosphere, soft bokeh',nature:'fresh outdoor garden at dusk, green plants, warm sunset glow, natural breeze',forest:'quiet forest path, moonlight filtering through trees, peaceful atmosphere',food:'warm family dining table, evening meal setting, cozy home atmosphere',kitchen:'cozy home kitchen, warm light, family cooking together, homey taiwanese interior',luxury:'modern premium apartment interior, dark elegant tones, gold accent lighting',marble:'clean marble surface, soft studio light, minimalist product photography',outdoor:'suburban neighborhood at dusk, warm street lights, family community',beach:'outdoor summer evening, open air, warm ambient light, relaxing family setting',minimal:'soft gray gradient, minimal clean background, neutral tones',night:'taiwanese bedroom at night, dim warm light, peaceful sleeping atmosphere',garden:'taiwanese home garden, potted plants, warm porch light, summer evening',camping:'outdoor camping at night, campfire glow, starry sky, family gathering',office:'modern home office, clean desk setup, natural window light',random:null},
+  ww:{studio:'clean white background, traditional taiwanese food photography, warm natural lighting',lifestyle:'taiwanese family BBQ gathering, outdoor grill, joyful atmosphere',nature:'outdoor picnic, sunny day, taiwanese countryside, fresh air food scene',forest:'outdoor forest barbecue, campfire grill, rustic wooden table',food:'sizzling grill plate, charcoal BBQ, smoke rising, authentic taiwanese street food',kitchen:'traditional taiwanese kitchen, wooden cutting board, rustic home cooking',luxury:'premium food presentation, elegant dark plate, fine dining interpretation',marble:'white marble surface, artisan food styling, fresh ingredients',outdoor:'vibrant taiwan night market, colorful vendor lights, busy food stalls',beach:'outdoor beach BBQ, seaside grill party, summer evening',minimal:'clean white plate, minimal food photography, soft natural light',night:'taiwan night market at night, glowing lanterns, busy stalls',garden:'outdoor garden barbecue, wooden deck, string lights',camping:'camping BBQ scene, outdoor fire grill, nature background',office:'casual office lunch, taiwanese takeout, warm approachable',random:null},
+  ly:{studio:'elegant white studio, premium product photography, soft diffused lighting',lifestyle:'upscale home dining, wine glass, sophisticated meal setting',nature:'fresh herb garden, morning light, organic premium food sourcing',forest:'dark forest, earthy tones, premium ingredient atmosphere',food:'fine dining presentation, truffle, elegant restaurant style',kitchen:'luxury kitchen, marble countertop, professional chef setup',luxury:'black marble surface, gold spoon, dark moody lighting, premium',marble:'white marble with gold veining, premium sauce bottle, elegant minimal',outdoor:'upscale outdoor dining terrace, city view, evening ambiance',beach:'mediterranean coastal dining, white tablecloth, sea view',minimal:'pure white background, dramatic side lighting, luxury minimal',night:'candlelit dinner, dark romantic atmosphere, fine dining',garden:'flower garden dining, afternoon tea, elegant outdoor table',camping:'glamping setup, premium outdoor dining, sophisticated',office:'modern kitchen counter, premium sauce styling, food blogger',random:null}
+};
 
-const PR_SCENE_PROMPTS={studio:'clean white studio background, minimal, professional product photography',lifestyle:'cozy home interior, warm living room, natural light, lifestyle photography',nature:'lush green nature, fresh botanical background, outdoor light, organic feel',forest:'dense forest path, morning light filtering through tall trees, mystical green atmosphere',food:'elegant dining table, wooden surface, soft food photography lighting, warm tones',kitchen:'warm cozy kitchen interior, wooden countertop, soft morning light, homey atmosphere',luxury:'black marble surface, gold accents, luxury dark background, premium product shot',marble:'white marble texture background, elegant veining, soft studio lighting, premium feel',outdoor:'urban city street background, modern architecture, outdoor natural light, lifestyle',beach:'tropical beach, golden sand, turquoise ocean water, bright sunny day, summer vibes',minimal:'soft gray gradient background, minimal clean studio, neutral tones, product photography',night:'city night scene, neon lights, bokeh background, urban nightlife atmosphere',garden:'beautiful flower garden, cherry blossoms, soft bokeh, spring natural light',camping:'outdoor camping scene, campfire, forest trees, starry night sky, adventure lifestyle',office:'modern office interior, clean desk, professional environment, natural window light',random:null};
-const PR_RANDOM_PROMPTS=['bright kitchen counter, morning light, fresh and clean','rustic wooden table, warm bokeh background, cozy atmosphere','modern minimalist concrete surface, cool tones, studio light'];
-const FOOD_SCENE_PROMPTS={bbq:'sizzling BBQ grill background, charcoal fire, outdoor grilling atmosphere, warm smoky tones',night_market:'vibrant night market stall, colorful lights, lively street food atmosphere',wooden_table:'rustic wooden table surface, warm natural light, cozy food photography background',white_plate:'clean white plate on minimal white background, professional food photography',outdoor_picnic:'outdoor picnic setting, green grass, natural sunlight, fresh and casual food scene',street_food:'busy street food scene, urban background, authentic local food culture atmosphere'};
+const PR_SCENE_PROMPTS={studio:'clean white studio background, minimal, professional product photography',lifestyle:'cozy home interior, warm living room, natural light',nature:'lush green nature, fresh botanical background, outdoor light',forest:'dense forest path, morning light filtering through trees',food:'elegant dining table, wooden surface, soft food photography lighting',kitchen:'warm cozy kitchen interior, wooden countertop, soft morning light',luxury:'black marble surface, gold accents, luxury dark background, premium',marble:'white marble texture background, elegant veining, soft studio lighting',outdoor:'urban city street background, modern architecture, outdoor natural light',beach:'tropical beach, golden sand, turquoise ocean water, bright sunny day',minimal:'soft gray gradient background, minimal clean studio, neutral tones',night:'city night scene, neon lights, bokeh background, urban atmosphere',garden:'beautiful flower garden, cherry blossoms, soft bokeh, spring light',camping:'outdoor camping scene, campfire, forest trees, starry night sky',office:'modern office interior, clean desk, professional environment',random:null};
+const PR_RANDOM_PROMPTS=['bright kitchen counter, morning light, fresh and clean','rustic wooden table, warm bokeh, cozy atmosphere','modern minimalist concrete surface, cool tones'];
+const FOOD_SCENE_PROMPTS={bbq:'sizzling BBQ grill background, charcoal fire, outdoor grilling, warm smoky tones',night_market:'vibrant night market stall, colorful lights, lively street food',wooden_table:'rustic wooden table, warm natural light, cozy food photography',white_plate:'clean white plate, minimal white background, professional food photography',outdoor_picnic:'outdoor picnic, green grass, natural sunlight, casual food scene',street_food:'busy street food scene, urban background, authentic local food culture'};
 
 function getBrandScenePrompt(scene){
   const brandId=S.brandId||'cf';
@@ -876,23 +716,16 @@ function openAdMaker(idx){
   renderAdCanvas();
 }
 function renderAmPhotoRow(){
-  const row=document.getElementById('amPhotoThumbRow');
-  const nameEl=document.getElementById('amPhotoName');
+  const row=document.getElementById('amPhotoThumbRow');const nameEl=document.getElementById('amPhotoName');
   if(!row)return;
   if(!S.photos.length){row.innerHTML='<span style="font-size:10px;color:var(--t3);">請先到右側抓取照片</span>';if(nameEl)nameEl.textContent='⚠️ 尚未選擇';return;}
-  row.innerHTML=S.photos.map((f,i)=>{
-    const isSelected=S.selPhoto===i;const thumb=f.src||f.thumb;
-    const imgHtml=thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:contain;border-radius:3px;">`:'<span style="font-size:16px;">🖼️</span>';
-    return `<div onclick="selectPhotoInAM(${i})" title="${f.name}" style="width:36px;height:36px;border-radius:5px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid ${isSelected?'#5BC8C8':'rgba(255,255,255,0.1)'};background:var(--bg4);display:flex;align-items:center;justify-content:center;">${imgHtml}</div>`;
-  }).join('');
+  row.innerHTML=S.photos.map((f,i)=>{const isSelected=S.selPhoto===i;const thumb=f.src||f.thumb;const imgHtml=thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:contain;border-radius:3px;">`:'<span style="font-size:16px;">🖼️</span>';return `<div onclick="selectPhotoInAM(${i})" title="${f.name}" style="width:36px;height:36px;border-radius:5px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid ${isSelected?'#5BC8C8':'rgba(255,255,255,0.1)'};background:var(--bg4);display:flex;align-items:center;justify-content:center;">${imgHtml}</div>`;}).join('');
   if(nameEl)nameEl.textContent=S.selPhoto!==null?('✅ '+S.photos[S.selPhoto].name):'← 點選上方照片';
 }
 function selectPhotoInAM(i){S.selPhoto=i;PR_BG_IMG=null;renderAmPhotoRow();renderAssets();renderAdCanvas();}
 function closeAdMaker(){document.getElementById('adMakerModal').style.display='none';}
 let FOOD_SCENE='bbq';
 function setFoodScene(btn,scene){document.querySelectorAll('#prFoodSection .pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');FOOD_SCENE=scene;}
-
-// ★ 修正：虛擬模型顯示警告提示
 function setPrMode(btn,mode){
   document.querySelectorAll('.pr-mode-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_MODE=mode;
   document.getElementById('prSceneSection').style.display=(mode==='ai_bg'?'block':'none');
@@ -912,72 +745,38 @@ function setPrStatus(msg,color){const el=document.getElementById('prStatus');if(
 async function applyPhotoroomBg(){
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   if(!photo){setPrStatus('⚠️ 請先選擇照片！','var(--red)');return;}
-  const imgSrc=photo.src||photo.thumb;
-  if(!imgSrc){setPrStatus('⚠️ 照片尚未載入','var(--red)');return;}
-  const btn=document.getElementById('prApplyBtn');
-  btn.disabled=true;btn.textContent='⏳ AI 處理中...';
+  const imgSrc=photo.src||photo.thumb;if(!imgSrc){setPrStatus('⚠️ 照片尚未載入','var(--red)');return;}
+  const btn=document.getElementById('prApplyBtn');btn.disabled=true;btn.textContent='⏳ AI 處理中...';
   const prBar=document.getElementById('prProgBar');const prFill=document.getElementById('prProgFill');const prPct=document.getElementById('prPct');
-  if(prBar)prBar.style.display='block';
-  let prPctVal=0;
+  if(prBar)prBar.style.display='block';let prPctVal=0;
   const prTotalMs=PR_MODE==='ai_bg'?18000:PR_MODE==='virtual_model'?25000:10000;
-  const prInterval=setInterval(()=>{
-    if(prPctVal>=93)return;
-    const speed=prPctVal<30?2.0:prPctVal<60?1.0:0.4;
-    prPctVal=Math.min(93,prPctVal+speed);
-    if(prFill)prFill.style.width=prPctVal+'%';
-    if(prPct)prPct.textContent=Math.round(prPctVal)+'%';
-    const msgs=['📤 上傳圖片...','✂️ AI 去背中...','🎨 生成背景中...','🖌️ 光影融合中...','⚡ 最終處理中...'];
-    const mi=Math.floor(prPctVal/20);
-    setPrStatus(msgs[Math.min(mi,msgs.length-1)],'var(--t3)');
-  },prTotalMs/100);
+  const prInterval=setInterval(()=>{if(prPctVal>=93)return;prPctVal=Math.min(93,prPctVal+(prPctVal<30?2.0:prPctVal<60?1.0:0.4));if(prFill)prFill.style.width=prPctVal+'%';if(prPct)prPct.textContent=Math.round(prPctVal)+'%';const msgs=['📤 上傳圖片...','✂️ AI 去背中...','🎨 生成背景中...','🖌️ 光影融合中...','⚡ 最終處理中...'];setPrStatus(msgs[Math.min(Math.floor(prPctVal/20),msgs.length-1)],'var(--t3)');},prTotalMs/100);
   try{
     const blob=await urlToBlob(imgSrc);
     const customInput=document.getElementById('prCustomPrompt')?.value?.trim();
     let prompt=customInput;
-    if(!prompt){
-      if(PR_MODE==='food_delivery')prompt=FOOD_SCENE_PROMPTS[FOOD_SCENE];
-      else prompt=getBrandScenePrompt(PR_SCENE);
-    }
+    if(!prompt){if(PR_MODE==='food_delivery')prompt=FOOD_SCENE_PROMPTS[FOOD_SCENE];else prompt=getBrandScenePrompt(PR_SCENE);}
     if(!prompt)prompt=PR_RANDOM_PROMPTS[0];
     const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
-    const resp=await fetch(CF_WORKER_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        action:'photoroom_process',password:GAS_PASSWORD,
-        imageBase64:base64,bgPrompt:prompt,mode:PR_MODE,
-        width:AM.w,height:AM.h,
-        vmModel:document.getElementById('vmModel')?.value||'avery',
-        vmPose:document.getElementById('vmPose')?.value||'random',
-        vmScene:document.getElementById('vmScene')?.value||'random'
-      })
-    });
-    const prData=await resp.json();
-    if(!prData.ok)throw new Error(prData.error||'AI 處理失敗');
-    PR_BG_IMG=prData.imageBase64;
-    await renderAdCanvasWithPR();
-    clearInterval(prInterval);
-    if(prFill)prFill.style.width='100%';if(prPct)prPct.textContent='100%';
-    setPrStatus('✅ AI 處理成功！','var(--mint)');
-    setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
+    // ★ 修正4：虛擬模型內衣加上 prompt 提示這是正規電商商品
+    const vmPrompt=PR_MODE==='virtual_model'?'professional ecommerce fashion clothing product, legitimate intimate apparel brand, tasteful commercial product photography, non-explicit fashion':``;
+    const resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,mode:PR_MODE,width:AM.w,height:AM.h,vmPrompt,vmModel:document.getElementById('vmModel')?.value||'avery',vmPose:document.getElementById('vmPose')?.value||'random',vmScene:document.getElementById('vmScene')?.value||'random'})});
+    const prData=await resp.json();if(!prData.ok)throw new Error(prData.error||'AI 處理失敗');
+    PR_BG_IMG=prData.imageBase64;await renderAdCanvasWithPR();
+    clearInterval(prInterval);if(prFill)prFill.style.width='100%';if(prPct)prPct.textContent='100%';
+    setPrStatus('✅ AI 處理成功！','var(--mint)');setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
   }catch(e){
     clearInterval(prInterval);if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';
-    // ★ 修正：虛擬模型錯誤顯示友善提示
     let errMsg=e.message||'發生錯誤';
-    if(PR_MODE==='virtual_model'&&(errMsg.includes('Virtual Model')||errMsg.includes('error')||errMsg.includes('Error'))){
-      errMsg='虛擬模型對內衣/泳衣有平台限制 😢\n請改用「幽靈模特兒」效果一樣好！';
-    }
+    if(PR_MODE==='virtual_model'&&(errMsg.includes('Virtual Model')||errMsg.toLowerCase().includes('error'))){errMsg='虛擬模型對內衣有平台限制 😢\n請改用「幽靈模特兒」，效果一樣好！';}
     setPrStatus('❌ '+errMsg,'var(--red)');
   }
   btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
 }
 
-async function urlToBlob(src){
-  if(src.startsWith('data:')){const res=await fetch(src);return res.blob();}
-  const res=await fetch(src);if(!res.ok)throw new Error('圖片載入失敗');return res.blob();
-}
+async function urlToBlob(src){if(src.startsWith('data:')){const res=await fetch(src);return res.blob();}const res=await fetch(src);if(!res.ok)throw new Error('圖片載入失敗');return res.blob();}
 
-// ★ 修正：圖片用 contain 模式，不壓扁
+// ★ 修正1+2：contain 模式不壓扁，橫線完全移除
 async function renderAdCanvas(){
   if(PR_BG_IMG){await renderAdCanvasWithPR();return;}
   const canvas=document.getElementById('adCanvas');if(!canvas)return;
@@ -992,12 +791,10 @@ async function renderAdCanvas(){
     await new Promise(resolve=>{
       const img=new Image();img.crossOrigin='anonymous';
       img.onload=()=>{
-        // 先填深色背景，再用 contain 模式置中顯示完整圖片（不壓扁）
-        ctx.fillStyle='#1a1a1a';
-        ctx.fillRect(0,0,AM.w,AM.h);
+        // ★ 白底 + contain 完整顯示，不壓扁不裁切
+        ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,AM.w,AM.h);
         const scale=Math.min(AM.w/img.width,AM.h/img.height);
-        const sw=img.width*scale;
-        const sh=img.height*scale;
+        const sw=img.width*scale;const sh=img.height*scale;
         ctx.drawImage(img,Math.round((AM.w-sw)/2),Math.round((AM.h-sh)/2),sw,sh);
         resolve();
       };
@@ -1005,10 +802,10 @@ async function renderAdCanvas(){
       img.src=photo.src||photo.thumb;
     });
   }else drawBgFallback(ctx);
-  drawClassic(ctx,title,accentColor);
+  drawOverlay(ctx,title,accentColor);
 }
 
-// ★ 修正：幽靈模特兒輸出是透明PNG，先填白底避免canvas黑背景
+// ★ 修正：幽靈模特兒/透明去背 白底，其他深底
 async function renderAdCanvasWithPR(){
   const canvas=document.getElementById('adCanvas');if(!canvas)return;
   canvas.width=AM.w;canvas.height=AM.h;
@@ -1017,36 +814,23 @@ async function renderAdCanvasWithPR(){
   const brand=BRANDS.find(b=>b.id===S.brandId);
   const colorMap={gold:'#E8603A',red:'#E8603A',sky:'#5BC8C8',mint:'#7ED4B0',purple:'#B89ED4'};
   const accentColor=colorMap[brand?.navColor]||'#E8603A';
-  // ★ 幽靈模特兒 / 透明去背PNG：先填白底；其他模式填深色
-  if(PR_MODE==='ghost_mannequin'||PR_MODE==='transparent_bg'||PR_MODE==='white_bg'){
-    ctx.fillStyle='#FFFFFF';
-  }else{
-    ctx.fillStyle='#1a1a1a';
-  }
-  ctx.fillRect(0,0,AM.w,AM.h);
+  // 幽靈模特兒/純白去背/透明去背 → 白底；其他 → 深色底
+  const needWhiteBg=['ghost_mannequin','white_bg','transparent_bg'].includes(PR_MODE);
+  ctx.fillStyle=needWhiteBg?'#FFFFFF':'#1a1a1a';ctx.fillRect(0,0,AM.w,AM.h);
   await new Promise(resolve=>{
     const img=new Image();
     img.onload=()=>{ctx.drawImage(img,0,0,AM.w,AM.h);resolve();};
     img.onerror=()=>{drawBgFallback(ctx);resolve();};
     img.src=PR_BG_IMG;
   });
-  drawClassic(ctx,title,accentColor);
+  drawOverlay(ctx,title,accentColor);
 }
 
-function drawBgFallback(ctx){
-  const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);
-  grad.addColorStop(0,'#1a1020');grad.addColorStop(1,'#0d0d1a');
-  ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);
-}
+function drawBgFallback(ctx){const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);grad.addColorStop(0,'#1a1020');grad.addColorStop(1,'#0d0d1a');ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);}
+function autoLines(ctx,text,maxWidth){const chars=text.split('');const lines=[];let cur='';for(const c of chars){if(ctx.measureText(cur+c).width>maxWidth&&cur){lines.push(cur);cur=c;}else cur+=c;}if(cur)lines.push(cur);return lines;}
 
-function autoLines(ctx,text,maxWidth){
-  const chars=text.split('');const lines=[];let cur='';
-  for(const c of chars){if(ctx.measureText(cur+c).width>maxWidth&&cur){lines.push(cur);cur=c;}else cur+=c;}
-  if(cur)lines.push(cur);return lines;
-}
-
-// ★ 修正：移除綠色橫線，改成白色半透明細線
-function drawClassic(ctx,title,accent){
+// ★ 修正2+6：完全移除底線；修正服飾電商圖靠左/置中/靠右對齊
+function drawOverlay(ctx,title,accent){
   const W=AM.w,H=AM.h;
   const gradStartPct=(parseInt(document.getElementById('amGradStart')?.value||38))/100;
   const gradStrength=(parseInt(document.getElementById('amGradStrength')?.value||85))/100;
@@ -1055,25 +839,26 @@ function drawClassic(ctx,title,accent){
   grad.addColorStop(0.35,'rgba(0,0,0,'+Math.round(gradStrength*0.65*100)/100+')');
   grad.addColorStop(1,'rgba(0,0,0,'+gradStrength+')');
   ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+  if(!title)return;
   const baseFontSize=parseInt(document.getElementById('amFontSize')?.value||94);
   const textYPct=parseInt(document.getElementById('amTextY')?.value||80)/100;
   const align=TEXT_ALIGN||'left';
-  ctx.font=`900 ${baseFontSize}px 'Noto Sans TC',sans-serif`;ctx.textAlign=align;
-  const lines=autoLines(ctx,title,W*0.86);const lineH=baseFontSize*1.18;const totalH=lines.length*lineH;
+  ctx.font=`900 ${baseFontSize}px 'Noto Sans TC',sans-serif`;
+  // ★ 修正6：textAlign 正確對應畫布寬度位置
+  ctx.textAlign=align;
   let tx;
   if(align==='left')tx=Math.round(W*0.07);
   else if(align==='right')tx=Math.round(W*0.93);
-  else tx=W/2;
-  const ty=Math.round(H*textYPct)-totalH+baseFontSize;
+  else tx=Math.round(W/2);
+  const lines=autoLines(ctx,title,W*0.86);
+  const lineH=baseFontSize*1.18;
+  const ty=Math.round(H*textYPct)-(lines.length-1)*lineH;
   lines.forEach((line,i)=>{
-    ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=18;ctx.shadowOffsetY=4;
-    ctx.fillStyle='#FFF';ctx.fillText(line,tx,ty+i*lineH);
+    ctx.shadowColor='rgba(0,0,0,0.85)';ctx.shadowBlur=20;ctx.shadowOffsetY=4;
+    ctx.fillStyle='#FFFFFF';ctx.fillText(line,tx,ty+i*lineH);
   });
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
-  // ★ 底線改白色半透明，不再是怪綠色
-  const lineStartX=align==='right'?tx-60:align==='center'?tx-30:tx;
-  ctx.fillStyle='rgba(255,255,255,0.75)';
-  ctx.fillRect(lineStartX,ty+(lines.length-1)*lineH+14,60,3);
+  // ★ 底線完全移除，不繪製任何橫線
 }
 
 function downloadAd(){
@@ -1100,69 +885,43 @@ async function uploadAdToDrive(canvas,filename){
 async function getOrCreateAdFolder(){
   const token=window._driveToken;
   const search=await fetch("https://www.googleapis.com/drive/v3/files?q=name%3D'Brand+OS+廣告圖'+and+mimeType%3D'application%2Fvnd.google-apps.folder'+and+trashed%3Dfalse&fields=files(id)",{headers:{'Authorization':'Bearer '+token}});
-  const sdata=await search.json();
-  if(sdata.files?.length>0)return sdata.files[0].id;
+  const sdata=await search.json();if(sdata.files?.length>0)return sdata.files[0].id;
   const create=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({name:'Brand OS 廣告圖',mimeType:'application/vnd.google-apps.folder'})});
   return (await create.json()).id;
 }
 
 const GOOG_CLIENT_ID='513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
 const GOOG_SCOPE='https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
-let tokenClient=null;
-const ADMIN_EMAIL='cyndi04592@gmail.com';
-let _userEmail=null;
+let tokenClient=null;const ADMIN_EMAIL='cyndi04592@gmail.com';let _userEmail=null;
 
 function initGoogleAuth(){
   if(!window.google)return;
-  tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:GOOG_CLIENT_ID,
-    scope:GOOG_SCOPE+' https://www.googleapis.com/auth/userinfo.email',
-    callback:async(resp)=>{
-      if(!resp.access_token)return;
-      window._driveToken=resp.access_token;
-      try{
-        const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
-        const info=await r.json();_userEmail=info.email||'';
-        const ok=await checkWhitelist(_userEmail);
-        if(ok){
-          document.getElementById('loginOverlay').style.display='none';
-          setDriveStatus('ok');
-          const btn=document.getElementById('driveLoginBtn');
-          btn.textContent='✅ '+(_userEmail||'已連結');btn.style.borderColor='var(--mint)';btn.style.color='var(--mint)';btn.style.background='var(--mint2)';
-          const warn=document.getElementById('driveWarningBanner');if(warn)warn.style.display='none';
-          const lbl=document.getElementById('driveLabel');if(lbl){lbl.classList.remove('drive-warning-text');lbl.textContent='Drive 已連結';}
-          startSystem();
-        }else{
-          document.getElementById('loginErr').textContent='❌ 此帳號無使用權限';
-          document.getElementById('loginBtn').disabled=false;
-          document.getElementById('loginBtn').textContent='使用 Google 帳號登入';
-          window._driveToken=null;
-        }
-      }catch(e){document.getElementById('loginErr').textContent='❌ 驗證失敗，請重試';document.getElementById('loginBtn').disabled=false;}
-    }
-  });
+  tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOG_CLIENT_ID,scope:GOOG_SCOPE+' https://www.googleapis.com/auth/userinfo.email',callback:async(resp)=>{
+    if(!resp.access_token)return;window._driveToken=resp.access_token;
+    try{
+      const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
+      const info=await r.json();_userEmail=info.email||'';
+      const ok=await checkWhitelist(_userEmail);
+      if(ok){
+        document.getElementById('loginOverlay').style.display='none';setDriveStatus('ok');
+        const btn=document.getElementById('driveLoginBtn');btn.textContent='✅ '+(_userEmail||'已連結');btn.style.borderColor='var(--mint)';btn.style.color='var(--mint)';btn.style.background='var(--mint2)';
+        const warn=document.getElementById('driveWarningBanner');if(warn)warn.style.display='none';
+        const lbl=document.getElementById('driveLabel');if(lbl){lbl.classList.remove('drive-warning-text');lbl.textContent='Drive 已連結';}
+        startSystem();
+      }else{document.getElementById('loginErr').textContent='❌ 此帳號無使用權限';document.getElementById('loginBtn').disabled=false;document.getElementById('loginBtn').textContent='使用 Google 帳號登入';window._driveToken=null;}
+    }catch(e){document.getElementById('loginErr').textContent='❌ 驗證失敗，請重試';document.getElementById('loginBtn').disabled=false;}
+  }});
 }
-
 async function checkWhitelist(email){
-  if(!email)return false;
-  if(email===ADMIN_EMAIL)return true;
-  try{
-    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8000);
-    const r=await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}`,{signal:controller.signal});
-    clearTimeout(timer);const j=await r.json();return j.ok&&j.allowed;
-  }catch(e){return false;}
+  if(!email)return false;if(email===ADMIN_EMAIL)return true;
+  try{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8000);const r=await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}`,{signal:controller.signal});clearTimeout(timer);const j=await r.json();return j.ok&&j.allowed;}catch(e){return false;}
 }
 function doGoogleLogin(){
-  const btn=document.getElementById('loginBtn');btn.disabled=true;
-  btn.innerHTML='<span class="spin" style="border-top-color:#fff"></span> 登入中...';
-  document.getElementById('loginErr').textContent='';
+  const btn=document.getElementById('loginBtn');btn.disabled=true;btn.innerHTML='<span class="spin" style="border-top-color:#fff"></span> 登入中...';document.getElementById('loginErr').textContent='';
   if(!tokenClient){setTimeout(()=>{if(tokenClient)tokenClient.requestAccessToken({prompt:'select_account'});else{document.getElementById('loginErr').textContent='❌ Google 載入失敗';btn.disabled=false;}},1500);return;}
   tokenClient.requestAccessToken({prompt:'select_account'});
 }
-function goAdmin(){
-  if(_userEmail===ADMIN_EMAIL){window.open('admin.html','_blank');}
-  else{alert('⚠️ 後台僅限管理員\n目前帳號：'+(_userEmail||'未登入'));}
-}
+function goAdmin(){if(_userEmail===ADMIN_EMAIL){window.open('admin.html','_blank');}else{alert('⚠️ 後台僅限管理員\n目前帳號：'+(_userEmail||'未登入'));}}
 function driveLogin(){if(!tokenClient){alert('Google 授權尚未載入');return;}tokenClient.requestAccessToken({});}
 function switchTab(btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));btn.classList.add('on');document.getElementById('pane-'+btn.dataset.tab).classList.add('on');}
 </script>
