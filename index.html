@@ -1040,15 +1040,31 @@ async function renderAdCanvasWithPR(){
   await new Promise(resolve=>{
     const img=new Image();
     img.onload=()=>{
-        // ★ kling_tryon：cover 填滿（裁掉白邊），其他服飾模式 contain 保持比例
+        // ★ kling_tryon：智慧填滿（裁切合理就 cover，裁太多就 contain+模糊背景）
         const needContain=['ghost_mannequin','white_bg','transparent_bg','clothing'].includes(PR_MODE);
         const needCover=(PR_MODE==='kling_tryon');
         if(needCover){
-          // cover：等比放大到填滿畫布，多餘部分裁掉（不留白邊）
-          ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,AM.w,AM.h);
-          const scale=Math.max(AM.w/img.width,AM.h/img.height);
-          const sw=img.width*scale;const sh=img.height*scale;
-          ctx.drawImage(img,Math.round((AM.w-sw)/2),Math.round((AM.h-sh)/2),sw,sh);
+          const scaleCover=Math.max(AM.w/img.width,AM.h/img.height);
+          const scaleContain=Math.min(AM.w/img.width,AM.h/img.height);
+          // 計算 cover 裁切比例（超過 20% 視為裁太多）
+          const cropRatio=1-(scaleContain/scaleCover);
+          if(cropRatio<=0.20){
+            // 裁切合理：直接 cover 填滿，移除白邊
+            const sw=img.width*scaleCover;const sh=img.height*scaleCover;
+            ctx.drawImage(img,Math.round((AM.w-sw)/2),Math.round((AM.h-sh)/2),sw,sh);
+          }else{
+            // 裁切太激進：用模糊背景 + contain 居中（保留完整人物）
+            // Step1：先放大模糊版本鋪滿背景
+            ctx.filter='blur(18px)';
+            const swBg=img.width*scaleCover;const shBg=img.height*scaleCover;
+            ctx.drawImage(img,Math.round((AM.w-swBg)/2),Math.round((AM.h-shBg)/2),swBg,shBg);
+            ctx.filter='none';
+            // Step2：加半透明暗化層
+            ctx.fillStyle='rgba(0,0,0,0.25)';ctx.fillRect(0,0,AM.w,AM.h);
+            // Step3：contain 清晰圖疊在上面
+            const sw=img.width*scaleContain;const sh=img.height*scaleContain;
+            ctx.drawImage(img,Math.round((AM.w-sw)/2),Math.round((AM.h-sh)/2),sw,sh);
+          }
         }else if(needContain){
           // contain：等比縮放置中，白底填充
           ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,AM.w,AM.h);
