@@ -454,7 +454,6 @@ const CF_WORKER_URL='https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 let BRANDS=[];let BRAND_FOLDERS={};
 const S={brandId:null,subId:null,prod:null,photos:[],videos:[],selPhoto:null,selVideo:null,scripts:[],delivers:[],openBrand:null};
 
-// ★ 修正：CMAP 加入 fallback，所有未知 color 都回 gold
 const CMAP={
   gold:{c:'var(--gold)',bg:'var(--gold2)'},
   red:{c:'#FF8099',bg:'var(--red2)'},
@@ -594,7 +593,9 @@ function selectAsset(type,i){
   if(S.scripts.length>0){const brand=BRANDS.find(b=>b.id===S.brandId);const sub=brand?.subs.find(s=>s.id===S.subId);renderScripts(`${brand?.name||''}${sub?' › '+sub.name:''}`,sub?.color||brand?.navColor);}
 }
 
-// ★★★ 核心修正：doGenerate 修復 null error + 強化 Hormozi 三段式 prompt ★★★
+// ══════════════════════════════════════════════════════
+// ★★★ 修改點 1/2：doGenerate — 強化字數鐵則 ★★★
+// ══════════════════════════════════════════════════════
 async function doGenerate(){
   if(!S.brandId){alert('請先選擇品牌！');return;}if(!S.prod){alert('請先選擇商品！');return;}
   const brand=BRANDS.find(b=>b.id===S.brandId);const sub=brand?.subs.find(s=>s.id===S.subId);
@@ -604,19 +605,19 @@ async function doGenerate(){
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.innerHTML='<span class="spin"></span>生成中';
   const prog=document.getElementById('prog');
   const fill=document.getElementById('progFill');
-  const progPctEl=document.getElementById('progPct'); // ★ 修正：安全取得元素
+  const progPctEl=document.getElementById('progPct');
   prog.style.display='block';
   let progVal=0;
   const progInterval=setInterval(()=>{
     if(progVal>=92)return;
     progVal=Math.min(92,progVal+(progVal<30?2.5:progVal<60?1.2:0.5));
     fill.style.width=progVal+'%';
-    if(progPctEl)progPctEl.textContent=Math.round(progVal)+'%'; // ★ 修正：null check
+    if(progPctEl)progPctEl.textContent=Math.round(progVal)+'%';
   },300);
   const copyLength=document.getElementById('selCopyLength')?.value||'medium';
   const copyLengthGuide={short:'核心段落2-4行，精煉有力',medium:'核心段落5-8行，清楚說明',long:'核心段落10-15行，深度說服'}[copyLength];
 
-  // ★★★ 強化版 Hormozi 三段式 prompt ★★★
+  // ★ 修改：加入嚴格字數鐵則到 prompt
   const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣。
 
 【品牌】${brandDisplay}
@@ -627,6 +628,15 @@ async function doGenerate(){
 【Hashtag】${tags}
 【文案規格】${copyLengthGuide}
 
+━━━ ⚠️ 字數鐵則（違反不接受，生成前必須自我驗算）━━━
+‣ hook.script：繁體中文字數【硬性上限 25 字】，只能 1 句話，禁止用句號切兩句
+‣ cta.script：繁體中文字數【硬性上限 20 字】，只能 1 句話
+‣ core.script：不受字數限制，按照 ${copyLengthGuide} 規格即可
+‣ 計算規則：每個中文字算 1 字，英文單字整體算 1 字，標點符號不計入字數
+‣ 範例合格 hook（14字）：「帶孩子出門眼鏡老是找不到？」
+‣ 範例合格 CTA（9字）：「現在下單首購折200」
+‣ 輸出前逐一默數每組 hook 和 CTA 字數，超過即縮寫重來
+
 ━━━ HORMOZI 三段式廣告框架（必須嚴格遵守）━━━
 
 每組廣告必須包含三個獨立段落：
@@ -634,10 +644,9 @@ async function doGenerate(){
 1. 【黃金3秒鉤子 hook】
    - 目的：讓人停止滑動，在3秒內被抓住
    - 方法：痛點洞察、好奇心、衝突感、數字震撼、反直覺陳述
-   - 長度：1-2句話，簡短有力，像被電到一樣
-   - 範例：「帶孩子出門，眼鏡總是丟到包包底層，要用時找不到？」
-   - 範例：「為什麼你的廣告燒錢沒效果？答案比你想的簡單」
-   - ❌ 禁止：冗長、解釋性語句、溫吞開場
+   - 長度：【硬性規定】繁中字數 ≤ 25 字，只能 1 句話，超過視為違規
+   - 範例：「帶孩子出門，眼鏡總是找不到？」（14字 ✅）
+   - ❌ 禁止：冗長、解釋性語句、溫吞開場、超過 25 字
 
 2. 【核心價值段落 core】
    - 目的：說清楚這個商品「為什麼能幫你解決問題」
@@ -649,17 +658,16 @@ async function doGenerate(){
 3. 【行動呼籲 CTA】
    - 目的：驅動立即行動
    - 方法：限時優惠、稀缺性、簡單指令、問句引導
-   - 長度：1-2句話
-   - 範例：「現在點連結，首購再折200」
-   - 範例：「留言『想知道』，私訊你完整資訊」
-   - ❌ 禁止：模糊的「歡迎洽詢」、把鉤子內容重複放這裡
+   - 長度：【硬性規定】繁中字數 ≤ 20 字，只能 1 句話
+   - 範例：「現在下單，首購再折200」（11字 ✅）
+   - ❌ 禁止：模糊的「歡迎洽詢」、把鉤子內容重複放這裡、超過 20 字
 
 ━━━ 輸出規則 ━━━
 - 生成「剛好 ${count} 組」，combos 陣列必須剛好 ${count} 個
 - 繁體中文台灣用語，每組風格截然不同
 - 只回傳純 JSON，不加任何說明文字：
 
-{"combos":[{"id":"AD001","hook":{"method":"方向名稱（如：痛點洞察/好奇心/數字震撼/反直覺/衝突感）","script":"黃金3秒鉤子文字，短！1-2句！","visual":"畫面建議"},"core":{"type":"廣告類型（產品展示型/客戶見證型/教育型/故事型/素材型）","script":"核心段落完整文字，${copyLengthGuide}","solve":"解決什麼核心問題"},"cta":{"style":"CTA風格（限時優惠/稀缺性/簡單指令/問句引導）","script":"行動呼籲文字，短！1-2句！"}}]}`;
+{"combos":[{"id":"AD001","hook":{"method":"方向名稱（如：痛點洞察/好奇心/數字震撼/反直覺/衝突感）","script":"鉤子文字，硬規≤25字，1句","visual":"畫面建議"},"core":{"type":"廣告類型（產品展示型/客戶見證型/教育型/故事型/素材型）","script":"核心段落完整文字，${copyLengthGuide}","solve":"解決什麼核心問題"},"cta":{"style":"CTA風格（限時優惠/稀缺性/簡單指令/問句引導）","script":"CTA文字，硬規≤20字，1句"}}]}`;
 
   try{
     fill.style.width='40%';
@@ -683,13 +691,42 @@ async function doGenerate(){
   finally{btn.disabled=false;btn.innerHTML='⚡ 生成腳本';}
 }
 
+// ══════════════════════════════════════════════════════
+// ★★★ 修改點 2/2：renderScripts — 加字數 badge 顯示 ★★★
+// ══════════════════════════════════════════════════════
+
+// 計算繁中字數的 helper（中文每字1，英文單字1，標點不計）
+function countWords(str){
+  if(!str)return 0;
+  // 移除標點符號後計算
+  const s=str.replace(/[，。！？、；：「」『』【】〔〕…—·\s]/g,'');
+  // 中文字符
+  const zhChars=(s.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g)||[]).length;
+  // 英文單字（把非中文的字母數字串視為1個單字）
+  const enWords=(s.replace(/[\u4e00-\u9fff\u3400-\u4dbf]/g,' ').match(/[a-zA-Z0-9]+/g)||[]).length;
+  return zhChars+enWords;
+}
+
+function charBadge(len,limit){
+  const over=len>limit;
+  const color=over?'#FF4D6A':'#7ED4B0';
+  const icon=over?'⚠️ 超字數！':'✅';
+  return `<span style="font-size:10px;font-weight:900;color:${color};font-family:'DM Mono';margin-left:6px;">${len}字 ${icon}</span>`;
+}
+
 function renderScripts(brandDisplay,colorKey){
-  const sc=getColor(colorKey); // ★ 修正：使用安全的 getColor
-  document.getElementById('scriptsOut').innerHTML=`<div style="background:rgba(91,200,200,0.08);border:1px dashed rgba(91,200,200,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--sky);line-height:1.8;">💡 右側選好 🖼️ 照片 + 🎬 影片，點「＋加入交付」或「🎨廣告圖」<br>📌 選中：${S.selPhoto!==null?`<span style="color:var(--sky)">🖼️ ${S.photos[S.selPhoto]?.name}</span>`:'<span style="color:var(--t3)">🖼️ 未選</span>'}&nbsp;&nbsp;${S.selVideo!==null?`<span style="color:var(--peach)">🎬 ${S.videos[S.selVideo]?.name}</span>`:'<span style="color:var(--t3)">🎬 未選</span>'}</div>`+S.scripts.map((s,i)=>`<div class="ad-card" style="animation-delay:${i*18}ms"><div class="ac-top"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;"><span class="ac-id">${s.id}</span><span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span><span style="font-size:9px;color:var(--t3);">${s.core?.type||''}</span></div><div class="ac-btns"><button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付 ${S.selPhoto!==null?'🖼️':''}${S.selVideo!==null?'🎬':''}</button><button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">🎨 廣告圖</button><button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button></div></div><div class="ac-body">
+  const sc=getColor(colorKey);
+  document.getElementById('scriptsOut').innerHTML=`<div style="background:rgba(91,200,200,0.08);border:1px dashed rgba(91,200,200,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--sky);line-height:1.8;">💡 右側選好 🖼️ 照片 + 🎬 影片，點「＋加入交付」或「🎨廣告圖」<br>📌 選中：${S.selPhoto!==null?`<span style="color:var(--sky)">🖼️ ${S.photos[S.selPhoto]?.name}</span>`:'<span style="color:var(--t3)">🖼️ 未選</span>'}&nbsp;&nbsp;${S.selVideo!==null?`<span style="color:var(--peach)">🎬 ${S.videos[S.selVideo]?.name}</span>`:'<span style="color:var(--t3)">🎬 未選</span>'}</div>`+S.scripts.map((s,i)=>{
+    const hookLen=countWords(s.hook?.script||'');
+    const ctaLen=countWords(s.cta?.script||'');
+    return `<div class="ad-card" style="animation-delay:${i*18}ms"><div class="ac-top"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;"><span class="ac-id">${s.id}</span><span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span><span style="font-size:9px;color:var(--t3);">${s.core?.type||''}</span></div><div class="ac-btns"><button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付 ${S.selPhoto!==null?'🖼️':''}${S.selVideo!==null?'🎬':''}</button><button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">🎨 廣告圖</button><button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button></div></div><div class="ac-body">
     <div class="seg">
       <div class="seg-lbl" style="color:var(--sky)">🪝 黃金3秒鉤子</div>
       <div class="seg-txt" style="font-size:14px;font-weight:700;line-height:1.6;color:#F5F5F5;">${s.hook?.script||''}</div>
-      <span class="seg-badge" style="background:var(--sky2);color:var(--sky)">${s.hook?.method||''}</span>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:4px;">
+        <span class="seg-badge" style="background:var(--sky2);color:var(--sky)">${s.hook?.method||''}</span>
+        ${charBadge(hookLen,25)}
+      </div>
       <div class="seg-hint">📸 ${s.hook?.visual||''}</div>
     </div>
     <div class="seg">
@@ -701,9 +738,13 @@ function renderScripts(brandDisplay,colorKey){
     <div class="seg">
       <div class="seg-lbl" style="color:var(--peach)">🚀 行動呼籲 CTA</div>
       <div class="seg-txt" style="font-size:14px;font-weight:700;line-height:1.6;color:#F5F5F5;">${s.cta?.script||''}</div>
-      <span class="seg-badge" style="background:var(--peach2);color:var(--peach)">${s.cta?.style||''}</span>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:4px;">
+        <span class="seg-badge" style="background:var(--peach2);color:var(--peach)">${s.cta?.style||''}</span>
+        ${charBadge(ctaLen,20)}
+      </div>
     </div>
-    </div></div>`).join('');
+    </div></div>`;
+  }).join('');
 }
 
 function copyOne(i,btn){const s=S.scripts[i];const t=`【${s.id}】${S.prod?.name}\n🪝 ${s.hook?.method}：${s.hook?.script}\n📸 ${s.hook?.visual}\n\n💎 ${s.core?.type}：\n${s.core?.script}\n💡 ${s.core?.solve}\n\n🚀 ${s.cta?.style}：${s.cta?.script}`;navigator.clipboard.writeText(t).then(()=>{btn.textContent='✅ 已複製';setTimeout(()=>btn.textContent='複製腳本',2000);});}
@@ -821,7 +862,6 @@ function onMdPhotoSelected(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
-    // ★ 壓縮圖片到最大 1200px，品質 85%
     const img=new Image();
     img.onload=()=>{
       const MAX=1500;
@@ -880,7 +920,6 @@ async function applyPhotoroomBg(){
     if(!prompt)prompt=PR_RANDOM_PROMPTS[0];
     const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
 
-    // ★ 真人MD試穿 → 兩步驟：先送出，前端輪詢
     if(PR_MODE==='kling_tryon'){
       const mdImg=document.getElementById('mdPhotoImg');
       if(!mdImg||!mdImg.src||mdImg.style.display==='none'){
@@ -889,7 +928,6 @@ async function applyPhotoroomBg(){
       const compressedGarment = await compressImageBase64(base64, 1500, 0.90);
       const mdBase64 = mdImg.src;
 
-      // Step 1: 送出任務
       setPrStatus('📤 送出任務中...','var(--t3)');
       const submitResp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'kling_tryon_submit',password:GAS_PASSWORD,humanImageBase64:mdBase64,garmentImageBase64:compressedGarment})});
       const submitData=await submitResp.json();
@@ -898,7 +936,6 @@ async function applyPhotoroomBg(){
       const statusUrl=submitData.statusUrl;
       const responseUrl=submitData.responseUrl;
 
-      // Step 2: 前端輪詢（每5秒一次，最多60次=5分鐘）
       setPrStatus('⏳ AI 處理中，請稍候...','var(--t3)');
       for(let i=0;i<60;i++){
         await new Promise(r=>setTimeout(r,5000));
@@ -915,7 +952,6 @@ async function applyPhotoroomBg(){
         if(pollData.status==='FAILED'||(!pollData.ok&&pollData.status!=='IN_QUEUE'&&pollData.status!=='IN_PROGRESS')){
           throw new Error(pollData.error||'Try-On 失敗');
         }
-        // 更新進度顯示
         const pct=Math.min(90,10+i*1.5);
         if(prFill)prFill.style.width=pct+'%';
         if(prPct)prPct.textContent=Math.round(pct)+'%';
