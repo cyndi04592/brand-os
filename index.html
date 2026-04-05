@@ -777,9 +777,9 @@ async function applyPhotoroomBg(){
     setPrStatus('✅ AI 處理成功！','var(--mint)');setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
   }catch(e){
     clearInterval(prInterval);if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';
-    let errMsg=e.message||'發生錯誤';
-    if(PR_MODE==='virtual_model'&&(errMsg.includes('Virtual Model')||errMsg.toLowerCase().includes('error'))){errMsg='虛擬模型對內衣有平台限制 😢\n請改用「幽靈模特兒」，效果一樣好！';}
-    setPrStatus('❌ '+errMsg,'var(--red)');
+   // 新的 - 顯示真實錯誤
+const errMsg=e.message||'發生錯誤';
+setPrStatus('❌ '+errMsg,'var(--red)');
   }
   btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
 }
