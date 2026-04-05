@@ -72,8 +72,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .gen-btn{padding:10px 24px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;border-radius:8px;color:#fff;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;transition:all 0.2s;white-space:nowrap;flex-shrink:0;}
 .gen-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(228,184,74,0.4);}
 .gen-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
-.prog{height:2px;background:var(--line);border-radius:1px;display:none;margin-top:6px;}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--gold));border-radius:1px;width:0%;transition:width 0.4s;}
+.prog{height:8px;background:var(--line);border-radius:4px;display:none;margin-top:6px;position:relative;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--gold));border-radius:4px;width:0%;transition:width 0.4s;}
+.prog-pct{position:absolute;right:0;top:-18px;font-size:10px;font-weight:900;color:#E8603A;font-family:'DM Mono';}
 .tabs{display:flex;border-bottom:1px solid var(--line);background:var(--bg2);flex-shrink:0;}
 .tab{padding:10px 16px;font-size:11px;font-weight:700;color:var(--t3);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;font-family:'Noto Sans TC';transition:all 0.2s;letter-spacing:0.5px;}
 .tab:hover{color:var(--t1);}
@@ -128,7 +129,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .asset-item:hover{border-color:var(--sky);}
 .asset-item.on.photo{border-color:var(--sky);background:var(--sky2);}
 .asset-item.on.video{border-color:var(--peach);background:var(--peach2);}
-.ai-thumb{width:34px;height:34px;border-radius:5px;overflow:hidden;flex-shrink:0;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.ai-thumb{width:34px;height:34px;border-radius:5px;overflow:hidden;flex-shrink:0;background:var(--bg4);display:flex;align-items:center;justify-content:font-size:14px;}
 .ai-thumb img{width:100%;height:100%;object-fit:contain;}
 .ai-info{flex:1;min-width:0;}
 .ai-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -265,9 +266,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       </div>
       <button class="gen-btn" id="genBtn" onclick="doGenerate()">⚡ 生成腳本</button>
     </div>
-    <div class="prog" id="prog" style="position:relative;height:6px;">
+    <div class="prog" id="prog">
       <div class="prog-fill" id="progFill"></div>
-      <span id="progPct" style="position:absolute;right:0;top:-16px;font-size:10px;font-weight:900;color:#E8603A;font-family:'DM Mono';"></span>
+      <span class="prog-pct" id="progPct"></span>
     </div>
   </div>
   <div class="tabs">
@@ -319,7 +320,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   </div>
 </div>
 
-<!-- ★ 修正3：Ad Maker Modal 加上明顯 X 關閉按鈕（固定右上角） -->
 <div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999;overflow-y:auto;">
   <button onclick="closeAdMaker()" style="position:fixed;top:16px;right:20px;z-index:1001;background:rgba(40,40,40,0.95);border:2px solid #E8603A;color:#E8603A;font-size:20px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;line-height:1;transition:all 0.2s;" onmouseover="this.style.background='#E8603A';this.style.color='#fff'" onmouseout="this.style.background='rgba(40,40,40,0.95)';this.style.color='#E8603A'">✕</button>
   <div style="max-width:1080px;margin:20px auto;padding:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
@@ -367,7 +367,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
             <button class="pr-mode-btn" onclick="setPrMode(this,'virtual_model')">🧍 虛擬模型（歐美）</button>
             <button class="pr-mode-btn" onclick="setPrMode(this,'clothing')">👕 服飾電商圖</button>
           </div>
-          <div id="virtualModelNote" style="display:none;"></div>
+          <div id="virtualModelNote" style="display:none;padding:6px 8px;background:rgba(232,96,58,0.08);border-radius:6px;font-size:9px;color:#E8A03A;line-height:1.6;">⚠️ 虛擬模型需要 Photoroom 付費方案支援。若失敗請改用「AI情境背景」。</div>
           <div style="font-size:9px;color:#3AE8A0;margin-bottom:4px;">🍱 食品專用</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
             <button class="pr-mode-btn" onclick="setPrMode(this,'food_delivery')">🍱 食品外送圖</button>
@@ -456,7 +456,17 @@ const CF_WORKER_URL='https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 
 let BRANDS=[];let BRAND_FOLDERS={};
 const S={brandId:null,subId:null,prod:null,photos:[],videos:[],selPhoto:null,selVideo:null,scripts:[],delivers:[],openBrand:null};
-const CMAP={gold:{c:'var(--gold)',bg:'var(--gold2)'},red:{c:'#FF8099',bg:'var(--red2)'},sky:{c:'var(--sky)',bg:'var(--sky2)'},mint:{c:'var(--mint)',bg:'var(--mint2)'},purple:{c:'var(--purple)',bg:'var(--purple2)'}};
+
+// ★ 修正：CMAP 加入 fallback，所有未知 color 都回 gold
+const CMAP={
+  gold:{c:'var(--gold)',bg:'var(--gold2)'},
+  red:{c:'#FF8099',bg:'var(--red2)'},
+  sky:{c:'var(--sky)',bg:'var(--sky2)'},
+  mint:{c:'var(--mint)',bg:'var(--mint2)'},
+  purple:{c:'var(--purple)',bg:'var(--purple2)'},
+  brown:{c:'#C8A870',bg:'rgba(200,168,112,0.15)'}
+};
+function getColor(key){return CMAP[key]||CMAP.gold;}
 
 const LOCAL_FALLBACK_DATA={brands:[{id:'cf',name:'巧福健康家電',icon:'🏠',navColor:'gold',soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。',adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊',hashtags:'#居家健康 #巧福 #台灣品牌'},{id:'ww',name:'旺味米香腸',icon:'🌾',navColor:'red',soul:'全台首創米香腸，傳承阿公家訓。',adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景',hashtags:'#旺味米香腸 #米香腸 #台灣豬'},{id:'ly',name:'琉宇醬選',icon:'🫙',navColor:'mint',soul:'琉宇醬選主理頂級進口醬料。',adStyle:'精緻質感、食材溯源、料理升級',hashtags:'#琉宇醬選 #好滋好滋 #PASSERI'}],products:[],folders:[{brandId:'cf',photoFolderId:'1tHV_loHiUcZx8MVrpnUwTWUge74GIwE7',videoFolderId:'132xtz0XebJV-gGXObV4UtanmwyZd9Awc'},{brandId:'ww',photoFolderId:'1dhCLr4tKrfV0RLHp454pzyJjytZFb92m',videoFolderId:'12LsKHCZQkDhT_FhzYWFw7rN4KJyvAD46'},{brandId:'ly',photoFolderId:'1u9n-NpnQjjzU3GnpT15ERanCEky_m6bP',videoFolderId:'1lSvqYV28lgqN2xZ6640glMTssYhUKMoD'}]};
 
@@ -483,13 +493,13 @@ function buildDataFromSheets(data){
   products.forEach(p=>{
     if(!prodByBrand[p.brandId])prodByBrand[p.brandId]={};
     const key=p.subId;
-    if(!prodByBrand[p.brandId][key])prodByBrand[p.brandId][key]={id:p.subId,name:p.subName,color:p.subColor,soul:p.subSoul,adStyle:p.subAdStyle,hashtags:p.subHashtags,prods:[]};
+    if(!prodByBrand[p.brandId][key])prodByBrand[p.brandId][key]={id:p.subId,name:p.subName,color:p.subColor||'gold',soul:p.subSoul,adStyle:p.subAdStyle,hashtags:p.subHashtags,prods:[]};
     prodByBrand[p.brandId][key].prods.push({id:p.prodId,name:p.prodName,tag:p.prodTag});
   });
-  BRANDS=brands.map(b=>({id:b.id,name:b.name,icon:b.icon,navColor:b.navColor,soul:b.soul,adStyle:b.adStyle,hashtags:b.hashtags,subs:Object.values(prodByBrand[b.id]||{})}));
+  BRANDS=brands.map(b=>({id:b.id,name:b.name,icon:b.icon||'🏷️',navColor:b.navColor||'gold',soul:b.soul||'',adStyle:b.adStyle||'',hashtags:b.hashtags||'',subs:Object.values(prodByBrand[b.id]||{})}));
 }
 
-function renderNavBrands(){document.getElementById('navBrands').innerHTML=BRANDS.map(b=>`<button class="nb ${b.navColor} ${S.brandId===b.id?'on':''}" onclick="clickBrand('${b.id}')">${b.name}</button>`).join('');}
+function renderNavBrands(){document.getElementById('navBrands').innerHTML=BRANDS.map(b=>`<button class="nb ${b.navColor||'gold'} ${S.brandId===b.id?'on':''}" onclick="clickBrand('${b.id}')">${b.name}</button>`).join('');}
 function renderBrandTree(){
   document.getElementById('brandTree').innerHTML=BRANDS.map(b=>{
     const isOpen=S.openBrand===b.id;
@@ -497,7 +507,6 @@ function renderBrandTree(){
   }).join('');
 }
 
-// ★ 修正1：切換品牌清空素材
 function clickBrand(id){
   S.openBrand=S.openBrand===id?null:id;S.brandId=id;S.subId=null;S.prod=null;
   S.photos=[];S.videos=[];S.selPhoto=null;S.selVideo=null;
@@ -510,7 +519,7 @@ function renderProds(){
   const el=document.getElementById('prodList');const brand=BRANDS.find(b=>b.id===S.brandId);
   if(!brand){el.innerHTML='<div class="empty" style="padding:24px 10px;"><div class="empty-ico">📦</div><div class="empty-p">← 先選品牌</div></div>';return;}
   const subs=S.subId?brand.subs.filter(s=>s.id===S.subId):brand.subs;let html='';
-  subs.forEach(sb=>{const sc=CMAP[sb.color]||CMAP.gold;html+=`<div style="margin-bottom:12px;"><div class="prod-grp-label" style="color:${sc.c}">${sb.name}</div>${sb.prods.map(p=>`<div class="prod-row ${S.prod?.id===p.id?'on':''}" onclick="clickProd('${sb.id}','${p.id}')"><div class="prod-dot"></div><div><div class="prod-name">${p.name}</div><div class="prod-tag">${p.tag}</div></div></div>`).join('')}</div>`;});
+  subs.forEach(sb=>{const sc=getColor(sb.color);html+=`<div style="margin-bottom:12px;"><div class="prod-grp-label" style="color:${sc.c}">${sb.name}</div>${sb.prods.map(p=>`<div class="prod-row ${S.prod?.id===p.id?'on':''}" onclick="clickProd('${sb.id}','${p.id}')"><div class="prod-dot"></div><div><div class="prod-name">${p.name}</div><div class="prod-tag">${p.tag}</div></div></div>`).join('')}</div>`;});
   el.innerHTML=html;
 }
 function clickProd(subId,prodId){
@@ -519,7 +528,7 @@ function clickProd(subId,prodId){
 }
 function updateCtx(){
   const brand=BRANDS.find(b=>b.id===S.brandId);const sub=brand?.subs.find(s=>s.id===S.subId);
-  const sc=CMAP[sub?.color||brand?.navColor]||CMAP.gold;
+  const sc=getColor(sub?.color||brand?.navColor);
   const bEl=document.getElementById('gbBrand');const pEl=document.getElementById('gbProd');
   if(!brand){bEl.textContent='尚未選擇品牌';bEl.style.color='var(--t3)';pEl.textContent='← 先選商品';pEl.style.color='var(--t3)';return;}
   bEl.style.color=sc.c;bEl.textContent=`${brand.icon} ${brand.name}${sub?' › '+sub.name:''}`;
@@ -588,6 +597,7 @@ function selectAsset(type,i){
   if(S.scripts.length>0){const brand=BRANDS.find(b=>b.id===S.brandId);const sub=brand?.subs.find(s=>s.id===S.subId);renderScripts(`${brand?.name||''}${sub?' › '+sub.name:''}`,sub?.color||brand?.navColor);}
 }
 
+// ★★★ 核心修正：doGenerate 修復 null error + 強化 Hormozi 三段式 prompt ★★★
 async function doGenerate(){
   if(!S.brandId){alert('請先選擇品牌！');return;}if(!S.prod){alert('請先選擇商品！');return;}
   const brand=BRANDS.find(b=>b.id===S.brandId);const sub=brand?.subs.find(s=>s.id===S.subId);
@@ -595,13 +605,65 @@ async function doGenerate(){
   const aud=document.getElementById('selAud').value;const count=parseInt(document.getElementById('selN').value)||20;
   const brandDisplay=`${brand.name}${sub&&sub.id!==brand.id?' › '+sub.name:''}`;
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.innerHTML='<span class="spin"></span>生成中';
-  const prog=document.getElementById('prog');const fill=document.getElementById('progFill');prog.style.display='block';
-  const progEl=document.getElementById('progPct');let progVal=0;
-  const progInterval=setInterval(()=>{if(progVal>=92)return;progVal=Math.min(92,progVal+(progVal<30?2.5:progVal<60?1.2:0.5));fill.style.width=progVal+'%';if(progEl)progEl.textContent=Math.round(progVal)+'%';},300);
+  const prog=document.getElementById('prog');
+  const fill=document.getElementById('progFill');
+  const progPctEl=document.getElementById('progPct'); // ★ 修正：安全取得元素
+  prog.style.display='block';
+  let progVal=0;
+  const progInterval=setInterval(()=>{
+    if(progVal>=92)return;
+    progVal=Math.min(92,progVal+(progVal<30?2.5:progVal<60?1.2:0.5));
+    fill.style.width=progVal+'%';
+    if(progPctEl)progPctEl.textContent=Math.round(progVal)+'%'; // ★ 修正：null check
+  },300);
   const copyLength=document.getElementById('selCopyLength')?.value||'medium';
-  const copyLengthGuide={short:'核心段落3-5行',medium:'核心段落6-10行',long:'核心段落12-18行'}[copyLength];
-  const copyLengthLabel={short:'【短文案版】',medium:'【中等文案版】',long:'【長文案版】'}[copyLength];
-  const prompt=`你是台灣頂尖FB廣告策略師，精通Hormozi廣告矩陣。\n【品牌】${brandDisplay}\n【靈魂】${soul}\n【風格】${style}\n【商品】${S.prod.name}（${S.prod.tag}）\n【受眾】${aud}\n【Hashtag】${tags}\n【規格】${copyLengthLabel}\n\n生成「剛好${count}組」廣告。combos陣列必須剛好${count}個。\n${copyLengthGuide}，繁體中文台灣用語，每組風格截然不同。\n只回傳純JSON：\n{"combos":[{"id":"AD001","hook":{"method":"方向","script":"鉤子","visual":"畫面"},"core":{"type":"類型","script":"段落","solve":"解決什麼"},"cta":{"style":"風格","script":"CTA"}}]}`;
+  const copyLengthGuide={short:'核心段落2-4行，精煉有力',medium:'核心段落5-8行，清楚說明',long:'核心段落10-15行，深度說服'}[copyLength];
+
+  // ★★★ 強化版 Hormozi 三段式 prompt ★★★
+  const prompt=`你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣。
+
+【品牌】${brandDisplay}
+【品牌靈魂】${soul}
+【廣告風格】${style}
+【商品】${S.prod.name}（${S.prod.tag}）
+【目標受眾】${aud}
+【Hashtag】${tags}
+【文案規格】${copyLengthGuide}
+
+━━━ HORMOZI 三段式廣告框架（必須嚴格遵守）━━━
+
+每組廣告必須包含三個獨立段落：
+
+1. 【黃金3秒鉤子 hook】
+   - 目的：讓人停止滑動，在3秒內被抓住
+   - 方法：痛點洞察、好奇心、衝突感、數字震撼、反直覺陳述
+   - 長度：1-2句話，簡短有力，像被電到一樣
+   - 範例：「帶孩子出門，眼鏡總是丟到包包底層，要用時找不到？」
+   - 範例：「為什麼你的廣告燒錢沒效果？答案比你想的簡單」
+   - ❌ 禁止：冗長、解釋性語句、溫吞開場
+
+2. 【核心價值段落 core】
+   - 目的：說清楚這個商品「為什麼能幫你解決問題」
+   - 內容：產品利益 + 社會證明/故事/數據 + 情感共鳴
+   - 長度：${copyLengthGuide}
+   - 類型：產品展示型 / 客戶見證型 / 教育型 / 故事型 / 純素材型
+   - ❌ 禁止：把 CTA 混入這裡
+
+3. 【行動呼籲 CTA】
+   - 目的：驅動立即行動
+   - 方法：限時優惠、稀缺性、簡單指令、問句引導
+   - 長度：1-2句話
+   - 範例：「現在點連結，首購再折200」
+   - 範例：「留言『想知道』，私訊你完整資訊」
+   - ❌ 禁止：模糊的「歡迎洽詢」、把鉤子內容重複放這裡
+
+━━━ 輸出規則 ━━━
+- 生成「剛好 ${count} 組」，combos 陣列必須剛好 ${count} 個
+- 繁體中文台灣用語，每組風格截然不同
+- 只回傳純 JSON，不加任何說明文字：
+
+{"combos":[{"id":"AD001","hook":{"method":"方向名稱（如：痛點洞察/好奇心/數字震撼/反直覺/衝突感）","script":"黃金3秒鉤子文字，短！1-2句！","visual":"畫面建議"},"core":{"type":"廣告類型（產品展示型/客戶見證型/教育型/故事型/素材型）","script":"核心段落完整文字，${copyLengthGuide}","solve":"解決什麼核心問題"},"cta":{"style":"CTA風格（限時優惠/稀缺性/簡單指令/問句引導）","script":"行動呼籲文字，短！1-2句！"}}]}`;
+
   try{
     fill.style.width='40%';
     const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt})});
@@ -612,19 +674,44 @@ async function doGenerate(){
     document.getElementById('scriptBadge').textContent=S.scripts.length;
     const lenLabel={short:'短文案',medium:'中文案',long:'長文案'}[copyLength];
     document.querySelector('[data-tab="scripts"]').innerHTML='📝 廣告腳本 <span class="badge">'+S.scripts.length+'</span> <span style="font-size:8px;background:rgba(232,96,58,0.15);color:#E8603A;padding:1px 5px;border-radius:3px;">'+lenLabel+'</span>';
-    clearInterval(progInterval);fill.style.width='100%';if(progEl)progEl.textContent='✅';setTimeout(()=>{prog.style.display='none';if(progEl)progEl.textContent='';},800);
-  }catch(e){clearInterval(progInterval);prog.style.display='none';alert('生成失敗：'+e.message);}
+    clearInterval(progInterval);fill.style.width='100%';
+    if(progPctEl)progPctEl.textContent='✅';
+    setTimeout(()=>{prog.style.display='none';if(progPctEl)progPctEl.textContent='';},800);
+  }catch(e){
+    clearInterval(progInterval);prog.style.display='none';
+    if(progPctEl)progPctEl.textContent='';
+    alert('生成失敗：'+e.message);
+  }
   finally{btn.disabled=false;btn.innerHTML='⚡ 生成腳本';}
 }
 
 function renderScripts(brandDisplay,colorKey){
-  const sc=CMAP[colorKey]||CMAP.gold;
-  document.getElementById('scriptsOut').innerHTML=`<div style="background:rgba(91,200,200,0.08);border:1px dashed rgba(91,200,200,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--sky);line-height:1.8;">💡 右側選好 🖼️ 照片 + 🎬 影片，點「＋加入交付」或「🎨廣告圖」<br>📌 選中：${S.selPhoto!==null?`<span style="color:var(--sky)">🖼️ ${S.photos[S.selPhoto]?.name}</span>`:'<span style="color:var(--t3)">🖼️ 未選</span>'}&nbsp;&nbsp;${S.selVideo!==null?`<span style="color:var(--peach)">🎬 ${S.videos[S.selVideo]?.name}</span>`:'<span style="color:var(--t3)">🎬 未選</span>'}</div>`+S.scripts.map((s,i)=>`<div class="ad-card" style="animation-delay:${i*18}ms"><div class="ac-top"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;"><span class="ac-id">${s.id}</span><span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span><span style="font-size:9px;color:var(--t3);">${s.core.type}</span></div><div class="ac-btns"><button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付 ${S.selPhoto!==null?'🖼️':''}${S.selVideo!==null?'🎬':''}</button><button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">🎨 廣告圖</button><button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button></div></div><div class="ac-body"><div class="seg"><div class="seg-lbl" style="color:var(--sky)">🪝 黃金3秒</div><div class="seg-txt">${s.hook.script}</div><span class="seg-badge" style="background:var(--sky2);color:var(--sky)">${s.hook.method}</span><div class="seg-hint">📸 ${s.hook.visual}</div></div><div class="seg"><div class="seg-lbl" style="color:var(--mint)">💎 核心段落</div><div class="seg-txt" style="white-space:pre-line">${s.core.script}</div><span class="seg-badge" style="background:var(--mint2);color:var(--mint)">${s.core.type}</span><div class="seg-hint">💡 ${s.core.solve}</div></div><div class="seg"><div class="seg-lbl" style="color:var(--peach)">🚀 CTA</div><div class="seg-txt">${s.cta.script}</div><span class="seg-badge" style="background:var(--peach2);color:var(--peach)">${s.cta.style}</span></div></div></div>`).join('');
+  const sc=getColor(colorKey); // ★ 修正：使用安全的 getColor
+  document.getElementById('scriptsOut').innerHTML=`<div style="background:rgba(91,200,200,0.08);border:1px dashed rgba(91,200,200,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--sky);line-height:1.8;">💡 右側選好 🖼️ 照片 + 🎬 影片，點「＋加入交付」或「🎨廣告圖」<br>📌 選中：${S.selPhoto!==null?`<span style="color:var(--sky)">🖼️ ${S.photos[S.selPhoto]?.name}</span>`:'<span style="color:var(--t3)">🖼️ 未選</span>'}&nbsp;&nbsp;${S.selVideo!==null?`<span style="color:var(--peach)">🎬 ${S.videos[S.selVideo]?.name}</span>`:'<span style="color:var(--t3)">🎬 未選</span>'}</div>`+S.scripts.map((s,i)=>`<div class="ad-card" style="animation-delay:${i*18}ms"><div class="ac-top"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;"><span class="ac-id">${s.id}</span><span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${S.prod?.name}</span><span style="font-size:9px;color:var(--t3);">${s.core?.type||''}</span></div><div class="ac-btns"><button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付 ${S.selPhoto!==null?'🖼️':''}${S.selVideo!==null?'🎬':''}</button><button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">🎨 廣告圖</button><button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button></div></div><div class="ac-body">
+    <div class="seg">
+      <div class="seg-lbl" style="color:var(--sky)">🪝 黃金3秒鉤子</div>
+      <div class="seg-txt" style="font-size:14px;font-weight:700;line-height:1.6;color:#F5F5F5;">${s.hook?.script||''}</div>
+      <span class="seg-badge" style="background:var(--sky2);color:var(--sky)">${s.hook?.method||''}</span>
+      <div class="seg-hint">📸 ${s.hook?.visual||''}</div>
+    </div>
+    <div class="seg">
+      <div class="seg-lbl" style="color:var(--mint)">💎 核心段落</div>
+      <div class="seg-txt" style="white-space:pre-line">${s.core?.script||''}</div>
+      <span class="seg-badge" style="background:var(--mint2);color:var(--mint)">${s.core?.type||''}</span>
+      <div class="seg-hint">💡 ${s.core?.solve||''}</div>
+    </div>
+    <div class="seg">
+      <div class="seg-lbl" style="color:var(--peach)">🚀 行動呼籲 CTA</div>
+      <div class="seg-txt" style="font-size:14px;font-weight:700;line-height:1.6;color:#F5F5F5;">${s.cta?.script||''}</div>
+      <span class="seg-badge" style="background:var(--peach2);color:var(--peach)">${s.cta?.style||''}</span>
+    </div>
+    </div></div>`).join('');
 }
-function copyOne(i,btn){const s=S.scripts[i];const t=`【${s.id}】${S.prod?.name}\n🪝 ${s.hook.method}：${s.hook.script}\n📸 ${s.hook.visual}\n\n💎 ${s.core.type}：\n${s.core.script}\n💡 ${s.core.solve}\n\n🚀 ${s.cta.style}：${s.cta.script}`;navigator.clipboard.writeText(t).then(()=>{btn.textContent='✅ 已複製';setTimeout(()=>btn.textContent='複製腳本',2000);});}
+
+function copyOne(i,btn){const s=S.scripts[i];const t=`【${s.id}】${S.prod?.name}\n🪝 ${s.hook?.method}：${s.hook?.script}\n📸 ${s.hook?.visual}\n\n💎 ${s.core?.type}：\n${s.core?.script}\n💡 ${s.core?.solve}\n\n🚀 ${s.cta?.style}：${s.cta?.script}`;navigator.clipboard.writeText(t).then(()=>{btn.textContent='✅ 已複製';setTimeout(()=>btn.textContent='複製腳本',2000);});}
 async function addDeliver(scriptIdx){
   const s=S.scripts[scriptIdx];const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;const video=S.selVideo!==null?S.videos[S.selVideo]:null;
-  const row={id:s.id,brand:S.brandId||'',product:S.prod?.name||'',hookScript:s.hook.script,coreScript:s.core.script,ctaScript:s.cta.script,photoName:photo?.name||'',photoUrl:photo?.driveUrl||'',videoName:video?.name||'',videoUrl:video?.driveUrl||'',status:!!(photo||video)?'素材已備妥':'缺素材',createdAt:new Date().toISOString()};
+  const row={id:s.id,brand:S.brandId||'',product:S.prod?.name||'',hookScript:s.hook?.script||'',coreScript:s.core?.script||'',ctaScript:s.cta?.script||'',photoName:photo?.name||'',photoUrl:photo?.driveUrl||'',videoName:video?.name||'',videoUrl:video?.driveUrl||'',status:!!(photo||video)?'素材已備妥':'缺素材',createdAt:new Date().toISOString()};
   try{await fetch(`${GAS_URL}?action=addDeliver&password=${GAS_PASSWORD}&row=${encodeURIComponent(JSON.stringify(row))}`);}catch(e){}
   S.delivers.push({...row,ready:!!(photo||video)});renderDeliverRows();renderDeliverOut();switchTab(document.querySelector('[data-tab="deliver"]'));
 }
@@ -651,7 +738,6 @@ function copyTSV(btn){
 // ══ AD MAKER ══
 let AM={w:1080,h:1080,scriptIdx:null};let PR_BG_IMG=null;let PR_MODE='ai_bg';let PR_SCENE='studio';
 
-// ★ 修正5+6：LACEZ/MOZ 升級專屬高質感場景 Prompt
 const BRAND_SCENE_PROMPTS={
   lacez:{
     studio:'pure white seamless studio backdrop, soft professional lighting, high-end lingerie product photography, minimal elegant, luxury intimate apparel brand',
@@ -714,7 +800,7 @@ function openAdMaker(idx){
   document.getElementById('prVirtualSection').style.display='none';
   document.getElementById('prFoodSection').style.display='none';
   const s=S.scripts[idx];AM.scriptIdx=idx;
-  document.getElementById('amTitle').value=s.hook.script;
+  document.getElementById('amTitle').value=s.hook?.script||'';
   document.getElementById('prCustomPrompt').value='';
   renderAmPhotoRow();
   document.getElementById('adMakerModal').style.display='block';
@@ -726,7 +812,7 @@ function renderAmPhotoRow(){
   if(!S.photos.length){row.innerHTML='<span style="font-size:10px;color:var(--t3);">請先到右側抓取照片</span>';if(nameEl)nameEl.textContent='⚠️ 尚未選擇';return;}
   row.innerHTML=S.photos.map((f,i)=>{
     const isSelected=S.selPhoto===i;const thumb=f.src||f.thumb;
-    const imgHtml=thumb?('<img src="'+thumb+'" style="width:100%;height:100%;object-fit:contain;border-radius:3px;">'):'<span style="font-size:16px;">\u{1F5BC}\uFE0F</span>';
+    const imgHtml=thumb?('<img src="'+thumb+'" style="width:100%;height:100%;object-fit:contain;border-radius:3px;">'):'<span style="font-size:16px;">🖼️</span>';
     const border=isSelected?'#5BC8C8':'rgba(255,255,255,0.1)';
     return '<div onclick="selectPhotoInAM('+i+')" title="'+f.name+'" style="width:36px;height:36px;border-radius:5px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid '+border+';background:var(--bg4);display:flex;align-items:center;justify-content:center;">'+imgHtml+'</div>';
   }).join('');
@@ -741,7 +827,8 @@ function setPrMode(btn,mode){
   document.getElementById('prSceneSection').style.display=(mode==='ai_bg'?'block':'none');
   document.getElementById('prVirtualSection').style.display=(mode==='virtual_model'?'block':'none');
   document.getElementById('prFoodSection').style.display=(mode==='food_delivery'?'block':'none');
-  document.getElementById('virtualModelNote').style.display='none';
+  // ★ 虛擬模型顯示提示
+  document.getElementById('virtualModelNote').style.display=(mode==='virtual_model'?'block':'none');
 }
 function setPrScene(btn,scene){document.querySelectorAll('#prSceneSection .pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
 let TEXT_ALIGN='left';
@@ -768,24 +855,29 @@ async function applyPhotoroomBg(){
     if(!prompt){if(PR_MODE==='food_delivery')prompt=FOOD_SCENE_PROMPTS[FOOD_SCENE];else prompt=getBrandScenePrompt(PR_SCENE);}
     if(!prompt)prompt=PR_RANDOM_PROMPTS[0];
     const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
-    // ★ 修正4：虛擬模型內衣加上 prompt 提示這是正規電商商品
-    const vmPrompt=PR_MODE==='virtual_model'?'professional ecommerce fashion clothing product, legitimate intimate apparel brand, tasteful commercial product photography, non-explicit fashion':``;
+    const vmPrompt=PR_MODE==='virtual_model'?'professional ecommerce fashion clothing product, legitimate intimate apparel brand, tasteful commercial product photography, non-explicit fashion':'';
     const resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,mode:PR_MODE,width:AM.w,height:AM.h,vmPrompt,vmModel:document.getElementById('vmModel')?.value||'avery',vmPose:document.getElementById('vmPose')?.value||'random',vmScene:document.getElementById('vmScene')?.value||'random'})});
-    const prData=await resp.json();if(!prData.ok)throw new Error(prData.error||'AI 處理失敗');
+    const prData=await resp.json();
+    if(!prData.ok){
+      // ★ 虛擬模型失敗給更友善提示
+      const errMsg=prData.error||'AI 處理失敗';
+      if(PR_MODE==='virtual_model'&&errMsg.includes('Virtual Model')){
+        throw new Error('虛擬模型處理失敗（可能需要 Photoroom 付費方案）\n請改用「AI情境背景」模式');
+      }
+      throw new Error(errMsg);
+    }
     PR_BG_IMG=prData.imageBase64;await renderAdCanvasWithPR();
     clearInterval(prInterval);if(prFill)prFill.style.width='100%';if(prPct)prPct.textContent='100%';
     setPrStatus('✅ AI 處理成功！','var(--mint)');setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
   }catch(e){
     clearInterval(prInterval);if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';
-    const errMsg=e.message||'發生錯誤';
-    setPrStatus('❌ '+errMsg,'var(--red)');
+    setPrStatus('❌ '+e.message,'var(--red)');
   }
   btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
 }
 
 async function urlToBlob(src){if(src.startsWith('data:')){const res=await fetch(src);return res.blob();}const res=await fetch(src);if(!res.ok)throw new Error('圖片載入失敗');return res.blob();}
 
-// ★ 修正1+2：contain 模式不壓扁，橫線完全移除
 async function renderAdCanvas(){
   if(PR_BG_IMG){await renderAdCanvasWithPR();return;}
   const canvas=document.getElementById('adCanvas');if(!canvas)return;
@@ -793,14 +885,13 @@ async function renderAdCanvas(){
   const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const title=document.getElementById('amTitle')?.value||'';
   const brand=BRANDS.find(b=>b.id===S.brandId);
-  const colorMap={gold:'#E8603A',red:'#E8603A',sky:'#5BC8C8',mint:'#7ED4B0',purple:'#B89ED4'};
+  const colorMap={gold:'#E8603A',red:'#E8603A',sky:'#5BC8C8',mint:'#7ED4B0',purple:'#B89ED4',brown:'#C8A870'};
   const accentColor=colorMap[brand?.navColor]||'#E8603A';
   const photo=S.selPhoto!==null?S.photos[S.selPhoto]:null;
   if(photo&&(photo.src||photo.thumb)){
     await new Promise(resolve=>{
       const img=new Image();img.crossOrigin='anonymous';
       img.onload=()=>{
-        // ★ 白底 + contain 完整顯示，不壓扁不裁切
         ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,AM.w,AM.h);
         const scale=Math.min(AM.w/img.width,AM.h/img.height);
         const sw=img.width*scale;const sh=img.height*scale;
@@ -814,16 +905,14 @@ async function renderAdCanvas(){
   drawOverlay(ctx,title,accentColor);
 }
 
-// ★ 修正：幽靈模特兒/透明去背 白底，其他深底
 async function renderAdCanvasWithPR(){
   const canvas=document.getElementById('adCanvas');if(!canvas)return;
   canvas.width=AM.w;canvas.height=AM.h;
   const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const title=document.getElementById('amTitle')?.value||'';
   const brand=BRANDS.find(b=>b.id===S.brandId);
-  const colorMap={gold:'#E8603A',red:'#E8603A',sky:'#5BC8C8',mint:'#7ED4B0',purple:'#B89ED4'};
+  const colorMap={gold:'#E8603A',red:'#E8603A',sky:'#5BC8C8',mint:'#7ED4B0',purple:'#B89ED4',brown:'#C8A870'};
   const accentColor=colorMap[brand?.navColor]||'#E8603A';
-  // 幽靈模特兒/純白去背/透明去背 → 白底；其他 → 深色底
   const needWhiteBg=['ghost_mannequin','white_bg','transparent_bg'].includes(PR_MODE);
   ctx.fillStyle=needWhiteBg?'#FFFFFF':'#1a1a1a';ctx.fillRect(0,0,AM.w,AM.h);
   await new Promise(resolve=>{
@@ -848,7 +937,6 @@ async function renderAdCanvasWithPR(){
 function drawBgFallback(ctx){const grad=ctx.createLinearGradient(0,0,AM.w,AM.h);grad.addColorStop(0,'#1a1020');grad.addColorStop(1,'#0d0d1a');ctx.fillStyle=grad;ctx.fillRect(0,0,AM.w,AM.h);}
 function autoLines(ctx,text,maxWidth){const chars=text.split('');const lines=[];let cur='';for(const c of chars){if(ctx.measureText(cur+c).width>maxWidth&&cur){lines.push(cur);cur=c;}else cur+=c;}if(cur)lines.push(cur);return lines;}
 
-// ★ 修正2+6：完全移除底線；修正服飾電商圖靠左/置中/靠右對齊
 function drawOverlay(ctx,title,accent){
   const W=AM.w,H=AM.h;
   const gradStartPct=(parseInt(document.getElementById('amGradStart')?.value||38))/100;
@@ -863,7 +951,6 @@ function drawOverlay(ctx,title,accent){
   const textYPct=parseInt(document.getElementById('amTextY')?.value||80)/100;
   const align=TEXT_ALIGN||'left';
   ctx.font=`900 ${baseFontSize}px 'Noto Sans TC',sans-serif`;
-  // ★ 修正6：textAlign 正確對應畫布寬度位置
   ctx.textAlign=align;
   let tx;
   if(align==='left')tx=Math.round(W*0.07);
@@ -877,7 +964,6 @@ function drawOverlay(ctx,title,accent){
     ctx.fillStyle='#FFFFFF';ctx.fillText(line,tx,ty+i*lineH);
   });
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
-  // ★ 底線完全移除，不繪製任何橫線
 }
 
 function downloadAd(){
