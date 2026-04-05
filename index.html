@@ -367,7 +367,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
             <button class="pr-mode-btn" onclick="setPrMode(this,'virtual_model')">🧍 虛擬模型（歐美）</button>
             <button class="pr-mode-btn" onclick="setPrMode(this,'clothing')">👕 服飾電商圖</button>
           </div>
-          <div id="virtualModelNote" style="display:none;font-size:9px;color:#E8A03A;background:rgba(232,160,58,0.1);border:1px solid rgba(232,160,58,0.3);border-radius:5px;padding:5px 7px;line-height:1.5;margin-bottom:4px;">⚠️ 虛擬模型對內衣/泳衣有平台限制<br>建議改用「幽靈模特兒」效果更好！</div>
+          <div id="virtualModelNote" style="display:none;"></div>
           <div style="font-size:9px;color:#3AE8A0;margin-bottom:4px;">🍱 食品專用</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
             <button class="pr-mode-btn" onclick="setPrMode(this,'food_delivery')">🍱 食品外送圖</button>
@@ -741,7 +741,7 @@ function setPrMode(btn,mode){
   document.getElementById('prSceneSection').style.display=(mode==='ai_bg'?'block':'none');
   document.getElementById('prVirtualSection').style.display=(mode==='virtual_model'?'block':'none');
   document.getElementById('prFoodSection').style.display=(mode==='food_delivery'?'block':'none');
-  document.getElementById('virtualModelNote').style.display=(mode==='virtual_model'?'block':'none');
+  document.getElementById('virtualModelNote').style.display='none';
 }
 function setPrScene(btn,scene){document.querySelectorAll('#prSceneSection .pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
 let TEXT_ALIGN='left';
@@ -777,8 +777,7 @@ async function applyPhotoroomBg(){
     setPrStatus('✅ AI 處理成功！','var(--mint)');setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
   }catch(e){
     clearInterval(prInterval);if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';
-    let errMsg=e.message||'發生錯誤';
-    if(PR_MODE==='virtual_model'&&(errMsg.includes('Virtual Model')||errMsg.toLowerCase().includes('error'))){errMsg='虛擬模型對內衣有平台限制 😢\n請改用「幽靈模特兒」，效果一樣好！';}
+    const errMsg=e.message||'發生錯誤';
     setPrStatus('❌ '+errMsg,'var(--red)');
   }
   btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
