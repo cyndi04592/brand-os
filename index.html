@@ -597,7 +597,7 @@ async function doGenerate(){
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.innerHTML='<span class="spin"></span>生成中';
   const prog=document.getElementById('prog');const fill=document.getElementById('progFill');prog.style.display='block';
   const progEl=document.getElementById('progPct');let progVal=0;
-  const progInterval=setInterval(()=>{if(progVal>=92)return;progVal=Math.min(92,progVal+(progVal<30?2.5:progVal<60?1.2:0.5));fill.style.width=progVal+'%';progEl.textContent=Math.round(progVal)+'%';},300);
+  const progInterval=setInterval(()=>{if(progVal>=92)return;progVal=Math.min(92,progVal+(progVal<30?2.5:progVal<60?1.2:0.5));fill.style.width=progVal+'%';if(progEl)progEl.textContent=Math.round(progVal)+'%';},300);
   const copyLength=document.getElementById('selCopyLength')?.value||'medium';
   const copyLengthGuide={short:'核心段落3-5行',medium:'核心段落6-10行',long:'核心段落12-18行'}[copyLength];
   const copyLengthLabel={short:'【短文案版】',medium:'【中等文案版】',long:'【長文案版】'}[copyLength];
@@ -612,7 +612,7 @@ async function doGenerate(){
     document.getElementById('scriptBadge').textContent=S.scripts.length;
     const lenLabel={short:'短文案',medium:'中文案',long:'長文案'}[copyLength];
     document.querySelector('[data-tab="scripts"]').innerHTML='📝 廣告腳本 <span class="badge">'+S.scripts.length+'</span> <span style="font-size:8px;background:rgba(232,96,58,0.15);color:#E8603A;padding:1px 5px;border-radius:3px;">'+lenLabel+'</span>';
-    clearInterval(progInterval);fill.style.width='100%';progEl.textContent='✅';setTimeout(()=>{prog.style.display='none';progEl.textContent='';},800);
+    clearInterval(progInterval);fill.style.width='100%';if(progEl)progEl.textContent='✅';setTimeout(()=>{prog.style.display='none';if(progEl)progEl.textContent='';},800);
   }catch(e){clearInterval(progInterval);prog.style.display='none';alert('生成失敗：'+e.message);}
   finally{btn.disabled=false;btn.innerHTML='⚡ 生成腳本';}
 }
@@ -659,7 +659,7 @@ const BRAND_SCENE_PROMPTS={
     nature:'ethereal white garden, soft natural light, delicate flowers, romantic feminine atmosphere, premium quality feeling',
     forest:'misty morning forest, dappled sunlight, dreamy soft bokeh, romantic natural setting, premium intimate brand',
     food:'elegant marble vanity table, perfume bottles, rose petals, luxury feminine product styling',
-    kitchen:'bright airy Scandinavian interior, white and gold accents, luxury home lifestyle, premium brand quality',
+    kitchen:'luxury fashion boutique interior, white marble floor, rose gold accents, elegant fitting room, premium intimate apparel brand, soft warm lighting',
     luxury:'deep navy velvet background, gold accent lighting, premium luxury product shot, high-end intimate fashion',
     marble:'white Carrara marble surface, soft diffused studio light, minimal luxury lingerie photography, premium brand',
     outdoor:'upscale rooftop terrace, city skyline blur, golden hour light, premium lifestyle brand atmosphere',
@@ -667,8 +667,8 @@ const BRAND_SCENE_PROMPTS={
     minimal:'soft gradient grey background, clean minimal studio, premium product photography, high-end fashion brand',
     night:'candlelit luxury interior, warm intimate glow, premium boutique atmosphere, elegant feminine brand',
     garden:'romantic English rose garden, soft afternoon light, delicate floral bokeh, luxury intimate brand lifestyle',
-    camping:'chic glamping setup, luxury canvas tent, warm string lights, premium lifestyle, feminine and elegant',
-    office:'luxury dressing room, large mirror, soft vanity lighting, high-end boutique interior, premium intimate brand',
+    camping:'luxury spa interior, white towels, candles, soft ambient light, premium feminine wellness brand, serene elegant atmosphere',
+    office:'elegant vanity dressing table, perfume bottles, soft mirror lighting, luxury feminine brand, premium intimate apparel lifestyle',
     random:null
   },
   moz:{
@@ -677,7 +677,7 @@ const BRAND_SCENE_PROMPTS={
     nature:'Nordic forest clearing, morning mist, natural wood textures, premium Scandinavian outdoor lifestyle, MOZ Sweden',
     forest:'Swedish forest path, pine trees, soft filtered light, Nordic nature, premium outdoor accessories lifestyle',
     food:'elegant Nordic dining setup, clean wooden table, minimalist Scandinavian interior, premium lifestyle accessories',
-    kitchen:'bright Scandinavian kitchen, white and oak wood, clean minimal design, premium Nordic lifestyle brand',
+    kitchen:'modern Scandinavian design studio, clean white walls, oak shelf, leather goods display, premium Nordic accessories brand',
     luxury:'dark marble surface, matte black accents, premium minimalist luxury, Scandinavian premium accessories brand',
     marble:'light grey marble surface, soft studio lighting, premium minimal product photography, Scandinavian design quality',
     outdoor:'Stockholm city street, cobblestone, autumn light, urban Nordic lifestyle, premium accessories brand',
@@ -685,7 +685,7 @@ const BRAND_SCENE_PROMPTS={
     minimal:'pure white minimal background, clean studio, premium product photography, Scandinavian design simplicity',
     night:'modern Nordic bar interior, warm ambient light, premium urban lifestyle, Scandinavian accessories brand',
     garden:'Swedish countryside garden, wildflowers, soft daylight, premium Nordic lifestyle, natural Scandinavian setting',
-    camping:'Nordic outdoor camping, forest background, premium outdoor lifestyle, Scandinavian brand quality and functionality',
+    camping:'Scandinavian outdoor adventure, misty mountain trail, premium leather backpack, Nordic nature lifestyle brand, quality craftsmanship',
     office:'modern Scandinavian workspace, clean white desk, premium minimal design, MOZ Sweden professional lifestyle',
     random:null
   },
