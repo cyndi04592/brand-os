@@ -407,7 +407,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
             </div>
             <input type="file" id="mdPhotoInput" accept="image/*" style="display:none;" onchange="onMdPhotoSelected(this)">
           </div>
-          <div style="font-size:9px;color:var(--t3);line-height:1.6;">· MD照片建議：全身、正面、背景簡單<br>· 每張約 NT$2，效果最像真人</div>
+          <div style="font-size:9px;color:var(--t3);line-height:1.6;">· MD照片建議：全身、正面、背景簡單<br>· 每張約 NT$2，效果最像真人</div><button id="outpaintBtn" onclick="doOutpaint()" style="display:none;width:100%;margin-top:8px;padding:8px;border-radius:7px;background:linear-gradient(135deg,#5BC8C8,#3A9898);border:none;color:#fff;font-family:Noto Sans TC,sans-serif;font-size:11px;font-weight:900;cursor:pointer;">🖼️ AI 補左右背景（方形填滿）</button>
         </div>
         <div id="prFoodSection" style="display:none;padding:8px 10px;border-bottom:1px solid var(--line);">
           <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:5px;">· 食品外送圖場景</div>
@@ -731,6 +731,7 @@ function openAdMaker(idx){
   document.querySelectorAll('.pr-mode-btn').forEach(b=>b.classList.remove('on'));
   document.querySelector('.pr-mode-btn')?.classList.add('on');
   document.getElementById('prSceneSection').style.display='block';
+  const ob=document.getElementById('outpaintBtn');if(ob)ob.style.display='none';
   document.getElementById('prVirtualSection').style.display='none';
   document.getElementById('prFoodSection').style.display='none';
   const s=S.scripts[idx];AM.scriptIdx=idx;
@@ -825,6 +826,8 @@ async function applyPhotoroomBg(){
           clearInterval(prInterval);if(prFill)prFill.style.width='100%';if(prPct)prPct.textContent='100%';
           setPrStatus('✅ MD試穿完成！','var(--mint)');
           setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
+          // ★ 顯示補背景按鈕
+          document.getElementById('outpaintBtn').style.display='block';
           btn.disabled=false;btn.textContent='✨ 套用 AI 效果';return;
         }
         if(pollData.status==='FAILED'||(!pollData.ok&&pollData.status!=='IN_QUEUE'&&pollData.status!=='IN_PROGRESS')){throw new Error(pollData.error||'Try-On 失敗');}
@@ -952,6 +955,38 @@ function drawOverlay(ctx,title,accent){
   const ty=Math.round(H*textYPct)-(lines.length-1)*lineH;
   lines.forEach((line,i)=>{ctx.shadowColor='rgba(0,0,0,0.85)';ctx.shadowBlur=20;ctx.shadowOffsetY=4;ctx.fillStyle='#FFFFFF';ctx.fillText(line,tx,ty+i*lineH);});
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
+}
+
+// ★ AI 補左右背景
+async function doOutpaint(){
+  if(!PR_BG_IMG){setPrStatus("⚠️ 請先完成 MD 試穿","var(--red)");return;}
+  const btn=document.getElementById("outpaintBtn");
+  btn.disabled=true;btn.textContent="⏳ AI 補背景中...";
+  setPrStatus("🖼️ 計算需要補多少背景...","var(--t3)");
+  // 計算圖片實際寬高比，算出需要左右各補多少
+  const img=new Image();
+  await new Promise(r=>{img.onload=r;img.src=PR_BG_IMG;});
+  const imgW=img.width;const imgH=img.height;
+  // 目標是 1080x1080，圖片是直式，需要左右各補
+  const targetSize=Math.max(imgW,imgH);
+  const expandEach=Math.round((targetSize-imgW)/2);
+  const expandTop=Math.round((targetSize-imgH)/2);
+  if(expandEach<=0&&expandTop<=0){setPrStatus("⚠️ 圖片已經是方形，不需要補背景","var(--t3)");btn.disabled=false;btn.textContent="🖼️ AI 補左右背景（方形填滿）";return;}
+  setPrStatus("📤 上傳試穿結果...","var(--t3)");
+  try{
+    const resp=await fetch(CF_WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"fal_outpaint",password:GAS_PASSWORD,imageBase64:PR_BG_IMG,expandLeft:expandEach,expandRight:expandEach,expandTop:expandTop>0?expandTop:0,expandBottom:expandTop>0?expandTop:0,prompt:"seamlessly extend the room background, same lighting and wall texture, natural continuation of the scene"})});
+    setPrStatus("🖌️ AI 補背景中（約30秒）...","var(--t3)");
+    const data=await resp.json();
+    if(!data.ok)throw new Error(data.error);
+    PR_BG_IMG=data.imageBase64;
+    await renderAdCanvasWithPR();
+    setPrStatus("✅ 補背景完成！","var(--mint)");
+    btn.textContent="🖼️ 再次補背景";
+  }catch(e){
+    setPrStatus("❌ "+e.message,"var(--red)");
+    btn.textContent="🖼️ AI 補左右背景（方形填滿）";
+  }
+  btn.disabled=false;
 }
 
 function downloadAd(){
