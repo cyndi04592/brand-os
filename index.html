@@ -820,10 +820,26 @@ function onMdPhotoSelected(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
-    const img=document.getElementById('mdPhotoImg');
-    const placeholder=document.getElementById('mdPhotoPlaceholder');
-    if(img){img.src=e.target.result;img.style.display='block';}
-    if(placeholder)placeholder.style.display='none';
+    // ★ 壓縮圖片到最大 1200px，品質 85%
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=1200;
+      let w=img.width,h=img.height;
+      if(w>MAX||h>MAX){
+        if(w>h){h=Math.round(h*MAX/w);w=MAX;}
+        else{w=Math.round(w*MAX/h);h=MAX;}
+      }
+      const canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      const compressed=canvas.toDataURL('image/jpeg',0.85);
+      const mdImg=document.getElementById('mdPhotoImg');
+      const placeholder=document.getElementById('mdPhotoPlaceholder');
+      if(mdImg){mdImg.src=compressed;mdImg.style.display='block';}
+      if(placeholder)placeholder.style.display='none';
+    };
+    img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -869,10 +885,11 @@ async function applyPhotoroomBg(){
       if(!mdImg||!mdImg.src||mdImg.style.display==='none'){
         throw new Error('請先上傳 MD 照片！');
       }
-      // MD 照片轉 base64
-      const mdBlob=await urlToBlob(mdImg.src);
-      const mdBase64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(mdBlob);});
-      const resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'kling_tryon',password:GAS_PASSWORD,humanImageBase64:mdBase64,garmentImageBase64:base64})});
+      // ★ 壓縮商品圖到 1200px
+      const compressedGarment = await compressImageBase64(base64, 1200, 0.85);
+      // MD 照片已在上傳時壓縮，直接用
+      const mdBase64 = mdImg.src;
+      const resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'kling_tryon',password:GAS_PASSWORD,humanImageBase64:mdBase64,garmentImageBase64:compressedGarment})});
       const prData=await resp.json();
       if(!prData.ok)throw new Error(prData.error||'MD試穿失敗');
       PR_BG_IMG=prData.imageBase64;await renderAdCanvasWithPR();
@@ -897,6 +914,24 @@ async function applyPhotoroomBg(){
     setPrStatus('❌ '+e.message,'var(--red)');
   }
   btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
+}
+
+async function compressImageBase64(base64, maxSize, quality){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxSize||h>maxSize){
+        if(w>h){h=Math.round(h*maxSize/w);w=maxSize;}
+        else{w=Math.round(w*maxSize/h);h=maxSize;}
+      }
+      const canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg',quality));
+    };
+    img.src=base64;
+  });
 }
 
 async function urlToBlob(src){if(src.startsWith('data:')){const res=await fetch(src);return res.blob();}const res=await fetch(src);if(!res.ok)throw new Error('圖片載入失敗');return res.blob();}
