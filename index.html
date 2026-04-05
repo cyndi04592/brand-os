@@ -50,7 +50,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 <body>
 <div class="card">
   <div class="logo-wrap">
-    <img id="logoImg" src="" alt="RB Design & Creative"
+    <img id="logoImg" src="logo.webp" alt="RB Design & Creative"
+      style="height:90px;width:auto;object-fit:contain;margin-bottom:12px;"
       onerror="this.style.display='none'">
     <div class="brand-title">Brand OS</div>
     <div class="brand-sub">RABY D&amp;C · v5</div>
@@ -102,7 +103,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 <script src="shared.js"></script>
 <script>
 // LOGO 從 GitHub 載入（避免 base64 塞爆）
-document.getElementById('logoImg').src = 'logo.webp';
+// LOGO 直接在 img src 設定
 
 // 頁面載入：先看有沒有 session
 window.addEventListener('load', () => {
