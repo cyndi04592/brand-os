@@ -364,10 +364,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
           <div style="font-size:9px;color:#E8A03A;margin-bottom:4px;">👙 服飾／內衣專用</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:4px;">
             <button class="pr-mode-btn" onclick="setPrMode(this,'ghost_mannequin')">👻 幽靈模特兒</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'virtual_model')">🧍 虛擬模型（歐美）</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')">✨ 真人MD試穿</button>
             <button class="pr-mode-btn" onclick="setPrMode(this,'clothing')">👕 服飾電商圖</button>
           </div>
-          <div id="virtualModelNote" style="display:none;padding:6px 8px;background:rgba(232,96,58,0.08);border-radius:6px;font-size:9px;color:#E8A03A;line-height:1.6;">⚠️ 虛擬模型需要 Photoroom 付費方案支援。若失敗請改用「AI情境背景」。</div>
+          <div id="virtualModelNote" style="display:none;"></div>
           <div style="font-size:9px;color:#3AE8A0;margin-bottom:4px;">🍱 食品專用</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
             <button class="pr-mode-btn" onclick="setPrMode(this,'food_delivery')">🍱 食品外送圖</button>
@@ -396,23 +396,20 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
           <input id="prCustomPrompt" type="text" placeholder="自訂場景（英文，留空則用上方按鈕）" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;margin-top:6px;">
         </div>
         <div id="prVirtualSection" style="display:none;padding:8px 10px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:5px;">🧍 虛擬模型設定</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px;">
-            <div><div class="sel-lbl">模特兒</div>
-              <select id="vmModel" class="sel" style="width:100%;font-size:10px;">
-                <option value="avery">Avery（女）</option><option value="sam">Sam（中性）</option><option value="taylor">Taylor（女）</option><option value="kendall">Kendall（女）</option><option value="jordan">Jordan（男）</option><option value="maya">Maya（女）</option><option value="lena">Lena（女）</option><option value="julia">Julia（女）</option><option value="sophia">Sophia（女）</option><option value="emma">Emma（女）</option>
-              </select>
+          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">✨ 真人MD試穿設定</div>
+          <div style="font-size:9px;color:var(--sky);margin-bottom:6px;line-height:1.6;">上傳MD照片 + 左側選商品圖 → 生成試穿效果<br>支援任何品牌、任何服飾、配件</div>
+          <div style="margin-bottom:6px;">
+            <div class="sel-lbl">MD 照片（全身清晰）</div>
+            <div id="mdPhotoPreview" style="width:100%;height:80px;border:1.5px dashed var(--sky);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg4);margin-top:4px;overflow:hidden;position:relative;" onclick="document.getElementById('mdPhotoInput').click()">
+              <span id="mdPhotoPlaceholder" style="font-size:10px;color:var(--t3);">點擊上傳 MD 照片</span>
+              <img id="mdPhotoImg" style="display:none;width:100%;height:100%;object-fit:contain;" />
             </div>
-            <div><div class="sel-lbl">姿勢</div>
-              <select id="vmPose" class="sel" style="width:100%;font-size:10px;">
-                <option value="random">隨機</option><option value="standing">站立</option><option value="34turn">3/4 側身</option><option value="powerstance">自信站姿</option><option value="walkingforward">行走</option><option value="handinpocket">手插口袋</option><option value="crossedarms">交叉手臂</option><option value="seated">坐姿</option>
-              </select>
-            </div>
+            <input type="file" id="mdPhotoInput" accept="image/*" style="display:none;" onchange="onMdPhotoSelected(this)">
           </div>
-          <div><div class="sel-lbl">場景</div>
-            <select id="vmScene" class="sel" style="width:100%;font-size:10px;">
-              <option value="random">隨機</option><option value="street">街道</option><option value="bedroom">臥室</option><option value="studio">攝影棚</option><option value="beach">海灘</option><option value="forest">森林</option><option value="cafe">咖啡廳</option><option value="asiancity">亞洲城市</option>
-            </select>
+          <div style="font-size:9px;color:var(--t3);line-height:1.6;">
+            📌 MD照片建議：全身、正面、背景簡單<br>
+            📌 商品圖從左側素材庫選取<br>
+            💰 每張約 NT$2，效果最像真人
           </div>
         </div>
         <div id="prFoodSection" style="display:none;padding:8px 10px;border-bottom:1px solid var(--line);">
@@ -819,16 +816,26 @@ function renderAmPhotoRow(){
   if(nameEl)nameEl.textContent=S.selPhoto!==null?('✅ '+S.photos[S.selPhoto].name):'← 點選上方照片';
 }
 function selectPhotoInAM(i){S.selPhoto=i;PR_BG_IMG=null;renderAmPhotoRow();renderAssets();renderAdCanvas();}
+function onMdPhotoSelected(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=document.getElementById('mdPhotoImg');
+    const placeholder=document.getElementById('mdPhotoPlaceholder');
+    if(img){img.src=e.target.result;img.style.display='block';}
+    if(placeholder)placeholder.style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
 function closeAdMaker(){document.getElementById('adMakerModal').style.display='none';}
 let FOOD_SCENE='bbq';
 function setFoodScene(btn,scene){document.querySelectorAll('#prFoodSection .pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');FOOD_SCENE=scene;}
 function setPrMode(btn,mode){
   document.querySelectorAll('.pr-mode-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_MODE=mode;
   document.getElementById('prSceneSection').style.display=(mode==='ai_bg'?'block':'none');
-  document.getElementById('prVirtualSection').style.display=(mode==='virtual_model'?'block':'none');
+  document.getElementById('prVirtualSection').style.display=(mode==='kling_tryon'?'block':'none');
   document.getElementById('prFoodSection').style.display=(mode==='food_delivery'?'block':'none');
-  // ★ 虛擬模型顯示提示
-  document.getElementById('virtualModelNote').style.display=(mode==='virtual_model'?'block':'none');
 }
 function setPrScene(btn,scene){document.querySelectorAll('#prSceneSection .pr-scene-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');PR_SCENE=scene;}
 let TEXT_ALIGN='left';
@@ -846,7 +853,7 @@ async function applyPhotoroomBg(){
   const btn=document.getElementById('prApplyBtn');btn.disabled=true;btn.textContent='⏳ AI 處理中...';
   const prBar=document.getElementById('prProgBar');const prFill=document.getElementById('prProgFill');const prPct=document.getElementById('prPct');
   if(prBar)prBar.style.display='block';let prPctVal=0;
-  const prTotalMs=PR_MODE==='ai_bg'?18000:PR_MODE==='virtual_model'?25000:10000;
+  const prTotalMs=PR_MODE==='ai_bg'?18000:PR_MODE==='kling_tryon'?30000:10000;
   const prInterval=setInterval(()=>{if(prPctVal>=93)return;prPctVal=Math.min(93,prPctVal+(prPctVal<30?2.0:prPctVal<60?1.0:0.4));if(prFill)prFill.style.width=prPctVal+'%';if(prPct)prPct.textContent=Math.round(prPctVal)+'%';const msgs=['📤 上傳圖片...','✂️ AI 去背中...','🎨 生成背景中...','🖌️ 光影融合中...','⚡ 最終處理中...'];setPrStatus(msgs[Math.min(Math.floor(prPctVal/20),msgs.length-1)],'var(--t3)');},prTotalMs/100);
   try{
     const blob=await urlToBlob(imgSrc);
@@ -855,15 +862,31 @@ async function applyPhotoroomBg(){
     if(!prompt){if(PR_MODE==='food_delivery')prompt=FOOD_SCENE_PROMPTS[FOOD_SCENE];else prompt=getBrandScenePrompt(PR_SCENE);}
     if(!prompt)prompt=PR_RANDOM_PROMPTS[0];
     const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
-    const vmPrompt=PR_MODE==='virtual_model'?'professional ecommerce fashion clothing product, legitimate intimate apparel brand, tasteful commercial product photography, non-explicit fashion':'';
-    const resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,mode:PR_MODE,width:AM.w,height:AM.h,vmPrompt,vmModel:document.getElementById('vmModel')?.value||'avery',vmPose:document.getElementById('vmPose')?.value||'random',vmScene:document.getElementById('vmScene')?.value||'random'})});
+
+    // ★ 真人MD試穿 → 呼叫 fal.ai Kling
+    if(PR_MODE==='kling_tryon'){
+      const mdImg=document.getElementById('mdPhotoImg');
+      if(!mdImg||!mdImg.src||mdImg.style.display==='none'){
+        throw new Error('請先上傳 MD 照片！');
+      }
+      // MD 照片轉 base64
+      const mdBlob=await urlToBlob(mdImg.src);
+      const mdBase64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(mdBlob);});
+      const resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'kling_tryon',password:GAS_PASSWORD,humanImageBase64:mdBase64,garmentImageBase64:base64})});
+      const prData=await resp.json();
+      if(!prData.ok)throw new Error(prData.error||'MD試穿失敗');
+      PR_BG_IMG=prData.imageBase64;await renderAdCanvasWithPR();
+      clearInterval(prInterval);if(prFill)prFill.style.width='100%';if(prPct)prPct.textContent='100%';
+      setPrStatus('✅ MD試穿完成！','var(--mint)');setTimeout(()=>{if(prBar)prBar.style.display='none';if(prPct)prPct.textContent='';},2000);
+      btn.disabled=false;btn.textContent='✨ 套用 AI 效果';
+      return;
+    }
+
+    const vmPrompt='';
+    const resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'photoroom_process',password:GAS_PASSWORD,imageBase64:base64,bgPrompt:prompt,mode:PR_MODE,width:AM.w,height:AM.h,vmPrompt})});
     const prData=await resp.json();
     if(!prData.ok){
-      // ★ 虛擬模型失敗給更友善提示
       const errMsg=prData.error||'AI 處理失敗';
-      if(PR_MODE==='virtual_model'&&errMsg.includes('Virtual Model')){
-        throw new Error('虛擬模型處理失敗（可能需要 Photoroom 付費方案）\n請改用「AI情境背景」模式');
-      }
       throw new Error(errMsg);
     }
     PR_BG_IMG=prData.imageBase64;await renderAdCanvasWithPR();
@@ -918,7 +941,7 @@ async function renderAdCanvasWithPR(){
   await new Promise(resolve=>{
     const img=new Image();
     img.onload=()=>{
-        const needContain=['ghost_mannequin','white_bg','transparent_bg','virtual_model','clothing'].includes(PR_MODE);
+        const needContain=['ghost_mannequin','white_bg','transparent_bg','kling_tryon','clothing'].includes(PR_MODE);
         if(needContain){
           ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,AM.w,AM.h);
           const scale=Math.min(AM.w/img.width,AM.h/img.height);
