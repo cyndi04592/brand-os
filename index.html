@@ -668,9 +668,10 @@ async function doGenerate(){
     const data=await res.json();if(!data.ok)throw new Error(data.error||JSON.stringify(data));
     const raw=data.text.replace(/```json|```/g,'').trim();const parsed=JSON.parse(raw);
     S.scripts=parsed.combos||[];renderScripts(brandDisplay,sub?.color||brand?.navColor);
-    document.getElementById('scriptBadge').textContent=S.scripts.length;
+    const sb=document.getElementById('scriptBadge');if(sb)sb.textContent=S.scripts.length;
     const lenLabel={short:'短文案',medium:'中文案',long:'長文案'}[copyLength];
-    document.querySelector('[data-tab="scripts"]').innerHTML='📝 廣告腳本 <span class="badge">'+S.scripts.length+'</span> <span style="font-size:8px;background:rgba(232,96,58,0.15);color:#E8603A;padding:1px 5px;border-radius:3px;">'+lenLabel+'</span>';
+    const tabBtn=document.querySelector('[data-tab="scripts"]');
+    if(tabBtn)tabBtn.innerHTML='📝 廣告腳本 <span class="badge">'+S.scripts.length+'</span> <span style="font-size:8px;background:rgba(232,96,58,0.15);color:#E8603A;padding:1px 5px;border-radius:3px;">'+lenLabel+'</span>';
     clearInterval(progInterval);fill.style.width='100%';
     if(progPctEl)progPctEl.textContent='✅';
     setTimeout(()=>{prog.style.display='none';if(progPctEl)progPctEl.textContent='';},800);
@@ -713,7 +714,7 @@ async function addDeliver(scriptIdx){
   S.delivers.push({...row,ready:!!(photo||video)});renderDeliverRows();renderDeliverOut();switchTab(document.querySelector('[data-tab="deliver"]'));
 }
 function renderDeliverRows(){
-  document.getElementById('dzSub').textContent=S.delivers.length+' 組素材';document.getElementById('deliverBadge').textContent=S.delivers.length;
+  const dzSub=document.getElementById('dzSub');if(dzSub)dzSub.textContent=S.delivers.length+' 組素材';const db=document.getElementById('deliverBadge');if(db)db.textContent=S.delivers.length;
   const tbody=document.getElementById('deliverRows');
   if(!S.delivers.length){tbody.innerHTML='<div style="text-align:center;padding:14px;font-size:10px;color:var(--t3);">尚無素材</div>';return;}
   tbody.innerHTML=S.delivers.map((r,i)=>{const pLink=r.photoUrl?`<a class="asset-link al-photo" href="${r.photoUrl}" target="_blank">🖼️</a>`:`<span class="asset-link al-none">🖼️</span>`;const vLink=r.videoUrl?`<a class="asset-link al-video" href="${r.videoUrl}" target="_blank">🎬</a>`:`<span class="asset-link al-none">🎬</span>`;return `<div class="dr ${i===S.delivers.length-1?'new':''}"><span class="dr-id">${r.id}</span><span class="dr-script" title="${r.hookScript}">${r.hookScript.slice(0,16)}…</span><span>${pLink}</span><span>${vLink}</span><span class="dr-status ${r.ready?'ds-ready':'ds-missing'}">${r.ready?'✅':'⚠️'}</span></div>`;}).join('');
