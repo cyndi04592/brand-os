@@ -6,16 +6,12 @@
 <title>Brand OS · 廣告監控</title>
 <link rel="stylesheet" href="style.css">
 <style>
-/* ══ Monitor 專用樣式（繼承 style.css）══ */
 html, body { overflow:auto; height:auto; }
-
 .monitor-wrap { max-width:1400px; margin:0 auto; padding:20px; }
 
-/* 帳號切換列 */
 .account-bar {
   display:flex; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap;
-  padding:12px 16px; background:var(--bg2); border:1px solid var(--line);
-  border-radius:10px;
+  padding:12px 16px; background:var(--bg2); border:1px solid var(--line); border-radius:10px;
 }
 .account-bar-label { font-size:9px; font-weight:700; letter-spacing:2px; color:var(--t3); text-transform:uppercase; }
 .acc-chip {
@@ -40,7 +36,6 @@ html, body { overflow:auto; height:auto; }
 }
 .btn-cfg:hover { border-color:var(--t2); color:var(--t2); }
 
-/* 設定面板 */
 .cfg-panel {
   background:var(--bg2); border:1px solid rgba(232,96,58,0.3);
   border-radius:10px; padding:18px; margin-bottom:20px; display:none;
@@ -61,7 +56,6 @@ html, body { overflow:auto; height:auto; }
 }
 .btn-save-cfg:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(232,96,58,0.4); }
 
-/* 警示橫幅 */
 .alert-banner {
   background:rgba(232,96,58,0.08); border:1px solid rgba(232,96,58,0.35);
   border-radius:10px; padding:12px 16px; margin-bottom:20px; display:none;
@@ -74,19 +68,15 @@ html, body { overflow:auto; height:auto; }
   border-radius:5px; padding:3px 10px; font-size:10px; color:#E8C0A0;
 }
 
-/* 總覽卡片 */
 .overview-grid {
   display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:10px; margin-bottom:20px;
 }
-.ov-card {
-  background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:14px;
-}
+.ov-card { background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:14px; }
 .ov-lbl { font-size:9px; font-weight:700; letter-spacing:1.5px; color:var(--t3); text-transform:uppercase; margin-bottom:8px; }
 .ov-val { font-size:24px; font-weight:900; font-family:'DM Mono'; line-height:1; }
 .ov-sub { font-size:9px; color:var(--t3); margin-top:5px; }
 
-/* Section Title */
 .sec-title {
   font-size:9px; font-weight:700; letter-spacing:2px; color:var(--t3);
   text-transform:uppercase; margin-bottom:10px;
@@ -94,7 +84,6 @@ html, body { overflow:auto; height:auto; }
 }
 .sec-title::after { content:''; flex:1; height:1px; background:var(--line); }
 
-/* 廣告列表 */
 .ads-table-wrap {
   background:var(--bg2); border:1px solid var(--line); border-radius:10px;
   overflow:hidden; margin-bottom:24px;
@@ -107,7 +96,6 @@ html, body { overflow:auto; height:auto; }
 }
 .ads-table-wrap td { padding:9px 12px; border-top:1px solid var(--line); vertical-align:middle; }
 .ads-table-wrap tr:hover td { background:rgba(255,255,255,0.015); }
-
 .ad-name-cell { font-size:12px; font-weight:500; color:var(--t1); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ad-id-cell   { font-size:9px; color:var(--t3); font-family:'DM Mono'; margin-top:2px; }
 .status-on  { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; background:var(--mint2); color:var(--mint); }
@@ -119,16 +107,13 @@ html, body { overflow:auto; height:auto; }
 .fatigue-hi  { display:inline-block; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:700; background:rgba(232,96,58,0.15); color:var(--gold); }
 .fatigue-mid { display:inline-block; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:700; background:rgba(232,160,96,0.15); color:#E8A060; }
 .fatigue-ok  { display:inline-block; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:700; background:var(--mint2); color:var(--mint); }
-
-/* 載入/空狀態 */
-.load-state { text-align:center; padding:50px; color:var(--t3); }
+.load-state { text-align:center; padding:50px; color:var(--t3); font-size:12px; }
 .spin2 { width:28px; height:28px; border:3px solid var(--line); border-top-color:var(--gold); border-radius:50%; animation:sp 0.8s linear infinite; margin:0 auto 12px; }
 @keyframes sp { to{transform:rotate(360deg)} }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav class="nav">
   <div style="display:flex;align-items:center;gap:10px;">
     <img src="logo.webp" alt="RB" style="height:36px;width:auto;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
@@ -147,15 +132,15 @@ html, body { overflow:auto; height:auto; }
 
   <!-- 設定面板 -->
   <div class="cfg-panel" id="cfgPanel">
-    <div class="cfg-title">· API 設定</div>
+    <div class="cfg-title">· 監控設定</div>
     <div class="cfg-grid">
       <div class="cfg-item">
-        <label>System User Token</label>
-        <input class="cfg-input" id="cfgToken" type="password" placeholder="EAATIZCDg...">
+        <label>品牌代碼（moz / ww / ka / la）</label>
+        <input class="cfg-input" id="cfgBrand" placeholder="moz">
       </div>
       <div class="cfg-item">
-        <label>廣告帳號 ID（逗號分隔多帳號）</label>
-        <input class="cfg-input" id="cfgAccounts" placeholder="566452034785926,123456...">
+        <label>廣告帳號 ID</label>
+        <input class="cfg-input" id="cfgAccountId" placeholder="566452034785926">
       </div>
       <div class="cfg-item">
         <label>頻率警戒值（超過即警示）</label>
@@ -201,7 +186,7 @@ html, body { overflow:auto; height:auto; }
   <div class="ads-table-wrap">
     <div class="load-state" id="loadState">
       <div class="spin2"></div>
-      <div style="font-size:12px;">請先設定 System User Token</div>
+      <div>載入中...</div>
     </div>
     <table id="adsTable" style="display:none;">
       <thead>
@@ -225,45 +210,53 @@ html, body { overflow:auto; height:auto; }
 </div>
 
 <script>
-// ══ 設定 ══
+// ══ 從 config.js 繼承這些變數 ══
+// GAS_PASSWORD、CF_WORKER_URL 已在 config.js 定義
+
+// ══ 本地設定（不含 Token，Token 在 Worker 環境變數）══
 let CFG = {
-  token:    localStorage.getItem('mon_token')    || '',
-  accounts: JSON.parse(localStorage.getItem('mon_accounts') || '["566452034785926"]'),
-  freqWarn: parseFloat(localStorage.getItem('mon_freqWarn') || '3.5'),
-  ctrWarn:  parseFloat(localStorage.getItem('mon_ctrWarn')  || '0.8'),
+  brand:     localStorage.getItem('mon_brand')     || 'moz',
+  accountId: localStorage.getItem('mon_accountId') || '566452034785926',
+  freqWarn:  parseFloat(localStorage.getItem('mon_freqWarn') || '3.5'),
+  ctrWarn:   parseFloat(localStorage.getItem('mon_ctrWarn')  || '0.8'),
 };
-let curAccount = CFG.accounts[0];
-let allAds = [];
+
+// 多帳號設定（之後加品牌在這裡加）
+const ACCOUNTS = [
+  { brand: 'moz', accountId: '566452034785926', label: 'MOZ for Cliff' },
+  // { brand: 'ww',  accountId: 'xxxxxxxxx',       label: '旺味米香腸' },
+  // { brand: 'ka',  accountId: 'xxxxxxxxx',       label: '空瑪那' },
+];
+
+let curBrand     = CFG.brand;
+let curAccountId = CFG.accountId;
+let allAds       = [];
 
 window.onload = () => {
   applyConfig();
   renderChips();
-  if (CFG.token) {
-    loadData();
-    setInterval(loadData, 5 * 60 * 1000);
-  } else {
-    document.getElementById('cfgPanel').classList.add('show');
-    setLoadState('請先點右上角「⚙️ 設定」輸入 Token');
-  }
+  loadData();
+  setInterval(loadData, 5 * 60 * 1000); // 每5分鐘自動更新
 };
 
 function applyConfig() {
-  document.getElementById('cfgToken').value    = CFG.token;
-  document.getElementById('cfgAccounts').value = CFG.accounts.join(',');
-  document.getElementById('cfgFreqWarn').value = CFG.freqWarn;
-  document.getElementById('cfgCtrWarn').value  = CFG.ctrWarn;
+  document.getElementById('cfgBrand').value     = CFG.brand;
+  document.getElementById('cfgAccountId').value = CFG.accountId;
+  document.getElementById('cfgFreqWarn').value  = CFG.freqWarn;
+  document.getElementById('cfgCtrWarn').value   = CFG.ctrWarn;
 }
 
 function saveSettings() {
-  CFG.token    = document.getElementById('cfgToken').value.trim();
-  CFG.accounts = document.getElementById('cfgAccounts').value.split(',').map(s=>s.trim()).filter(Boolean);
-  CFG.freqWarn = parseFloat(document.getElementById('cfgFreqWarn').value) || 3.5;
-  CFG.ctrWarn  = parseFloat(document.getElementById('cfgCtrWarn').value)  || 0.8;
-  localStorage.setItem('mon_token',    CFG.token);
-  localStorage.setItem('mon_accounts', JSON.stringify(CFG.accounts));
-  localStorage.setItem('mon_freqWarn', CFG.freqWarn);
-  localStorage.setItem('mon_ctrWarn',  CFG.ctrWarn);
-  curAccount = CFG.accounts[0];
+  CFG.brand     = document.getElementById('cfgBrand').value.trim() || 'moz';
+  CFG.accountId = document.getElementById('cfgAccountId').value.trim() || '566452034785926';
+  CFG.freqWarn  = parseFloat(document.getElementById('cfgFreqWarn').value) || 3.5;
+  CFG.ctrWarn   = parseFloat(document.getElementById('cfgCtrWarn').value)  || 0.8;
+  localStorage.setItem('mon_brand',     CFG.brand);
+  localStorage.setItem('mon_accountId', CFG.accountId);
+  localStorage.setItem('mon_freqWarn',  CFG.freqWarn);
+  localStorage.setItem('mon_ctrWarn',   CFG.ctrWarn);
+  curBrand     = CFG.brand;
+  curAccountId = CFG.accountId;
   document.getElementById('cfgPanel').classList.remove('show');
   renderChips();
   loadData();
@@ -274,29 +267,37 @@ function toggleCfg() {
 }
 
 function renderChips() {
-  document.getElementById('accChips').innerHTML = CFG.accounts.map(a =>
-    `<span class="acc-chip ${a===curAccount?'on':''}" onclick="switchAcc('${a}')">${a}</span>`
-  ).join('');
+  const chips = ACCOUNTS.length > 0
+    ? ACCOUNTS.map(a =>
+        `<span class="acc-chip ${a.brand===curBrand?'on':''}" onclick="switchAcc('${a.brand}','${a.accountId}')">${a.label}</span>`
+      ).join('')
+    : `<span class="acc-chip on">${curAccountId}</span>`;
+  document.getElementById('accChips').innerHTML = chips;
 }
 
-function switchAcc(acc) {
-  curAccount = acc;
+function switchAcc(brand, accountId) {
+  curBrand     = brand;
+  curAccountId = accountId;
   renderChips();
   loadData();
 }
 
-// ══ 載入數據 ══
+// ══ 載入數據（透過 Worker，Token 不外露）══
 async function loadData() {
-  if (!CFG.token) return;
   setLoadState('抓取廣告數據中...');
-
   try {
-    const fields = 'name,status,insights.date_preset(last_7d){spend,impressions,reach,frequency,ctr,cpm,clicks}';
-    const url = `https://graph.facebook.com/v19.0/act_${curAccount}/ads?fields=${encodeURIComponent(fields)}&limit=100&access_token=${CFG.token}`;
-    const res  = await fetch(url);
+    const res = await fetch(CF_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action:    'fb_insights',
+        password:  GAS_PASSWORD,
+        brand:     curBrand,
+        accountId: curAccountId
+      })
+    });
     const data = await res.json();
-
-    if (data.error) throw new Error(data.error.message);
+    if (!data.ok) throw new Error(data.error);
 
     allAds = (data.data || []).map(ad => {
       const ins = ad.insights?.data?.[0] || {};
@@ -320,7 +321,7 @@ async function loadData() {
     document.getElementById('lastUpd').textContent = '更新：' + new Date().toLocaleTimeString('zh-TW');
 
   } catch(e) {
-    setLoadState('❌ ' + e.message + '<br><span style="font-size:10px;color:var(--t3)">請確認 Token 與帳號 ID 是否正確</span>');
+    setLoadState('❌ ' + e.message + '<br><span style="font-size:10px;color:var(--t3)">請確認 Cloudflare Worker 的 FB_TOKEN_MOZ 是否設定正確</span>');
   }
 }
 
@@ -359,11 +360,9 @@ function renderTable() {
   }
   tbody.innerHTML = allAds.map(ad => {
     const f = fatigue(ad);
-    const fbadge = f >= 70
-      ? `<span class="fatigue-hi">⚠️ 高 ${f}</span>`
-      : f >= 40
-        ? `<span class="fatigue-mid">注意 ${f}</span>`
-        : `<span class="fatigue-ok">正常 ${f}</span>`;
+    const fbadge = f >= 70 ? `<span class="fatigue-hi">⚠️ 高 ${f}</span>`
+                 : f >= 40 ? `<span class="fatigue-mid">注意 ${f}</span>`
+                 :            `<span class="fatigue-ok">正常 ${f}</span>`;
     const fC = ad.frequency > CFG.freqWarn ? 'c-warn' : ad.frequency > CFG.freqWarn*0.8 ? 'c-mid' : 'c-ok';
     const cC = ad.ctr < CFG.ctrWarn ? 'c-warn' : ad.ctr < CFG.ctrWarn*1.5 ? 'c-mid' : 'c-ok';
     return `<tr>
@@ -396,25 +395,27 @@ function renderAlerts() {
 function fatigue(ad) {
   if (!ad.impressions) return 0;
   let s = 0;
-  if (ad.frequency > CFG.freqWarn)         s += 50;
-  else if (ad.frequency > CFG.freqWarn*0.8) s += 25;
-  if (ad.ctr < CFG.ctrWarn)                s += 30;
-  else if (ad.ctr < CFG.ctrWarn*1.5)        s += 15;
+  if (ad.frequency > CFG.freqWarn)          s += 50;
+  else if (ad.frequency > CFG.freqWarn*0.8)  s += 25;
+  if (ad.ctr < CFG.ctrWarn)                 s += 30;
+  else if (ad.ctr < CFG.ctrWarn*1.5)         s += 15;
   if (ad.cpm > 300) s += 20; else if (ad.cpm > 200) s += 10;
   return Math.min(100, s);
 }
 
-// ══ 工具 ══
 function fmt(n) {
   if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
   if (n >= 1000)    return (n/1000).toFixed(1)+'K';
   return (n||0).toString();
 }
+
 function setLoadState(msg) {
   document.getElementById('adsTable').style.display = 'none';
   const ls = document.getElementById('loadState');
   ls.style.display = 'block';
-  ls.innerHTML = msg.includes('抓取') ? `<div class="spin2"></div><div style="font-size:12px;color:var(--t3)">${msg}</div>` : `<div style="font-size:12px;color:var(--t3)">${msg}</div>`;
+  ls.innerHTML = msg.includes('抓取')
+    ? `<div class="spin2"></div><div style="color:var(--t3)">${msg}</div>`
+    : `<div style="color:var(--t3)">${msg}</div>`;
 }
 </script>
 </body>
