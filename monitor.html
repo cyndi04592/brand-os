@@ -828,13 +828,7 @@ var trendChart = null;
 var trendData = [];
 var curChartMetric = 'spend';
 
-function setChartMetric(m){
-  curChartMetric = m;
-  document.querySelectorAll('.chart-tab').forEach(function(b){
-    b.classList.toggle('on', b.id === 'ct-'+m);
-  });
-  renderTrendChart();
-}
+// setChartMetric 在下方定義（統一使用 chartMetric + drawChart）
 
 async function loadTrendData(){
   // 每次載入主數據後自動觸發趨勢圖
@@ -1008,8 +1002,8 @@ var chartVisible = true;
 
 function setChartMetric(m) {
   chartMetric = m;
-  ['spend','ctr','cpm','roas','purchases'].forEach(function(x){
-    document.getElementById('ct-'+x).classList.toggle('on', x===m);
+  document.querySelectorAll('.chart-tab').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('onclick') === "setChartMetric('"+m+"')");
   });
   drawChart();
 }
@@ -1102,17 +1096,30 @@ function drawChart() {
   for(var yi=0;yi<=4;yi++){
     var yv = maxV - range*yi/4;
     var yl = pad.t + ph*yi/4 + 3;
-    var yt = chartMetric==='spend'?'$'+Math.round(yv/1000)+'K':chartMetric==='ctr'||chartMetric==='roas'?yv.toFixed(1)+(chartMetric==='ctr'?'%':'x'):'$'+Math.round(yv);
-    if(chartMetric==='purchases') yt = Math.round(yv).toString();
+    var yt = chartMetric==='spend'?'$'+Math.round(yv/1000)+'K'
+           : chartMetric==='ctr'?yv.toFixed(1)+'%'
+           : chartMetric==='roas'?yv.toFixed(1)+'x'
+           : chartMetric==='cpm'?'$'+Math.round(yv)
+           : (yv>=1000?Math.round(yv/1000)+'K':Math.round(yv)).toString();
     ctx.fillText(yt, pad.l-4, yl);
   }
 
-  // 顏色
-  var metricColor = {spend:'#E8A032',ctr:'#5BC8C8',cpm:'#A060E8',roas:'#5BC8A0',purchases:'#E8603A'}[chartMetric]||'#5BC8C8';
+  // 顏色對照表（hex + rgba 漸層色）
+  var colorMap = {
+    spend:    { line:'#E8A032', area:'rgba(232,160,50,0.18)' },
+    ctr:      { line:'#5BC8C8', area:'rgba(91,200,200,0.18)' },
+    cpm:      { line:'#A060E8', area:'rgba(160,96,232,0.18)' },
+    roas:     { line:'#5BC8A0', area:'rgba(91,200,160,0.18)' },
+    purchases:{ line:'#E8603A', area:'rgba(232,96,58,0.18)'  },
+    add_to_cart:{ line:'#6090E8', area:'rgba(96,144,232,0.18)' },
+    impressions:{ line:'#A08040', area:'rgba(160,128,64,0.18)' },
+  };
+  var colors = colorMap[chartMetric] || colorMap.spend;
+  var metricColor = colors.line;
 
   // 填充漸層
   var grad = ctx.createLinearGradient(0,pad.t,0,pad.t+ph);
-  grad.addColorStop(0, metricColor.replace('#','rgba(').replace(/([0-9a-f]{2})/gi,function(m,h,i){return parseInt(h,16)+',';})+' 0.25)');
+  grad.addColorStop(0, colors.area);
   grad.addColorStop(1, 'rgba(0,0,0,0)');
 
   // 畫折線 + 填充
