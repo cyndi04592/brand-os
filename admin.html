@@ -17,8 +17,8 @@ body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f0f13; 
 .status-msg { font-size: 13px; color: #888; }
 .status-msg.ok { color: #4caf50; }
 .status-msg.err { color: #f44336; }
-.tabs { display: flex; background: #1a1a24; border-bottom: 1px solid #2a2a3a; padding: 0 24px; }
-.tab { padding: 12px 20px; cursor: pointer; font-size: 14px; color: #666; border-bottom: 3px solid transparent; transition: all 0.2s; user-select: none; }
+.tabs { display: flex; background: #1a1a24; border-bottom: 1px solid #2a2a3a; padding: 0 24px; overflow-x: auto; }
+.tab { padding: 12px 20px; cursor: pointer; font-size: 14px; color: #666; border-bottom: 3px solid transparent; transition: all 0.2s; user-select: none; white-space: nowrap; }
 .tab:hover { color: #aaa; }
 .tab.active { color: #d4af6a; border-bottom-color: #d4af6a; }
 .main { padding: 24px; max-width: 1300px; margin: 0 auto; }
@@ -67,7 +67,6 @@ tr:hover td { background: #1a1a2488; }
 .al-video { color: #ff7f5c; background: rgba(255,127,92,0.12); border: 1px solid #ff7f5c; }
 .al-none { color: #44446a; border: 1px solid #2a2a3a; cursor: default; }
 .status-select { background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 6px; color: #e8e0d0; font-size: 11px; padding: 3px 6px; cursor: pointer; }
-/* 員工管理 */
 .staff-grid { display: grid; gap: 10px; }
 .staff-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
 .staff-avatar { width: 40px; height: 40px; border-radius: 50%; background: #d4af6a22; border: 2px solid #d4af6a44; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
@@ -82,7 +81,6 @@ tr:hover td { background: #1a1a2488; }
 .add-staff-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
 .btn-add-staff { background: #d4af6a; color: #0f0f13; border: none; border-radius: 8px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .btn-add-staff:hover { background: #e8c87a; }
-/* loading */
 .loading-overlay { position: fixed; inset: 0; background: #0f0f13cc; display: none; align-items: center; justify-content: center; z-index: 999; }
 .loading-overlay.show { display: flex; }
 .loading-box { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 16px; padding: 32px 48px; text-align: center; }
@@ -91,6 +89,37 @@ tr:hover td { background: #1a1a2488; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty-state { text-align: center; padding: 60px 20px; color: #444; }
 .color-gold{background:#d4af6a}.color-red{background:#e05555}.color-mint{background:#5db8a0}.color-purple{background:#9b7fd4}.color-sky{background:#5ba8d4}.color-brown{background:#a07850}
+
+/* ══ 記憶庫樣式 ══ */
+.mem-admin-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.mem-filter-group { display: flex; gap: 8px; }
+.mem-select { background: #1a1a24; border: 1px solid #2a2a3a; color: #e8e0d0; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.mem-select:focus { outline: none; border-color: #d4af6a; }
+.mem-stats { font-size: 12px; color: #888; flex: 1; }
+.mem-btn-reload { background: #1a1a24; border: 1px solid #2a2a3a; color: #d4af6a; border-radius: 6px; padding: 6px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.mem-btn-reload:hover { border-color: #d4af6a; background: rgba(212,175,106,0.1); }
+.mem-admin-list { display: flex; flex-direction: column; gap: 8px; }
+.mem-loading { text-align: center; color: #555; padding: 40px; }
+.mem-admin-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px 18px; display: grid; grid-template-columns: 44px 1fr auto auto; gap: 12px; align-items: start; transition: all 0.2s; }
+.mem-admin-card:hover { border-color: rgba(212,175,106,0.3); }
+.mem-admin-rank { font-size: 11px; color: #d4af6a; font-weight: 700; width: 44px; text-align: center; background: rgba(212,175,106,0.1); border-radius: 6px; padding: 6px 0; line-height: 1.2; }
+.mem-admin-rank small { display: block; font-size: 8px; color: #888; font-weight: 400; margin-top: 2px; }
+.mem-admin-brand { font-size: 10px; color: #4DC8F0; letter-spacing: 0.5px; margin-bottom: 3px; }
+.mem-admin-hook-method { display: inline-block; font-size: 9px; background: rgba(77,200,240,0.1); color: #4DC8F0; border-radius: 4px; padding: 1px 6px; margin-bottom: 6px; }
+.mem-admin-hook { font-size: 14px; color: #F0F0FF; font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
+.mem-admin-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.mem-admin-cta { font-size: 11px; color: rgba(228,184,74,0.8); background: rgba(228,184,74,0.08); border-radius: 4px; padding: 2px 8px; }
+.mem-admin-time { font-size: 10px; color: #555; }
+.mem-admin-score { text-align: center; min-width: 50px; }
+.mem-score-num { font-size: 22px; font-weight: 700; color: #3DD68C; line-height: 1; }
+.mem-score-label { font-size: 9px; color: #555; margin-top: 2px; }
+.mem-score-bar { font-size: 8px; color: #3DD68C; letter-spacing: -1.5px; margin-top: 2px; font-family: monospace; }
+.mem-admin-actions { display: flex; flex-direction: column; gap: 6px; }
+.mem-btn-del { background: transparent; border: 1px solid rgba(212,24,46,0.3); color: rgba(212,24,46,0.6); border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+.mem-btn-del:hover { background: rgba(212,24,46,0.1); border-color: #D4182E; color: #D4182E; }
+.mem-pagination { display: flex; gap: 6px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+.mem-page-btn { background: #1a1a24; border: 1px solid #2a2a3a; color: #888; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.mem-page-btn:hover, .mem-page-btn.active { border-color: #d4af6a; color: #d4af6a; background: rgba(212,175,106,0.1); }
 </style>
 </head>
 <body>
@@ -108,11 +137,12 @@ tr:hover td { background: #1a1a2488; }
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('brands')">🏷️ 品牌管理</div>
-  <div class="tab" onclick="switchTab('products')">📦 商品管理</div>
-  <div class="tab" onclick="switchTab('folders')">📁 素材資料夾</div>
-  <div class="tab" onclick="switchTab('delivers')">🚀 投手交付表</div>
-  <div class="tab" onclick="switchTab('staff')">👥 員工管理</div>
+  <div class="tab active" onclick="switchTab('brands')">品牌管理</div>
+  <div class="tab" onclick="switchTab('products')">商品管理</div>
+  <div class="tab" onclick="switchTab('folders')">素材資料夾</div>
+  <div class="tab" onclick="switchTab('delivers')">投手交付表</div>
+  <div class="tab" onclick="switchTab('memory')">🧠 記憶庫</div>
+  <div class="tab" onclick="switchTab('staff')">員工管理</div>
 </div>
 
 <div class="main">
@@ -162,17 +192,35 @@ tr:hover td { background: #1a1a2488; }
     </div>
   </div>
 
-  <!-- ★ 員工管理 -->
+  <!-- 記憶庫 -->
+  <div class="section" id="sec-memory">
+    <div class="section-header">
+      <h2>🧠 文案記憶庫</h2>
+      <button class="btn-refresh mem-btn-reload" onclick="loadAdminMemory(1)">🔄 重新整理</button>
+    </div>
+    <div class="mem-admin-toolbar">
+      <div class="mem-filter-group">
+        <select id="memFilterBrand" onchange="loadAdminMemory(1)" class="mem-select">
+          <option value="">全部品牌</option>
+        </select>
+      </div>
+      <span class="mem-stats" id="memStats">載入中...</span>
+    </div>
+    <div id="memList" class="mem-admin-list">
+      <div class="mem-loading">切換到此頁面自動載入...</div>
+    </div>
+    <div class="mem-pagination" id="memPagination"></div>
+  </div>
+
   <div class="section" id="sec-staff">
     <div class="section-header">
-      <h2>👥 員工白名單管理</h2>
+      <h2>員工白名單管理</h2>
       <button class="btn-refresh" onclick="loadStaff()">🔄 重新整理</button>
     </div>
     <div style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.8;">
       只有在白名單內的 Google 帳號才能登入 Brand OS。<br>
       新增員工後立即生效，刪除後立即失效。
     </div>
-    <!-- 新增員工表單 -->
     <div class="add-staff-form">
       <h3>＋ 新增員工</h3>
       <div class="add-staff-row">
@@ -187,7 +235,6 @@ tr:hover td { background: #1a1a2488; }
         <button class="btn-add-staff" onclick="addStaff()">＋ 加入</button>
       </div>
     </div>
-    <!-- 員工列表 -->
     <div class="staff-grid" id="staffGrid">
       <div class="empty-state"><p>載入中...</p></div>
     </div>
@@ -196,7 +243,7 @@ tr:hover td { background: #1a1a2488; }
 </div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2_fRfbYY6m42yzzWQHqKeLnSlZ9hMGBBeMoTOI7yFG4kcZg/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 let DB = { brands: [], products: [], folders: [] };
@@ -215,12 +262,13 @@ window.onload = async () => {
 };
 
 function switchTab(name) {
-  const tabs = ['brands','products','folders','delivers','staff'];
+  const tabs = ['brands','products','folders','delivers','memory','staff'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
   if (name==='delivers') loadDelivers();
   if (name==='staff') loadStaff();
+  if (name==='memory') loadAdminMemory(1);
 }
 
 function renderAll() { renderBrands(); renderProducts(); renderFolders(); updateFilters(); }
@@ -253,6 +301,11 @@ function updateFilters() {
     const cur = sel.value;
     sel.innerHTML = '<option value="">全部品牌</option>' + DB.brands.map(b=>`<option value="${b.id}" ${cur===b.id?'selected':''}>${b.icon||''} ${b.name}</option>`).join('');
   });
+  // 記憶庫品牌篩選
+  const memSel = document.getElementById('memFilterBrand');
+  if (memSel) {
+    memSel.innerHTML = '<option value="">全部品牌</option>' + DB.brands.map(b=>`<option value="${b.id}">${b.icon||''} ${b.name}</option>`).join('');
+  }
 }
 
 function renderProducts() {
@@ -323,10 +376,7 @@ function renderDelivers() {
   const filtered = DELIVERS.filter(d => (!bf||d.brand===bf) && (!sf||d.status===sf));
   document.getElementById('deliverStat').textContent = `共 ${filtered.length} 筆`;
   const tbody = document.getElementById('deliversBody');
-  if (!filtered.length) {
-    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:#444">尚無交付記錄</td></tr>';
-    return;
-  }
+  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:#444">尚無交付記錄</td></tr>'; return; }
   tbody.innerHTML = filtered.map(d => {
     const brand = DB.brands.find(b=>b.id===d.brand);
     const date = d.createdAt ? new Date(d.createdAt).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
@@ -338,14 +388,12 @@ function renderDelivers() {
       <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#aaa" title="${esc(d.hookScript)}">${esc(d.hookScript)}</td>
       <td>${d.photoUrl?`<a class="asset-link al-photo" href="${d.photoUrl}" target="_blank">🖼️ 看</a>`:'<span class="asset-link al-none">無</span>'}</td>
       <td>${d.videoUrl?`<a class="asset-link al-video" href="${d.videoUrl}" target="_blank">🎬 看</a>`:'<span class="asset-link al-none">無</span>'}</td>
-      <td>
-        <select class="status-select" onchange="updateStatus(${d._rowIndex},this.value)">
-          <option value="素材已備妥" ${d.status==='素材已備妥'?'selected':''}>✅ 素材已備妥</option>
-          <option value="缺素材" ${d.status==='缺素材'?'selected':''}>⚠️ 缺素材</option>
-          <option value="已投放" ${d.status==='已投放'?'selected':''}>🚀 已投放</option>
-        </select>
-      </td>
-      <td><button class="btn-row-del" onclick="deleteDeliverRow(${d._rowIndex})" title="刪除">✕</button></td>
+      <td><select class="status-select" onchange="updateStatus(${d._rowIndex},this.value)">
+        <option value="素材已備妥" ${d.status==='素材已備妥'?'selected':''}>✅ 素材已備妥</option>
+        <option value="缺素材" ${d.status==='缺素材'?'selected':''}>⚠️ 缺素材</option>
+        <option value="已投放" ${d.status==='已投放'?'selected':''}>🚀 已投放</option>
+      </select></td>
+      <td><button class="btn-row-del" onclick="deleteDeliverRow(${d._rowIndex})">✕</button></td>
     </tr>`;
   }).join('');
 }
@@ -370,7 +418,120 @@ async function deleteDeliverRow(rowIndex) {
   } catch(e) { setStatus('❌ 刪除失敗', 'err'); }
 }
 
-// ══ 員工白名單管理 ══
+// ══ 記憶庫 ══
+let memCurrentPage = 1;
+const _memSeenBrands = new Set();
+
+async function loadAdminMemory(page = 1) {
+  memCurrentPage = page;
+  const brandFilter = document.getElementById('memFilterBrand')?.value || '';
+  const listEl = document.getElementById('memList');
+  const statsEl = document.getElementById('memStats');
+  listEl.innerHTML = '<div class="mem-loading">載入記憶庫中...</div>';
+
+  try {
+    const url = `${GAS_URL}?action=getAllMemory&password=${PASSWORD}&page=${page}&pageSize=20`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '載入失敗');
+
+    let rows = data.rows || [];
+    if (statsEl) statsEl.textContent = `共 ${data.total || 0} 筆記憶`;
+
+    // 前端品牌篩選
+    if (brandFilter) rows = rows.filter(r => r.brandId === brandFilter);
+
+    if (!rows.length) {
+      listEl.innerHTML = '<div class="mem-loading">沒有符合的記憶</div>';
+      renderMemPagination(0, page);
+      return;
+    }
+
+    const scoreMax = Math.max(...rows.map(r => r.score || 1), 1);
+
+    listEl.innerHTML = rows.map((m, i) => {
+      const globalRank = (page - 1) * 20 + i + 1;
+      const scoreVal = m.score || 0;
+      const barFilled = Math.round((scoreVal / scoreMax) * 5);
+      const scoreBar = '█'.repeat(barFilled) + '░'.repeat(5 - barFilled);
+      return `
+        <div class="mem-admin-card">
+          <div class="mem-admin-rank">#${globalRank}<small>${scoreVal}分</small></div>
+          <div>
+            <div class="mem-admin-brand">${esc(m.brandName||m.brandId)} › ${esc(m.productName||m.productId)}</div>
+            <div class="mem-admin-hook-method">${esc(m.hookMethod||'未分類')}</div>
+            <div class="mem-admin-hook">${esc(m.hookScript)}</div>
+            <div class="mem-admin-meta">
+              <span class="mem-admin-cta">${esc(m.ctaScript)}</span>
+              <span class="mem-admin-time">${timeAgo(m.timestamp)}</span>
+              ${m.adId?`<span style="font-size:9px;color:#555">${esc(m.adId)}</span>`:''}
+            </div>
+          </div>
+          <div class="mem-admin-score">
+            <div class="mem-score-num">${scoreVal}</div>
+            <div class="mem-score-label">分數</div>
+            <div class="mem-score-bar">${scoreBar}</div>
+          </div>
+          <div class="mem-admin-actions">
+            <button class="mem-btn-del" onclick="deleteAdminMemory('${esc(m.id)}',this)">刪除</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    renderMemPagination(data.total, page);
+
+  } catch(e) {
+    listEl.innerHTML = `<div class="mem-loading" style="color:#D4182E">載入失敗：${e.message}</div>`;
+  }
+}
+
+function renderMemPagination(total, currentPage) {
+  const el = document.getElementById('memPagination');
+  if (!el) return;
+  const totalPages = Math.ceil(total / 20) || 1;
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+  let html = '';
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button class="mem-page-btn ${i===currentPage?'active':''}" onclick="loadAdminMemory(${i})">${i}</button>`;
+  }
+  el.innerHTML = html;
+}
+
+async function deleteAdminMemory(memoryId, btnEl) {
+  if (!confirm('確定刪除這筆記憶？')) return;
+  btnEl.disabled = true;
+  btnEl.textContent = '刪除中...';
+  try {
+    const url = `${GAS_URL}?action=deleteMemory&password=${PASSWORD}&memoryId=${encodeURIComponent(memoryId)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.ok) {
+      btnEl.closest('.mem-admin-card').remove();
+      setStatus('✅ 已刪除記憶', 'ok');
+    } else {
+      alert('刪除失敗：' + (data.error||'未知錯誤'));
+      btnEl.disabled = false;
+      btnEl.textContent = '刪除';
+    }
+  } catch(e) {
+    alert('刪除失敗：' + e.message);
+    btnEl.disabled = false;
+    btnEl.textContent = '刪除';
+  }
+}
+
+function timeAgo(timestamp) {
+  if (!timestamp) return '';
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor(diff / 3600000);
+  if (days > 30) return `${Math.floor(days/30)}個月前`;
+  if (days > 0) return `${days}天前`;
+  if (hours > 0) return `${hours}小時前`;
+  return '剛才';
+}
+
+// ══ 員工白名單 ══
 async function loadStaff() {
   showLoading('載入員工名單...');
   try {
@@ -397,7 +558,7 @@ function renderStaff() {
       </div>
       <span class="staff-badge ${isAdmin?'badge-admin':'badge-staff'}">${isAdmin?'👑 管理員':'👤 員工'}</span>
       <span style="font-size:11px;color:#555;margin-left:8px;">${date}</span>
-      ${isAdmin?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" title="移除" style="margin-left:8px;font-size:18px;">✕</button>`}
+      ${isAdmin?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" style="margin-left:8px;font-size:18px;">✕</button>`}
     </div>`;
   }).join('');
 }
