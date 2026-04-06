@@ -322,7 +322,7 @@ canvas#trendChart{width:100%;height:160px}
 
   <div class="health-row">
     <div class="health-card"><div class="health-icon">📊</div><div class="health-info"><div class="health-lbl">帳號健康分</div><div class="health-val" id="hScore">—</div><div class="health-bar-wrap"><div class="health-bar-fill" id="hScoreBar" style="width:0%"></div></div><div class="health-sub">建議 &gt; 70 分</div></div></div>
-    <div class="health-card"><div class="health-icon">🎓</div><div class="health-info"><div class="health-lbl">學習期廣告佔比</div><div class="health-val" id="hLearn">—%</div><div class="health-bar-wrap"><div class="health-bar-fill" id="hLearnBar" style="width:0%"></div></div><div class="health-sub">警戒 &gt; 20%</div></div></div>
+    <div class="health-card"><div class="health-icon">🎓</div><div class="health-info"><div class="health-lbl">學習期廣告佔比</div><div class="health-val" id="hLearn">—%</div><div class="health-bar-wrap"><div class="health-bar-fill" id="hLearnBar" style="width:0%"></div></div><div class="health-sub">警戒 &gt; 20%｜<span id="hLearnSpend90" style="color:var(--t3);">90天花費佔比載入中...</span></div></div></div>
     <div class="health-card"><div class="health-icon">🤖</div><div class="health-info"><div class="health-lbl">AI 素材佔比</div><div class="health-val" id="hAiPct">—%</div><div class="health-bar-wrap"><div class="health-bar-fill" id="hAiBar" style="background:var(--sky);width:0%"></div></div><div class="health-sub">Brand OS 生成</div></div></div>
     <div class="health-card"><div class="health-icon">🎯</div><div class="health-info"><div class="health-lbl">ASC 佔比</div><div class="health-val" id="hAscPct">—%</div><div class="health-bar-wrap"><div class="health-bar-fill" id="hAscBar" style="background:var(--peach);width:0%"></div></div><div class="health-sub">目標 90%（META 要求）</div></div></div>
   </div>
@@ -485,7 +485,7 @@ function setRange(r){curRange=r;['today','7d','14d','30d','90d','yoy','custom'].
 function applyCustom(){if(!document.getElementById('dateSince').value||!document.getElementById('dateUntil').value)return alert('請選擇起訖日期');loadData();}
 function getRangeParams(){var pm={today:'today','7d':'last_7d','14d':'last_14d','30d':'last_30d','90d':'last_90d'};if(curRange==='custom')return{since:document.getElementById('dateSince').value,until:document.getElementById('dateUntil').value};if(curRange==='yoy'){var now=new Date(),past=new Date(now);past.setDate(now.getDate()-30);return{since:past.toISOString().split('T')[0],until:now.toISOString().split('T')[0],isYoy:true};}return{datePreset:pm[curRange]||'last_7d'};}
 function switchTab(t){curTab=t;['ads','adsets','campaigns'].forEach(function(x){document.getElementById('tab-'+x).classList.toggle('on',x===t);});loadData();}
-async function loadData(){setLoadState('抓取廣告數據中...');document.getElementById('yoyBanner').classList.remove('show');try{var rp=getRangeParams();var labels={today:'今日','7d':'過去7天','14d':'過去14天','30d':'過去30天','90d':'過去90天',yoy:'去年同期',custom:'自訂'};document.getElementById('tableRangeLabel').textContent=' — '+labels[curRange];if(curRange==='yoy'){var res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'fb_insights_yoy',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,since:rp.since,until:rp.until})});var data=await res.json();if(!data.ok)throw new Error(data.error);allAds=parseAds(data.thisYear&&data.thisYear.data||[]);renderYoy(data.thisYear,data.lastYear);}else{var payload=Object.assign({action:'fb_insights',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,level:curTab},rp);var res2=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var data2=await res2.json();if(!data2.ok)throw new Error(data2.error);allAds=parseAds(data2.data||[]);document.getElementById('tableCount').textContent=' （'+allAds.length+' 筆）';}renderFunnel();renderOverview();renderRoi();renderHealthCards();renderCreativeHealth();renderTable();renderAlerts();checkCibs();loadTrendData();var _now=new Date();document.getElementById('lastUpd').textContent='更新：'+_now.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'})+' '+_now.toLocaleTimeString('zh-TW');}catch(e){setLoadState('❌ '+e.message+'<br><span style="font-size:10px;color:var(--t3)">確認 Worker Token：FB_TOKEN_'+curBrand.toUpperCase()+'</span>');}}
+async function loadData(){setLoadState('抓取廣告數據中...');document.getElementById('yoyBanner').classList.remove('show');try{var rp=getRangeParams();var labels={today:'今日','7d':'過去7天','14d':'過去14天','30d':'過去30天','90d':'過去90天',yoy:'去年同期',custom:'自訂'};document.getElementById('tableRangeLabel').textContent=' — '+labels[curRange];if(curRange==='yoy'){var res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'fb_insights_yoy',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,since:rp.since,until:rp.until})});var data=await res.json();if(!data.ok)throw new Error(data.error);allAds=parseAds(data.thisYear&&data.thisYear.data||[]);renderYoy(data.thisYear,data.lastYear);}else{var payload=Object.assign({action:'fb_insights',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,level:curTab},rp);var res2=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var data2=await res2.json();if(!data2.ok)throw new Error(data2.error);allAds=parseAds(data2.data||[]);document.getElementById('tableCount').textContent=' （'+allAds.length+' 筆）';}renderFunnel();renderOverview();renderRoi();renderHealthCards();renderCreativeHealth();renderTable();renderAlerts();checkCibs();loadTrendData();loadLearningPct90();var _now=new Date();document.getElementById('lastUpd').textContent='更新：'+_now.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'})+' '+_now.toLocaleTimeString('zh-TW');}catch(e){setLoadState('❌ '+e.message+'<br><span style="font-size:10px;color:var(--t3)">確認 Worker Token：FB_TOKEN_'+curBrand.toUpperCase()+'</span>');}}
 function parseAdName(n){n=n||'';
 // ── 來源：AI_ 或 DE_ 開頭
 var source=/^AI[_\s]/i.test(n)?'ai':/^DE[_\s]/i.test(n)||/^MIX[_\s]/i.test(n)?'de':'unknown';
@@ -563,6 +563,35 @@ return'<tr><td><div class="ad-name-cell" title="'+ad.name+'">'+ad.name+'</div><d
 +(ad.objective==='reach'?'<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:8px;font-weight:700;background:rgba(255,255,255,0.05);color:var(--t3);margin-left:2px;">觸及</span>':ad.objective==='recall'?'<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:8px;font-weight:700;background:rgba(255,255,255,0.05);color:var(--t3);margin-left:2px;">回想</span>':ad.objective==='traffic'?'<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:8px;font-weight:700;background:rgba(255,255,255,0.05);color:var(--t3);margin-left:2px;">流量</span>':'')
 +'</td><td>'+sb+'</td><td class="mono">$'+Math.round(ad.spend).toLocaleString()+'</td><td class="mono">'+fmt(ad.impressions)+'</td><td class="mono">'+fmt(ad.reach)+'</td><td class="mono '+fC+'">'+ad.frequency.toFixed(2)+'</td><td class="mono '+cC+'">'+ad.ctr.toFixed(2)+'%</td><td class="mono '+cpmC+'">$'+Math.round(ad.cpm)+'</td><td class="mono">'+fmt(ad.clicks)+'</td><td class="mono">'+(ad.purchases||'—')+'</td><td class="mono">'+(ad.add_to_cart||'—')+'</td><td class="mono '+roasC+'">'+(ad.roas>0?ad.roas.toFixed(2)+'x':'—')+'</td><td class="mono '+cpaC+'">'+(ad.cpa>0?'$'+Math.round(ad.cpa):'—')+'</td><td>'+fbadge+'</td></tr>';}).join('');}
 function renderAlerts(){var bad=allAds.filter(function(a){return a.fatigue>=70&&a.status==='ACTIVE';});var b=document.getElementById('urgentBanner');if(!bad.length){b.classList.remove('show');return;}b.classList.add('show');document.getElementById('urgentChips').innerHTML=bad.map(function(a){return'<span class="urgent-chip">📢 '+(a.name.slice(0,20))+'… 頻率'+a.frequency.toFixed(1)+'x CTR'+a.ctr.toFixed(2)+'%</span>';}).join('');}
+// ══ 90天學習期花費佔比（META 直客看的數字）══
+async function loadLearningPct90() {
+  var el = document.getElementById('hLearnSpend90');
+  if(!el) return;
+  try {
+    var res = await fetch(CF_WORKER_URL, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        action:'fb_learning_pct', password:GAS_PASSWORD,
+        brand:curBrand, accountId:curAccountId, days:90
+      })
+    });
+    var d = await res.json();
+    if(!d.ok) { el.textContent = '90天佔比：取得失敗'; return; }
+
+    var pct = d.learnPct;
+    var color = pct >= 40 ? 'var(--gold)' : pct >= 20 ? '#E8A060' : 'var(--mint)';
+    var label = pct >= 40 ? '⚠️ 偏高' : pct >= 20 ? '注意' : '✅ 正常';
+
+    el.innerHTML = '90天花費佔比：<strong style="color:'+color+'">'+pct+'%</strong> '+label
+      + '<span style="color:rgba(255,255,255,0.2);margin-left:4px;">('
+      + (d.learningCount||0)+'學習中'
+      + (d.learningLimitedCount>0?' · '+d.learningLimitedCount+'受限':'')
+      + ')</span>';
+  } catch(e) {
+    el.textContent = '90天佔比：—';
+  }
+}
+
 // ══ 昨日對比（雙11前夕預警）══
 async function loadYesterdayCompare() {
   try {
