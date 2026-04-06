@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand OS · 廣告監控</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* ══ Monitor 專用樣式（繼承 style.css）══ */
+html, body { overflow:auto; height:auto; }
+
+.monitor-wrap { max-width:1400px; margin:0 auto; padding:20px; }
+
+/* 帳號切換列 */
+.account-bar {
+  display:flex; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap;
+  padding:12px 16px; background:var(--bg2); border:1px solid var(--line);
+  border-radius:10px;
+}
+.account-bar-label { font-size:9px; font-weight:700; letter-spacing:2px; color:var(--t3); text-transform:uppercase; }
+.acc-chip {
+  padding:4px 12px; border-radius:20px; border:1px solid var(--line);
+  background:transparent; font-family:'DM Mono'; font-size:10px; color:var(--t2);
+  cursor:pointer; transition:all 0.2s;
+}
+.acc-chip:hover { border-color:var(--gold); color:var(--gold); }
+.acc-chip.on { border-color:var(--gold); color:var(--gold); background:var(--gold2); }
+.acc-bar-right { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.last-upd { font-size:10px; color:var(--t3); font-family:'DM Mono'; }
+.btn-refresh {
+  padding:5px 14px; border-radius:6px; border:1px solid var(--sky);
+  background:var(--sky2); color:var(--sky); font-size:10px; font-weight:700;
+  cursor:pointer; font-family:'Noto Sans TC'; transition:all 0.2s;
+}
+.btn-refresh:hover { background:rgba(91,200,200,0.22); }
+.btn-cfg {
+  padding:5px 12px; border-radius:6px; border:1px solid var(--line);
+  background:transparent; color:var(--t3); font-size:10px; font-weight:700;
+  cursor:pointer; font-family:'Noto Sans TC'; transition:all 0.2s;
+}
+.btn-cfg:hover { border-color:var(--t2); color:var(--t2); }
+
+/* 設定面板 */
+.cfg-panel {
+  background:var(--bg2); border:1px solid rgba(232,96,58,0.3);
+  border-radius:10px; padding:18px; margin-bottom:20px; display:none;
+}
+.cfg-panel.show { display:block; }
+.cfg-title { font-size:11px; font-weight:700; color:var(--gold); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:14px; }
+.cfg-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.cfg-item label { display:block; font-size:9px; color:var(--t3); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px; }
+.cfg-input {
+  width:100%; background:var(--bg3); border:1px solid var(--line); border-radius:6px;
+  padding:7px 10px; color:var(--t1); font-size:12px; font-family:'DM Mono'; outline:none;
+}
+.cfg-input:focus { border-color:var(--gold); }
+.btn-save-cfg {
+  margin-top:14px; padding:8px 22px; border-radius:8px; border:none;
+  background:linear-gradient(135deg,#E8603A,#C44020); color:#fff;
+  font-family:'Noto Sans TC'; font-size:12px; font-weight:900; cursor:pointer; transition:all 0.2s;
+}
+.btn-save-cfg:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(232,96,58,0.4); }
+
+/* 警示橫幅 */
+.alert-banner {
+  background:rgba(232,96,58,0.08); border:1px solid rgba(232,96,58,0.35);
+  border-radius:10px; padding:12px 16px; margin-bottom:20px; display:none;
+}
+.alert-banner.show { display:block; }
+.alert-banner-title { font-size:11px; font-weight:900; color:var(--gold); letter-spacing:1px; margin-bottom:8px; }
+.alert-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.alert-chip {
+  background:rgba(232,96,58,0.12); border:1px solid rgba(232,96,58,0.35);
+  border-radius:5px; padding:3px 10px; font-size:10px; color:#E8C0A0;
+}
+
+/* 總覽卡片 */
+.overview-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:10px; margin-bottom:20px;
+}
+.ov-card {
+  background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:14px;
+}
+.ov-lbl { font-size:9px; font-weight:700; letter-spacing:1.5px; color:var(--t3); text-transform:uppercase; margin-bottom:8px; }
+.ov-val { font-size:24px; font-weight:900; font-family:'DM Mono'; line-height:1; }
+.ov-sub { font-size:9px; color:var(--t3); margin-top:5px; }
+
+/* Section Title */
+.sec-title {
+  font-size:9px; font-weight:700; letter-spacing:2px; color:var(--t3);
+  text-transform:uppercase; margin-bottom:10px;
+  display:flex; align-items:center; gap:8px;
+}
+.sec-title::after { content:''; flex:1; height:1px; background:var(--line); }
+
+/* 廣告列表 */
+.ads-table-wrap {
+  background:var(--bg2); border:1px solid var(--line); border-radius:10px;
+  overflow:hidden; margin-bottom:24px;
+}
+.ads-table-wrap table { width:100%; border-collapse:collapse; font-size:12px; }
+.ads-table-wrap thead { background:var(--bg3); }
+.ads-table-wrap th {
+  padding:10px 12px; text-align:left; color:var(--t3);
+  font-size:9px; letter-spacing:1px; text-transform:uppercase; font-weight:700; white-space:nowrap;
+}
+.ads-table-wrap td { padding:9px 12px; border-top:1px solid var(--line); vertical-align:middle; }
+.ads-table-wrap tr:hover td { background:rgba(255,255,255,0.015); }
+
+.ad-name-cell { font-size:12px; font-weight:500; color:var(--t1); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ad-id-cell   { font-size:9px; color:var(--t3); font-family:'DM Mono'; margin-top:2px; }
+.status-on  { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; background:var(--mint2); color:var(--mint); }
+.status-off { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; background:rgba(144,144,168,0.1); color:var(--t3); }
+.mono { font-family:'DM Mono'; font-size:12px; }
+.c-warn { color:var(--gold); font-weight:700; }
+.c-ok   { color:var(--mint); }
+.c-mid  { color:#E8A060; }
+.fatigue-hi  { display:inline-block; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:700; background:rgba(232,96,58,0.15); color:var(--gold); }
+.fatigue-mid { display:inline-block; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:700; background:rgba(232,160,96,0.15); color:#E8A060; }
+.fatigue-ok  { display:inline-block; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:700; background:var(--mint2); color:var(--mint); }
+
+/* 載入/空狀態 */
+.load-state { text-align:center; padding:50px; color:var(--t3); }
+.spin2 { width:28px; height:28px; border:3px solid var(--line); border-top-color:var(--gold); border-radius:50%; animation:sp 0.8s linear infinite; margin:0 auto 12px; }
+@keyframes sp { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img src="logo.webp" alt="RB" style="height:36px;width:auto;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
+    <div style="display:flex;flex-direction:column;line-height:1;">
+      <span class="nav-logo">Brand OS</span>
+      <span style="font-size:8px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';margin-top:1px;">廣告監控儀表板</span>
+    </div>
+  </div>
+  <div class="nav-right">
+    <a href="index.html" style="padding:4px 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--t2);font-family:'Noto Sans TC';font-size:10px;cursor:pointer;text-decoration:none;">← 主系統</a>
+    <a href="admin.html" style="padding:4px 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--t2);font-family:'Noto Sans TC';font-size:10px;cursor:pointer;text-decoration:none;">⚙️ 後台</a>
+  </div>
+</nav>
+
+<div class="monitor-wrap">
+
+  <!-- 設定面板 -->
+  <div class="cfg-panel" id="cfgPanel">
+    <div class="cfg-title">· API 設定</div>
+    <div class="cfg-grid">
+      <div class="cfg-item">
+        <label>System User Token</label>
+        <input class="cfg-input" id="cfgToken" type="password" placeholder="EAATIZCDg...">
+      </div>
+      <div class="cfg-item">
+        <label>廣告帳號 ID（逗號分隔多帳號）</label>
+        <input class="cfg-input" id="cfgAccounts" placeholder="566452034785926,123456...">
+      </div>
+      <div class="cfg-item">
+        <label>頻率警戒值（超過即警示）</label>
+        <input class="cfg-input" id="cfgFreqWarn" type="number" value="3.5" step="0.1">
+      </div>
+      <div class="cfg-item">
+        <label>CTR 警戒值（低於即警示）%</label>
+        <input class="cfg-input" id="cfgCtrWarn" type="number" value="0.8" step="0.1">
+      </div>
+    </div>
+    <button class="btn-save-cfg" onclick="saveSettings()">儲存設定</button>
+  </div>
+
+  <!-- 帳號切換列 -->
+  <div class="account-bar">
+    <span class="account-bar-label">監控帳號</span>
+    <div id="accChips"></div>
+    <div class="acc-bar-right">
+      <span class="last-upd" id="lastUpd">尚未載入</span>
+      <button class="btn-cfg" onclick="toggleCfg()">⚙️ 設定</button>
+      <button class="btn-refresh" onclick="loadData()">🔄 重新整理</button>
+    </div>
+  </div>
+
+  <!-- 警示橫幅 -->
+  <div class="alert-banner" id="alertBanner">
+    <div class="alert-banner-title">· 廣告疲乏警示 — 以下廣告建議更換素材</div>
+    <div class="alert-chips" id="alertChips"></div>
+  </div>
+
+  <!-- 總覽 -->
+  <div class="overview-grid" id="ovGrid">
+    <div class="ov-card"><div class="ov-lbl">7天花費</div><div class="ov-val" style="color:var(--gold)">—</div><div class="ov-sub">TWD</div></div>
+    <div class="ov-card"><div class="ov-lbl">平均 CTR</div><div class="ov-val" style="color:var(--sky)">—</div><div class="ov-sub">點擊率</div></div>
+    <div class="ov-card"><div class="ov-lbl">平均 CPM</div><div class="ov-val" style="color:var(--mint)">—</div><div class="ov-sub">千次曝光成本</div></div>
+    <div class="ov-card"><div class="ov-lbl">平均頻率</div><div class="ov-val" style="color:var(--peach)">—</div><div class="ov-sub">重複觸及</div></div>
+    <div class="ov-card"><div class="ov-lbl">總曝光</div><div class="ov-val" style="font-size:18px">—</div><div class="ov-sub">次</div></div>
+    <div class="ov-card"><div class="ov-lbl">觸及人數</div><div class="ov-val" style="font-size:18px">—</div><div class="ov-sub">人</div></div>
+  </div>
+
+  <!-- 廣告列表 -->
+  <div class="sec-title">廣告活動列表（近7天）</div>
+  <div class="ads-table-wrap">
+    <div class="load-state" id="loadState">
+      <div class="spin2"></div>
+      <div style="font-size:12px;">請先設定 System User Token</div>
+    </div>
+    <table id="adsTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>廣告名稱</th>
+          <th>狀態</th>
+          <th>花費 TWD</th>
+          <th>曝光</th>
+          <th>觸及</th>
+          <th>頻率</th>
+          <th>CTR %</th>
+          <th>CPM</th>
+          <th>點擊</th>
+          <th>疲乏指數</th>
+        </tr>
+      </thead>
+      <tbody id="adsBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+// ══ 設定 ══
+let CFG = {
+  token:    localStorage.getItem('mon_token')    || '',
+  accounts: JSON.parse(localStorage.getItem('mon_accounts') || '["566452034785926"]'),
+  freqWarn: parseFloat(localStorage.getItem('mon_freqWarn') || '3.5'),
+  ctrWarn:  parseFloat(localStorage.getItem('mon_ctrWarn')  || '0.8'),
+};
+let curAccount = CFG.accounts[0];
+let allAds = [];
+
+window.onload = () => {
+  applyConfig();
+  renderChips();
+  if (CFG.token) {
+    loadData();
+    setInterval(loadData, 5 * 60 * 1000);
+  } else {
+    document.getElementById('cfgPanel').classList.add('show');
+    setLoadState('請先點右上角「⚙️ 設定」輸入 Token');
+  }
+};
+
+function applyConfig() {
+  document.getElementById('cfgToken').value    = CFG.token;
+  document.getElementById('cfgAccounts').value = CFG.accounts.join(',');
+  document.getElementById('cfgFreqWarn').value = CFG.freqWarn;
+  document.getElementById('cfgCtrWarn').value  = CFG.ctrWarn;
+}
+
+function saveSettings() {
+  CFG.token    = document.getElementById('cfgToken').value.trim();
+  CFG.accounts = document.getElementById('cfgAccounts').value.split(',').map(s=>s.trim()).filter(Boolean);
+  CFG.freqWarn = parseFloat(document.getElementById('cfgFreqWarn').value) || 3.5;
+  CFG.ctrWarn  = parseFloat(document.getElementById('cfgCtrWarn').value)  || 0.8;
+  localStorage.setItem('mon_token',    CFG.token);
+  localStorage.setItem('mon_accounts', JSON.stringify(CFG.accounts));
+  localStorage.setItem('mon_freqWarn', CFG.freqWarn);
+  localStorage.setItem('mon_ctrWarn',  CFG.ctrWarn);
+  curAccount = CFG.accounts[0];
+  document.getElementById('cfgPanel').classList.remove('show');
+  renderChips();
+  loadData();
+}
+
+function toggleCfg() {
+  document.getElementById('cfgPanel').classList.toggle('show');
+}
+
+function renderChips() {
+  document.getElementById('accChips').innerHTML = CFG.accounts.map(a =>
+    `<span class="acc-chip ${a===curAccount?'on':''}" onclick="switchAcc('${a}')">${a}</span>`
+  ).join('');
+}
+
+function switchAcc(acc) {
+  curAccount = acc;
+  renderChips();
+  loadData();
+}
+
+// ══ 載入數據 ══
+async function loadData() {
+  if (!CFG.token) return;
+  setLoadState('抓取廣告數據中...');
+
+  try {
+    const fields = 'name,status,insights.date_preset(last_7d){spend,impressions,reach,frequency,ctr,cpm,clicks}';
+    const url = `https://graph.facebook.com/v19.0/act_${curAccount}/ads?fields=${encodeURIComponent(fields)}&limit=100&access_token=${CFG.token}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error.message);
+
+    allAds = (data.data || []).map(ad => {
+      const ins = ad.insights?.data?.[0] || {};
+      return {
+        id:          ad.id,
+        name:        ad.name,
+        status:      ad.status,
+        spend:       parseFloat(ins.spend       || 0),
+        impressions: parseInt(ins.impressions   || 0),
+        reach:       parseInt(ins.reach         || 0),
+        frequency:   parseFloat(ins.frequency   || 0),
+        ctr:         parseFloat(ins.ctr         || 0),
+        cpm:         parseFloat(ins.cpm         || 0),
+        clicks:      parseInt(ins.clicks        || 0),
+      };
+    });
+
+    renderOverview();
+    renderTable();
+    renderAlerts();
+    document.getElementById('lastUpd').textContent = '更新：' + new Date().toLocaleTimeString('zh-TW');
+
+  } catch(e) {
+    setLoadState('❌ ' + e.message + '<br><span style="font-size:10px;color:var(--t3)">請確認 Token 與帳號 ID 是否正確</span>');
+  }
+}
+
+// ══ 總覽 ══
+function renderOverview() {
+  const active = allAds.filter(a => a.impressions > 0);
+  if (!active.length) return;
+  const spend   = active.reduce((s,a)=>s+a.spend,0);
+  const imps    = active.reduce((s,a)=>s+a.impressions,0);
+  const reach   = active.reduce((s,a)=>s+a.reach,0);
+  const clicks  = active.reduce((s,a)=>s+a.clicks,0);
+  const avgCTR  = imps > 0 ? clicks/imps*100 : 0;
+  const avgCPM  = active.reduce((s,a)=>s+a.cpm,0)/active.length;
+  const avgFreq = active.reduce((s,a)=>s+a.frequency,0)/active.length;
+  const ctrC    = avgCTR  < CFG.ctrWarn  ? 'var(--gold)' : 'var(--mint)';
+  const freqC   = avgFreq > CFG.freqWarn ? 'var(--gold)' : 'var(--sky)';
+  document.getElementById('ovGrid').innerHTML = `
+    <div class="ov-card"><div class="ov-lbl">7天花費</div><div class="ov-val" style="color:var(--gold)">$${Math.round(spend).toLocaleString()}</div><div class="ov-sub">TWD</div></div>
+    <div class="ov-card"><div class="ov-lbl">平均 CTR</div><div class="ov-val" style="color:${ctrC}">${avgCTR.toFixed(2)}%</div><div class="ov-sub">警戒 &lt; ${CFG.ctrWarn}%</div></div>
+    <div class="ov-card"><div class="ov-lbl">平均 CPM</div><div class="ov-val" style="color:var(--mint)">$${Math.round(avgCPM)}</div><div class="ov-sub">千次曝光成本</div></div>
+    <div class="ov-card"><div class="ov-lbl">平均頻率</div><div class="ov-val" style="color:${freqC}">${avgFreq.toFixed(1)}x</div><div class="ov-sub">警戒 &gt; ${CFG.freqWarn}</div></div>
+    <div class="ov-card"><div class="ov-lbl">總曝光</div><div class="ov-val" style="font-size:18px">${fmt(imps)}</div><div class="ov-sub">次</div></div>
+    <div class="ov-card"><div class="ov-lbl">觸及人數</div><div class="ov-val" style="font-size:18px">${fmt(reach)}</div><div class="ov-sub">人</div></div>
+  `;
+}
+
+// ══ 廣告列表 ══
+function renderTable() {
+  document.getElementById('loadState').style.display = 'none';
+  const table = document.getElementById('adsTable');
+  table.style.display = 'table';
+  const tbody = document.getElementById('adsBody');
+  if (!allAds.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--t3);">此帳號尚無廣告資料</td></tr>';
+    return;
+  }
+  tbody.innerHTML = allAds.map(ad => {
+    const f = fatigue(ad);
+    const fbadge = f >= 70
+      ? `<span class="fatigue-hi">⚠️ 高 ${f}</span>`
+      : f >= 40
+        ? `<span class="fatigue-mid">注意 ${f}</span>`
+        : `<span class="fatigue-ok">正常 ${f}</span>`;
+    const fC = ad.frequency > CFG.freqWarn ? 'c-warn' : ad.frequency > CFG.freqWarn*0.8 ? 'c-mid' : 'c-ok';
+    const cC = ad.ctr < CFG.ctrWarn ? 'c-warn' : ad.ctr < CFG.ctrWarn*1.5 ? 'c-mid' : 'c-ok';
+    return `<tr>
+      <td><div class="ad-name-cell" title="${ad.name}">${ad.name}</div><div class="ad-id-cell">${ad.id}</div></td>
+      <td>${ad.status==='ACTIVE'?'<span class="status-on">投放中</span>':'<span class="status-off">已暫停</span>'}</td>
+      <td class="mono">$${Math.round(ad.spend).toLocaleString()}</td>
+      <td class="mono">${fmt(ad.impressions)}</td>
+      <td class="mono">${fmt(ad.reach)}</td>
+      <td class="mono ${fC}">${ad.frequency.toFixed(2)}</td>
+      <td class="mono ${cC}">${ad.ctr.toFixed(2)}%</td>
+      <td class="mono">$${Math.round(ad.cpm)}</td>
+      <td class="mono">${fmt(ad.clicks)}</td>
+      <td>${fbadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══ 警示 ══
+function renderAlerts() {
+  const bad = allAds.filter(a => fatigue(a) >= 70 && a.status === 'ACTIVE');
+  const banner = document.getElementById('alertBanner');
+  if (!bad.length) { banner.classList.remove('show'); return; }
+  banner.classList.add('show');
+  document.getElementById('alertChips').innerHTML = bad.map(a =>
+    `<span class="alert-chip">📢 ${a.name.slice(0,18)}… 頻率${a.frequency.toFixed(1)} CTR${a.ctr.toFixed(2)}%</span>`
+  ).join('');
+}
+
+// ══ 疲乏指數 ══
+function fatigue(ad) {
+  if (!ad.impressions) return 0;
+  let s = 0;
+  if (ad.frequency > CFG.freqWarn)         s += 50;
+  else if (ad.frequency > CFG.freqWarn*0.8) s += 25;
+  if (ad.ctr < CFG.ctrWarn)                s += 30;
+  else if (ad.ctr < CFG.ctrWarn*1.5)        s += 15;
+  if (ad.cpm > 300) s += 20; else if (ad.cpm > 200) s += 10;
+  return Math.min(100, s);
+}
+
+// ══ 工具 ══
+function fmt(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if (n >= 1000)    return (n/1000).toFixed(1)+'K';
+  return (n||0).toString();
+}
+function setLoadState(msg) {
+  document.getElementById('adsTable').style.display = 'none';
+  const ls = document.getElementById('loadState');
+  ls.style.display = 'block';
+  ls.innerHTML = msg.includes('抓取') ? `<div class="spin2"></div><div style="font-size:12px;color:var(--t3)">${msg}</div>` : `<div style="font-size:12px;color:var(--t3)">${msg}</div>`;
+}
+</script>
+</body>
+</html>
