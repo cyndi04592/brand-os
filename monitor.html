@@ -173,7 +173,56 @@ html,body{overflow:auto;height:auto}
 .load-state{text-align:center;padding:50px;color:var(--t3);font-size:12px}
 .spin2{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:sp 0.8s linear infinite;margin:0 auto 12px}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── 曲線圖 ── */
+.chart-wrap{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.chart-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.chart-tab{padding:4px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;font-family:'DM Mono';font-size:10px;color:var(--t2);cursor:pointer;transition:all 0.2s}
+.chart-tab:hover{border-color:var(--sky);color:var(--sky)}
+.chart-tab.on{border-color:var(--sky);color:var(--sky);background:rgba(91,200,200,0.1)}
+.chart-loading{text-align:center;padding:40px;color:var(--t3);font-size:11px}
+/* ── 語言切換 ── */
+.lang-btns{display:flex;gap:4px;margin-left:8px}
+.lang-btn{padding:3px 8px;border-radius:5px;border:1px solid var(--line);background:transparent;font-size:9px;color:var(--t3);cursor:pointer;font-family:'DM Mono';font-weight:700;transition:all 0.2s}
+.lang-btn:hover{border-color:var(--sky);color:var(--sky)}
+.lang-btn.on{border-color:var(--sky);color:var(--sky);background:rgba(91,200,200,0.1)}
+
+/* ── 廣告評分卡 ── */
+.score-card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.score-main{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.score-ring{position:relative;width:80px;height:80px}
+.score-ring svg{transform:rotate(-90deg)}
+.score-ring-val{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;font-weight:900;font-family:'DM Mono';line-height:1}
+.score-ring-lbl{font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;text-align:center}
+.score-breakdown{display:flex;flex-wrap:wrap;gap:8px;flex:1}
+.score-item{background:var(--bg3);border-radius:8px;padding:8px 12px;min-width:100px;flex:1}
+.score-item-lbl{font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.score-item-val{font-size:13px;font-weight:900;font-family:'DM Mono'}
+.score-item-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:4px;overflow:hidden}
+.score-item-fill{height:100%;border-radius:2px;transition:width 0.6s}
+.score-grade{font-size:9px;margin-top:2px;font-weight:700;letter-spacing:1px}
+/* ── 曲線圖 ── */
+.chart-section{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.chart-title{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);text-transform:uppercase}
+.chart-legend{display:flex;gap:12px}
+.chart-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t2);cursor:pointer}
+.chart-legend-dot{width:10px;height:3px;border-radius:2px;flex-shrink:0}
+.chart-tabs{display:flex;gap:6px}
+.chart-tab{padding:3px 10px;border-radius:10px;border:1px solid var(--line);background:transparent;font-size:9px;font-family:'DM Mono';color:var(--t2);cursor:pointer}
+.chart-tab.on{border-color:var(--sky);color:var(--sky);background:rgba(91,200,200,0.1)}
+.chart-canvas-wrap{position:relative;height:160px;overflow:hidden}
+canvas#trendChart{width:100%;height:160px}
+.chart-empty{display:flex;align-items:center;justify-content:center;height:160px;color:var(--t3);font-size:11px;flex-direction:column;gap:6px}
+/* ── 多語言按鈕 ── */
+.lang-switcher{display:flex;gap:4px;margin-left:auto}
+.lang-btn{padding:3px 10px;border-radius:10px;border:1px solid var(--line);background:transparent;font-size:10px;font-family:'DM Mono';color:var(--t2);cursor:pointer;transition:all 0.2s}
+.lang-btn:hover{border-color:var(--sky);color:var(--sky)}
+.lang-btn.on{border-color:var(--gold);color:var(--gold);background:var(--gold2)}
+
 </style>
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 <nav class="nav">
@@ -187,6 +236,11 @@ html,body{overflow:auto;height:auto}
   <div class="nav-right">
     <a href="index.html" style="padding:4px 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--t2);font-family:'Noto Sans TC';font-size:10px;cursor:pointer;text-decoration:none;">← 主系統</a>
     <a href="admin.html" style="padding:4px 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--t2);font-family:'Noto Sans TC';font-size:10px;cursor:pointer;text-decoration:none;">⚙️ 後台</a>
+    <div class="lang-btns">
+      <button class="lang-btn on" onclick="setLang('zh')" id="lb-zh">中</button>
+      <button class="lang-btn" onclick="setLang('en')" id="lb-en">EN</button>
+      <button class="lang-btn" onclick="setLang('ja')" id="lb-ja">日</button>
+    </div>
   </div>
 </nav>
 <div class="monitor-wrap">
@@ -213,6 +267,11 @@ html,body{overflow:auto;height:auto}
       <span class="last-upd" id="lastUpd">尚未載入</span>
       <button class="btn-cfg" onclick="toggleCfg()">⚙️ 設定</button>
       <button class="btn-refresh" onclick="loadData()">🔄 重新整理</button>
+      <div class="lang-switcher">
+        <button class="lang-btn on" onclick="setLang('zh')" id="lang-zh">中</button>
+        <button class="lang-btn" onclick="setLang('en')" id="lang-en">EN</button>
+        <button class="lang-btn" onclick="setLang('ja')" id="lang-ja">日</button>
+      </div>
     </div>
   </div>
   <div class="range-bar">
@@ -254,6 +313,46 @@ html,body{overflow:auto;height:auto}
     <div class="urgent-title">🚨 廣告素材疲乏警示 — 以下廣告建議立即更換素材，並至 Brand OS 生成新文案</div>
     <div class="urgent-chips" id="urgentChips"></div>
   </div>
+
+  <!-- 廣告帳號綜合評分 -->
+  <div class="score-card" id="scoreCard">
+    <div class="score-main">
+      <div class="score-ring">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="var(--bg3)" stroke-width="8"/>
+          <circle id="scoreRingFill" cx="40" cy="40" r="34" fill="none" stroke="var(--mint)" stroke-width="8"
+            stroke-dasharray="0 214" stroke-linecap="round" style="transition:stroke-dasharray 0.8s"/>
+        </svg>
+        <div class="score-ring-val" id="scoreRingVal" style="color:var(--mint)">—</div>
+      </div>
+      <div class="score-ring-lbl" data-i18n="score_label">廣告健康分</div>
+    </div>
+    <div class="score-breakdown" id="scoreBreakdown"></div>
+    <div style="font-size:9px;color:var(--t3);line-height:1.8;min-width:160px;" id="scoreAdvice"></div>
+  </div>
+
+  <!-- 趨勢曲線圖 -->
+  <div class="chart-section">
+    <div class="chart-header">
+      <span class="chart-title" data-i18n="trend_title">📈 廣告趨勢曲線</span>
+      <div class="chart-tabs">
+        <button class="chart-tab on" onclick="setChartMetric('spend')" id="ct-spend" data-i18n="ct_spend">花費</button>
+        <button class="chart-tab" onclick="setChartMetric('ctr')" id="ct-ctr">CTR%</button>
+        <button class="chart-tab" onclick="setChartMetric('cpm')" id="ct-cpm">CPM</button>
+        <button class="chart-tab" onclick="setChartMetric('roas')" id="ct-roas">ROAS</button>
+        <button class="chart-tab" onclick="setChartMetric('purchases')" id="ct-purchases" data-i18n="ct_purchases">購買</button>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="trendChart"></canvas>
+      <div class="chart-empty" id="chartEmpty">
+        <div style="font-size:22px">📊</div>
+        <div data-i18n="chart_hint">選擇「自訂區間」查詢一段時間即可顯示趨勢</div>
+        <div style="font-size:9px;color:var(--t3);" data-i18n="chart_hint2">或切換到「過去 30 天」自動載入每日數據</div>
+      </div>
+    </div>
+  </div>
+
   <div class="health-row">
     <div class="health-card"><div class="health-icon">📊</div><div class="health-info"><div class="health-lbl">帳號健康分</div><div class="health-val" id="hScore">—</div><div class="health-bar-wrap"><div class="health-bar-fill" id="hScoreBar" style="width:0%"></div></div><div class="health-sub">建議 &gt; 70 分</div></div></div>
     <div class="health-card"><div class="health-icon">🎓</div><div class="health-info"><div class="health-lbl">學習期廣告佔比</div><div class="health-val" id="hLearn">—%</div><div class="health-bar-wrap"><div class="health-bar-fill" id="hLearnBar" style="width:0%"></div></div><div class="health-sub">警戒 &gt; 20%</div></div></div>
@@ -349,6 +448,23 @@ html,body{overflow:auto;height:auto}
       </div>
     </div>
   </div>
+  <!-- 曲線圖 -->
+  <div class="sec-title" id="st-trend">每日趨勢曲線圖</div>
+  <div class="chart-wrap">
+    <div class="chart-tabs">
+      <button class="chart-tab on" onclick="setChartMetric('spend')" id="ct-spend" data-i18n="spend">花費</button>
+      <button class="chart-tab" onclick="setChartMetric('purchases')" id="ct-purchases" data-i18n="purchases">購買次數</button>
+      <button class="chart-tab" onclick="setChartMetric('roas')" id="ct-roas">ROAS</button>
+      <button class="chart-tab" onclick="setChartMetric('ctr')" id="ct-ctr">CTR%</button>
+      <button class="chart-tab" onclick="setChartMetric('cpm')" id="ct-cpm">CPM</button>
+      <button class="chart-tab" onclick="setChartMetric('impressions')" id="ct-impressions" data-i18n="impressions">曝光</button>
+    </div>
+    <div id="chartArea" style="position:relative;height:220px;">
+      <div class="chart-loading" id="chartLoading">選擇 7天以上時間區間即可顯示每日趨勢</div>
+      <canvas id="trendChart" style="display:none;"></canvas>
+    </div>
+  </div>
+
   <div class="table-tabs">
     <div class="table-tab on"  onclick="switchTab('ads')"       id="tab-ads">廣告素材</div>
     <div class="table-tab"     onclick="switchTab('adsets')"    id="tab-adsets">廣告組合</div>
@@ -379,7 +495,7 @@ var _today=new Date(),_past7=new Date(_today);_past7.setDate(_today.getDate()-7)
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('dateSince').value=_past7.toISOString().split('T')[0];
   document.getElementById('dateUntil').value=_today.toISOString().split('T')[0];
-  applyConfig();renderChips();loadData();setInterval(loadData,5*60*1000);
+  applyConfig();renderChips();loadData();setInterval(loadData,5*60*1000);applyLang();
 });
 function applyConfig(){document.getElementById('cfgBrand').value=CFG.brand;document.getElementById('cfgAccountId').value=CFG.accountId;document.getElementById('cfgFreqWarn').value=CFG.freqWarn;document.getElementById('cfgCtrWarn').value=CFG.ctrWarn;document.getElementById('cfgRoasTarget').value=CFG.roasTarget;document.getElementById('cfgCibsAlert').value=CFG.cibsAlert;document.getElementById('cfgLearnWarn').value=CFG.learnWarn;document.getElementById('cfgCpcWarn').value=CFG.cpcWarn;document.getElementById('cfgCpaWarn').value=CFG.cpaWarn;document.getElementById('cfgCpmWarn').value=CFG.cpmWarn;document.getElementById('roasTargetVal').textContent=CFG.roasTarget.toFixed(1)+'x';}
 function saveSettings(){CFG.brand=document.getElementById('cfgBrand').value.trim()||'moz';CFG.accountId=document.getElementById('cfgAccountId').value.trim()||'566452034785926';CFG.freqWarn=parseFloat(document.getElementById('cfgFreqWarn').value)||3.5;CFG.ctrWarn=parseFloat(document.getElementById('cfgCtrWarn').value)||0.8;CFG.roasTarget=parseFloat(document.getElementById('cfgRoasTarget').value)||3.0;CFG.cibsAlert=parseFloat(document.getElementById('cfgCibsAlert').value)||50000;CFG.learnWarn=parseFloat(document.getElementById('cfgLearnWarn').value)||20;CFG.cpcWarn=parseFloat(document.getElementById('cfgCpcWarn').value)||15;CFG.cpaWarn=parseFloat(document.getElementById('cfgCpaWarn').value)||1500;CFG.cpmWarn=parseFloat(document.getElementById('cfgCpmWarn').value)||300;Object.entries(CFG).forEach(function(e){localStorage.setItem('mon_'+e[0],e[1])});curBrand=CFG.brand;curAccountId=CFG.accountId;document.getElementById('cfgPanel').classList.remove('show');renderChips();loadData();}
@@ -390,7 +506,7 @@ function setRange(r){curRange=r;['today','7d','14d','30d','90d','yoy','custom'].
 function applyCustom(){if(!document.getElementById('dateSince').value||!document.getElementById('dateUntil').value)return alert('請選擇起訖日期');loadData();}
 function getRangeParams(){var pm={today:'today','7d':'last_7d','14d':'last_14d','30d':'last_30d','90d':'last_90d'};if(curRange==='custom')return{since:document.getElementById('dateSince').value,until:document.getElementById('dateUntil').value};if(curRange==='yoy'){var now=new Date(),past=new Date(now);past.setDate(now.getDate()-30);return{since:past.toISOString().split('T')[0],until:now.toISOString().split('T')[0],isYoy:true};}return{datePreset:pm[curRange]||'last_7d'};}
 function switchTab(t){curTab=t;['ads','adsets','campaigns'].forEach(function(x){document.getElementById('tab-'+x).classList.toggle('on',x===t);});loadData();}
-async function loadData(){setLoadState('抓取廣告數據中...');document.getElementById('yoyBanner').classList.remove('show');try{var rp=getRangeParams();var labels={today:'今日','7d':'過去7天','14d':'過去14天','30d':'過去30天','90d':'過去90天',yoy:'去年同期',custom:'自訂'};document.getElementById('tableRangeLabel').textContent=' — '+labels[curRange];if(curRange==='yoy'){var res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'fb_insights_yoy',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,since:rp.since,until:rp.until})});var data=await res.json();if(!data.ok)throw new Error(data.error);allAds=parseAds(data.thisYear&&data.thisYear.data||[]);renderYoy(data.thisYear,data.lastYear);}else{var payload=Object.assign({action:'fb_insights',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,level:curTab},rp);var res2=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var data2=await res2.json();if(!data2.ok)throw new Error(data2.error);allAds=parseAds(data2.data||[]);document.getElementById('tableCount').textContent=' （'+allAds.length+' 筆）';}renderFunnel();renderOverview();renderRoi();renderHealthCards();renderCreativeHealth();renderTable();renderAlerts();checkCibs();var _now=new Date();document.getElementById('lastUpd').textContent='更新：'+_now.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'})+' '+_now.toLocaleTimeString('zh-TW');}catch(e){setLoadState('❌ '+e.message+'<br><span style="font-size:10px;color:var(--t3)">確認 Worker Token：FB_TOKEN_'+curBrand.toUpperCase()+'</span>');}}
+async function loadData(){setLoadState('抓取廣告數據中...');document.getElementById('yoyBanner').classList.remove('show');try{var rp=getRangeParams();var labels={today:'今日','7d':'過去7天','14d':'過去14天','30d':'過去30天','90d':'過去90天',yoy:'去年同期',custom:'自訂'};document.getElementById('tableRangeLabel').textContent=' — '+labels[curRange];if(curRange==='yoy'){var res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'fb_insights_yoy',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,since:rp.since,until:rp.until})});var data=await res.json();if(!data.ok)throw new Error(data.error);allAds=parseAds(data.thisYear&&data.thisYear.data||[]);renderYoy(data.thisYear,data.lastYear);}else{var payload=Object.assign({action:'fb_insights',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,level:curTab},rp);var res2=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var data2=await res2.json();if(!data2.ok)throw new Error(data2.error);allAds=parseAds(data2.data||[]);document.getElementById('tableCount').textContent=' （'+allAds.length+' 筆）';}renderFunnel();renderOverview();renderRoi();renderHealthCards();renderCreativeHealth();renderTable();renderAlerts();checkCibs();loadTrendData();var _now=new Date();document.getElementById('lastUpd').textContent='更新：'+_now.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'})+' '+_now.toLocaleTimeString('zh-TW');}catch(e){setLoadState('❌ '+e.message+'<br><span style="font-size:10px;color:var(--t3)">確認 Worker Token：FB_TOKEN_'+curBrand.toUpperCase()+'</span>');}}
 function parseAdName(n){n=n||'';
 // ── 來源：AI_ 或 DE_ 開頭
 var source=/^AI[_\s]/i.test(n)?'ai':/^DE[_\s]/i.test(n)||/^MIX[_\s]/i.test(n)?'de':'unknown';
@@ -441,6 +557,568 @@ function calcFatigue(ad){if(!ad.impressions)return 0;var s=0;if(ad.frequency>CFG
 function fmt(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return(n||0).toString();}
 function setLoadState(msg){document.getElementById('adsTable').style.display='none';var ls=document.getElementById('loadState');ls.style.display='block';ls.innerHTML=msg.includes('抓取')?'<div class="spin2"></div><div style="color:var(--t3)">'+msg+'</div>':'<div style="color:var(--t3)">'+msg+'</div>';}
 async function testLineNotify(){var btn=event.target;btn.textContent='發送中...';btn.disabled=true;try{var res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'line_test',password:GAS_PASSWORD})});var data=await res.json();if(data.ok){alert('✅ 測試通知已發送！請查看你的 LINE');}else{alert('❌ 發送失敗：'+data.error);}}catch(e){alert('❌ 錯誤：'+e.message);}finally{btn.textContent='🧪 測試通知';btn.disabled=false;}}
+
+// ══════════════════════════════════════
+// ══ 多語言 i18n 系統 ══
+// ══════════════════════════════════════
+var LANG = localStorage.getItem('mon_lang') || 'zh';
+var I18N = {
+  zh: {
+    monitorTitle:'廣告監控儀表板', monitorAcct:'監控帳號', lastUpd:'尚未載入',
+    refresh:'🔄 重新整理', settings:'⚙️ 設定', saveSettings:'儲存設定',
+    timeRange:'時間區間', today:'今日', d7:'過去 7 天', d14:'過去 14 天',
+    d30:'過去 30 天', d90:'過去 90 天', yoy:'📅 去年同期 YoY', custom:'自訂區間',
+    apply:'查詢',
+    healthScore:'帳號健康分', learnPct:'學習期廣告佔比', aiPct:'AI 素材佔比', ascPct:'ASC 佔比',
+    funnel:'消費者路徑漏斗（廣告 → 購買）',
+    spend:'花費', avgCtr:'平均 CTR', avgCpm:'平均 CPM', avgFreq:'平均頻率',
+    totalImp:'總曝光', reach:'觸及人數', cpa:'CPA', cpc:'CPC',
+    roasTitle:'ROAS · ROI 分析',
+    creativeTitle:'素材健康度 · AI vs 美編 · 受眾結構',
+    adList:'廣告列表', tabAds:'廣告素材', tabAdsets:'廣告組合', tabCampaigns:'行銷活動',
+    trendTitle:'每日趨勢曲線圖',
+    purchases:'購買次數', impressions:'曝光',
+    name:'廣告名稱', tags:'標籤', status:'狀態', freq:'頻率', clicks:'點擊',
+    addCart:'加購', fatigue:'疲乏',
+    active:'投放中', paused:'已暫停', learning:'學習期',
+    noData:'無廣告資料', loading:'抓取廣告數據中...',
+  },
+  en: {
+    monitorTitle:'Ad Monitor Dashboard', monitorAcct:'Ad Account', lastUpd:'Not loaded',
+    refresh:'🔄 Refresh', settings:'⚙️ Settings', saveSettings:'Save Settings',
+    timeRange:'Date Range', today:'Today', d7:'Last 7 Days', d14:'Last 14 Days',
+    d30:'Last 30 Days', d90:'Last 90 Days', yoy:'📅 YoY Comparison', custom:'Custom Range',
+    apply:'Query',
+    healthScore:'Account Health', learnPct:'Learning Phase %', aiPct:'AI Creative %', ascPct:'ASC %',
+    funnel:'Consumer Funnel (Ad → Purchase)',
+    spend:'Spend', avgCtr:'Avg CTR', avgCpm:'Avg CPM', avgFreq:'Avg Frequency',
+    totalImp:'Impressions', reach:'Reach', cpa:'CPA', cpc:'CPC',
+    roasTitle:'ROAS · ROI Analysis',
+    creativeTitle:'Creative Health · AI vs Designer · Audience',
+    adList:'Ad List', tabAds:'Ad Creatives', tabAdsets:'Ad Sets', tabCampaigns:'Campaigns',
+    trendTitle:'Daily Trend Chart',
+    purchases:'Purchases', impressions:'Impressions',
+    name:'Ad Name', tags:'Tags', status:'Status', freq:'Frequency', clicks:'Clicks',
+    addCart:'Add to Cart', fatigue:'Fatigue',
+    active:'Active', paused:'Paused', learning:'Learning',
+    noData:'No ad data', loading:'Loading ad data...',
+  },
+  ja: {
+    monitorTitle:'広告モニターダッシュボード', monitorAcct:'広告アカウント', lastUpd:'未ロード',
+    refresh:'🔄 更新', settings:'⚙️ 設定', saveSettings:'設定を保存',
+    timeRange:'期間', today:'本日', d7:'過去7日', d14:'過去14日',
+    d30:'過去30日', d90:'過去90日', yoy:'📅 前年同期比 YoY', custom:'カスタム期間',
+    apply:'検索',
+    healthScore:'アカウント健全スコア', learnPct:'ラーニング期間 %', aiPct:'AI素材 %', ascPct:'ASC %',
+    funnel:'購買ファネル（広告 → 購入）',
+    spend:'費用', avgCtr:'平均 CTR', avgCpm:'平均 CPM', avgFreq:'平均フリクエンシー',
+    totalImp:'インプレッション', reach:'リーチ', cpa:'CPA', cpc:'CPC',
+    roasTitle:'ROAS · ROI 分析',
+    creativeTitle:'クリエイティブ · AI vs デザイナー · オーディエンス',
+    adList:'広告一覧', tabAds:'広告クリエイティブ', tabAdsets:'広告セット', tabCampaigns:'キャンペーン',
+    trendTitle:'デイリートレンドチャート',
+    purchases:'購入数', impressions:'インプレッション',
+    name:'広告名', tags:'タグ', status:'ステータス', freq:'フリクエンシー', clicks:'クリック',
+    addCart:'カートに追加', fatigue:'疲弊度',
+    active:'配信中', paused:'一時停止', learning:'ラーニング中',
+    noData:'広告データなし', loading:'広告データ取得中...',
+  }
+};
+function t(key){ return (I18N[LANG]||I18N.zh)[key] || key; }
+function setLang(lang){
+  LANG = lang;
+  localStorage.setItem('mon_lang', lang);
+  ['zh','en','ja'].forEach(function(l){ document.getElementById('lb-'+l).classList.toggle('on',l===lang); });
+  applyLang();
+}
+function applyLang(){
+  // Nav subtitle
+  var sub = document.querySelector('.nav-logo + * + span, nav span[style*="A08040"]');
+  if(sub) sub.textContent = t('monitorTitle');
+  // Account bar
+  var al = document.querySelector('.account-bar-label');
+  if(al) al.textContent = t('monitorAcct');
+  // Refresh / Settings buttons
+  var rb = document.querySelector('.btn-refresh');
+  if(rb) rb.textContent = t('refresh');
+  var cb = document.querySelector('.btn-cfg');
+  if(cb) cb.textContent = t('settings');
+  // Time range label
+  var rl = document.querySelector('.range-label');
+  if(rl) rl.textContent = t('timeRange');
+  // Range buttons
+  var rmap = {today:'rb-today','7d':'rb-7d','14d':'rb-14d','30d':'rb-30d','90d':'rb-90d'};
+  var rkeys = ['today','d7','d14','d30','d90'];
+  var rids = ['rb-today','rb-7d','rb-14d','rb-30d','rb-90d'];
+  rids.forEach(function(id,i){ var el=document.getElementById(id); if(el) el.textContent=t(rkeys[i]); });
+  var ryoy = document.getElementById('rb-yoy'); if(ryoy) ryoy.textContent = t('yoy');
+  var rcust = document.getElementById('rb-custom'); if(rcust) rcust.textContent = t('custom');
+  var bgo = document.querySelector('.btn-go'); if(bgo) bgo.textContent = t('apply');
+  // Table tabs
+  var tabs = {
+    'tab-ads': t('tabAds'),
+    'tab-adsets': t('tabAdsets'),
+    'tab-campaigns': t('tabCampaigns')
+  };
+  Object.entries(tabs).forEach(function(e){ var el=document.getElementById(e[0]); if(el) el.textContent=e[1]; });
+  // Chart tabs
+  var ctSpend = document.getElementById('ct-spend'); if(ctSpend) ctSpend.textContent = t('spend');
+  var ctPur = document.getElementById('ct-purchases'); if(ctPur) ctPur.textContent = t('purchases');
+  var ctImp = document.getElementById('ct-impressions'); if(ctImp) ctImp.textContent = t('impressions');
+  // Trend section title
+  var st = document.getElementById('st-trend'); if(st) st.childNodes[0].textContent = t('trendTitle') + ' ';
+  // Save button
+  var sb = document.querySelector('.btn-save-cfg'); if(sb) sb.textContent = t('saveSettings');
+}
+
+// ══════════════════════════════════════
+// ══ 每日趨勢曲線圖 ══
+// ══════════════════════════════════════
+var trendChart = null;
+var trendData = [];
+var curChartMetric = 'spend';
+
+function setChartMetric(m){
+  curChartMetric = m;
+  document.querySelectorAll('.chart-tab').forEach(function(b){
+    b.classList.toggle('on', b.id === 'ct-'+m);
+  });
+  renderTrendChart();
+}
+
+async function loadTrendData(){
+  // 只在 7d/14d/30d/90d/custom 有意義
+  if(curRange === 'today' || curRange === 'yoy') {
+    document.getElementById('chartLoading').textContent = t('trendTitle') + ' — ' + (LANG==='zh'?'請選擇7天以上時間區間':LANG==='ja'?'7日以上の期間を選択してください':'Select 7+ day range to show chart');
+    document.getElementById('chartLoading').style.display = 'block';
+    document.getElementById('trendChart').style.display = 'none';
+    return;
+  }
+  document.getElementById('chartLoading').textContent = LANG==='zh'?'載入趨勢數據中...':LANG==='ja'?'データ読み込み中...':'Loading trend data...';
+  document.getElementById('chartLoading').style.display = 'block';
+  document.getElementById('trendChart').style.display = 'none';
+
+  try {
+    var rp = getRangeParams();
+    // 計算日期範圍
+    var since, until;
+    if(rp.since && rp.until){ since = rp.since; until = rp.until; }
+    else {
+      var now = new Date(), past = new Date(now);
+      var daysMap = {'7d':7,'14d':14,'30d':30,'90d':90};
+      past.setDate(now.getDate() - (daysMap[curRange]||7));
+      since = past.toISOString().split('T')[0];
+      until = now.toISOString().split('T')[0];
+    }
+
+    var res = await fetch(CF_WORKER_URL, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'fb_daily_trend', password:GAS_PASSWORD, brand:curBrand, accountId:curAccountId, since:since, until:until})
+    });
+    var data = await res.json();
+    if(!data.ok) throw new Error(data.error);
+    trendData = data.data || [];
+    renderTrendChart();
+  } catch(e) {
+    document.getElementById('chartLoading').textContent = '❌ ' + e.message;
+  }
+}
+
+function renderTrendChart(){
+  if(!trendData.length){
+    document.getElementById('chartLoading').style.display='block';
+    document.getElementById('trendChart').style.display='none';
+    return;
+  }
+  document.getElementById('chartLoading').style.display='none';
+  var canvas = document.getElementById('trendChart');
+  canvas.style.display = 'block';
+
+  // 整理數據
+  var labels = [], values = [];
+  trendData.forEach(function(d){
+    var date = d.date_start || d.date_stop || '';
+    labels.push(date.slice(5)); // MM-DD
+    var actions = d.actions || [];
+    var actVals = d.action_values || [];
+    var pur = parseInt((actions.find(function(a){return a.action_type==='purchase';})||{}).value||0);
+    var purVal = parseFloat((actVals.find(function(a){return a.action_type==='purchase';})||{}).value||0);
+    var spend = parseFloat(d.spend||0);
+
+    if(curChartMetric==='spend') values.push(Math.round(spend));
+    else if(curChartMetric==='purchases') values.push(pur);
+    else if(curChartMetric==='roas') values.push(spend>0&&purVal>0?parseFloat((purVal/spend).toFixed(2)):0);
+    else if(curChartMetric==='ctr') values.push(parseFloat(d.ctr||0));
+    else if(curChartMetric==='cpm') values.push(Math.round(parseFloat(d.cpm||0)));
+    else if(curChartMetric==='impressions') values.push(parseInt(d.impressions||0));
+  });
+
+  // 顏色對應
+  var colorMap = {spend:'#E8A032',purchases:'#5BC8C8',roas:'#5BC8A0',ctr:'#6090E8',cpm:'#E8603A',impressions:'#A060E8'};
+  var color = colorMap[curChartMetric] || '#5BC8C8';
+
+  // 標籤翻譯
+  var metricLabels = {spend:t('spend'),purchases:t('purchases'),roas:'ROAS',ctr:'CTR%',cpm:'CPM',impressions:t('impressions')};
+
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: metricLabels[curChartMetric] || curChartMetric,
+        data: values,
+        borderColor: color,
+        backgroundColor: color.replace(')',',0.1)').replace('rgb','rgba'),
+        borderWidth: 2,
+        pointRadius: values.length > 20 ? 2 : 4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(20,20,30,0.95)',
+          borderColor: color,
+          borderWidth: 1,
+          titleColor: '#aaa',
+          bodyColor: '#fff',
+          callbacks: {
+            label: function(ctx){
+              var v = ctx.raw;
+              if(curChartMetric==='spend'||curChartMetric==='cpm') return '$' + v.toLocaleString();
+              if(curChartMetric==='roas') return v + 'x';
+              if(curChartMetric==='ctr') return v + '%';
+              return v.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:{ color:'rgba(255,255,255,0.04)' },
+          ticks:{ color:'#666', font:{size:10}, maxTicksLimit:10 }
+        },
+        y: {
+          grid:{ color:'rgba(255,255,255,0.06)' },
+          ticks:{
+            color:'#666', font:{size:10},
+            callback: function(v){
+              if(curChartMetric==='spend'||curChartMetric==='cpm') return '$'+v.toLocaleString();
+              if(curChartMetric==='roas') return v+'x';
+              if(curChartMetric==='ctr') return v+'%';
+              if(v>=1000000) return (v/1000000).toFixed(1)+'M';
+              if(v>=1000) return (v/1000).toFixed(0)+'K';
+              return v;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+
+// ══════════════════════════════════════
+// ══ 多語言字典 ══
+// ══════════════════════════════════════
+var curLang = localStorage.getItem('mon_lang') || 'zh';
+var I18N = {
+  zh: {
+    score_label:'廣告健康分', trend_title:'📈 廣告趨勢曲線',
+    ct_spend:'花費', ct_purchases:'購買', chart_hint:'選擇時間區間後即顯示趨勢',
+    chart_hint2:'建議選「過去 30 天」查看每日變化',
+    grade_S:'S級 頂尖', grade_A:'A級 優秀', grade_B:'B級 良好',
+    grade_C:'C級 普通', grade_D:'D級 需改善',
+    no_data:'無數據',
+    score_items:{ctr:'點擊率 CTR',roas:'ROAS',freq:'頻率控制',cpm:'CPM成本',learn:'學習期'},
+    loading:'抓取廣告數據中...',
+  },
+  en: {
+    score_label:'Ad Health Score', trend_title:'📈 Ad Trend Chart',
+    ct_spend:'Spend', ct_purchases:'Purchase', chart_hint:'Select a date range to show trend',
+    chart_hint2:'Try "Last 30 days" for daily breakdown',
+    grade_S:'S-Tier Top', grade_A:'A-Tier Excellent', grade_B:'B-Tier Good',
+    grade_C:'C-Tier Average', grade_D:'D-Tier Needs Work',
+    no_data:'No data',
+    score_items:{ctr:'CTR',roas:'ROAS',freq:'Frequency',cpm:'CPM Cost',learn:'Learning Phase'},
+    loading:'Fetching ad data...',
+  },
+  ja: {
+    score_label:'広告健全スコア', trend_title:'📈 広告トレンドグラフ',
+    ct_spend:'費用', ct_purchases:'購入', chart_hint:'期間を選択するとトレンドを表示',
+    chart_hint2:'「過去30日」で日次データを確認',
+    grade_S:'Sランク 最高', grade_A:'Aランク 優秀', grade_B:'Bランク 良好',
+    grade_C:'Cランク 普通', grade_D:'Dランク 改善要',
+    no_data:'データなし',
+    score_items:{ctr:'クリック率',roas:'ROAS',freq:'頻度管理',cpm:'CPMコスト',learn:'学習期間'},
+    loading:'広告データを取得中...',
+  }
+};
+
+function t(key) { return (I18N[curLang] && I18N[curLang][key]) || (I18N.zh[key]) || key; }
+
+function setLang(lang) {
+  curLang = lang;
+  localStorage.setItem('mon_lang', lang);
+  ['zh','en','ja'].forEach(function(l) {
+    document.getElementById('lang-'+l).classList.toggle('on', l===lang);
+  });
+  applyI18n();
+  // 更新曲線圖空白提示
+  var empty = document.getElementById('chartEmpty');
+  if (empty) empty.innerHTML = '<div style="font-size:22px">📊</div><div>'+t('chart_hint')+'</div><div style="font-size:9px;color:var(--t3);">'+t('chart_hint2')+'</div>';
+  // 重新渲染評分
+  if (allAds.length) renderScore();
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+}
+
+// ══════════════════════════════════════
+// ══ 廣告帳號綜合評分（業界電商標準）══
+// ══════════════════════════════════════
+function renderScore() {
+  var a = allAds.filter(function(x){return x.impressions>0;});
+  if (!a.length) return;
+
+  var avgCTR  = a.reduce(function(s,x){return s+x.ctr;},0)/a.length;
+  var avgFreq = a.reduce(function(s,x){return s+x.frequency;},0)/a.length;
+  var avgCPM  = a.reduce(function(s,x){return s+x.cpm;},0)/a.length;
+  var avgRoas = (function(){var r=a.filter(function(x){return x.roas>0;});return r.length?r.reduce(function(s,x){return s+x.roas;},0)/r.length:0;})();
+  var learning= allAds.filter(function(x){return x.effective_status==='LEARNING'||x.effective_status==='LEARNING_LIMITED';});
+  var learnPct= allAds.length>0?learning.length/allAds.length*100:0;
+
+  // 評分邏輯（業界電商標準，各項滿分）
+  // CTR 25分
+  var ctrScore  = avgCTR>=2?25:avgCTR>=1.5?20:avgCTR>=1?14:avgCTR>=0.5?7:2;
+  // ROAS 25分（Pixel value 不准時顯示 N/A）
+  var roasScore = avgRoas>=3?25:avgRoas>=2?18:avgRoas>=1.5?12:avgRoas>0?6:null;
+  // 頻率 20分
+  var freqScore = avgFreq<=2?20:avgFreq<=3?15:avgFreq<=3.5?10:avgFreq<=5?4:0;
+  // CPM 15分（台灣電商 $150~250 正常）
+  var cpmScore  = avgCPM<=150?15:avgCPM<=250?12:avgCPM<=350?7:avgCPM<=500?3:0;
+  // 學習期 15分
+  var learnScore= learnPct<=10?15:learnPct<=20?10:learnPct<=40?5:0;
+
+  var totalPossible = 85 + (roasScore!==null?25:0);
+  var totalScore = ctrScore + (roasScore||0) + freqScore + cpmScore + learnScore;
+  var score100 = Math.round(totalScore / totalPossible * 100);
+
+  // 等級
+  var grade, gradeColor;
+  if (score100>=90){grade=t('grade_S');gradeColor='#FFD700';}
+  else if(score100>=75){grade=t('grade_A');gradeColor='var(--mint)';}
+  else if(score100>=60){grade=t('grade_B');gradeColor='var(--sky)';}
+  else if(score100>=40){grade=t('grade_C');gradeColor='#E8A060';}
+  else{grade=t('grade_D');gradeColor='var(--gold)';}
+
+  // 環形進度
+  var circ = 2*Math.PI*34; // 213.6
+  document.getElementById('scoreRingFill').setAttribute('stroke-dasharray', (circ*score100/100).toFixed(1)+' '+circ);
+  document.getElementById('scoreRingFill').setAttribute('stroke', gradeColor);
+  document.getElementById('scoreRingVal').textContent = score100;
+  document.getElementById('scoreRingVal').style.color = gradeColor;
+
+  // 各項明細
+  var items = [
+    {key:'ctr',  score:ctrScore,  max:25, val:avgCTR.toFixed(2)+'%', color:'var(--sky)'},
+    {key:'roas', score:roasScore, max:25, val:avgRoas>0?avgRoas.toFixed(2)+'x':'N/A', color:'var(--mint)'},
+    {key:'freq', score:freqScore, max:20, val:avgFreq.toFixed(1)+'x', color:'var(--peach)'},
+    {key:'cpm',  score:cpmScore,  max:15, val:'$'+Math.round(avgCPM), color:'#A060E8'},
+    {key:'learn',score:learnScore,max:15, val:learnPct.toFixed(0)+'%', color:'#E8A032'},
+  ];
+
+  document.getElementById('scoreBreakdown').innerHTML = items.map(function(it){
+    var s = it.score===null?'N/A':it.score;
+    var pct = it.score===null?0:it.score/it.max*100;
+    var lbl = (I18N[curLang]&&I18N[curLang].score_items&&I18N[curLang].score_items[it.key]) || it.key;
+    return '<div class="score-item">'
+      +'<div class="score-item-lbl">'+lbl+'</div>'
+      +'<div style="display:flex;align-items:baseline;gap:4px;">'
+      +'<div class="score-item-val" style="color:'+it.color+'">'+s+(s!=='N/A'?'/'+it.max:'')+'</div>'
+      +'<div style="font-size:9px;color:var(--t3);">'+it.val+'</div>'
+      +'</div>'
+      +'<div class="score-item-bar"><div class="score-item-fill" style="width:'+pct+'%;background:'+it.color+'"></div></div>'
+      +'</div>';
+  }).join('');
+
+  // 建議
+  var advice = [];
+  if(ctrScore<14) advice.push((curLang==='en'?'⚠️ CTR low, refresh creative':curLang==='ja'?'⚠️ CTR低下、素材更新を':'⚠️ CTR偏低，建議更換素材'));
+  if(freqScore<10) advice.push((curLang==='en'?'⚠️ Frequency high, expand audience':curLang==='ja'?'⚠️ 頻度高、オーディエンス拡大を':'⚠️ 頻率過高，建議擴展受眾'));
+  if(cpmScore<7)  advice.push((curLang==='en'?'⚠️ CPM expensive, try Reels format':curLang==='ja'?'⚠️ CPM高、Reels素材を試して':'⚠️ CPM偏高，嘗試 Reels 格式'));
+  if(learnScore<10)advice.push((curLang==='en'?'⚠️ Too many ads in learning phase':curLang==='ja'?'⚠️ 学習期間多すぎ':'⚠️ 學習期廣告過多，避免頻繁修改'));
+  if(avgRoas>0&&avgRoas<2) advice.push((curLang==='en'?'⚠️ ROAS<2x, check Pixel value tracking':curLang==='ja'?'⚠️ ROAS低、Pixel value設定を確認':'⚠️ ROAS<2x，確認 Pixel 有無傳送金額'));
+  if(advice.length===0) advice.push((curLang==='en'?'✅ Account performance is healthy!':curLang==='ja'?'✅ 広告アカウント健全です！':'✅ 廣告帳號整體表現健康！'));
+  advice.push('<span style="color:'+gradeColor+';font-weight:700;">'+grade+'</span>');
+  document.getElementById('scoreAdvice').innerHTML = advice.join('<br>');
+}
+
+// ══════════════════════════════════════
+// ══ 趨勢曲線圖 ══
+// ══════════════════════════════════════
+var chartData = [];      // [{date, spend, ctr, cpm, roas, purchases}]
+var chartMetric = 'spend';
+var chartVisible = true;
+
+function setChartMetric(m) {
+  chartMetric = m;
+  ['spend','ctr','cpm','roas','purchases'].forEach(function(x){
+    document.getElementById('ct-'+x).classList.toggle('on', x===m);
+  });
+  drawChart();
+}
+
+// FB API 抓每日分解數據（time_increment=1）
+async function loadTrendData(since, until) {
+  try {
+    var res = await fetch(CF_WORKER_URL, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        action:'fb_insights_daily', password:GAS_PASSWORD,
+        brand:curBrand, accountId:curAccountId,
+        since:since, until:until
+      })
+    });
+    var data = await res.json();
+    if (!data.ok || !data.data) return;
+    chartData = data.data.map(function(d){
+      return {
+        date:d.date_start,
+        spend:parseFloat(d.spend||0),
+        ctr:parseFloat(d.ctr||0),
+        cpm:parseFloat(d.cpm||0),
+        roas:d.purchase_value>0&&d.spend>0?d.purchase_value/d.spend:0,
+        purchases:parseInt(d.purchases||0)
+      };
+    }).sort(function(a,b){return a.date.localeCompare(b.date);});
+    drawChart();
+  } catch(e) { console.log('trend error',e); }
+}
+
+function drawChart() {
+  var canvas = document.getElementById('trendChart');
+  var empty  = document.getElementById('chartEmpty');
+  if (!canvas) return;
+
+  if (!chartData.length) {
+    canvas.style.display='none'; empty.style.display='flex'; return;
+  }
+  canvas.style.display='block'; empty.style.display='none';
+
+  var ctx = canvas.getContext('2d');
+  var W = canvas.offsetWidth || 800;
+  var H = 160;
+  canvas.width = W; canvas.height = H;
+
+  var vals = chartData.map(function(d){return d[chartMetric]||0;});
+  var maxV = Math.max.apply(null,vals)||1;
+  var minV = Math.min.apply(null,vals);
+  var range = maxV - minV || 1;
+
+  var pad = {l:48,r:16,t:10,b:28};
+  var pw = W - pad.l - pad.r;
+  var ph = H - pad.t - pad.b;
+
+  // 背景清空
+  ctx.clearRect(0,0,W,H);
+
+  // 格線
+  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
+  for(var gi=0;gi<=4;gi++){
+    var gy = pad.t + ph * gi/4;
+    ctx.beginPath(); ctx.moveTo(pad.l,gy); ctx.lineTo(W-pad.r,gy); ctx.stroke();
+  }
+
+  // Y軸標籤
+  ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='9px DM Mono,monospace'; ctx.textAlign='right';
+  for(var yi=0;yi<=4;yi++){
+    var yv = maxV - range*yi/4;
+    var yl = pad.t + ph*yi/4 + 3;
+    var yt = chartMetric==='spend'?'$'+Math.round(yv/1000)+'K':chartMetric==='ctr'||chartMetric==='roas'?yv.toFixed(1)+(chartMetric==='ctr'?'%':'x'):'$'+Math.round(yv);
+    if(chartMetric==='purchases') yt = Math.round(yv).toString();
+    ctx.fillText(yt, pad.l-4, yl);
+  }
+
+  // 顏色
+  var metricColor = {spend:'#E8A032',ctr:'#5BC8C8',cpm:'#A060E8',roas:'#5BC8A0',purchases:'#E8603A'}[chartMetric]||'#5BC8C8';
+
+  // 填充漸層
+  var grad = ctx.createLinearGradient(0,pad.t,0,pad.t+ph);
+  grad.addColorStop(0, metricColor.replace('#','rgba(').replace(/([0-9a-f]{2})/gi,function(m,h,i){return parseInt(h,16)+',';})+' 0.25)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+  // 畫折線 + 填充
+  ctx.beginPath();
+  chartData.forEach(function(d,i){
+    var x = pad.l + pw*i/(chartData.length-1||1);
+    var y = pad.t + ph*(1-(d[chartMetric]-minV)/range);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  // 填充
+  var lastX = pad.l + pw;
+  ctx.lineTo(lastX, pad.t+ph); ctx.lineTo(pad.l, pad.t+ph); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  // 折線本身
+  ctx.beginPath();
+  chartData.forEach(function(d,i){
+    var x = pad.l + pw*i/(chartData.length-1||1);
+    var y = pad.t + ph*(1-(d[chartMetric]-minV)/range);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = metricColor; ctx.lineWidth=2; ctx.stroke();
+
+  // 資料點 + X軸日期
+  ctx.fillStyle = metricColor; ctx.font='8px DM Mono,monospace'; ctx.textAlign='center';
+  var step = Math.max(1, Math.floor(chartData.length/8));
+  chartData.forEach(function(d,i){
+    var x = pad.l + pw*i/(chartData.length-1||1);
+    var y = pad.t + ph*(1-(d[chartMetric]-minV)/range);
+    ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill();
+    if(i%step===0){
+      ctx.fillStyle='rgba(255,255,255,0.3)';
+      ctx.fillText(d.date.slice(5), x, H-6); // MM-DD
+      ctx.fillStyle=metricColor;
+    }
+  });
+}
+
+// ══ 覆蓋 loadData，自動載入趨勢數據 ══
+var _origLoadData = loadData;
+loadData = async function() {
+  await _origLoadData.apply(this, arguments);
+  // 對於 30天 或 自訂區間，自動抓每日分解
+  if (curRange==='30d'||curRange==='custom'||curRange==='90d') {
+    var rp = getRangeParams();
+    var since = rp.since, until = rp.until;
+    if (!since) {
+      var now = new Date(), past = new Date(now);
+      var days = {today:1,'30d':30,'90d':90}[curRange]||30;
+      past.setDate(now.getDate()-days);
+      since = past.toISOString().split('T')[0];
+      until = now.toISOString().split('T')[0];
+    }
+    loadTrendData(since, until);
+  } else {
+    chartData = [];
+    drawChart();
+  }
+  // 評分
+  renderScore();
+  applyI18n();
+};
+
 </script>
 </body>
 </html>
