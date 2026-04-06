@@ -12,7 +12,7 @@
 <div id="loginOverlay">
   <div class="login-card">
     <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">
-      <img src="logo.webp" alt="RB Design & Creative" style="height:80px;width:auto;object-fit:contain;margin-bottom:16px;" onerror="this.style.display='none'">
+      <img src="logo.webp" alt="RB Design &amp; Creative" style="height:80px;width:auto;object-fit:contain;margin-bottom:16px;" onerror="this.style.display='none'">
       <div class="login-title">Brand OS</div>
       <div class="login-sub">RABY D&amp;C · v6</div>
     </div>
@@ -46,6 +46,7 @@
     <span style="font-size:10px;color:#E8603A;white-space:nowrap;font-weight:700;letter-spacing:1px;">✦ RABY BRAND OS</span>
   </div>
   <div class="nav-right">
+    <a href="monitor.html" class="btn-ads-monitor" title="廣告監控儀表板"><svg width="15" height="15" viewBox="0 0 36 36" fill="none" style="flex-shrink:0;"><circle cx="18" cy="18" r="14" stroke="#FF6600" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/><circle cx="18" cy="18" r="8.5" stroke="#FF6600" stroke-width="1.2" opacity="0.7"/><circle cx="18" cy="18" r="2.5" fill="#FF6600"/><line x1="18" y1="18" x2="18" y2="4" stroke="#FF6600" stroke-width="1.5" stroke-linecap="round"/></svg><span>廣告監控</span><span class="monitor-live-dot"></span></a>
     <button onclick="goAdmin()" style="padding:4px 12px;border-radius:6px;border:1px solid #E8603A;background:rgba(232,96,58,0.12);color:#E8603A;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">⚙️ 後台</button>
     <button id="logoutBtn" onclick="doLogout()" style="display:none;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--t3);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">登出</button>
     <button id="driveLoginBtn" onclick="driveLogin()" style="padding:4px 12px;border-radius:6px;border:1px solid var(--sky);background:var(--sky2);color:var(--sky);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">· 連結 Drive</button>
@@ -141,10 +142,8 @@
         <div style="font-size:10px;color:#FF8099;margin-bottom:8px;">必須先連結才能抓取素材庫</div>
         <button onclick="driveLogin()" style="padding:6px 16px;background:#D4182E;border:none;border-radius:6px;color:#fff;font-family:'Noto Sans TC';font-size:11px;font-weight:900;cursor:pointer;">· 立即連結 Drive</button>
       </div>
-      <!-- 隱藏輸入框（切換品牌時自動填入）-->
       <input type="hidden" id="inPhotoFolder">
       <input type="hidden" id="inVideoFolder">
-      <!-- 手動補抓按鈕 -->
       <div style="margin-bottom:4px;">
         <button class="fetch-btn fetch-sky" style="width:100%;font-size:11px;font-weight:900;" onclick="fetchBoth()">· 重新抓取素材</button>
       </div>
