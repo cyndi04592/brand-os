@@ -353,3 +353,58 @@ body {
   .seg:last-child { border-bottom:none; }
   .dz-body { max-height:300px; }
 }
+
+/* ══ 廣告監控入口按鈕 ══ */
+.btn-ads-monitor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1.5px solid #FF6600;
+  border-radius: 6px;
+  background: transparent;
+  color: #FF6600;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+.btn-ads-monitor::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: -2px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FF6600, transparent);
+  animation: monitor-scan 3s ease-in-out infinite;
+  opacity: 0.6;
+  pointer-events: none;
+}
+@keyframes monitor-scan {
+  0%   { transform: translateY(0); opacity: 0; }
+  15%  { opacity: 0.8; }
+  85%  { opacity: 0.4; }
+  100% { transform: translateY(32px); opacity: 0; }
+}
+.btn-ads-monitor:hover {
+  background: rgba(255, 102, 0, 0.1);
+  transform: translateY(-1px);
+}
+.btn-ads-monitor:active { transform: scale(0.98); }
+.monitor-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #FF6600;
+  animation: monitor-pulse 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes monitor-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.25; transform: scale(0.5); }
+}
