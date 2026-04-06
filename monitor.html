@@ -730,7 +730,8 @@ function renderScore() {
   document.getElementById('scoreBreakdown').innerHTML = items.map(function(it){
     var s = it.score===null?'N/A':it.score;
     var pct = it.score===null?0:it.score/it.max*100;
-    var lbl = (I18N[curLang]&&I18N[curLang].score_items&&I18N[curLang].score_items[it.key]) || it.key;
+    var scoreLabels = {ctr:'點擊率 CTR', roas:'ROAS', freq:'頻率控制', cpm:'CPM成本', learn:'學習期'};
+    var lbl = scoreLabels[it.key] || it.key;
     return '<div class="score-item">'
       +'<div class="score-item-lbl">'+lbl+'</div>'
       +'<div style="display:flex;align-items:baseline;gap:4px;">'
