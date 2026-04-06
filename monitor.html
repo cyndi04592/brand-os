@@ -248,6 +248,7 @@ html,body{overflow:auto;height:auto}
     <div style="flex:1;"><div class="cibs-title">⚡ CIBS 高預算廣告警示</div><div class="cibs-desc">日預算 = CPA×30~50 倍；假日單日可能消耗 18 萬+</div></div>
     <div class="cibs-nums" id="cibsNumbers"></div>
     <button class="btn-line" onclick="alert('請至後台設定 LINE Notify Token 以啟用即時通知')">🔔 LINE 通知</button>
+    <button class="btn-line" style="background:linear-gradient(135deg,#0084ff,#0060cc);margin-left:6px;" onclick="testLineNotify()">🧪 測試通知</button>
   </div>
   <div class="urgent-banner" id="urgentBanner">
     <div class="urgent-title">🚨 廣告素材疲乏警示 — 以下廣告建議立即更換素材，並至 Brand OS 生成新文案</div>
@@ -439,6 +440,7 @@ function renderAlerts(){var bad=allAds.filter(function(a){return a.fatigue>=70&&
 function calcFatigue(ad){if(!ad.impressions)return 0;var s=0;if(ad.frequency>CFG.freqWarn)s+=50;else if(ad.frequency>CFG.freqWarn*0.8)s+=25;if(ad.ctr<CFG.ctrWarn)s+=30;else if(ad.ctr<CFG.ctrWarn*1.5)s+=15;if(ad.cpm>300)s+=20;else if(ad.cpm>200)s+=10;return Math.min(100,s);}
 function fmt(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return(n||0).toString();}
 function setLoadState(msg){document.getElementById('adsTable').style.display='none';var ls=document.getElementById('loadState');ls.style.display='block';ls.innerHTML=msg.includes('抓取')?'<div class="spin2"></div><div style="color:var(--t3)">'+msg+'</div>':'<div style="color:var(--t3)">'+msg+'</div>';}
+async function testLineNotify(){var btn=event.target;btn.textContent='發送中...';btn.disabled=true;try{var res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'line_test',password:GAS_PASSWORD})});var data=await res.json();if(data.ok){alert('✅ 測試通知已發送！請查看你的 LINE');}else{alert('❌ 發送失敗：'+data.error);}}catch(e){alert('❌ 錯誤：'+e.message);}finally{btn.textContent='🧪 測試通知';btn.disabled=false;}}
 </script>
 </body>
 </html>
