@@ -82,7 +82,7 @@ function renderMemoryPanel() {
   const container = document.getElementById('memoryPanel');
   if (!container) return;
   if (currentMemories.length === 0) {
-    container.innerHTML = `<div class="mem-empty"><span style="opacity:0.4;font-size:16px;">🧠</span><span>尚無文案記憶，點「＋加入交付」後自動存入</span></div>`;
+    container.innerHTML = `<div class="mem-empty"><span style="opacity:0.4;font-size:16px;">🧠</span><span>尚無文案記憶，點「＋加入記憶學習區」後自動存入</span></div>`;
     return;
   }
   const top5     = currentMemories.slice(0, 5);
@@ -257,7 +257,7 @@ function renderScripts(brandDisplay, colorKey) {
   document.getElementById('scriptsOut').innerHTML =
     `<div id="memoryPanel"></div>` +
     `<div style="background:rgba(91,200,200,0.08);border:1px dashed rgba(91,200,200,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--sky);line-height:1.8;">
-      · 右側選好 圖 照片 + 影 影片，點「＋加入交付」或「廣告圖」<br>
+      · 點「＋加入記憶學習區」讓 AI 記住這組文案方向，下次生成不重複<br>
       · 選中：${selPhotoName ? `<span style="color:var(--sky)">圖 ${selPhotoName}</span>` : '<span style="color:var(--t3)">未選</span>'}
       &nbsp;&nbsp;${selVideoName ? `<span style="color:var(--peach)">影 ${selVideoName}</span>` : '<span style="color:var(--t3)">未選</span>'}
     </div>` +
@@ -272,9 +272,9 @@ function renderScripts(brandDisplay, colorKey) {
             <span style="font-size:9px;color:var(--t3);">${s.core?.type||''}</span>
           </div>
           <div class="ac-btns">
-            <button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入交付</button>
+            <button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入記憶學習區</button>
             <button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">廣告圖</button>
-            <button class="tbtn tbtn-g" onclick="copyOne(${i},this)">複製腳本</button>
+
           </div>
         </div>
         <div class="ac-body">
@@ -318,37 +318,21 @@ function copyOne(i, btn) {
 
 // ══ 加入交付（★ 加入記憶儲存，用 POST 正確存入）══
 async function addDeliver(scriptIdx) {
-  const s     = window.S.scripts[scriptIdx];
-  const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
-  const video = window.S.selVideo !== null ? window.S.videos[window.S.selVideo] : null;
-  const row   = {
-    id: s.id, brand: window.S.brandId || '', product: window.S.prod?.name || '',
-    hookScript: s.hook?.script || '', coreScript: s.core?.script || '', ctaScript: s.cta?.script || '',
-    photoName: photo?.name || '', photoUrl: photo?.driveUrl || '',
-    videoName: video?.name || '', videoUrl: video?.driveUrl || '',
-    status: !!(photo || video) ? '素材已備妥' : '缺素材',
-    createdAt: new Date().toISOString()
-  };
-
-  // 寫入 Sheets 交付表
-  try {
-    await fetch(GAS_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body:    JSON.stringify({ action: 'addDeliver', password: GAS_PASSWORD, row })
-    });
-  } catch (e) { console.warn('交付記錄儲存失敗:', e); }
-
-  window.S.delivers.push({ ...row, ready: !!(photo || video) });
-  renderDeliverRows();
-  renderDeliverOut();
-  switchTab(document.querySelector('[data-tab="deliver"]'));
-
-  // ★ 存入記憶庫（背景執行，POST）
+  const s = window.S.scripts[scriptIdx];
   const brand     = window.BRANDS.find(b => b.id === window.S.brandId);
   const sub       = brand?.subs.find(sb => sb.id === window.S.subId);
   const brandName = brand ? `${brand.name}${sub ? ' › ' + sub.name : ''}` : '';
-  saveMemory(s, window.S.brandId, window.S.subId, brandName, window.S.prod?.name || '');
+
+  // 只存入記憶庫
+  const ok = await saveMemory(s, window.S.brandId, window.S.subId, brandName, window.S.prod?.name || '');
+
+  // 按鈕回饋
+  const btn = document.querySelector(`[onclick="addDeliver(${scriptIdx})"]`);
+  if (btn) {
+    btn.textContent = ok ? '✅ 已存入記憶' : '⚠️ 存入失敗';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = '＋ 加入記憶學習區'; btn.disabled = false; }, 2000);
+  }
 }
 
 // ══ 渲染交付列 ══
