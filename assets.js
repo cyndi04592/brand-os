@@ -69,7 +69,7 @@ async function fetchDriveAssets(type) {
 }
 
 async function fetchBoth() {
-  if (!window._driveToken) { alert('請先連結 Google Drive'); return; }
+  if (!window._driveToken) { driveLogin(); return; }
   const bid = window.S.brandId;
   // 清掉快取，強制重抓
   if (bid) delete _assetCache[bid];
