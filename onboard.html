@@ -13,30 +13,26 @@
   --orange:#E8603A;--line:rgba(255,255,255,0.08);
   --t1:#F0EDE8;--t2:#A09890;--t3:#606060;
   --mint:#3AE8C0;--sky:#5BC8E8;
-} 
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;min-height:100vh;}
 .nav{display:flex;align-items:center;gap:12px;padding:0 24px;height:52px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:100;background:rgba(14,14,15,0.95);backdrop-filter:blur(12px);}
 .nav-logo{font-family:'Bebas Neue';font-size:20px;letter-spacing:3px;color:var(--gold);}
 .nav-sub{font-size:8px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
-
 #loginOverlay{position:fixed;inset:0;background:rgba(10,10,11,0.97);z-index:999;display:flex;align-items:center;justify-content:center;}
 .login-card{background:var(--bg2);border:1px solid rgba(232,160,58,0.3);border-radius:20px;padding:40px 36px;width:340px;text-align:center;}
 .login-title{font-family:'Bebas Neue';font-size:28px;letter-spacing:4px;color:var(--gold);margin-bottom:4px;}
 .login-sub{font-size:10px;color:var(--t3);letter-spacing:3px;font-family:'DM Mono';margin-bottom:24px;}
 .login-desc{font-size:12px;color:var(--t2);line-height:1.8;margin-bottom:24px;}
 .login-btn{width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gold),#C47820);color:#1a0e00;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:1px;transition:opacity .2s;}
-.login-btn:hover{opacity:.85}
-.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-btn:hover{opacity:.85}.login-btn:disabled{opacity:.5;cursor:not-allowed}
 .login-err{font-size:11px;color:#FF6080;margin-top:12px;min-height:18px;}
 .login-footer{font-size:9px;color:var(--t3);margin-top:16px;letter-spacing:1px;}
-
 .main{max-width:780px;margin:0 auto;padding:40px 24px 80px;}
 .page-title{font-family:'Bebas Neue';font-size:42px;letter-spacing:6px;color:var(--gold);line-height:1;}
 .page-sub{font-size:11px;color:var(--t3);letter-spacing:3px;font-family:'DM Mono';margin-top:6px;}
 .page-desc{font-size:13px;color:var(--t2);line-height:1.9;margin-top:16px;max-width:560px;margin-bottom:36px;}
-
 .steps{display:flex;gap:0;margin-bottom:40px;}
 .step{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;}
 .step:not(:last-child)::after{content:'';position:absolute;top:14px;left:calc(50% + 14px);right:calc(-50% + 14px);height:1px;background:var(--line);}
@@ -46,11 +42,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .step.done .step-num{border-color:var(--gold);background:var(--gold);color:#1a0e00;font-weight:900;}
 .step-lbl{font-size:9px;color:var(--t3);letter-spacing:1px;white-space:nowrap;}
 .step.active .step-lbl{color:var(--gold);}
-
 .section{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:20px;display:none;}
 .section.active{display:block;}
 .sec-title{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--orange);margin-bottom:18px;text-transform:uppercase;}
-
 .field{margin-bottom:16px;}
 .field label{display:block;font-size:10px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;}
 .field input,.field textarea,.field select{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'Noto Sans TC';font-size:13px;padding:10px 12px;outline:none;transition:border-color .2s;resize:vertical;}
@@ -59,42 +53,60 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .field-hint{font-size:10px;color:var(--t3);margin-top:4px;line-height:1.6;}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 @media(max-width:560px){.field-row{grid-template-columns:1fr;}}
-
 .check-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
 .check-item{display:flex;align-items:center;gap:6px;cursor:pointer;}
 .check-item input{width:14px;height:14px;accent-color:var(--gold);cursor:pointer;}
 .check-item span{font-size:12px;color:var(--t2);}
-
 .radio-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
 .radio-btn{padding:7px 14px;border-radius:7px;border:1px solid var(--line);background:var(--bg3);color:var(--t2);font-size:11px;font-family:'Noto Sans TC';cursor:pointer;transition:all .15s;}
 .radio-btn.on{border-color:var(--gold);background:var(--gold2);color:var(--gold);font-weight:700;}
-
-.color-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
-.color-btn{width:36px;height:36px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;}
-.color-btn.on{border-color:#fff;transform:scale(1.15);}
-
-.btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;}
-.btn-back{padding:10px 20px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--t3);font-family:'Noto Sans TC';font-size:12px;font-weight:700;cursor:pointer;}
-.btn-back:hover{border-color:var(--t2);color:var(--t2);}
-.btn-next{padding:10px 28px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--gold),#C47820);color:#1a0e00;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;}
-.btn-next:hover{opacity:.85}
-.btn-next:disabled{opacity:.4;cursor:not-allowed}
-
-/* 社群媒體 */
 .social-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
 @media(max-width:560px){.social-grid{grid-template-columns:1fr;}}
 .social-item label{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--t3);display:block;margin-bottom:4px;}
 .social-item input{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:8px 10px;outline:none;transition:border-color .2s;}
 .social-item input:focus{border-color:var(--gold);}
+.btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;}
+.btn-back{padding:10px 20px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--t3);font-family:'Noto Sans TC';font-size:12px;font-weight:700;cursor:pointer;}
+.btn-back:hover{border-color:var(--t2);color:var(--t2);}
+.btn-next{padding:10px 28px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--gold),#C47820);color:#1a0e00;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;}
+.btn-next:hover{opacity:.85}.btn-next:disabled{opacity:.4;cursor:not-allowed}
 
-/* 生成覆蓋層 */
+/* ══ 色系選擇器 ══ */
+.color-section{margin-top:6px;}
+.color-presets{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.color-preset{cursor:pointer;border-radius:10px;border:2px solid transparent;padding:8px 12px;display:flex;align-items:center;gap:8px;background:var(--bg3);transition:all .2s;}
+.color-preset:hover{border-color:rgba(255,255,255,0.2);}
+.color-preset.on{border-color:#fff;transform:scale(1.04);}
+.color-preset-dots{display:flex;gap:3px;}
+.color-preset-dot{width:14px;height:14px;border-radius:50%;}
+.color-preset-name{font-size:10px;color:var(--t2);white-space:nowrap;}
+.color-custom-area{background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:14px;}
+.color-custom-title{font-size:10px;color:var(--t3);font-weight:700;letter-spacing:1px;margin-bottom:10px;}
+.color-url-row{display:flex;gap:8px;}
+.color-url-input{flex:1;background:var(--bg4);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'DM Mono';font-size:11px;padding:8px 10px;outline:none;transition:border-color .2s;}
+.color-url-input:focus{border-color:var(--gold);}
+.btn-grab-color{padding:8px 14px;border-radius:8px;border:none;background:var(--gold2);border:1px solid var(--gold);color:var(--gold);font-family:'Noto Sans TC';font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;}
+.btn-grab-color:hover{background:var(--gold);color:#1a0e00;}
+.btn-grab-color:disabled{opacity:.5;cursor:not-allowed;}
+.color-result{margin-top:12px;display:none;}
+.color-result-title{font-size:10px;color:var(--t3);margin-bottom:8px;}
+.color-swatches{display:flex;flex-wrap:wrap;gap:8px;}
+.color-swatch{width:40px;height:40px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;position:relative;}
+.color-swatch:hover{transform:scale(1.1);}
+.color-swatch.on{border-color:#fff;transform:scale(1.15);}
+.color-swatch-hex{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--t3);font-family:'DM Mono';white-space:nowrap;}
+.color-hint{font-size:10px;color:var(--t3);margin-top:8px;}
+.selected-color-preview{margin-top:14px;display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg4);border-radius:8px;}
+.selected-dot{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);}
+.selected-label{font-size:11px;color:var(--t2);}
+.selected-hex{font-size:11px;color:var(--gold);font-family:'DM Mono';}
+
 #genOverlay{display:none;position:fixed;inset:0;background:rgba(10,10,11,0.97);z-index:500;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
 #genOverlay.show{display:flex;}
 .gen-title{font-family:'Bebas Neue';font-size:28px;letter-spacing:5px;color:var(--gold);}
 .gen-msg{font-size:11px;color:var(--t2);font-family:'DM Mono';letter-spacing:1px;}
 .gen-bar-wrap{width:320px;height:3px;background:var(--line);border-radius:2px;overflow:hidden;}
 .gen-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--orange));border-radius:2px;width:0%;transition:width .5s ease;}
-
 #resultSection{display:none;background:var(--bg2);border:1px solid rgba(232,160,58,0.4);border-radius:14px;padding:28px;margin-bottom:20px;}
 .result-title{font-family:'Bebas Neue';font-size:22px;letter-spacing:4px;color:var(--gold);margin-bottom:6px;}
 .result-sub{font-size:10px;color:var(--t3);font-family:'DM Mono';letter-spacing:2px;margin-bottom:20px;}
@@ -102,16 +114,13 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .result-note{font-size:11px;color:var(--mint);padding:12px;background:rgba(58,232,192,0.08);border-radius:8px;border:1px solid rgba(58,232,192,0.2);line-height:1.8;}
 .btn-submit{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--orange),#C04020);color:#fff;font-family:'Noto Sans TC';font-size:14px;font-weight:900;cursor:pointer;letter-spacing:2px;margin-top:16px;}
 .btn-submit:disabled{opacity:.4;cursor:not-allowed}
-
 #successSection{display:none;text-align:center;padding:60px 20px;}
 .success-icon{font-size:56px;margin-bottom:20px;}
 .success-title{font-family:'Bebas Neue';font-size:32px;letter-spacing:5px;color:var(--mint);margin-bottom:8px;}
 .success-msg{font-size:13px;color:var(--t2);line-height:1.9;}
-
 .spin2{width:32px;height:32px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
 @keyframes spin{to{transform:rotate(360deg)}}
-
 .info-box{background:rgba(232,160,58,0.08);border:1px solid rgba(232,160,58,0.2);border-radius:10px;padding:14px;margin-bottom:20px;}
 .info-box-title{font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px;}
 .info-box p{font-size:11px;color:var(--t2);line-height:2;}
@@ -165,7 +174,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       <div class="field"><label>品牌英文名稱</label><input type="text" id="f_nameEn" placeholder="例：WangWei Rice Sausage"></div>
     </div>
     <div class="field"><label>官方網站</label><input type="url" id="f_website" placeholder="https://..."></div>
-
     <div class="field">
       <label>社群媒體帳號</label>
       <div class="social-grid">
@@ -177,7 +185,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <div class="social-item"><label>其他社群</label><input type="text" id="f_social_other" placeholder="YouTube / LINE / TikTok..."></div>
       </div>
     </div>
-
     <div class="field-row">
       <div class="field"><label>聯絡人姓名 *</label><input type="text" id="f_contact" placeholder="您的姓名"></div>
       <div class="field"><label>聯絡電話</label><input type="tel" id="f_phone" placeholder="0912-345-678"></div>
@@ -188,37 +195,13 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   <!-- SECTION 2 -->
   <div class="section" id="sec2">
     <div class="sec-title">02 · 品牌故事與定位</div>
-    <div class="field">
-      <label>為什麼創立這個品牌？*</label>
-      <textarea id="f_story" rows="4" placeholder="例：阿公傳下來的古早味配方，想讓更多人吃到真正的台灣米香腸..."></textarea>
-    </div>
-    <div class="field">
-      <label>品牌核心價值（3個關鍵字）</label>
-      <input type="text" id="f_values" placeholder="例：健康、天然、台灣在地">
-      <div class="field-hint">用逗號分隔，這會成為品牌靈魂的核心</div>
-    </div>
-    <div class="field">
-      <label>主要競爭對手名稱</label>
-      <input type="text" id="f_competitors" placeholder="例：xxx品牌、yyy品牌">
-    </div>
-    <div class="field">
-      <label>競爭對手網址（可多個，換行分隔）</label>
-      <textarea id="f_competitorUrls" rows="3" placeholder="例：&#10;https://www.competitor1.com&#10;https://www.competitor2.com"></textarea>
-      <div class="field-hint">AI 會分析競爭對手的定位，幫你找出差異化方向</div>
-    </div>
-    <div class="field">
-      <label>相較競爭對手的優勢</label>
-      <textarea id="f_pros" rows="3" placeholder="例：使用100%台灣豬、添加米讓口感更Q彈、無防腐劑..."></textarea>
-    </div>
-    <div class="field">
-      <label>目前的弱點或挑戰</label>
-      <textarea id="f_cons" rows="2" placeholder="例：知名度低、價格比市售高..."></textarea>
-      <div class="field-hint">誠實填寫，AI 才能幫你找到突破點</div>
-    </div>
-    <div class="field">
-      <label>想說但不知道怎麼說的話（廢話也可以）</label>
-      <textarea id="f_misc" rows="3" placeholder="任何想表達的想法，什麼都可以寫..."></textarea>
-    </div>
+    <div class="field"><label>為什麼創立這個品牌？*</label><textarea id="f_story" rows="4" placeholder="例：阿公傳下來的古早味配方，想讓更多人吃到真正的台灣米香腸..."></textarea></div>
+    <div class="field"><label>品牌核心價值（3個關鍵字）</label><input type="text" id="f_values" placeholder="例：健康、天然、台灣在地"><div class="field-hint">用逗號分隔，這會成為品牌靈魂的核心</div></div>
+    <div class="field"><label>主要競爭對手名稱</label><input type="text" id="f_competitors" placeholder="例：xxx品牌、yyy品牌"></div>
+    <div class="field"><label>競爭對手網址（可多個，換行分隔）</label><textarea id="f_competitorUrls" rows="3" placeholder="例：&#10;https://www.competitor1.com&#10;https://www.competitor2.com"></textarea><div class="field-hint">AI 會分析競爭對手的定位，幫你找出差異化方向</div></div>
+    <div class="field"><label>相較競爭對手的優勢</label><textarea id="f_pros" rows="3" placeholder="例：使用100%台灣豬、添加米讓口感更Q彈、無防腐劑..."></textarea></div>
+    <div class="field"><label>目前的弱點或挑戰</label><textarea id="f_cons" rows="2" placeholder="例：知名度低、價格比市售高..."></textarea><div class="field-hint">誠實填寫，AI 才能幫你找到突破點</div></div>
+    <div class="field"><label>想說但不知道怎麼說的話（廢話也可以）</label><textarea id="f_misc" rows="3" placeholder="任何想表達的想法，什麼都可以寫..."></textarea></div>
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(1)">← 上一步</button>
       <button class="btn-next" onclick="goStep(3)">下一步 →</button>
@@ -254,13 +237,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       </div>
       <input type="hidden" id="f_category">
     </div>
-
     <div class="field">
       <label>主力商品／服務（簡短描述，一行一個）*</label>
-      <textarea id="f_products" rows="5" placeholder="例（實體商品）：&#10;米香腸原味 280g&#10;米香腸辣味 280g&#10;&#10;例（課程服務）：&#10;200小時瑜珈師資培訓班&#10;100小時頌缽師資培訓班&#10;&#10;例（專業服務）：&#10;企業法律顧問月費方案&#10;商標申請服務"></textarea>
+      <textarea id="f_products" rows="5" placeholder="例（實體商品）：&#10;米香腸原味 280g&#10;&#10;例（課程服務）：&#10;200小時瑜珈師資培訓班&#10;&#10;例（專業服務）：&#10;企業法律顧問月費方案"></textarea>
       <div class="field-hint">不限實體商品，課程、服務、顧問方案都可以填</div>
     </div>
-
     <div class="field">
       <label>上架或銷售平台（可多選）</label>
       <div class="check-group">
@@ -280,7 +261,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <label class="check-item"><input type="checkbox" value="線下活動/課程" id="ch_event"><span>線下活動/課程</span></label>
       </div>
     </div>
-
     <div class="field-row">
       <div class="field"><label>商品／服務平均售價</label><input type="text" id="f_price" placeholder="例：NT$280 / NT$15,000/堂"></div>
       <div class="field"><label>目標客群</label><input type="text" id="f_audience" placeholder="例：30-45歲媽媽、愛健康的上班族"></div>
@@ -294,17 +274,41 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   <!-- SECTION 4 -->
   <div class="section" id="sec4">
     <div class="sec-title">04 · 品牌風格設定</div>
+
+    <!-- 色系選擇器 -->
     <div class="field">
       <label>品牌主色系</label>
-      <div class="color-row" id="colorRow">
-        <button class="color-btn on" style="background:#E8A03A;" onclick="selectColor(this,'gold')" title="金色"></button>
-        <button class="color-btn" style="background:#FF8099;" onclick="selectColor(this,'red')" title="紅粉"></button>
-        <button class="color-btn" style="background:#5BC8E8;" onclick="selectColor(this,'sky')" title="天空藍"></button>
-        <button class="color-btn" style="background:#3AE8C0;" onclick="selectColor(this,'mint')" title="薄荷綠"></button>
-        <button class="color-btn" style="background:#9D6EF8;" onclick="selectColor(this,'purple')" title="紫色"></button>
-        <button class="color-btn" style="background:#C8A870;" onclick="selectColor(this,'brown')" title="棕色"></button>
+      <div class="color-section">
+
+        <!-- 預設色系 -->
+        <div class="color-presets" id="colorPresets">
+          <!-- 動態生成 -->
+        </div>
+
+        <!-- 自訂抓色 -->
+        <div class="color-custom-area">
+          <div class="color-custom-title">✨ 輸入你喜歡的品牌網址，AI 自動抓取主色系</div>
+          <div class="color-url-row">
+            <input class="color-url-input" id="colorUrlInput" placeholder="例：https://www.apple.com 或 https://www.muji.com" type="url">
+            <button class="btn-grab-color" id="btnGrabColor" onclick="grabColors()">🎨 抓取色系</button>
+          </div>
+          <div class="color-hint">輸入任何你喜歡的品牌網站，系統會幫你抓取主要色碼</div>
+          <div class="color-result" id="colorResult">
+            <div class="color-result-title" id="colorResultTitle">抓取到的色系：</div>
+            <div class="color-swatches" id="colorSwatches"></div>
+          </div>
+        </div>
+
+        <!-- 已選色 -->
+        <div class="selected-color-preview" id="selectedColorPreview">
+          <div class="selected-dot" id="selectedDot" style="background:#E8A03A;"></div>
+          <span class="selected-label">已選色系：</span>
+          <span class="selected-hex" id="selectedHex">#E8A03A · 品牌金（預設）</span>
+        </div>
+
+        <input type="hidden" id="f_color" value="gold">
+        <input type="hidden" id="f_colorHex" value="#E8A03A">
       </div>
-      <input type="hidden" id="f_color" value="gold">
     </div>
 
     <div class="field">
@@ -332,8 +336,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 
     <div class="field">
       <label>Google Drive 照片素材資料夾連結（可選）</label>
-      <input type="text" id="f_photoFolder" placeholder="https://drive.google.com/drive/folders/...">
-      <div class="field-hint">我們會提供一個共用資料夾給你上傳商品照片，或填入你自己的</div>
+      <input type="text" id="f_photoFolder" value="https://drive.google.com/drive/folders/14LlXgAzqds62VZuIBAdEDhoFt15b1t1b" placeholder="https://drive.google.com/drive/folders/...">
+      <div class="field-hint">已預設芮比提供的共用資料夾，或填入你自己的</div>
     </div>
     <div class="field">
       <label>Google Drive 影片素材資料夾連結（可選）</label>
@@ -351,12 +355,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div id="summaryBox" style="background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px;font-size:12px;color:var(--t2);line-height:2;"></div>
     <div class="info-box">
       <div class="info-box-title">⚡ 接下來會發生的事</div>
-      <p>
-        1. Claude AI 分析您的品牌資料（透過 Cloudflare 安全處理）<br>
-        2. 自動生成「品牌靈魂書」（定位、文案風格、廣告策略）<br>
-        3. 資料送交管理員審核<br>
-        4. 審核通過後，品牌頁籤立即上線
-      </p>
+      <p>1. Claude AI 分析您的品牌資料（透過 Cloudflare 安全處理）<br>
+         2. 自動生成「品牌靈魂書」（定位、文案風格、廣告策略）<br>
+         3. 資料送交管理員審核<br>
+         4. 審核通過後，品牌頁籤立即上線</p>
     </div>
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(4)">← 上一步</button>
@@ -399,18 +401,137 @@ let userEmail = '';
 let currentStep = 1;
 let generatedSoul = '';
 
+// ══ 預設色系（知名品牌色）══
+const COLOR_PRESETS = [
+  { name: '品牌金', colors: ['#E8A03A','#C47820','#F5C97A'], key: 'gold' },
+  { name: '珊瑚橙', colors: ['#FF6B6B','#FF8E53','#FFA07A'], key: 'coral' },
+  { name: '蒂芬妮藍', colors: ['#00B5AD','#5BC8C8','#A8E6E6'], key: 'tiffany' },
+  { name: '愛馬仕橙', colors: ['#E8603A','#FF8C42','#FFB347'], key: 'hermes' },
+  { name: '夜幕深藍', colors: ['#1B2A4A','#2E4A8C','#4A6CC8'], key: 'navy' },
+  { name: '香奈兒黑', colors: ['#1A1A1A','#404040','#808080'], key: 'chanel' },
+  { name: '玫瑰粉', colors: ['#FF8FAB','#FFB3C6','#FFCCD5'], key: 'rose' },
+  { name: '抹茶綠', colors: ['#6B8F5A','#8BC34A','#C8E6C9'], key: 'matcha' },
+  { name: '薰衣草紫', colors: ['#9B7FD4','#B39DDB','#D1C4E9'], key: 'lavender' },
+  { name: 'Apple 銀灰', colors: ['#8D8D93','#AEAEB2','#E5E5EA'], key: 'apple' },
+  { name: 'MUJI 米白', colors: ['#C8B89A','#DDD0BC','#F0E8D8'], key: 'muji' },
+  { name: '中國紅', colors: ['#C0392B','#E74C3C','#F1948A'], key: 'red' },
+];
+
+let selectedColorKey = 'gold';
+let selectedColorHex = '#E8A03A';
+
+function initColorPresets() {
+  const container = document.getElementById('colorPresets');
+  container.innerHTML = COLOR_PRESETS.map((p, i) => `
+    <div class="color-preset ${i===0?'on':''}" onclick="selectPreset(${i})" id="preset-${i}">
+      <div class="color-preset-dots">
+        ${p.colors.map(c => `<div class="color-preset-dot" style="background:${c}"></div>`).join('')}
+      </div>
+      <span class="color-preset-name">${p.name}</span>
+    </div>
+  `).join('');
+}
+
+function selectPreset(i) {
+  document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
+  document.getElementById('preset-' + i).classList.add('on');
+  // 清除自訂色選取
+  document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('on'));
+  const preset = COLOR_PRESETS[i];
+  selectedColorKey = preset.key;
+  selectedColorHex = preset.colors[0];
+  updateSelectedColor(selectedColorHex, preset.name);
+}
+
+function updateSelectedColor(hex, name) {
+  document.getElementById('f_color').value = selectedColorKey;
+  document.getElementById('f_colorHex').value = hex;
+  document.getElementById('selectedDot').style.background = hex;
+  document.getElementById('selectedHex').textContent = hex + (name ? ' · ' + name : '');
+}
+
+// ══ 抓取網站色系 ══
+async function grabColors() {
+  const url = document.getElementById('colorUrlInput').value.trim();
+  if (!url || !url.startsWith('http')) { alert('請輸入有效的網址（需包含 https://）'); return; }
+
+  const btn = document.getElementById('btnGrabColor');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin" style="border-top-color:#1a0e00"></span> 抓取中...';
+
+  try {
+    // 透過 Claude API 分析網站色系
+    const prompt = `請分析以下網站的品牌主色系，提取 5-8 個主要色碼。
+網站：${url}
+
+請只回傳 JSON 格式，不要其他文字：
+{"colors": ["#XXXXXX", "#XXXXXX", ...], "siteName": "網站名稱"}
+
+如果無法訪問網站，請根據你對這個品牌的認知來提供色碼。`;
+
+    const res = await fetch(CF_WORKER_URL + '/claude', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{role:'user', content: prompt}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+
+    // 解析 JSON
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('無法解析色碼');
+    const result = JSON.parse(jsonMatch[0]);
+    const colors = result.colors || [];
+    const siteName = result.siteName || url;
+
+    if (!colors.length) throw new Error('沒有抓到色碼');
+
+    // 顯示色票
+    const swatchesEl = document.getElementById('colorSwatches');
+    swatchesEl.innerHTML = colors.map((hex, i) => `
+      <div style="position:relative;margin-bottom:20px;">
+        <div class="color-swatch" style="background:${hex};" onclick="selectCustomColor('${hex}')" title="${hex}">
+          <span class="color-swatch-hex">${hex}</span>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('colorResultTitle').textContent = `${siteName} 的色系：`;
+    document.getElementById('colorResult').style.display = 'block';
+
+    // 清除預設選取
+    document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
+
+  } catch(e) {
+    alert('抓取失敗：' + e.message + '\n\n請確認網址正確，或直接選擇預設色系');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🎨 抓取色系';
+}
+
+function selectCustomColor(hex) {
+  document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('on'));
+  event.currentTarget.classList.add('on');
+  document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
+  selectedColorKey = 'custom';
+  selectedColorHex = hex;
+  document.getElementById('f_color').value = hex;
+  document.getElementById('f_colorHex').value = hex;
+  updateSelectedColor(hex, '自訂色');
+}
+
+// ══ 其他功能 ══
 function selectRadio(btn, group) {
-  const parent = btn.closest('.radio-group') || btn.closest('.section');
+  const parent = btn.closest('.radio-group');
   parent.querySelectorAll('.radio-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   const hiddenId = {cat:'f_category', style:'f_style'}[group];
   if (hiddenId) document.getElementById(hiddenId).value = btn.textContent.trim();
-}
-
-function selectColor(btn, color) {
-  document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  document.getElementById('f_color').value = color;
 }
 
 function goStep(n) {
@@ -440,9 +561,7 @@ function validateStep(n) {
 }
 
 function buildSummary() {
-  const platforms = ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_xhs','ch_douyin_shop','ch_offline','ch_direct','ch_event']
-    .filter(id => document.getElementById(id)?.checked)
-    .map(id => document.getElementById(id).value).join('、') || '未填寫';
+  const platforms = getPlatforms() || '未填寫';
   document.getElementById('summaryBox').innerHTML = `
     <b style="color:var(--gold)">品牌名稱：</b>${v('f_name')} ${v('f_nameEn') ? '('+v('f_nameEn')+')' : ''}<br>
     <b style="color:var(--gold)">聯絡人：</b>${v('f_contact')} ${v('f_phone')}<br>
@@ -451,12 +570,11 @@ function buildSummary() {
     <b style="color:var(--gold)">銷售平台：</b>${platforms}<br>
     <b style="color:var(--gold)">目標客群：</b>${v('f_audience')||'未填'}<br>
     <b style="color:var(--gold)">品牌風格：</b>${v('f_style')||'未選'}<br>
-    <b style="color:var(--gold)">品牌主色：</b>${v('f_color')}
+    <b style="color:var(--gold)">品牌主色：</b><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${selectedColorHex};vertical-align:middle;margin:0 4px;"></span>${selectedColorHex}
   `;
 }
 
 function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
-
 function getPlatforms() {
   return ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_xhs','ch_douyin_shop','ch_offline','ch_direct','ch_event']
     .filter(id => document.getElementById(id)?.checked)
@@ -479,43 +597,41 @@ async function doGenerate() {
 【品牌基本資訊】
 品牌名稱：${v('f_name')} ${v('f_nameEn') ? '('+v('f_nameEn')+')' : ''}
 官網：${v('f_website')}
-Facebook：${v('f_fb')}
-Instagram：${v('f_ig')}
-小紅書：${v('f_xiaohongshu')}
-抖音：${v('f_douyin')}
-微信公眾號：${v('f_wechat')}
-其他社群：${v('f_social_other')}
+Facebook：${v('f_fb')}  Instagram：${v('f_ig')}
+小紅書：${v('f_xiaohongshu')}  抖音：${v('f_douyin')}
+微信公眾號：${v('f_wechat')}  其他：${v('f_social_other')}
 
-【品牌故事與定位】
+【品牌故事】
 創立原因：${v('f_story')}
 核心價值：${v('f_values')}
 競爭對手：${v('f_competitors')}
 競爭對手網址：${v('f_competitorUrls')}
 競爭優勢：${v('f_pros')}
 目前挑戰：${v('f_cons')}
-補充想法：${v('f_misc')}
+補充：${v('f_misc')}
 
-【商品／服務資訊】
+【商品／服務】
 類別：${v('f_category')}
-主力商品／服務：${v('f_products')}
+主力商品：${v('f_products')}
 銷售平台：${getPlatforms()}
-售價區間：${v('f_price')}
+售價：${v('f_price')}
 目標客群：${v('f_audience')}
 
 【品牌風格】
 視覺風格：${v('f_style')}
+品牌主色：${selectedColorHex}
 參考品牌：${v('f_ref')}
 
-注意：這個品牌可能是賣實體商品、線上課程、或專業服務，請根據類別調整廣告策略。
+注意：根據類別（實體/課程/服務）調整廣告策略。
 
 請用繁體中文生成品牌靈魂書，包含：
-1. 品牌定位宣言（一句話，有力量有記憶點）
-2. 品牌靈魂（3-5句，描述核心精神）
-3. 目標受眾畫像（詳細描述，包含痛點）
-4. 廣告文案風格指南（語氣、措辭、禁忌）
-5. 核心廣告主張（3個不同訴求方向）
-6. 建議Hashtag組合（10個，含中英文）
-7. 競爭差異化重點（針對競爭對手的弱點）`;
+1. 品牌定位宣言（一句話）
+2. 品牌靈魂（3-5句）
+3. 目標受眾畫像（詳細，含痛點）
+4. 廣告文案風格指南
+5. 核心廣告主張（3個方向）
+6. 建議Hashtag（10個，含中英文）
+7. 競爭差異化重點`;
 
   try {
     const res = await fetch(CF_WORKER_URL + '/claude', {
@@ -530,7 +646,7 @@ Instagram：${v('f_ig')}
     const data = await res.json();
     generatedSoul = data.content?.[0]?.text || '生成失敗，請重試';
   } catch(e) {
-    generatedSoul = '⚠️ 生成失敗：' + e.message + '\n\n請稍後重試或聯絡管理員。';
+    generatedSoul = '⚠️ 生成失敗：' + e.message;
   }
 
   clearInterval(interval);
@@ -558,8 +674,7 @@ async function doSubmit() {
   }
 
   const payload = {
-    action: 'submitBrand', password: GAS_PASSWORD,
-    email: userEmail,
+    action: 'submitBrand', password: GAS_PASSWORD, email: userEmail,
     name: v('f_name'), nameEn: v('f_nameEn'),
     website: v('f_website'), fb: v('f_fb'), ig: v('f_ig'),
     xiaohongshu: v('f_xiaohongshu'), douyin: v('f_douyin'),
@@ -571,19 +686,15 @@ async function doSubmit() {
     category: v('f_category'), products: v('f_products'),
     platforms: getPlatforms(), price: v('f_price'), audience: v('f_audience'),
     style: v('f_style'), ref: v('f_ref'),
-    color: v('f_color'),
+    color: v('f_color'), colorHex: selectedColorHex,
     photoFolder: parseDriveId(v('f_photoFolder')),
     videoFolder: parseDriveId(v('f_videoFolder')),
     soulBook: generatedSoul, status: 'pending'
   };
 
   try {
-    await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      headers: {'Content-Type':'application/json'}
-    });
-  } catch(e) { console.warn('GAS submit error', e); }
+    await fetch(GAS_URL, { method:'POST', body:JSON.stringify(payload), headers:{'Content-Type':'application/json'} });
+  } catch(e) { console.warn(e); }
 
   document.getElementById('resultSection').style.display = 'none';
   document.getElementById('successSection').style.display = 'block';
@@ -597,9 +708,7 @@ function initGoogleAuth() {
     scope: 'https://www.googleapis.com/auth/userinfo.email',
     callback: async (resp) => {
       if (!resp.access_token) return;
-      const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: {Authorization: 'Bearer ' + resp.access_token}
-      });
+      const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers:{Authorization:'Bearer '+resp.access_token} });
       const info = await r.json();
       userEmail = info.email || '';
       document.getElementById('loginOverlay').style.display = 'none';
@@ -614,6 +723,13 @@ function doGoogleLogin() {
   if (tokenClient) tokenClient.requestAccessToken({prompt:'select_account'});
   else setTimeout(() => { if(tokenClient) tokenClient.requestAccessToken({prompt:'select_account'}); }, 1500);
 }
+
+// 初始化
+window.addEventListener('load', () => {
+  initColorPresets();
+  // 預設第一個色系
+  updateSelectedColor('#E8A03A', '品牌金');
+});
 </script>
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
 </body>
