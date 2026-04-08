@@ -824,8 +824,11 @@ async function saveAll() {
   showLoading('儲存中...');
   document.getElementById('btnSaveAll').disabled = true;
   try {
-    const data = encodeURIComponent(JSON.stringify(DB));
-    const r = await fetch(`${GAS_URL}?action=saveBrandOS&password=${PASSWORD}&data=${data}`);
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'saveBrandOS', password: PASSWORD, data: DB })
+    });
     const j = await r.json();
     if (j.ok) setStatus('✅ 儲存成功！', 'ok');
     else setStatus('❌ ' + j.error, 'err');
