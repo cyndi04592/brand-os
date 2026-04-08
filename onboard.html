@@ -203,8 +203,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div class="sec-title">01 · 品牌基本資訊</div>
 
     <div class="field">
-      <label>品牌名稱 * <span style="color:var(--sky);font-weight:400;font-size:9px;">· 將作為 Google Drive 資料夾名稱，請填真實品牌名</span></label>
-      <input type="text" id="f_name" placeholder="例：旺味米香腸（必填）" required>
+      <label>品牌名稱 *</label>
+      <input type="text" id="f_name" placeholder="例：旺味米香腸">
     </div>
 
     <div class="field">
@@ -474,73 +474,62 @@ const COLOR_PRESETS = [
   { name:'MUJI 米白', colors:['#C8B89A','#DDD0BC','#F0E8D8'], key:'muji' },
   { name:'中國紅',   colors:['#C0392B','#E74C3C','#F1948A'], key:'red' },
 ];
-let selectedColorKey = 'gold';
-let selectedColorHex = '#E8A03A';
+
+// 複選色系狀態
+let pickedColors = []; // [{hex, name, key}]
 
 function initColorPresets() {
   const container = document.getElementById('colorPresets');
   container.innerHTML = COLOR_PRESETS.map((p, i) => `
-    <div class="color-preset ${i===0?'on':''}" onclick="selectPreset(${i})" id="preset-${i}">
+    <div class="color-preset" onclick="togglePreset(${i})" id="preset-${i}">
       <div class="color-preset-dots">${p.colors.map(c=>`<div class="color-preset-dot" style="background:${c}"></div>`).join('')}</div>
       <span class="color-preset-name">${p.name}</span>
     </div>`).join('');
+  // 預設選品牌金
+  togglePreset(0);
 }
 
-// 複選色系 - 支援多選
-let selectedColorList = [{ hex:'#E8A03A', name:'品牌金', key:'gold' }];
-
-function selectPreset(i) {
+function togglePreset(i) {
   const el = document.getElementById('preset-' + i);
   const p = COLOR_PRESETS[i];
-  const idx = selectedColorList.findIndex(c => c.key === p.key && c.key !== 'custom');
-  if (el.classList.contains('on')) {
-    // 取消選取（至少保留一個）
-    if (selectedColorList.length > 1) {
-      selectedColorList.splice(idx, 1);
+  const idx = pickedColors.findIndex(c => c.key === p.key);
+  if (idx >= 0) {
+    // 取消 - 至少保留一個
+    if (pickedColors.length > 1) {
+      pickedColors.splice(idx, 1);
       el.classList.remove('on');
     }
   } else {
-    selectedColorList.push({ hex: p.colors[0], name: p.name, key: p.key });
+    pickedColors.push({ hex: p.colors[0], name: p.name, key: p.key });
     el.classList.add('on');
   }
-  syncSelectedColors();
+  refreshColorDisplay();
 }
 
-function toggleCustomColor(hex, wrapEl) {
-  const swatchEl = wrapEl.querySelector('.color-swatch');
-  const idx = selectedColorList.findIndex(c => c.hex === hex);
-  if (swatchEl.classList.contains('on')) {
-    // 取消選取，至少保留一個
-    if (selectedColorList.length > 1) {
-      selectedColorList.splice(idx >= 0 ? idx : 0, 1);
-      swatchEl.classList.remove('on');
+function toggleSwatch(hex, el) {
+  // el 是 color-swatch div 本身
+  const idx = pickedColors.findIndex(c => c.hex === hex);
+  if (el.classList.contains('on')) {
+    if (pickedColors.length > 1) {
+      pickedColors.splice(idx >= 0 ? idx : 0, 1);
+      el.classList.remove('on');
     }
   } else {
-    // 加入選取
-    if (idx < 0) selectedColorList.push({ hex, name: '自訂色', key: 'custom' });
-    swatchEl.classList.add('on');
+    if (idx < 0) pickedColors.push({ hex, name: '自訂色', key: 'custom_' + hex });
+    el.classList.add('on');
   }
-  syncSelectedColors();
+  refreshColorDisplay();
 }
 
-function syncSelectedColors() {
-  const hexes = selectedColorList.map(c => c.hex);
-  const names = selectedColorList.map(c => c.name);
-  selectedColorHex = hexes[0]; // 主色取第一個
-  selectedColorKey = selectedColorList.map(c => c.key).join(',');
-  document.getElementById('f_color').value = selectedColorKey;
+function refreshColorDisplay() {
+  const hexes = pickedColors.map(c => c.hex);
+  const names = pickedColors.map(c => c.name);
+  document.getElementById('f_color').value = pickedColors.map(c => c.key).join(',');
   document.getElementById('f_colorHex').value = hexes.join(',');
-  // 更新顯示
-  document.getElementById('selectedDot').style.background =
-    hexes.length === 1 ? hexes[0] :
-    `linear-gradient(135deg, ${hexes.slice(0,3).join(', ')})`;
+  document.getElementById('selectedDot').style.background = hexes[0] || '#E8A03A';
   document.getElementById('selectedHex').textContent =
-    hexes.slice(0,3).join(' + ') + (names.length > 0 ? ' · ' + names.slice(0,2).join('+') : '');
-}
-
-function updateSelectedColor(hex, name) {
-  selectedColorList = [{ hex, name: name||'自訂色', key: selectedColorKey }];
-  syncSelectedColors();
+    hexes.slice(0,3).map((h,i) => h + (names[i] !== '自訂色' ? '' : '')).join(' + ') +
+    ' · ' + names.slice(0,3).join('+');
 }
 
 async function grabColors() {
@@ -566,9 +555,9 @@ async function grabColors() {
     const colors = result.colors || [];
     if (!colors.length) throw new Error('沒有抓到色碼');
     document.getElementById('colorSwatches').innerHTML = colors.map(hex => `
-      <div class="color-swatch-wrap" style="cursor:pointer" onclick="toggleCustomColor('${hex}', this)">
-        <div class="color-swatch" style="background:${hex};border:2px solid transparent;border-radius:8px;width:40px;height:40px;transition:all .2s;"></div>
-        <span class="color-swatch-hex" style="font-size:8px;color:var(--t3);font-family:'DM Mono';display:block;text-align:center;margin-top:4px;">${hex}</span>
+      <div class="color-swatch-wrap" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
+        <div class="color-swatch" style="background:${hex};" onclick="toggleSwatch('${hex}', this)"></div>
+        <span style="font-size:8px;color:var(--t3);font-family:'DM Mono';">${hex}</span>
       </div>`).join('');
     document.getElementById('colorResultTitle').textContent = `${result.siteName || url} 的色系：`;
     document.getElementById('colorResult').style.display = 'block';
@@ -578,14 +567,7 @@ async function grabColors() {
   btn.innerHTML = '🎨 抓取色系';
 }
 
-function selectCustomColor(hex) {
-  document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('on'));
-  event.currentTarget.querySelector('.color-swatch').classList.add('on');
-  document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
-  selectedColorKey = 'custom';
-  selectedColorHex = hex;
-  updateSelectedColor(hex, '自訂色');
-}
+
 
 // ══ 表單邏輯 ══
 function selectRadio(btn, group) {
@@ -740,13 +722,16 @@ async function doSubmit() {
     style:v('f_style'), ref:v('f_ref'),
     color:v('f_color'), colorHex:selectedColorHex,
     rootFolderId: ROOT_FOLDER_ID,
-    soulBook:generatedSoul.substring(0, 8000), status:'pending'
+    soulBook:generatedSoul, status:'pending'
   };
   try {
+    // GAS POST - 使用 no-cors 確保跨域送出
+    const formData = new URLSearchParams();
+    formData.append('payload', JSON.stringify(payload));
     await fetch(GAS_URL, {
       method: 'POST',
       body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+      headers: { 'Content-Type': 'text/plain' }
     });
   } catch(e) { console.warn(e); }
   document.getElementById('resultSection').style.display = 'none';
@@ -779,10 +764,7 @@ function doGoogleLogin() {
 }
 
 window.addEventListener('load', () => {
-  initColorPresets();
-  // 初始化只選品牌金
-  selectedColorList = [{ hex:'#E8A03A', name:'品牌金', key:'gold' }];
-  syncSelectedColors();
+  initColorPresets(); // 會自動 togglePreset(0) 選品牌金
 });
 </script>
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
