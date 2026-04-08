@@ -19,7 +19,7 @@ function setDriveStatus(state) {
     lbl.textContent = '載入中…';
     lbl.style.color = 'var(--gold)';
   } else {
-    lbl.textContent = 'Drive 未連結';
+    lbl.textContent = '· 請連結 Drive';
     lbl.style.color = 'var(--t3)';
   }
 }
@@ -33,25 +33,24 @@ function initGoogleAuth() {
     callback: async (resp) => {
       if (!resp.access_token) return;
 
-      const isRelogin = !!window._driveToken; // 已經登入過，這次是重新連結
+      const prevToken = window._driveToken;
       window._driveToken = resp.access_token;
-      sessionStorage.setItem('bs_token', resp.access_token);
+      // 不存 token 到 sessionStorage（1小時會過期）
+      sessionStorage.setItem('bs_email', _userEmail || '');
 
-      // ★ 重新連結 Drive 時：只更新 token 並重新抓素材，不重跑整個流程
-      if (isRelogin) {
+      // ★ 已經登入過（重新連結 or 靜默刷新）
+      if (prevToken || _userEmail) {
         setDriveStatus('ok');
-        // 清除快取讓素材重新抓取
+        _onLoginSuccess();
+        // 清快取，重新抓素材
         Object.keys(_assetCache || {}).forEach(k => delete _assetCache[k]);
-        // 重新抓取當前品牌素材
-        if (window.S?.brandId) {
-          await autoFetchAssets(window.S.brandId);
-        }
+        if (window.S?.brandId) await autoFetchAssets(window.S.brandId);
         return;
       }
 
+      // 第一次登入
       if (_isInitializing) return;
       _isInitializing = true;
-
       try {
         const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: 'Bearer ' + resp.access_token }
@@ -68,7 +67,6 @@ function initGoogleAuth() {
           document.getElementById('loginBtn').disabled = false;
           document.getElementById('loginBtn').textContent = '使用 Google 帳號登入';
           window._driveToken = null;
-          sessionStorage.removeItem('bs_token');
         }
       } catch (e) {
         document.getElementById('loginErr').textContent = '❌ 驗證失敗，請重試';
@@ -121,10 +119,11 @@ function doGoogleLogin() {
   tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
-// ══ Drive 重新連結（★ 修正：重新連結後直接刷新素材）══
+// ══ Drive 重新連結 / 靜默刷新 ══
 function driveLogin() {
   if (!tokenClient) { alert('Google 授權尚未載入'); return; }
-  tokenClient.requestAccessToken({});
+  // prompt:'' = 靜默刷新（不跳授權視窗，如果還在有效期內）
+  tokenClient.requestAccessToken({ prompt: '' });
 }
 
 // ══ 白名單檢查 ══
@@ -134,7 +133,7 @@ async function checkWhitelist(email) {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
-    const r = await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}`, { signal: controller.signal });
+    const r = await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}&password=${GAS_PASSWORD}`, { signal: controller.signal });
     clearTimeout(timer);
     const j = await r.json();
     return j.ok && j.allowed;
@@ -146,7 +145,6 @@ function doLogout() {
   if (!confirm('確定要登出嗎？')) return;
   window._driveToken = null;
   _userEmail = null;
-  sessionStorage.removeItem('bs_token');
   sessionStorage.removeItem('bs_email');
   window.S = { brandId:null, subId:null, prod:null, photos:[], videos:[], selPhoto:null, selVideo:null, scripts:[], delivers:[], openBrand:null };
   _isInitializing = false;
@@ -165,15 +163,34 @@ function goAdmin() {
   }
 }
 
-// ══ 系統啟動（含 session 還原）══
+// ══ 系統啟動 ══
 async function startSystem() {
-  // 嘗試從 session 還原 token
-  if (!window._driveToken) {
-    const t = sessionStorage.getItem('bs_token');
-    if (t) {
-      window._driveToken = t;
-      _userEmail = sessionStorage.getItem('bs_email') || '';
-      _onLoginSuccess();
+  // 嘗試靜默刷新 token（如果之前有登入過）
+  const savedEmail = sessionStorage.getItem('bs_email');
+  if (!window._driveToken && savedEmail && tokenClient) {
+    _userEmail = savedEmail;
+    try {
+      // 靜默取得新 token（不跳視窗）
+      await new Promise((resolve, reject) => {
+        const orig = tokenClient.callback;
+        tokenClient.callback = async (resp) => {
+          tokenClient.callback = orig;
+          if (resp.access_token) {
+            window._driveToken = resp.access_token;
+            _onLoginSuccess();
+            resolve();
+          } else {
+            reject(new Error('silent refresh failed'));
+          }
+        };
+        tokenClient.requestAccessToken({ prompt: '' });
+        // 3秒沒回應就放棄
+        setTimeout(() => reject(new Error('timeout')), 3000);
+      });
+    } catch(e) {
+      // 靜默刷新失敗 → 顯示登入畫面
+      console.warn('靜默刷新失敗，需要重新登入');
+      window._driveToken = null;
     }
   }
 
