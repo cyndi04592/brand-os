@@ -509,13 +509,15 @@ function selectPreset(i) {
 function toggleCustomColor(hex, wrapEl) {
   const swatchEl = wrapEl.querySelector('.color-swatch');
   const idx = selectedColorList.findIndex(c => c.hex === hex);
-  if (idx >= 0) {
+  if (swatchEl.classList.contains('on')) {
+    // 取消選取，至少保留一個
     if (selectedColorList.length > 1) {
-      selectedColorList.splice(idx, 1);
+      selectedColorList.splice(idx >= 0 ? idx : 0, 1);
       swatchEl.classList.remove('on');
     }
   } else {
-    selectedColorList.push({ hex, name: '自訂色', key: 'custom' });
+    // 加入選取
+    if (idx < 0) selectedColorList.push({ hex, name: '自訂色', key: 'custom' });
     swatchEl.classList.add('on');
   }
   syncSelectedColors();
@@ -564,9 +566,9 @@ async function grabColors() {
     const colors = result.colors || [];
     if (!colors.length) throw new Error('沒有抓到色碼');
     document.getElementById('colorSwatches').innerHTML = colors.map(hex => `
-      <div class="color-swatch-wrap" onclick="toggleCustomColor('${hex}', this)">
-        <div class="color-swatch" style="background:${hex};"></div>
-        <span class="color-swatch-hex">${hex}</span>
+      <div class="color-swatch-wrap" style="cursor:pointer" onclick="toggleCustomColor('${hex}', this)">
+        <div class="color-swatch" style="background:${hex};border:2px solid transparent;border-radius:8px;width:40px;height:40px;transition:all .2s;"></div>
+        <span class="color-swatch-hex" style="font-size:8px;color:var(--t3);font-family:'DM Mono';display:block;text-align:center;margin-top:4px;">${hex}</span>
       </div>`).join('');
     document.getElementById('colorResultTitle').textContent = `${result.siteName || url} 的色系：`;
     document.getElementById('colorResult').style.display = 'block';
@@ -778,7 +780,9 @@ function doGoogleLogin() {
 
 window.addEventListener('load', () => {
   initColorPresets();
-  updateSelectedColor('#E8A03A', '品牌金');
+  // 初始化只選品牌金
+  selectedColorList = [{ hex:'#E8A03A', name:'品牌金', key:'gold' }];
+  syncSelectedColors();
 });
 </script>
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
