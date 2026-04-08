@@ -498,14 +498,37 @@ function selectPreset(i) {
   setColor(p.colors[0], p.name);
 }
 
+// 複選色票清單
+let extraColors = []; // 抓色後額外選的顏色
+
 function selectSwatch(hex, name) {
-  // 點抓色色票：直接替換為這個顏色，清掉預設選取
-  document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
-  document.querySelectorAll('.swatch-item').forEach(el => el.classList.remove('on'));
-  event.currentTarget.classList.add('on');
-  selectedColorHex = hex;
-  selectedColorName = name || '自訂色';
-  setColor(hex, selectedColorName);
+  const el = event.currentTarget;
+  const idx = extraColors.findIndex(c => c.hex === hex);
+  if (el.classList.contains('on')) {
+    // 取消選取
+    el.classList.remove('on');
+    extraColors = extraColors.filter(c => c.hex !== hex);
+    // 如果取消後沒有額外色，回到預設色
+    if (extraColors.length === 0) {
+      setColor(selectedColorHex, selectedColorName);
+    } else {
+      setColor(extraColors[0].hex, extraColors.map(c=>c.hex).join(', '));
+    }
+  } else {
+    // 加入選取
+    el.classList.add('on');
+    // 清掉預設色系選取
+    document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
+    extraColors.push({ hex, name: name||'自訂色' });
+    setColor(extraColors[0].hex, extraColors.map(c=>c.hex).join(', '));
+  }
+  // 更新 hidden 欄位
+  const allHex = extraColors.length > 0 ? extraColors.map(c=>c.hex).join(',') : selectedColorHex;
+  document.getElementById('f_colorHex').value = allHex;
+  document.getElementById('f_color').value = extraColors.length > 0 ? '自訂色' : selectedColorName;
+  // 更新顯示
+  document.getElementById('selectedDot').style.background = extraColors.length > 0 ? extraColors[0].hex : selectedColorHex;
+  document.getElementById('selectedHex').textContent = allHex + ' · ' + (extraColors.length > 0 ? extraColors.map(c=>c.name).join('+') : selectedColorName);
 }
 
 function setColor(hex, name) {
@@ -542,6 +565,8 @@ async function grabColors() {
         <div class="color-swatch" style="background:${hex};"></div>
         <span class="color-swatch-hex">${hex}</span>
       </div>`).join('');
+    // 重置額外選色
+    extraColors = [];
     document.getElementById('colorResultTitle').textContent = `${result.siteName || url} 的色系：`;
     document.getElementById('colorResult').style.display = 'block';
     document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
