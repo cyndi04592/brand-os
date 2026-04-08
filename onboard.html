@@ -8,30 +8,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+TC:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:    #0E0E0F;
-  --bg2:   #161618;
-  --bg3:   #1E1E21;
-  --bg4:   #252528;
-  --gold:  #E8A03A;
-  --gold2: rgba(232,160,58,0.12);
-  --orange:#E8603A;
-  --line:  rgba(255,255,255,0.08);
-  --t1:    #F0EDE8;
-  --t2:    #A09890;
-  --t3:    #606060;
-  --mint:  #3AE8C0;
-  --sky:   #5BC8E8;
-}
+  --bg:#0E0E0F;--bg2:#161618;--bg3:#1E1E21;--bg4:#252528;
+  --gold:#E8A03A;--gold2:rgba(232,160,58,0.12);
+  --orange:#E8603A;--line:rgba(255,255,255,0.08);
+  --t1:#F0EDE8;--t2:#A09890;--t3:#606060;
+  --mint:#3AE8C0;--sky:#5BC8E8;
+} 
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;min-height:100vh;}
-
-/* ── NAV ── */
 .nav{display:flex;align-items:center;gap:12px;padding:0 24px;height:52px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:100;background:rgba(14,14,15,0.95);backdrop-filter:blur(12px);}
 .nav-logo{font-family:'Bebas Neue';font-size:20px;letter-spacing:3px;color:var(--gold);}
 .nav-sub{font-size:8px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
 
-/* ── LOGIN OVERLAY ── */
 #loginOverlay{position:fixed;inset:0;background:rgba(10,10,11,0.97);z-index:999;display:flex;align-items:center;justify-content:center;}
 .login-card{background:var(--bg2);border:1px solid rgba(232,160,58,0.3);border-radius:20px;padding:40px 36px;width:340px;text-align:center;}
 .login-title{font-family:'Bebas Neue';font-size:28px;letter-spacing:4px;color:var(--gold);margin-bottom:4px;}
@@ -43,20 +32,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .login-err{font-size:11px;color:#FF6080;margin-top:12px;min-height:18px;}
 .login-footer{font-size:9px;color:var(--t3);margin-top:16px;letter-spacing:1px;}
 
-/* ── INIT OVERLAY ── */
-#initOverlay{position:fixed;inset:0;background:rgba(10,10,11,0.97);z-index:998;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
-#initOverlay p{font-size:12px;color:var(--t3);font-family:'DM Mono';letter-spacing:2px;}
-.spin2{width:32px;height:32px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ── MAIN ── */
 .main{max-width:780px;margin:0 auto;padding:40px 24px 80px;}
-.page-header{margin-bottom:40px;}
 .page-title{font-family:'Bebas Neue';font-size:42px;letter-spacing:6px;color:var(--gold);line-height:1;}
 .page-sub{font-size:11px;color:var(--t3);letter-spacing:3px;font-family:'DM Mono';margin-top:6px;}
-.page-desc{font-size:13px;color:var(--t2);line-height:1.9;margin-top:16px;max-width:560px;}
+.page-desc{font-size:13px;color:var(--t2);line-height:1.9;margin-top:16px;max-width:560px;margin-bottom:36px;}
 
-/* ── STEPS ── */
 .steps{display:flex;gap:0;margin-bottom:40px;}
 .step{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;}
 .step:not(:last-child)::after{content:'';position:absolute;top:14px;left:calc(50% + 14px);right:calc(-50% + 14px);height:1px;background:var(--line);}
@@ -67,48 +47,47 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .step-lbl{font-size:9px;color:var(--t3);letter-spacing:1px;white-space:nowrap;}
 .step.active .step-lbl{color:var(--gold);}
 
-/* ── SECTION ── */
 .section{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:20px;display:none;}
 .section.active{display:block;}
 .sec-title{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--orange);margin-bottom:18px;text-transform:uppercase;}
 
-/* ── FORM ── */
 .field{margin-bottom:16px;}
 .field label{display:block;font-size:10px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;}
 .field input,.field textarea,.field select{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'Noto Sans TC';font-size:13px;padding:10px 12px;outline:none;transition:border-color .2s;resize:vertical;}
 .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold);}
-.field select{appearance:none;cursor:pointer;}
 .field textarea{min-height:80px;line-height:1.7;}
 .field-hint{font-size:10px;color:var(--t3);margin-top:4px;line-height:1.6;}
-
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 @media(max-width:560px){.field-row{grid-template-columns:1fr;}}
 
-/* ── CHECKBOX GROUP ── */
 .check-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
 .check-item{display:flex;align-items:center;gap:6px;cursor:pointer;}
 .check-item input{width:14px;height:14px;accent-color:var(--gold);cursor:pointer;}
 .check-item span{font-size:12px;color:var(--t2);}
 
-/* ── RADIO GROUP ── */
 .radio-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
 .radio-btn{padding:7px 14px;border-radius:7px;border:1px solid var(--line);background:var(--bg3);color:var(--t2);font-size:11px;font-family:'Noto Sans TC';cursor:pointer;transition:all .15s;}
 .radio-btn.on{border-color:var(--gold);background:var(--gold2);color:var(--gold);font-weight:700;}
 
-/* ── COLOR PICKER ── */
 .color-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
-.color-btn{width:36px;height:36px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.color-btn{width:36px;height:36px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;}
 .color-btn.on{border-color:#fff;transform:scale(1.15);}
 
-/* ── NAV BUTTONS ── */
 .btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;}
-.btn-back{padding:10px 20px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--t3);font-family:'Noto Sans TC';font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-back{padding:10px 20px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--t3);font-family:'Noto Sans TC';font-size:12px;font-weight:700;cursor:pointer;}
 .btn-back:hover{border-color:var(--t2);color:var(--t2);}
-.btn-next{padding:10px 28px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--gold),#C47820);color:#1a0e00;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;transition:opacity .2s;}
+.btn-next{padding:10px 28px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--gold),#C47820);color:#1a0e00;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;}
 .btn-next:hover{opacity:.85}
 .btn-next:disabled{opacity:.4;cursor:not-allowed}
 
-/* ── GENERATING ── */
+/* 社群媒體 */
+.social-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+@media(max-width:560px){.social-grid{grid-template-columns:1fr;}}
+.social-item label{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--t3);display:block;margin-bottom:4px;}
+.social-item input{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:8px 10px;outline:none;transition:border-color .2s;}
+.social-item input:focus{border-color:var(--gold);}
+
+/* 生成覆蓋層 */
 #genOverlay{display:none;position:fixed;inset:0;background:rgba(10,10,11,0.97);z-index:500;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
 #genOverlay.show{display:flex;}
 .gen-title{font-family:'Bebas Neue';font-size:28px;letter-spacing:5px;color:var(--gold);}
@@ -116,28 +95,30 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .gen-bar-wrap{width:320px;height:3px;background:var(--line);border-radius:2px;overflow:hidden;}
 .gen-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--orange));border-radius:2px;width:0%;transition:width .5s ease;}
 
-/* ── RESULT ── */
 #resultSection{display:none;background:var(--bg2);border:1px solid rgba(232,160,58,0.4);border-radius:14px;padding:28px;margin-bottom:20px;}
 .result-title{font-family:'Bebas Neue';font-size:22px;letter-spacing:4px;color:var(--gold);margin-bottom:6px;}
 .result-sub{font-size:10px;color:var(--t3);font-family:'DM Mono';letter-spacing:2px;margin-bottom:20px;}
-.soul-block{background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;white-space:pre-wrap;font-size:12px;color:var(--t2);line-height:1.9;font-family:'Noto Sans TC';}
+.soul-block{background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;white-space:pre-wrap;font-size:12px;color:var(--t2);line-height:1.9;}
 .result-note{font-size:11px;color:var(--mint);padding:12px;background:rgba(58,232,192,0.08);border-radius:8px;border:1px solid rgba(58,232,192,0.2);line-height:1.8;}
-.btn-submit{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--orange),#C04020);color:#fff;font-family:'Noto Sans TC';font-size:14px;font-weight:900;cursor:pointer;letter-spacing:2px;margin-top:16px;transition:opacity .2s;}
-.btn-submit:hover{opacity:.85}
+.btn-submit{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--orange),#C04020);color:#fff;font-family:'Noto Sans TC';font-size:14px;font-weight:900;cursor:pointer;letter-spacing:2px;margin-top:16px;}
 .btn-submit:disabled{opacity:.4;cursor:not-allowed}
 
-/* ── SUCCESS ── */
 #successSection{display:none;text-align:center;padding:60px 20px;}
 .success-icon{font-size:56px;margin-bottom:20px;}
 .success-title{font-family:'Bebas Neue';font-size:32px;letter-spacing:5px;color:var(--mint);margin-bottom:8px;}
 .success-msg{font-size:13px;color:var(--t2);line-height:1.9;}
 
+.spin2{width:32px;height:32px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.info-box{background:rgba(232,160,58,0.08);border:1px solid rgba(232,160,58,0.2);border-radius:10px;padding:14px;margin-bottom:20px;}
+.info-box-title{font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px;}
+.info-box p{font-size:11px;color:var(--t2);line-height:2;}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="loginOverlay">
   <div class="login-card">
     <div class="login-title">品牌進駐</div>
@@ -152,13 +133,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   </div>
 </div>
 
-<!-- INIT -->
-<div id="initOverlay">
-  <div class="spin2"></div>
-  <p id="initMsg">載入中...</p>
-</div>
-
-<!-- NAV -->
 <nav class="nav">
   <div style="display:flex;flex-direction:column;line-height:1;">
     <span class="nav-logo">Brand OS</span>
@@ -170,15 +144,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   </div>
 </nav>
 
-<!-- MAIN -->
 <div class="main">
-  <div class="page-header">
-    <div class="page-title">品牌進駐申請</div>
-    <div class="page-sub">BRAND ONBOARDING · AI POWERED</div>
-    <div class="page-desc">填寫品牌基本資料，AI 將自動生成「品牌靈魂書」，審核通過後品牌頁籤即刻上線。</div>
-  </div>
+  <div class="page-title">品牌進駐申請</div>
+  <div class="page-sub">BRAND ONBOARDING · AI POWERED</div>
+  <div class="page-desc">填寫品牌基本資料，AI 將自動生成「品牌靈魂書」，審核通過後品牌頁籤即刻上線。</div>
 
-  <!-- STEPS -->
   <div class="steps" id="stepsBar">
     <div class="step active" id="step1"><div class="step-num">1</div><div class="step-lbl">品牌基本</div></div>
     <div class="step" id="step2"><div class="step-num">2</div><div class="step-lbl">品牌故事</div></div>
@@ -187,46 +157,35 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div class="step" id="step5"><div class="step-num">5</div><div class="step-lbl">確認送出</div></div>
   </div>
 
-  <!-- SECTION 1：品牌基本 -->
+  <!-- SECTION 1 -->
   <div class="section active" id="sec1">
     <div class="sec-title">01 · 品牌基本資訊</div>
     <div class="field-row">
-      <div class="field">
-        <label>品牌名稱 *</label>
-        <input type="text" id="f_name" placeholder="例：旺味米香腸">
+      <div class="field"><label>品牌名稱 *</label><input type="text" id="f_name" placeholder="例：旺味米香腸"></div>
+      <div class="field"><label>品牌英文名稱</label><input type="text" id="f_nameEn" placeholder="例：WangWei Rice Sausage"></div>
+    </div>
+    <div class="field"><label>官方網站</label><input type="url" id="f_website" placeholder="https://..."></div>
+
+    <div class="field">
+      <label>社群媒體帳號</label>
+      <div class="social-grid">
+        <div class="social-item"><label>Facebook 粉絲頁</label><input type="url" id="f_fb" placeholder="https://www.facebook.com/..."></div>
+        <div class="social-item"><label>Instagram</label><input type="url" id="f_ig" placeholder="https://www.instagram.com/..."></div>
+        <div class="social-item"><label>小紅書</label><input type="text" id="f_xiaohongshu" placeholder="小紅書主頁連結或帳號名稱"></div>
+        <div class="social-item"><label>抖音</label><input type="text" id="f_douyin" placeholder="抖音主頁連結或帳號名稱"></div>
+        <div class="social-item"><label>微信公眾號</label><input type="text" id="f_wechat" placeholder="微信公眾號名稱或連結"></div>
+        <div class="social-item"><label>其他社群</label><input type="text" id="f_social_other" placeholder="YouTube / LINE / TikTok..."></div>
       </div>
-      <div class="field">
-        <label>品牌英文名稱</label>
-        <input type="text" id="f_nameEn" placeholder="例：WangWei Rice Sausage">
-      </div>
     </div>
-    <div class="field">
-      <label>官方網站</label>
-      <input type="url" id="f_website" placeholder="https://...">
+
+    <div class="field-row">
+      <div class="field"><label>聯絡人姓名 *</label><input type="text" id="f_contact" placeholder="您的姓名"></div>
+      <div class="field"><label>聯絡電話</label><input type="tel" id="f_phone" placeholder="0912-345-678"></div>
     </div>
-    <div class="field">
-      <label>Facebook 粉絲頁</label>
-      <input type="url" id="f_fb" placeholder="https://www.facebook.com/...">
-    </div>
-    <div class="field">
-      <label>Instagram</label>
-      <input type="url" id="f_ig" placeholder="https://www.instagram.com/...">
-    </div>
-    <div class="field">
-      <label>聯絡人姓名 *</label>
-      <input type="text" id="f_contact" placeholder="您的姓名">
-    </div>
-    <div class="field">
-      <label>聯絡電話</label>
-      <input type="tel" id="f_phone" placeholder="0912-345-678">
-    </div>
-    <div class="btn-row">
-      <div></div>
-      <button class="btn-next" onclick="goStep(2)">下一步 →</button>
-    </div>
+    <div class="btn-row"><div></div><button class="btn-next" onclick="goStep(2)">下一步 →</button></div>
   </div>
 
-  <!-- SECTION 2：品牌故事 -->
+  <!-- SECTION 2 -->
   <div class="section" id="sec2">
     <div class="sec-title">02 · 品牌故事與定位</div>
     <div class="field">
@@ -239,8 +198,13 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       <div class="field-hint">用逗號分隔，這會成為品牌靈魂的核心</div>
     </div>
     <div class="field">
-      <label>主要競爭對手</label>
+      <label>主要競爭對手名稱</label>
       <input type="text" id="f_competitors" placeholder="例：xxx品牌、yyy品牌">
+    </div>
+    <div class="field">
+      <label>競爭對手網址（可多個，換行分隔）</label>
+      <textarea id="f_competitorUrls" rows="3" placeholder="例：&#10;https://www.competitor1.com&#10;https://www.competitor2.com"></textarea>
+      <div class="field-hint">AI 會分析競爭對手的定位，幫你找出差異化方向</div>
     </div>
     <div class="field">
       <label>相較競爭對手的優勢</label>
@@ -261,11 +225,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     </div>
   </div>
 
-  <!-- SECTION 3：商品資訊 -->
+  <!-- SECTION 3 -->
   <div class="section" id="sec3">
-    <div class="sec-title">03 · 商品與銷售資訊</div>
+    <div class="sec-title">03 · 商品／服務資訊</div>
     <div class="field">
-      <label>商品屬於哪個類別？*</label>
+      <label>品牌屬於哪個類別？*</label>
       <div class="radio-group" id="catGroup">
         <button class="radio-btn" onclick="selectRadio(this,'cat')">食品／飲料</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">健康保健</button>
@@ -277,16 +241,28 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <button class="radio-btn" onclick="selectRadio(this,'cat')">居家生活</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">運動休閒</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">母嬰兒童</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">線上課程／教育</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">身心靈／療癒</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">法律／顧問服務</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">醫療／診所</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">餐飲／食品代工</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">設計／創意服務</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">旅遊／住宿</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">房地產</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">金融／投資</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">其他</button>
       </div>
       <input type="hidden" id="f_category">
     </div>
+
     <div class="field">
-      <label>主力商品（簡短描述，一行一個）*</label>
-      <textarea id="f_products" rows="4" placeholder="例：&#10;米香腸原味 280g&#10;米香腸辣味 280g&#10;迷你米香腸禮盒"></textarea>
+      <label>主力商品／服務（簡短描述，一行一個）*</label>
+      <textarea id="f_products" rows="5" placeholder="例（實體商品）：&#10;米香腸原味 280g&#10;米香腸辣味 280g&#10;&#10;例（課程服務）：&#10;200小時瑜珈師資培訓班&#10;100小時頌缽師資培訓班&#10;&#10;例（專業服務）：&#10;企業法律顧問月費方案&#10;商標申請服務"></textarea>
+      <div class="field-hint">不限實體商品，課程、服務、顧問方案都可以填</div>
     </div>
+
     <div class="field">
-      <label>上架平台（可多選）</label>
+      <label>上架或銷售平台（可多選）</label>
       <div class="check-group">
         <label class="check-item"><input type="checkbox" value="官網" id="ch_web"><span>官網</span></label>
         <label class="check-item"><input type="checkbox" value="MOMO" id="ch_momo"><span>MOMO</span></label>
@@ -297,18 +273,17 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <label class="check-item"><input type="checkbox" value="樂天" id="ch_rakuten"><span>樂天</span></label>
         <label class="check-item"><input type="checkbox" value="Yahoo購物" id="ch_yahoo"><span>Yahoo購物</span></label>
         <label class="check-item"><input type="checkbox" value="LINE購物" id="ch_line"><span>LINE購物</span></label>
+        <label class="check-item"><input type="checkbox" value="小紅書電商" id="ch_xhs"><span>小紅書電商</span></label>
+        <label class="check-item"><input type="checkbox" value="抖音小店" id="ch_douyin_shop"><span>抖音小店</span></label>
         <label class="check-item"><input type="checkbox" value="實體門市" id="ch_offline"><span>實體門市</span></label>
+        <label class="check-item"><input type="checkbox" value="私訊/Line下單" id="ch_direct"><span>私訊/Line下單</span></label>
+        <label class="check-item"><input type="checkbox" value="線下活動/課程" id="ch_event"><span>線下活動/課程</span></label>
       </div>
     </div>
+
     <div class="field-row">
-      <div class="field">
-        <label>商品平均售價</label>
-        <input type="text" id="f_price" placeholder="例：NT$280 / NT$580">
-      </div>
-      <div class="field">
-        <label>目標客群</label>
-        <input type="text" id="f_audience" placeholder="例：30-45歲媽媽、愛健康的上班族">
-      </div>
+      <div class="field"><label>商品／服務平均售價</label><input type="text" id="f_price" placeholder="例：NT$280 / NT$15,000/堂"></div>
+      <div class="field"><label>目標客群</label><input type="text" id="f_audience" placeholder="例：30-45歲媽媽、愛健康的上班族"></div>
     </div>
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(2)">← 上一步</button>
@@ -316,7 +291,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     </div>
   </div>
 
-  <!-- SECTION 4：風格設定 -->
+  <!-- SECTION 4 -->
   <div class="section" id="sec4">
     <div class="sec-title">04 · 品牌風格設定</div>
     <div class="field">
@@ -331,24 +306,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
       </div>
       <input type="hidden" id="f_color" value="gold">
     </div>
-    <div class="field">
-      <label>品牌圖示 Emoji</label>
-      <div class="radio-group" id="iconGroup">
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">🏠</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">🌾</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">🫙</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">🦌</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">✈️</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">🎯</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">🌿</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">⭐</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">🔥</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">💎</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">🏷️</button>
-        <button class="radio-btn" onclick="selectRadio(this,'icon')">🐾</button>
-      </div>
-      <input type="hidden" id="f_icon" value="🏷️">
-    </div>
+
     <div class="field">
       <label>喜歡的品牌風格</label>
       <div class="radio-group" id="styleGroup">
@@ -360,20 +318,25 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <button class="radio-btn" onclick="selectRadio(this,'style')">自然健康</button>
         <button class="radio-btn" onclick="selectRadio(this,'style')">科技現代</button>
         <button class="radio-btn" onclick="selectRadio(this,'style')">文青小清新</button>
+        <button class="radio-btn" onclick="selectRadio(this,'style')">療癒禪意</button>
+        <button class="radio-btn" onclick="selectRadio(this,'style')">國際商務</button>
       </div>
       <input type="hidden" id="f_style">
     </div>
+
     <div class="field">
-      <label>參考品牌或網站（喜歡的視覺風格）</label>
-      <input type="text" id="f_ref" placeholder="例：痴漢油品、無印良品、統一企業...">
+      <label>喜歡的品牌或網站風格參考（可貼網址）</label>
+      <textarea id="f_ref" rows="3" placeholder="例：Apple 的簡潔感、無印良品的自然風、或直接貼你喜歡的網站網址..."></textarea>
+      <div class="field-hint">可以是任何你喜歡的品牌、廣告、網站，讓 AI 更了解你的審美</div>
     </div>
+
     <div class="field">
-      <label>Google Drive 照片資料夾 ID（可選）</label>
+      <label>Google Drive 照片素材資料夾連結（可選）</label>
       <input type="text" id="f_photoFolder" placeholder="https://drive.google.com/drive/folders/...">
-      <div class="field-hint">用來自動載入商品素材，之後也可以補填</div>
+      <div class="field-hint">我們會提供一個共用資料夾給你上傳商品照片，或填入你自己的</div>
     </div>
     <div class="field">
-      <label>Google Drive 影片資料夾 ID（可選）</label>
+      <label>Google Drive 影片素材資料夾連結（可選）</label>
       <input type="text" id="f_videoFolder" placeholder="https://drive.google.com/drive/folders/...">
     </div>
     <div class="btn-row">
@@ -382,18 +345,18 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     </div>
   </div>
 
-  <!-- SECTION 5：確認送出 -->
+  <!-- SECTION 5 -->
   <div class="section" id="sec5">
     <div class="sec-title">05 · 確認資料 · AI 生成靈魂書</div>
     <div id="summaryBox" style="background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px;font-size:12px;color:var(--t2);line-height:2;"></div>
-    <div style="padding:14px;background:rgba(232,160,58,0.08);border:1px solid rgba(232,160,58,0.2);border-radius:10px;margin-bottom:20px;">
-      <div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px;">⚡ 接下來會發生的事</div>
-      <div style="font-size:11px;color:var(--t2);line-height:2;">
-        1. Claude AI 分析您的品牌資料<br>
+    <div class="info-box">
+      <div class="info-box-title">⚡ 接下來會發生的事</div>
+      <p>
+        1. Claude AI 分析您的品牌資料（透過 Cloudflare 安全處理）<br>
         2. 自動生成「品牌靈魂書」（定位、文案風格、廣告策略）<br>
         3. 資料送交管理員審核<br>
         4. 審核通過後，品牌頁籤立即上線
-      </div>
+      </p>
     </div>
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(4)">← 上一步</button>
@@ -416,10 +379,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div class="success-title">申請已送出！</div>
     <div class="success-msg">品牌資料已送交管理員審核<br>審核通過後您的品牌頁籤將自動上線<br><br>有問題請聯繫：cyndi04592@gmail.com</div>
   </div>
+</div>
 
-</div><!-- end main -->
-
-<!-- GENERATING OVERLAY -->
 <div id="genOverlay">
   <div class="spin2"></div>
   <div class="gen-title">AI 正在生成品牌靈魂書</div>
@@ -432,32 +393,28 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2
 const GAS_PASSWORD = 'raby2026';
 const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
 const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
-const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 
 let tokenClient = null;
 let userEmail = '';
 let currentStep = 1;
 let generatedSoul = '';
 
-// ── RADIO / COLOR SELECT ──
 function selectRadio(btn, group) {
   const parent = btn.closest('.radio-group') || btn.closest('.section');
   parent.querySelectorAll('.radio-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  const hiddenId = {cat:'f_category', icon:'f_icon', style:'f_style'}[group];
+  const hiddenId = {cat:'f_category', style:'f_style'}[group];
   if (hiddenId) document.getElementById(hiddenId).value = btn.textContent.trim();
 }
+
 function selectColor(btn, color) {
   document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   document.getElementById('f_color').value = color;
 }
 
-// ── STEPS ──
 function goStep(n) {
-  if (n > currentStep) {
-    if (!validateStep(currentStep)) return;
-  }
+  if (n > currentStep && !validateStep(currentStep)) return;
   document.getElementById('sec' + currentStep).classList.remove('active');
   document.getElementById('sec' + n).classList.add('active');
   ['step1','step2','step3','step4','step5'].forEach((id, i) => {
@@ -471,73 +428,77 @@ function goStep(n) {
 
 function validateStep(n) {
   if (n === 1) {
-    if (!document.getElementById('f_name').value.trim()) { alert('請填寫品牌名稱'); return false; }
-    if (!document.getElementById('f_contact').value.trim()) { alert('請填寫聯絡人姓名'); return false; }
+    if (!v('f_name')) { alert('請填寫品牌名稱'); return false; }
+    if (!v('f_contact')) { alert('請填寫聯絡人姓名'); return false; }
   }
-  if (n === 2) {
-    if (!document.getElementById('f_story').value.trim()) { alert('請填寫品牌故事'); return false; }
-  }
+  if (n === 2 && !v('f_story')) { alert('請填寫品牌故事'); return false; }
   if (n === 3) {
-    if (!document.getElementById('f_products').value.trim()) { alert('請填寫主力商品'); return false; }
-    if (!document.getElementById('f_category').value) { alert('請選擇商品類別'); return false; }
+    if (!v('f_category')) { alert('請選擇商品類別'); return false; }
+    if (!v('f_products')) { alert('請填寫主力商品或服務'); return false; }
   }
   return true;
 }
 
 function buildSummary() {
-  const platforms = ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_offline']
+  const platforms = ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_xhs','ch_douyin_shop','ch_offline','ch_direct','ch_event']
     .filter(id => document.getElementById(id)?.checked)
     .map(id => document.getElementById(id).value).join('、') || '未填寫';
   document.getElementById('summaryBox').innerHTML = `
-    <b style="color:var(--gold)">品牌名稱：</b>${v('f_name')} ${v('f_nameEn') ? '(' + v('f_nameEn') + ')' : ''}<br>
+    <b style="color:var(--gold)">品牌名稱：</b>${v('f_name')} ${v('f_nameEn') ? '('+v('f_nameEn')+')' : ''}<br>
     <b style="color:var(--gold)">聯絡人：</b>${v('f_contact')} ${v('f_phone')}<br>
-    <b style="color:var(--gold)">官網：</b>${v('f_website') || '未填'}<br>
+    <b style="color:var(--gold)">官網：</b>${v('f_website')||'未填'}<br>
     <b style="color:var(--gold)">商品類別：</b>${v('f_category')}<br>
-    <b style="color:var(--gold)">上架平台：</b>${platforms}<br>
-    <b style="color:var(--gold)">目標客群：</b>${v('f_audience') || '未填'}<br>
-    <b style="color:var(--gold)">品牌風格：</b>${v('f_style') || '未選'}<br>
+    <b style="color:var(--gold)">銷售平台：</b>${platforms}<br>
+    <b style="color:var(--gold)">目標客群：</b>${v('f_audience')||'未填'}<br>
+    <b style="color:var(--gold)">品牌風格：</b>${v('f_style')||'未選'}<br>
     <b style="color:var(--gold)">品牌主色：</b>${v('f_color')}
   `;
 }
+
 function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
 
-// ── GENERATE SOUL ──
+function getPlatforms() {
+  return ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_xhs','ch_douyin_shop','ch_offline','ch_direct','ch_event']
+    .filter(id => document.getElementById(id)?.checked)
+    .map(id => document.getElementById(id).value).join('、');
+}
+
 async function doGenerate() {
   document.getElementById('btnGenerate').disabled = true;
   document.getElementById('genOverlay').classList.add('show');
-
-  const msgs = ['分析品牌資料中...','建立品牌定位...','生成廣告策略...','撰寫品牌靈魂書...'];
+  const msgs = ['分析品牌資料中...','研究競爭對手...','建立品牌定位...','生成廣告策略...','撰寫品牌靈魂書...'];
   let pct = 0;
   const interval = setInterval(() => {
-    pct = Math.min(pct + 8, 85);
+    pct = Math.min(pct + 6, 85);
     document.getElementById('genBarFill').style.width = pct + '%';
-    document.getElementById('genMsg').textContent = msgs[Math.floor(pct/25)] || msgs[3];
+    document.getElementById('genMsg').textContent = msgs[Math.floor(pct/18)] || msgs[4];
   }, 400);
-
-  const platforms = ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_offline']
-    .filter(id => document.getElementById(id)?.checked)
-    .map(id => document.getElementById(id).value).join('、');
 
   const prompt = `你是一位頂尖的品牌策略師，請根據以下資料生成一份完整的「品牌靈魂書」。
 
 【品牌基本資訊】
-品牌名稱：${v('f_name')} ${v('f_nameEn') ? '(' + v('f_nameEn') + ')' : ''}
+品牌名稱：${v('f_name')} ${v('f_nameEn') ? '('+v('f_nameEn')+')' : ''}
 官網：${v('f_website')}
-FB：${v('f_fb')}
-IG：${v('f_ig')}
+Facebook：${v('f_fb')}
+Instagram：${v('f_ig')}
+小紅書：${v('f_xiaohongshu')}
+抖音：${v('f_douyin')}
+微信公眾號：${v('f_wechat')}
+其他社群：${v('f_social_other')}
 
 【品牌故事與定位】
 創立原因：${v('f_story')}
 核心價值：${v('f_values')}
 競爭對手：${v('f_competitors')}
+競爭對手網址：${v('f_competitorUrls')}
 競爭優勢：${v('f_pros')}
 目前挑戰：${v('f_cons')}
 補充想法：${v('f_misc')}
 
-【商品資訊】
-商品類別：${v('f_category')}
-主力商品：${v('f_products')}
-上架平台：${platforms}
+【商品／服務資訊】
+類別：${v('f_category')}
+主力商品／服務：${v('f_products')}
+銷售平台：${getPlatforms()}
 售價區間：${v('f_price')}
 目標客群：${v('f_audience')}
 
@@ -545,16 +506,16 @@ IG：${v('f_ig')}
 視覺風格：${v('f_style')}
 參考品牌：${v('f_ref')}
 
-請生成品牌靈魂書，包含以下區塊：
-1. 品牌定位宣言（一句話）
-2. 品牌靈魂（3-5句，描述品牌的核心精神）
-3. 目標受眾畫像（詳細描述）
-4. 廣告文案風格指南（如何說話、用什麼語氣）
-5. 核心廣告主張（3個訴求方向）
-6. 建議Hashtag組合（10個）
-7. 競爭差異化重點
+注意：這個品牌可能是賣實體商品、線上課程、或專業服務，請根據類別調整廣告策略。
 
-請用繁體中文，風格要有力量、有溫度、有記憶點。`;
+請用繁體中文生成品牌靈魂書，包含：
+1. 品牌定位宣言（一句話，有力量有記憶點）
+2. 品牌靈魂（3-5句，描述核心精神）
+3. 目標受眾畫像（詳細描述，包含痛點）
+4. 廣告文案風格指南（語氣、措辭、禁忌）
+5. 核心廣告主張（3個不同訴求方向）
+6. 建議Hashtag組合（10個，含中英文）
+7. 競爭差異化重點（針對競爭對手的弱點）`;
 
   try {
     const res = await fetch(CF_WORKER_URL + '/claude', {
@@ -576,8 +537,6 @@ IG：${v('f_ig')}
   document.getElementById('genBarFill').style.width = '100%';
   await new Promise(r => setTimeout(r, 500));
   document.getElementById('genOverlay').classList.remove('show');
-
-  // 顯示結果
   document.getElementById('sec5').style.display = 'none';
   document.getElementById('stepsBar').style.display = 'none';
   document.getElementById('soulOutput').textContent = generatedSoul;
@@ -585,15 +544,10 @@ IG：${v('f_ig')}
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-// ── SUBMIT ──
 async function doSubmit() {
   const btn = document.getElementById('btnSubmit');
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span> 送出中...';
-
-  const platforms = ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_offline']
-    .filter(id => document.getElementById(id)?.checked)
-    .map(id => document.getElementById(id).value).join('、');
 
   function parseDriveId(raw) {
     if (!raw) return '';
@@ -604,35 +558,23 @@ async function doSubmit() {
   }
 
   const payload = {
-    action: 'submitBrand',
-    password: GAS_PASSWORD,
+    action: 'submitBrand', password: GAS_PASSWORD,
     email: userEmail,
-    name: v('f_name'),
-    nameEn: v('f_nameEn'),
-    website: v('f_website'),
-    fb: v('f_fb'),
-    ig: v('f_ig'),
-    contact: v('f_contact'),
-    phone: v('f_phone'),
-    story: v('f_story'),
-    values: v('f_values'),
-    competitors: v('f_competitors'),
-    pros: v('f_pros'),
-    cons: v('f_cons'),
-    misc: v('f_misc'),
-    category: v('f_category'),
-    products: v('f_products'),
-    platforms,
-    price: v('f_price'),
-    audience: v('f_audience'),
-    style: v('f_style'),
-    ref: v('f_ref'),
+    name: v('f_name'), nameEn: v('f_nameEn'),
+    website: v('f_website'), fb: v('f_fb'), ig: v('f_ig'),
+    xiaohongshu: v('f_xiaohongshu'), douyin: v('f_douyin'),
+    wechat: v('f_wechat'), socialOther: v('f_social_other'),
+    contact: v('f_contact'), phone: v('f_phone'),
+    story: v('f_story'), values: v('f_values'),
+    competitors: v('f_competitors'), competitorUrls: v('f_competitorUrls'),
+    pros: v('f_pros'), cons: v('f_cons'), misc: v('f_misc'),
+    category: v('f_category'), products: v('f_products'),
+    platforms: getPlatforms(), price: v('f_price'), audience: v('f_audience'),
+    style: v('f_style'), ref: v('f_ref'),
     color: v('f_color'),
-    icon: v('f_icon'),
     photoFolder: parseDriveId(v('f_photoFolder')),
     videoFolder: parseDriveId(v('f_videoFolder')),
-    soulBook: generatedSoul,
-    status: 'pending'
+    soulBook: generatedSoul, status: 'pending'
   };
 
   try {
@@ -648,7 +590,6 @@ async function doSubmit() {
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-// ── GOOGLE AUTH ──
 function initGoogleAuth() {
   if (!window.google) return;
   tokenClient = google.accounts.oauth2.initTokenClient({
