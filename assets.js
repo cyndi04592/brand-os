@@ -3,12 +3,11 @@
 // ══════════════════════════════════════════
 
 // ══ 智慧快取：每個品牌只抓一次 ══
-const _assetCache = {}; // { brandId: { photos:[], videos:[], loaded:true } }
+const _assetCache = {};
 
 async function autoFetchAssets(brandId) {
   if (!window._driveToken) return;
   if (_assetCache[brandId]?.loaded) {
-    // 已載入過 → 直接從快取還原
     window.S.photos   = _assetCache[brandId].photos;
     window.S.videos   = _assetCache[brandId].videos;
     window.S.selPhoto = null;
@@ -16,7 +15,6 @@ async function autoFetchAssets(brandId) {
     renderAssets();
     return;
   }
-  // 還沒載入過 → 去 Drive 抓
   const f = window.BRAND_FOLDERS[brandId];
   if (!f) return;
 
@@ -40,7 +38,6 @@ async function autoFetchAssets(brandId) {
   }
   await Promise.all(promises);
 
-  // 存入快取
   _assetCache[brandId] = {
     loaded: true,
     photos: [...window.S.photos],
@@ -61,35 +58,51 @@ async function fetchDriveAssets(type) {
       </div>`;
     return;
   }
-  const inputId = type === 'photo' ? 'inPhotoFolder' : 'inVideoFolder';
-  const btnId   = type === 'photo' ? 'fetchPhotoBtn' : 'fetchVideoBtn';
-  const raw     = document.getElementById(inputId)?.value?.trim();
+  const inputId  = type === 'photo' ? 'inPhotoFolder' : 'inVideoFolder';
+  const raw      = document.getElementById(inputId)?.value?.trim();
   const folderId = parseDriveId(raw);
-  const btn     = document.getElementById(btnId);
   if (!raw) { alert('請先貼上 Drive 資料夾連結'); return; }
-  if (btn) { btn.disabled = true; btn.textContent = '載入中…'; }
   setDriveStatus('busy');
   if (window._driveToken && folderId) await fetchFromDriveAPI(folderId, type, window._driveToken);
-  if (btn) { btn.disabled = false; btn.textContent = type === 'photo' ? '抓照片' : '抓影片'; }
   renderAssets();
   setDriveStatus('ok');
 }
 
 async function fetchBoth() {
   if (!window._driveToken) { alert('請先連結 Google Drive'); return; }
+  const bid = window.S.brandId;
+  // 清掉快取，強制重抓
+  if (bid) delete _assetCache[bid];
+  window.S.photos = [];
+  window.S.videos = [];
+
   const photoRaw = document.getElementById('inPhotoFolder')?.value?.trim();
   const videoRaw = document.getElementById('inVideoFolder')?.value?.trim();
-  if (!photoRaw && !videoRaw) { alert('請先填入照片或影片資料夾連結'); return; }
-  if (photoRaw) await fetchDriveAssets('photo');
-  if (videoRaw) await fetchDriveAssets('video');
-  // 更新快取
-  const bid = window.S.brandId;
-  if (bid) {
-    _assetCache[bid] = { loaded:true, photos:[...window.S.photos], videos:[...window.S.videos] };
+
+  if (!photoRaw && !videoRaw) {
+    // 如果隱藏欄位是空的，從 BRAND_FOLDERS 補上
+    const f = window.BRAND_FOLDERS[bid];
+    if (f?.photo) document.getElementById('inPhotoFolder').value = f.photo;
+    if (f?.video) document.getElementById('inVideoFolder').value = f.video;
   }
+
+  setDriveStatus('busy');
+  const pRaw = document.getElementById('inPhotoFolder')?.value?.trim();
+  const vRaw = document.getElementById('inVideoFolder')?.value?.trim();
+
+  const promises = [];
+  if (pRaw) promises.push(fetchFromDriveAPI(parseDriveId(pRaw) || pRaw, 'photo', window._driveToken));
+  if (vRaw) promises.push(fetchFromDriveAPI(parseDriveId(vRaw) || vRaw, 'video', window._driveToken));
+  await Promise.all(promises);
+
+  if (bid) {
+    _assetCache[bid] = { loaded: true, photos: [...window.S.photos], videos: [...window.S.videos] };
+  }
+  renderAssets();
+  setDriveStatus('ok');
 }
 
-// ══ Drive API 實際抓取 ══
+// ══ Drive API 實際抓取（★ 加入 401 自動重授權）══
 async function fetchFromDriveAPI(folderId, type, token) {
   const mimeFilter = type === 'photo' ? "mimeType contains 'image/'" : "mimeType contains 'video/'";
   const q = encodeURIComponent(`'${folderId}' in parents and (${mimeFilter}) and trashed=false`);
@@ -98,6 +111,23 @@ async function fetchFromDriveAPI(folderId, type, token) {
       `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,thumbnailLink,webViewLink)&pageSize=100`,
       { headers: { Authorization: 'Bearer ' + token } }
     );
+
+    // ★ 401 → token 過期，清掉 session 強制重新登入
+    if (r.status === 401) {
+      console.warn('Drive token 過期，清除快取重新授權');
+      sessionStorage.removeItem('bs_token');
+      window._driveToken = null;
+      setDriveStatus('err');
+      // 顯示重新連結提示
+      document.getElementById('assetGrid').innerHTML = `
+        <div style="margin:12px;padding:14px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;">
+          <div style="font-size:13px;font-weight:900;color:#FF4D6A;margin-bottom:6px;">· Drive 授權已過期</div>
+          <div style="font-size:11px;color:#FF8099;margin-bottom:10px;">請重新連結 Google Drive</div>
+          <button onclick="driveLogin()" style="padding:8px 20px;background:#D4182E;border:none;border-radius:8px;color:#fff;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:900;cursor:pointer;">· 重新連結 Drive</button>
+        </div>`;
+      return;
+    }
+
     const d = await r.json();
     if (d.files) {
       d.files.forEach(f => {
@@ -139,7 +169,7 @@ function renderAssets() {
       ${window.S.videos.map((f, i) => assetItemHtml(f, i, 'video', window.S.selVideo === i)).join('')}
     </div>`;
   }
-  if (!html) html = '<div class="empty"><div class="empty-ico">·</div><div class="empty-p">切換品牌自動載入素材<br>或點「一鍵抓全部素材」</div></div>';
+  if (!html) html = '<div class="empty"><div class="empty-ico">·</div><div class="empty-p">切換品牌自動載入素材<br>或點「重新抓取素材」</div></div>';
   grid.innerHTML = html;
 }
 
@@ -166,7 +196,6 @@ function selectAsset(type, i) {
   if (type === 'photo') window.S.selPhoto = window.S.selPhoto === i ? null : i;
   else                  window.S.selVideo = window.S.selVideo === i ? null : i;
   renderAssets();
-  // 如果已有腳本，同步更新腳本區提示
   if (window.S.scripts.length > 0) {
     const brand = window.BRANDS.find(b => b.id === window.S.brandId);
     const sub   = brand?.subs.find(s => s.id === window.S.subId);
@@ -213,4 +242,13 @@ async function getOrCreateAdFolder() {
     body: JSON.stringify({ name: 'Brand OS 廣告圖', mimeType: 'application/vnd.google-apps.folder' })
   });
   return (await create.json()).id;
+}
+
+// ══ Drive ID 解析 ══
+function parseDriveId(raw) {
+  if (!raw) return '';
+  const m = raw.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (m) return m[1];
+  if (/^[a-zA-Z0-9_-]{25,}$/.test(raw)) return raw;
+  return raw;
 }
