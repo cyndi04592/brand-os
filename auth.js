@@ -5,6 +5,7 @@
 let tokenClient = null;
 let _userEmail = null;
 let _isInitializing = false;
+let _systemStarted = false;
 
 // ══ Drive 狀態顯示 ══
 function setDriveStatus(state) {
@@ -141,6 +142,7 @@ function doLogout() {
   if (!confirm('確定要登出嗎？')) return;
   window._driveToken = null;
   _userEmail = null;
+  _systemStarted = false;
   sessionStorage.removeItem('bs_token');
   sessionStorage.removeItem('bs_email');
   window.S = { brandId:null, subId:null, prod:null, photos:[], videos:[], selPhoto:null, selVideo:null, scripts:[], delivers:[], openBrand:null };
@@ -172,8 +174,11 @@ async function startSystem() {
     }
   }
 
+  // 防止重複執行
+  if (_systemStarted) return;
+  _systemStarted = true;
+
   const overlay = document.getElementById('initOverlay');
-  if (overlay && overlay.style.display === 'flex') return;
   overlay.style.display = 'flex';
   document.getElementById('initMsg').textContent = '初始化 Brand OS 系統...';
 
@@ -189,7 +194,7 @@ async function startSystem() {
   } catch (e) {
     console.warn('fallback:', e.message);
     buildDataFromSheets(LOCAL_FALLBACK_DATA);
-    document.getElementById('initMsg').textContent = '✅ 系統就緒！';
+    document.getElementById('initMsg').textContent = '✅ 系統就緒！（本地資料）';
   }
 
   await new Promise(r => setTimeout(r, 600));
