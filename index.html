@@ -58,18 +58,18 @@
 <!-- ══ 主工作區 ══ -->
 <div class="workspace">
 
-  <!-- 左側：品牌 + 商品 -->
-  <div class="left">
+  <!-- 左側：品牌 + 商品 ── 修正捲動問題 -->
+  <div class="left" style="display:flex;flex-direction:column;overflow:hidden;">
     <div style="padding:12px 14px 6px;flex-shrink:0;">
       <div class="l-sec">品牌 · 商品</div>
     </div>
-    <div style="overflow-y:auto;padding:0 14px 10px;flex-shrink:0;max-height:100%;">
+    <div style="overflow-y:auto;flex:1;padding:0 14px 10px;">
       <div id="brandTree"></div>
-    </div>
-    <div class="prod-scroll" id="prodList">
-      <div class="empty" style="padding:24px 10px;">
-        <div class="empty-ico">·</div>
-        <div class="empty-p">← 選品牌 再選商品</div>
+      <div class="prod-scroll" id="prodList">
+        <div class="empty" style="padding:24px 10px;">
+          <div class="empty-ico">·</div>
+          <div class="empty-p">← 選品牌 再選商品</div>
+        </div>
       </div>
     </div>
   </div>
