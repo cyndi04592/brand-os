@@ -469,6 +469,7 @@ function renderApply() {
           <button class="btn-reject-brand" onclick="doReject('${esc(b.id)}')">❌ 拒絕</button>
         ` : ''}
         <button class="btn-toggle-soul" onclick="toggleSoul('${esc(b.id)}')">📄 靈魂書</button>
+        <button class="btn-reject-brand" style="margin-left:auto;border-color:rgba(100,100,100,0.4);color:#666;" onclick="doDeleteBrand('${esc(b.id)}','${esc(b.name||'此品牌')}')">🗑 刪除</button>
       </div>
     </div>`;
   }).join('');
@@ -493,6 +494,24 @@ async function doApprove(brandId) {
       await loadApply();
     } else { setStatus('❌ ' + j.error, 'err'); }
   } catch(e) { setStatus('❌ 操作失敗', 'err'); }
+  hideLoading();
+}
+
+async function doDeleteBrand(brandId, name) {
+  if (!confirm('確定刪除「' + name + '」？此操作無法復原！')) return;
+  showLoading('刪除中...');
+  try {
+    const r = await fetch(GAS_NEW_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action:'deleteBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId }),
+      headers: { 'Content-Type':'text/plain' }
+    });
+    const j = await r.json();
+    if (j.ok) {
+      setStatus('✅ 已刪除', 'ok');
+      await loadApply();
+    } else { setStatus('❌ ' + j.error, 'err'); }
+  } catch(e) { setStatus('❌ 刪除失敗', 'err'); }
   hideLoading();
 }
 
