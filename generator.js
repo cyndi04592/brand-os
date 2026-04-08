@@ -27,13 +27,14 @@ function charBadge(len, limit) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// ★ 記憶模組（新增，不影響原有功能）
+// ★ 記憶模組
 // ════════════════════════════════════════════════════════════════
 
 let currentMemories = [];
 
 async function loadMemories(brandId, productId) {
   try {
+    // GET 讀取記憶
     const url  = `${GAS_URL}?action=getMemory&password=${GAS_PASSWORD}&brandId=${encodeURIComponent(brandId)}&productId=${encodeURIComponent(productId)}`;
     const res  = await fetch(url);
     const data = await res.json();
@@ -48,8 +49,10 @@ async function loadMemories(brandId, productId) {
 async function saveMemory(combo, brandId, subId, brandName, productName) {
   try {
     const payload = {
+      action:      'addMemory',
+      password:    GAS_PASSWORD,
       brandId,
-      productId:   window.S.prod?.id || '',
+      productId:   window.S.prod?.id || subId || '',
       brandName,
       productName,
       hookMethod:  combo.hook?.method || '',
@@ -58,9 +61,12 @@ async function saveMemory(combo, brandId, subId, brandName, productName) {
       ctaScript:   combo.cta?.script  || '',
       adId:        combo.id           || ''
     };
-    const encoded = encodeURIComponent(JSON.stringify(payload));
-    const url  = `${GAS_URL}?action=addMemory&password=${GAS_PASSWORD}&data=${encoded}`;
-    const res  = await fetch(url);
+    // ★ 改成 POST（原本用 GET 存不進去）
+    const res  = await fetch(GAS_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify(payload)
+    });
     const data = await res.json();
     if (data.ok) {
       currentMemories.unshift({ ...payload, id: data.id, timestamp: data.timestamp, score: 1 });
@@ -135,7 +141,7 @@ function injectMemoryCSS() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// 主生成函式（★ 加入記憶讀取，其餘原版不動）
+// 主生成函式（加入記憶讀取）
 // ════════════════════════════════════════════════════════════════
 async function doGenerate() {
   if (!window.S.brandId) { alert('請先選擇品牌！'); return; }
@@ -208,7 +214,7 @@ ${memoryContext}
     const res = await fetch(CF_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'claude_generate', password: GAS_PASSWORD, prompt })
+      body: JSON.stringify({ action: 'claude_generate', password: GAS_PASSWORD, prompt, max_tokens: 4000 })
     });
     fill.style.width = '80%';
     btn.innerHTML = '<span class="spin"></span>整理中...';
@@ -242,7 +248,7 @@ ${memoryContext}
   }
 }
 
-// ══ 渲染腳本卡片（★ 加入 memoryPanel，其餘原版不動）══
+// ══ 渲染腳本卡片（加入 memoryPanel）══
 function renderScripts(brandDisplay, colorKey) {
   const sc = getColor(colorKey);
   const selPhotoName = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto]?.name : null;
@@ -303,14 +309,14 @@ function renderScripts(brandDisplay, colorKey) {
   renderMemoryPanel();
 }
 
-// ══ 複製單組腳本（原版不動）══
+// ══ 複製單組腳本 ══
 function copyOne(i, btn) {
   const s = window.S.scripts[i];
   const t = `【${s.id}】${window.S.prod?.name}\n鉤子 ${s.hook?.method}：${s.hook?.script}\n畫面：${s.hook?.visual}\n\n核心 ${s.core?.type}：\n${s.core?.script}\n解決：${s.core?.solve}\n\nCTA ${s.cta?.style}：${s.cta?.script}`;
   navigator.clipboard.writeText(t).then(() => { btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '複製腳本', 2000); });
 }
 
-// ══ 加入交付（★ 加入記憶儲存，其餘原版不動）══
+// ══ 加入交付（★ 加入記憶儲存，用 POST 正確存入）══
 async function addDeliver(scriptIdx) {
   const s     = window.S.scripts[scriptIdx];
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
@@ -323,22 +329,29 @@ async function addDeliver(scriptIdx) {
     status: !!(photo || video) ? '素材已備妥' : '缺素材',
     createdAt: new Date().toISOString()
   };
+
+  // 寫入 Sheets 交付表
   try {
-    await fetch(`${GAS_URL}?action=addDeliver&password=${GAS_PASSWORD}&row=${encodeURIComponent(JSON.stringify(row))}`);
-  } catch (e) {}
+    await fetch(GAS_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify({ action: 'addDeliver', password: GAS_PASSWORD, row })
+    });
+  } catch (e) { console.warn('交付記錄儲存失敗:', e); }
+
   window.S.delivers.push({ ...row, ready: !!(photo || video) });
   renderDeliverRows();
   renderDeliverOut();
   switchTab(document.querySelector('[data-tab="deliver"]'));
 
-  // ★ 存入記憶庫（背景執行，不阻塞）
+  // ★ 存入記憶庫（背景執行，POST）
   const brand     = window.BRANDS.find(b => b.id === window.S.brandId);
   const sub       = brand?.subs.find(sb => sb.id === window.S.subId);
   const brandName = brand ? `${brand.name}${sub ? ' › ' + sub.name : ''}` : '';
   saveMemory(s, window.S.brandId, window.S.subId, brandName, window.S.prod?.name || '');
 }
 
-// ══ 渲染交付列（原版不動）══
+// ══ 渲染交付列 ══
 function renderDeliverRows() {
   const dzSub = document.getElementById('dzSub');
   if (dzSub) dzSub.textContent = window.S.delivers.length + ' 組素材';
@@ -361,7 +374,7 @@ function renderDeliverRows() {
   }).join('');
 }
 
-// ══ 渲染交付詳細（原版不動）══
+// ══ 渲染交付詳細 ══
 function renderDeliverOut() {
   const el = document.getElementById('deliverOut');
   if (!window.S.delivers.length) {
