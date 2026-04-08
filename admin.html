@@ -485,7 +485,7 @@ async function doApprove(brandId) {
     const r = await fetch(GAS_NEW_URL, {
       method: 'POST',
       body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId }),
-      headers: { 'Content-Type':'application/json' }
+      headers: { 'Content-Type':'text/plain' }
     });
     const j = await r.json();
     if (j.ok) {
@@ -504,7 +504,7 @@ async function doReject(brandId) {
     const r = await fetch(GAS_NEW_URL, {
       method: 'POST',
       body: JSON.stringify({ action:'rejectBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId, reason }),
-      headers: { 'Content-Type':'application/json' }
+      headers: { 'Content-Type':'text/plain' }
     });
     const j = await r.json();
     if (j.ok) {
