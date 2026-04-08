@@ -2,7 +2,8 @@
 //  config.js — 常數、URLs、品牌資料、顏色對照
 // ══════════════════════════════════════════
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2_fRfbYY6m42yzzWQHqKeLnSlZ9hMGBBeMoTOI7yFG4kcZg/exec';
+// ★ 修正 GAS_URL
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const GAS_PASSWORD = 'raby2026';
 const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
@@ -32,18 +33,26 @@ const CMAP = {
 };
 function getColor(key) { return CMAP[key] || CMAP.gold; }
 
-// ══ 本地備援資料（GAS 掛掉時使用）══
+// ★ 修正：補齊 7 個品牌
 const LOCAL_FALLBACK_DATA = {
   brands: [
     { id:'cf',  name:'巧福健康家電', icon:'🏠', navColor:'gold',   soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。', adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊', hashtags:'#居家健康 #巧福 #台灣品牌' },
     { id:'ww',  name:'旺味米香腸',   icon:'🌾', navColor:'red',    soul:'全台首創米香腸，傳承阿公家訓。', adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景', hashtags:'#旺味米香腸 #米香腸 #台灣豬' },
-    { id:'ly',  name:'琉宇醬選',     icon:'🫙', navColor:'mint',   soul:'琉宇醬選主理頂級進口醬料。', adStyle:'精緻質感、食材溯源、料理升級', hashtags:'#琉宇醬選 #好滋好滋 #PASSERI' }
+    { id:'ly',  name:'琉宇醬選',     icon:'🫙', navColor:'mint',   soul:'琉宇醬選主理頂級進口醬料。', adStyle:'精緻質感、食材溯源、料理升級', hashtags:'#琉宇醬選 #好滋好滋 #PASSERI' },
+    { id:'moz', name:'MOZ瑞典駝鹿',  icon:'🦌', navColor:'sky',    soul:'瑞典駝鹿DNA，用北歐色彩與趣味設計讓日常更輕鬆愉快。', adStyle:'北歐輕鬆感、顏值日常、戶外露營風、多色搭配', hashtags:'#MOZ瑞典駝鹿 #北歐設計 #洞洞鞋 #雲朵包' },
+    { id:'ka',  name:'空瑪那',        icon:'🎯', navColor:'purple', soul:'空瑪那是台灣頂尖身心靈國際學院，由宸甄老師創立。', adStyle:'療癒禪意、國際專業、身心靈覺醒、名人背書', hashtags:'#空瑪那 #頌缽療癒 #瑜珈師資 #冥想' },
+    { id:'la',  name:'LACEZ',         icon:'💎', navColor:'mint',   soul:'LACEZ是台灣MIT內衣品牌，工廠直接賣給消費者。', adStyle:'閨蜜親切、精品感平價、MIT驕傲、穿出自信', hashtags:'#LACEZ #台灣MIT #好內衣不貴 #無鋼圈' },
+    { id:'ra',  name:'RADESIGN',      icon:'🏷️', navColor:'gold',   soul:'RADESIGN專營正版品牌鞋Outlet，百分百原廠授權。', adStyle:'直白促銷、正版保證、超值撿漏、蝦皮熱銷', hashtags:'#RADESIGN #正版outlet #品牌鞋特賣 #蝦皮' }
   ],
   products: [],
   folders: [
-    { brandId:'cf', photoFolderId:'1tHV_loHiUcZx8MVrpnUwTWUge74GIwE7', videoFolderId:'132xtz0XebJV-gGXObV4UtanmwyZd9Awc' },
-    { brandId:'ww', photoFolderId:'1dhCLr4tKrfV0RLHp454pzyJjytZFb92m', videoFolderId:'12LsKHCZQkDhT_FhzYWFw7rN4KJyvAD46' },
-    { brandId:'ly', photoFolderId:'1u9n-NpnQjjzU3GnpT15ERanCEky_m6bP', videoFolderId:'1lSvqYV28lgqN2xZ6640glMTssYhUKMoD' }
+    { brandId:'cf',  photoFolderId:'1tHV_loHiUcZx8MVrpnUwTWUge74GIwE7', videoFolderId:'132xtz0XebJV-gGXObV4UtanmwyZd9Awc' },
+    { brandId:'ww',  photoFolderId:'1dhCLr4tKrfV0RLHp454pzyJjytZFb92m', videoFolderId:'12LsKHCZQkDhT_FhzYWFw7rN4KJyvAD46' },
+    { brandId:'ly',  photoFolderId:'1u9n-NpnQjjzU3GnpT15ERanCEky_m6bP', videoFolderId:'1lSvqYV28lgqN2xZ6640glMTssYhUKMoD' },
+    { brandId:'moz', photoFolderId:'1qEsp9ifgBlYhAViOYBiou0u0mbABs1CE', videoFolderId:'1FYErl24zN_Cp2I7T3hSiv0pxqxU6QbYa' },
+    { brandId:'ka',  photoFolderId:'1FX3-68mUz84tmWXI0BGnoQhKKv8JkpPW', videoFolderId:'13xC4onSRLQTB9J9wTot24bdPI9Yc2kj4' },
+    { brandId:'la',  photoFolderId:'1Yt3NoT_ryBlj-jVvG7-sWm-UCGYQchxy', videoFolderId:'18LPs4wV2kcnT8pcJRUtm7hDax7nId5pD' },
+    { brandId:'ra',  photoFolderId:'1ZJ1KVG6ae0WNG55eF4kwVsycozT6NmJM', videoFolderId:'1kUT_a5AKn71UgU1bD0-t_HR3W9OhqMY6' }
   ]
 };
 
@@ -175,20 +184,22 @@ function parseDriveId(raw) {
 function buildDataFromSheets(data) {
   const { brands, products, folders } = data;
   window.BRAND_FOLDERS = {};
-  folders.forEach(f => {
+  (folders || []).forEach(f => {
     window.BRAND_FOLDERS[f.brandId] = { photo: f.photoFolderId, video: f.videoFolderId };
   });
   const prodByBrand = {};
-  products.forEach(p => {
+  (products || []).forEach(p => {
     if (!prodByBrand[p.brandId]) prodByBrand[p.brandId] = {};
     const key = p.subId;
     if (!prodByBrand[p.brandId][key]) prodByBrand[p.brandId][key] = {
       id: p.subId, name: p.subName, color: p.subColor || 'gold',
       soul: p.subSoul, adStyle: p.subAdStyle, hashtags: p.subHashtags, prods: []
     };
-    prodByBrand[p.brandId][key].prods.push({ id: p.prodId, name: p.prodName, tag: p.prodTag });
+    if (p.prodId) {
+      prodByBrand[p.brandId][key].prods.push({ id: p.prodId, name: p.prodName, tag: p.prodTag });
+    }
   });
-  window.BRANDS = brands.map(b => ({
+  window.BRANDS = (brands || []).map(b => ({
     id: b.id, name: b.name, icon: b.icon || '🏷️', navColor: b.navColor || 'gold',
     soul: b.soul || '', adStyle: b.adStyle || '', hashtags: b.hashtags || '',
     subs: Object.values(prodByBrand[b.id] || {})
