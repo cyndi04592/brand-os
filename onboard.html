@@ -203,8 +203,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div class="sec-title">01 · 品牌基本資訊</div>
 
     <div class="field">
-      <label>品牌名稱 *</label>
-      <input type="text" id="f_name" placeholder="例：旺味米香腸">
+      <label>品牌名稱 * <span style="color:var(--sky);font-weight:400;font-size:9px;">· 將作為 Google Drive 資料夾名稱，請填真實品牌名</span></label>
+      <input type="text" id="f_name" placeholder="例：旺味米香腸（必填）" required>
     </div>
 
     <div class="field">
@@ -355,7 +355,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         </div>
         <div class="selected-color-preview" id="selectedColorPreview">
           <div class="selected-dot" id="selectedDot" style="background:#E8A03A;"></div>
-          <span class="selected-label">已選色系：</span>
+          <span class="selected-label">已選主色（可複選）：</span>
           <span class="selected-hex" id="selectedHex">#E8A03A · 品牌金（預設）</span>
         </div>
         <input type="hidden" id="f_color" value="gold">
@@ -486,21 +486,59 @@ function initColorPresets() {
     </div>`).join('');
 }
 
+// 複選色系 - 支援多選
+let selectedColorList = [{ hex:'#E8A03A', name:'品牌金', key:'gold' }];
+
 function selectPreset(i) {
-  document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
-  document.getElementById('preset-' + i).classList.add('on');
-  document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('on'));
+  const el = document.getElementById('preset-' + i);
   const p = COLOR_PRESETS[i];
-  selectedColorKey = p.key;
-  selectedColorHex = p.colors[0];
-  updateSelectedColor(selectedColorHex, p.name);
+  const idx = selectedColorList.findIndex(c => c.key === p.key && c.key !== 'custom');
+  if (el.classList.contains('on')) {
+    // 取消選取（至少保留一個）
+    if (selectedColorList.length > 1) {
+      selectedColorList.splice(idx, 1);
+      el.classList.remove('on');
+    }
+  } else {
+    selectedColorList.push({ hex: p.colors[0], name: p.name, key: p.key });
+    el.classList.add('on');
+  }
+  syncSelectedColors();
+}
+
+function toggleCustomColor(hex, wrapEl) {
+  const swatchEl = wrapEl.querySelector('.color-swatch');
+  const idx = selectedColorList.findIndex(c => c.hex === hex);
+  if (idx >= 0) {
+    if (selectedColorList.length > 1) {
+      selectedColorList.splice(idx, 1);
+      swatchEl.classList.remove('on');
+    }
+  } else {
+    selectedColorList.push({ hex, name: '自訂色', key: 'custom' });
+    swatchEl.classList.add('on');
+  }
+  syncSelectedColors();
+}
+
+function syncSelectedColors() {
+  const hexes = selectedColorList.map(c => c.hex);
+  const names = selectedColorList.map(c => c.name);
+  selectedColorHex = hexes[0]; // 主色取第一個
+  selectedColorKey = selectedColorList.map(c => c.key).join(',');
+  document.getElementById('f_color').value = selectedColorKey;
+  document.getElementById('f_colorHex').value = hexes.join(',');
+  // 更新顯示
+  document.getElementById('selectedDot').style.background =
+    hexes.length === 1 ? hexes[0] :
+    `linear-gradient(135deg, ${hexes.slice(0,3).join(', ')})`;
+  document.getElementById('selectedHex').textContent =
+    hexes.slice(0,3).join(' + ') + (names.length > 0 ? ' · ' + names.slice(0,2).join('+') : '');
 }
 
 function updateSelectedColor(hex, name) {
-  document.getElementById('f_color').value = selectedColorKey;
-  document.getElementById('f_colorHex').value = hex;
-  document.getElementById('selectedDot').style.background = hex;
-  document.getElementById('selectedHex').textContent = hex + (name ? ' · ' + name : '');
+  selectedColorList = [{ hex, name: name||'自訂色', key: selectedColorKey }];
+  syncSelectedColors();
 }
 
 async function grabColors() {
@@ -514,19 +552,19 @@ async function grabColors() {
 網站：${url}
 請只回傳 JSON 格式：{"colors":["#XXXXXX","#XXXXXX",...],"siteName":"網站名稱"}
 如無法訪問，請根據你對這個品牌的認知提供色碼。`;
-    const res = await fetch(CF_WORKER_URL, {
+    const res = await fetch(CF_WORKER_URL + '/claude', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'claude_generate', password:'raby2026', prompt })
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:300, messages:[{role:'user',content:prompt}] })
     });
     const data = await res.json();
-    const text = data.text || '';
+    const text = data.content?.[0]?.text || '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('無法解析色碼');
     const result = JSON.parse(jsonMatch[0]);
     const colors = result.colors || [];
     if (!colors.length) throw new Error('沒有抓到色碼');
     document.getElementById('colorSwatches').innerHTML = colors.map(hex => `
-      <div class="color-swatch-wrap" onclick="selectCustomColor('${hex}')">
+      <div class="color-swatch-wrap" onclick="toggleCustomColor('${hex}', this)">
         <div class="color-swatch" style="background:${hex};"></div>
         <span class="color-swatch-hex">${hex}</span>
       </div>`).join('');
@@ -658,13 +696,12 @@ Facebook：${v('f_fb')}  Instagram：${v('f_ig')}
 7. 競爭差異化重點`;
 
   try {
-    const res = await fetch(CF_WORKER_URL, {
+    const res = await fetch(CF_WORKER_URL + '/claude', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'claude_generate', password:'raby2026', prompt, max_tokens:2000 })
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:2000, messages:[{role:'user',content:prompt}] })
     });
     const data = await res.json();
-    generatedSoul = data.text || data.ok === false ? (data.error || '生成失敗，請重試') : '生成失敗，請重試';
-    if (data.text) generatedSoul = data.text;
+    generatedSoul = data.content?.[0]?.text || '生成失敗，請重試';
   } catch(e) {
     generatedSoul = '⚠️ 生成失敗：' + e.message;
   }
@@ -701,16 +738,13 @@ async function doSubmit() {
     style:v('f_style'), ref:v('f_ref'),
     color:v('f_color'), colorHex:selectedColorHex,
     rootFolderId: ROOT_FOLDER_ID,
-    soulBook:generatedSoul, status:'pending'
+    soulBook:generatedSoul.substring(0, 8000), status:'pending'
   };
   try {
-    // GAS POST - 使用 no-cors 確保跨域送出
-    const formData = new URLSearchParams();
-    formData.append('payload', JSON.stringify(payload));
     await fetch(GAS_URL, {
       method: 'POST',
       body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'text/plain' }
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
   } catch(e) { console.warn(e); }
   document.getElementById('resultSection').style.display = 'none';
