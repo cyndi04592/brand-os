@@ -188,9 +188,10 @@ async function startSystem() {
         setTimeout(() => reject(new Error('timeout')), 3000);
       });
     } catch(e) {
-      // 靜默刷新失敗 → 顯示登入畫面
-      console.warn('靜默刷新失敗，需要重新登入');
-      window._driveToken = null;
+      // 靜默刷新失敗 → 跳出授權視窗讓用戶重新授權
+      console.warn('靜默刷新失敗，跳出授權視窗');
+      if (tokenClient) tokenClient.requestAccessToken({ prompt: 'select_account' });
+      return; // 等授權完成後 callback 會繼續
     }
   }
 
