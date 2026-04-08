@@ -32,10 +32,26 @@ function initGoogleAuth() {
     scope: GOOG_SCOPE + ' https://www.googleapis.com/auth/userinfo.email',
     callback: async (resp) => {
       if (!resp.access_token) return;
-      if (_isInitializing) return;
-      _isInitializing = true;
+
+      const isRelogin = !!window._driveToken; // 已經登入過，這次是重新連結
       window._driveToken = resp.access_token;
       sessionStorage.setItem('bs_token', resp.access_token);
+
+      // ★ 重新連結 Drive 時：只更新 token 並重新抓素材，不重跑整個流程
+      if (isRelogin) {
+        setDriveStatus('ok');
+        // 清除快取讓素材重新抓取
+        Object.keys(_assetCache || {}).forEach(k => delete _assetCache[k]);
+        // 重新抓取當前品牌素材
+        if (window.S?.brandId) {
+          await autoFetchAssets(window.S.brandId);
+        }
+        return;
+      }
+
+      if (_isInitializing) return;
+      _isInitializing = true;
+
       try {
         const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: 'Bearer ' + resp.access_token }
@@ -105,7 +121,7 @@ function doGoogleLogin() {
   tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
-// ══ Drive 重新連結 ══
+// ══ Drive 重新連結（★ 修正：重新連結後直接刷新素材）══
 function driveLogin() {
   if (!tokenClient) { alert('Google 授權尚未載入'); return; }
   tokenClient.requestAccessToken({});
@@ -184,7 +200,6 @@ async function startSystem() {
   await new Promise(r => setTimeout(r, 600));
   document.getElementById('initOverlay').style.display = 'none';
 
-  // 通知其他模組渲染
   renderNavBrands();
   renderBrandTree();
 }
