@@ -48,8 +48,12 @@ async function loadMemories(brandId, productId) {
 async function saveMemory(combo, brandId, subId, brandName, productName) {
   try {
     const hookScript = combo.hook?.script || '';
+    const productId  = window.S.prod?.id || subId || '';
 
-    // ★ 防重複：同 hookScript 已存在就跳過
+    // ★ 存入前重新拉最新記憶（防跨 session / 重整頁面後重複）
+    await loadMemories(brandId, productId);
+
+    // 防重複：同 hookScript 已存在就跳過
     const isDuplicate = currentMemories.some(m => m.hookScript === hookScript);
     if (isDuplicate) {
       console.log('記憶已存在，跳過重複存入');
@@ -60,7 +64,7 @@ async function saveMemory(combo, brandId, subId, brandName, productName) {
       action:      'addMemory',
       password:    GAS_PASSWORD,
       brandId,
-      productId:   window.S.prod?.id || subId || '',
+      productId,
       brandName,
       productName,
       hookMethod:  combo.hook?.method || '',
@@ -187,11 +191,9 @@ async function doGenerate() {
     long:   '核心段落10-15行，深度說服'
   }[copyLength];
 
-  // ★ 讀取記憶（生成前先拉）
   btn.innerHTML = '<span class="spin"></span>載入記憶...';
   await loadMemories(window.S.brandId, window.S.prod.id);
 
-  // ★ 組裝記憶提示詞
   const memoryContext = currentMemories.length > 0
     ? `\n━━━ 🧠 歷史記憶（已用過，新腳本必須完全不同方向）━━━\n` +
       currentMemories.slice(0, 5).map((m, i) =>
@@ -255,7 +257,7 @@ ${memoryContext}
   }
 }
 
-// ══ 渲染腳本卡片（加入 memoryPanel）══
+// ══ 渲染腳本卡片 ══
 function renderScripts(brandDisplay, colorKey) {
   const sc = getColor(colorKey);
   const selPhotoName = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto]?.name : null;
@@ -311,7 +313,6 @@ function renderScripts(brandDisplay, colorKey) {
       </div>`;
     }).join('');
 
-  // ★ 渲染記憶面板
   renderMemoryPanel();
 }
 
@@ -322,7 +323,7 @@ function copyOne(i, btn) {
   navigator.clipboard.writeText(t).then(() => { btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '複製腳本', 2000); });
 }
 
-// ══ 加入交付（★ 防重複存入記憶）══
+// ══ 加入記憶學習區（存入前重新拉記憶防重複）══
 async function addDeliver(scriptIdx) {
   const s = window.S.scripts[scriptIdx];
   const brand     = window.BRANDS.find(b => b.id === window.S.brandId);
@@ -330,7 +331,7 @@ async function addDeliver(scriptIdx) {
   const brandName = brand ? `${brand.name}${sub ? ' › ' + sub.name : ''}` : '';
 
   const btn = document.querySelector(`[onclick="addDeliver(${scriptIdx})"]`);
-  if (btn) { btn.disabled = true; btn.textContent = '存入中...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '檢查中...'; }
 
   const result = await saveMemory(s, window.S.brandId, window.S.subId, brandName, window.S.prod?.name || '');
 
@@ -353,6 +354,7 @@ function renderDeliverRows() {
   const db = document.getElementById('deliverBadge');
   if (db) db.textContent = window.S.delivers.length;
   const tbody = document.getElementById('deliverRows');
+  if (!tbody) return;
   if (!window.S.delivers.length) {
     tbody.innerHTML = '<div style="text-align:center;padding:14px;font-size:10px;color:var(--t3);">尚無素材</div>';
     return;
