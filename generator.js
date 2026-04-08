@@ -34,7 +34,6 @@ let currentMemories = [];
 
 async function loadMemories(brandId, productId) {
   try {
-    // GET 讀取記憶
     const url  = `${GAS_URL}?action=getMemory&password=${GAS_PASSWORD}&brandId=${encodeURIComponent(brandId)}&productId=${encodeURIComponent(productId)}`;
     const res  = await fetch(url);
     const data = await res.json();
@@ -48,6 +47,15 @@ async function loadMemories(brandId, productId) {
 
 async function saveMemory(combo, brandId, subId, brandName, productName) {
   try {
+    const hookScript = combo.hook?.script || '';
+
+    // ★ 防重複：同 hookScript 已存在就跳過
+    const isDuplicate = currentMemories.some(m => m.hookScript === hookScript);
+    if (isDuplicate) {
+      console.log('記憶已存在，跳過重複存入');
+      return 'duplicate';
+    }
+
     const payload = {
       action:      'addMemory',
       password:    GAS_PASSWORD,
@@ -56,12 +64,11 @@ async function saveMemory(combo, brandId, subId, brandName, productName) {
       brandName,
       productName,
       hookMethod:  combo.hook?.method || '',
-      hookScript:  combo.hook?.script || '',
+      hookScript,
       coreType:    combo.core?.type   || '',
       ctaScript:   combo.cta?.script  || '',
       adId:        combo.id           || ''
     };
-    // ★ 改成 POST（原本用 GET 存不進去）
     const res  = await fetch(GAS_URL, {
       method:  'POST',
       headers: { 'Content-Type': 'text/plain' },
@@ -230,7 +237,7 @@ ${memoryContext}
 
     const lenLabel = { short:'短文案', medium:'中文案', long:'長文案' }[copyLength];
     const tabBtn   = document.querySelector('[data-tab="scripts"]');
-    if (tabBtn) tabBtn.innerHTML = `廣告腳本 <span class="badge">${window.S.scripts.length}</span> <span style="font-size:8px;background:rgba(232,96,58,0.15);color:#E8603A;padding:1px 5px;border-radius:3px;">${lenLabel}</span>`;
+    if (tabBtn) tabBtn.innerHTML = `廣告文案 <span class="badge">${window.S.scripts.length}</span> <span style="font-size:8px;background:rgba(232,96,58,0.15);color:#E8603A;padding:1px 5px;border-radius:3px;">${lenLabel}</span>`;
 
     clearInterval(progInterval);
     fill.style.width = '100%';
@@ -274,7 +281,6 @@ function renderScripts(brandDisplay, colorKey) {
           <div class="ac-btns">
             <button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入記憶學習區</button>
             <button class="tbtn" style="border-color:var(--purple);color:var(--purple);background:var(--purple2)" onclick="openAdMaker(${i})">廣告圖</button>
-
           </div>
         </div>
         <div class="ac-body">
@@ -316,21 +322,26 @@ function copyOne(i, btn) {
   navigator.clipboard.writeText(t).then(() => { btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '複製腳本', 2000); });
 }
 
-// ══ 加入交付（★ 加入記憶儲存，用 POST 正確存入）══
+// ══ 加入交付（★ 防重複存入記憶）══
 async function addDeliver(scriptIdx) {
   const s = window.S.scripts[scriptIdx];
   const brand     = window.BRANDS.find(b => b.id === window.S.brandId);
   const sub       = brand?.subs.find(sb => sb.id === window.S.subId);
   const brandName = brand ? `${brand.name}${sub ? ' › ' + sub.name : ''}` : '';
 
-  // 只存入記憶庫
-  const ok = await saveMemory(s, window.S.brandId, window.S.subId, brandName, window.S.prod?.name || '');
-
-  // 按鈕回饋
   const btn = document.querySelector(`[onclick="addDeliver(${scriptIdx})"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '存入中...'; }
+
+  const result = await saveMemory(s, window.S.brandId, window.S.subId, brandName, window.S.prod?.name || '');
+
   if (btn) {
-    btn.textContent = ok ? '✅ 已存入記憶' : '⚠️ 存入失敗';
-    btn.disabled = true;
+    if (result === 'duplicate') {
+      btn.textContent = '⚠️ 已存在';
+    } else if (result) {
+      btn.textContent = '✅ 已存入記憶';
+    } else {
+      btn.textContent = '⚠️ 存入失敗';
+    }
     setTimeout(() => { btn.textContent = '＋ 加入記憶學習區'; btn.disabled = false; }, 2000);
   }
 }
@@ -361,6 +372,7 @@ function renderDeliverRows() {
 // ══ 渲染交付詳細 ══
 function renderDeliverOut() {
   const el = document.getElementById('deliverOut');
+  if (!el) return;
   if (!window.S.delivers.length) {
     el.innerHTML = '<div class="empty"><div class="empty-p">加入交付後顯示</div></div>';
     return;
