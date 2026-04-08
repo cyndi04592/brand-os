@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>品牌進駐申請 · Brand OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+TC:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #0E0E0F;
+  --bg2:   #161618;
+  --bg3:   #1E1E21;
+  --bg4:   #252528;
+  --gold:  #E8A03A;
+  --gold2: rgba(232,160,58,0.12);
+  --orange:#E8603A;
+  --line:  rgba(255,255,255,0.08);
+  --t1:    #F0EDE8;
+  --t2:    #A09890;
+  --t3:    #606060;
+  --mint:  #3AE8C0;
+  --sky:   #5BC8E8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;min-height:100vh;}
+
+/* ── NAV ── */
+.nav{display:flex;align-items:center;gap:12px;padding:0 24px;height:52px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:100;background:rgba(14,14,15,0.95);backdrop-filter:blur(12px);}
+.nav-logo{font-family:'Bebas Neue';font-size:20px;letter-spacing:3px;color:var(--gold);}
+.nav-sub{font-size:8px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+
+/* ── LOGIN OVERLAY ── */
+#loginOverlay{position:fixed;inset:0;background:rgba(10,10,11,0.97);z-index:999;display:flex;align-items:center;justify-content:center;}
+.login-card{background:var(--bg2);border:1px solid rgba(232,160,58,0.3);border-radius:20px;padding:40px 36px;width:340px;text-align:center;}
+.login-title{font-family:'Bebas Neue';font-size:28px;letter-spacing:4px;color:var(--gold);margin-bottom:4px;}
+.login-sub{font-size:10px;color:var(--t3);letter-spacing:3px;font-family:'DM Mono';margin-bottom:24px;}
+.login-desc{font-size:12px;color:var(--t2);line-height:1.8;margin-bottom:24px;}
+.login-btn{width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gold),#C47820);color:#1a0e00;font-family:'Noto Sans TC';font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:1px;transition:opacity .2s;}
+.login-btn:hover{opacity:.85}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-err{font-size:11px;color:#FF6080;margin-top:12px;min-height:18px;}
+.login-footer{font-size:9px;color:var(--t3);margin-top:16px;letter-spacing:1px;}
+
+/* ── INIT OVERLAY ── */
+#initOverlay{position:fixed;inset:0;background:rgba(10,10,11,0.97);z-index:998;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+#initOverlay p{font-size:12px;color:var(--t3);font-family:'DM Mono';letter-spacing:2px;}
+.spin2{width:32px;height:32px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── MAIN ── */
+.main{max-width:780px;margin:0 auto;padding:40px 24px 80px;}
+.page-header{margin-bottom:40px;}
+.page-title{font-family:'Bebas Neue';font-size:42px;letter-spacing:6px;color:var(--gold);line-height:1;}
+.page-sub{font-size:11px;color:var(--t3);letter-spacing:3px;font-family:'DM Mono';margin-top:6px;}
+.page-desc{font-size:13px;color:var(--t2);line-height:1.9;margin-top:16px;max-width:560px;}
+
+/* ── STEPS ── */
+.steps{display:flex;gap:0;margin-bottom:40px;}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;}
+.step:not(:last-child)::after{content:'';position:absolute;top:14px;left:calc(50% + 14px);right:calc(-50% + 14px);height:1px;background:var(--line);}
+.step.done::after{background:var(--gold);}
+.step-num{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'DM Mono';color:var(--t3);background:var(--bg);}
+.step.active .step-num{border-color:var(--gold);color:var(--gold);background:var(--gold2);}
+.step.done .step-num{border-color:var(--gold);background:var(--gold);color:#1a0e00;font-weight:900;}
+.step-lbl{font-size:9px;color:var(--t3);letter-spacing:1px;white-space:nowrap;}
+.step.active .step-lbl{color:var(--gold);}
+
+/* ── SECTION ── */
+.section{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:20px;display:none;}
+.section.active{display:block;}
+.sec-title{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--orange);margin-bottom:18px;text-transform:uppercase;}
+
+/* ── FORM ── */
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:10px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;}
+.field input,.field textarea,.field select{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'Noto Sans TC';font-size:13px;padding:10px 12px;outline:none;transition:border-color .2s;resize:vertical;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold);}
+.field select{appearance:none;cursor:pointer;}
+.field textarea{min-height:80px;line-height:1.7;}
+.field-hint{font-size:10px;color:var(--t3);margin-top:4px;line-height:1.6;}
+
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:560px){.field-row{grid-template-columns:1fr;}}
+
+/* ── CHECKBOX GROUP ── */
+.check-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.check-item{display:flex;align-items:center;gap:6px;cursor:pointer;}
+.check-item input{width:14px;height:14px;accent-color:var(--gold);cursor:pointer;}
+.check-item span{font-size:12px;color:var(--t2);}
+
+/* ── RADIO GROUP ── */
+.radio-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.radio-btn{padding:7px 14px;border-radius:7px;border:1px solid var(--line);background:var(--bg3);color:var(--t2);font-size:11px;font-family:'Noto Sans TC';cursor:pointer;transition:all .15s;}
+.radio-btn.on{border-color:var(--gold);background:var(--gold2);color:var(--gold);font-weight:700;}
+
+/* ── COLOR PICKER ── */
+.color-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.color-btn{width:36px;height:36px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.color-btn.on{border-color:#fff;transform:scale(1.15);}
+
+/* ── NAV BUTTONS ── */
+.btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;}
+.btn-back{padding:10px 20px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--t3);font-family:'Noto Sans TC';font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-back:hover{border-color:var(--t2);color:var(--t2);}
+.btn-next{padding:10px 28px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--gold),#C47820);color:#1a0e00;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;transition:opacity .2s;}
+.btn-next:hover{opacity:.85}
+.btn-next:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── GENERATING ── */
+#genOverlay{display:none;position:fixed;inset:0;background:rgba(10,10,11,0.97);z-index:500;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+#genOverlay.show{display:flex;}
+.gen-title{font-family:'Bebas Neue';font-size:28px;letter-spacing:5px;color:var(--gold);}
+.gen-msg{font-size:11px;color:var(--t2);font-family:'DM Mono';letter-spacing:1px;}
+.gen-bar-wrap{width:320px;height:3px;background:var(--line);border-radius:2px;overflow:hidden;}
+.gen-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--orange));border-radius:2px;width:0%;transition:width .5s ease;}
+
+/* ── RESULT ── */
+#resultSection{display:none;background:var(--bg2);border:1px solid rgba(232,160,58,0.4);border-radius:14px;padding:28px;margin-bottom:20px;}
+.result-title{font-family:'Bebas Neue';font-size:22px;letter-spacing:4px;color:var(--gold);margin-bottom:6px;}
+.result-sub{font-size:10px;color:var(--t3);font-family:'DM Mono';letter-spacing:2px;margin-bottom:20px;}
+.soul-block{background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;white-space:pre-wrap;font-size:12px;color:var(--t2);line-height:1.9;font-family:'Noto Sans TC';}
+.result-note{font-size:11px;color:var(--mint);padding:12px;background:rgba(58,232,192,0.08);border-radius:8px;border:1px solid rgba(58,232,192,0.2);line-height:1.8;}
+.btn-submit{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--orange),#C04020);color:#fff;font-family:'Noto Sans TC';font-size:14px;font-weight:900;cursor:pointer;letter-spacing:2px;margin-top:16px;transition:opacity .2s;}
+.btn-submit:hover{opacity:.85}
+.btn-submit:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── SUCCESS ── */
+#successSection{display:none;text-align:center;padding:60px 20px;}
+.success-icon{font-size:56px;margin-bottom:20px;}
+.success-title{font-family:'Bebas Neue';font-size:32px;letter-spacing:5px;color:var(--mint);margin-bottom:8px;}
+.success-msg{font-size:13px;color:var(--t2);line-height:1.9;}
+
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-title">品牌進駐</div>
+    <div class="login-sub">BRAND OS · RABY D&C</div>
+    <div class="login-desc">使用 Google 帳號登入<br>開始填寫品牌資料，AI 自動生成品牌靈魂書</div>
+    <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+      使用 Google 帳號登入
+    </button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-footer">登入後資料將與您的帳號綁定</div>
+  </div>
+</div>
+
+<!-- INIT -->
+<div id="initOverlay">
+  <div class="spin2"></div>
+  <p id="initMsg">載入中...</p>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div style="display:flex;flex-direction:column;line-height:1;">
+    <span class="nav-logo">Brand OS</span>
+    <span class="nav-sub">RABY D&C · 品牌進駐</span>
+  </div>
+  <div class="nav-right">
+    <span id="navEmail" style="font-size:10px;color:var(--t3);font-family:'DM Mono';"></span>
+    <a href="index.html" style="font-size:10px;color:var(--t3);text-decoration:none;padding:4px 10px;border:1px solid var(--line);border-radius:6px;">← 返回系統</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="page-header">
+    <div class="page-title">品牌進駐申請</div>
+    <div class="page-sub">BRAND ONBOARDING · AI POWERED</div>
+    <div class="page-desc">填寫品牌基本資料，AI 將自動生成「品牌靈魂書」，審核通過後品牌頁籤即刻上線。</div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="step1"><div class="step-num">1</div><div class="step-lbl">品牌基本</div></div>
+    <div class="step" id="step2"><div class="step-num">2</div><div class="step-lbl">品牌故事</div></div>
+    <div class="step" id="step3"><div class="step-num">3</div><div class="step-lbl">商品資訊</div></div>
+    <div class="step" id="step4"><div class="step-num">4</div><div class="step-lbl">風格設定</div></div>
+    <div class="step" id="step5"><div class="step-num">5</div><div class="step-lbl">確認送出</div></div>
+  </div>
+
+  <!-- SECTION 1：品牌基本 -->
+  <div class="section active" id="sec1">
+    <div class="sec-title">01 · 品牌基本資訊</div>
+    <div class="field-row">
+      <div class="field">
+        <label>品牌名稱 *</label>
+        <input type="text" id="f_name" placeholder="例：旺味米香腸">
+      </div>
+      <div class="field">
+        <label>品牌英文名稱</label>
+        <input type="text" id="f_nameEn" placeholder="例：WangWei Rice Sausage">
+      </div>
+    </div>
+    <div class="field">
+      <label>官方網站</label>
+      <input type="url" id="f_website" placeholder="https://...">
+    </div>
+    <div class="field">
+      <label>Facebook 粉絲頁</label>
+      <input type="url" id="f_fb" placeholder="https://www.facebook.com/...">
+    </div>
+    <div class="field">
+      <label>Instagram</label>
+      <input type="url" id="f_ig" placeholder="https://www.instagram.com/...">
+    </div>
+    <div class="field">
+      <label>聯絡人姓名 *</label>
+      <input type="text" id="f_contact" placeholder="您的姓名">
+    </div>
+    <div class="field">
+      <label>聯絡電話</label>
+      <input type="tel" id="f_phone" placeholder="0912-345-678">
+    </div>
+    <div class="btn-row">
+      <div></div>
+      <button class="btn-next" onclick="goStep(2)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 2：品牌故事 -->
+  <div class="section" id="sec2">
+    <div class="sec-title">02 · 品牌故事與定位</div>
+    <div class="field">
+      <label>為什麼創立這個品牌？*</label>
+      <textarea id="f_story" rows="4" placeholder="例：阿公傳下來的古早味配方，想讓更多人吃到真正的台灣米香腸..."></textarea>
+    </div>
+    <div class="field">
+      <label>品牌核心價值（3個關鍵字）</label>
+      <input type="text" id="f_values" placeholder="例：健康、天然、台灣在地">
+      <div class="field-hint">用逗號分隔，這會成為品牌靈魂的核心</div>
+    </div>
+    <div class="field">
+      <label>主要競爭對手</label>
+      <input type="text" id="f_competitors" placeholder="例：xxx品牌、yyy品牌">
+    </div>
+    <div class="field">
+      <label>相較競爭對手的優勢</label>
+      <textarea id="f_pros" rows="3" placeholder="例：使用100%台灣豬、添加米讓口感更Q彈、無防腐劑..."></textarea>
+    </div>
+    <div class="field">
+      <label>目前的弱點或挑戰</label>
+      <textarea id="f_cons" rows="2" placeholder="例：知名度低、價格比市售高..."></textarea>
+      <div class="field-hint">誠實填寫，AI 才能幫你找到突破點</div>
+    </div>
+    <div class="field">
+      <label>想說但不知道怎麼說的話（廢話也可以）</label>
+      <textarea id="f_misc" rows="3" placeholder="任何想表達的想法，什麼都可以寫..."></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(1)">← 上一步</button>
+      <button class="btn-next" onclick="goStep(3)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 3：商品資訊 -->
+  <div class="section" id="sec3">
+    <div class="sec-title">03 · 商品與銷售資訊</div>
+    <div class="field">
+      <label>商品屬於哪個類別？*</label>
+      <div class="radio-group" id="catGroup">
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">食品／飲料</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">健康保健</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">家電用品</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">美容保養</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">服飾配件</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">寵物用品</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">3C電子</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">居家生活</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">運動休閒</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">母嬰兒童</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">其他</button>
+      </div>
+      <input type="hidden" id="f_category">
+    </div>
+    <div class="field">
+      <label>主力商品（簡短描述，一行一個）*</label>
+      <textarea id="f_products" rows="4" placeholder="例：&#10;米香腸原味 280g&#10;米香腸辣味 280g&#10;迷你米香腸禮盒"></textarea>
+    </div>
+    <div class="field">
+      <label>上架平台（可多選）</label>
+      <div class="check-group">
+        <label class="check-item"><input type="checkbox" value="官網" id="ch_web"><span>官網</span></label>
+        <label class="check-item"><input type="checkbox" value="MOMO" id="ch_momo"><span>MOMO</span></label>
+        <label class="check-item"><input type="checkbox" value="PChome" id="ch_pchome"><span>PChome</span></label>
+        <label class="check-item"><input type="checkbox" value="蝦皮商城" id="ch_shopee_mall"><span>蝦皮商城</span></label>
+        <label class="check-item"><input type="checkbox" value="蝦皮個人賣家" id="ch_shopee"><span>蝦皮個人賣家</span></label>
+        <label class="check-item"><input type="checkbox" value="Coupang" id="ch_coupang"><span>Coupang</span></label>
+        <label class="check-item"><input type="checkbox" value="樂天" id="ch_rakuten"><span>樂天</span></label>
+        <label class="check-item"><input type="checkbox" value="Yahoo購物" id="ch_yahoo"><span>Yahoo購物</span></label>
+        <label class="check-item"><input type="checkbox" value="LINE購物" id="ch_line"><span>LINE購物</span></label>
+        <label class="check-item"><input type="checkbox" value="實體門市" id="ch_offline"><span>實體門市</span></label>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>商品平均售價</label>
+        <input type="text" id="f_price" placeholder="例：NT$280 / NT$580">
+      </div>
+      <div class="field">
+        <label>目標客群</label>
+        <input type="text" id="f_audience" placeholder="例：30-45歲媽媽、愛健康的上班族">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(2)">← 上一步</button>
+      <button class="btn-next" onclick="goStep(4)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 4：風格設定 -->
+  <div class="section" id="sec4">
+    <div class="sec-title">04 · 品牌風格設定</div>
+    <div class="field">
+      <label>品牌主色系</label>
+      <div class="color-row" id="colorRow">
+        <button class="color-btn on" style="background:#E8A03A;" onclick="selectColor(this,'gold')" title="金色"></button>
+        <button class="color-btn" style="background:#FF8099;" onclick="selectColor(this,'red')" title="紅粉"></button>
+        <button class="color-btn" style="background:#5BC8E8;" onclick="selectColor(this,'sky')" title="天空藍"></button>
+        <button class="color-btn" style="background:#3AE8C0;" onclick="selectColor(this,'mint')" title="薄荷綠"></button>
+        <button class="color-btn" style="background:#9D6EF8;" onclick="selectColor(this,'purple')" title="紫色"></button>
+        <button class="color-btn" style="background:#C8A870;" onclick="selectColor(this,'brown')" title="棕色"></button>
+      </div>
+      <input type="hidden" id="f_color" value="gold">
+    </div>
+    <div class="field">
+      <label>品牌圖示 Emoji</label>
+      <div class="radio-group" id="iconGroup">
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">🏠</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">🌾</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">🫙</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">🦌</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">✈️</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">🎯</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">🌿</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">⭐</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">🔥</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">💎</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">🏷️</button>
+        <button class="radio-btn" onclick="selectRadio(this,'icon')">🐾</button>
+      </div>
+      <input type="hidden" id="f_icon" value="🏷️">
+    </div>
+    <div class="field">
+      <label>喜歡的品牌風格</label>
+      <div class="radio-group" id="styleGroup">
+        <button class="radio-btn" onclick="selectRadio(this,'style')">溫暖親切</button>
+        <button class="radio-btn" onclick="selectRadio(this,'style')">專業質感</button>
+        <button class="radio-btn" onclick="selectRadio(this,'style')">活潑年輕</button>
+        <button class="radio-btn" onclick="selectRadio(this,'style')">台灣古早味</button>
+        <button class="radio-btn" onclick="selectRadio(this,'style')">輕奢精品</button>
+        <button class="radio-btn" onclick="selectRadio(this,'style')">自然健康</button>
+        <button class="radio-btn" onclick="selectRadio(this,'style')">科技現代</button>
+        <button class="radio-btn" onclick="selectRadio(this,'style')">文青小清新</button>
+      </div>
+      <input type="hidden" id="f_style">
+    </div>
+    <div class="field">
+      <label>參考品牌或網站（喜歡的視覺風格）</label>
+      <input type="text" id="f_ref" placeholder="例：痴漢油品、無印良品、統一企業...">
+    </div>
+    <div class="field">
+      <label>Google Drive 照片資料夾 ID（可選）</label>
+      <input type="text" id="f_photoFolder" placeholder="https://drive.google.com/drive/folders/...">
+      <div class="field-hint">用來自動載入商品素材，之後也可以補填</div>
+    </div>
+    <div class="field">
+      <label>Google Drive 影片資料夾 ID（可選）</label>
+      <input type="text" id="f_videoFolder" placeholder="https://drive.google.com/drive/folders/...">
+    </div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(3)">← 上一步</button>
+      <button class="btn-next" onclick="goStep(5)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 5：確認送出 -->
+  <div class="section" id="sec5">
+    <div class="sec-title">05 · 確認資料 · AI 生成靈魂書</div>
+    <div id="summaryBox" style="background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px;font-size:12px;color:var(--t2);line-height:2;"></div>
+    <div style="padding:14px;background:rgba(232,160,58,0.08);border:1px solid rgba(232,160,58,0.2);border-radius:10px;margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px;">⚡ 接下來會發生的事</div>
+      <div style="font-size:11px;color:var(--t2);line-height:2;">
+        1. Claude AI 分析您的品牌資料<br>
+        2. 自動生成「品牌靈魂書」（定位、文案風格、廣告策略）<br>
+        3. 資料送交管理員審核<br>
+        4. 審核通過後，品牌頁籤立即上線
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(4)">← 上一步</button>
+      <button class="btn-next" id="btnGenerate" onclick="doGenerate()">⚡ 生成品牌靈魂書</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="resultSection">
+    <div class="result-title">品牌靈魂書</div>
+    <div class="result-sub">AI GENERATED · 等待審核後上線</div>
+    <div class="soul-block" id="soulOutput"></div>
+    <div class="result-note">✅ 靈魂書已生成！送出後管理員審核（通常 1 個工作天內），審核通過後您的品牌頁籤將自動出現在系統中。</div>
+    <button class="btn-submit" id="btnSubmit" onclick="doSubmit()">📨 正式送出申請</button>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="successSection">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">申請已送出！</div>
+    <div class="success-msg">品牌資料已送交管理員審核<br>審核通過後您的品牌頁籤將自動上線<br><br>有問題請聯繫：cyndi04592@gmail.com</div>
+  </div>
+
+</div><!-- end main -->
+
+<!-- GENERATING OVERLAY -->
+<div id="genOverlay">
+  <div class="spin2"></div>
+  <div class="gen-title">AI 正在生成品牌靈魂書</div>
+  <div class="gen-msg" id="genMsg">分析品牌資料中...</div>
+  <div class="gen-bar-wrap"><div class="gen-bar-fill" id="genBarFill"></div></div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2_fRfbYY6m42yzzWQHqKeLnSlZ9hMGBBeMoTOI7yFG4kcZg/exec';
+const GAS_PASSWORD = 'raby2026';
+const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
+const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
+const ADMIN_EMAIL = 'cyndi04592@gmail.com';
+
+let tokenClient = null;
+let userEmail = '';
+let currentStep = 1;
+let generatedSoul = '';
+
+// ── RADIO / COLOR SELECT ──
+function selectRadio(btn, group) {
+  const parent = btn.closest('.radio-group') || btn.closest('.section');
+  parent.querySelectorAll('.radio-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const hiddenId = {cat:'f_category', icon:'f_icon', style:'f_style'}[group];
+  if (hiddenId) document.getElementById(hiddenId).value = btn.textContent.trim();
+}
+function selectColor(btn, color) {
+  document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('f_color').value = color;
+}
+
+// ── STEPS ──
+function goStep(n) {
+  if (n > currentStep) {
+    if (!validateStep(currentStep)) return;
+  }
+  document.getElementById('sec' + currentStep).classList.remove('active');
+  document.getElementById('sec' + n).classList.add('active');
+  ['step1','step2','step3','step4','step5'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'step' + (i+1 < n ? ' done' : i+1 === n ? ' active' : '');
+  });
+  if (n === 5) buildSummary();
+  currentStep = n;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function validateStep(n) {
+  if (n === 1) {
+    if (!document.getElementById('f_name').value.trim()) { alert('請填寫品牌名稱'); return false; }
+    if (!document.getElementById('f_contact').value.trim()) { alert('請填寫聯絡人姓名'); return false; }
+  }
+  if (n === 2) {
+    if (!document.getElementById('f_story').value.trim()) { alert('請填寫品牌故事'); return false; }
+  }
+  if (n === 3) {
+    if (!document.getElementById('f_products').value.trim()) { alert('請填寫主力商品'); return false; }
+    if (!document.getElementById('f_category').value) { alert('請選擇商品類別'); return false; }
+  }
+  return true;
+}
+
+function buildSummary() {
+  const platforms = ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_offline']
+    .filter(id => document.getElementById(id)?.checked)
+    .map(id => document.getElementById(id).value).join('、') || '未填寫';
+  document.getElementById('summaryBox').innerHTML = `
+    <b style="color:var(--gold)">品牌名稱：</b>${v('f_name')} ${v('f_nameEn') ? '(' + v('f_nameEn') + ')' : ''}<br>
+    <b style="color:var(--gold)">聯絡人：</b>${v('f_contact')} ${v('f_phone')}<br>
+    <b style="color:var(--gold)">官網：</b>${v('f_website') || '未填'}<br>
+    <b style="color:var(--gold)">商品類別：</b>${v('f_category')}<br>
+    <b style="color:var(--gold)">上架平台：</b>${platforms}<br>
+    <b style="color:var(--gold)">目標客群：</b>${v('f_audience') || '未填'}<br>
+    <b style="color:var(--gold)">品牌風格：</b>${v('f_style') || '未選'}<br>
+    <b style="color:var(--gold)">品牌主色：</b>${v('f_color')}
+  `;
+}
+function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
+
+// ── GENERATE SOUL ──
+async function doGenerate() {
+  document.getElementById('btnGenerate').disabled = true;
+  document.getElementById('genOverlay').classList.add('show');
+
+  const msgs = ['分析品牌資料中...','建立品牌定位...','生成廣告策略...','撰寫品牌靈魂書...'];
+  let pct = 0;
+  const interval = setInterval(() => {
+    pct = Math.min(pct + 8, 85);
+    document.getElementById('genBarFill').style.width = pct + '%';
+    document.getElementById('genMsg').textContent = msgs[Math.floor(pct/25)] || msgs[3];
+  }, 400);
+
+  const platforms = ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_offline']
+    .filter(id => document.getElementById(id)?.checked)
+    .map(id => document.getElementById(id).value).join('、');
+
+  const prompt = `你是一位頂尖的品牌策略師，請根據以下資料生成一份完整的「品牌靈魂書」。
+
+【品牌基本資訊】
+品牌名稱：${v('f_name')} ${v('f_nameEn') ? '(' + v('f_nameEn') + ')' : ''}
+官網：${v('f_website')}
+FB：${v('f_fb')}
+IG：${v('f_ig')}
+
+【品牌故事與定位】
+創立原因：${v('f_story')}
+核心價值：${v('f_values')}
+競爭對手：${v('f_competitors')}
+競爭優勢：${v('f_pros')}
+目前挑戰：${v('f_cons')}
+補充想法：${v('f_misc')}
+
+【商品資訊】
+商品類別：${v('f_category')}
+主力商品：${v('f_products')}
+上架平台：${platforms}
+售價區間：${v('f_price')}
+目標客群：${v('f_audience')}
+
+【品牌風格】
+視覺風格：${v('f_style')}
+參考品牌：${v('f_ref')}
+
+請生成品牌靈魂書，包含以下區塊：
+1. 品牌定位宣言（一句話）
+2. 品牌靈魂（3-5句，描述品牌的核心精神）
+3. 目標受眾畫像（詳細描述）
+4. 廣告文案風格指南（如何說話、用什麼語氣）
+5. 核心廣告主張（3個訴求方向）
+6. 建議Hashtag組合（10個）
+7. 競爭差異化重點
+
+請用繁體中文，風格要有力量、有溫度、有記憶點。`;
+
+  try {
+    const res = await fetch(CF_WORKER_URL + '/claude', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{role:'user', content: prompt}]
+      })
+    });
+    const data = await res.json();
+    generatedSoul = data.content?.[0]?.text || '生成失敗，請重試';
+  } catch(e) {
+    generatedSoul = '⚠️ 生成失敗：' + e.message + '\n\n請稍後重試或聯絡管理員。';
+  }
+
+  clearInterval(interval);
+  document.getElementById('genBarFill').style.width = '100%';
+  await new Promise(r => setTimeout(r, 500));
+  document.getElementById('genOverlay').classList.remove('show');
+
+  // 顯示結果
+  document.getElementById('sec5').style.display = 'none';
+  document.getElementById('stepsBar').style.display = 'none';
+  document.getElementById('soulOutput').textContent = generatedSoul;
+  document.getElementById('resultSection').style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── SUBMIT ──
+async function doSubmit() {
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> 送出中...';
+
+  const platforms = ['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_offline']
+    .filter(id => document.getElementById(id)?.checked)
+    .map(id => document.getElementById(id).value).join('、');
+
+  function parseDriveId(raw) {
+    if (!raw) return '';
+    const m = raw.match(/(?:folders\/|id=)([a-zA-Z0-9_\-]{15,})/);
+    if (m) return m[1];
+    if (/^[a-zA-Z0-9_\-]{15,}$/.test(raw.trim())) return raw.trim();
+    return raw;
+  }
+
+  const payload = {
+    action: 'submitBrand',
+    password: GAS_PASSWORD,
+    email: userEmail,
+    name: v('f_name'),
+    nameEn: v('f_nameEn'),
+    website: v('f_website'),
+    fb: v('f_fb'),
+    ig: v('f_ig'),
+    contact: v('f_contact'),
+    phone: v('f_phone'),
+    story: v('f_story'),
+    values: v('f_values'),
+    competitors: v('f_competitors'),
+    pros: v('f_pros'),
+    cons: v('f_cons'),
+    misc: v('f_misc'),
+    category: v('f_category'),
+    products: v('f_products'),
+    platforms,
+    price: v('f_price'),
+    audience: v('f_audience'),
+    style: v('f_style'),
+    ref: v('f_ref'),
+    color: v('f_color'),
+    icon: v('f_icon'),
+    photoFolder: parseDriveId(v('f_photoFolder')),
+    videoFolder: parseDriveId(v('f_videoFolder')),
+    soulBook: generatedSoul,
+    status: 'pending'
+  };
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {'Content-Type':'application/json'}
+    });
+  } catch(e) { console.warn('GAS submit error', e); }
+
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('successSection').style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── GOOGLE AUTH ──
+function initGoogleAuth() {
+  if (!window.google) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOG_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/userinfo.email',
+    callback: async (resp) => {
+      if (!resp.access_token) return;
+      const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {Authorization: 'Bearer ' + resp.access_token}
+      });
+      const info = await r.json();
+      userEmail = info.email || '';
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('navEmail').textContent = userEmail;
+    }
+  });
+}
+function doGoogleLogin() {
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin" style="border-top-color:#1a0e00"></span> 登入中...';
+  if (tokenClient) tokenClient.requestAccessToken({prompt:'select_account'});
+  else setTimeout(() => { if(tokenClient) tokenClient.requestAccessToken({prompt:'select_account'}); }, 1500);
+}
+</script>
+<script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
+</body>
+</html>
