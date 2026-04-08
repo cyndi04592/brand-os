@@ -65,13 +65,18 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .social-item label{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--t3);display:block;margin-bottom:4px;}
 .social-item input{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:8px 10px;outline:none;transition:border-color .2s;}
 .social-item input:focus{border-color:var(--gold);}
+/* 電話國碼 */
+.phone-row{display:flex;gap:8px;}
+.phone-code{width:130px;flex-shrink:0;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'Noto Sans TC';font-size:13px;padding:10px 8px;outline:none;cursor:pointer;}
+.phone-code:focus{border-color:var(--gold);}
+.phone-number{flex:1;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'Noto Sans TC';font-size:13px;padding:10px 12px;outline:none;}
+.phone-number:focus{border-color:var(--gold);}
 .btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;}
 .btn-back{padding:10px 20px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--t3);font-family:'Noto Sans TC';font-size:12px;font-weight:700;cursor:pointer;}
 .btn-back:hover{border-color:var(--t2);color:var(--t2);}
 .btn-next{padding:10px 28px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--gold),#C47820);color:#1a0e00;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;}
 .btn-next:hover{opacity:.85}.btn-next:disabled{opacity:.4;cursor:not-allowed}
-
-/* ══ 色系選擇器 ══ */
+/* 色系選擇器 */
 .color-section{margin-top:6px;}
 .color-presets{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
 .color-preset{cursor:pointer;border-radius:10px;border:2px solid transparent;padding:8px 12px;display:flex;align-items:center;gap:8px;background:var(--bg3);transition:all .2s;}
@@ -83,24 +88,28 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
 .color-custom-area{background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:14px;}
 .color-custom-title{font-size:10px;color:var(--t3);font-weight:700;letter-spacing:1px;margin-bottom:10px;}
 .color-url-row{display:flex;gap:8px;}
-.color-url-input{flex:1;background:var(--bg4);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'DM Mono';font-size:11px;padding:8px 10px;outline:none;transition:border-color .2s;}
+.color-url-input{flex:1;background:var(--bg4);border:1px solid var(--line);border-radius:8px;color:var(--t1);font-family:'DM Mono';font-size:11px;padding:8px 10px;outline:none;}
 .color-url-input:focus{border-color:var(--gold);}
-.btn-grab-color{padding:8px 14px;border-radius:8px;border:none;background:var(--gold2);border:1px solid var(--gold);color:var(--gold);font-family:'Noto Sans TC';font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;}
+.btn-grab-color{padding:8px 14px;border-radius:8px;border:1px solid var(--gold);background:var(--gold2);color:var(--gold);font-family:'Noto Sans TC';font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;}
 .btn-grab-color:hover{background:var(--gold);color:#1a0e00;}
 .btn-grab-color:disabled{opacity:.5;cursor:not-allowed;}
 .color-result{margin-top:12px;display:none;}
-.color-result-title{font-size:10px;color:var(--t3);margin-bottom:8px;}
-.color-swatches{display:flex;flex-wrap:wrap;gap:8px;}
-.color-swatch{width:40px;height:40px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;position:relative;}
+.color-result-title{font-size:10px;color:var(--t3);margin-bottom:12px;}
+.color-swatches{display:flex;flex-wrap:wrap;gap:12px;}
+.color-swatch-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
+.color-swatch{width:40px;height:40px;border-radius:8px;border:2px solid transparent;transition:all .2s;}
 .color-swatch:hover{transform:scale(1.1);}
 .color-swatch.on{border-color:#fff;transform:scale(1.15);}
-.color-swatch-hex{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--t3);font-family:'DM Mono';white-space:nowrap;}
-.color-hint{font-size:10px;color:var(--t3);margin-top:8px;}
+.color-swatch-hex{font-size:8px;color:var(--t3);font-family:'DM Mono';}
 .selected-color-preview{margin-top:14px;display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg4);border-radius:8px;}
 .selected-dot{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);}
 .selected-label{font-size:11px;color:var(--t2);}
 .selected-hex{font-size:11px;color:var(--gold);font-family:'DM Mono';}
-
+/* Drive 通知區 */
+.drive-notice{background:rgba(91,200,232,0.08);border:1px solid rgba(91,200,232,0.2);border-radius:10px;padding:14px;margin-bottom:16px;}
+.drive-notice-title{font-size:11px;color:var(--sky);font-weight:700;margin-bottom:6px;}
+.drive-notice p{font-size:11px;color:var(--t2);line-height:1.9;}
+/* 生成覆蓋層 */
 #genOverlay{display:none;position:fixed;inset:0;background:rgba(10,10,11,0.97);z-index:500;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
 #genOverlay.show{display:flex;}
 .gen-title{font-family:'Bebas Neue';font-size:28px;letter-spacing:5px;color:var(--gold);}
@@ -169,13 +178,19 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   <!-- SECTION 1 -->
   <div class="section active" id="sec1">
     <div class="sec-title">01 · 品牌基本資訊</div>
-    <div class="field-row">
-      <div class="field"><label>品牌名稱 *</label><input type="text" id="f_name" placeholder="例：旺味米香腸"></div>
-      <div class="field"><label>品牌英文名稱</label><input type="text" id="f_nameEn" placeholder="例：WangWei Rice Sausage"></div>
-    </div>
-    <div class="field"><label>官方網站</label><input type="url" id="f_website" placeholder="https://..."></div>
+
     <div class="field">
-      <label>社群媒體帳號</label>
+      <label>品牌名稱 *</label>
+      <input type="text" id="f_name" placeholder="例：旺味米香腸">
+    </div>
+
+    <div class="field">
+      <label>官方網站 <span style="color:var(--t3);font-weight:400;font-size:9px;">（沒有可不填）</span></label>
+      <input type="url" id="f_website" placeholder="https://...">
+    </div>
+
+    <div class="field">
+      <label>社群媒體帳號 <span style="color:var(--sky);font-weight:400;font-size:9px;">· 請盡量填寫，AI 會判斷得更精準</span></label>
       <div class="social-grid">
         <div class="social-item"><label>Facebook 粉絲頁</label><input type="url" id="f_fb" placeholder="https://www.facebook.com/..."></div>
         <div class="social-item"><label>Instagram</label><input type="url" id="f_ig" placeholder="https://www.instagram.com/..."></div>
@@ -185,10 +200,31 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
         <div class="social-item"><label>其他社群</label><input type="text" id="f_social_other" placeholder="YouTube / LINE / TikTok..."></div>
       </div>
     </div>
-    <div class="field-row">
-      <div class="field"><label>聯絡人姓名 *</label><input type="text" id="f_contact" placeholder="您的姓名"></div>
-      <div class="field"><label>聯絡電話</label><input type="tel" id="f_phone" placeholder="0912-345-678"></div>
+
+    <div class="field">
+      <label>聯絡人姓名 *</label>
+      <input type="text" id="f_contact" placeholder="您的姓名">
     </div>
+
+    <div class="field">
+      <label>聯絡電話</label>
+      <div class="phone-row">
+        <select class="phone-code" id="f_phoneCode">
+          <option value="+886">🇹🇼 +886 台灣</option>
+          <option value="+852">🇭🇰 +852 香港</option>
+          <option value="+86">🇨🇳 +86 中國</option>
+          <option value="+81">🇯🇵 +81 日本</option>
+          <option value="+65">🇸🇬 +65 新加坡</option>
+          <option value="+60">🇲🇾 +60 馬來西亞</option>
+          <option value="+1">🇺🇸 +1 美國/加拿大</option>
+          <option value="+44">🇬🇧 +44 英國</option>
+          <option value="+82">🇰🇷 +82 韓國</option>
+          <option value="+other">其他</option>
+        </select>
+        <input class="phone-number" type="tel" id="f_phone" placeholder="請輸入電話號碼（不含國碼）">
+      </div>
+    </div>
+
     <div class="btn-row"><div></div><button class="btn-next" onclick="goStep(2)">下一步 →</button></div>
   </div>
 
@@ -198,7 +234,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div class="field"><label>為什麼創立這個品牌？*</label><textarea id="f_story" rows="4" placeholder="例：阿公傳下來的古早味配方，想讓更多人吃到真正的台灣米香腸..."></textarea></div>
     <div class="field"><label>品牌核心價值（3個關鍵字）</label><input type="text" id="f_values" placeholder="例：健康、天然、台灣在地"><div class="field-hint">用逗號分隔，這會成為品牌靈魂的核心</div></div>
     <div class="field"><label>主要競爭對手名稱</label><input type="text" id="f_competitors" placeholder="例：xxx品牌、yyy品牌"></div>
-    <div class="field"><label>競爭對手網址（可多個，換行分隔）</label><textarea id="f_competitorUrls" rows="3" placeholder="例：&#10;https://www.competitor1.com&#10;https://www.competitor2.com"></textarea><div class="field-hint">AI 會分析競爭對手的定位，幫你找出差異化方向</div></div>
+    <div class="field">
+      <label>競爭對手網址（可多個，換行分隔）</label>
+      <textarea id="f_competitorUrls" rows="3" placeholder="例：&#10;https://www.competitor1.com&#10;https://www.competitor2.com"></textarea>
+      <div class="field-hint">AI 會分析競爭對手的定位，幫你找出差異化方向</div>
+    </div>
     <div class="field"><label>相較競爭對手的優勢</label><textarea id="f_pros" rows="3" placeholder="例：使用100%台灣豬、添加米讓口感更Q彈、無防腐劑..."></textarea></div>
     <div class="field"><label>目前的弱點或挑戰</label><textarea id="f_cons" rows="2" placeholder="例：知名度低、價格比市售高..."></textarea><div class="field-hint">誠實填寫，AI 才能幫你找到突破點</div></div>
     <div class="field"><label>想說但不知道怎麼說的話（廢話也可以）</label><textarea id="f_misc" rows="3" placeholder="任何想表達的想法，什麼都可以寫..."></textarea></div>
@@ -275,37 +315,26 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   <div class="section" id="sec4">
     <div class="sec-title">04 · 品牌風格設定</div>
 
-    <!-- 色系選擇器 -->
     <div class="field">
       <label>品牌主色系</label>
       <div class="color-section">
-
-        <!-- 預設色系 -->
-        <div class="color-presets" id="colorPresets">
-          <!-- 動態生成 -->
-        </div>
-
-        <!-- 自訂抓色 -->
+        <div class="color-presets" id="colorPresets"></div>
         <div class="color-custom-area">
           <div class="color-custom-title">✨ 輸入你喜歡的品牌網址，AI 自動抓取主色系</div>
           <div class="color-url-row">
-            <input class="color-url-input" id="colorUrlInput" placeholder="例：https://www.apple.com 或 https://www.muji.com" type="url">
+            <input class="color-url-input" id="colorUrlInput" placeholder="例：https://www.apple.com" type="url">
             <button class="btn-grab-color" id="btnGrabColor" onclick="grabColors()">🎨 抓取色系</button>
           </div>
-          <div class="color-hint">輸入任何你喜歡的品牌網站，系統會幫你抓取主要色碼</div>
           <div class="color-result" id="colorResult">
             <div class="color-result-title" id="colorResultTitle">抓取到的色系：</div>
             <div class="color-swatches" id="colorSwatches"></div>
           </div>
         </div>
-
-        <!-- 已選色 -->
         <div class="selected-color-preview" id="selectedColorPreview">
           <div class="selected-dot" id="selectedDot" style="background:#E8A03A;"></div>
           <span class="selected-label">已選色系：</span>
           <span class="selected-hex" id="selectedHex">#E8A03A · 品牌金（預設）</span>
         </div>
-
         <input type="hidden" id="f_color" value="gold">
         <input type="hidden" id="f_colorHex" value="#E8A03A">
       </div>
@@ -331,18 +360,19 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div class="field">
       <label>喜歡的品牌或網站風格參考（可貼網址）</label>
       <textarea id="f_ref" rows="3" placeholder="例：Apple 的簡潔感、無印良品的自然風、或直接貼你喜歡的網站網址..."></textarea>
-      <div class="field-hint">可以是任何你喜歡的品牌、廣告、網站，讓 AI 更了解你的審美</div>
     </div>
 
-    <div class="field">
-      <label>Google Drive 照片素材資料夾連結（可選）</label>
-      <input type="text" id="f_photoFolder" value="https://drive.google.com/drive/folders/14LlXgAzqds62VZuIBAdEDhoFt15b1t1b" placeholder="https://drive.google.com/drive/folders/...">
-      <div class="field-hint">已預設芮比提供的共用資料夾，或填入你自己的</div>
+    <!-- Drive 說明 -->
+    <div class="drive-notice">
+      <div class="drive-notice-title">📁 素材資料夾說明</div>
+      <p>
+        送出申請後，系統將自動在 Google Drive 為您建立專屬資料夾：<br>
+        <strong style="color:var(--t1)">📁 品牌名稱 / 📷 照片 &amp; 🎬 影片</strong><br>
+        您的資料夾是獨立私人的，不會與其他品牌共用。<br>
+        建立完成後我們會通知您上傳素材。
+      </p>
     </div>
-    <div class="field">
-      <label>Google Drive 影片素材資料夾連結（可選）</label>
-      <input type="text" id="f_videoFolder" placeholder="https://drive.google.com/drive/folders/...">
-    </div>
+
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(3)">← 上一步</button>
       <button class="btn-next" onclick="goStep(5)">下一步 →</button>
@@ -355,10 +385,13 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
     <div id="summaryBox" style="background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px;font-size:12px;color:var(--t2);line-height:2;"></div>
     <div class="info-box">
       <div class="info-box-title">⚡ 接下來會發生的事</div>
-      <p>1. Claude AI 分析您的品牌資料（透過 Cloudflare 安全處理）<br>
-         2. 自動生成「品牌靈魂書」（定位、文案風格、廣告策略）<br>
-         3. 資料送交管理員審核<br>
-         4. 審核通過後，品牌頁籤立即上線</p>
+      <p>
+        1. Claude AI 分析您的品牌資料（透過 Cloudflare 安全處理）<br>
+        2. 自動生成「品牌靈魂書」（定位、文案風格、廣告策略）<br>
+        3. 系統自動建立您的專屬 Google Drive 素材資料夾<br>
+        4. 資料送交管理員審核<br>
+        5. 審核通過後，品牌頁籤立即上線
+      </p>
     </div>
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(4)">← 上一步</button>
@@ -379,7 +412,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;
   <div id="successSection">
     <div class="success-icon">🎉</div>
     <div class="success-title">申請已送出！</div>
-    <div class="success-msg">品牌資料已送交管理員審核<br>審核通過後您的品牌頁籤將自動上線<br><br>有問題請聯繫：cyndi04592@gmail.com</div>
+    <div class="success-msg">品牌資料已送交管理員審核<br>系統正在建立您的專屬素材資料夾<br>審核通過後您的品牌頁籤將自動上線<br><br>有問題請聯繫：cyndi04592@gmail.com</div>
   </div>
 </div>
 
@@ -395,28 +428,29 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwc55f7UYP0_S4I4yhPkBx2
 const GAS_PASSWORD = 'raby2026';
 const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
 const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
+// 你的共用素材根資料夾 ID
+const ROOT_FOLDER_ID = '14LlXgAzqds62VZuIBAdEDhoFt15b1t1b';
 
 let tokenClient = null;
 let userEmail = '';
 let currentStep = 1;
 let generatedSoul = '';
 
-// ══ 預設色系（知名品牌色）══
+// ══ 色系 ══
 const COLOR_PRESETS = [
-  { name: '品牌金', colors: ['#E8A03A','#C47820','#F5C97A'], key: 'gold' },
-  { name: '珊瑚橙', colors: ['#FF6B6B','#FF8E53','#FFA07A'], key: 'coral' },
-  { name: '蒂芬妮藍', colors: ['#00B5AD','#5BC8C8','#A8E6E6'], key: 'tiffany' },
-  { name: '愛馬仕橙', colors: ['#E8603A','#FF8C42','#FFB347'], key: 'hermes' },
-  { name: '夜幕深藍', colors: ['#1B2A4A','#2E4A8C','#4A6CC8'], key: 'navy' },
-  { name: '香奈兒黑', colors: ['#1A1A1A','#404040','#808080'], key: 'chanel' },
-  { name: '玫瑰粉', colors: ['#FF8FAB','#FFB3C6','#FFCCD5'], key: 'rose' },
-  { name: '抹茶綠', colors: ['#6B8F5A','#8BC34A','#C8E6C9'], key: 'matcha' },
-  { name: '薰衣草紫', colors: ['#9B7FD4','#B39DDB','#D1C4E9'], key: 'lavender' },
-  { name: 'Apple 銀灰', colors: ['#8D8D93','#AEAEB2','#E5E5EA'], key: 'apple' },
-  { name: 'MUJI 米白', colors: ['#C8B89A','#DDD0BC','#F0E8D8'], key: 'muji' },
-  { name: '中國紅', colors: ['#C0392B','#E74C3C','#F1948A'], key: 'red' },
+  { name:'品牌金',    colors:['#E8A03A','#C47820','#F5C97A'], key:'gold' },
+  { name:'珊瑚橙',   colors:['#FF6B6B','#FF8E53','#FFA07A'], key:'coral' },
+  { name:'蒂芬妮藍', colors:['#00B5AD','#5BC8C8','#A8E6E6'], key:'tiffany' },
+  { name:'愛馬仕橙', colors:['#E8603A','#FF8C42','#FFB347'], key:'hermes' },
+  { name:'夜幕深藍', colors:['#1B2A4A','#2E4A8C','#4A6CC8'], key:'navy' },
+  { name:'香奈兒黑', colors:['#1A1A1A','#404040','#808080'], key:'chanel' },
+  { name:'玫瑰粉',   colors:['#FF8FAB','#FFB3C6','#FFCCD5'], key:'rose' },
+  { name:'抹茶綠',   colors:['#6B8F5A','#8BC34A','#C8E6C9'], key:'matcha' },
+  { name:'薰衣草紫', colors:['#9B7FD4','#B39DDB','#D1C4E9'], key:'lavender' },
+  { name:'Apple 銀', colors:['#8D8D93','#AEAEB2','#E5E5EA'], key:'apple' },
+  { name:'MUJI 米白', colors:['#C8B89A','#DDD0BC','#F0E8D8'], key:'muji' },
+  { name:'中國紅',   colors:['#C0392B','#E74C3C','#F1948A'], key:'red' },
 ];
-
 let selectedColorKey = 'gold';
 let selectedColorHex = '#E8A03A';
 
@@ -424,23 +458,19 @@ function initColorPresets() {
   const container = document.getElementById('colorPresets');
   container.innerHTML = COLOR_PRESETS.map((p, i) => `
     <div class="color-preset ${i===0?'on':''}" onclick="selectPreset(${i})" id="preset-${i}">
-      <div class="color-preset-dots">
-        ${p.colors.map(c => `<div class="color-preset-dot" style="background:${c}"></div>`).join('')}
-      </div>
+      <div class="color-preset-dots">${p.colors.map(c=>`<div class="color-preset-dot" style="background:${c}"></div>`).join('')}</div>
       <span class="color-preset-name">${p.name}</span>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function selectPreset(i) {
   document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
   document.getElementById('preset-' + i).classList.add('on');
-  // 清除自訂色選取
   document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('on'));
-  const preset = COLOR_PRESETS[i];
-  selectedColorKey = preset.key;
-  selectedColorHex = preset.colors[0];
-  updateSelectedColor(selectedColorHex, preset.name);
+  const p = COLOR_PRESETS[i];
+  selectedColorKey = p.key;
+  selectedColorHex = p.colors[0];
+  updateSelectedColor(selectedColorHex, p.name);
 }
 
 function updateSelectedColor(hex, name) {
@@ -450,85 +480,53 @@ function updateSelectedColor(hex, name) {
   document.getElementById('selectedHex').textContent = hex + (name ? ' · ' + name : '');
 }
 
-// ══ 抓取網站色系 ══
 async function grabColors() {
   const url = document.getElementById('colorUrlInput').value.trim();
   if (!url || !url.startsWith('http')) { alert('請輸入有效的網址（需包含 https://）'); return; }
-
   const btn = document.getElementById('btnGrabColor');
   btn.disabled = true;
   btn.innerHTML = '<span class="spin" style="border-top-color:#1a0e00"></span> 抓取中...';
-
   try {
-    // 透過 Claude API 分析網站色系
-    const prompt = `請分析以下網站的品牌主色系，提取 5-8 個主要色碼。
+    const prompt = `請分析以下網站的品牌主色系，提取 6 個主要色碼。
 網站：${url}
-
-請只回傳 JSON 格式，不要其他文字：
-{"colors": ["#XXXXXX", "#XXXXXX", ...], "siteName": "網站名稱"}
-
-如果無法訪問網站，請根據你對這個品牌的認知來提供色碼。`;
-
+請只回傳 JSON 格式：{"colors":["#XXXXXX","#XXXXXX",...],"siteName":"網站名稱"}
+如無法訪問，請根據你對這個品牌的認知提供色碼。`;
     const res = await fetch(CF_WORKER_URL + '/claude', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 300,
-        messages: [{role:'user', content: prompt}]
-      })
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:300, messages:[{role:'user',content:prompt}] })
     });
     const data = await res.json();
     const text = data.content?.[0]?.text || '';
-
-    // 解析 JSON
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('無法解析色碼');
     const result = JSON.parse(jsonMatch[0]);
     const colors = result.colors || [];
-    const siteName = result.siteName || url;
-
     if (!colors.length) throw new Error('沒有抓到色碼');
-
-    // 顯示色票
-    const swatchesEl = document.getElementById('colorSwatches');
-    swatchesEl.innerHTML = colors.map((hex, i) => `
-      <div style="position:relative;margin-bottom:20px;">
-        <div class="color-swatch" style="background:${hex};" onclick="selectCustomColor('${hex}')" title="${hex}">
-          <span class="color-swatch-hex">${hex}</span>
-        </div>
-      </div>
-    `).join('');
-
-    document.getElementById('colorResultTitle').textContent = `${siteName} 的色系：`;
+    document.getElementById('colorSwatches').innerHTML = colors.map(hex => `
+      <div class="color-swatch-wrap" onclick="selectCustomColor('${hex}')">
+        <div class="color-swatch" style="background:${hex};"></div>
+        <span class="color-swatch-hex">${hex}</span>
+      </div>`).join('');
+    document.getElementById('colorResultTitle').textContent = `${result.siteName || url} 的色系：`;
     document.getElementById('colorResult').style.display = 'block';
-
-    // 清除預設選取
     document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
-
-  } catch(e) {
-    alert('抓取失敗：' + e.message + '\n\n請確認網址正確，或直接選擇預設色系');
-  }
-
+  } catch(e) { alert('抓取失敗：' + e.message + '\n\n請選擇預設色系'); }
   btn.disabled = false;
   btn.innerHTML = '🎨 抓取色系';
 }
 
 function selectCustomColor(hex) {
   document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('on'));
-  event.currentTarget.classList.add('on');
+  event.currentTarget.querySelector('.color-swatch').classList.add('on');
   document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('on'));
   selectedColorKey = 'custom';
   selectedColorHex = hex;
-  document.getElementById('f_color').value = hex;
-  document.getElementById('f_colorHex').value = hex;
   updateSelectedColor(hex, '自訂色');
 }
 
-// ══ 其他功能 ══
+// ══ 表單邏輯 ══
 function selectRadio(btn, group) {
-  const parent = btn.closest('.radio-group');
-  parent.querySelectorAll('.radio-btn').forEach(b => b.classList.remove('on'));
+  btn.closest('.radio-group').querySelectorAll('.radio-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   const hiddenId = {cat:'f_category', style:'f_style'}[group];
   if (hiddenId) document.getElementById(hiddenId).value = btn.textContent.trim();
@@ -539,8 +537,7 @@ function goStep(n) {
   document.getElementById('sec' + currentStep).classList.remove('active');
   document.getElementById('sec' + n).classList.add('active');
   ['step1','step2','step3','step4','step5'].forEach((id, i) => {
-    const el = document.getElementById(id);
-    el.className = 'step' + (i+1 < n ? ' done' : i+1 === n ? ' active' : '');
+    document.getElementById(id).className = 'step' + (i+1<n?' done':i+1===n?' active':'');
   });
   if (n === 5) buildSummary();
   currentStep = n;
@@ -548,12 +545,12 @@ function goStep(n) {
 }
 
 function validateStep(n) {
-  if (n === 1) {
+  if (n===1) {
     if (!v('f_name')) { alert('請填寫品牌名稱'); return false; }
     if (!v('f_contact')) { alert('請填寫聯絡人姓名'); return false; }
   }
-  if (n === 2 && !v('f_story')) { alert('請填寫品牌故事'); return false; }
-  if (n === 3) {
+  if (n===2 && !v('f_story')) { alert('請填寫品牌故事'); return false; }
+  if (n===3) {
     if (!v('f_category')) { alert('請選擇商品類別'); return false; }
     if (!v('f_products')) { alert('請填寫主力商品或服務'); return false; }
   }
@@ -562,9 +559,10 @@ function validateStep(n) {
 
 function buildSummary() {
   const platforms = getPlatforms() || '未填寫';
+  const phoneCode = document.getElementById('f_phoneCode').value;
   document.getElementById('summaryBox').innerHTML = `
-    <b style="color:var(--gold)">品牌名稱：</b>${v('f_name')} ${v('f_nameEn') ? '('+v('f_nameEn')+')' : ''}<br>
-    <b style="color:var(--gold)">聯絡人：</b>${v('f_contact')} ${v('f_phone')}<br>
+    <b style="color:var(--gold)">品牌名稱：</b>${v('f_name')}<br>
+    <b style="color:var(--gold)">聯絡人：</b>${v('f_contact')} ${phoneCode} ${v('f_phone')}<br>
     <b style="color:var(--gold)">官網：</b>${v('f_website')||'未填'}<br>
     <b style="color:var(--gold)">商品類別：</b>${v('f_category')}<br>
     <b style="color:var(--gold)">銷售平台：</b>${platforms}<br>
@@ -581,6 +579,7 @@ function getPlatforms() {
     .map(id => document.getElementById(id).value).join('、');
 }
 
+// ══ 生成靈魂書 ══
 async function doGenerate() {
   document.getElementById('btnGenerate').disabled = true;
   document.getElementById('genOverlay').classList.add('show');
@@ -592,14 +591,16 @@ async function doGenerate() {
     document.getElementById('genMsg').textContent = msgs[Math.floor(pct/18)] || msgs[4];
   }, 400);
 
+  const phoneCode = document.getElementById('f_phoneCode').value;
   const prompt = `你是一位頂尖的品牌策略師，請根據以下資料生成一份完整的「品牌靈魂書」。
 
 【品牌基本資訊】
-品牌名稱：${v('f_name')} ${v('f_nameEn') ? '('+v('f_nameEn')+')' : ''}
+品牌名稱：${v('f_name')}
 官網：${v('f_website')}
 Facebook：${v('f_fb')}  Instagram：${v('f_ig')}
 小紅書：${v('f_xiaohongshu')}  抖音：${v('f_douyin')}
 微信公眾號：${v('f_wechat')}  其他：${v('f_social_other')}
+聯絡：${v('f_contact')} ${phoneCode} ${v('f_phone')}
 
 【品牌故事】
 創立原因：${v('f_story')}
@@ -622,7 +623,7 @@ Facebook：${v('f_fb')}  Instagram：${v('f_ig')}
 品牌主色：${selectedColorHex}
 參考品牌：${v('f_ref')}
 
-注意：根據類別（實體/課程/服務）調整廣告策略。
+注意：根據類別（實體/課程/服務）調整廣告策略。若有海外社群（小紅書/抖音/微信），需考量跨境行銷。
 
 請用繁體中文生成品牌靈魂書，包含：
 1. 品牌定位宣言（一句話）
@@ -635,13 +636,8 @@ Facebook：${v('f_fb')}  Instagram：${v('f_ig')}
 
   try {
     const res = await fetch(CF_WORKER_URL + '/claude', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        messages: [{role:'user', content: prompt}]
-      })
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:2000, messages:[{role:'user',content:prompt}] })
     });
     const data = await res.json();
     generatedSoul = data.content?.[0]?.text || '生成失敗，請重試';
@@ -660,47 +656,38 @@ Facebook：${v('f_fb')}  Instagram：${v('f_ig')}
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
+// ══ 送出 ══
 async function doSubmit() {
   const btn = document.getElementById('btnSubmit');
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span> 送出中...';
-
-  function parseDriveId(raw) {
-    if (!raw) return '';
-    const m = raw.match(/(?:folders\/|id=)([a-zA-Z0-9_\-]{15,})/);
-    if (m) return m[1];
-    if (/^[a-zA-Z0-9_\-]{15,}$/.test(raw.trim())) return raw.trim();
-    return raw;
-  }
-
+  const phoneCode = document.getElementById('f_phoneCode').value;
   const payload = {
-    action: 'submitBrand', password: GAS_PASSWORD, email: userEmail,
-    name: v('f_name'), nameEn: v('f_nameEn'),
-    website: v('f_website'), fb: v('f_fb'), ig: v('f_ig'),
-    xiaohongshu: v('f_xiaohongshu'), douyin: v('f_douyin'),
-    wechat: v('f_wechat'), socialOther: v('f_social_other'),
-    contact: v('f_contact'), phone: v('f_phone'),
-    story: v('f_story'), values: v('f_values'),
-    competitors: v('f_competitors'), competitorUrls: v('f_competitorUrls'),
-    pros: v('f_pros'), cons: v('f_cons'), misc: v('f_misc'),
-    category: v('f_category'), products: v('f_products'),
-    platforms: getPlatforms(), price: v('f_price'), audience: v('f_audience'),
-    style: v('f_style'), ref: v('f_ref'),
-    color: v('f_color'), colorHex: selectedColorHex,
-    photoFolder: parseDriveId(v('f_photoFolder')),
-    videoFolder: parseDriveId(v('f_videoFolder')),
-    soulBook: generatedSoul, status: 'pending'
+    action:'submitBrand', password:GAS_PASSWORD, email:userEmail,
+    name:v('f_name'),
+    website:v('f_website'), fb:v('f_fb'), ig:v('f_ig'),
+    xiaohongshu:v('f_xiaohongshu'), douyin:v('f_douyin'),
+    wechat:v('f_wechat'), socialOther:v('f_social_other'),
+    contact:v('f_contact'), phone: phoneCode + ' ' + v('f_phone'),
+    story:v('f_story'), values:v('f_values'),
+    competitors:v('f_competitors'), competitorUrls:v('f_competitorUrls'),
+    pros:v('f_pros'), cons:v('f_cons'), misc:v('f_misc'),
+    category:v('f_category'), products:v('f_products'),
+    platforms:getPlatforms(), price:v('f_price'), audience:v('f_audience'),
+    style:v('f_style'), ref:v('f_ref'),
+    color:v('f_color'), colorHex:selectedColorHex,
+    rootFolderId: ROOT_FOLDER_ID,
+    soulBook:generatedSoul, status:'pending'
   };
-
   try {
     await fetch(GAS_URL, { method:'POST', body:JSON.stringify(payload), headers:{'Content-Type':'application/json'} });
   } catch(e) { console.warn(e); }
-
   document.getElementById('resultSection').style.display = 'none';
   document.getElementById('successSection').style.display = 'block';
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
+// ══ Google Auth ══
 function initGoogleAuth() {
   if (!window.google) return;
   tokenClient = google.accounts.oauth2.initTokenClient({
@@ -724,10 +711,8 @@ function doGoogleLogin() {
   else setTimeout(() => { if(tokenClient) tokenClient.requestAccessToken({prompt:'select_account'}); }, 1500);
 }
 
-// 初始化
 window.addEventListener('load', () => {
   initColorPresets();
-  // 預設第一個色系
   updateSelectedColor('#E8A03A', '品牌金');
 });
 </script>
