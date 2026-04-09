@@ -969,18 +969,21 @@ async function runAIDiagnosis() {
   if (btn) { btn.disabled = true; btn.innerHTML = '🔄 診斷中...'; }
   showDiagPanel('<div class="diag-loading"><div class="spin2"></div><div style="color:var(--t3);margin-top:12px;font-size:11px;">Claude 正在分析廣告數據...<br><span style="font-size:10px;color:rgba(255,255,255,0.2);">通常需要 10~20 秒</span></div></div>');
   try {
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    // 透過 Cloudflare Worker 代理（避免 CORS），使用現有的 claude_generate action
+    var resp = await fetch(CF_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
+        action: 'claude_generate',
+        password: GAS_PASSWORD,
+        prompt: prompt,
+        max_tokens: 1000
       })
     });
     var data = await resp.json();
-    var text = (data.content||[]).map(function(b){return b.text||'';}).join('');
-    if (!text) throw new Error(data.error&&data.error.message||'API 無回應');
+    if (!data.ok) throw new Error(data.error || 'Worker 回應錯誤');
+    var text = data.text || '';
+    if (!text) throw new Error('Claude 無回應內容');
     showDiagPanel(renderMarkdown(text), true);
   } catch(e) {
     showDiagPanel('<div style="color:var(--gold);padding:20px;">❌ 診斷失敗：'+e.message+'</div>');
