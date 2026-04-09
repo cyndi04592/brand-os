@@ -33,7 +33,7 @@ const CMAP = {
 };
 function getColor(key) { return CMAP[key] || CMAP.gold; }
 
-// ★ 修正：補齊 7 個品牌
+// ★ 品牌資料（含新增香港福臨門）
 const LOCAL_FALLBACK_DATA = {
   brands: [
     { id:'cf',  name:'巧福健康家電', icon:'🏠', navColor:'gold',   soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。', adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊', hashtags:'#居家健康 #巧福 #台灣品牌' },
@@ -42,7 +42,12 @@ const LOCAL_FALLBACK_DATA = {
     { id:'moz', name:'MOZ瑞典駝鹿',  icon:'🦌', navColor:'sky',    soul:'瑞典駝鹿DNA，用北歐色彩與趣味設計讓日常更輕鬆愉快。', adStyle:'北歐輕鬆感、顏值日常、戶外露營風、多色搭配', hashtags:'#MOZ瑞典駝鹿 #北歐設計 #洞洞鞋 #雲朵包' },
     { id:'ka',  name:'空瑪那',        icon:'🎯', navColor:'purple', soul:'空瑪那是台灣頂尖身心靈國際學院，由宸甄老師創立。', adStyle:'療癒禪意、國際專業、身心靈覺醒、名人背書', hashtags:'#空瑪那 #頌缽療癒 #瑜珈師資 #冥想' },
     { id:'la',  name:'LACEZ',         icon:'💎', navColor:'mint',   soul:'LACEZ是台灣MIT內衣品牌，工廠直接賣給消費者。', adStyle:'閨蜜親切、精品感平價、MIT驕傲、穿出自信', hashtags:'#LACEZ #台灣MIT #好內衣不貴 #無鋼圈' },
-    { id:'ra',  name:'RADESIGN',      icon:'🏷️', navColor:'gold',   soul:'RADESIGN專營正版品牌鞋Outlet，百分百原廠授權。', adStyle:'直白促銷、正版保證、超值撿漏、蝦皮熱銷', hashtags:'#RADESIGN #正版outlet #品牌鞋特賣 #蝦皮' }
+    { id:'ra',  name:'RADESIGN',      icon:'🏷️', navColor:'gold',   soul:'RADESIGN專營正版品牌鞋Outlet，百分百原廠授權。', adStyle:'直白促銷、正版保證、超值撿漏、蝦皮熱銷', hashtags:'#RADESIGN #正版outlet #品牌鞋特賣 #蝦皮' },
+    // ★ 新增：香港福臨門
+    { id:'flm', name:'香港福臨門',    icon:'🏮', navColor:'brown',
+      soul:'1948年創立於香港灣仔，近八十載粵菜傳承。米其林一星連續七年、富豪飯堂、中餐少林寺。每日新鮮食材、傳統手工烹製、百道工序成就每一味。',
+      adStyle:'高端粵菜質感、傳承匠心、米其林星級、香港在地情懷、簡體中文為主（小紅書/抖音）、港味文案風格、不涉及家族歷史',
+      hashtags:'#福臨門 #FookLamMoon #香港美食 #米其林 #粵菜 #富豪飯堂 #香港必吃' }
   ],
   products: [],
   folders: [
@@ -52,7 +57,9 @@ const LOCAL_FALLBACK_DATA = {
     { brandId:'moz', photoFolderId:'1qEsp9ifgBlYhAViOYBiou0u0mbABs1CE', videoFolderId:'1FYErl24zN_Cp2I7T3hSiv0pxqxU6QbYa' },
     { brandId:'ka',  photoFolderId:'1FX3-68mUz84tmWXI0BGnoQhKKv8JkpPW', videoFolderId:'13xC4onSRLQTB9J9wTot24bdPI9Yc2kj4' },
     { brandId:'la',  photoFolderId:'1Yt3NoT_ryBlj-jVvG7-sWm-UCGYQchxy', videoFolderId:'18LPs4wV2kcnT8pcJRUtm7hDax7nId5pD' },
-    { brandId:'ra',  photoFolderId:'1ZJ1KVG6ae0WNG55eF4kwVsycozT6NmJM', videoFolderId:'1kUT_a5AKn71UgU1bD0-t_HR3W9OhqMY6' }
+    { brandId:'ra',  photoFolderId:'1ZJ1KVG6ae0WNG55eF4kwVsycozT6NmJM', videoFolderId:'1kUT_a5AKn71UgU1bD0-t_HR3W9OhqMY6' },
+    // ★ 新增：香港福臨門（Drive folder 待後續填入）
+    { brandId:'flm', photoFolderId:'', videoFolderId:'' }
   ]
 };
 
@@ -128,6 +135,25 @@ const BRAND_SCENE_PROMPTS = {
     garden:    'flower garden dining, afternoon tea, elegant outdoor table',
     camping:   'glamping setup, premium outdoor dining, sophisticated',
     office:    'modern kitchen counter, premium sauce styling, food blogger',
+    random:    null
+  },
+  // ★ 新增：福臨門專屬場景（香港高端粵菜氛圍）
+  flm: {
+    studio:    'classic chinese restaurant interior, red lacquer and gold accents, elegant Hong Kong fine dining, professional food photography, dark moody background',
+    lifestyle: 'hong kong luxury private dining room, round table, traditional chinese setting, warm chandelier light, VIP atmosphere',
+    nature:    'hong kong harbour view at golden hour, victoria peak backdrop, upscale outdoor dining terrace',
+    forest:    'chinese garden courtyard, bamboo, stone lanterns, traditional elegant atmosphere',
+    food:      'authentic cantonese fine dining table setting, ivory chopsticks, premium porcelain, warm light, traditional chinese restaurant ambiance',
+    kitchen:   'professional cantonese kitchen, wok fire blazing, traditional chinese cooking, authentic hong kong restaurant',
+    luxury:    'dark black lacquer surface, gold chopsticks, premium cantonese cuisine plating, michelin star restaurant vibes, elegant and prestigious',
+    marble:    'white jade marble surface, traditional chinese porcelain bowl, soft elegant studio lighting, premium hongkong brand',
+    outdoor:   'hong kong city skyline blur, peak tram view, upscale rooftop terrace dining, golden hour',
+    beach:     'hong kong aberdeen harbour, traditional fishing boats bokeh, upscale waterfront dining',
+    minimal:   'pure black background, dramatic single spotlight, premium cantonese dish presentation, michelin star plating',
+    night:     'hong kong neon night, wanchai atmosphere, classic chinese restaurant glowing facade, iconic hongkong',
+    garden:    'traditional chinese garden, peonies, koi pond, elegant scholar rock, premium setting',
+    camping:   'private yacht deck, hong kong harbour, sunset, luxury cantonese dining experience',
+    office:    'hong kong business lunch setting, private room, premium chopsticks, formal cantonese hospitality',
     random:    null
   }
 };
