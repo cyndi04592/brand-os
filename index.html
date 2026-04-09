@@ -58,7 +58,7 @@
 <!-- ══ 主工作區 ══ -->
 <div class="workspace">
 
-  <!-- 左側：品牌 + 商品 ── 修正捲動問題 -->
+  <!-- 左側：品牌 + 商品 -->
   <div class="left" style="display:flex;flex-direction:column;overflow:hidden;">
     <div style="padding:12px 14px 6px;flex-shrink:0;">
       <div class="l-sec">品牌 · 商品</div>
@@ -85,11 +85,34 @@
         <div style="display:flex;flex-direction:column;gap:2px;">
           <div class="sel-lbl">目標受眾</div>
           <select class="sel" id="selAud">
-            <option>媽媽族群／家庭主婦</option><option>新手爸媽／育兒家庭</option><option>銀髮族／養生族</option>
-            <option>上班族／久坐族</option><option>健身運動族</option><option>Z世代零嘴族</option>
-            <option>學生族群</option><option>小資族／省錢族</option><option>寵物主人</option>
-            <option>居家生活愛好者</option><option>戶外露營族</option><option>美食饕客</option>
-            <option>科技愛好者</option><option>一般消費者</option>
+            <!-- ── 電商／一般消費品 ── -->
+            <optgroup label="── 電商／消費品 ──">
+              <option>媽媽族群／家庭主婦</option>
+              <option>新手爸媽／育兒家庭</option>
+              <option>銀髮族／養生族</option>
+              <option>上班族／久坐族</option>
+              <option>健身運動族</option>
+              <option>Z世代零嘴族</option>
+              <option>學生族群</option>
+              <option>小資族／省錢族</option>
+              <option>寵物主人</option>
+              <option>居家生活愛好者</option>
+              <option>戶外露營族</option>
+              <option>美食饕客</option>
+              <option>科技愛好者</option>
+              <option>一般消費者</option>
+            </optgroup>
+            <!-- ── 餐廳／服務業專用 ── -->
+            <optgroup label="── 餐廳／服務業 ──">
+              <option>商務宴請／企業客戶</option>
+              <option>高端美食饕客／米其林愛好者</option>
+              <option>香港本地名流／富豪圈</option>
+              <option>內地赴港美食打卡族</option>
+              <option>家庭慶典／重要紀念日</option>
+              <option>觀光旅遊客／外籍訪客</option>
+              <option>飲食KOL／美食媒體</option>
+              <option>婚宴／企業包場客戶</option>
+            </optgroup>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;">
