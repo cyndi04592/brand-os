@@ -36,9 +36,10 @@ function initGoogleAuth() {
 
       const isRelogin = !!window._driveToken;
       window._driveToken = resp.access_token;
+      window._workerDriveMode = false; // Google 登入用原本流程
       sessionStorage.setItem('bs_token', resp.access_token);
+      sessionStorage.removeItem('bs_worker_mode');
 
-      // 重新連結 Drive：清快取重抓素材
       if (isRelogin) {
         setDriveStatus('ok');
         Object.keys(_assetCache || {}).forEach(k => delete _assetCache[k]);
@@ -76,23 +77,93 @@ function initGoogleAuth() {
   });
 }
 
-// ══ 登入成功後更新 UI ══
-function _onLoginSuccess() {
-  document.getElementById('loginOverlay').style.display = 'none';
-  setDriveStatus('ok');
+// ══ 帳密登入（★ 新增）══
+// 帳密對照表：帳號 → 對應顯示名稱
+const _PWD_ACCOUNTS = {
+  'test': { pass: 'Abc12345', name: 'Fook Lam Moon' },
+};
 
-  const btn = document.getElementById('driveLoginBtn');
-  if (btn) {
-    btn.textContent = '✅ ' + (_userEmail || '已連結');
-    btn.style.borderColor = 'var(--mint)';
-    btn.style.color = 'var(--mint)';
-    btn.style.background = 'var(--mint2)';
+function showPasswordLogin() {
+  const overlay = document.getElementById('loginOverlay');
+  const existing = document.getElementById('pwdLoginForm');
+  if (existing) { existing.style.display = existing.style.display === 'none' ? 'block' : 'none'; return; }
+
+  // 動態插入帳密表單
+  const form = document.createElement('div');
+  form.id = 'pwdLoginForm';
+  form.style.cssText = 'margin-top:16px;';
+  form.innerHTML = `
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;margin-top:4px;">
+      <div style="font-size:10px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;text-align:center;">帳號密碼登入</div>
+      <input id="pwdUser" type="text" placeholder="帳號" autocomplete="username"
+        style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px 12px;color:#e8e0d0;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:8px;font-family:inherit;">
+      <input id="pwdPass" type="password" placeholder="密碼" autocomplete="current-password"
+        style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px 12px;color:#e8e0d0;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:10px;font-family:inherit;"
+        onkeydown="if(event.key==='Enter')doPwdLogin()">
+      <button onclick="doPwdLogin()"
+        style="width:100%;padding:10px;border-radius:8px;border:none;background:rgba(91,200,200,0.15);color:var(--sky);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1px solid rgba(91,200,200,0.4);">
+        登入
+      </button>
+      <div id="pwdErr" style="font-size:11px;color:#f44336;text-align:center;margin-top:8px;min-height:16px;"></div>
+    </div>`;
+
+  // 插入到 loginErr 後面
+  const loginErr = overlay.querySelector('#loginErr');
+  loginErr.parentNode.insertBefore(form, loginErr.nextSibling);
+}
+
+async function doPwdLogin() {
+  const user = document.getElementById('pwdUser')?.value?.trim().toLowerCase();
+  const pass = document.getElementById('pwdPass')?.value;
+  const errEl = document.getElementById('pwdErr');
+  if (!user || !pass) { if(errEl) errEl.textContent = '請輸入帳號和密碼'; return; }
+
+  const account = _PWD_ACCOUNTS[user];
+  if (!account || account.pass !== pass) {
+    if(errEl) errEl.textContent = '❌ 帳號或密碼錯誤';
+    return;
   }
-  const warn = document.getElementById('driveWarningBanner');
-  if (warn) warn.style.display = 'none';
 
-  const lbl = document.getElementById('driveLabel');
-  if (lbl) { lbl.classList.remove('drive-warning-text'); lbl.textContent = 'Drive 已連結'; }
+  // 驗證成功
+  if(errEl) errEl.textContent = '';
+  _userEmail = user + '@brandos.internal';
+  window._workerDriveMode = true; // ★ 走 Worker Drive 模式
+  window._driveToken = null;       // 不用 Google token
+  sessionStorage.setItem('bs_worker_mode', '1');
+  sessionStorage.setItem('bs_email', _userEmail);
+  sessionStorage.removeItem('bs_token');
+
+  _onLoginSuccess(_userEmail, account.name);
+  await startSystem();
+}
+
+// ══ 登入成功後更新 UI ══
+function _onLoginSuccess(email, displayName) {
+  document.getElementById('loginOverlay').style.display = 'none';
+
+  // Worker mode 不顯示 Drive 連結按鈕
+  if (window._workerDriveMode) {
+    setDriveStatus('ok');
+    const btn = document.getElementById('driveLoginBtn');
+    if (btn) btn.style.display = 'none';
+    const warn = document.getElementById('driveWarningBanner');
+    if (warn) warn.style.display = 'none';
+    const lbl = document.getElementById('driveLabel');
+    if (lbl) { lbl.classList.remove('drive-warning-text'); lbl.textContent = displayName || 'Drive 已連結'; }
+  } else {
+    setDriveStatus('ok');
+    const btn = document.getElementById('driveLoginBtn');
+    if (btn) {
+      btn.textContent = '✅ ' + (_userEmail || '已連結');
+      btn.style.borderColor = 'var(--mint)';
+      btn.style.color = 'var(--mint)';
+      btn.style.background = 'var(--mint2)';
+    }
+    const warn = document.getElementById('driveWarningBanner');
+    if (warn) warn.style.display = 'none';
+    const lbl = document.getElementById('driveLabel');
+    if (lbl) { lbl.classList.remove('drive-warning-text'); lbl.textContent = 'Drive 已連結'; }
+  }
 
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) logoutBtn.style.display = 'block';
@@ -119,6 +190,7 @@ function doGoogleLogin() {
 
 // ══ Drive 重新連結 ══
 function driveLogin() {
+  if (window._workerDriveMode) return; // worker mode 不需要
   if (!tokenClient) { alert('Google 授權尚未載入'); return; }
   tokenClient.requestAccessToken({ prompt: '' });
 }
@@ -141,10 +213,12 @@ async function checkWhitelist(email) {
 function doLogout() {
   if (!confirm('確定要登出嗎？')) return;
   window._driveToken = null;
+  window._workerDriveMode = false;
   _userEmail = null;
   _systemStarted = false;
   sessionStorage.removeItem('bs_token');
   sessionStorage.removeItem('bs_email');
+  sessionStorage.removeItem('bs_worker_mode');
   window.S = { brandId:null, subId:null, prod:null, photos:[], videos:[], selPhoto:null, selVideo:null, scripts:[], delivers:[], openBrand:null };
   _isInitializing = false;
   if (window.google?.accounts?.oauth2) {
@@ -164,17 +238,23 @@ function goAdmin() {
 
 // ══ 系統啟動 ══
 async function startSystem() {
-  // 從 session 還原 token 和 email
-  if (!window._driveToken) {
+  // 還原 worker mode session
+  if (sessionStorage.getItem('bs_worker_mode') === '1') {
+    window._workerDriveMode = true;
+    window._driveToken = null;
+    _userEmail = sessionStorage.getItem('bs_email') || '';
+    _onLoginSuccess(_userEmail);
+  } else if (!window._driveToken) {
+    // 還原一般 Google token
     const t = sessionStorage.getItem('bs_token');
     if (t) {
       window._driveToken = t;
+      window._workerDriveMode = false;
       _userEmail = sessionStorage.getItem('bs_email') || '';
       _onLoginSuccess();
     }
   }
 
-  // 防止重複執行
   if (_systemStarted) return;
   _systemStarted = true;
 
