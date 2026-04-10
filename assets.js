@@ -6,6 +6,12 @@
 const _assetCache = {};
 
 async function autoFetchAssets(brandId) {
+  // ★ Worker Drive 模式（帳密登入）
+  if (window._workerDriveMode) {
+    await autoFetchAssetsWorker(brandId);
+    return;
+  }
+  // 原本 Google OAuth 模式
   if (!window._driveToken) return;
   if (_assetCache[brandId]?.loaded) {
     window.S.photos   = _assetCache[brandId].photos;
@@ -48,8 +54,88 @@ async function autoFetchAssets(brandId) {
   setDriveStatus('ok');
 }
 
+// ★ Worker Drive 模式：透過小號 Refresh Token 抓圖
+async function autoFetchAssetsWorker(brandId) {
+  if (_assetCache[brandId]?.loaded) {
+    window.S.photos   = _assetCache[brandId].photos;
+    window.S.videos   = _assetCache[brandId].videos;
+    window.S.selPhoto = null;
+    window.S.selVideo = null;
+    renderAssets();
+    return;
+  }
+  const f = window.BRAND_FOLDERS[brandId];
+  if (!f) return;
+
+  window.S.photos   = [];
+  window.S.videos   = [];
+  window.S.selPhoto = null;
+  window.S.selVideo = null;
+  setDriveStatus('busy');
+
+  const photoInput = document.getElementById('inPhotoFolder');
+  const videoInput = document.getElementById('inVideoFolder');
+
+  const promises = [];
+  if (f.photo) {
+    if (photoInput) photoInput.value = f.photo;
+    promises.push(fetchFromWorker(f.photo, 'photo'));
+  }
+  if (f.video) {
+    if (videoInput) videoInput.value = f.video;
+    promises.push(fetchFromWorker(f.video, 'video'));
+  }
+  await Promise.all(promises);
+
+  _assetCache[brandId] = {
+    loaded: true,
+    photos: [...window.S.photos],
+    videos: [...window.S.videos]
+  };
+
+  renderAssets();
+  setDriveStatus('ok');
+}
+
+// ★ 透過 Cloudflare Worker 抓 Drive 檔案
+async function fetchFromWorker(folderId, type) {
+  if (!folderId) return;
+  try {
+    const resp = await fetch(CF_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'drive_files',
+        password: GAS_PASSWORD,
+        folderId,
+        type: type === 'photo' ? 'photo' : 'video'
+      })
+    });
+    const data = await resp.json();
+    if (!data.ok) { console.warn('Worker Drive error:', data.error); return; }
+
+    (data.files || []).forEach(f => {
+      const arr = type === 'photo' ? window.S.photos : window.S.videos;
+      if (!arr.find(x => x.driveId === f.id)) {
+        arr.push({
+          driveId: f.id,
+          name: f.name,
+          thumb: f.thumbnailLink || '',
+          driveUrl: f.viewUrl,
+          src: f.thumbnailLink || '', // 用縮圖當預覽
+          type
+        });
+      }
+    });
+  } catch (e) { console.warn('fetchFromWorker error:', e); }
+}
+
 // ══ 手動抓取（按鈕觸發）══
 async function fetchDriveAssets(type) {
+  if (window._workerDriveMode) {
+    await fetchBoth();
+    return;
+  }
   if (!window._driveToken) {
     document.getElementById('assetGrid').innerHTML = `
       <div style="margin:12px;padding:14px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;">
@@ -69,18 +155,23 @@ async function fetchDriveAssets(type) {
 }
 
 async function fetchBoth() {
-  if (!window._driveToken) { driveLogin(); return; }
   const bid = window.S.brandId;
-  // 清掉快取，強制重抓
   if (bid) delete _assetCache[bid];
   window.S.photos = [];
   window.S.videos = [];
+
+  // ★ Worker Drive 模式
+  if (window._workerDriveMode) {
+    await autoFetchAssetsWorker(bid);
+    return;
+  }
+
+  if (!window._driveToken) { driveLogin(); return; }
 
   const photoRaw = document.getElementById('inPhotoFolder')?.value?.trim();
   const videoRaw = document.getElementById('inVideoFolder')?.value?.trim();
 
   if (!photoRaw && !videoRaw) {
-    // 如果隱藏欄位是空的，從 BRAND_FOLDERS 補上
     const f = window.BRAND_FOLDERS[bid];
     if (f?.photo) document.getElementById('inPhotoFolder').value = f.photo;
     if (f?.video) document.getElementById('inVideoFolder').value = f.video;
@@ -102,7 +193,7 @@ async function fetchBoth() {
   setDriveStatus('ok');
 }
 
-// ══ Drive API 實際抓取（★ 加入 401 自動重授權）══
+// ══ Drive API 實際抓取（原本 Google OAuth 流程，不動）══
 async function fetchFromDriveAPI(folderId, type, token) {
   const mimeFilter = type === 'photo' ? "mimeType contains 'image/'" : "mimeType contains 'video/'";
   const q = encodeURIComponent(`'${folderId}' in parents and (${mimeFilter}) and trashed=false`);
@@ -112,13 +203,11 @@ async function fetchFromDriveAPI(folderId, type, token) {
       { headers: { Authorization: 'Bearer ' + token } }
     );
 
-    // ★ 401 → token 過期，清掉 session 強制重新登入
     if (r.status === 401) {
       console.warn('Drive token 過期，清除快取重新授權');
       sessionStorage.removeItem('bs_token');
       window._driveToken = null;
       setDriveStatus('err');
-      // 顯示重新連結提示
       document.getElementById('assetGrid').innerHTML = `
         <div style="margin:12px;padding:14px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;">
           <div style="font-size:13px;font-weight:900;color:#FF4D6A;margin-bottom:6px;">· Drive 授權已過期</div>
@@ -139,7 +228,6 @@ async function fetchFromDriveAPI(folderId, type, token) {
             src: '', type
           };
           arr.push(item);
-          // 背景載入實際圖片
           fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, {
             headers: { Authorization: 'Bearer ' + token }
           }).then(r => r.blob()).then(blob => {
@@ -203,8 +291,9 @@ function selectAsset(type, i) {
   }
 }
 
-// ══ Drive 上傳廣告圖 ══
+// ══ Drive 上傳廣告圖（只有 Google 模式才能用）══
 async function uploadAdToDrive(canvas, filename) {
+  if (window._workerDriveMode) return; // worker mode 不支援上傳
   const dlBtn = document.getElementById('adDownloadBtn');
   const origText = dlBtn?.textContent || '';
   if (dlBtn) { dlBtn.textContent = '· 上傳中...'; dlBtn.disabled = true; }
