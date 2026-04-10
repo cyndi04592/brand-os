@@ -92,8 +92,6 @@ tr:hover td { background: #1a1a2488; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty-state { text-align: center; padding: 60px 20px; color: #444; }
 .color-gold{background:#d4af6a}.color-red{background:#e05555}.color-mint{background:#5db8a0}.color-purple{background:#9b7fd4}.color-sky{background:#5ba8d4}.color-brown{background:#a07850}
-
-/* ══ 記憶庫樣式 ══ */
 .mem-admin-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .mem-filter-group { display: flex; gap: 8px; }
 .mem-select { background: #1a1a24; border: 1px solid #2a2a3a; color: #e8e0d0; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
@@ -123,8 +121,6 @@ tr:hover td { background: #1a1a2488; }
 .mem-pagination { display: flex; gap: 6px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
 .mem-page-btn { background: #1a1a24; border: 1px solid #2a2a3a; color: #888; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
 .mem-page-btn:hover, .mem-page-btn.active { border-color: #d4af6a; color: #d4af6a; background: rgba(212,175,106,0.1); }
-
-/* ══ 品牌審核樣式 ══ */
 .apply-filter-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
 .apply-ftab { padding: 6px 14px; border-radius: 7px; border: 1px solid #2a2a3a; background: transparent; color: #666; font-size: 12px; cursor: pointer; transition: all .15s; }
 .apply-ftab:hover { color: #aaa; }
@@ -262,64 +258,47 @@ tr:hover td { background: #1a1a2488; }
     <div class="mem-pagination" id="memPagination"></div>
   </div>
 
-  <!-- ══ 品牌審核（新增）══ -->
+  <!-- 品牌審核 -->
   <div class="section" id="sec-apply">
     <div class="section-header">
       <h2>📋 品牌進駐審核</h2>
       <button class="btn-refresh" onclick="loadApply()">🔄 重新整理</button>
     </div>
-
-    <!-- 篩選 -->
     <div class="apply-filter-tabs">
       <button class="apply-ftab on" onclick="filterApply('all',this)">全部</button>
       <button class="apply-ftab" onclick="filterApply('pending',this)">⏳ 待審核</button>
       <button class="apply-ftab" onclick="filterApply('approved',this)">✅ 已核准</button>
       <button class="apply-ftab" onclick="filterApply('rejected',this)">❌ 已拒絕</button>
     </div>
-
     <div id="applyList" class="apply-list">
       <div class="mem-loading">載入中...</div>
     </div>
-
-    <!-- API 快速連結 -->
     <div class="apply-api-links">
       <div class="api-links-title">🔗 API 費用快速連結</div>
       <div class="api-links-grid">
         <a class="api-link-card" href="https://console.anthropic.com/settings/billing" target="_blank">
-          <div class="api-link-icon">🤖</div>
-          <div class="api-link-name">Claude API</div>
-          <div class="api-link-url">console.anthropic.com</div>
-          <div class="api-link-arrow">↗</div>
+          <div class="api-link-icon">🤖</div><div class="api-link-name">Claude API</div>
+          <div class="api-link-url">console.anthropic.com</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://app.photoroom.com/account" target="_blank">
-          <div class="api-link-icon">📸</div>
-          <div class="api-link-name">PhotoRoom</div>
-          <div class="api-link-url">app.photoroom.com</div>
-          <div class="api-link-arrow">↗</div>
+          <div class="api-link-icon">📸</div><div class="api-link-name">PhotoRoom</div>
+          <div class="api-link-url">app.photoroom.com</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://fal.ai/dashboard" target="_blank">
-          <div class="api-link-icon">🎨</div>
-          <div class="api-link-name">fal.ai</div>
-          <div class="api-link-url">fal.ai/dashboard</div>
-          <div class="api-link-arrow">↗</div>
+          <div class="api-link-icon">🎨</div><div class="api-link-name">fal.ai</div>
+          <div class="api-link-url">fal.ai/dashboard</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://dash.cloudflare.com" target="_blank">
-          <div class="api-link-icon">☁️</div>
-          <div class="api-link-name">Cloudflare</div>
-          <div class="api-link-url">dash.cloudflare.com</div>
-          <div class="api-link-arrow">↗</div>
+          <div class="api-link-icon">☁️</div><div class="api-link-name">Cloudflare</div>
+          <div class="api-link-url">dash.cloudflare.com</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://ai.raby.com.tw/onboard.html" target="_blank">
-          <div class="api-link-icon">📝</div>
-          <div class="api-link-name">品牌進駐問卷</div>
-          <div class="api-link-url">ai.raby.com.tw/onboard.html</div>
-          <div class="api-link-arrow">↗</div>
+          <div class="api-link-icon">📝</div><div class="api-link-name">品牌進駐問卷</div>
+          <div class="api-link-url">ai.raby.com.tw/onboard.html</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://script.google.com" target="_blank">
-          <div class="api-link-icon">📋</div>
-          <div class="api-link-name">Apps Script</div>
-          <div class="api-link-url">script.google.com</div>
-          <div class="api-link-arrow">↗</div>
+          <div class="api-link-icon">📋</div><div class="api-link-name">Apps Script</div>
+          <div class="api-link-url">script.google.com</div><div class="api-link-arrow">↗</div>
         </a>
       </div>
     </div>
@@ -354,17 +333,14 @@ tr:hover td { background: #1a1a2488; }
     </div>
   </div>
 
-</div><!-- end main -->
+</div>
 
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
-const GAS_NEW_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 let DB = { brands: [], products: [], folders: [] };
-let DELIVERS = [];
-let STAFF = [];
-let APPLIES = [];
+let DELIVERS = [], STAFF = [], APPLIES = [];
 let applyFilter = 'all';
 
 window.onload = async () => {
@@ -376,7 +352,6 @@ window.onload = async () => {
     else setStatus('❌ ' + j.error, 'err');
   } catch(e) { setStatus('❌ 連線失敗', 'err'); }
   hideLoading();
-  // 背景載入品牌申請數量
   loadApplyCount();
 };
 
@@ -396,7 +371,7 @@ function renderAll() { renderBrands(); renderProducts(); renderFolders(); update
 // ══ 品牌審核 ══
 async function loadApplyCount() {
   try {
-    const r = await fetch(`${GAS_NEW_URL}?action=adminGetAll&password=${PASSWORD}&email=${encodeURIComponent(ADMIN_EMAIL)}`);
+    const r = await fetch(`${GAS_URL}?action=adminGetAll&password=${PASSWORD}&email=${encodeURIComponent(ADMIN_EMAIL)}`);
     const j = await r.json();
     if (j.ok) {
       const pending = (j.brands||[]).filter(b => b.status === 'pending').length;
@@ -408,12 +383,11 @@ async function loadApplyCount() {
 async function loadApply() {
   document.getElementById('applyList').innerHTML = '<div class="mem-loading">載入中...</div>';
   try {
-    const r = await fetch(`${GAS_NEW_URL}?action=adminGetAll&password=${PASSWORD}&email=${encodeURIComponent(ADMIN_EMAIL)}`);
+    const r = await fetch(`${GAS_URL}?action=adminGetAll&password=${PASSWORD}&email=${encodeURIComponent(ADMIN_EMAIL)}`);
     const j = await r.json();
     if (!j.ok) throw new Error(j.error);
     APPLIES = j.brands || [];
     renderApply();
-    // 更新紅點
     const pending = APPLIES.filter(b => b.status === 'pending').length;
     document.getElementById('pendingDot').classList.toggle('show', pending > 0);
   } catch(e) {
@@ -431,14 +405,10 @@ function filterApply(filter, btn) {
 function renderApply() {
   const filtered = applyFilter === 'all' ? APPLIES : APPLIES.filter(b => b.status === applyFilter);
   const el = document.getElementById('applyList');
-  if (!filtered.length) {
-    el.innerHTML = '<div class="empty-state"><div style="font-size:36px;margin-bottom:12px;">✨</div><p>沒有符合的申請</p></div>';
-    return;
-  }
-  // 排序：pending 優先
+  if (!filtered.length) { el.innerHTML = '<div class="empty-state"><div style="font-size:36px;margin-bottom:12px;">✨</div><p>沒有符合的申請</p></div>'; return; }
   const sorted = [...filtered].sort((a,b) => {
-    if (a.status === 'pending' && b.status !== 'pending') return -1;
-    if (b.status === 'pending' && a.status !== 'pending') return 1;
+    if (a.status==='pending'&&b.status!=='pending') return -1;
+    if (b.status==='pending'&&a.status!=='pending') return 1;
     return new Date(b.submittedAt||0) - new Date(a.submittedAt||0);
   });
   el.innerHTML = sorted.map(b => {
@@ -454,20 +424,20 @@ function renderApply() {
           <div class="apply-email">${esc(b.email||'')}</div>
           <div class="apply-meta">類別：${esc(b.category||'-')} · 申請日：${date}</div>
           <div class="apply-info-grid">
-            ${b.website ? `<div class="apply-info-item">🌐 <span><a href="${esc(b.website)}" target="_blank" style="color:#4dc8f0">${esc(b.website)}</a></span></div>` : ''}
-            ${b.platforms ? `<div class="apply-info-item">🛒 <span>${esc(b.platforms)}</span></div>` : ''}
-            ${b.audience ? `<div class="apply-info-item">👥 <span>${esc(b.audience)}</span></div>` : ''}
-            ${b.contact ? `<div class="apply-info-item">👤 <span>${esc(b.contact)} ${esc(b.phone||'')}</span></div>` : ''}
+            ${b.website?`<div class="apply-info-item">🌐 <span><a href="${esc(b.website)}" target="_blank" style="color:#4dc8f0">${esc(b.website)}</a></span></div>`:''}
+            ${b.platforms?`<div class="apply-info-item">🛒 <span>${esc(b.platforms)}</span></div>`:''}
+            ${b.audience?`<div class="apply-info-item">👥 <span>${esc(b.audience)}</span></div>`:''}
+            ${b.contact?`<div class="apply-info-item">👤 <span>${esc(b.contact)} ${esc(b.phone||'')}</span></div>`:''}
           </div>
         </div>
         <span class="apply-status-badge ${statusClass[b.status]||'sb-pending'}">${statusMap[b.status]||b.status}</span>
       </div>
       <div class="apply-soul">${esc(b.soulBook||'尚無靈魂書')}</div>
       <div class="apply-actions">
-        ${b.status === 'pending' ? `
+        ${b.status==='pending'?`
           <button class="btn-approve" onclick="doApprove('${esc(b.id)}')">✅ 核准上線</button>
           <button class="btn-reject-brand" onclick="doReject('${esc(b.id)}')">❌ 拒絕</button>
-        ` : ''}
+        `:''}
         <button class="btn-toggle-soul" onclick="toggleSoul('${esc(b.id)}')">📄 靈魂書</button>
         <button class="btn-reject-brand" style="margin-left:auto;border-color:rgba(100,100,100,0.4);color:#666;" onclick="doDeleteBrand('${esc(b.id)}','${esc(b.name||'此品牌')}')">🗑 刪除</button>
       </div>
@@ -475,66 +445,46 @@ function renderApply() {
   }).join('');
 }
 
-function toggleSoul(id) {
-  document.getElementById('applycard-' + id)?.classList.toggle('expanded');
-}
+function toggleSoul(id) { document.getElementById('applycard-'+id)?.classList.toggle('expanded'); }
 
 async function doApprove(brandId) {
-  if (!confirm('確定核准這個品牌？核准後將自動加入系統品牌列表！')) return;
+  if (!confirm('確定核准這個品牌？')) return;
   showLoading('核准中...');
   try {
-    const r = await fetch(GAS_NEW_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId }),
-      headers: { 'Content-Type':'text/plain' }
-    });
+    const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId }), headers:{'Content-Type':'text/plain'} });
     const j = await r.json();
-    if (j.ok) {
-      setStatus('✅ 品牌已核准上線！', 'ok');
-      await loadApply();
-    } else { setStatus('❌ ' + j.error, 'err'); }
+    if (j.ok) { setStatus('✅ 品牌已核准上線！', 'ok'); await loadApply(); }
+    else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 操作失敗', 'err'); }
   hideLoading();
 }
 
 async function doDeleteBrand(brandId, name) {
-  if (!confirm('確定刪除「' + name + '」？此操作無法復原！')) return;
+  if (!confirm(`確定刪除「${name}」？`)) return;
   showLoading('刪除中...');
   try {
-    const r = await fetch(GAS_NEW_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action:'deleteBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId }),
-      headers: { 'Content-Type':'text/plain' }
-    });
+    const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'deleteBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId }), headers:{'Content-Type':'text/plain'} });
     const j = await r.json();
-    if (j.ok) {
-      setStatus('✅ 已刪除', 'ok');
-      await loadApply();
-    } else { setStatus('❌ ' + j.error, 'err'); }
+    if (j.ok) { setStatus('✅ 已刪除', 'ok'); await loadApply(); }
+    else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 刪除失敗', 'err'); }
   hideLoading();
 }
 
 async function doReject(brandId) {
   const reason = prompt('拒絕原因（可空白）：');
-  if (reason === null) return; // 按取消
+  if (reason === null) return;
   showLoading('處理中...');
   try {
-    const r = await fetch(GAS_NEW_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action:'rejectBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId, reason }),
-      headers: { 'Content-Type':'text/plain' }
-    });
+    const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'rejectBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId, reason }), headers:{'Content-Type':'text/plain'} });
     const j = await r.json();
-    if (j.ok) {
-      setStatus('已拒絕品牌申請', 'ok');
-      await loadApply();
-    } else { setStatus('❌ ' + j.error, 'err'); }
+    if (j.ok) { setStatus('已拒絕品牌申請', 'ok'); await loadApply(); }
+    else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 操作失敗', 'err'); }
   hideLoading();
 }
 
-// ══ 原有功能（完整保留）══
+// ══ 品牌管理 ══
 function renderBrands() {
   const g = document.getElementById('brandsGrid');
   if (!DB.brands.length) { g.innerHTML='<div class="empty-state"><p>尚無品牌</p></div>'; return; }
@@ -570,7 +520,7 @@ function updateFilters() {
 function renderProducts() {
   const bf = document.getElementById('filterBrand').value;
   const sf = document.getElementById('filterSearch').value.toLowerCase();
-  const filtered = DB.products.filter(p => (!bf||p.brandId===bf) && (!sf||p.prodName?.toLowerCase().includes(sf)));
+  const filtered = DB.products.filter(p => (!bf||p.brandId===bf)&&(!sf||p.prodName?.toLowerCase().includes(sf)));
   const tbody = document.getElementById('productsBody');
   if (!filtered.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:#444">沒有符合的商品</td></tr>'; return; }
   tbody.innerHTML = filtered.map(p => {
@@ -623,7 +573,7 @@ async function loadDelivers() {
     const r = await fetch(`${GAS_URL}?action=getDelivers&password=${PASSWORD}`);
     const j = await r.json();
     if (j.ok) { DELIVERS = j.delivers; renderDelivers(); }
-    else setStatus('❌ ' + j.error, 'err');
+    else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 載入失敗', 'err'); }
   hideLoading();
 }
@@ -631,7 +581,7 @@ async function loadDelivers() {
 function renderDelivers() {
   const bf = document.getElementById('deliverFilterBrand').value;
   const sf = document.getElementById('deliverFilterStatus').value;
-  const filtered = DELIVERS.filter(d => (!bf||d.brand===bf) && (!sf||d.status===sf));
+  const filtered = DELIVERS.filter(d => (!bf||d.brand===bf)&&(!sf||d.status===sf));
   document.getElementById('deliverStat').textContent = `共 ${filtered.length} 筆`;
   const tbody = document.getElementById('deliversBody');
   if (!filtered.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:#444">尚無交付記錄</td></tr>'; return; }
@@ -676,6 +626,7 @@ async function deleteDeliverRow(rowIndex) {
   } catch(e) { setStatus('❌ 刪除失敗', 'err'); }
 }
 
+// ══ 記憶庫 ══
 let memCurrentPage = 1;
 async function loadAdminMemory(page = 1) {
   memCurrentPage = page;
@@ -684,20 +635,19 @@ async function loadAdminMemory(page = 1) {
   const statsEl = document.getElementById('memStats');
   listEl.innerHTML = '<div class="mem-loading">載入記憶庫中...</div>';
   try {
-    const url = `${GAS_URL}?action=getAllMemory&password=${PASSWORD}&page=${page}&pageSize=20`;
-    const res = await fetch(url);
+    const res = await fetch(`${GAS_URL}?action=getAllMemory&password=${PASSWORD}&page=${page}&pageSize=20`);
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || '載入失敗');
+    if (!data.ok) throw new Error(data.error||'載入失敗');
     let rows = data.rows || [];
-    if (statsEl) statsEl.textContent = `共 ${data.total || 0} 筆記憶`;
-    if (brandFilter) rows = rows.filter(r => r.brandId === brandFilter);
-    if (!rows.length) { listEl.innerHTML = '<div class="mem-loading">沒有符合的記憶</div>'; renderMemPagination(0, page); return; }
-    const scoreMax = Math.max(...rows.map(r => r.score || 1), 1);
-    listEl.innerHTML = rows.map((m, i) => {
-      const globalRank = (page - 1) * 20 + i + 1;
-      const scoreVal = m.score || 0;
-      const barFilled = Math.round((scoreVal / scoreMax) * 5);
-      const scoreBar = '█'.repeat(barFilled) + '░'.repeat(5 - barFilled);
+    if (statsEl) statsEl.textContent = `共 ${data.total||0} 筆記憶`;
+    if (brandFilter) rows = rows.filter(r => r.brandId===brandFilter);
+    if (!rows.length) { listEl.innerHTML='<div class="mem-loading">沒有符合的記憶</div>'; renderMemPagination(0,page); return; }
+    const scoreMax = Math.max(...rows.map(r=>r.score||1),1);
+    listEl.innerHTML = rows.map((m,i) => {
+      const globalRank = (page-1)*20+i+1;
+      const scoreVal = m.score||0;
+      const barFilled = Math.round((scoreVal/scoreMax)*5);
+      const scoreBar = '█'.repeat(barFilled)+'░'.repeat(5-barFilled);
       return `<div class="mem-admin-card">
         <div class="mem-admin-rank">#${globalRank}<small>${scoreVal}分</small></div>
         <div>
@@ -729,42 +679,32 @@ async function loadAdminMemory(page = 1) {
 function renderMemPagination(total, currentPage) {
   const el = document.getElementById('memPagination');
   if (!el) return;
-  const totalPages = Math.ceil(total / 20) || 1;
-  if (totalPages <= 1) { el.innerHTML = ''; return; }
+  const totalPages = Math.ceil(total/20)||1;
+  if (totalPages<=1) { el.innerHTML=''; return; }
   let html = '';
-  for (let i = 1; i <= totalPages; i++) html += `<button class="mem-page-btn ${i===currentPage?'active':''}" onclick="loadAdminMemory(${i})">${i}</button>`;
+  for (let i=1; i<=totalPages; i++) html += `<button class="mem-page-btn ${i===currentPage?'active':''}" onclick="loadAdminMemory(${i})">${i}</button>`;
   el.innerHTML = html;
 }
 
 async function deleteAdminMemory(memoryId, btnEl) {
   if (!confirm('確定刪除這筆記憶？')) return;
-  btnEl.disabled = true; btnEl.textContent = '刪除中...';
+  btnEl.disabled=true; btnEl.textContent='刪除中...';
   try {
     const res = await fetch(`${GAS_URL}?action=deleteMemory&password=${PASSWORD}&memoryId=${encodeURIComponent(memoryId)}`);
     const data = await res.json();
-    if (data.ok) { btnEl.closest('.mem-admin-card').remove(); setStatus('✅ 已刪除記憶', 'ok'); }
-    else { alert('刪除失敗：' + (data.error||'未知錯誤')); btnEl.disabled = false; btnEl.textContent = '刪除'; }
-  } catch(e) { alert('刪除失敗：' + e.message); btnEl.disabled = false; btnEl.textContent = '刪除'; }
+    if (data.ok) { btnEl.closest('.mem-admin-card').remove(); setStatus('✅ 已刪除記憶','ok'); }
+    else { alert('刪除失敗：'+(data.error||'未知錯誤')); btnEl.disabled=false; btnEl.textContent='刪除'; }
+  } catch(e) { alert('刪除失敗：'+e.message); btnEl.disabled=false; btnEl.textContent='刪除'; }
 }
 
-function timeAgo(timestamp) {
-  if (!timestamp) return '';
-  const diff = Date.now() - new Date(timestamp).getTime();
-  const days = Math.floor(diff / 86400000);
-  const hours = Math.floor(diff / 3600000);
-  if (days > 30) return `${Math.floor(days/30)}個月前`;
-  if (days > 0) return `${days}天前`;
-  if (hours > 0) return `${hours}小時前`;
-  return '剛才';
-}
-
+// ══ 員工管理 ★ 修正刪除 bug ══
 async function loadStaff() {
   showLoading('載入員工名單...');
   try {
     const r = await fetch(`${GAS_URL}?action=getWhitelist&password=${PASSWORD}`);
     const j = await r.json();
     if (j.ok) { STAFF = j.whitelist; renderStaff(); }
-    else setStatus('❌ ' + j.error, 'err');
+    else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 載入失敗', 'err'); }
   hideLoading();
 }
@@ -784,7 +724,7 @@ function renderStaff() {
       </div>
       <span class="staff-badge ${isAdmin?'badge-admin':'badge-staff'}">${isAdmin?'👑 管理員':'👤 員工'}</span>
       <span style="font-size:11px;color:#555;margin-left:8px;">${date}</span>
-      ${isAdmin?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" style="margin-left:8px;font-size:18px;">✕</button>`}
+      ${isAdmin?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" style="margin-left:8px;font-size:18px;" title="移除">✕</button>`}
     </div>`;
   }).join('');
 }
@@ -792,19 +732,24 @@ function renderStaff() {
 async function addStaff() {
   const email = document.getElementById('newStaffEmail').value.trim();
   const name  = document.getElementById('newStaffName').value.trim();
-  if (!email) { setStatus('❌ 請輸入 Email', 'err'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setStatus('❌ Email 格式不正確', 'err'); return; }
+  if (!email) { setStatus('❌ 請輸入 Email','err'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setStatus('❌ Email 格式不正確','err'); return; }
   showLoading('新增中...');
   try {
-    const r = await fetch(`${GAS_URL}?action=addWhitelist&password=${PASSWORD}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`);
+    // ★ 用 POST 送 addWhitelist，包含 targetEmail
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action:'addWhitelist', password:PASSWORD, email:ADMIN_EMAIL, targetEmail:email, name })
+    });
     const j = await r.json();
     if (j.ok) {
-      setStatus('✅ 已加入白名單', 'ok');
+      setStatus('✅ 已加入白名單','ok');
       document.getElementById('newStaffEmail').value = '';
       document.getElementById('newStaffName').value = '';
       await loadStaff();
-    } else setStatus('❌ ' + j.error, 'err');
-  } catch(e) { setStatus('❌ 新增失敗', 'err'); }
+    } else setStatus('❌ '+j.error,'err');
+  } catch(e) { setStatus('❌ 新增失敗','err'); }
   hideLoading();
 }
 
@@ -812,11 +757,16 @@ async function removeStaff(email) {
   if (!confirm(`確定移除 ${email}？\n移除後該員工立即無法登入。`)) return;
   showLoading('移除中...');
   try {
-    const r = await fetch(`${GAS_URL}?action=deleteWhitelist&password=${PASSWORD}&email=${encodeURIComponent(email)}`);
+    // ★ 修正：action 改為 removeWhitelist，用 POST 送 targetEmail
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action:'removeWhitelist', password:PASSWORD, email:ADMIN_EMAIL, targetEmail:email })
+    });
     const j = await r.json();
-    if (j.ok) { setStatus('✅ 已移除', 'ok'); await loadStaff(); }
-    else setStatus('❌ ' + j.error, 'err');
-  } catch(e) { setStatus('❌ 移除失敗', 'err'); }
+    if (j.ok) { setStatus('✅ 已移除','ok'); await loadStaff(); }
+    else setStatus('❌ '+j.error,'err');
+  } catch(e) { setStatus('❌ 移除失敗','err'); }
   hideLoading();
 }
 
@@ -827,14 +777,25 @@ async function saveAll() {
     const r = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'saveBrandOS', password: PASSWORD, data: DB })
+      body: JSON.stringify({ action:'saveBrandOS', password:PASSWORD, data:DB })
     });
     const j = await r.json();
-    if (j.ok) setStatus('✅ 儲存成功！', 'ok');
-    else setStatus('❌ ' + j.error, 'err');
-  } catch(e) { setStatus('❌ 連線失敗', 'err'); }
+    if (j.ok) setStatus('✅ 儲存成功！','ok');
+    else setStatus('❌ '+j.error,'err');
+  } catch(e) { setStatus('❌ 連線失敗','err'); }
   document.getElementById('btnSaveAll').disabled = false;
   hideLoading();
+}
+
+function timeAgo(timestamp) {
+  if (!timestamp) return '';
+  const diff = Date.now()-new Date(timestamp).getTime();
+  const days = Math.floor(diff/86400000);
+  const hours = Math.floor(diff/3600000);
+  if (days>30) return `${Math.floor(days/30)}個月前`;
+  if (days>0) return `${days}天前`;
+  if (hours>0) return `${hours}小時前`;
+  return '剛才';
 }
 
 function esc(str) { return (str||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
