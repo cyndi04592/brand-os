@@ -484,7 +484,16 @@ function applyConfig(){document.getElementById('cfgBrand').value=CFG.brand;docum
 function saveSettings(){CFG.brand=document.getElementById('cfgBrand').value.trim()||'moz';CFG.accountId=document.getElementById('cfgAccountId').value.trim()||'566452034785926';CFG.freqWarn=parseFloat(document.getElementById('cfgFreqWarn').value)||3.5;CFG.ctrWarn=parseFloat(document.getElementById('cfgCtrWarn').value)||0.8;CFG.roasTarget=parseFloat(document.getElementById('cfgRoasTarget').value)||3.0;CFG.cibsAlert=parseFloat(document.getElementById('cfgCibsAlert').value)||50000;CFG.learnWarn=parseFloat(document.getElementById('cfgLearnWarn').value)||20;CFG.cpcWarn=parseFloat(document.getElementById('cfgCpcWarn').value)||15;CFG.cpaWarn=parseFloat(document.getElementById('cfgCpaWarn').value)||1500;CFG.cpmWarn=parseFloat(document.getElementById('cfgCpmWarn').value)||300;Object.entries(CFG).forEach(function(e){localStorage.setItem('mon_'+e[0],e[1])});curBrand=CFG.brand;curAccountId=CFG.accountId;document.getElementById('cfgPanel').classList.remove('show');renderChips();loadData();}
 function toggleCfg(){document.getElementById('cfgPanel').classList.toggle('show');}
 function renderChips(){document.getElementById('accChips').innerHTML=ACCOUNTS.map(function(a){return'<span class="acc-chip '+(a.brand===curBrand?'on':'')+'" onclick="switchAcc(\''+a.brand+'\',\''+a.accountId+'\')">'+a.label+'</span>';}).join('');}
-function switchAcc(b,id){curBrand=b;curAccountId=id;renderChips();loadData();}
+function switchAcc(b,id){
+  curBrand=b;
+  curAccountId=id;
+  CFG.brand=b;
+  CFG.accountId=id;
+  renderChips();
+  // 強制清空舊資料再載入
+  allAds=[];
+  loadData();
+}
 function setRange(r){curRange=r;['today','7d','14d','30d','90d','yoy','custom'].forEach(function(x){var el=document.getElementById('rb-'+x);if(el)el.classList.remove('on');});var el2=document.getElementById('rb-'+r);if(el2)el2.classList.add('on');document.getElementById('customRange').classList.toggle('show',r==='custom');if(r!=='custom')loadData();}
 function applyCustom(){if(!document.getElementById('dateSince').value||!document.getElementById('dateUntil').value)return alert('請選擇起訖日期');loadData();}
 function getRangeParams(){var pm={today:'today','7d':'last_7d','14d':'last_14d','30d':'last_30d','90d':'last_90d'};if(curRange==='custom')return{since:document.getElementById('dateSince').value,until:document.getElementById('dateUntil').value};if(curRange==='yoy'){var now=new Date(),past=new Date(now);past.setDate(now.getDate()-30);return{since:past.toISOString().split('T')[0],until:now.toISOString().split('T')[0],isYoy:true};}return{datePreset:pm[curRange]||'last_7d'};}
