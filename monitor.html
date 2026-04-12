@@ -489,8 +489,13 @@ function switchAcc(b,id){
   curAccountId=id;
   CFG.brand=b;
   CFG.accountId=id;
+  var cfgBrand=document.getElementById('cfgBrand');
+  var cfgAcc=document.getElementById('cfgAccountId');
+  if(cfgBrand) cfgBrand.value=b;
+  if(cfgAcc) cfgAcc.value=id;
+  localStorage.setItem('mon_brand',b);
+  localStorage.setItem('mon_accountId',id);
   renderChips();
-  // 強制清空舊資料再載入
   allAds=[];
   loadData();
 }
