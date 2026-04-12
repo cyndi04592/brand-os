@@ -4,6 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brand OS · 文案+廣告圖</title>
+
+<!-- ★ WebView 偵測 — 最優先執行 -->
+<script>
+(function() {
+  var ua = navigator.userAgent;
+  var url = location.href;
+  var sep = url.indexOf('?') >= 0 ? '&' : '?';
+  // LINE / FB Messenger / WhatsApp → 自動跳外部瀏覽器
+  if (/Line/i.test(ua) || /FBAN|FBAV|FB_IAB/i.test(ua) || /WhatsApp/i.test(ua)) {
+    if (url.indexOf('openExternalBrowser') < 0) {
+      location.replace(url + sep + 'openExternalBrowser=1');
+    }
+    return;
+  }
+  // 微信 / Telegram → 顯示提示畫面
+  if (/MicroMessenger/i.test(ua) || /Telegram/i.test(ua)) {
+    var isWechat = /MicroMessenger/i.test(ua);
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.innerHTML = '<div style="position:fixed;inset:0;background:#0E0E0F;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;font-family:sans-serif;z-index:99999;">' +
+        '<div style="font-size:64px;margin-bottom:24px;">' + (isWechat ? '💬' : '✈️') + '</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#E8A03A;margin-bottom:16px;">請用瀏覽器開啟</div>' +
+        '<div style="font-size:15px;color:#A09890;line-height:2.4;">' +
+        (isWechat ? '點右上角 <strong style="color:#fff">···</strong><br>選擇「在瀏覽器中開啟」' : '點右上角選單<br>選擇 Open in Safari / Chrome') +
+        '</div></div>';
+    });
+  }
+})();
+</script>
+
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -245,7 +274,6 @@
             <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')">真人MD試穿</button>
             <button class="pr-mode-btn" onclick="setPrMode(this,'clothing')">服飾電商圖</button>
           </div>
-
         </div>
         <!-- AI 背景場景 -->
         <div id="prSceneSection" style="padding:8px 10px;border-bottom:1px solid var(--line);">
