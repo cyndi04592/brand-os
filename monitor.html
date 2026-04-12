@@ -254,7 +254,6 @@ canvas#trendChart{width:100%;height:160px}
       <span class="last-upd" id="lastUpd">尚未載入</span>
       <button class="btn-cfg" onclick="toggleCfg()">⚙️ 設定</button>
       <button class="btn-refresh" onclick="loadData()">🔄 重新整理</button>
-      <!-- ★ AI 診斷按鈕 -->
       <button id="btnAIDiag" onclick="runAIDiagnosis()" style="padding:5px 14px;border-radius:6px;border:1px solid rgba(91,200,200,0.5);background:linear-gradient(135deg,rgba(91,200,200,0.12),rgba(91,200,160,0.12));color:var(--sky);font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all 0.2s;" onmouseover="this.style.background='linear-gradient(135deg,rgba(91,200,200,0.22),rgba(91,200,160,0.22))'" onmouseout="this.style.background='linear-gradient(135deg,rgba(91,200,200,0.12),rgba(91,200,160,0.12))'"><span style="font-size:13px;">🤖</span> AI 診斷</button>
     </div>
   </div>
@@ -298,7 +297,6 @@ canvas#trendChart{width:100%;height:160px}
     <div class="urgent-chips" id="urgentChips"></div>
   </div>
 
-  <!-- 廣告帳號綜合評分 -->
   <div class="score-card" id="scoreCard">
     <div class="score-main">
       <div class="score-ring">
@@ -356,7 +354,6 @@ canvas#trendChart{width:100%;height:160px}
       <div class="roi-r"><span id="lbl-r2Checkout">開始結帳</span><span id="r2Checkout">—</span></div>
       <div class="roi-r"><span id="lbl-r2Cvr">加購→購買轉換率</span><span id="r2Cvr">—</span></div>
       <div class="roi-r"><span id="lbl-r2Cpa">CPA（每次購買成本）</span><span id="r2Cpa">—</span></div>
-      <!-- 昨日對比 -->
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
         <div style="font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;" id="lbl-vsYday">📅 vs 昨日對比</div>
         <div id="ydayCompare" style="font-size:10px;color:var(--t2);line-height:1.8;">
@@ -423,7 +420,6 @@ canvas#trendChart{width:100%;height:160px}
       </div>
     </div>
   </div>
-  <!-- 曲線圖 -->
   <div class="sec-title" id="st-trend">每日趨勢曲線圖</div>
   <div class="chart-wrap">
     <div class="chart-tabs">
@@ -466,7 +462,17 @@ canvas#trendChart{width:100%;height:160px}
 </div>
 <script>
 var CFG={brand:localStorage.getItem('mon_brand')||'moz',accountId:localStorage.getItem('mon_accountId')||'566452034785926',freqWarn:parseFloat(localStorage.getItem('mon_freqWarn')||'3.5'),ctrWarn:parseFloat(localStorage.getItem('mon_ctrWarn')||'0.8'),roasTarget:parseFloat(localStorage.getItem('mon_roasTarget')||'3.0'),cibsAlert:parseFloat(localStorage.getItem('mon_cibsAlert')||'50000'),learnWarn:parseFloat(localStorage.getItem('mon_learnWarn')||'20'),cpcWarn:parseFloat(localStorage.getItem('mon_cpcWarn')||'15'),cpaWarn:parseFloat(localStorage.getItem('mon_cpaWarn')||'1500'),cpmWarn:parseFloat(localStorage.getItem('mon_cpmWarn')||'300')};
-var ACCOUNTS=[{brand:'moz',accountId:'566452034785926',label:'MOZ for Cliff'}];
+
+// ══ 品牌帳號清單（新增品牌在此加一行）══
+var ACCOUNTS=[
+  {brand:'moz',    accountId:'566452034785926',  label:'MOZ 瑞典駝鹿'},
+  {brand:'hoshun', accountId:'1702278137298223', label:'和順興業社'},
+  // 預留：{brand:'ww', accountId:'', label:'旺味米香腸'},
+  // 預留：{brand:'ka', accountId:'', label:'空馬'},
+  // 預留：{brand:'la', accountId:'', label:'LACEZ'},
+  // 預留：{brand:'cf', accountId:'', label:'巧福'},
+];
+
 var curBrand=CFG.brand,curAccountId=CFG.accountId,allAds=[],curRange='7d',curTab='ads',_sk='spend',_sd=-1,_fai=-1;
 var _today=new Date(),_past7=new Date(_today);_past7.setDate(_today.getDate()-7);
 document.addEventListener('DOMContentLoaded',function(){
@@ -483,7 +489,7 @@ function setRange(r){curRange=r;['today','7d','14d','30d','90d','yoy','custom'].
 function applyCustom(){if(!document.getElementById('dateSince').value||!document.getElementById('dateUntil').value)return alert('請選擇起訖日期');loadData();}
 function getRangeParams(){var pm={today:'today','7d':'last_7d','14d':'last_14d','30d':'last_30d','90d':'last_90d'};if(curRange==='custom')return{since:document.getElementById('dateSince').value,until:document.getElementById('dateUntil').value};if(curRange==='yoy'){var now=new Date(),past=new Date(now);past.setDate(now.getDate()-30);return{since:past.toISOString().split('T')[0],until:now.toISOString().split('T')[0],isYoy:true};}return{datePreset:pm[curRange]||'last_7d'};}
 function switchTab(t){curTab=t;['ads','adsets','campaigns'].forEach(function(x){document.getElementById('tab-'+x).classList.toggle('on',x===t);});loadData();}
-async function loadData(){setLoadState('抓取廣告數據中...');document.getElementById('yoyBanner').classList.remove('show');try{var rp=getRangeParams();var labels={today:'今日','7d':'過去7天','14d':'過去14天','30d':'過去30天','90d':'過去90天',yoy:'去年同期',custom:'自訂'};document.getElementById('tableRangeLabel').textContent=' — '+labels[curRange];if(curRange==='yoy'){var res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'fb_insights_yoy',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,since:rp.since,until:rp.until})});var data=await res.json();if(!data.ok)throw new Error(data.error);allAds=parseAds(data.thisYear&&data.thisYear.data||[]);renderYoy(data.thisYear,data.lastYear);}else{var payload=Object.assign({action:'fb_insights',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,level:curTab},rp);var res2=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var data2=await res2.json();if(!data2.ok)throw new Error(data2.error);allAds=parseAds(data2.data||[]);document.getElementById('tableCount').textContent=' （'+allAds.length+' 筆）';}renderFunnel();renderOverview();renderRoi();renderHealthCards();renderCreativeHealth();renderTable();renderAlerts();checkCibs();loadTrendData();loadLearningPct90();var _now=new Date();document.getElementById('lastUpd').textContent='更新：'+_now.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'})+' '+_now.toLocaleTimeString('zh-TW');}catch(e){setLoadState('❌ '+e.message+'<br><span style="font-size:10px;color:var(--t3)">確認 Worker Token：FB_TOKEN_'+curBrand.toUpperCase()+'</span>');}}
+async function loadData(){setLoadState('抓取廣告數據中...');document.getElementById('yoyBanner').classList.remove('show');try{var rp=getRangeParams();var labels={today:'今日','7d':'過去7天','14d':'過去14天','30d':'過去30天','90d':'過去90天',yoy:'去年同期',custom:'自訂'};document.getElementById('tableRangeLabel').textContent=' — '+labels[curRange];if(curRange==='yoy'){var res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'fb_insights_yoy',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,since:rp.since,until:rp.until})});var data=await res.json();if(!data.ok)throw new Error(data.error);allAds=parseAds(data.thisYear&&data.thisYear.data||[]);renderYoy(data.thisYear,data.lastYear);}else{var payload=Object.assign({action:'fb_insights',password:GAS_PASSWORD,brand:curBrand,accountId:curAccountId,level:curTab},rp);var res2=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var data2=await res2.json();if(!data2.ok)throw new Error(data2.error);allAds=parseAds(data2.data||[]);document.getElementById('tableCount').textContent=' （'+allAds.length+' 筆）';}renderFunnel();renderOverview();renderRoi();renderHealthCards();renderCreativeHealth();renderTable();renderAlerts();checkCibs();loadTrendData();loadLearningPct90();var _now=new Date();document.getElementById('lastUpd').textContent='更新：'+_now.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'})+' '+_now.toLocaleTimeString('zh-TW');}catch(e){setLoadState('❌ '+e.message+'<br><span style="font-size:10px;color:var(--t3)">確認 Worker Token</span>');}}
 function parseAdName(n){n=n||'';
 var source=/^AI[_\s]/i.test(n)?'ai':/^DE[_\s]/i.test(n)||/^MIX[_\s]/i.test(n)?'de':'unknown';
 var isASC=/【ASC|ASC[\s_\/]|Advantage\+|Advantage Shopping|Advantage\+購物/i.test(n);
@@ -766,7 +772,6 @@ async function loadTrendDataRange(since, until) {
     drawChart();
   } catch(e) {
     if(loading){ loading.textContent='❌ 趨勢圖載入失敗：'+e.message; loading.style.display='flex'; }
-    console.log('trend error',e);
   }
 }
 
@@ -878,13 +883,12 @@ loadData = async function() {
 };
 
 // ══════════════════════════════════════
-// ══ AI 廣告診斷功能 ★ NEW ★ ══
+// ══ AI 廣告診斷功能 ══
 // ══════════════════════════════════════
 
 function buildDiagPrompt() {
   var a = allAds.filter(function(x){return x.impressions>0;});
   if (!a.length) return null;
-
   var totalSpend   = a.reduce(function(s,x){return s+x.spend;},0);
   var totalImps    = a.reduce(function(s,x){return s+x.impressions;},0);
   var totalReach   = a.reduce(function(s,x){return s+x.reach;},0);
@@ -899,18 +903,14 @@ function buildDiagPrompt() {
   var roas         = totalSpend>0&&totalRev>0?totalRev/totalSpend:0;
   var cpa          = totalPur>0?totalSpend/totalPur:0;
   var cpc          = totalClicks>0?totalSpend/totalClicks:0;
-
   var newR  = a.filter(function(x){return x.audience==='new';}).reduce(function(s,x){return s+x.reach;},0);
   var retR  = a.filter(function(x){return x.audience==='retarget';}).reduce(function(s,x){return s+x.reach;},0);
   var totR  = newR+retR||1;
-
   var fatigued = a.filter(function(x){return x.fatigue>=70;});
   var aiN  = a.filter(function(x){return x.source==='ai';}).length;
   var deN  = a.filter(function(x){return x.source==='de';}).length;
-
   var learning = allAds.filter(function(x){return x.effective_status==='LEARNING'||x.effective_status==='LEARNING_LIMITED';});
   var learnPct = allAds.length>0?Math.round(learning.length/allAds.length*100):0;
-
   var top10 = [].concat(a).sort(function(a,b){return b.spend-a.spend;}).slice(0,10);
   var adsDetail = top10.map(function(ad,i){
     return (i+1)+'. 【'+ad.name.slice(0,30)+'】'
@@ -924,12 +924,11 @@ function buildDiagPrompt() {
       +' 狀態:'+ad.effective_status
       +' 受眾:'+ad.audience;
   }).join('\n');
-
   var rangeLabel = {today:'今日','7d':'過去7天','14d':'過去14天','30d':'過去30天','90d':'過去90天',custom:'自訂區間'}[curRange]||curRange;
-
+  var brandLabel = (ACCOUNTS.find(function(a){return a.brand===curBrand;})||{label:curBrand}).label;
   return '你是一名台灣電商 Facebook 廣告的資深投手（媒體採購），請用**繁體中文**、**專業且直接**的語氣，對以下廣告帳號數據進行全面診斷。\n\n'
     +'## 帳號概況（時間：'+rangeLabel+'）\n'
-    +'品牌：'+curBrand.toUpperCase()+'\n'
+    +'品牌：'+brandLabel+'\n'
     +'有效廣告數：'+a.length+'組\n'
     +'總花費：$'+Math.round(totalSpend).toLocaleString()+' TWD\n'
     +'總曝光：'+Math.round(totalImps/1000)+'K\n'
@@ -969,7 +968,6 @@ async function runAIDiagnosis() {
   if (btn) { btn.disabled = true; btn.innerHTML = '🔄 診斷中...'; }
   showDiagPanel('<div class="diag-loading"><div class="spin2"></div><div style="color:var(--t3);margin-top:12px;font-size:11px;">Claude 正在分析廣告數據...<br><span style="font-size:10px;color:rgba(255,255,255,0.2);">通常需要 10~20 秒</span></div></div>');
   try {
-    // 透過 Cloudflare Worker 代理（避免 CORS），使用現有的 claude_generate action
     var resp = await fetch(CF_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1011,34 +1009,31 @@ function showDiagPanel(html, hasPrompt) {
   var existingOverlay = document.getElementById('diagOverlay');
   if (existing) existing.remove();
   if (existingOverlay) existingOverlay.remove();
-
   var overlay = document.createElement('div');
   overlay.id = 'diagOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;backdrop-filter:blur(4px);transition:opacity 0.35s;';
   overlay.onclick = function(e){ if(e.target===overlay) closeDiagPanel(); };
-
   var panel = document.createElement('div');
   panel.id = 'diagPanel';
   panel.style.cssText = 'position:fixed;top:0;right:0;width:min(620px,100vw);height:100vh;background:var(--bg2);border-left:1px solid rgba(91,200,200,0.3);z-index:1000;display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,0.6);transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.16,1,0.3,1);';
-
   var ts = new Date().toLocaleTimeString('zh-TW');
+  var brandLabel = (ACCOUNTS.find(function(a){return a.brand===curBrand;})||{label:curBrand}).label;
   panel.innerHTML = ''
     +'<div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-shrink:0;background:rgba(91,200,200,0.04);">'
     +'<div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,rgba(91,200,200,0.2),rgba(91,200,160,0.2));border:1px solid rgba(91,200,200,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>'
-    +'<div><div style="font-size:12px;font-weight:900;color:var(--t1);letter-spacing:0.5px;">AI 廣告診斷報告</div>'
+    +'<div><div style="font-size:12px;font-weight:900;color:var(--t1);letter-spacing:0.5px;">AI 廣告診斷報告 · '+brandLabel+'</div>'
     +'<div style="font-size:9px;color:var(--t3);margin-top:1px;font-family:DM Mono;">Claude Sonnet · '+ts+'</div></div>'
     +'<div style="margin-left:auto;display:flex;gap:6px;">'
-    +(hasPrompt?'<button onclick="copyDiagText()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--t3);font-size:10px;cursor:pointer;transition:all 0.2s;" id="btnCopyDiag">📋 複製</button>':'')
+    +(hasPrompt?'<button onclick="copyDiagText()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--t3);font-size:10px;cursor:pointer;" id="btnCopyDiag">📋 複製</button>':'')
     +'<button onclick="closeDiagPanel()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--t3);font-size:10px;cursor:pointer;">✕</button>'
     +'</div></div>'
     +'<div id="diagContent" style="flex:1;overflow-y:auto;padding:20px 24px;font-size:11px;color:var(--t2);line-height:1.8;">'
     +html+'</div>'
     +(hasPrompt
       ? '<div style="padding:12px 20px;border-top:1px solid var(--line);flex-shrink:0;">'
-        +'<button onclick="runAIDiagnosis()" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(91,200,200,0.3);background:linear-gradient(135deg,rgba(91,200,200,0.1),rgba(91,200,160,0.1));color:var(--sky);font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;">🔄 重新診斷</button>'
+        +'<button onclick="runAIDiagnosis()" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(91,200,200,0.3);background:linear-gradient(135deg,rgba(91,200,200,0.1),rgba(91,200,160,0.1));color:var(--sky);font-size:11px;font-weight:700;cursor:pointer;">🔄 重新診斷</button>'
         +'</div>'
       : '');
-
   document.body.appendChild(overlay);
   document.body.appendChild(panel);
   requestAnimationFrame(function(){ panel.style.transform='translateX(0)'; });
@@ -1059,16 +1054,13 @@ function copyDiagText() {
   navigator.clipboard.writeText(txt).then(function(){
     if(btn){ btn.textContent='✅ 已複製'; setTimeout(function(){ if(btn) btn.textContent='📋 複製'; }, 2000); }
   }).catch(function(){
-    // fallback
     var ta = document.createElement('textarea');
     ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     if(btn){ btn.textContent='✅ 複製成功'; setTimeout(function(){ if(btn) btn.textContent='📋 複製'; }, 2000); }
   });
 }
 
-// ESC 關閉
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDiagPanel(); });
-
 </script>
 </body>
 </html>
