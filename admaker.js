@@ -16,9 +16,12 @@ function openAdMaker(idx) {
   setPrStatus('', '');
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('.pr-mode-btn')?.classList.add('on');
-  document.getElementById('prSceneSection').style.display   = 'block';
-  document.getElementById('prVirtualSection').style.display = 'none';
-  document.getElementById('prVideoSection').style.display   = 'none';
+  const _s = document.getElementById('prSceneSection');
+  const _v = document.getElementById('prVirtualSection');
+  const _vid = document.getElementById('prVideoSection');
+  if (_s)   _s.style.display   = 'block';
+  if (_v)   _v.style.display   = 'none';
+  if (_vid) _vid.style.display = 'none';
 
   const s = window.S.scripts[idx];
   AM.scriptIdx = idx;
