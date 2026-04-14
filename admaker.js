@@ -162,11 +162,26 @@ async function callWorker(params) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ── 先上傳圖片到 fal storage，取得 URL 再送 Kontext/Seedance ──
+// ── 上傳圖片到 fal storage（前端直接 PUT presigned URL，不受 Worker 30秒限制）──
 async function uploadToFal(base64) {
-  const data = await callWorker({ action: 'fal_upload', imageBase64: base64 });
-  if (!data.ok) throw new Error('圖片上傳失敗: ' + (data.error || ''));
-  return data.url;
+  // Step 1: Worker 取得 presigned URL（< 1秒）
+  const match = base64.match(/^data:(image\/\w+);base64,(.+)$/);
+  if (!match) throw new Error('base64 格式錯誤');
+  const mimeType = match[1];
+  const urlData = await callWorker({ action: 'fal_get_upload_url', mimeType });
+  if (!urlData.ok) throw new Error('取得上傳URL失敗: ' + (urlData.error || ''));
+
+  // Step 2: 前端直接 PUT 到 presigned URL（不經過 Worker）
+  const binaryStr = atob(match[2]);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+  const putResp = await fetch(urlData.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': mimeType },
+    body: bytes
+  });
+  if (!putResp.ok) throw new Error('圖片上傳 PUT 失敗: ' + putResp.status);
+  return urlData.fileUrl;
 }
 
 // ══ 前端 Poll Loop（不走 Worker，直接查 fal.ai）══
