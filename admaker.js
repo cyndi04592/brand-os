@@ -338,15 +338,16 @@ async function applySeedanceVideo() {
       ? photoV.thumbnailLink.replace(/=s\d+$/, '=s1200')
       : await uploadToFal(compressed);
     setPrStatus('📤 送出 Seedance 任務...', 'var(--t3)');
+    // 影片用 queue 非同步（Seedance 需要 1-2 分鐘，同步會超時）
     const submitData = await callWorker({
-      action: 'fal_submit',
+      action: 'fal_video_submit',
       endpoint: 'bytedance/seedance-2.0/image-to-video',
       payload: { image_url: imageUrlVideo, prompt: videoPrompt || defaultPrompt, duration: String(videoDuration), aspect_ratio: videoRatio, generate_audio: videoAudio, resolution: '720p' }
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
-    // 影片最多等 8 分鐘
-    setPrStatus('🎬 Seedance 2.0 生成中，約 2-5 分鐘...', 'var(--t3)');
+    // Poll 最多等 8 分鐘
+    setPrStatus('🎬 Seedance 2.0 生成中，約 1-3 分鐘...', 'var(--t3)');
     const result = await pollUntilDone(submitData.requestId, 'bytedance/seedance-2.0/image-to-video', 480000);
 
     if (result.videoUrl) {
