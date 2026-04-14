@@ -231,10 +231,14 @@ async function applyPhotoroomBg() {
     // ── AI 換背景 / 廣告主視覺 / 服裝（Kontext）──
     if (['ai_bg','clothing','ad_visual'].includes(PR_MODE)) {
       const customInput = document.getElementById('prCustomPrompt')?.value?.trim();
-      const prompt = customInput || KONTEXT_PROMPTS[PR_SCENE === 'camping' || PR_MODE === 'ad_visual' ? PR_SCENE : PR_SCENE] || KONTEXT_PROMPTS.studio;
-      setPrStatus('📤 送出 Kontext 任務...', 'var(--t3)');
-      setPrStatus('📤 上傳圖片到 fal...', 'var(--t3)');
-      const imageUrl = await uploadToFal(compressed);
+      const prompt = customInput || KONTEXT_PROMPTS[PR_SCENE] || KONTEXT_PROMPTS.studio;
+      // 優先用 thumbnailLink（Google CDN 公開 URL，fal.ai 可直接存取，不需上傳）
+      // thumbnailLink 已是縮圖 URL，改成更高解析度
+      const photo = window.S.photos[window.S.selPhoto];
+      const imageUrl = photo?.thumbnailLink
+        ? photo.thumbnailLink.replace(/=s\d+$/, '=s1200')
+        : await uploadToFal(compressed);
+      setPrStatus('🎨 送出 Kontext 任務...', 'var(--t3)');
       const submitData = await callWorker({
         action: 'fal_submit',
         endpoint: 'fal-ai/flux-pro/kontext',
@@ -252,13 +256,15 @@ async function applyPhotoroomBg() {
 
     // ── 純去背 ──
     if (['white_bg','transparent_bg','ghost_mannequin'].includes(PR_MODE)) {
-      setPrStatus('📤 送出去背任務...', 'var(--t3)');
-      setPrStatus('📤 上傳圖片到 fal...', 'var(--t3)');
-      const imageUrl = await uploadToFal(compressed);
+      const photo2 = window.S.photos[window.S.selPhoto];
+      const imageUrl2 = photo2?.thumbnailLink
+        ? photo2.thumbnailLink.replace(/=s\d+$/, '=s1200')
+        : await uploadToFal(compressed);
+      setPrStatus('✂️ 送出去背任務...', 'var(--t3)');
       const submitData = await callWorker({
         action: 'fal_submit',
         endpoint: 'fal-ai/bria/background/removal',
-        payload: { image_url: imageUrl }
+        payload: { image_url: imageUrl2 }
       });
       if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
       setPrStatus('✂️ 去背中...', 'var(--t3)');
@@ -300,8 +306,10 @@ async function applySeedanceVideo() {
     const base64 = await blobToBase64(blob);
     const compressed = await compressImageBase64(base64, 1200, 0.88);
 
-    setPrStatus('📤 上傳圖片到 fal...', 'var(--t3)');
-    const imageUrlVideo = await uploadToFal(compressed);
+    const photoV = window.S.photos[window.S.selPhoto];
+    const imageUrlVideo = photoV?.thumbnailLink
+      ? photoV.thumbnailLink.replace(/=s\d+$/, '=s1200')
+      : await uploadToFal(compressed);
     setPrStatus('📤 送出 Seedance 任務...', 'var(--t3)');
     const submitData = await callWorker({
       action: 'fal_submit',
