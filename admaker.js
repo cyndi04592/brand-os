@@ -253,16 +253,15 @@ async function applyPhotoroomBg() {
       const imageUrl = photo?.thumbnailLink
         ? photo.thumbnailLink.replace(/=s\d+$/, '=s1200')
         : await uploadToFal(compressed);
-      setPrStatus('🎨 送出 Kontext 任務...', 'var(--t3)');
+      setPrStatus('🎨 Kontext 換背景中（約10-15秒）...', 'var(--t3)');
       const submitData = await callWorker({
         action: 'fal_submit',
         endpoint: 'fal-ai/flux-pro/kontext',
         payload: { image_url: imageUrl, prompt, guidance_scale: 3.5, num_inference_steps: 28 }
       });
-      if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
-      setPrStatus('🎨 Kontext 換背景中...', 'var(--t3)');
-      const result = await pollUntilDone(submitData.requestId, 'fal-ai/flux-pro/kontext', 180000);
-      PR_BG_IMG = result.imageBase64;
+      if (!submitData.ok) throw new Error(submitData.error || '換背景失敗');
+      // 同步呼叫直接回傳結果，不需要 poll
+      PR_BG_IMG = submitData.imageBase64;
       await renderAdCanvasWithPR();
       finishProgress(interval);
       setPrStatus('✅ AI 換背景完成！', 'var(--mint)');
@@ -275,16 +274,14 @@ async function applyPhotoroomBg() {
       const imageUrl2 = photo2?.thumbnailLink
         ? photo2.thumbnailLink.replace(/=s\d+$/, '=s1200')
         : await uploadToFal(compressed);
-      setPrStatus('✂️ 送出去背任務...', 'var(--t3)');
+      setPrStatus('✂️ 去背中（約5-10秒）...', 'var(--t3)');
       const submitData = await callWorker({
         action: 'fal_submit',
         endpoint: 'fal-ai/bria/background/removal',
         payload: { image_url: imageUrl2 }
       });
-      if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
-      setPrStatus('✂️ 去背中...', 'var(--t3)');
-      const result = await pollUntilDone(submitData.requestId, 'fal-ai/bria/background/removal', 60000);
-      PR_BG_IMG = result.imageBase64;
+      if (!submitData.ok) throw new Error(submitData.error || '去背失敗');
+      PR_BG_IMG = submitData.imageBase64;
       await renderAdCanvasWithPR();
       finishProgress(interval);
       setPrStatus('✅ 去背完成！', 'var(--mint)');
