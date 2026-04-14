@@ -14,13 +14,24 @@ let TEXT_ALIGN = 'left';
 
 // ── Kontext prompt 場景庫（前端帶過去）──
 const KONTEXT_PROMPTS = {
-  studio:    'Replace the background with a clean professional studio, pure white or light grey seamless backdrop, soft diffused lighting, subtle product shadow, keep subject position and proportions exactly',
-  lifestyle: 'Replace the background with a warm modern home interior, natural daylight from window, Scandinavian minimal aesthetics, wooden floor or marble surface, match subject lighting perfectly',
-  outdoor:   'Replace the background with a beautiful outdoor nature scene, soft golden hour sunlight, blurred bokeh greenery or beach, subject in foreground with perfect lighting integration',
-  camping:   'Replace the background with a cozy camping scene, campfire warm glow, night sky stars, rustic outdoor atmosphere, wooden table, keep subject perfectly lit and integrated',
-  food:      'Replace the background with professional food photography setting, marble or wooden surface, soft natural side lighting, clean minimal restaurant aesthetic, subject perfectly preserved',
-  fashion:   'Replace the background with high-fashion editorial backdrop, minimal light gradient, premium campaign aesthetic, soft directional lighting, maintain model/clothing perfectly',
-  ad_visual: 'Replace the background with a cinematic advertising scene, dramatic professional lighting, premium commercial photography, subject exact position maintained',
+  // 所有 prompt 必須保留原圖主體！KEY 對應 index.html 的 setPrScene() 值
+  studio:    'Change ONLY the background to a pure white seamless studio backdrop with soft diffused lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  lifestyle: 'Change ONLY the background to a warm Scandinavian living room with wooden floor and natural daylight. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  natural:   'Change ONLY the background to a fresh outdoor nature scene with green trees and golden sunlight. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  forest:    'Change ONLY the background to a lush dark forest at dusk with atmospheric fog and filtered light. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  food:      'Change ONLY the background to a marble surface with professional food photography lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  kitchen:   'Change ONLY the background to a warm cozy kitchen interior with soft warm lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  dark_gold: 'Change ONLY the background to a premium dark luxury backdrop with golden accent lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  marble:    'Change ONLY the background to an elegant marble texture surface with subtle luxury feel. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  city:      'Change ONLY the background to a modern city street at golden hour with blurred urban buildings. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  beach:     'Change ONLY the background to a tropical beach with golden sand and blue ocean sunset. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  minimal:   'Change ONLY the background to a clean minimal light grey gradient backdrop. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  night:     'Change ONLY the background to a beautiful night cityscape with neon lights and bokeh glow. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  garden:    'Change ONLY the background to a beautiful blooming garden with colorful flowers and soft sunlight. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  camping:   'Change ONLY the background to a cozy camping scene at night with campfire, tent, and starry sky. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  office:    'Change ONLY the background to a modern minimalist office interior with clean lines. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  random:    'Change ONLY the background to a creative and unexpected scene with dramatic lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  ad_visual: 'Change ONLY the background to a cinematic advertising scene with dramatic professional lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
 };
 
 // ══ 開啟 AD Maker ══
@@ -326,7 +337,7 @@ async function applySeedanceVideo() {
     const submitData = await callWorker({
       action: 'fal_submit',
       endpoint: 'bytedance/seedance-2.0/image-to-video',
-      payload: { image_url: imageUrlVideo, prompt: videoPrompt || defaultPrompt, duration: videoDuration, aspect_ratio: videoRatio, generate_audio: videoAudio, resolution: '720p' }
+      payload: { image_url: imageUrlVideo, prompt: videoPrompt || defaultPrompt, duration: String(videoDuration), aspect_ratio: videoRatio, generate_audio: videoAudio, resolution: '720p' }
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
@@ -426,7 +437,13 @@ async function renderAdCanvasWithPR() {
         const scale = Math.min(AM.w/img.width, AM.h/img.height);
         ctx.drawImage(img, Math.round((AM.w-img.width*scale)/2), Math.round((AM.h-img.height*scale)/2), img.width*scale, img.height*scale);
       } else {
-        ctx.drawImage(img, 0, 0, AM.w, AM.h);
+        // Kontext 回傳圖保持原始比例（contain），避免拉長
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, AM.w, AM.h);
+        const scale = Math.min(AM.w / img.width, AM.h / img.height);
+        const x = Math.round((AM.w - img.width * scale) / 2);
+        const y = Math.round((AM.h - img.height * scale) / 2);
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
       }
       resolve();
     };
