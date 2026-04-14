@@ -14,28 +14,26 @@ let TEXT_ALIGN = 'left';
 
 // ── Kontext prompt 場景庫（前端帶過去）──
 const KONTEXT_PROMPTS = {
-  // 所有 prompt 必須保留原圖主體！KEY 對應 index.html 的 setPrScene() 值
-  studio:    'Change ONLY the background to a pure white seamless studio backdrop with soft diffused lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  lifestyle: 'Change ONLY the background to a warm Scandinavian living room with wooden floor and natural daylight. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  natural:   'Change ONLY the background to a fresh outdoor nature scene with green trees and golden sunlight. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  forest:    'Change ONLY the background to a lush dark forest at dusk with atmospheric fog and filtered light. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  food:      'Change ONLY the background to a marble surface with professional food photography lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  kitchen:   'Change ONLY the background to a warm cozy kitchen interior with soft warm lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  dark_gold: 'Change ONLY the background to a premium dark luxury backdrop with golden accent lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  marble:    'Change ONLY the background to an elegant marble texture surface with subtle luxury feel. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  city:      'Change ONLY the background to a modern city street at golden hour with blurred urban buildings. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  beach:     'Change ONLY the background to a tropical beach with golden sand and blue ocean sunset. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  minimal:   'Change ONLY the background to a clean minimal light grey gradient backdrop. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  night:     'Change ONLY the background to a beautiful night cityscape with neon lights and bokeh glow. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  garden:    'Change ONLY the background to a beautiful blooming garden with colorful flowers and soft sunlight. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  camping:   'Change ONLY the background to a cozy camping scene at night with campfire, tent, and starry sky. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  office:    'Change ONLY the background to a modern minimalist office interior with clean lines. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  random:    'Change ONLY the background to a creative and unexpected scene with dramatic lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  ad_visual: 'Change ONLY the background to a cinematic advertising scene with dramatic professional lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  // 補充 index.html 用到的 key
-  nature:    'Change ONLY the background to a fresh outdoor nature scene with green trees and golden sunlight. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  luxury:    'Change ONLY the background to a premium dark luxury backdrop with golden accent lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
-  outdoor:   'Change ONLY the background to a modern city street at golden hour with blurred urban buildings. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  // 升級版：整體重新渲染成廣告風格，不只換背景
+  studio:    'Transform this into a premium commercial product photo. Pure white seamless studio backdrop, soft professional diffused lighting with subtle shadows. Enhance product details to look like a high-end catalog shoot. Keep ALL subjects and products in EXACTLY the same position.',
+  lifestyle: 'Transform this into a warm lifestyle advertisement. Scandinavian living room setting, natural window daylight, wooden surfaces. Add warm atmospheric glow and lifestyle storytelling mood. Keep ALL subjects in EXACTLY the same position.',
+  nature:    'Transform this into a fresh outdoor brand advertisement. Lush green nature background, golden hour sunlight filtering through leaves, soft bokeh. Add cinematic depth of field. Keep ALL subjects in EXACTLY the same position.',
+  forest:    'Transform this into a dramatic forest brand advertisement. Dark atmospheric forest at dusk, mysterious fog, filtered golden light through trees. Cinematic moody atmosphere. Keep ALL subjects in EXACTLY the same position.',
+  marble:    'Transform this into a luxury product advertisement. Elegant Italian marble surface, dark premium backdrop, dramatic side lighting with golden rim light. High-end luxury brand aesthetic. Keep ALL subjects in EXACTLY the same position.',
+  dark_gold: 'Transform this into a premium luxury brand advertisement. Deep black background with dramatic golden accent lighting, rich shadows, cinematic contrast. Think Rolex or Chanel advertisement quality. Keep ALL subjects in EXACTLY the same position.',
+  minimal:   'Transform this into a clean minimal brand advertisement. Light grey gradient backdrop, soft diffused lighting, minimalist composition. Apple or Muji advertisement aesthetic. Keep ALL subjects in EXACTLY the same position.',
+  camping:   'Transform this into a cinematic outdoor camping advertisement. Night forest setting with warm campfire glow, starry sky, tent in background. Dramatic atmospheric lighting. Keep ALL subjects in EXACTLY the same position.',
+  outdoor:   'Transform this into an urban lifestyle advertisement. Modern city backdrop at golden hour, bokeh city lights, dynamic urban energy. Keep ALL subjects in EXACTLY the same position.',
+  beach:     'Transform this into a summer lifestyle advertisement. Tropical beach setting, golden sand, blue ocean, warm sunset glow. Fresh and vibrant advertising mood. Keep ALL subjects in EXACTLY the same position.',
+  garden:    'Transform this into a fresh natural brand advertisement. Beautiful blooming garden, soft morning sunlight, colorful flowers in background. Keep ALL subjects in EXACTLY the same position.',
+  night:     'Transform this into a dramatic night brand advertisement. City nightscape, neon bokeh lights, premium evening atmosphere. Keep ALL subjects in EXACTLY the same position.',
+  office:    'Transform this into a professional business advertisement. Modern minimalist office interior, clean architectural lines, professional atmosphere. Keep ALL subjects in EXACTLY the same position.',
+  food:      'Transform this into a world-class food advertisement. Add dramatic atmospheric steam rising from hot food, cinematic dark moody background with warm golden accent lighting, professional food photography with shallow depth of field. Michelin restaurant advertisement quality. Keep ALL food, dishes and hands in EXACTLY the same position.',
+  kitchen:   'Transform this into a premium restaurant brand photo. Warm professional kitchen atmosphere, dramatic overhead lighting on food, steam and texture enhancement. Commercial food brand quality. Keep ALL subjects in EXACTLY the same position.',
+  ad_visual: 'Transform this into a cinematic advertising hero shot. Dramatic professional studio lighting, rich color grading, commercial photography. Think Coca-Cola or McDonald advertisement quality. Keep ALL subjects in EXACTLY the same position.',
+  random:    'Transform this into a stunning creative advertisement with unexpected dramatic lighting and cinematic atmosphere. Creative commercial photography style. Keep ALL subjects in EXACTLY the same position.',
+  luxury:    'Transform this into a premium luxury brand advertisement. Deep black background with dramatic golden accent lighting, rich shadows. Think Rolex advertisement quality. Keep ALL subjects in EXACTLY the same position.',
+  nature_key: 'Transform this into a fresh outdoor brand advertisement. Lush green nature background, golden hour sunlight, soft bokeh. Keep ALL subjects in EXACTLY the same position.',
 };
 
 // ══ 開啟 AD Maker ══
