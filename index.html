@@ -76,6 +76,7 @@
     <span style="font-size:10px;color:#E8603A;white-space:nowrap;font-weight:700;letter-spacing:1px;">✦ RABY BRAND OS</span>
   </div>
   <div class="nav-right">
+    <a href="privacy.html" target="_blank" style="font-size:10px;color:rgba(160,144,128,0.6);text-decoration:none;white-space:nowrap;" title="隱私政策">隱私政策</a>
     <a href="monitor.html" class="btn-ads-monitor" title="廣告監控儀表板"><svg width="15" height="15" viewBox="0 0 36 36" fill="none" style="flex-shrink:0;"><circle cx="18" cy="18" r="14" stroke="#FF6600" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/><circle cx="18" cy="18" r="8.5" stroke="#FF6600" stroke-width="1.2" opacity="0.7"/><circle cx="18" cy="18" r="2.5" fill="#FF6600"/><line x1="18" y1="18" x2="18" y2="4" stroke="#FF6600" stroke-width="1.5" stroke-linecap="round"/></svg><span>廣告監控</span><span class="monitor-live-dot"></span></a>
     <button onclick="goAdmin()" style="padding:4px 12px;border-radius:6px;border:1px solid #E8603A;background:rgba(232,96,58,0.12);color:#E8603A;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">⚙️ 後台</button>
     <button id="logoutBtn" onclick="doLogout()" style="display:none;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--t3);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">登出</button>
@@ -179,7 +180,10 @@
   <!-- 右側：Drive 素材庫 -->
   <div class="right">
     <div class="drive-cfg">
-      <div class="l-sec">Drive 素材庫</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div class="l-sec" style="margin-bottom:0;">Drive 素材庫</div>
+        <button onclick="openAdMakerDirect()" style="padding:4px 10px;border-radius:6px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap;">🎨 直接做廣告圖</button>
+      </div>
       <div id="driveWarningBanner" style="display:block;margin-bottom:8px;padding:10px 12px;background:rgba(212,24,46,0.15);border:1.5px solid #D4182E;border-radius:8px;text-align:center;">
         <div class="drive-warning-text" style="font-size:12px;font-weight:900;color:#FF4D6A;margin-bottom:4px;">· 尚未連結 Google Drive</div>
         <div style="font-size:10px;color:#FF8099;margin-bottom:8px;">必須先連結才能抓取素材庫</div>
@@ -381,6 +385,18 @@
 <script src="assets.js"></script>
 <script src="generator.js"></script>
 <script src="admaker.js"></script>
+<script>
+// 直接做廣告圖（不需要先生成文案）
+function openAdMakerDirect() {
+  // 建一個空白腳本物件直接開 AD Maker
+  if (!window.S) { alert('請先選擇品牌和商品'); return; }
+  if (!window.S.brandId) { alert('請先選擇品牌'); return; }
+  // 在 scripts 陣列加一個空白項目
+  if (!window.S.scripts) window.S.scripts = [];
+  window.S.scripts.unshift({ hook: { script: '' }, body: '', cta: '' });
+  openAdMaker(0);
+}
+</script>
 
 <!-- Google OAuth（最後載入，完成後呼叫 initGoogleAuth）-->
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth();startSystem();" async defer></script>
