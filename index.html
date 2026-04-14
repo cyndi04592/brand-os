@@ -320,6 +320,13 @@
             <div class="sel-lbl">影片運鏡描述（選填，留空用品牌預設）</div>
             <textarea id="videoPrompt" rows="2" placeholder="例：slow zoom in, product rotating, soft morning light, lifestyle feeling" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;resize:none;margin-top:4px;line-height:1.5;"></textarea>
           </div>
+          <div style="margin-bottom:6px;">
+            <div class="sel-lbl">AI 模型</div>
+            <select id="videoModel" class="sel" style="width:100%;margin-top:4px;" onchange="updateVideoDurationOptions()">
+              <option value="seedance" selected>🎬 Seedance（純產品，$0.24/秒）</option>
+              <option value="kling">🎥 Kling v3 Pro（帶人像，$0.11/秒）</option>
+            </select>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
             <div>
               <div class="sel-lbl">時長</div>
