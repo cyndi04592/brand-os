@@ -177,6 +177,24 @@ async function callWorker(params) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// 更新時長選項（Kling 支援 5-10 秒，Seedance 支援 4-10 秒）
+function updateVideoDurationOptions() {
+  const model = document.getElementById('videoModel')?.value;
+  const sel = document.getElementById('videoDuration');
+  if (!sel) return;
+  if (model === 'kling') {
+    sel.innerHTML = `
+      <option value="5" selected>5 秒（$0.56）</option>
+      <option value="10">10 秒（$1.12）</option>`;
+  } else {
+    sel.innerHTML = `
+      <option value="4">4 秒（$0.96）</option>
+      <option value="5" selected>5 秒（$1.20）</option>
+      <option value="8">8 秒（$1.92）</option>
+      <option value="10">10 秒（$2.40）</option>`;
+  }
+}
+
 // ── 上傳圖片到 fal storage（前端直接 PUT presigned URL，不受 Worker 30秒限制）──
 async function uploadToFal(base64) {
   // Step 1: Worker 取得 presigned URL（< 1秒）
@@ -337,18 +355,22 @@ async function applySeedanceVideo() {
     const imageUrlVideo = photoV?.thumbnailLink
       ? photoV.thumbnailLink.replace(/=s\d+$/, '=s1200')
       : await uploadToFal(compressed);
-    setPrStatus('📤 送出 Seedance 任務...', 'var(--t3)');
-    // 影片用 queue 非同步（Seedance 需要 1-2 分鐘，同步會超時）
+    const videoModel = document.getElementById('videoModel')?.value || 'seedance';
+    const isKling = videoModel === 'kling';
+    const videoEndpoint = isKling
+      ? 'fal-ai/kling-video/v3/pro/image-to-video'
+      : 'bytedance/seedance-2.0/image-to-video';
+    setPrStatus(`📤 送出${isKling ? ' Kling v3' : ' Seedance'} 任務...`, 'var(--t3)');
     const submitData = await callWorker({
       action: 'fal_video_submit',
-      endpoint: 'bytedance/seedance-2.0/image-to-video',
+      endpoint: videoEndpoint,
       payload: { image_url: imageUrlVideo, prompt: videoPrompt || defaultPrompt, duration: String(videoDuration), aspect_ratio: videoRatio, generate_audio: videoAudio, resolution: '720p' }
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
     // Poll 最多等 8 分鐘
     setPrStatus('🎬 Seedance 2.0 生成中，約 1-3 分鐘...', 'var(--t3)');
-    const result = await pollUntilDone(submitData.requestId, 'bytedance/seedance-2.0/image-to-video', 480000);
+    const result = await pollUntilDone(submitData.requestId, videoEndpoint, 480000);
 
     if (result.videoUrl) {
       finishProgress(interval);
