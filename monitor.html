@@ -1160,7 +1160,7 @@ function drawChart(){
   if(!chartData.length){canvas.style.display='none';if(empty) empty.style.display='flex';if(loading) loading.style.display='none';return;}
   canvas.style.display='block';if(empty) empty.style.display='none';if(loading) loading.style.display='none';
   var ctx=canvas.getContext('2d');
-  var W=canvas.offsetWidth||800, H=160;
+  var chartWrap=canvas.parentElement; var W=(chartWrap?chartWrap.offsetWidth:0)||canvas.offsetWidth||800; W=W-32; var H=160;
   canvas.width=W; canvas.height=H;
   var vals=chartData.map(function(d){return d[chartMetric]||0;});
   var maxV=Math.max.apply(null,vals)||1, minV=Math.min.apply(null,vals), range=maxV-minV||1;
@@ -1302,6 +1302,7 @@ function copyDiagText(){
 }
 
 document.addEventListener('keydown',function(e){if(e.key==='Escape') closeDiagPanel();});
+window.addEventListener('resize',function(){if(chartData.length) drawChart();});
 </script>
 </body>
 </html>
