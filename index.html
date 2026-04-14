@@ -195,24 +195,6 @@
     <div class="asset-grid" id="assetGrid">
       <div class="empty"><div class="empty-ico">·</div><div class="empty-p">選擇品牌後<br>自動載入素材</div></div>
     </div>
-    <div class="deliver-zone">
-      <div class="dz-head">
-        <span class="dz-title">交付給投手</span>
-        <span class="dz-sub" id="dzSub">0 組素材</span>
-      </div>
-      <div class="dz-body">
-        <div class="dr" style="background:var(--bg4);font-size:8px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;">
-          <span>#</span><span>腳本預覽</span><span>照片</span><span>影片</span><span>狀態</span>
-        </div>
-        <div id="deliverRows">
-          <div style="text-align:center;padding:14px;font-size:10px;color:var(--t3);">尚無素材</div>
-        </div>
-      </div>
-      <div class="dz-footer">
-        <button class="dz-copy" onclick="copyTSV(this)">複製全部 → 貼入 Google Sheet</button>
-        <button class="dz-clear" onclick="clearAll()">清空</button>
-      </div>
-    </div>
   </div>
 
 </div><!-- end workspace -->
@@ -238,7 +220,7 @@
       <!-- 文字設定 -->
       <div style="flex-shrink:0;">
         <div class="sel-lbl">主標題文字</div>
-        <textarea id="amTitle" rows="2" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:7px;outline:none;resize:none;margin-top:4px;line-height:1.6;" placeholder="廣告主標題" oninput="renderAdCanvas()"></textarea>
+        <textarea id="amTitle" rows="2" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:7px;outline:none;resize:none;margin-top:4px;line-height:1.6;" placeholder="廣告主標題（可留空直接做背景圖）" oninput="renderAdCanvas()"></textarea>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
           <div><div class="sel-lbl">文字大小</div><input type="range" id="amFontSize" min="40" max="160" value="94" style="width:100%;accent-color:#E8603A;" oninput="document.getElementById('amFontSizeVal').textContent=this.value+'px';renderAdCanvas()"><span id="amFontSizeVal" style="font-size:9px;color:var(--t3);">94px</span></div>
           <div><div class="sel-lbl">文字 Y 位置</div><input type="range" id="amTextY" min="10" max="95" value="80" style="width:100%;accent-color:#E8603A;" oninput="document.getElementById('amTextYVal').textContent=this.value+'%';renderAdCanvas()"><span id="amTextYVal" style="font-size:9px;color:var(--t3);">80%</span></div>
@@ -270,12 +252,6 @@
             <button class="pr-mode-btn"    onclick="setPrMode(this,'transparent_bg')">透明去背PNG</button>
           </div>
 
-          <!-- ★ 新增：廣告主視覺 -->
-          <div style="font-size:9px;color:#5BC8C8;margin-bottom:4px;font-weight:700;">· 廣告主視覺</div>
-          <div style="display:grid;grid-template-columns:1fr;gap:3px;margin-bottom:8px;">
-            <button class="pr-mode-btn" onclick="setPrMode(this,'ad_visual')" style="border-color:rgba(91,200,200,0.5);color:var(--sky);">🎨 Flux Pro 電影級場景</button>
-          </div>
-
           <!-- 服飾／內衣專用 -->
           <div style="font-size:9px;color:#E8A03A;margin-bottom:4px;">· 服飾／內衣專用</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:8px;">
@@ -284,14 +260,14 @@
             <button class="pr-mode-btn" onclick="setPrMode(this,'clothing')">服飾電商圖</button>
           </div>
 
-          <!-- ★ 新增：短影音素材 -->
+          <!-- 短影音素材 -->
           <div style="font-size:9px;color:#B89ED4;margin-bottom:4px;font-weight:700;">· 短影音素材</div>
           <div style="display:grid;grid-template-columns:1fr;gap:3px;">
             <button class="pr-mode-btn" onclick="setPrMode(this,'seedance_video')" style="border-color:rgba(184,158,212,0.5);color:#B89ED4;">🎬 Seedance 2.0 影片生成</button>
           </div>
         </div>
 
-        <!-- AI 背景場景（換背景/廣告主視覺共用）-->
+        <!-- AI 背景場景 -->
         <div id="prSceneSection" style="padding:8px 10px;border-bottom:1px solid var(--line);">
           <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:5px;">AI 背景場景</div>
           <div id="prSceneGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
@@ -332,16 +308,14 @@
           <div style="font-size:9px;color:var(--t3);line-height:1.6;">· MD照片建議：全身、正面、背景簡單<br>· 每張約 NT$2，效果最像真人</div>
         </div>
 
-        <!-- ★ 新增：影片生成設定 -->
+        <!-- 影片生成設定 -->
         <div id="prVideoSection" style="display:none;padding:8px 10px;border-bottom:1px solid var(--line);">
           <div style="font-size:8px;color:#B89ED4;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">🎬 Seedance 2.0 影片設定</div>
           <div style="font-size:9px;color:var(--t3);margin-bottom:8px;line-height:1.6;">選左側產品照片 → 生成短影音素材<br>含原生音效，直接可上傳投放</div>
-
           <div style="margin-bottom:6px;">
             <div class="sel-lbl">影片運鏡描述（選填，留空用品牌預設）</div>
             <textarea id="videoPrompt" rows="2" placeholder="例：slow zoom in, product rotating, soft morning light, lifestyle feeling" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;resize:none;margin-top:4px;line-height:1.5;"></textarea>
           </div>
-
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
             <div>
               <div class="sel-lbl">時長</div>
@@ -361,12 +335,10 @@
               </select>
             </div>
           </div>
-
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
             <input type="checkbox" id="videoAudio" checked style="accent-color:#B89ED4;">
             <label for="videoAudio" style="font-size:10px;color:var(--t2);cursor:pointer;">生成原生音效（推薦開啟）</label>
           </div>
-
           <div style="font-size:9px;color:var(--t3);line-height:1.6;padding:6px 8px;background:rgba(184,158,212,0.08);border-radius:5px;border:1px solid rgba(184,158,212,0.2);">
             💡 Seedance 2.0 by ByteDance<br>
             · 電影級畫質 + 真實物理引擎<br>
