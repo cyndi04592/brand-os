@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>隱私政策 · Brand OS | 芮比廣告行銷</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', -apple-system, sans-serif; background: #0E0E0F; color: #D4C9BC; line-height: 1.8; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 48px 24px 80px; }
+  .logo-area { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .logo-text { font-size: 22px; font-weight: 900; color: #E8603A; letter-spacing: 3px; }
+  .logo-sub { font-size: 11px; color: #A08040; letter-spacing: 2px; margin-top: 2px; }
+  h1 { font-size: 26px; font-weight: 900; color: #fff; margin-bottom: 8px; }
+  .updated { font-size: 12px; color: #A09890; margin-bottom: 40px; }
+  h2 { font-size: 15px; font-weight: 900; color: #E8603A; margin: 36px 0 12px; letter-spacing: 1px; padding-left: 12px; border-left: 3px solid #E8603A; }
+  p { font-size: 14px; color: #C4B9AC; margin-bottom: 12px; }
+  ul { padding-left: 20px; margin-bottom: 12px; }
+  li { font-size: 14px; color: #C4B9AC; margin-bottom: 6px; }
+  .highlight { background: rgba(232,96,58,0.08); border: 1px solid rgba(232,96,58,0.2); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  .highlight p { margin: 0; color: #E8A03A; }
+  a { color: #5BC8C8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #A09890; text-align: center; }
+  .tag { display: inline-block; background: rgba(91,200,200,0.1); border: 1px solid rgba(91,200,200,0.3); color: #5BC8C8; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-right: 6px; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="logo-area">
+    <div>
+      <div class="logo-text">Brand OS</div>
+      <div class="logo-sub">RABY D&amp;C · 芮比廣告行銷</div>
+    </div>
+  </div>
+
+  <h1>隱私政策</h1>
+  <div class="updated">最後更新：2026 年 4 月 15 日｜適用系統：ai.raby.com.tw</div>
+
+  <div class="highlight">
+    <p>📌 Brand OS 是芮比廣告行銷（RABY D&amp;C）的<strong>內部專用廣告管理系統</strong>，僅供授權員工及合作客戶使用，不對一般大眾開放。</p>
+  </div>
+
+  <h2>一、系統概述</h2>
+  <p>Brand OS（以下簡稱「本系統」）由芮比廣告行銷有限公司（統一編號：72600600）開發及營運，部署於 <a href="https://ai.raby.com.tw">https://ai.raby.com.tw</a>。本系統整合 Meta Marketing API、Google Ads API、Google Drive 及多項 AI 服務，協助廣告代理商管理客戶品牌的廣告投放數據與素材製作。</p>
+
+  <h2>二、資料收集範圍</h2>
+  <p>本系統僅收集下列必要資訊：</p>
+  <ul>
+    <li><strong>登入驗證資訊：</strong>Google 帳號電子郵件地址，用於身份驗證（白名單制度）</li>
+    <li><strong>廣告績效數據：</strong>透過 Meta Marketing API 存取的廣告花費、曝光、點擊、轉換等聚合數據，屬於廣告帳戶業務資訊，非個人消費者資料</li>
+    <li><strong>素材檔案：</strong>存放於授權使用者自行提供的 Google Drive 資料夾中的產品圖片及影片</li>
+    <li><strong>系統操作記錄：</strong>Cloudflare Workers 基礎日誌，用於系統維護與除錯</li>
+  </ul>
+
+  <h2>三、Meta Marketing API 資料使用說明</h2>
+  <div class="highlight">
+    <p>⚠️ 本系統透過 Meta Marketing API 存取的所有廣告數據，嚴格遵守 Meta Platform Terms 及 Developer Data Use Policy。</p>
+  </div>
+  <p>本系統存取 Meta Marketing API 的目的與範圍：</p>
+  <ul>
+    <li><span class="tag">ads_read</span> 讀取廣告帳戶績效數據（花費、ROAS、頻率、CTR、CPM 等）用於廣告成效分析</li>
+    <li><span class="tag">business_management</span> 管理芮比廣告行銷代理之客戶廣告帳戶存取權限</li>
+  </ul>
+  <p>本系統<strong>明確聲明不會</strong>將 Meta 廣告數據用於以下用途：</p>
+  <ul>
+    <li>轉售或提供給任何第三方</li>
+    <li>用於芮比廣告行銷代理服務範圍以外的廣告投放</li>
+    <li>建立消費者個人檔案或行為追蹤</li>
+    <li>與其他平台的個人識別資訊（PII）合併</li>
+  </ul>
+
+  <h2>四、資料儲存與安全</h2>
+  <ul>
+    <li>廣告數據透過 Cloudflare Workers 即時中轉處理，不在本系統伺服器長期儲存原始數據</li>
+    <li>所有 API 金鑰及存取權杖均以加密方式儲存於 Cloudflare Workers 環境變數中</li>
+    <li>系統採用 Google OAuth 2.0 進行身份驗證，並設有白名單機制限制存取人員</li>
+    <li>GitHub Pages 靜態前端，不含資料庫，不儲存使用者個人資料</li>
+  </ul>
+
+  <h2>五、資料分享對象</h2>
+  <p>本系統使用以下第三方服務，各服務的資料處理依其各自隱私政策規範：</p>
+  <ul>
+    <li><strong>Meta Platforms Inc.</strong> — Marketing API（廣告數據來源）</li>
+    <li><strong>Google LLC</strong> — Google OAuth、Google Drive API、Google Ads API</li>
+    <li><strong>Anthropic PBC</strong> — Claude API（文案生成）</li>
+    <li><strong>fal.ai</strong> — AI 圖像及影片生成服務</li>
+    <li><strong>Cloudflare Inc.</strong> — Workers 運算及 CDN 服務</li>
+    <li><strong>LINE Corporation</strong> — 廣告異常通知推送</li>
+  </ul>
+  <p>本系統不會在上述以外的第三方分享任何資料。</p>
+
+  <h2>六、Cookie 及追蹤技術</h2>
+  <p>本系統使用 <code>localStorage</code> 儲存使用者登入狀態及介面偏好設定（如選擇的品牌、帳號設定），不使用第三方追蹤 Cookie，不安裝 Meta Pixel 或 Google Analytics 等分析工具。</p>
+
+  <h2>七、使用者權利</h2>
+  <p>授權使用者對其個人資料享有以下權利：</p>
+  <ul>
+    <li><strong>存取權：</strong>可向系統管理員要求查閱系統中與其相關的資料</li>
+    <li><strong>刪除權：</strong>可要求移除帳號存取權限及相關記錄</li>
+    <li><strong>撤回授權：</strong>可隨時透過 Google 帳號設定撤回 OAuth 授權</li>
+  </ul>
+  <p>如需行使上述權利，請聯絡：<a href="mailto:admin@raby.com.tw">admin@raby.com.tw</a></p>
+
+  <h2>八、適用對象</h2>
+  <p>本隱私政策適用於所有存取 ai.raby.com.tw 的授權使用者，包含芮比廣告行銷員工及經授權的客戶代表（如 misa@owohad.com 等合作夥伴）。</p>
+
+  <h2>九、政策更新</h2>
+  <p>本政策如有重大修訂，將透過 LINE 通知或電子郵件通知所有授權使用者。繼續使用本系統即表示同意更新後的隱私政策。</p>
+
+  <h2>十、聯絡資訊</h2>
+  <p>
+    <strong>芮比廣告行銷有限公司</strong><br>
+    系統管理員：YEN CHOULI（嚴周禮）<br>
+    電子郵件：<a href="mailto:admin@raby.com.tw">admin@raby.com.tw</a><br>
+    電話：+886-912-441-787<br>
+    公司網站：<a href="https://raby.com.tw">https://raby.com.tw</a><br>
+    系統網址：<a href="https://ai.raby.com.tw">https://ai.raby.com.tw</a>
+  </p>
+
+  <div class="footer">
+    © 2026 芮比廣告行銷（RABY D&amp;C）· Brand OS · 本政策依 Meta Platform Terms 及 GDPR 相關規範制定
+  </div>
+
+</div>
+</body>
+</html>
