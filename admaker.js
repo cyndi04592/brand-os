@@ -32,6 +32,10 @@ const KONTEXT_PROMPTS = {
   office:    'Change ONLY the background to a modern minimalist office interior with clean lines. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
   random:    'Change ONLY the background to a creative and unexpected scene with dramatic lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
   ad_visual: 'Change ONLY the background to a cinematic advertising scene with dramatic professional lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  // 補充 index.html 用到的 key
+  nature:    'Change ONLY the background to a fresh outdoor nature scene with green trees and golden sunlight. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  luxury:    'Change ONLY the background to a premium dark luxury backdrop with golden accent lighting. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
+  outdoor:   'Change ONLY the background to a modern city street at golden hour with blurred urban buildings. Keep ALL subjects, people, products, and foreground objects EXACTLY unchanged.',
 };
 
 // ══ 開啟 AD Maker ══
