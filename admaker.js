@@ -1,23 +1,24 @@
 // ══════════════════════════════════════════
-//  admaker.js — AD Maker彈窗、Canvas、Photoroom、Kling
+//  admaker.js — AD Maker 素材製作系統 v2（全 fal.ai）
+//  三層模式：電商快速圖 / 廣告主視覺 / 短影音素材
 // ══════════════════════════════════════════
 
 let AM = { w:1080, h:1080, scriptIdx:null };
-let PR_BG_IMG  = null;
+let PR_BG_IMG  = null;  // 圖片結果（base64 或 URL）
+let PR_BG_DATA = null;  // ad_visual 模式專用（{nobgUrl, bgUrl}）
 let PR_MODE    = 'ai_bg';
 let PR_SCENE   = 'studio';
-let FOOD_SCENE = 'bbq';
 let TEXT_ALIGN = 'left';
 
 // ══ 開啟 AD Maker ══
 function openAdMaker(idx) {
-  PR_BG_IMG = null; PR_MODE = 'ai_bg';
+  PR_BG_IMG = null; PR_BG_DATA = null; PR_MODE = 'ai_bg';
   setPrStatus('', '');
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('.pr-mode-btn')?.classList.add('on');
-  document.getElementById('prSceneSection').style.display  = 'block';
+  document.getElementById('prSceneSection').style.display   = 'block';
   document.getElementById('prVirtualSection').style.display = 'none';
-  document.getElementById('prFoodSection').style.display   = 'none';
+  document.getElementById('prVideoSection').style.display   = 'none';
 
   const s = window.S.scripts[idx];
   AM.scriptIdx = idx;
@@ -32,7 +33,7 @@ function closeAdMaker() {
   document.getElementById('adMakerModal').style.display = 'none';
 }
 
-// ══ 照片縮圖列（AD Maker 左側）══
+// ══ 照片縮圖列 ══
 function renderAmPhotoRow() {
   const row    = document.getElementById('amPhotoThumbRow');
   const nameEl = document.getElementById('amPhotoName');
@@ -57,7 +58,7 @@ function renderAmPhotoRow() {
 
 function selectPhotoInAM(i) {
   window.S.selPhoto = i;
-  PR_BG_IMG = null;
+  PR_BG_IMG = null; PR_BG_DATA = null;
   renderAmPhotoRow();
   renderAssets();
   renderAdCanvas();
@@ -91,26 +92,40 @@ function onMdPhotoSelected(input) {
   reader.readAsDataURL(file);
 }
 
-// ══ Mode / Scene 按鈕 ══
+// ══ Mode 按鈕切換 ══
 function setPrMode(btn, mode) {
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   PR_MODE = mode;
-  document.getElementById('prSceneSection').style.display   = mode === 'ai_bg'      ? 'block' : 'none';
-  document.getElementById('prVirtualSection').style.display = mode === 'kling_tryon' ? 'block' : 'none';
-  document.getElementById('prFoodSection').style.display    = mode === 'food_delivery'? 'block' : 'none';
+
+  // 顯示對應區塊
+  document.getElementById('prSceneSection').style.display    = ['ai_bg','white_bg','transparent_bg','relight','shadow_only','remove_text','expand','beautify','ghost_mannequin','clothing','ad_visual'].includes(mode) ? 'block' : 'none';
+  document.getElementById('prVirtualSection').style.display  = mode === 'kling_tryon' ? 'block' : 'none';
+  document.getElementById('prVideoSection').style.display    = mode === 'seedance_video' ? 'block' : 'none';
+
+  // 場景選項只在換背景相關模式顯示
+  const sceneGrid = document.getElementById('prSceneGrid');
+  if (sceneGrid) {
+    sceneGrid.style.display = ['ai_bg','clothing','ad_visual'].includes(mode) ? 'block' : 'none';
+  }
+
+  // 自訂 prompt 只在換背景模式顯示
+  const customPromptRow = document.getElementById('prCustomPromptRow');
+  if (customPromptRow) {
+    customPromptRow.style.display = ['ai_bg','clothing','ad_visual'].includes(mode) ? 'block' : 'none';
+  }
+
+  // 影片選項
+  const videoOptions = document.getElementById('prVideoOptions');
+  if (videoOptions) {
+    videoOptions.style.display = mode === 'seedance_video' ? 'block' : 'none';
+  }
 }
 
 function setPrScene(btn, scene) {
   document.querySelectorAll('#prSceneSection .pr-scene-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   PR_SCENE = scene;
-}
-
-function setFoodScene(btn, scene) {
-  document.querySelectorAll('#prFoodSection .pr-scene-btn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  FOOD_SCENE = scene;
 }
 
 function setTextAlign(align, btn) {
@@ -128,9 +143,16 @@ function setPrStatus(msg, color) {
   if (el) { el.textContent = msg; el.style.color = color || 'var(--t3)'; }
 }
 
-// ══ 套用 AI 效果（Photoroom / Kling）══
+// ══ 套用 AI 效果（統一入口）══
 async function applyPhotoroomBg() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
+
+  // 影片模式不需要選照片（用選取的照片生成影片）
+  if (PR_MODE === 'seedance_video') {
+    await applySeedanceVideo();
+    return;
+  }
+
   if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
   const imgSrc = photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
@@ -142,26 +164,29 @@ async function applyPhotoroomBg() {
   const prFill = document.getElementById('prProgFill');
   const prPct  = document.getElementById('prPct');
   if (prBar) prBar.style.display = 'block';
+
+  // 預估時間（秒）
+  const estimatedMs = PR_MODE === 'kling_tryon' ? 30000 : PR_MODE === 'ad_visual' ? 20000 : 8000;
   let prPctVal = 0;
-  const prTotalMs = PR_MODE === 'ai_bg' ? 18000 : PR_MODE === 'kling_tryon' ? 30000 : 10000;
   const prInterval = setInterval(() => {
-    if (prPctVal >= 93) return;
-    prPctVal = Math.min(93, prPctVal + (prPctVal < 30 ? 2.0 : prPctVal < 60 ? 1.0 : 0.4));
+    if (prPctVal >= 90) return;
+    prPctVal = Math.min(90, prPctVal + (prPctVal < 30 ? 2.5 : prPctVal < 60 ? 1.2 : 0.5));
     if (prFill) prFill.style.width = prPctVal + '%';
     if (prPct)  prPct.textContent  = Math.round(prPctVal) + '%';
-    const msgs = ['📤 上傳圖片...','✂️ AI 去背中...','生成背景中...','🖌️ 光影融合中...','⚡ 最終處理中...'];
+    const msgs = ['📤 上傳圖片...','✂️ AI 去背中...','🎨 生成背景中...','🖌️ 光影融合中...','⚡ 最終處理中...'];
     setPrStatus(msgs[Math.min(Math.floor(prPctVal / 20), msgs.length - 1)], 'var(--t3)');
-  }, prTotalMs / 100);
+  }, estimatedMs / 100);
+
+  const finishProgress = () => {
+    clearInterval(prInterval);
+    if (prFill) prFill.style.width = '100%';
+    if (prPct)  prPct.textContent  = '100%';
+    setTimeout(() => { if (prBar) prBar.style.display = 'none'; if (prPct) prPct.textContent = ''; }, 2000);
+    btn.disabled = false; btn.textContent = '✨ 套用 AI 效果';
+  };
 
   try {
     const blob   = await urlToBlob(imgSrc);
-    const customInput = document.getElementById('prCustomPrompt')?.value?.trim();
-    let prompt = customInput;
-    if (!prompt) {
-      if (PR_MODE === 'food_delivery') prompt = FOOD_SCENE_PROMPTS[FOOD_SCENE];
-      else prompt = getBrandScenePrompt(PR_SCENE);
-    }
-    if (!prompt) prompt = PR_RANDOM_PROMPTS[0];
     const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
@@ -169,7 +194,7 @@ async function applyPhotoroomBg() {
       reader.readAsDataURL(blob);
     });
 
-    // ── Kling 試穿 ──
+    // ── Kling 試穿（保留原有邏輯）──
     if (PR_MODE === 'kling_tryon') {
       const mdImg = document.getElementById('mdPhotoImg');
       if (!mdImg || !mdImg.src || mdImg.style.display === 'none') throw new Error('請先上傳 MD 照片！');
@@ -182,7 +207,7 @@ async function applyPhotoroomBg() {
       const submitData = await submitResp.json();
       if (!submitData.ok) throw new Error(submitData.error || '任務提交失敗');
       const { requestId, statusUrl, responseUrl } = submitData;
-      setPrStatus('⏳ AI 處理中，請稍候...', 'var(--t3)');
+      setPrStatus('⏳ AI 試穿中，請稍候...', 'var(--t3)');
       for (let i = 0; i < 60; i++) {
         await new Promise(r => setTimeout(r, 5000));
         const pollResp = await fetch(CF_WORKER_URL, {
@@ -193,17 +218,11 @@ async function applyPhotoroomBg() {
         if (pollData.status === 'COMPLETED' && pollData.imageBase64) {
           PR_BG_IMG = pollData.imageBase64;
           await renderAdCanvasWithPR();
-          clearInterval(prInterval);
-          if (prFill) prFill.style.width = '100%';
-          if (prPct)  prPct.textContent  = '100%';
+          finishProgress();
           setPrStatus('✅ MD試穿完成！', 'var(--mint)');
-          setTimeout(() => { if (prBar) prBar.style.display = 'none'; if (prPct) prPct.textContent = ''; }, 2000);
-          btn.disabled = false; btn.textContent = '✨ 套用 AI 效果';
           return;
         }
-        if (pollData.status === 'FAILED' || (!pollData.ok && pollData.status !== 'IN_QUEUE' && pollData.status !== 'IN_PROGRESS')) {
-          throw new Error(pollData.error || 'Try-On 失敗');
-        }
+        if (pollData.status === 'FAILED') throw new Error(pollData.error || 'Try-On 失敗');
         const pct = Math.min(90, 10 + i * 1.5);
         if (prFill) prFill.style.width = pct + '%';
         if (prPct)  prPct.textContent  = Math.round(pct) + '%';
@@ -211,34 +230,201 @@ async function applyPhotoroomBg() {
       throw new Error('Try-On 超時，請稍後再試');
     }
 
-    // ── Photoroom ──
+    // ── 廣告主視覺模式（Flux Pro 生成背景）──
+    if (PR_MODE === 'ad_visual') {
+      const customInput = document.getElementById('prCustomPrompt')?.value?.trim();
+      const prompt = customInput || getBrandScenePrompt(PR_SCENE);
+      setPrStatus('🎨 Flux Pro 生成電影級背景中...', 'var(--t3)');
+      const compressed = await compressImageBase64(base64, 1500, 0.90);
+      const resp = await fetch(CF_WORKER_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action:'fal_image_process', password:GAS_PASSWORD, imageBase64:compressed, mode:'ad_visual', bgPrompt:prompt, width:AM.w, height:AM.h })
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || 'Flux Pro 失敗');
+      // ad_visual 回傳 nobgUrl + bgUrl，前端合成
+      PR_BG_DATA = { nobgUrl: data.nobgUrl, bgUrl: data.bgUrl };
+      PR_BG_IMG = null;
+      await renderAdCanvasWithPR();
+      finishProgress();
+      setPrStatus('✅ 廣告主視覺生成完成！', 'var(--mint)');
+      return;
+    }
+
+    // ── 其他 fal.ai 圖片處理模式 ──
+    const customInput = document.getElementById('prCustomPrompt')?.value?.trim();
+    let prompt = customInput;
+    if (!prompt && ['ai_bg','clothing'].includes(PR_MODE)) {
+      prompt = getBrandScenePrompt(PR_SCENE);
+    }
+
+    setPrStatus('🤖 fal.ai 處理中...', 'var(--t3)');
+    const compressed = await compressImageBase64(base64, 1500, 0.90);
     const resp = await fetch(CF_WORKER_URL, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action:'photoroom_process', password:GAS_PASSWORD, imageBase64:base64, bgPrompt:prompt, mode:PR_MODE, width:AM.w, height:AM.h })
+      body: JSON.stringify({ action:'fal_image_process', password:GAS_PASSWORD, imageBase64:compressed, mode:PR_MODE, bgPrompt:prompt, width:AM.w, height:AM.h })
     });
     const prData = await resp.json();
     if (!prData.ok) throw new Error(prData.error || 'AI 處理失敗');
+
     PR_BG_IMG = prData.imageBase64;
+    PR_BG_DATA = null;
     await renderAdCanvasWithPR();
-    clearInterval(prInterval);
-    if (prFill) prFill.style.width = '100%';
-    if (prPct)  prPct.textContent  = '100%';
+    finishProgress();
     setPrStatus('✅ AI 處理成功！', 'var(--mint)');
-    setTimeout(() => { if (prBar) prBar.style.display = 'none'; if (prPct) prPct.textContent = ''; }, 2000);
 
   } catch (e) {
     clearInterval(prInterval);
     if (prBar) prBar.style.display = 'none';
     if (prPct) prPct.textContent = '';
     setPrStatus('❌ ' + e.message, 'var(--red)');
+    btn.disabled = false; btn.textContent = '✨ 套用 AI 效果';
   }
-  btn.disabled = false; btn.textContent = '✨ 套用 AI 效果';
+}
+
+// ══ Seedance 2.0 影片生成 ══
+async function applySeedanceVideo() {
+  const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
+  if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
+  const imgSrc = photo.src || photo.thumb;
+  if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
+
+  const btn    = document.getElementById('prApplyBtn');
+  btn.disabled = true; btn.textContent = '⏳ 影片生成中...';
+
+  const prBar  = document.getElementById('prProgBar');
+  const prFill = document.getElementById('prProgFill');
+  const prPct  = document.getElementById('prPct');
+  if (prBar) prBar.style.display = 'block';
+
+  const videoPrompt   = document.getElementById('videoPrompt')?.value?.trim() || '';
+  const videoDuration = parseInt(document.getElementById('videoDuration')?.value || 5);
+  const videoRatio    = document.getElementById('videoRatio')?.value || '9:16';
+  const videoAudio    = document.getElementById('videoAudio')?.checked !== false;
+
+  // 預設提示詞：根據品牌自動生成
+  const brand = window.BRANDS.find(b => b.id === window.S.brandId);
+  const defaultPrompt = `cinematic smooth camera movement, professional advertising, high quality commercial video, ${brand?.adStyle || 'elegant lifestyle'}, soft natural lighting, photorealistic`;
+  const finalPrompt = videoPrompt || defaultPrompt;
+
+  let pctVal = 0;
+  const interval = setInterval(() => {
+    if (pctVal >= 88) return;
+    pctVal = Math.min(88, pctVal + 0.8);
+    if (prFill) prFill.style.width = pctVal + '%';
+    if (prPct)  prPct.textContent  = Math.round(pctVal) + '%';
+    const msgs = ['📤 上傳圖片...','🎬 Seedance 2.0 生成中...','🎞️ 渲染影格...','🔊 同步音效...','⚡ 最終輸出...'];
+    setPrStatus(msgs[Math.min(Math.floor(pctVal / 20), msgs.length - 1)], 'var(--t3)');
+  }, 1500);
+
+  try {
+    const blob   = await urlToBlob(imgSrc);
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    const compressed = await compressImageBase64(base64, 1200, 0.88);
+
+    // Step 1: Submit
+    setPrStatus('📤 送出 Seedance 2.0 任務...', 'var(--t3)');
+    const submitResp = await fetch(CF_WORKER_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'fal_video_submit', password: GAS_PASSWORD,
+        imageBase64: compressed,
+        prompt: finalPrompt,
+        duration: videoDuration,
+        aspectRatio: videoRatio,
+        generateAudio: videoAudio
+      })
+    });
+    const submitData = await submitResp.json();
+    if (!submitData.ok) throw new Error(submitData.error || '影片任務提交失敗');
+    const { requestId, statusUrl, responseUrl } = submitData;
+
+    // Step 2: Poll（最多等 3 分鐘）
+    setPrStatus('🎬 Seedance 2.0 生成中，約 1-2 分鐘...', 'var(--t3)');
+    for (let i = 0; i < 36; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+      const pollResp = await fetch(CF_WORKER_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action:'fal_video_poll', password:GAS_PASSWORD, requestId, statusUrl, responseUrl })
+      });
+      const pollData = await pollResp.json();
+
+      if (pollData.status === 'COMPLETED' && pollData.videoUrl) {
+        clearInterval(interval);
+        if (prFill) prFill.style.width = '100%';
+        if (prPct)  prPct.textContent  = '100%';
+        setTimeout(() => { if (prBar) prBar.style.display = 'none'; if (prPct) prPct.textContent = ''; }, 2000);
+
+        // 顯示影片預覽
+        showVideoResult(pollData.videoUrl);
+        setPrStatus('✅ 影片生成完成！', 'var(--mint)');
+        btn.disabled = false; btn.textContent = '✨ 套用 AI 效果';
+        return;
+      }
+
+      if (pollData.status === 'FAILED') throw new Error(pollData.error || '影片生成失敗');
+
+      const pct = Math.min(88, 15 + i * 2);
+      if (prFill) prFill.style.width = pct + '%';
+      if (prPct)  prPct.textContent  = Math.round(pct) + '%';
+    }
+    throw new Error('影片生成超時，請稍後再試');
+
+  } catch(e) {
+    clearInterval(interval);
+    if (prBar) prBar.style.display = 'none';
+    if (prPct) prPct.textContent = '';
+    setPrStatus('❌ ' + e.message, 'var(--red)');
+    btn.disabled = false; btn.textContent = '✨ 套用 AI 效果';
+  }
+}
+
+// ══ 顯示影片結果 ══
+function showVideoResult(videoUrl) {
+  // 在 AD Maker 右側顯示影片預覽（取代 canvas）
+  const canvas = document.getElementById('adCanvas');
+  if (canvas) canvas.style.display = 'none';
+
+  let videoEl = document.getElementById('adVideoPreview');
+  if (!videoEl) {
+    videoEl = document.createElement('video');
+    videoEl.id = 'adVideoPreview';
+    videoEl.controls = true;
+    videoEl.loop = true;
+    videoEl.autoplay = true;
+    videoEl.style.cssText = 'border-radius:10px;width:100%;max-width:560px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);display:block;';
+    canvas?.parentNode?.insertBefore(videoEl, canvas);
+  }
+  videoEl.src = videoUrl;
+  videoEl.style.display = 'block';
+
+  // 下載按鈕
+  const dlBtn = document.getElementById('adDownloadBtn');
+  if (dlBtn) {
+    dlBtn.textContent = '⬇️ 下載影片';
+    dlBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = videoUrl;
+      a.download = `seedance_${Date.now()}.mp4`;
+      a.click();
+    };
+  }
 }
 
 // ══ Canvas 渲染 ══
 async function renderAdCanvas() {
-  if (PR_BG_IMG) { await renderAdCanvasWithPR(); return; }
+  // 如果有影片預覽，切回 canvas 模式
+  const videoEl = document.getElementById('adVideoPreview');
+  if (videoEl) videoEl.style.display = 'none';
   const canvas = document.getElementById('adCanvas');
+  if (canvas) canvas.style.display = 'block';
+
+  if (PR_BG_IMG || PR_BG_DATA) { await renderAdCanvasWithPR(); return; }
   if (!canvas) return;
   canvas.width = AM.w; canvas.height = AM.h;
   const ctx = canvas.getContext('2d');
@@ -276,13 +462,56 @@ async function renderAdCanvasWithPR() {
   const brand  = window.BRANDS.find(b => b.id === window.S.brandId);
   const colorMap = { gold:'#E8603A', red:'#E8603A', sky:'#5BC8C8', mint:'#7ED4B0', purple:'#B89ED4', brown:'#C8A870' };
   const accentColor = colorMap[brand?.navColor] || '#E8603A';
+
   const needContain = ['ghost_mannequin','white_bg','transparent_bg','clothing'].includes(PR_MODE);
   const needCover   = PR_MODE === 'kling_tryon';
+
+  // ── 廣告主視覺模式：前端合成去背圖 + 生成背景 ──
+  if (PR_BG_DATA && PR_BG_DATA.bgUrl) {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, AM.w, AM.h);
+
+    // 先畫背景
+    await new Promise(resolve => {
+      const bgImg = new Image();
+      bgImg.crossOrigin = 'anonymous';
+      bgImg.onload = () => {
+        ctx.drawImage(bgImg, 0, 0, AM.w, AM.h);
+        resolve();
+      };
+      bgImg.onerror = () => resolve();
+      bgImg.src = PR_BG_DATA.bgUrl;
+    });
+
+    // 再疊去背產品圖
+    if (PR_BG_DATA.nobgUrl) {
+      await new Promise(resolve => {
+        const nobgImg = new Image();
+        nobgImg.crossOrigin = 'anonymous';
+        nobgImg.onload = () => {
+          const scale = Math.min(AM.w * 0.8 / nobgImg.width, AM.h * 0.8 / nobgImg.height);
+          ctx.drawImage(nobgImg,
+            Math.round((AM.w - nobgImg.width*scale)/2),
+            Math.round((AM.h - nobgImg.height*scale)/2),
+            nobgImg.width*scale, nobgImg.height*scale
+          );
+          resolve();
+        };
+        nobgImg.onerror = () => resolve();
+        nobgImg.src = PR_BG_DATA.nobgUrl;
+      });
+    }
+    drawOverlay(ctx, title, accentColor);
+    return;
+  }
+
+  // ── 一般模式 ──
   ctx.fillStyle = needContain ? '#FFFFFF' : '#1a1a1a';
   ctx.fillRect(0, 0, AM.w, AM.h);
 
   await new Promise(resolve => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       if (needCover) {
         const scaleCover   = Math.max(AM.w / img.width, AM.h / img.height);
