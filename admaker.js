@@ -13,70 +13,69 @@ let TEXT_ALIGN = 'left';
 
 // ── Flux Pro Kontext 場景 prompt 庫（直接改原圖，不去背）──
 // 核心原則：保留所有人物/商品/前景，只改背景/光線/氛圍
-// 攝影設備基準：Nikon Z9 + NIKKOR Z 24-70mm f/2.8 S，商業攝影 300 DPI 等級
+// 自動擴展至 1080x1080，光影與商品色調對應
+// 攝影設備基準：Nikon Z9 + NIKKOR Z 24-70mm f/2.8 S
 const PRODUCT_SCENES = {
 
   // ══ 通用場景 ══
   studio_white:
-    'Change ONLY the background to a seamless premium white studio backdrop with soft gradient shadow at the base. Add professional soft box lighting from upper left with gentle fill light. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged in position and appearance. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, 300 DPI commercial grade.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to premium seamless white studio backdrop with subtle gradient shadow at base. Add soft directional key light matching the product existing light source direction, gentle fill light. Product on reflective white acrylic surface. Match lighting color temperature to product tones. Environment should feel cohesive with the product. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   dark_luxury:
-    'Change ONLY the background to deep matte black. Add dramatic single-source side lighting with golden rim light outlining the subject edges. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Luxury brand editorial aesthetic, high contrast chiaroscuro. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to deep matte black. Add dramatic single-source side lighting direction matching the product existing highlights, golden rim light complementing product color tones. Seamless light integration between product and background. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   marble_premium:
-    'Change ONLY the background and surface to Italian Calacatta marble with dark charcoal upper background. Add dramatic golden accent rim lighting. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Premium brand aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change surface and background to Italian Calacatta marble with dark charcoal upper background. Add dramatic golden accent rim lighting that complements product color palette. Environment accent colors match product tones naturally. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   minimal_grey:
-    'Change ONLY the background to light grey seamless gradient backdrop. Add diffused soft box lighting with no harsh shadows. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Scandinavian minimalist aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to light grey seamless gradient. Add diffused soft box lighting matching product existing light direction. No harsh shadows. Environment neutral tones complement product naturally. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   forest_outdoor:
-    'Change ONLY the background to a lush Japanese cedar forest with dappled golden morning light filtering through trees, misty atmospheric bokeh. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged in position. Outdoor adventure lifestyle. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, golden hour f/2.8.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to lush Japanese cedar forest with dappled golden morning light. Match lighting color temperature and direction to product existing light source. Green forest ambient color reflects naturally onto product surface. Seamless integration. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   night_city:
-    'Change ONLY the background to a beautiful night cityscape with neon bokeh lights and city glow. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Premium evening atmosphere. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to beautiful night cityscape with neon bokeh lights. Neon colors should complement and reflect onto product surface edges naturally. Match light direction from city glow to product existing highlights. Seamless light integration. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   lifestyle_warm:
-    'Change ONLY the background to a warm Scandinavian home interior with large window soft natural morning light, aged oak surface and linen texture. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Cozy lifestyle atmosphere. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, warm 5500K.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to warm Scandinavian home interior with large window soft natural morning light. Warm 5500K ambient light wraps around product naturally matching its existing light direction. Wood and linen tones complement product color palette. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   tech_futuristic:
-    'Change ONLY the background to dark carbon fiber with dramatic cool blue and purple LED accent lighting, geometric light reflections and holographic streaks. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Futuristic tech aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to dark carbon fiber with cool blue and purple LED accent lighting. Tech light colors reflect subtly onto product surface edges matching product contours. Holographic light streaks direction aligned with product highlights. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   sport_energy:
-    'Change ONLY the background to bold gradient deep navy and electric orange with dynamic motion energy. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Athletic lifestyle, powerful composition. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to bold gradient deep navy and electric orange. Dynamic lighting energy direction matches product existing light source. Background gradient colors complement product color tones. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   pet_natural:
-    'Change ONLY the background to warm natural home setting with soft morning window light, wood floor and soft-focus green plants. Keep ALL subjects, products, people, animals and foreground objects EXACTLY unchanged. Friendly approachable aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to warm natural home setting with soft morning window light and wood floor with soft-focus green plants. Warm natural light wraps product seamlessly matching existing light direction. Keep ALL subjects products people animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   jewelry_dark:
-    'Change ONLY the background to pure black velvet with single dramatic spotlight and subtle teal reflection on dark glass surface. Keep ALL subjects, products and foreground objects EXACTLY unchanged. Luxury jewelry editorial. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Change background to pure black velvet with single dramatic spotlight. Spotlight direction matches product existing highlight position exactly. Subtle teal reflection on dark glass surface complements product metal tones. Keep ALL subjects products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4.',
 
-  // ══ 美食場景（強化光線氛圍，不動食物）══
+  // ══ 美食場景（強化氛圍，保留擺盤，自動補滿畫面）══
   food_drama:
-    'Transform this into a Michelin 3-star restaurant advertisement. Change background to pure black, add dramatic single spotlight from above creating intense food highlight, add atmospheric steam wisps rising from dish, add warm golden rim light. Rich deep shadows, cinematic chiaroscuro. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged in position. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background and table surface seamlessly. Transform into Michelin 3-star advertisement. Change background to pure black, add dramatic single spotlight from above matching dish existing highlight direction, add atmospheric steam wisps, warm golden rim light that complements food color tones. Environment dark tones make food colors pop vividly. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_japanese:
-    'Transform into Japanese kappo cuisine photography. Change background and surface to dark charcoal grey aged stone slate, add soft single-source side lighting from right, cool 4000K color temperature, add subtle condensation on ceramic, scattered Japanese cypress wood chopstick rest, refined empty negative space. Wabi-sabi minimalist aesthetic. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background and surface seamlessly. Transform into Japanese kappo cuisine. Change surface to dark charcoal aged stone slate, soft single-source cool side lighting 4000K matching dish existing light direction. Cool grey environment tones complement ceramic and food colors naturally. Wabi-sabi minimal. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_cantonese:
-    'Transform into high-end Hong Kong Cantonese banquet photography. Change background to dark lacquered rosewood table surface, add warm amber pendant light glow from above, add gold-rimmed porcelain props in background, deep red and gold accent tones, elegant dynasty restaurant atmosphere. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background and surface seamlessly. Transform into Hong Kong Cantonese banquet. Change surface to dark lacquered rosewood, add warm amber pendant light matching dish existing highlight direction. Gold and red environment tones reflect warmly onto dish rim and food surface. Elegant dynasty atmosphere. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_korean:
-    'Transform into Korean BBQ restaurant photography. Change background to dark volcanic stone surface with scattered sesame seeds and dried chili props, add dramatic warm backlight creating intense glow on food, add subtle smoke haze, bold high-contrast warm orange tones, energetic and appetizing. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background and surface seamlessly. Transform into Korean BBQ atmosphere. Change surface to dark volcanic stone with scattered sesame and chili props. Add dramatic warm backlight from behind matching food existing highlight. Orange-red environment glow reflects onto food surface edges naturally. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_taiwanese:
-    'Transform into authentic Taiwanese comfort food photography. Change background to warm aged teak wood dining table, add soft warm 3800K tungsten overhead light, add traditional blue-white ceramic tea cup and bamboo chopstick rest as props, subtle steam, warm golden-brown tones, nostalgic home-cooked feeling. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background and surface seamlessly. Transform into Taiwanese comfort food. Change surface to warm aged teak wood table, add soft 3800K tungsten overhead light matching dish existing light direction. Warm golden-brown environment tones complement food color naturally. Traditional ceramic tea cup props. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_french:
-    'Transform into French fine dining editorial photography. Change background to deep navy blue linen tablecloth, add silver cutlery and white porcelain props, soft diffused natural window light from left, cool elegant 5500K tones, minimal luxury composition, Paris brasserie atmosphere. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background and surface seamlessly. Transform into French fine dining editorial. Change surface to deep navy blue linen tablecloth, add silver cutlery props, soft cool natural window light 5500K matching dish existing light direction. Cool blue environment tones create elegant contrast with warm food colors. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_outdoor:
-    'Transform into outdoor picnic lifestyle photography. Change background to natural green grass meadow with warm golden hour sunlight, add rustic wooden cutting board and wildflowers as props, dappled light through leaves, warm natural 5600K daylight, fresh casual outdoor atmosphere. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Expand the canvas to a perfect 1080x1080 square by extending the background seamlessly. Transform into outdoor golden hour picnic. Change background to natural green grass meadow with warm golden sunset light matching dish existing highlight direction. Warm golden environment light wraps onto dish and food surface naturally. Rustic wooden props. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_bright:
-    'Transform into bright Nordic brunch photography. Change background to clean white marble table surface with soft natural morning window light from upper left, add fresh herb sprigs and lemon slice props, clean white ceramic, airy and fresh 6000K daylight tone, Scandinavian minimal aesthetic. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
-
-};
-// ══ 開啟 AD Maker ══
+    'Expand the canvas to a perfect 1080x1080 square by extending the background and surface seamlessly. Transform into bright Nordic brunch. Change surface to clean white marble table, add soft natural morning window light 6000K from upper left matching dish existing light direction. Clean bright environment enhances food colors vibrancy. Fresh herb and lemon slice props. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+};// ══ 開啟 AD Maker ══
 function openAdMaker(idx) {
   PR_BG_IMG = null; PR_MODE = 'product_shot';
   setPrStatus('', '');
@@ -372,7 +371,8 @@ async function applyPhotoroomBg() {
       const submitData = await callWorker({
         action: 'flux_kontext_submit',
         imageUrl,
-        prompt: scenePrompt
+        prompt: scenePrompt,
+        outputSize: 1080
       });
       if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
