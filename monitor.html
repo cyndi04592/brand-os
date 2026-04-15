@@ -6,6 +6,16 @@
 <title>Brand OS · 廣告監控</title>
 <link rel="stylesheet" href="style.css">
 <script src="config.js"></script>
+<script>
+(function(){
+  var token = sessionStorage.getItem('bs_token');
+  var workerMode = sessionStorage.getItem('bs_worker_mode');
+  var email = sessionStorage.getItem('bs_email');
+  if (!token && !workerMode && !email) {
+    window.location.href = 'index.html';
+  }
+})();
+</script>
 <style>
 html,body{overflow:auto;height:auto}
 .monitor-wrap{max-width:1500px;margin:0 auto;padding:20px}
