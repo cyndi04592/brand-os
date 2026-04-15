@@ -216,12 +216,12 @@ async function uploadToFal(base64) {
 // ✅ 超時不 throw，改成 return { status:'TIMEOUT' }
 // ✅ 讓影片/試穿任務可以超時後自動再查
 // ══
-async function pollUntilDone(requestId, endpoint, maxMs = 300000, responseUrl = null) {
+async function pollUntilDone(requestId, endpoint, maxMs = 300000, responseUrl = null, statusUrl = null) {
   const start = Date.now();
   while (Date.now() - start < maxMs) {
     await sleep(5000);
     try {
-      const pollData = await callWorker({ action:'fal_poll', requestId, endpoint, responseUrl });
+      const pollData = await callWorker({ action:'fal_poll', requestId, endpoint, responseUrl, statusUrl });
       if (pollData.status === 'COMPLETED') return pollData;
       if (pollData.status === 'FAILED') return { status:'FAILED', error: pollData.error || '任務失敗' };
       const elapsed = Date.now() - start;
@@ -286,12 +286,12 @@ async function applyPhotoroomBg() {
       setPrStatus('⏳ Kling 試穿中（約30-90秒）...', 'var(--t3)');
 
       // ✅ poll 3分鐘，超時自動再查3次
-      let result = await pollUntilDone(submitData.requestId, submitData.endpoint, 180000, submitData.responseUrl);
+      let result = await pollUntilDone(submitData.requestId, submitData.endpoint, 180000, submitData.responseUrl, submitData.statusUrl);
       if (result.status === 'TIMEOUT') {
         setPrStatus('🔄 超時，最後查詢一次...', 'var(--t3)');
         for (let i = 0; i < 3; i++) {
           await sleep(5000);
-          result = await callWorker({ action:'fal_poll', requestId: submitData.requestId, endpoint: submitData.endpoint, responseUrl: submitData.responseUrl });
+          result = await callWorker({ action:'fal_poll', requestId: submitData.requestId, endpoint: submitData.endpoint, responseUrl: submitData.responseUrl, statusUrl: submitData.statusUrl });
           // ✅ 修正：改用 imageUrl（Worker 回傳 URL，不再是 base64）
           if (result.status === 'COMPLETED' && (result.imageUrl || result.imageBase64)) break;
         }
@@ -412,14 +412,14 @@ async function applySeedanceVideo() {
     const requestId = submitData.requestId;
     const maxWait = isKling && videoDuration >= 10 ? 900000 : 600000;
     setPrStatus(`🎬 ${isKling ? 'Kling v3' : 'Seedance 2.0'} 生成中...`, 'var(--t3)');
-    let result = await pollUntilDone(requestId, videoEndpoint, maxWait, submitData.responseUrl);
+    let result = await pollUntilDone(requestId, videoEndpoint, maxWait, submitData.responseUrl, submitData.statusUrl);
 
     // ✅ 超時後自動再查 3 次
     if (result.status === 'TIMEOUT') {
       setPrStatus('🔄 超時，最後查詢一次...', 'var(--t3)');
       for (let i = 0; i < 3; i++) {
         await sleep(5000);
-        result = await callWorker({ action:'fal_poll', requestId, endpoint: videoEndpoint, responseUrl: submitData.responseUrl });
+        result = await callWorker({ action:'fal_poll', requestId, endpoint: videoEndpoint, responseUrl: submitData.responseUrl, statusUrl: submitData.statusUrl });
         if (result.status === 'COMPLETED' && result.videoUrl) break;
       }
     }
