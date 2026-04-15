@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-//  admaker.js — AD Maker 素材製作系統 v4.1
+//  admaker.js — AD Maker 素材製作系統 v4.2
 //  ✅ AI 電商場景：去背 → Bria Product Shot（全自動串接）
-//  ✅ 真人 MD 試穿：Kling kolors
-//  ✅ 影片生成：Kling v3 Pro / Seedance 2.0
-//  ✅ 影片 poll 超時不報錯，自動再查一次拿結果
+//  ✅ 真人 MD 試穿：Kling kolors（超時自動再查3次）
+//  ✅ 影片生成：Kling v3 Pro / Seedance 2.0（超時自動再查）
+//  ✅ 場景補回：food / forest / outdoor
 // ══════════════════════════════════════════
 
 let AM = { w:1080, h:1080, scriptIdx:null };
@@ -16,8 +16,10 @@ const PRODUCT_SCENES = {
   studio:    'clean white studio backdrop, professional soft lighting, minimal shadows',
   lifestyle: 'warm Scandinavian living room, natural window light, wooden surfaces',
   nature:    'lush green outdoor nature setting, golden hour sunlight, soft bokeh',
-  camping:   'outdoor camping setting, warm campfire glow, forest background at dusk',
+  forest:    'dark atmospheric forest at dusk, mysterious fog, filtered golden light through trees, cinematic moody',
+  food:      'dramatic dark moody food photography background, warm golden accent lighting, steam atmosphere, Michelin restaurant quality',
   kitchen:   'premium kitchen counter, warm professional lighting, culinary atmosphere',
+  camping:   'outdoor camping setting, warm campfire glow, forest background at dusk',
   marble:    'elegant Italian marble surface, dark premium backdrop, dramatic golden rim light',
   minimal:   'light grey gradient backdrop, soft diffused lighting, minimalist clean style',
   dark_gold: 'deep black background, dramatic golden accent lighting, luxury brand aesthetic',
@@ -25,6 +27,7 @@ const PRODUCT_SCENES = {
   garden:    'beautiful blooming garden, soft morning sunlight, colorful flowers',
   night:     'city nightscape background, neon bokeh lights, premium evening atmosphere',
   office:    'modern minimalist office interior, clean architectural lines, professional',
+  outdoor:   'modern city backdrop at golden hour, bokeh city lights, dynamic urban energy',
 };
 
 // ══ 開啟 AD Maker ══
@@ -211,7 +214,7 @@ async function uploadToFal(base64) {
 
 // ══ Poll Loop
 // ✅ 超時不 throw，改成 return { status:'TIMEOUT' }
-// ✅ 讓影片任務可以超時後自動再查一次
+// ✅ 讓影片/試穿任務可以超時後自動再查
 // ══
 async function pollUntilDone(requestId, endpoint, maxMs = 300000) {
   const start = Date.now();
@@ -221,7 +224,6 @@ async function pollUntilDone(requestId, endpoint, maxMs = 300000) {
       const pollData = await callWorker({ action:'fal_poll', requestId, endpoint });
       if (pollData.status === 'COMPLETED') return pollData;
       if (pollData.status === 'FAILED') return { status:'FAILED', error: pollData.error || '任務失敗' };
-      // 更新進度
       const elapsed = Date.now() - start;
       const pct = Math.min(88, Math.round(15 + elapsed / maxMs * 73));
       const prFill = document.getElementById('prProgFill');
@@ -229,11 +231,9 @@ async function pollUntilDone(requestId, endpoint, maxMs = 300000) {
       if (prFill) prFill.style.width = pct + '%';
       if (prPct) prPct.textContent = pct + '%';
     } catch(e) {
-      // 單次 poll 失敗不中斷，繼續等
       console.warn('poll 單次失敗，繼續:', e.message);
     }
   }
-  // 超時：return 而不是 throw，讓外層自行處理
   return { status:'TIMEOUT' };
 }
 
@@ -284,9 +284,20 @@ async function applyPhotoroomBg() {
       });
       if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
       setPrStatus('⏳ Kling 試穿中（約30-90秒）...', 'var(--t3)');
-      const result = await pollUntilDone(submitData.requestId, submitData.endpoint, 120000);
+
+      // ✅ 修正：poll 3分鐘，超時自動再查3次
+      let result = await pollUntilDone(submitData.requestId, submitData.endpoint, 180000);
+      if (result.status === 'TIMEOUT') {
+        setPrStatus('🔄 超時，最後查詢一次...', 'var(--t3)');
+        for (let i = 0; i < 3; i++) {
+          await sleep(5000);
+          result = await callWorker({ action:'fal_poll', requestId: submitData.requestId, endpoint: submitData.endpoint });
+          if (result.status === 'COMPLETED' && result.imageBase64) break;
+        }
+      }
       if (result.status === 'FAILED') throw new Error(result.error || '試穿失敗');
-      if (result.status === 'TIMEOUT' || !result.imageBase64) throw new Error('試穿超時，請再試一次');
+      if (!result.imageBase64) throw new Error('試穿超時，請再試一次');
+
       PR_BG_IMG = result.imageBase64;
       await renderAdCanvasWithPR();
       finishProgress(interval);
@@ -347,10 +358,7 @@ async function applyPhotoroomBg() {
   }
 }
 
-// ══ 影片生成（Seedance 2.0 / Kling v3）
-// ✅ 關鍵修正：poll 超時後自動再打一次查詢，不直接報錯
-// ✅ 拿到 videoUrl 才顯示播放器＋下載按鈕
-// ══
+// ══ 影片生成（Seedance 2.0 / Kling v3）══
 async function applySeedanceVideo() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
@@ -396,16 +404,13 @@ async function applySeedanceVideo() {
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
     const requestId = submitData.requestId;
-
-    // Kling 10秒影片約需 550 秒，設 15 分鐘上限
     const maxWait = isKling && videoDuration >= 10 ? 900000 : 600000;
     setPrStatus(`🎬 ${isKling ? 'Kling v3' : 'Seedance 2.0'} 生成中...`, 'var(--t3)');
     let result = await pollUntilDone(requestId, videoEndpoint, maxWait);
 
-    // ✅ 超時後自動再查一次（影片可能已生成完，只是前端 timer 被節流）
+    // ✅ 超時後自動再查 3 次
     if (result.status === 'TIMEOUT') {
       setPrStatus('🔄 超時，最後查詢一次...', 'var(--t3)');
-      // 連續查 3 次，每次間隔 5 秒
       for (let i = 0; i < 3; i++) {
         await sleep(5000);
         result = await callWorker({ action:'fal_poll', requestId, endpoint: videoEndpoint });
@@ -420,7 +425,6 @@ async function applySeedanceVideo() {
       showVideoResult(result.videoUrl);
       setPrStatus('✅ 影片生成完成！', 'var(--mint)');
     } else {
-      // 還是沒有：顯示友善提示，不是報錯
       finishProgress(interval);
       setPrStatus('⏳ 影片仍在生成，請稍後重新開啟廣告圖功能再試', 'var(--gold)');
       if (btn) btn.textContent = '✨ 套用 AI 效果';
@@ -431,10 +435,8 @@ async function applySeedanceVideo() {
 
 // ══ 顯示影片結果（播放器 + 下載按鈕）══
 function showVideoResult(videoUrl) {
-  // 隱藏 canvas，顯示影片
   const canvas = document.getElementById('adCanvas');
   if (canvas) canvas.style.display = 'none';
-
   let videoEl = document.getElementById('adVideoPreview');
   if (!videoEl) {
     videoEl = document.createElement('video');
@@ -444,8 +446,6 @@ function showVideoResult(videoUrl) {
     canvas?.parentNode?.insertBefore(videoEl, canvas);
   }
   videoEl.src = videoUrl; videoEl.style.display = 'block';
-
-  // ✅ 更新下載按鈕變成「下載影片」
   const dlBtn = document.getElementById('adDownloadBtn');
   if (dlBtn) {
     dlBtn.textContent = '⬇️ 下載影片';
