@@ -52,19 +52,28 @@ const PRODUCT_SCENES = {
 
   // ══ 美食場景（強化光線氛圍，不動食物）══
   food_drama:
-    'Transform this into a world-class food advertisement. Add dramatic atmospheric steam rising from hot food, cinematic dark moody background with warm golden accent lighting, professional food photography with shallow depth of field. Michelin restaurant advertisement quality. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged in position.',
-
-  food_warm:
-    'Enhance this food photo with warm professional restaurant lighting. Add soft warm 4200K glow, subtle steam atmosphere, rich warm tones on food surface. Change background to warm dark wooden table setting. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform this into a Michelin 3-star restaurant advertisement. Change background to pure black, add dramatic single spotlight from above creating intense food highlight, add atmospheric steam wisps rising from dish, add warm golden rim light. Rich deep shadows, cinematic chiaroscuro. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged in position. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_japanese:
-    'Transform background to Japanese zen minimalist dark slate setting. Add soft diffused side lighting, subtle steam wisps. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged in position. Refined wabi-sabi aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform into Japanese kappo cuisine photography. Change background and surface to dark charcoal grey aged stone slate, add soft single-source side lighting from right, cool 4000K color temperature, add subtle condensation on ceramic, scattered Japanese cypress wood chopstick rest, refined empty negative space. Wabi-sabi minimalist aesthetic. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_cantonese:
+    'Transform into high-end Hong Kong Cantonese banquet photography. Change background to dark lacquered rosewood table surface, add warm amber pendant light glow from above, add gold-rimmed porcelain props in background, deep red and gold accent tones, elegant dynasty restaurant atmosphere. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_korean:
-    'Enhance with vibrant Korean food photography atmosphere. Add dramatic backlight creating food glow, dark stone surface background. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Bold energetic atmosphere. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform into Korean BBQ restaurant photography. Change background to dark volcanic stone surface with scattered sesame seeds and dried chili props, add dramatic warm backlight creating intense glow on food, add subtle smoke haze, bold high-contrast warm orange tones, energetic and appetizing. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_taiwanese:
+    'Transform into authentic Taiwanese comfort food photography. Change background to warm aged teak wood dining table, add soft warm 3800K tungsten overhead light, add traditional blue-white ceramic tea cup and bamboo chopstick rest as props, subtle steam, warm golden-brown tones, nostalgic home-cooked feeling. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_french:
+    'Transform into French fine dining editorial photography. Change background to deep navy blue linen tablecloth, add silver cutlery and white porcelain props, soft diffused natural window light from left, cool elegant 5500K tones, minimal luxury composition, Paris brasserie atmosphere. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_outdoor:
+    'Transform into outdoor picnic lifestyle photography. Change background to natural green grass meadow with warm golden hour sunlight, add rustic wooden cutting board and wildflowers as props, dappled light through leaves, warm natural 5600K daylight, fresh casual outdoor atmosphere. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_bright:
-    'Transform to bright clean food photography. Add fresh natural overhead lighting, white marble or light wood surface. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Clean appetizing commercial style. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform into bright Nordic brunch photography. Change background to clean white marble table surface with soft natural morning window light from upper left, add fresh herb sprigs and lemon slice props, clean white ceramic, airy and fresh 6000K daylight tone, Scandinavian minimal aesthetic. Keep ALL food, dishes, hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
 };
 // ══ 開啟 AD Maker ══
