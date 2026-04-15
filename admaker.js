@@ -13,6 +13,122 @@ let TEXT_ALIGN = 'left';
 
 // ── Flux Pro Kontext 場景 prompt 庫（直接改原圖，不去背）──
 // 核心原則：保留所有人物/商品/前景，只改背景/光線/氛圍
+// 攝影設備基準：Nikon Z9 + NIKKOR Z 24-70mm f/2.8 S
+const PRODUCT_SCENES = {
+
+  // ══ 通用場景 ══
+  studio_white:
+    'Change ONLY the background to a premium seamless white studio backdrop with subtle gradient shadow at base. Add professional soft box lighting matching product existing light direction. Product reflected on white acrylic surface. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  dark_luxury:
+    'Change ONLY the background to deep matte black. Add dramatic single-source side lighting with golden rim light complementing product color. Seamless light integration. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  marble_premium:
+    'Change surface and background to Italian Calacatta marble with dark charcoal upper background. Add dramatic golden accent rim lighting complementing product. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  minimal_grey:
+    'Change background to light grey seamless gradient. Add diffused soft box lighting matching product light direction. No harsh shadows. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  forest_outdoor:
+    'Change background to lush Japanese cedar forest with dappled golden morning light filtering through trees. Green forest ambient light reflects naturally onto product. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  night_city:
+    'Change background to beautiful night cityscape with warm neon bokeh lights. City glow reflects naturally onto product surface edges. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  lifestyle_home:
+    'Change background to warm Scandinavian home interior with large window soft natural morning light, aged oak surface. Warm 5500K ambient light wraps product matching existing light direction. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  // ══ 科技/3C ══
+  tech_dark_stage:
+    'Change background to pure deep black studio with single dramatic overhead spotlight creating perfect circular light pool on product, subtle dark grey floor reflection, product appears to float in darkness. Style like Apple or Sony product launch photography. No colored lights, only pure white spotlight. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  tech_space:
+    'Change background to deep space atmosphere with Earth curvature glow at horizon, dark cosmic backdrop, subtle blue-purple atmospheric rim light wrapping product edges naturally like OnePlus or Samsung flagship photography. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  tech_mirror_stage:
+    'Change background to dark architectural stage with tall dark mirror panels creating infinite reflection corridors, single dramatic downward spotlight on product like eufy or Dyson brand photography, polished dark floor with subtle product reflection. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  // ══ 服飾/鞋子 ══
+  fashion_minimal:
+    'Change background to clean off-white or light warm beige seamless studio, soft natural light from left window, fashion editorial aesthetic, minimal negative space. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  fashion_outdoor:
+    'Change background to golden hour urban street or park setting, bokeh city or nature background, warm lifestyle fashion photography aesthetic. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  shoe_floating:
+    'Change background to pure deep black with single overhead spotlight, shoe or product appears to float with perfect shadow below, ultra-clean product launch aesthetic like Nike or Adidas campaign. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  // ══ 寵物 ══
+  pet_home_warm:
+    'Change background to warm cozy home interior with soft morning window light, wood floor, soft-focus green plants and simple furniture. Warm 4500K ambient light. Approachable domestic atmosphere. Keep ALL subjects products people animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  pet_outdoor_grass:
+    'Change background to sunny outdoor park with fresh green grass, soft natural sunlight, bokeh trees in background, happy energetic outdoor atmosphere. Keep ALL subjects products people animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  pet_studio_clean:
+    'Change background to clean white or light grey seamless studio with soft professional lighting, pet product photography style, clean and bright. Keep ALL subjects products people animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  // ══ 健康/瑜珈/課程 ══
+  yoga_zen:
+    'Change background to serene Japanese zen interior or outdoor bamboo garden with soft diffused morning light, peaceful minimal atmosphere, warm neutral tones, wellness brand aesthetic. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  wellness_bright:
+    'Change background to bright airy studio with large windows and natural morning light, white walls with subtle plant shadow, clean wellness lifestyle aesthetic. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  // ══ 零食/飲料 ══
+  snack_playful:
+    'Change background to bold colorful flat lay surface in warm yellow or coral, playful scattered ingredients or props matching product theme, bright fun commercial food photography. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  snack_dark_premium:
+    'Change background to deep dark moody surface with single dramatic spotlight and subtle steam or particles, premium snack brand aesthetic, dramatic food photography. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  // ══ 運動感 ══
+  sport_energy:
+    'Change background to bold gradient deep navy and electric orange, dynamic motion energy atmosphere, athletic lifestyle photography. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  // ══ 珠寶/精品 ══
+  jewelry_dark:
+    'Change background to pure black velvet with single dramatic spotlight and subtle teal reflection on dark glass surface. Spotlight direction matches product existing highlight exactly. Keep ALL subjects products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4.',
+
+  // ══ 美食升級（保留擺盤）══
+  food_drama:
+    'Transform into Michelin 3-star advertisement. Change background to pure black, add dramatic single spotlight from above matching dish existing highlight direction, add atmospheric steam wisps, warm golden rim light complementing food color. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_japanese:
+    'Transform into Japanese kappo cuisine. Change surface to dark charcoal aged stone slate, soft single-source cool side lighting 4000K matching dish light direction. Wabi-sabi minimal aesthetic. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_cantonese:
+    'Transform into Hong Kong Cantonese banquet. Change surface to dark lacquered rosewood, add warm amber pendant light matching dish existing highlight. Gold and red tones reflect warmly onto dish. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_korean:
+    'Transform into Korean BBQ atmosphere. Change surface to dark volcanic stone, add dramatic warm backlight from behind matching food existing highlight. Orange-red glow reflects onto food surface edges. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_taiwanese:
+    'Transform into Taiwanese comfort food. Change surface to warm aged teak wood, add soft 3800K tungsten overhead light matching dish light direction. Traditional ceramic tea cup props. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_french:
+    'Transform into French fine dining editorial. Change surface to deep navy blue linen tablecloth, silver cutlery props, soft cool natural window light 5500K. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_outdoor:
+    'Transform into outdoor golden hour picnic. Change background to natural green grass meadow with warm golden sunset light. Rustic wooden props. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+
+  food_bright:
+    'Transform into bright Nordic brunch. Change surface to clean white marble, soft natural morning window light 6000K. Fresh herb and lemon slice props. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+};══════════════════════════════════════════
+//  admaker.js — AD Maker 素材製作系統 v4.3
+//  ✅ AI 電商場景：去背 → Bria Product Shot（全自動串接）
+//  ✅ 真人 MD 試穿：Kling kolors（超時自動再查3次）
+//  ✅ 影片生成：Kling v3 Pro / Seedance 2.0（超時自動再查）
+//  ✅ 修正：全部改用 imageUrl / videoUrl，不再等 imageBase64
+// ══════════════════════════════════════════
+
+let AM = { w:1080, h:1080, scriptIdx:null };
+let PR_BG_IMG  = null;
+let PR_MODE    = 'product_shot';
+let TEXT_ALIGN = 'left';
+
+// ── Flux Pro Kontext 場景 prompt 庫（直接改原圖，不去背）──
+// 核心原則：保留所有人物/商品/前景，只改背景/光線/氛圍
 // 自動擴展至 1080x1080，光影與商品色調對應
 // 攝影設備基準：Nikon Z9 + NIKKOR Z 24-70mm f/2.8 S
 const PRODUCT_SCENES = {
@@ -358,10 +474,11 @@ async function applyPhotoroomBg() {
   if (PR_MODE === 'product_shot') {
     const interval = startProgress(30000);
     try {
+      // ✅ 先把原圖 pad 成 1080x1080（居中，空白補黑），再送給 Flux 擴展背景
       const blob = await urlToBlob(imgSrc);
       const base64 = await blobToBase64(blob);
-      const compressed = await compressImageBase64(base64, 1500, 0.90);
-      const imageUrl = getImageUrl(photo) || await uploadToFal(compressed);
+      const paddedBase64 = await padImageTo1080(base64);
+      const imageUrl = await uploadToFal(paddedBase64);
 
       const sceneKey = document.getElementById('prSceneSection')?.dataset?.scene || 'studio_white';
       const customPrompt = document.getElementById('prCustomPrompt')?.value?.trim();
@@ -371,8 +488,7 @@ async function applyPhotoroomBg() {
       const submitData = await callWorker({
         action: 'flux_kontext_submit',
         imageUrl,
-        prompt: scenePrompt,
-        outputSize: 1080
+        prompt: scenePrompt
       });
       if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
@@ -652,6 +768,31 @@ async function compressImageBase64(base64, maxSize, quality) {
       canvas.width=w; canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
       resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = base64;
+  });
+}
+
+// ══ 把圖片 pad 成 1080x1080 正方形（居中，空白補黑）══
+async function padImageTo1080(base64) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const SIZE = 1080;
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      // 黑色底
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, SIZE, SIZE);
+      // 縮放原圖到最大 1080，居中放
+      const scale = Math.min(SIZE / img.width, SIZE / img.height);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const x = Math.round((SIZE - w) / 2);
+      const y = Math.round((SIZE - h) / 2);
+      ctx.drawImage(img, x, y, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
     };
     img.src = base64;
   });
