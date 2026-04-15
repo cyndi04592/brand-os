@@ -1,44 +1,35 @@
 // ══════════════════════════════════════════
-//  admaker.js — AD Maker 素材製作系統 v3.1
-//  ✅ Poll loop 全在前端，Worker 只做單次 HTTP
-//  ✅ Kontext：換背景（30秒~2分鐘）
-//  ✅ Seedance 2.0：影片生成（1~5分鐘）
-//  ✅ Kling kolors：試穿（30~90秒）
+//  admaker.js — AD Maker 素材製作系統 v4.1
+//  ✅ AI 電商場景：去背 → Bria Product Shot（全自動串接）
+//  ✅ 真人 MD 試穿：Kling kolors
+//  ✅ 影片生成：Kling v3 Pro / Seedance 2.0
+//  ✅ 影片 poll 超時不報錯，自動再查一次拿結果
 // ══════════════════════════════════════════
 
 let AM = { w:1080, h:1080, scriptIdx:null };
 let PR_BG_IMG  = null;
-let PR_MODE    = 'ai_bg';
-let PR_SCENE   = 'studio';
+let PR_MODE    = 'product_shot';
 let TEXT_ALIGN = 'left';
 
-// ── Kontext prompt 場景庫（前端帶過去）──
-const KONTEXT_PROMPTS = {
-  // 升級版：整體重新渲染成廣告風格，不只換背景
-  studio:    'Transform this into a premium commercial product photo. Pure white seamless studio backdrop, soft professional diffused lighting with subtle shadows. Enhance product details to look like a high-end catalog shoot. Keep ALL subjects and products in EXACTLY the same position.',
-  lifestyle: 'Transform this into a warm lifestyle advertisement. Scandinavian living room setting, natural window daylight, wooden surfaces. Add warm atmospheric glow and lifestyle storytelling mood. Keep ALL subjects in EXACTLY the same position.',
-  nature:    'Transform this into a fresh outdoor brand advertisement. Lush green nature background, golden hour sunlight filtering through leaves, soft bokeh. Add cinematic depth of field. Keep ALL subjects in EXACTLY the same position.',
-  forest:    'Transform this into a dramatic forest brand advertisement. Dark atmospheric forest at dusk, mysterious fog, filtered golden light through trees. Cinematic moody atmosphere. Keep ALL subjects in EXACTLY the same position.',
-  marble:    'Transform this into a luxury product advertisement. Elegant Italian marble surface, dark premium backdrop, dramatic side lighting with golden rim light. High-end luxury brand aesthetic. Keep ALL subjects in EXACTLY the same position.',
-  dark_gold: 'Transform this into a premium luxury brand advertisement. Deep black background with dramatic golden accent lighting, rich shadows, cinematic contrast. Think Rolex or Chanel advertisement quality. Keep ALL subjects in EXACTLY the same position.',
-  minimal:   'Transform this into a clean minimal brand advertisement. Light grey gradient backdrop, soft diffused lighting, minimalist composition. Apple or Muji advertisement aesthetic. Keep ALL subjects in EXACTLY the same position.',
-  camping:   'Transform this into a cinematic outdoor camping advertisement. Night forest setting with warm campfire glow, starry sky, tent in background. Dramatic atmospheric lighting. Keep ALL subjects in EXACTLY the same position.',
-  outdoor:   'Transform this into an urban lifestyle advertisement. Modern city backdrop at golden hour, bokeh city lights, dynamic urban energy. Keep ALL subjects in EXACTLY the same position.',
-  beach:     'Transform this into a summer lifestyle advertisement. Tropical beach setting, golden sand, blue ocean, warm sunset glow. Fresh and vibrant advertising mood. Keep ALL subjects in EXACTLY the same position.',
-  garden:    'Transform this into a fresh natural brand advertisement. Beautiful blooming garden, soft morning sunlight, colorful flowers in background. Keep ALL subjects in EXACTLY the same position.',
-  night:     'Transform this into a dramatic night brand advertisement. City nightscape, neon bokeh lights, premium evening atmosphere. Keep ALL subjects in EXACTLY the same position.',
-  office:    'Transform this into a professional business advertisement. Modern minimalist office interior, clean architectural lines, professional atmosphere. Keep ALL subjects in EXACTLY the same position.',
-  food:      'Transform this into a world-class food advertisement. Add dramatic atmospheric steam rising from hot food, cinematic dark moody background with warm golden accent lighting, professional food photography with shallow depth of field. Michelin restaurant advertisement quality. Keep ALL food, dishes and hands in EXACTLY the same position.',
-  kitchen:   'Transform this into a premium restaurant brand photo. Warm professional kitchen atmosphere, dramatic overhead lighting on food, steam and texture enhancement. Commercial food brand quality. Keep ALL subjects in EXACTLY the same position.',
-  ad_visual: 'Transform this into a cinematic advertising hero shot. Dramatic professional studio lighting, rich color grading, commercial photography. Think Coca-Cola or McDonald advertisement quality. Keep ALL subjects in EXACTLY the same position.',
-  random:    'Transform this into a stunning creative advertisement with unexpected dramatic lighting and cinematic atmosphere. Creative commercial photography style. Keep ALL subjects in EXACTLY the same position.',
-  luxury:    'Transform this into a premium luxury brand advertisement. Deep black background with dramatic golden accent lighting, rich shadows. Think Rolex advertisement quality. Keep ALL subjects in EXACTLY the same position.',
-  nature_key: 'Transform this into a fresh outdoor brand advertisement. Lush green nature background, golden hour sunlight, soft bokeh. Keep ALL subjects in EXACTLY the same position.',
+// ── Bria Product Shot 場景 prompt 庫（必須英文）──
+const PRODUCT_SCENES = {
+  studio:    'clean white studio backdrop, professional soft lighting, minimal shadows',
+  lifestyle: 'warm Scandinavian living room, natural window light, wooden surfaces',
+  nature:    'lush green outdoor nature setting, golden hour sunlight, soft bokeh',
+  camping:   'outdoor camping setting, warm campfire glow, forest background at dusk',
+  kitchen:   'premium kitchen counter, warm professional lighting, culinary atmosphere',
+  marble:    'elegant Italian marble surface, dark premium backdrop, dramatic golden rim light',
+  minimal:   'light grey gradient backdrop, soft diffused lighting, minimalist clean style',
+  dark_gold: 'deep black background, dramatic golden accent lighting, luxury brand aesthetic',
+  beach:     'tropical beach setting, golden sand, blue ocean in background, warm sunset',
+  garden:    'beautiful blooming garden, soft morning sunlight, colorful flowers',
+  night:     'city nightscape background, neon bokeh lights, premium evening atmosphere',
+  office:    'modern minimalist office interior, clean architectural lines, professional',
 };
 
 // ══ 開啟 AD Maker ══
 function openAdMaker(idx) {
-  PR_BG_IMG = null; PR_MODE = 'ai_bg'; PR_SCENE = 'studio';
+  PR_BG_IMG = null; PR_MODE = 'product_shot';
   setPrStatus('', '');
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('.pr-mode-btn')?.classList.add('on');
@@ -70,13 +61,17 @@ function renderAmPhotoRow() {
   row.innerHTML = window.S.photos.map((f, i) => {
     const isSelected = window.S.selPhoto === i;
     const thumb = f.src || f.thumb;
-    const imgHtml = thumb ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:contain;border-radius:3px;">` : '<span style="font-size:16px;">🖼️</span>';
+    const imgHtml = thumb
+      ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:contain;border-radius:3px;">`
+      : '<span style="font-size:16px;">🖼️</span>';
     return `<div onclick="selectPhotoInAM(${i})" title="${f.name}"
       style="width:36px;height:36px;border-radius:5px;overflow:hidden;flex-shrink:0;cursor:pointer;
              border:2px solid ${isSelected?'#5BC8C8':'rgba(255,255,255,0.1)'};background:var(--bg4);
              display:flex;align-items:center;justify-content:center;">${imgHtml}</div>`;
   }).join('');
-  if (nameEl) nameEl.textContent = window.S.selPhoto !== null ? ('✅ ' + window.S.photos[window.S.selPhoto].name) : '← 點選上方照片';
+  if (nameEl) nameEl.textContent = window.S.selPhoto !== null
+    ? ('✅ ' + window.S.photos[window.S.selPhoto].name)
+    : '← 點選上方照片';
 }
 
 function selectPhotoInAM(i) {
@@ -93,10 +88,14 @@ function onMdPhotoSelected(input) {
     img.onload = () => {
       const MAX = 1500;
       let w = img.width, h = img.height;
-      if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h*MAX/w); w = MAX; } else { w = Math.round(w*MAX/h); h = MAX; } }
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h*MAX/w); w = MAX; }
+        else { w = Math.round(w*MAX/h); h = MAX; }
+      }
       const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      const mdImg = document.getElementById('mdPhotoImg'), placeholder = document.getElementById('mdPhotoPlaceholder');
+      const mdImg = document.getElementById('mdPhotoImg');
+      const placeholder = document.getElementById('mdPhotoPlaceholder');
       if (mdImg) { mdImg.src = canvas.toDataURL('image/jpeg',0.85); mdImg.style.display = 'block'; }
       if (placeholder) placeholder.style.display = 'none';
     };
@@ -105,21 +104,19 @@ function onMdPhotoSelected(input) {
   reader.readAsDataURL(file);
 }
 
-// ══ Mode / Scene 切換 ══
+// ══ Mode 切換 ══
 function setPrMode(btn, mode) {
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on'); PR_MODE = mode;
-  document.getElementById('prSceneSection').style.display    = ['ai_bg','white_bg','transparent_bg','ghost_mannequin','clothing','ad_visual'].includes(mode) ? 'block' : 'none';
-  document.getElementById('prVirtualSection').style.display  = mode === 'kling_tryon' ? 'block' : 'none';
-  document.getElementById('prVideoSection').style.display    = mode === 'seedance_video' ? 'block' : 'none';
-  document.getElementById('prSceneGrid')?.style && (document.getElementById('prSceneGrid').style.display = ['ai_bg','clothing','ad_visual'].includes(mode) ? 'block' : 'none');
-  document.getElementById('prCustomPromptRow')?.style && (document.getElementById('prCustomPromptRow').style.display = ['ai_bg','clothing','ad_visual'].includes(mode) ? 'block' : 'none');
-  document.getElementById('prVideoOptions')?.style && (document.getElementById('prVideoOptions').style.display = mode === 'seedance_video' ? 'block' : 'none');
+  document.getElementById('prSceneSection').style.display   = mode === 'product_shot'   ? 'block' : 'none';
+  document.getElementById('prVirtualSection').style.display = mode === 'kling_tryon'    ? 'block' : 'none';
+  document.getElementById('prVideoSection').style.display   = mode === 'seedance_video' ? 'block' : 'none';
 }
 
 function setPrScene(btn, scene) {
   document.querySelectorAll('#prSceneSection .pr-scene-btn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on'); PR_SCENE = scene;
+  btn.classList.add('on');
+  document.getElementById('prSceneSection').dataset.scene = scene;
 }
 
 function setTextAlign(align, btn) {
@@ -135,10 +132,12 @@ function setPrStatus(msg, color) {
 
 // ══ 進度條 ══
 function startProgress(totalMs) {
-  const prBar=document.getElementById('prProgBar'), prFill=document.getElementById('prProgFill'), prPct=document.getElementById('prPct');
+  const prBar  = document.getElementById('prProgBar');
+  const prFill = document.getElementById('prProgFill');
+  const prPct  = document.getElementById('prPct');
   if (prBar) prBar.style.display = 'block';
   let pctVal = 0;
-  const msgs = ['📤 上傳中...','✂️ 分析主體...','🎨 生成背景...','🖌️ 光影融合...','⚡ 最終輸出...'];
+  const msgs = ['📤 上傳中...','✂️ AI 去背...','🎨 生成場景...','🖌️ 光影融合...','⚡ 最終輸出...'];
   const interval = setInterval(() => {
     if (pctVal >= 90) return;
     pctVal = Math.min(90, pctVal + (pctVal < 30 ? 2 : pctVal < 60 ? 1 : 0.4));
@@ -151,7 +150,10 @@ function startProgress(totalMs) {
 
 function finishProgress(interval) {
   clearInterval(interval);
-  const prBar=document.getElementById('prProgBar'), prFill=document.getElementById('prProgFill'), prPct=document.getElementById('prPct'), btn=document.getElementById('prApplyBtn');
+  const prBar  = document.getElementById('prProgBar');
+  const prFill = document.getElementById('prProgFill');
+  const prPct  = document.getElementById('prPct');
+  const btn    = document.getElementById('prApplyBtn');
   if (prFill) prFill.style.width = '100%';
   if (prPct) prPct.textContent = '100%';
   setTimeout(() => { if(prBar) prBar.style.display='none'; if(prPct) prPct.textContent=''; }, 2000);
@@ -160,7 +162,9 @@ function finishProgress(interval) {
 
 function failProgress(interval, errMsg) {
   clearInterval(interval);
-  const prBar=document.getElementById('prProgBar'), prPct=document.getElementById('prPct'), btn=document.getElementById('prApplyBtn');
+  const prBar = document.getElementById('prProgBar');
+  const prPct = document.getElementById('prPct');
+  const btn   = document.getElementById('prApplyBtn');
   if (prBar) prBar.style.display = 'none';
   if (prPct) prPct.textContent = '';
   setPrStatus('❌ ' + errMsg, 'var(--red)');
@@ -169,13 +173,71 @@ function failProgress(interval, errMsg) {
 
 // ══ Worker 呼叫 ══
 async function callWorker(params) {
-  const resp = await fetch(CF_WORKER_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ ...params, password: GAS_PASSWORD }) });
+  const resp = await fetch(CF_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...params, password: GAS_PASSWORD })
+  });
   return resp.json();
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// 更新時長選項（Kling 支援 5-10 秒，Seedance 支援 4-10 秒）
+// ── 取得圖片 URL（優先 Google CDN）──
+function getImageUrl(photo) {
+  return photo?.thumbnailLink
+    ? photo.thumbnailLink.replace(/=s\d+$/, '=s1200')
+    : null;
+}
+
+// ── 上傳圖片到 fal storage ──
+async function uploadToFal(base64) {
+  const match = base64.match(/^data:(image\/\w+);base64,(.+)$/);
+  if (!match) throw new Error('base64 格式錯誤');
+  const mimeType = match[1];
+  const urlData = await callWorker({ action: 'fal_get_upload_url', mimeType });
+  if (!urlData.ok) throw new Error('取得上傳URL失敗: ' + (urlData.error || ''));
+  const binaryStr = atob(match[2]);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+  const putResp = await fetch(urlData.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': mimeType },
+    body: bytes
+  });
+  if (!putResp.ok) throw new Error('圖片上傳失敗: ' + putResp.status);
+  return urlData.fileUrl;
+}
+
+// ══ Poll Loop
+// ✅ 超時不 throw，改成 return { status:'TIMEOUT' }
+// ✅ 讓影片任務可以超時後自動再查一次
+// ══
+async function pollUntilDone(requestId, endpoint, maxMs = 300000) {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    await sleep(5000);
+    try {
+      const pollData = await callWorker({ action:'fal_poll', requestId, endpoint });
+      if (pollData.status === 'COMPLETED') return pollData;
+      if (pollData.status === 'FAILED') return { status:'FAILED', error: pollData.error || '任務失敗' };
+      // 更新進度
+      const elapsed = Date.now() - start;
+      const pct = Math.min(88, Math.round(15 + elapsed / maxMs * 73));
+      const prFill = document.getElementById('prProgFill');
+      const prPct  = document.getElementById('prPct');
+      if (prFill) prFill.style.width = pct + '%';
+      if (prPct) prPct.textContent = pct + '%';
+    } catch(e) {
+      // 單次 poll 失敗不中斷，繼續等
+      console.warn('poll 單次失敗，繼續:', e.message);
+    }
+  }
+  // 超時：return 而不是 throw，讓外層自行處理
+  return { status:'TIMEOUT' };
+}
+
+// ══ 更新影片時長選項 ══
 function updateVideoDurationOptions() {
   const model = document.getElementById('videoModel')?.value;
   const sel = document.getElementById('videoDuration');
@@ -193,52 +255,6 @@ function updateVideoDurationOptions() {
   }
 }
 
-// ── 上傳圖片到 fal storage（前端直接 PUT presigned URL，不受 Worker 30秒限制）──
-async function uploadToFal(base64) {
-  // Step 1: Worker 取得 presigned URL（< 1秒）
-  const match = base64.match(/^data:(image\/\w+);base64,(.+)$/);
-  if (!match) throw new Error('base64 格式錯誤');
-  const mimeType = match[1];
-  const urlData = await callWorker({ action: 'fal_get_upload_url', mimeType });
-  if (!urlData.ok) throw new Error('取得上傳URL失敗: ' + (urlData.error || ''));
-
-  // Step 2: 前端直接 PUT 到 presigned URL（不經過 Worker）
-  const binaryStr = atob(match[2]);
-  const bytes = new Uint8Array(binaryStr.length);
-  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-  const putResp = await fetch(urlData.uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': mimeType },
-    body: bytes
-  });
-  if (!putResp.ok) throw new Error('圖片上傳 PUT 失敗: ' + putResp.status);
-  return urlData.fileUrl;
-}
-
-// ══ 前端 Poll Loop（不走 Worker，直接查 fal.ai）══
-// fal.ai 的 status URL 是公開的，只需要 Authorization header
-// 但瀏覽器不能帶自訂 header → 必須還是走 Worker 的 fal_poll
-async function pollUntilDone(requestId, endpoint, maxMs = 300000) {
-  const start = Date.now();
-  const interval_ms = 4000;
-  while (Date.now() - start < maxMs) {
-    await sleep(interval_ms);
-    const pollData = await callWorker({ action:'fal_poll', requestId, endpoint });
-    if (!pollData.ok && pollData.status !== 'IN_QUEUE' && pollData.status !== 'IN_PROGRESS') {
-      throw new Error(pollData.error || '任務失敗');
-    }
-    if (pollData.status === 'COMPLETED') return pollData;
-    // 更新進度百分比顯示
-    const elapsed = Date.now() - start;
-    const pct = Math.min(88, Math.round(15 + elapsed / maxMs * 73));
-    const prFill = document.getElementById('prProgFill');
-    const prPct = document.getElementById('prPct');
-    if (prFill) prFill.style.width = pct + '%';
-    if (prPct) prPct.textContent = pct + '%';
-  }
-  throw new Error('任務超時，請稍後再試');
-}
-
 // ══ 套用 AI 效果（統一入口）══
 async function applyPhotoroomBg() {
   if (PR_MODE === 'seedance_video') { await applySeedanceVideo(); return; }
@@ -250,83 +266,91 @@ async function applyPhotoroomBg() {
 
   const btn = document.getElementById('prApplyBtn');
   btn.disabled = true; btn.textContent = '⏳ AI 處理中...';
-  const estimatedMs = PR_MODE === 'kling_tryon' ? 60000 : 25000;
-  const interval = startProgress(estimatedMs);
 
-  try {
-    const blob = await urlToBlob(imgSrc);
-    const base64 = await blobToBase64(blob);
-    const compressed = await compressImageBase64(base64, 1500, 0.90);
-
-    // ── Kling 試穿 ──
-    if (PR_MODE === 'kling_tryon') {
+  // ── MD 試穿 ──
+  if (PR_MODE === 'kling_tryon') {
+    const interval = startProgress(60000);
+    try {
+      const blob = await urlToBlob(imgSrc);
+      const base64 = await blobToBase64(blob);
+      const compressed = await compressImageBase64(base64, 1500, 0.90);
       const mdImg = document.getElementById('mdPhotoImg');
       if (!mdImg || !mdImg.src || mdImg.style.display === 'none') throw new Error('請先上傳 MD 照片！');
       setPrStatus('📤 送出試穿任務...', 'var(--t3)');
-      const submitData = await callWorker({ action:'kling_tryon_submit', humanImageBase64:mdImg.src, garmentImageBase64:compressed });
+      const submitData = await callWorker({
+        action: 'kling_tryon_submit',
+        humanImageBase64: mdImg.src,
+        garmentImageBase64: compressed
+      });
       if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
-      setPrStatus('⏳ Kling 試穿中...', 'var(--t3)');
+      setPrStatus('⏳ Kling 試穿中（約30-90秒）...', 'var(--t3)');
       const result = await pollUntilDone(submitData.requestId, submitData.endpoint, 120000);
+      if (result.status === 'FAILED') throw new Error(result.error || '試穿失敗');
+      if (result.status === 'TIMEOUT' || !result.imageBase64) throw new Error('試穿超時，請再試一次');
       PR_BG_IMG = result.imageBase64;
       await renderAdCanvasWithPR();
       finishProgress(interval);
-      setPrStatus('✅ MD試穿完成！', 'var(--mint)');
-      return;
-    }
+      setPrStatus('✅ MD 試穿完成！', 'var(--mint)');
+    } catch(e) { failProgress(interval, e.message); }
+    return;
+  }
 
-    // ── AI 換背景 / 廣告主視覺 / 服裝（Kontext）──
-    if (['ai_bg','clothing','ad_visual'].includes(PR_MODE)) {
-      const customInput = document.getElementById('prCustomPrompt')?.value?.trim();
-      const prompt = customInput || KONTEXT_PROMPTS[PR_SCENE] || KONTEXT_PROMPTS.studio;
-      // 優先用 thumbnailLink（Google CDN 公開 URL，fal.ai 可直接存取，不需上傳）
-      // thumbnailLink 已是縮圖 URL，改成更高解析度
-      const photo = window.S.photos[window.S.selPhoto];
-      const imageUrl = photo?.thumbnailLink
-        ? photo.thumbnailLink.replace(/=s\d+$/, '=s1200')
-        : await uploadToFal(compressed);
-      setPrStatus('🎨 Kontext 換背景中（約10-15秒）...', 'var(--t3)');
-      const submitData = await callWorker({
+  // ── AI 電商場景：去背 → Bria Product Shot 全自動串接 ──
+  if (PR_MODE === 'product_shot') {
+    const interval = startProgress(35000);
+    try {
+      const blob = await urlToBlob(imgSrc);
+      const base64 = await blobToBase64(blob);
+      const compressed = await compressImageBase64(base64, 1500, 0.90);
+      const imageUrl = getImageUrl(photo) || await uploadToFal(compressed);
+
+      // Step 1：Bria 去背
+      setPrStatus('✂️ Step 1/2：AI 去背中...', 'var(--t3)');
+      const removeBgData = await callWorker({
         action: 'fal_submit',
-        endpoint: 'fal-ai/flux-pro/kontext',
-        payload: { image_url: imageUrl, prompt, guidance_scale: 3.5, num_inference_steps: 28 }
+        endpoint: 'fal-ai/bria/background/remove',
+        payload: { image_url: imageUrl }
       });
-      if (!submitData.ok) throw new Error(submitData.error || '換背景失敗');
-      // 同步呼叫直接回傳結果，不需要 poll
-      PR_BG_IMG = submitData.imageBase64;
+      if (!removeBgData.ok) throw new Error('去背失敗: ' + (removeBgData.error || ''));
+
+      // 去背結果上傳到 fal storage
+      setPrStatus('📤 上傳去背圖...', 'var(--t3)');
+      const cutoutUrl = await uploadToFal(removeBgData.imageBase64);
+
+      // Step 2：Bria Product Shot
+      const sceneKey = document.getElementById('prSceneSection')?.dataset?.scene || 'studio';
+      const customPrompt = document.getElementById('prCustomPrompt')?.value?.trim();
+      const sceneDescription = customPrompt || PRODUCT_SCENES[sceneKey] || PRODUCT_SCENES.studio;
+
+      setPrStatus('🎨 Step 2/2：生成電商場景中...', 'var(--t3)');
+      const shotData = await callWorker({
+        action: 'fal_submit',
+        endpoint: 'fal-ai/bria/product-shot',
+        payload: {
+          image_url: cutoutUrl,
+          scene_description: sceneDescription,
+          optimize_description: true,
+          num_results: 1,
+          fast: true,
+          placement_type: 'original',
+          shot_size: [1080, 1080]
+        }
+      });
+      if (!shotData.ok) throw new Error('場景生成失敗: ' + (shotData.error || ''));
+
+      PR_BG_IMG = shotData.imageBase64;
       await renderAdCanvasWithPR();
       finishProgress(interval);
-      setPrStatus('✅ AI 換背景完成！', 'var(--mint)');
-      return;
-    }
-
-    // ── 純去背 ──
-    if (['white_bg','transparent_bg','ghost_mannequin'].includes(PR_MODE)) {
-      const photo2 = window.S.photos[window.S.selPhoto];
-      const imageUrl2 = photo2?.thumbnailLink
-        ? photo2.thumbnailLink.replace(/=s\d+$/, '=s1200')
-        : await uploadToFal(compressed);
-      setPrStatus('✂️ 去背中（約5-10秒）...', 'var(--t3)');
-      const submitData = await callWorker({
-        action: 'fal_submit',
-        endpoint: 'fal-ai/bria/background/removal',
-        payload: { image_url: imageUrl2 }
-      });
-      if (!submitData.ok) throw new Error(submitData.error || '去背失敗');
-      PR_BG_IMG = submitData.imageBase64;
-      await renderAdCanvasWithPR();
-      finishProgress(interval);
-      setPrStatus('✅ 去背完成！', 'var(--mint)');
-      return;
-    }
-
-    throw new Error('未知的處理模式: ' + PR_MODE);
-
-  } catch(e) {
-    failProgress(interval, e.message);
+      setPrStatus('✅ AI 電商場景完成！', 'var(--mint)');
+    } catch(e) { failProgress(interval, e.message); }
+    return;
   }
 }
 
-// ══ Seedance 2.0 影片生成 ══
+// ══ 影片生成（Seedance 2.0 / Kling v3）
+// ✅ 關鍵修正：poll 超時後自動再打一次查詢，不直接報錯
+// ✅ 拿到 videoUrl 才顯示播放器＋下載按鈕
+// ══
 async function applySeedanceVideo() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
@@ -337,68 +361,100 @@ async function applySeedanceVideo() {
   btn.disabled = true; btn.textContent = '⏳ 影片生成中...';
   const interval = startProgress(120000);
 
-  const videoPrompt = document.getElementById('videoPrompt')?.value?.trim() || '';
+  const videoPrompt   = document.getElementById('videoPrompt')?.value?.trim() || '';
   const videoDuration = parseInt(document.getElementById('videoDuration')?.value || 5);
-  const videoRatio = document.getElementById('videoRatio')?.value || '9:16';
-  const videoAudio = document.getElementById('videoAudio')?.checked !== false;
-  const brand = window.BRANDS.find(b => b.id === window.S.brandId);
+  const videoRatio    = document.getElementById('videoRatio')?.value || '9:16';
+  const videoAudio    = document.getElementById('videoAudio')?.checked !== false;
+  const brand         = window.BRANDS.find(b => b.id === window.S.brandId);
   const defaultPrompt = `cinematic smooth camera movement, professional advertising, high quality commercial video, ${brand?.adStyle||'elegant lifestyle'}, soft natural lighting`;
 
   try {
     const blob = await urlToBlob(imgSrc);
     const base64 = await blobToBase64(blob);
     const compressed = await compressImageBase64(base64, 1200, 0.88);
+    const imageUrlVideo = getImageUrl(photo) || await uploadToFal(compressed);
 
-    const photoV = window.S.photos[window.S.selPhoto];
-    const imageUrlVideo = photoV?.thumbnailLink
-      ? photoV.thumbnailLink.replace(/=s\d+$/, '=s1200')
-      : await uploadToFal(compressed);
-    const videoModel = document.getElementById('videoModel')?.value || 'seedance';
-    const isKling = videoModel === 'kling';
+    const videoModel    = document.getElementById('videoModel')?.value || 'seedance';
+    const isKling       = videoModel === 'kling';
     const videoEndpoint = isKling
       ? 'fal-ai/kling-video/v3/pro/image-to-video'
       : 'bytedance/seedance-2.0/image-to-video';
-    setPrStatus(`📤 送出${isKling ? ' Kling v3' : ' Seedance'} 任務...`, 'var(--t3)');
+
+    setPrStatus(`📤 送出 ${isKling ? 'Kling v3' : 'Seedance 2.0'} 任務...`, 'var(--t3)');
     const submitData = await callWorker({
       action: 'fal_video_submit',
       endpoint: videoEndpoint,
-      payload: { image_url: imageUrlVideo, prompt: videoPrompt || defaultPrompt, duration: String(videoDuration), aspect_ratio: videoRatio, generate_audio: videoAudio, resolution: '720p' }
+      payload: {
+        image_url: imageUrlVideo,
+        prompt: videoPrompt || defaultPrompt,
+        duration: String(videoDuration),
+        aspect_ratio: videoRatio,
+        generate_audio: videoAudio,
+        resolution: '720p'
+      }
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
-    // Poll 最多等 8 分鐘
-    setPrStatus('🎬 Seedance 2.0 生成中，約 1-3 分鐘...', 'var(--t3)');
-    const result = await pollUntilDone(submitData.requestId, videoEndpoint, 480000);
+    const requestId = submitData.requestId;
+
+    // Kling 10秒影片約需 550 秒，設 15 分鐘上限
+    const maxWait = isKling && videoDuration >= 10 ? 900000 : 600000;
+    setPrStatus(`🎬 ${isKling ? 'Kling v3' : 'Seedance 2.0'} 生成中...`, 'var(--t3)');
+    let result = await pollUntilDone(requestId, videoEndpoint, maxWait);
+
+    // ✅ 超時後自動再查一次（影片可能已生成完，只是前端 timer 被節流）
+    if (result.status === 'TIMEOUT') {
+      setPrStatus('🔄 超時，最後查詢一次...', 'var(--t3)');
+      // 連續查 3 次，每次間隔 5 秒
+      for (let i = 0; i < 3; i++) {
+        await sleep(5000);
+        result = await callWorker({ action:'fal_poll', requestId, endpoint: videoEndpoint });
+        if (result.status === 'COMPLETED' && result.videoUrl) break;
+      }
+    }
+
+    if (result.status === 'FAILED') throw new Error(result.error || '影片生成失敗');
 
     if (result.videoUrl) {
       finishProgress(interval);
       showVideoResult(result.videoUrl);
       setPrStatus('✅ 影片生成完成！', 'var(--mint)');
     } else {
-      throw new Error('無影片 URL');
+      // 還是沒有：顯示友善提示，不是報錯
+      finishProgress(interval);
+      setPrStatus('⏳ 影片仍在生成，請稍後重新開啟廣告圖功能再試', 'var(--gold)');
+      if (btn) btn.textContent = '✨ 套用 AI 效果';
     }
 
-  } catch(e) {
-    failProgress(interval, e.message);
-  }
+  } catch(e) { failProgress(interval, e.message); }
 }
 
-// ══ 顯示影片結果 ══
+// ══ 顯示影片結果（播放器 + 下載按鈕）══
 function showVideoResult(videoUrl) {
+  // 隱藏 canvas，顯示影片
   const canvas = document.getElementById('adCanvas');
   if (canvas) canvas.style.display = 'none';
+
   let videoEl = document.getElementById('adVideoPreview');
   if (!videoEl) {
     videoEl = document.createElement('video');
-    videoEl.id = 'adVideoPreview'; videoEl.controls = true; videoEl.loop = true; videoEl.autoplay = true;
+    videoEl.id = 'adVideoPreview';
+    videoEl.controls = true; videoEl.loop = true; videoEl.autoplay = true;
     videoEl.style.cssText = 'border-radius:10px;width:100%;max-width:560px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);display:block;';
     canvas?.parentNode?.insertBefore(videoEl, canvas);
   }
   videoEl.src = videoUrl; videoEl.style.display = 'block';
+
+  // ✅ 更新下載按鈕變成「下載影片」
   const dlBtn = document.getElementById('adDownloadBtn');
   if (dlBtn) {
     dlBtn.textContent = '⬇️ 下載影片';
-    dlBtn.onclick = () => { const a=document.createElement('a'); a.href=videoUrl; a.download=`seedance_${Date.now()}.mp4`; a.click(); };
+    dlBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = videoUrl;
+      a.download = `video_${Date.now()}.mp4`;
+      a.click();
+    };
   }
 }
 
@@ -421,7 +477,10 @@ async function renderAdCanvas() {
       img.onload = () => {
         ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, AM.w, AM.h);
         const scale = Math.min(AM.w/img.width, AM.h/img.height);
-        ctx.drawImage(img, Math.round((AM.w-img.width*scale)/2), Math.round((AM.h-img.height*scale)/2), img.width*scale, img.height*scale);
+        ctx.drawImage(img,
+          Math.round((AM.w-img.width*scale)/2),
+          Math.round((AM.h-img.height*scale)/2),
+          img.width*scale, img.height*scale);
         resolve();
       };
       img.onerror = () => { drawBgFallback(ctx); resolve(); };
@@ -438,37 +497,38 @@ async function renderAdCanvasWithPR() {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const title = document.getElementById('amTitle')?.value || '';
-  const needContain = ['ghost_mannequin','white_bg','transparent_bg'].includes(PR_MODE);
-  const needCover   = PR_MODE === 'kling_tryon';
-  ctx.fillStyle = needContain ? '#FFFFFF' : '#1a1a1a';
-  ctx.fillRect(0, 0, AM.w, AM.h);
+  const isTryon = PR_MODE === 'kling_tryon';
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, AM.w, AM.h);
   await new Promise(resolve => {
     const img = new Image(); img.crossOrigin = 'anonymous';
     img.onload = () => {
-      if (needCover) {
-        const scaleCover = Math.max(AM.w/img.width, AM.h/img.height);
+      if (isTryon) {
+        const scaleCover   = Math.max(AM.w/img.width, AM.h/img.height);
         const scaleContain = Math.min(AM.w/img.width, AM.h/img.height);
         if (1 - scaleContain/scaleCover <= 0.20) {
-          ctx.drawImage(img, Math.round((AM.w-img.width*scaleCover)/2), Math.round((AM.h-img.height*scaleCover)/2), img.width*scaleCover, img.height*scaleCover);
+          ctx.drawImage(img,
+            Math.round((AM.w-img.width*scaleCover)/2),
+            Math.round((AM.h-img.height*scaleCover)/2),
+            img.width*scaleCover, img.height*scaleCover);
         } else {
           ctx.filter = 'blur(18px)';
-          ctx.drawImage(img, Math.round((AM.w-img.width*scaleCover)/2), Math.round((AM.h-img.height*scaleCover)/2), img.width*scaleCover, img.height*scaleCover);
+          ctx.drawImage(img,
+            Math.round((AM.w-img.width*scaleCover)/2),
+            Math.round((AM.h-img.height*scaleCover)/2),
+            img.width*scaleCover, img.height*scaleCover);
           ctx.filter = 'none';
           ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0,0,AM.w,AM.h);
-          ctx.drawImage(img, Math.round((AM.w-img.width*scaleContain)/2), Math.round((AM.h-img.height*scaleContain)/2), img.width*scaleContain, img.height*scaleContain);
+          ctx.drawImage(img,
+            Math.round((AM.w-img.width*scaleContain)/2),
+            Math.round((AM.h-img.height*scaleContain)/2),
+            img.width*scaleContain, img.height*scaleContain);
         }
-      } else if (needContain) {
-        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,AM.w,AM.h);
-        const scale = Math.min(AM.w/img.width, AM.h/img.height);
-        ctx.drawImage(img, Math.round((AM.w-img.width*scale)/2), Math.round((AM.h-img.height*scale)/2), img.width*scale, img.height*scale);
       } else {
-        // Kontext 回傳圖保持原始比例（contain），避免拉長
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(0, 0, AM.w, AM.h);
-        const scale = Math.min(AM.w / img.width, AM.h / img.height);
-        const x = Math.round((AM.w - img.width * scale) / 2);
-        const y = Math.round((AM.h - img.height * scale) / 2);
-        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        const scale = Math.min(AM.w/img.width, AM.h/img.height);
+        ctx.drawImage(img,
+          Math.round((AM.w-img.width*scale)/2),
+          Math.round((AM.h-img.height*scale)/2),
+          img.width*scale, img.height*scale);
       }
       resolve();
     };
@@ -491,7 +551,10 @@ function drawBgFallback(ctx) {
 
 function autoLines(ctx, text, maxWidth) {
   const chars=text.split(''), lines=[]; let cur='';
-  for (const c of chars) { if (ctx.measureText(cur+c).width>maxWidth&&cur){lines.push(cur);cur=c;}else cur+=c; }
+  for (const c of chars) {
+    if (ctx.measureText(cur+c).width > maxWidth && cur) { lines.push(cur); cur=c; }
+    else cur += c;
+  }
   if (cur) lines.push(cur);
   return lines;
 }
@@ -500,10 +563,10 @@ function drawOverlay(ctx, title, accent) {
   const W=AM.w, H=AM.h;
   const gradStartPct = (parseInt(document.getElementById('amGradStart')?.value||38))/100;
   const gradStrength = (parseInt(document.getElementById('amGradStrength')?.value||85))/100;
-  const grad = ctx.createLinearGradient(0,H*gradStartPct,0,H);
-  grad.addColorStop(0,'rgba(0,0,0,0)');
-  grad.addColorStop(0.35,`rgba(0,0,0,${Math.round(gradStrength*0.65*100)/100})`);
-  grad.addColorStop(1,`rgba(0,0,0,${gradStrength})`);
+  const grad = ctx.createLinearGradient(0, H*gradStartPct, 0, H);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(0.35, `rgba(0,0,0,${Math.round(gradStrength*0.65*100)/100})`);
+  grad.addColorStop(1, `rgba(0,0,0,${gradStrength})`);
   ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
   if (!title) return;
   const baseFontSize = parseInt(document.getElementById('amFontSize')?.value||94);
@@ -511,11 +574,11 @@ function drawOverlay(ctx, title, accent) {
   const align = TEXT_ALIGN||'left';
   ctx.font = `900 ${baseFontSize}px 'Noto Sans TC',sans-serif`;
   ctx.textAlign = align;
-  const tx = align==='left'?Math.round(W*0.07):align==='right'?Math.round(W*0.93):Math.round(W/2);
+  const tx = align==='left' ? Math.round(W*0.07) : align==='right' ? Math.round(W*0.93) : Math.round(W/2);
   const lines = autoLines(ctx, title, W*0.86);
   const lineH = baseFontSize*1.18;
-  const ty = Math.round(H*textYPct)-(lines.length-1)*lineH;
-  lines.forEach((line,i) => {
+  const ty = Math.round(H*textYPct) - (lines.length-1)*lineH;
+  lines.forEach((line, i) => {
     ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=20; ctx.shadowOffsetY=4;
     ctx.fillStyle='#FFFFFF'; ctx.fillText(line, tx, ty+i*lineH);
   });
@@ -527,8 +590,10 @@ function downloadAd() {
   const canvas = document.getElementById('adCanvas');
   const brand = window.BRANDS.find(b => b.id === window.S.brandId);
   const filename = `${brand?.name||'ad'}_${window.S.prod?.name||'img'}.jpg`.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
-  const link = document.createElement('a'); link.download = filename;
-  link.href = canvas.toDataURL('image/jpeg', 0.92); link.click();
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/jpeg', 0.92);
+  link.click();
   if (window._driveToken) uploadAdToDrive(canvas, filename);
 }
 
@@ -538,8 +603,12 @@ async function compressImageBase64(base64, maxSize, quality) {
     const img = new Image();
     img.onload = () => {
       let w=img.width, h=img.height;
-      if (w>maxSize||h>maxSize) { if(w>h){h=Math.round(h*maxSize/w);w=maxSize;}else{w=Math.round(w*maxSize/h);h=maxSize;} }
-      const canvas = document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      if (w>maxSize||h>maxSize) {
+        if (w>h) { h=Math.round(h*maxSize/w); w=maxSize; }
+        else { w=Math.round(w*maxSize/h); h=maxSize; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
@@ -549,11 +618,16 @@ async function compressImageBase64(base64, maxSize, quality) {
 
 async function urlToBlob(src) {
   if (src.startsWith('data:')) { const res = await fetch(src); return res.blob(); }
-  const res = await fetch(src); if (!res.ok) throw new Error('圖片載入失敗'); return res.blob();
+  const res = await fetch(src);
+  if (!res.ok) throw new Error('圖片載入失敗');
+  return res.blob();
 }
 
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob);
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
   });
 }
