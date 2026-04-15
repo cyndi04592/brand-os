@@ -11,74 +11,71 @@ let PR_BG_IMG  = null;
 let PR_MODE    = 'product_shot';
 let TEXT_ALIGN = 'left';
 
-// ── Bria Product Shot 場景 prompt 庫（必須英文）──
+// ── Flux Pro Kontext 場景 prompt 庫（直接改原圖，不去背）──
+// 核心原則：保留所有人物/商品/前景，只改背景/光線/氛圍
 // 攝影設備基準：Nikon Z9 + NIKKOR Z 24-70mm f/2.8 S，商業攝影 300 DPI 等級
 const PRODUCT_SCENES = {
 
   // ══ 通用場景 ══
   studio_white:
-    'premium white studio photography, seamless white backdrop with subtle gradient shadow, soft directional key light from upper left, gentle fill light, product on reflective white acrylic surface creating elegant mirror reflection, professional commercial photography, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, 300 DPI commercial grade',
+    'Change ONLY the background to a seamless premium white studio backdrop with soft gradient shadow at the base. Add professional soft box lighting from upper left with gentle fill light. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged in position and appearance. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, 300 DPI commercial grade.',
 
   dark_luxury:
-    'deep matte black background, dramatic single-source side lighting, golden rim light outlining product edges, product on black marble with subtle reflection, luxury brand editorial aesthetic, high contrast chiaroscuro, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, cinematic commercial photography',
+    'Change ONLY the background to deep matte black. Add dramatic single-source side lighting with golden rim light outlining the subject edges. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Luxury brand editorial aesthetic, high contrast chiaroscuro. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   marble_premium:
-    'Italian Calacatta marble surface, dark charcoal background, dramatic golden accent rim lighting, product casting elegant shadow on marble, scattered gold geometric props, premium brand aesthetic, architectural studio lighting, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, ultra sharp product details',
+    'Change ONLY the background and surface to Italian Calacatta marble with dark charcoal upper background. Add dramatic golden accent rim lighting. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Premium brand aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   minimal_grey:
-    'light grey seamless gradient backdrop, diffused soft box lighting, no harsh shadows, Scandinavian minimalist aesthetic, clean negative space, product centered with subtle drop shadow, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S',
+    'Change ONLY the background to light grey seamless gradient backdrop. Add diffused soft box lighting with no harsh shadows. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Scandinavian minimalist aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   forest_outdoor:
-    'lush Japanese forest setting, dappled golden morning light filtering through cedar trees, moss-covered ground, misty atmospheric bokeh background, outdoor adventure lifestyle, product on natural wood log, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, golden hour shallow depth of field',
+    'Change ONLY the background to a lush Japanese cedar forest with dappled golden morning light filtering through trees, misty atmospheric bokeh. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged in position. Outdoor adventure lifestyle. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, golden hour f/2.8.',
+
+  night_city:
+    'Change ONLY the background to a beautiful night cityscape with neon bokeh lights and city glow. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Premium evening atmosphere. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   lifestyle_warm:
-    'warm Scandinavian home interior, large window with soft natural morning light, aged oak wooden table, linen fabric texture, dried flowers and ceramic props, cozy lifestyle atmosphere, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, warm 5500K color temperature',
+    'Change ONLY the background to a warm Scandinavian home interior with large window soft natural morning light, aged oak surface and linen texture. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Cozy lifestyle atmosphere. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, warm 5500K.',
 
   tech_futuristic:
-    'dark carbon fiber background, dramatic cool blue and purple LED accent lighting, geometric light reflections, holographic light streaks, futuristic tech product photography, hard dramatic shadows, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, high contrast cyberpunk commercial aesthetic',
+    'Change ONLY the background to dark carbon fiber with dramatic cool blue and purple LED accent lighting, geometric light reflections and holographic streaks. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Futuristic tech aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   sport_energy:
-    'dynamic motion energy photography, bold gradient background deep navy and electric orange, dramatic upward lighting, motion blur elements, athletic lifestyle setting, powerful compositional angles, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, high shutter speed frozen energy',
+    'Change ONLY the background to bold gradient deep navy and electric orange with dynamic motion energy. Keep ALL subjects, products, people and foreground objects EXACTLY unchanged. Athletic lifestyle, powerful composition. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   pet_natural:
-    'warm natural home setting, soft morning window light, natural wood floor with soft-focus green plants in background, cozy domestic atmosphere, friendly approachable aesthetic, warm 4500K lighting, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, shallow depth of field bokeh',
+    'Change ONLY the background to warm natural home setting with soft morning window light, wood floor and soft-focus green plants. Keep ALL subjects, products, people, animals and foreground objects EXACTLY unchanged. Friendly approachable aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   jewelry_dark:
-    'pure black velvet background, single dramatic spotlight creating perfect product highlight, deep shadow with subtle teal reflection on dark glass surface, luxury jewelry editorial photography, macro-level sharp detail, shot on Nikon Z9 NIKKOR Z 85mm f/1.4, jewelry brand campaign quality',
+    'Change ONLY the background to pure black velvet with single dramatic spotlight and subtle teal reflection on dark glass surface. Keep ALL subjects, products and foreground objects EXACTLY unchanged. Luxury jewelry editorial. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4.',
 
-  // ══ 美食場景 ══
-  food_taiwanese:
-    'authentic Taiwanese food photography, warm wooden dining table with traditional ceramic bowl and chopsticks, aged clay teapot, soft warm 4000K tungsten lighting, steam wisps visible, local Taiwanese ingredients as props, rustic yet refined atmosphere, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, overhead 45-degree angle',
+  // ══ 美食場景（強化光線氛圍，不動食物）══
+  food_drama:
+    'Transform this into a world-class food advertisement. Add dramatic atmospheric steam rising from hot food, cinematic dark moody background with warm golden accent lighting, professional food photography with shallow depth of field. Michelin restaurant advertisement quality. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged in position.',
+
+  food_warm:
+    'Enhance this food photo with warm professional restaurant lighting. Add soft warm 4200K glow, subtle steam atmosphere, rich warm tones on food surface. Change background to warm dark wooden table setting. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_japanese:
-    'Japanese zen minimalist food photography, dark slate or aged wood surface, handmade ceramic vessel, single green garnish, negative space composition, diffused soft side lighting, bamboo mat texture, refined wabi-sabi style, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, low angle close-up',
+    'Transform background to Japanese zen minimalist dark slate setting. Add soft diffused side lighting, subtle steam wisps. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged in position. Refined wabi-sabi aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_korean:
-    'vibrant Korean food photography, dark stone surface, banchan side dishes arrangement, bold colors and textures, Korean ceramic bowls, steam and sizzling effect, dramatic top-down angle, warm backlight creating food glow, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S',
+    'Enhance with vibrant Korean food photography atmosphere. Add dramatic backlight creating food glow, dark stone surface background. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Bold energetic atmosphere. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
-  food_american:
-    'bold American food photography, rustic wooden table, generous portions with casual props, warm amber lighting, slight overhead angle showing abundance, casual yet appetizing composition, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, rich warm tones',
+  food_bright:
+    'Transform to bright clean food photography. Add fresh natural overhead lighting, white marble or light wood surface. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Clean appetizing commercial style. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
-  food_family:
-    'warm family dining table setting, multiple dishes spread for sharing, natural overhead warm light, casual family atmosphere, linen tablecloth with scattered utensils, joyful abundant composition, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, soft warm tones',
+  // ══ 品牌專屬 ══
+  wangwei:
+    'Transform into premium Taiwanese food brand advertisement. Add warm aged wood table background, soft warm 4200K tungsten lighting with steam wisps, traditional ceramic props in background. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Elevated home-cooking quality aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
-  food_dark_drama:
-    'Michelin-star dark dramatic food photography, pure black background, single dramatic spotlight from above, visible steam and smoke atmosphere, dark slate serving plate, cinematic moody lighting, fine dining editorial quality, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, dramatic chiaroscuro',
+  fulinmen:
+    'Transform into high-end Hong Kong Cantonese fine dining advertisement. Change background to dark lacquered rosewood table, warm golden pendant light, elegant banquet atmosphere with gold accents and deep red backdrop. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
-  food_beverage:
-    'refreshing beverage commercial photography, crisp white or light cyan background, condensation water droplets on glass, fresh fruit slices scattered around, splashing water motion frozen, bright and clean lighting, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S',
-
-  // ══ 品牌專屬場景 ══
-  wangwei_taiwanese:
-    'premium Taiwanese traditional food brand photography, warm aged wood table with traditional ceramic dishes, handwoven bamboo tray, soft warm 4200K lighting creating appetizing glow, steam from hot food, Taiwan local ingredients as props, quality home-cooking elevated aesthetic, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S',
-
-  fulinmen_cantonese:
-    'high-end Hong Kong Cantonese restaurant photography, dark lacquered rosewood table, fine Chinese porcelain and jade chopstick rest, warm golden pendant light, elegant banquet atmosphere, premium Cantonese cuisine presentation, gold accents and deep red backdrop, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, fine dining editorial',
-
-  luyu_elegant:
-    'premium artisanal condiment brand photography, dark slate surface with scattered truffle shavings and herb garnish, sophisticated European deli aesthetic, warm single-source side lighting highlighting sauce texture and gloss, dark olive green and deep brown tones, editorial food luxury brand style, shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S',
+  luyu:
+    'Transform into premium artisanal food brand editorial. Change background to dark slate with scattered truffle shavings and herb garnish props. Add warm single-source side lighting highlighting texture and gloss. Keep ALL products and foreground objects EXACTLY unchanged. European deli luxury brand aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 };
-
 // ══ 開啟 AD Maker ══
 function openAdMaker(idx) {
   PR_BG_IMG = null; PR_MODE = 'product_shot';
@@ -358,52 +355,36 @@ async function applyPhotoroomBg() {
     return;
   }
 
-  // ── AI 電商場景：去背 → Bria Product Shot 全自動串接 ──
+  // ── Flux Pro Kontext：直接改原圖，不去背 ──
   if (PR_MODE === 'product_shot') {
-    const interval = startProgress(35000);
+    const interval = startProgress(30000);
     try {
       const blob = await urlToBlob(imgSrc);
       const base64 = await blobToBase64(blob);
       const compressed = await compressImageBase64(base64, 1500, 0.90);
       const imageUrl = getImageUrl(photo) || await uploadToFal(compressed);
 
-      // Step 1：Bria 去背
-      setPrStatus('✂️ Step 1/2：AI 去背中...', 'var(--t3)');
-      const removeBgData = await callWorker({
-        action: 'fal_submit',
-        endpoint: 'fal-ai/bria/background/remove',
-        payload: { image_url: imageUrl }
-      });
-      if (!removeBgData.ok) throw new Error('去背失敗: ' + (removeBgData.error || ''));
-
-      // ✅ 修正：去背結果直接用 URL，不需要再上傳（Worker 已回傳 imageUrl）
-      const cutoutUrl = removeBgData.imageUrl;
-      if (!cutoutUrl) throw new Error('去背未回傳圖片 URL');
-
-      // Step 2：Bria Product Shot
       const sceneKey = document.getElementById('prSceneSection')?.dataset?.scene || 'studio_white';
       const customPrompt = document.getElementById('prCustomPrompt')?.value?.trim();
-      const sceneDescription = customPrompt || PRODUCT_SCENES[sceneKey] || PRODUCT_SCENES.studio_white;
+      const scenePrompt = customPrompt || PRODUCT_SCENES[sceneKey] || PRODUCT_SCENES.studio_white;
 
-      setPrStatus('🎨 Step 2/2：生成電商場景中...', 'var(--t3)');
-      const shotData = await callWorker({
-        action: 'fal_submit',
-        endpoint: 'fal-ai/bria/product-shot',
-        payload: {
-          image_url: cutoutUrl,
-          scene_description: sceneDescription,
-          optimize_description: true,
-          num_results: 1,
-          fast: true,
-          placement_type: 'original',
-          shot_size: [1080, 1080]
-        }
+      setPrStatus('🎨 Flux Kontext 改圖中...', 'var(--t3)');
+      const submitData = await callWorker({
+        action: 'flux_kontext_submit',
+        imageUrl,
+        prompt: scenePrompt
       });
-      if (!shotData.ok) throw new Error('場景生成失敗: ' + (shotData.error || ''));
+      if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
-      // ✅ 修正：直接用 imageUrl（fal.ai CDN URL）
-      PR_BG_IMG = shotData.imageUrl;
-      if (!PR_BG_IMG) throw new Error('場景生成未回傳圖片 URL');
+      setPrStatus('⏳ 生成中（約10-15秒）...', 'var(--t3)');
+      let result = await pollUntilDone(submitData.requestId, submitData.endpoint, 120000, submitData.responseUrl, submitData.statusUrl);
+
+      if (result.status === 'TIMEOUT' || result.status === 'FAILED') {
+        throw new Error(result.error || '生成失敗，請再試一次');
+      }
+
+      PR_BG_IMG = result.imageUrl;
+      if (!PR_BG_IMG) throw new Error('未回傳圖片 URL');
 
       await renderAdCanvasWithPR();
       finishProgress(interval);
