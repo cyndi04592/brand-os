@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-//  admaker.js — AD Maker 素材製作系統 v4.2
+//  admaker.js — AD Maker 素材製作系統 v4.3
 //  ✅ AI 電商場景：去背 → Bria Product Shot（全自動串接）
 //  ✅ 真人 MD 試穿：Kling kolors（超時自動再查3次）
 //  ✅ 影片生成：Kling v3 Pro / Seedance 2.0（超時自動再查）
-//  ✅ 場景補回：food / forest / outdoor
+//  ✅ 修正：全部改用 imageUrl / videoUrl，不再等 imageBase64
 // ══════════════════════════════════════════
 
 let AM = { w:1080, h:1080, scriptIdx:null };
@@ -285,20 +285,23 @@ async function applyPhotoroomBg() {
       if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
       setPrStatus('⏳ Kling 試穿中（約30-90秒）...', 'var(--t3)');
 
-      // ✅ 修正：poll 3分鐘，超時自動再查3次
+      // ✅ poll 3分鐘，超時自動再查3次
       let result = await pollUntilDone(submitData.requestId, submitData.endpoint, 180000);
       if (result.status === 'TIMEOUT') {
         setPrStatus('🔄 超時，最後查詢一次...', 'var(--t3)');
         for (let i = 0; i < 3; i++) {
           await sleep(5000);
           result = await callWorker({ action:'fal_poll', requestId: submitData.requestId, endpoint: submitData.endpoint });
-          if (result.status === 'COMPLETED' && result.imageBase64) break;
+          // ✅ 修正：改用 imageUrl（Worker 回傳 URL，不再是 base64）
+          if (result.status === 'COMPLETED' && (result.imageUrl || result.imageBase64)) break;
         }
       }
       if (result.status === 'FAILED') throw new Error(result.error || '試穿失敗');
-      if (!result.imageBase64) throw new Error('試穿超時，請再試一次');
+      // ✅ 修正：改用 imageUrl
+      if (!result.imageUrl && !result.imageBase64) throw new Error('試穿超時，請再試一次');
 
-      PR_BG_IMG = result.imageBase64;
+      // ✅ 修正：優先用 URL（fal.ai CDN 直接顯示，不需下載）
+      PR_BG_IMG = result.imageUrl || result.imageBase64;
       await renderAdCanvasWithPR();
       finishProgress(interval);
       setPrStatus('✅ MD 試穿完成！', 'var(--mint)');
@@ -324,9 +327,9 @@ async function applyPhotoroomBg() {
       });
       if (!removeBgData.ok) throw new Error('去背失敗: ' + (removeBgData.error || ''));
 
-      // 去背結果上傳到 fal storage
-      setPrStatus('📤 上傳去背圖...', 'var(--t3)');
-      const cutoutUrl = await uploadToFal(removeBgData.imageBase64);
+      // ✅ 修正：去背結果直接用 URL，不需要再上傳（Worker 已回傳 imageUrl）
+      const cutoutUrl = removeBgData.imageUrl;
+      if (!cutoutUrl) throw new Error('去背未回傳圖片 URL');
 
       // Step 2：Bria Product Shot
       const sceneKey = document.getElementById('prSceneSection')?.dataset?.scene || 'studio';
@@ -349,7 +352,10 @@ async function applyPhotoroomBg() {
       });
       if (!shotData.ok) throw new Error('場景生成失敗: ' + (shotData.error || ''));
 
-      PR_BG_IMG = shotData.imageBase64;
+      // ✅ 修正：直接用 imageUrl（fal.ai CDN URL）
+      PR_BG_IMG = shotData.imageUrl;
+      if (!PR_BG_IMG) throw new Error('場景生成未回傳圖片 URL');
+
       await renderAdCanvasWithPR();
       finishProgress(interval);
       setPrStatus('✅ AI 電商場景完成！', 'var(--mint)');
@@ -424,6 +430,11 @@ async function applySeedanceVideo() {
       finishProgress(interval);
       showVideoResult(result.videoUrl);
       setPrStatus('✅ 影片生成完成！', 'var(--mint)');
+    } else if (result.imageUrl || result.imageBase64) {
+      // 萬一影片 endpoint 回傳圖片（不應發生，但防呆）
+      finishProgress(interval);
+      setPrStatus('⚠️ 收到圖片而非影片，請重試', 'var(--gold)');
+      if (btn) btn.textContent = '✨ 套用 AI 效果';
     } else {
       finishProgress(interval);
       setPrStatus('⏳ 影片仍在生成，請稍後重新開啟廣告圖功能再試', 'var(--gold)');
