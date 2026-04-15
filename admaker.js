@@ -66,15 +66,6 @@ const PRODUCT_SCENES = {
   food_bright:
     'Transform to bright clean food photography. Add fresh natural overhead lighting, white marble or light wood surface. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Clean appetizing commercial style. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
-  // ══ 品牌專屬 ══
-  wangwei:
-    'Transform into premium Taiwanese food brand advertisement. Add warm aged wood table background, soft warm 4200K tungsten lighting with steam wisps, traditional ceramic props in background. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Elevated home-cooking quality aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
-
-  fulinmen:
-    'Transform into high-end Hong Kong Cantonese fine dining advertisement. Change background to dark lacquered rosewood table, warm golden pendant light, elegant banquet atmosphere with gold accents and deep red backdrop. Keep ALL food, dishes, hands and foreground objects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
-
-  luyu:
-    'Transform into premium artisanal food brand editorial. Change background to dark slate with scattered truffle shavings and herb garnish props. Add warm single-source side lighting highlighting texture and gloss. Keep ALL products and foreground objects EXACTLY unchanged. European deli luxury brand aesthetic. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 };
 // ══ 開啟 AD Maker ══
 function openAdMaker(idx) {
