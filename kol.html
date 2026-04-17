@@ -260,6 +260,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
         <!-- 影片任務 -->
         <div id="video-tasks"></div>
+        <div id="video-preview-section"></div>
       </div>
     </div>
   </div>
@@ -540,26 +541,47 @@ async function createVideo() {
 async function pollVideo(task) {
   let count = 0;
   const t = setInterval(async () => {
-    if (++count > 60) { clearInterval(t); task.status = 'failed'; renderTasks(); return; }
+    if (++count > 80) { clearInterval(t); task.status = 'failed'; renderTasks(); return; }
     try {
       const res = await api('heygen_video_status', { video_id: task.video_id });
       if (!res.ok) return;
-      task.status = res.status; if (res.video_url) task.url = res.video_url;
+      task.status = res.status;
+      if (res.video_url) task.url = res.video_url;
       renderTasks();
       if (res.status === 'completed' || res.status === 'failed') {
         clearInterval(t);
-        if (res.status === 'completed') toast('影片生成完成 ✓', 'success');
+        if (res.status === 'completed') {
+          toast('影片生成完成 ✓', 'success');
+          showVideoPreview(task.url, task.label);
+        }
       }
     } catch {}
   }, 15000);
 }
 
+function showVideoPreview(url, label) {
+  const preview = document.getElementById('video-preview-section');
+  preview.innerHTML = `
+    <div style="margin-top:16px">
+      <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent3)"></div>${label}</div>
+      <video src="${url}" controls autoplay playsinline
+        style="width:100%;border-radius:var(--radius-sm);background:#000;max-height:500px;display:block">
+      </video>
+      <div class="btn-row" style="margin-top:10px">
+        <a href="${url}" download class="btn btn-ghost btn-sm">⬇ 下載影片</a>
+        <a href="${url}" target="_blank" class="btn btn-ghost btn-sm">🔗 開新分頁</a>
+      </div>
+    </div>
+  `;
+  preview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 function renderTasks() {
   document.getElementById('video-tasks').innerHTML = S.videoTasks.map(t => `
-    <div class="video-task">
-      <div class="video-task-info"><strong>${t.label}</strong><small>${t.created} · ${t.video_id}</small></div>
-      <span class="task-badge ${t.status}">${t.status === 'processing' ? '渲染中…' : t.status === 'completed' ? '完成 ✓' : t.status === 'failed' ? '失敗' : t.status}</span>
-      ${t.url ? `<a href="${t.url}" target="_blank" class="btn btn-ghost btn-sm">▶ 播放</a>` : ''}
+    <div class="video-task" style="cursor:${t.url?'pointer':'default'}" onclick="${t.url?`showVideoPreview('${t.url}','${t.label}');`:''}">
+      <div class="video-task-info"><strong>${t.label}</strong><small>${t.created} · ${t.video_id.slice(0,16)}…</small></div>
+      <span class="task-badge ${t.status}">${t.status==='processing'?'渲染中…':t.status==='completed'?'完成 ✓':t.status==='failed'?'失敗':t.status}</span>
+      ${t.url ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showVideoPreview('${t.url}','${t.label}')">▶ 預覽</button>` : ''}
     </div>
   `).join('');
 }
@@ -574,4 +596,3 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
-
