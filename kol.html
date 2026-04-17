@@ -162,7 +162,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="card-title"><div class="dot"></div>MD 照片上傳</div>
       <div class="upload-zone" id="upload-zone" onclick="document.getElementById('photo-input').click()">
         <div class="upload-icon">📸</div>
-        <div class="upload-text"><strong>點擊選擇照片</strong> 或拖曳至此<br><small>正面清晰 · 光線均勻 · 背景乾淨 · JPG/PNG · 最大 10MB</small></div>
+        <div class="upload-text"><strong>點擊選擇照片</strong> 或拖曳至此<br><small>正面清晰 · 光線均勻 · 背景乾淨 · JPG/PNG · 最大 30MB</small></div>
       </div>
       <div class="photo-preview-wrap" id="photo-preview-wrap">
         <img class="photo-preview" id="photo-preview" src="" alt="預覽">
@@ -284,7 +284,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <script>
 // ══ CONFIG ══════════════════════════════════
 // 部署 kol-worker.js 後，將 URL 填入下方
-const KOL_WORKER = 'https://kol-proxy.YOUR_SUBDOMAIN.workers.dev';
+const KOL_WORKER = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 const PASSWORD   = 'raby2026';
 // ════════════════════════════════════════════
 
@@ -303,7 +303,7 @@ zone.addEventListener('dragleave', ()=>zone.classList.remove('dragover'));
 zone.addEventListener('drop', e=>{e.preventDefault();zone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))handlePhoto(f);});
 
 function handlePhoto(file) {
-  if(file.size>10*1024*1024){toast('照片超過 10MB','error');return;}
+  if(file.size>10*1024*1024){toast('照片超過 30MB','error');return;}
   S.photoFile=file; S.photoMime=file.type||'image/jpeg';
   const r=new FileReader();
   r.onload=e=>{
