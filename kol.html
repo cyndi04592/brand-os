@@ -336,7 +336,6 @@ async function startTraining(){
   try{
     setTrainUI('uploading','上傳照片至 HeyGen…',`${S.photoFile.name} · ${(S.photoFile.size/1024).toFixed(0)}KB`);
     showProgress(true,'上傳中…',20);
-    // 直接用 binary 串流上傳，避免 base64 過大
     const upMime=S.photoFile.type&&S.photoFile.type.startsWith('image/')?S.photoFile.type:'image/jpeg';
     const upResp=await fetch('https://kol-proxy.calm-sunset-6b66.workers.dev/upload',{
       method:'POST',
@@ -345,6 +344,27 @@ async function startTraining(){
     });
     const upRes=await upResp.json();
     if(!upRes.ok)throw new Error(upRes.error);
+
+    // 若直接拿到 talking_photo_id，跳過 group/train，直接可用
+    if(upRes.talking_photo_id){
+      S.talkingPhotoId=upRes.talking_photo_id;
+      localStorage.setItem('kol_talking_photo_id',S.talkingPhotoId);
+      localStorage.setItem('kol_group_name',kolName);
+      showProgress(true,'上傳完成！',100);
+      await delay(400);showProgress(false);
+      setTrainUI('ready','照片已上傳，數字人就緒！',`ID: ${S.talkingPhotoId}`);
+      document.getElementById('train-chip').textContent='就緒';
+      document.getElementById('train-chip').className='chip green';
+      document.getElementById('look-chip').textContent='選擇版本';
+      document.getElementById('look-chip').className='chip';
+      fillAvatarSlot(0,S.talkingPhotoId,document.getElementById('photo-preview').src,kolName);
+      selectAvatar(document.getElementById('av0'),S.talkingPhotoId);
+      setStep(4);updateFooter('數字人就緒','可以開始生成口播影片了！');
+      toast('照片上傳成功，數字人已就緒 ✓','success');
+      btn.disabled=false;btn.textContent='🚀 上傳並訓練數字人';
+      return;
+    }
+
     S.imageKey=upRes.image_key;
     showProgress(true,'建立 Avatar Group…',50);
     setTrainUI('uploading','建立 Avatar Group…',`名稱：${kolName}`);
@@ -557,7 +577,8 @@ async function loadVoices(){
       tag.dataset.v=v.id;
       tag.dataset.label=v.name;
       tag.style.display='flex';tag.style.alignItems='center';tag.style.gap='6px';
-      tag.innerHTML=`${v.name} <span style="opacity:.5;font-size:10px">${v.gender==='female'?'♀':'♂'}</span>${v.preview_url?`<span onclick="event.stopPropagation();playPreview('${v.preview_url}')" style="cursor:pointer;opacity:.7">▶</span>`:''}`;
+      const langShort = v.language ? v.language.replace('Chinese','中').replace('Cantonese','粵').replace('Taiwanese','台').replace('Multilingual','多').replace('English','英').replace('Japanese','日').replace('Korean','韓') : '';
+      tag.innerHTML=`${v.name} <span style="opacity:.5;font-size:10px">${langShort}</span>${v.preview_url?`<span onclick="event.stopPropagation();playPreview('${v.preview_url}')" style="cursor:pointer;opacity:.7">▶</span>`:''}`;
       tag.addEventListener('click',()=>{
         wrap.querySelectorAll('.tag').forEach(t=>t.classList.remove('selected'));
         tag.classList.add('selected');
