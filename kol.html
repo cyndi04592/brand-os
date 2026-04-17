@@ -338,7 +338,13 @@ async function startTraining(){
   try{
     setTrainUI('uploading','上傳照片至 HeyGen…',`${S.photoFile.name} · ${(S.photoFile.size/1024).toFixed(0)}KB`);
     showProgress(true,'上傳中…',20);
-    const upRes=await kol('heygen_upload_photo',{image_base64:S.photoBase64,mime_type:S.photoMime});
+    // 直接用 binary 串流上傳，避免 base64 過大
+    const upResp=await fetch(KOL_WORKER.replace(/\/$/,'')+'/upload',{
+      method:'POST',
+      headers:{'Content-Type':S.photoMime||'image/jpeg','X-Password':PASSWORD},
+      body:S.photoFile,
+    });
+    const upRes=await upResp.json();
     if(!upRes.ok)throw new Error(upRes.error);
     S.imageKey=upRes.image_key;
     showProgress(true,'建立 Avatar Group…',50);
