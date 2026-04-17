@@ -299,16 +299,23 @@ async function api(action, extra = {}) {
 // ══ KOL 形象庫 ══
 async function loadKolList() {
   document.getElementById('kol-list').innerHTML = '<div class="kol-empty">載入中…</div>';
-  const res = await api('heygen_list_groups');
-  if (!res.ok) {
-    document.getElementById('kol-list').innerHTML = `<div class="kol-empty">載入失敗：${res.error}</div>`;
-    return;
-  }
-  if (!res.groups?.length) {
+  
+  // 合併：HeyGen 上的 group + localStorage 的 talking_photo
+  const [apiRes] = await Promise.all([api('heygen_list_groups')]);
+  const apiGroups = apiRes.ok ? (apiRes.groups || []) : [];
+  const localKols = JSON.parse(localStorage.getItem('kol_library') || '[]');
+  
+  // 去重合併（local 優先顯示，避免重複）
+  const apiIds = new Set(apiGroups.map(g => g.id));
+  const localOnly = localKols.filter(k => !apiIds.has(k.id));
+  const allKols = [...localOnly, ...apiGroups];
+  
+  if (!allKols.length) {
     document.getElementById('kol-list').innerHTML = '<div class="kol-empty">尚無 KOL 形象，從下方新增</div>';
     return;
   }
-  document.getElementById('kol-list').innerHTML = res.groups.map(g => `
+  
+  document.getElementById('kol-list').innerHTML = allKols.map(g => `
     <div class="kol-card" id="kol-${g.id}" onclick="selectKol(${JSON.stringify(g).replace(/"/g,'&quot;')})">
       <img class="kol-avatar" src="${g.image_url||''}" onerror="this.style.display='none'" alt="">
       <div class="kol-info">
@@ -397,20 +404,33 @@ async function addKol() {
 
     showProgress(true, '建立 KOL 形象…', 60);
 
-    // Step 2: 建立 Avatar Group（group_id = talking_photo_id）
-    const grpRes = await api('heygen_create_group', { name, image_key: upRes.image_key });
-    if (!grpRes.ok) throw new Error(grpRes.error);
-
-    showProgress(true, '完成！', 100);
-    await delay(400); showProgress(false);
+    let kolId, kolImageUrl;
+    
+    if (upRes.talking_photo_id) {
+      // talking_photo 方式：直接可用，不需要 create_group
+      kolId = upRes.talking_photo_id;
+      kolImageUrl = document.getElementById('preview-img').src;
+      showProgress(true, '完成！', 100);
+      await delay(400); showProgress(false);
+      // 儲存到 localStorage
+      const saved = JSON.parse(localStorage.getItem('kol_library') || '[]');
+      saved.unshift({ id: kolId, name, image_url: kolImageUrl, talking_photo_id: kolId, created: new Date().toISOString() });
+      localStorage.setItem('kol_library', JSON.stringify(saved));
+    } else {
+      // asset 方式：需要 create_group
+      const grpRes = await api('heygen_create_group', { name, image_key: upRes.image_key });
+      if (!grpRes.ok) throw new Error(grpRes.error);
+      kolId = grpRes.group_id;
+      kolImageUrl = grpRes.image_url;
+      showProgress(true, '完成！', 100);
+      await delay(400); showProgress(false);
+    }
 
     toast(`KOL「${name}」建立成功！`, 'success');
     resetPhoto();
     document.getElementById('kol-name').value = '';
     await loadKolList();
-
-    // 自動選定新建的 KOL
-    selectKol({ id: grpRes.group_id, name, image_url: grpRes.image_url, talking_photo_id: grpRes.talking_photo_id });
+    selectKol({ id: kolId, name, image_url: kolImageUrl, talking_photo_id: kolId });
 
   } catch (e) {
     toast('失敗：' + e.message, 'error');
