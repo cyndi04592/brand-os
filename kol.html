@@ -303,7 +303,7 @@ zone.addEventListener('dragleave', ()=>zone.classList.remove('dragover'));
 zone.addEventListener('drop', e=>{e.preventDefault();zone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))handlePhoto(f);});
 
 function handlePhoto(file) {
-  if(file.size>10*1024*1024){toast('照片超過 30MB','error');return;}
+  
   S.photoFile=file; S.photoMime=file.type||'image/jpeg';
   const r=new FileReader();
   r.onload=e=>{
