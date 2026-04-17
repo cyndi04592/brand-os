@@ -342,7 +342,7 @@ async function startTraining(){
     const upMime=S.photoFile.type&&S.photoFile.type.startsWith('image/')?S.photoFile.type:'image/jpeg';
     const upResp=await fetch('https://kol-proxy.calm-sunset-6b66.workers.dev/upload',{
       method:'POST',
-      headers:{'Content-Type':upMime,'X-Password':PASSWORD,'X-Filename':S.photoFile.name},
+      headers:{'Content-Type':upMime,'X-Password':PASSWORD},
       body:S.photoFile,
     });
     const upRes=await upResp.json();
