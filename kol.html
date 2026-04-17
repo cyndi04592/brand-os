@@ -339,10 +339,11 @@ async function startTraining(){
     setTrainUI('uploading','上傳照片至 HeyGen…',`${S.photoFile.name} · ${(S.photoFile.size/1024).toFixed(0)}KB`);
     showProgress(true,'上傳中…',20);
     // 直接用 binary 串流上傳，避免 base64 過大
+    const upBuf=await S.photoFile.arrayBuffer();
     const upResp=await fetch('https://kol-proxy.calm-sunset-6b66.workers.dev/upload',{
       method:'POST',
       headers:{'Content-Type':S.photoMime||'image/jpeg','X-Password':PASSWORD},
-      body:S.photoFile,
+      body:upBuf,
     });
     const upRes=await upResp.json();
     if(!upRes.ok)throw new Error(upRes.error);
