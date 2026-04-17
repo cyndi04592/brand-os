@@ -197,13 +197,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <div class="tag" data-v="幽默逗趣">幽默逗趣</div>
           </div>
         </div>
-        <div class="form-group"><label class="form-label">口播語言 / 音色</label>
+        <div class="form-group"><label class="form-label">口播音色</label>
           <div class="tag-group" id="lang-tags">
-            <div class="tag selected" data-v="zh-TW-HsiaoChenNeural">繁體中文</div>
-            <div class="tag" data-v="zh-CN-XiaoxiaoNeural">簡體中文</div>
-            <div class="tag" data-v="en-US-JennyNeural">英文</div>
-            <div class="tag" data-v="ja-JP-NanamiNeural">日文</div>
+            <div class="tag selected" data-v="" data-label="載入中…">載入中…</div>
           </div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px">點擊音色名稱旁 ▶ 試聽</div>
         </div>
         <div class="form-group"><label class="form-label">KOL 簡介（腳本提示詞）</label>
           <textarea class="form-textarea" id="kol-bio" placeholder="例：我是芮比，從事廣告行銷 10 年…" maxlength="200" rows="3"></textarea>
@@ -478,8 +476,19 @@ async function createVideo(){
   const script=document.getElementById('script-output').value.trim();
   if(!script){toast('請先輸入或生成口播腳本','error');return;}
   if(!S.talkingPhotoId&&!S.groupId){toast('請先選定形象版本','error');return;}
-  const voiceId=document.querySelector('#lang-tags .tag.selected')?.dataset.v||'zh-TW-HsiaoChenNeural';
-  const talkingId=S.talkingPhotoId||S.groupId;
+  const voiceId=document.querySelector('#lang-tags .tag.selected')?.dataset.v||'';
+  // 如果還沒有 talkingPhotoId，先從 groupId 查
+  let talkingId=S.talkingPhotoId;
+  if(!talkingId&&S.groupId){
+    const avRes=await kol('heygen_get_avatar',{group_id:S.groupId});
+    if(avRes.ok&&avRes.talking_photo_id){
+      talkingId=avRes.talking_photo_id;
+      S.talkingPhotoId=talkingId;
+    }else{
+      // fallback: 直接用 group_id
+      talkingId=S.groupId;
+    }
+  }
   const btn=document.getElementById('create-video-btn');
   btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span> 送出中…';
   try{
@@ -535,11 +544,39 @@ function exportProfile(){
 document.querySelectorAll('.scene-card').forEach(c=>{c.addEventListener('click',()=>{document.querySelectorAll('.scene-card').forEach(x=>x.classList.remove('selected'));c.classList.add('selected');});});
 document.getElementById('script-output').addEventListener('input',function(){document.getElementById('script-count').textContent=this.value.length+' 字';});
 
+// ── 載入語音 ──
+async function loadVoices(){
+  try{
+    const res=await kol('heygen_list_voices');
+    if(!res.ok||!res.voices?.length) return;
+    const wrap=document.getElementById('lang-tags');
+    wrap.innerHTML='';
+    res.voices.slice(0,8).forEach((v,i)=>{
+      const tag=document.createElement('div');
+      tag.className='tag'+(i===0?' selected':'');
+      tag.dataset.v=v.id;
+      tag.dataset.label=v.name;
+      tag.style.display='flex';tag.style.alignItems='center';tag.style.gap='6px';
+      tag.innerHTML=`${v.name} <span style="opacity:.5;font-size:10px">${v.gender==='female'?'♀':'♂'}</span>${v.preview_url?`<span onclick="event.stopPropagation();playPreview('${v.preview_url}')" style="cursor:pointer;opacity:.7">▶</span>`:''}`;
+      tag.addEventListener('click',()=>{
+        wrap.querySelectorAll('.tag').forEach(t=>t.classList.remove('selected'));
+        tag.classList.add('selected');
+      });
+      wrap.appendChild(tag);
+    });
+  }catch(e){console.log('載入語音失敗',e);}
+}
+
+function playPreview(url){
+  const a=new Audio(url);a.play();
+}
+
 // ── 初始化 ──
 (function init(){
   const savedGroup=localStorage.getItem('kol_group_id');
   const savedName=localStorage.getItem('kol_group_name');
   if(savedGroup){setTrainUI('idle',`上次的形象：${savedName||savedGroup}`,'點「載入已有形象」可快速還原');document.getElementById('train-chip').textContent='有紀錄';document.getElementById('train-chip').className='chip';}
+  loadVoices();
 })();
 </script>
 </body>
