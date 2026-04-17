@@ -330,7 +330,7 @@ function resetPhoto(){
 
 // ── HeyGen 訓練 ──
 async function startTraining(){
-  if(!S.photoBase64){toast('請先上傳照片','error');return;}
+  if(!S.photoFile){toast('請先上傳照片','error');return;}
   const kolName=document.getElementById('kol-name').value.trim();
   if(!kolName){toast('請輸入 KOL 名稱','error');return;}
   const btn=document.getElementById('train-btn');
