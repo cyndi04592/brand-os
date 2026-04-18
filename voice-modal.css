@@ -974,3 +974,33 @@
   font-size: 11px;
   font-family: 'Syne', sans-serif;
 }
+
+/* 🚀 v2.1 效能優化：分頁「載入更多」按鈕 */
+.vm-load-more {
+  display: block;
+  width: calc(100% - 4px);
+  margin: 16px 2px 4px;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(124, 109, 250, 0.08), rgba(250, 109, 155, 0.04));
+  border: 1px dashed rgba(124, 109, 250, 0.3);
+  border-radius: 10px;
+  color: #b5abff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif;
+  transition: all 0.2s;
+}
+.vm-load-more:hover {
+  background: linear-gradient(135deg, rgba(124, 109, 250, 0.18), rgba(250, 109, 155, 0.1));
+  border-color: #7c6dfa;
+  color: #fff;
+  transform: translateY(-1px);
+}
+.vm-list-footer {
+  padding: 18px;
+  text-align: center;
+  color: rgba(109, 250, 194, 0.6);
+  font-size: 12px;
+  font-weight: 500;
+}
