@@ -2,6 +2,11 @@
  *  Voice Modal — Artlist 風語音選擇器
  *  延續 Brand OS 色系（深黑 + 紫/粉漸層）
  *  獨立樣式，不影響 kol.html 本體
+ *
+ *  🔧 v1.1 hotfix (2026-04):
+ *    • 修掉播放時出現超大藍圈的 bug
+ *    • 根因：.vm-play-btn 沒有 position:relative
+ *      導致子層 ::after 的 absolute 以整個 viewport 為基準定位
  * ═══════════════════════════════════════════════════════════════ */
 
 /* 變數繼承自 kol.html，若單獨使用需自補 :root */
@@ -228,7 +233,10 @@
   box-shadow: inset 3px 0 0 #7c6dfa;
 }
 
+/* 🔧 v1.1: 加入 position:relative 讓 ::after 光環能正確定位
+       在這個按鈕上（而不是整個 viewport 變成超大藍圈） */
 .vm-play-btn {
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -262,6 +270,7 @@
   border-radius: 50%;
   border: 2px solid #7c6dfa;
   animation: vmPulse 1.4s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .vm-info {
