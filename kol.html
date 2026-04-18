@@ -6,6 +6,7 @@
 <title>KOL 數字人工作室 — Brand OS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="voice-modal.css">
 <style>
 :root{--bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--border:rgba(255,255,255,0.07);--accent:#7c6dfa;--accent2:#fa6d9b;--accent3:#6dfac2;--text:#f0f0f8;--text-dim:rgba(240,240,248,0.45);--text-mid:rgba(240,240,248,0.72);--radius:14px;--radius-sm:8px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -68,14 +69,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .selected-kol-banner .info strong{font-size:14px;display:block;}
 .selected-kol-banner .info small{font-size:11px;color:var(--text-dim);}
 
-/* 語音選擇 */
-.voice-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
-.voice-tag{padding:6px 12px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
-.voice-tag:hover{border-color:var(--accent);}
-.voice-tag.selected{background:rgba(124,109,250,.15);border-color:var(--accent);color:var(--accent);}
-.voice-tag .play{opacity:.6;cursor:pointer;font-size:10px;}
-.voice-tag .play:hover{opacity:1;}
-
 /* 場景 */
 .scene-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;}
 @media(max-width:500px){.scene-grid{grid-template-columns:repeat(2,1fr);}}
@@ -117,11 +110,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .btn-full{width:100%;}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 
+/* Credit 預估 */
+.credit-est{font-size:11px;color:var(--text-dim);margin-top:8px;display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+.credit-est .num{font-family:'Syne',sans-serif;font-weight:700;color:var(--accent);}
+.credit-est .num.high{color:#ffa94d;}
+
 /* Toast */
 .toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;}
 .toast{background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:9px 18px;font-size:13px;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:tIn .3s ease,tOut .3s ease 2.7s forwards;white-space:nowrap;}
 .toast.success{border-color:var(--accent3);}
 .toast.error{border-color:var(--accent2);}
+.toast.warn{border-color:#ffa94d;}
 @keyframes tIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tOut{to{opacity:0;transform:translateY(-8px)}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -137,7 +136,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a class="topbar-logo" href="index.html">Brand <span>OS</span></a>
   <div class="topbar-sep"></div>
   <span class="topbar-title">KOL 數字人工作室</span>
-  <div class="topbar-badge">BETA</div>
+  <div class="topbar-badge">BETA v3</div>
 </header>
 
 <main class="main">
@@ -216,10 +215,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="panel" id="video-panel">
         <div class="panel-title"><div class="dot" style="background:var(--accent2)"></div>口播影片設定</div>
 
-        <!-- 語音 -->
-        <div class="form-label">口播音色</div>
-        <div class="voice-grid" id="voice-grid">
-          <div style="font-size:12px;color:var(--text-dim)">載入中…</div>
+        <!-- 語音（改為 Artlist 風 modal 觸發按鈕）-->
+        <div class="form-label" style="margin-bottom:2px">口播語音</div>
+        <div class="voice-trigger" id="voice-trigger" onclick="VoiceModal.open()">
+          <div class="voice-trigger-icon">🎤</div>
+          <div class="voice-trigger-info">
+            <div class="voice-trigger-name" id="vt-name">尚未選擇語音</div>
+            <div class="voice-trigger-meta" id="vt-meta">點擊開啟語音選擇器，支援 HeyGen 庫 / 自訂 Clone / AI 設計</div>
+          </div>
+          <div class="voice-trigger-arrow">→</div>
         </div>
 
         <div class="divider"></div>
@@ -253,6 +257,33 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
 
+        <!-- 🆕 動作控制 -->
+        <div class="motion-block" id="motion-block">
+          <div class="motion-head" onclick="toggleMotion()">
+            <div class="motion-check"></div>
+            <div class="motion-title">🎬 啟用人物動作（Avatar IV）</div>
+            <div class="motion-warn">2× Credits</div>
+          </div>
+          <div class="motion-body">
+            <div class="motion-label">快速選擇（點一個即可，或自訂）</div>
+            <div class="motion-presets" id="motion-presets">
+              <div class="motion-preset" data-prompt="Smiles gently while nodding in agreement">😊 微笑點頭</div>
+              <div class="motion-preset" data-prompt="Right hand raises to wave enthusiastically">👋 熱情揮手</div>
+              <div class="motion-preset" data-prompt="Right hand points toward the product with confidence">👉 指向商品</div>
+              <div class="motion-preset" data-prompt="Hands move naturally while speaking, relaxed and engaged">🙌 自然手勢</div>
+              <div class="motion-preset" data-prompt="Eyes widen and smiles in pleasant surprise">😲 驚喜表情</div>
+            </div>
+            <div class="motion-label" style="margin-top:14px">或自訂動作描述（中文即可，AI 會自動轉成標準格式）</div>
+            <textarea class="motion-custom" id="motion-custom" placeholder="例：開心地拍拍手、摸摸下巴思考、雙手比個愛心..." maxlength="200"></textarea>
+            <div class="motion-hint">💡 建議：一次只寫一個動作，保持兩句話內，HeyGen AI 會自動把中文轉成標準動作描述</div>
+          </div>
+        </div>
+
+        <!-- Credit 預估 -->
+        <div class="credit-est">
+          預估消耗：<span class="num" id="credit-est">— credits</span>
+        </div>
+
         <div class="btn-row">
           <button class="btn btn-primary" id="create-video-btn" onclick="createVideo()" disabled>🎬 生成口播影片</button>
           <button class="btn btn-ghost btn-sm" onclick="copyScript()">📋 複製腳本</button>
@@ -268,21 +299,33 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <div class="toast-wrap" id="toast-wrap"></div>
 
+<!-- Voice Modal 外部模組 -->
+<script src="voice-modal.js"></script>
+
 <script>
-// ══ CONFIG ══
+// ══════════════════════════════════════════════════════════════
+//  KOL 主頁邏輯  v3
+//  變更：
+//   • 語音改走 VoiceModal 模組
+//   • 新增 motion prompt 傳入 createVideo
+//   • AI 腳本生成改走 Worker proxy（修掉前端直 call Anthropic）
+//   • Credit 預估即時顯示
+// ══════════════════════════════════════════════════════════════
+
 const WORKER   = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 const PASSWORD = 'raby2026';
 
-// ══ 狀態 ══
 const S = {
   photoFile: null,
   photoMime: null,
-  selectedKol: null,   // { id, name, brand, image_url, talking_photo_id }
-  voices: [],
+  selectedKol: null,
+  selectedVoice: null,        // 🆕 由 VoiceModal 回填
+  motionEnabled: false,       // 🆕 動作開關
+  motionPrompt: '',           // 🆕 動作描述（從 preset 或 custom 取）
   videoTasks: [],
 };
 
-// ══ Worker 呼叫 ══
+// ─── Worker 呼叫 ──────────────────────────────────────────────
 async function api(action, extra = {}) {
   const r = await fetch(WORKER, {
     method: 'POST',
@@ -292,32 +335,127 @@ async function api(action, extra = {}) {
   return r.json();
 }
 
-// ══ 初始化 ══
+// ─── 初始化 ──────────────────────────────────────────────────
 (async function init() {
-  await Promise.all([loadKolList(), loadVoices()]);
+  // 先初始化語音 modal
+  VoiceModal.init({
+    workerUrl: WORKER,
+    password: PASSWORD,
+    onSelect: (v) => {
+      S.selectedVoice = v;
+      updateVoiceTrigger();
+      updateCreditEstimate();
+      toast(`已選定語音：${v.name}`, 'success');
+    },
+  });
+
+  // 如果上次有選過，恢復顯示
+  const saved = VoiceModal.getSelected();
+  if (saved) {
+    S.selectedVoice = saved;
+    updateVoiceTrigger();
+  }
+
+  await loadKolList();
+  updateCreditEstimate();
 })();
 
-// ══ KOL 形象庫 ══
+// ─── Voice Trigger 顯示 ──────────────────────────────────────
+function updateVoiceTrigger() {
+  const v = S.selectedVoice;
+  if (!v) {
+    document.getElementById('vt-name').textContent = '尚未選擇語音';
+    document.getElementById('vt-meta').textContent = '點擊開啟語音選擇器，支援 HeyGen 庫 / 自訂 Clone / AI 設計';
+    return;
+  }
+  document.getElementById('vt-name').textContent = v.name + (v.language ? `  ·  ${v.language}` : '');
+  const meta = [];
+  if (v.gender) meta.push(v.gender === 'female' ? '女聲' : '男聲');
+  if (v.engine) meta.push(v.engine);
+  if (v.source) meta.push(v.source === 'clone' ? '自訂 Clone' : v.source === 'design' ? 'AI 設計' : '');
+  document.getElementById('vt-meta').textContent = meta.filter(Boolean).join(' · ') + '  —  點擊更換';
+}
+
+// ─── 動作控制 ────────────────────────────────────────────────
+function toggleMotion() {
+  S.motionEnabled = !S.motionEnabled;
+  const block = document.getElementById('motion-block');
+  block.classList.toggle('on', S.motionEnabled);
+  if (!S.motionEnabled) {
+    // 關掉時清除選中的 preset，但保留 custom 文字
+    S.motionPrompt = '';
+    document.querySelectorAll('.motion-preset').forEach(p => p.classList.remove('active'));
+  } else {
+    syncMotionPrompt();
+  }
+  updateCreditEstimate();
+}
+
+document.querySelectorAll('.motion-preset').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.motion-preset').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('motion-custom').value = '';  // 清除 custom
+    S.motionPrompt = el.dataset.prompt;
+    updateCreditEstimate();
+  });
+});
+
+document.getElementById('motion-custom').addEventListener('input', function () {
+  const val = this.value.trim();
+  if (val) {
+    // 有 custom 時，取消所有 preset 選中
+    document.querySelectorAll('.motion-preset').forEach(p => p.classList.remove('active'));
+    S.motionPrompt = val;
+  } else {
+    S.motionPrompt = '';
+  }
+  updateCreditEstimate();
+});
+
+function syncMotionPrompt() {
+  const active = document.querySelector('.motion-preset.active');
+  const custom = document.getElementById('motion-custom').value.trim();
+  S.motionPrompt = custom || active?.dataset.prompt || '';
+}
+
+// ─── Credit 預估 ────────────────────────────────────────────
+// 規則：中文約每秒 3.5 字，3 秒 = 1 credit
+//       啟用動作 + 有 prompt → 2x credits
+function updateCreditEstimate() {
+  const script = document.getElementById('script-output')?.value || '';
+  const chars = script.trim().length;
+  const seconds = Math.max(5, Math.ceil(chars / 3.5));
+  const baseCredits = Math.ceil(seconds / 3);
+  const useMotion = S.motionEnabled && S.motionPrompt;
+  const totalCredits = useMotion ? baseCredits * 2 : baseCredits;
+
+  const el = document.getElementById('credit-est');
+  if (!el) return;
+  if (chars === 0) { el.textContent = '— credits'; el.classList.remove('high'); return; }
+  el.textContent = `~${totalCredits} credits（${seconds}s${useMotion ? ' · 2×' : ''}）`;
+  el.classList.toggle('high', useMotion);
+}
+
+// ─── KOL 形象庫 ─────────────────────────────────────────────
 async function loadKolList() {
   document.getElementById('kol-list').innerHTML = '<div class="kol-empty">載入中…</div>';
-  
-  // 合併：HeyGen 上的 group + localStorage 的 talking_photo
+
   const [apiRes] = await Promise.all([api('heygen_list_groups')]);
   const apiGroups = apiRes.ok ? (apiRes.groups || []) : [];
   const localKols = JSON.parse(localStorage.getItem('kol_library') || '[]');
-  
-  // 去重合併（local 優先顯示，避免重複）
+
   const apiIds = new Set(apiGroups.map(g => g.id));
   const localOnly = localKols.filter(k => !apiIds.has(k.id));
   const allKols = [...localOnly, ...apiGroups];
-  
+
   if (!allKols.length) {
     document.getElementById('kol-list').innerHTML = '<div class="kol-empty">尚無 KOL 形象，從下方新增</div>';
     return;
   }
-  
+
   document.getElementById('kol-list').innerHTML = allKols.map(g => `
-    <div class="kol-card" id="kol-${g.id}" onclick="selectKol(${JSON.stringify(g).replace(/"/g,'&quot;')})">
+    <div class="kol-card" id="kol-${g.id}" onclick='selectKol(${JSON.stringify(g).replace(/'/g,"\\'")})'>
       <img class="kol-avatar" src="${g.image_url||''}" onerror="this.style.display='none'" alt="">
       <div class="kol-info">
         <div class="kol-name">${g.name}</div>
@@ -350,11 +488,16 @@ function selectKol(g) {
 async function deleteKol(id, name) {
   if (!confirm(`確定刪除「${name}」？此操作無法復原。`)) return;
   const res = await api('heygen_delete_group', { group_id: id });
-  if (res.ok) { toast(`已刪除 ${name}`, 'success'); loadKolList(); }
-  else toast('刪除失敗：' + res.error, 'error');
+  if (res.ok) {
+    // 同時從 localStorage 移除
+    const localKols = JSON.parse(localStorage.getItem('kol_library') || '[]');
+    localStorage.setItem('kol_library', JSON.stringify(localKols.filter(k => k.id !== id)));
+    toast(`已刪除 ${name}`, 'success');
+    loadKolList();
+  } else toast('刪除失敗：' + res.error, 'error');
 }
 
-// ══ 新增 KOL ══
+// ─── 新增 KOL ────────────────────────────────────────────────
 document.getElementById('photo-input').addEventListener('change', e => {
   const f = e.target.files[0]; if (f) handlePhoto(f);
 });
@@ -394,7 +537,6 @@ async function addKol() {
   showProgress(true, '上傳照片中…', 20);
 
   try {
-    // Step 1: 上傳照片
     const upResp = await fetch(WORKER + '/upload', {
       method: 'POST',
       headers: { 'Content-Type': S.photoMime, 'X-Password': PASSWORD },
@@ -406,19 +548,16 @@ async function addKol() {
     showProgress(true, '建立 KOL 形象…', 60);
 
     let kolId, kolImageUrl;
-    
+
     if (upRes.talking_photo_id) {
-      // talking_photo 方式：直接可用，不需要 create_group
       kolId = upRes.talking_photo_id;
       kolImageUrl = document.getElementById('preview-img').src;
       showProgress(true, '完成！', 100);
       await delay(400); showProgress(false);
-      // 儲存到 localStorage
       const saved = JSON.parse(localStorage.getItem('kol_library') || '[]');
       saved.unshift({ id: kolId, name, image_url: kolImageUrl, talking_photo_id: kolId, created: new Date().toISOString() });
       localStorage.setItem('kol_library', JSON.stringify(saved));
     } else {
-      // asset 方式：需要 create_group
       const grpRes = await api('heygen_create_group', { name, image_key: upRes.image_key });
       if (!grpRes.ok) throw new Error(grpRes.error);
       kolId = grpRes.group_id;
@@ -443,35 +582,21 @@ async function addKol() {
 function showProgress(show, label, pct) {
   const w = document.getElementById('upload-progress');
   w.style.display = show ? 'block' : 'none';
-  if (show) { document.getElementById('upload-label').textContent = label; document.getElementById('upload-fill').style.width = pct + '%'; }
+  if (show) {
+    document.getElementById('upload-label').textContent = label;
+    document.getElementById('upload-fill').style.width = pct + '%';
+  }
 }
 
-// ══ 語音載入 ══
-async function loadVoices() {
-  const res = await api('heygen_list_voices');
-  if (!res.ok || !res.voices?.length) return;
-  S.voices = res.voices;
-  const grid = document.getElementById('voice-grid');
-  grid.innerHTML = res.voices.slice(0, 12).map((v, i) => `
-    <div class="voice-tag ${i === 0 ? 'selected' : ''}" data-id="${v.id}" onclick="selectVoice(this,'${v.id}')">
-      ${v.name}
-      <span class="chip" style="font-size:9px">${(v.language||'').replace('Chinese','中').replace('Japanese','日').replace('English','英').replace('Multilingual','多').replace('Cantonese','粵')}</span>
-      ${v.preview_url ? `<span class="play" onclick="event.stopPropagation();new Audio('${v.preview_url}').play()">▶</span>` : ''}
-    </div>
-  `).join('');
-}
-
-function selectVoice(el, id) {
-  document.querySelectorAll('.voice-tag').forEach(t => t.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-// ══ 場景選擇 ══
+// ─── 場景選擇 ────────────────────────────────────────────────
 document.querySelectorAll('.scene-card').forEach(c => {
-  c.addEventListener('click', () => { document.querySelectorAll('.scene-card').forEach(x => x.classList.remove('selected')); c.classList.add('selected'); });
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.scene-card').forEach(x => x.classList.remove('selected'));
+    c.classList.add('selected');
+  });
 });
 
-// ══ AI 腳本生成 ══
+// ─── AI 腳本生成（改走 Worker proxy）────────────────────────
 async function generateScript() {
   const topic = document.getElementById('video-topic').value.trim();
   if (!topic) { toast('請輸入影片主題', 'error'); return; }
@@ -479,33 +604,32 @@ async function generateScript() {
   const brandEl = document.getElementById('kol-brand');
   const brand = brandEl.options[brandEl.selectedIndex].text;
   const scene = document.querySelector('.scene-card.selected')?.dataset.scene || 'product';
-  const sceneMap = { product:'產品開箱', review:'使用心得', promo:'限時優惠', edu:'教育知識' };
 
   const btn = document.getElementById('gen-btn');
   btn.disabled = true; btn.textContent = '生成中…';
   document.getElementById('script-output').value = '';
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 600,
-        system: `你是品牌廣告文案專家，寫短影音口播腳本。直接輸出腳本，不要任何說明或標題。`,
-        messages: [{ role: 'user', content: `寫一段短影音口播腳本（30秒，約100字）。\nKOL：${kolName}\n品牌：${brand}\n場景：${sceneMap[scene]}\n主題：${topic}\n要求：開場 Hook、中間產品亮點、結尾 CTA，全程口語化。` }]
-      })
+    const res = await api('ai_generate_script', {
+      kol_name: kolName,
+      brand,
+      scene,
+      topic,
+      duration: 30,
     });
-    const data = await resp.json();
-    const text = data.content?.[0]?.text || '（生成失敗）';
+    if (!res.ok) throw new Error(res.error || '生成失敗');
+    const text = res.script;
     document.getElementById('script-output').value = text;
     document.getElementById('script-count').textContent = text.length + ' 字';
+    updateCreditEstimate();
     toast('腳本生成完成 ✓', 'success');
-  } catch (e) { toast('腳本生成失敗', 'error'); }
+  } catch (e) { toast('腳本生成失敗：' + e.message, 'error'); }
   btn.disabled = false; btn.textContent = '✨ AI 生成';
 }
 
-document.getElementById('script-output').addEventListener('input', function() {
+document.getElementById('script-output').addEventListener('input', function () {
   document.getElementById('script-count').textContent = this.value.length + ' 字';
+  updateCreditEstimate();
 });
 
 function copyScript() {
@@ -514,25 +638,55 @@ function copyScript() {
   navigator.clipboard.writeText(t).then(() => toast('已複製 ✓', 'success'));
 }
 
-// ══ 影片生成 ══
+// ─── 影片生成（含動作 + 語音）───────────────────────────────
 async function createVideo() {
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
   const script = document.getElementById('script-output').value.trim();
   if (!script) { toast('請先輸入腳本', 'error'); return; }
-  const voiceId = document.querySelector('.voice-tag.selected')?.dataset.id || '';
+  // 🛡️ 語音缺省時使用繁中女聲 fallback（Worker 也會再次兜底，雙重保險）
+  const FALLBACK_VOICE_ID = 'd7bbcdd6964c47bdaae26decade4a933';  // HsiaoChen - Friendly
+  if (!S.selectedVoice) {
+    if (!confirm('你還沒選擇語音，將使用預設繁中女聲（HsiaoChen），要繼續嗎？')) return;
+  }
+
+  syncMotionPrompt();  // 再次同步動作描述
+
   const talking_photo_id = S.selectedKol.talking_photo_id || S.selectedKol.id;
+  const payload = {
+    talking_photo_id,
+    script,
+    voice_id: S.selectedVoice?.id || FALLBACK_VOICE_ID,
+    ratio: '9:16',
+  };
+
+  if (S.motionEnabled && S.motionPrompt) {
+    payload.motion_prompt = S.motionPrompt;
+    payload.enhance_motion = true;  // 預設開啟 AI 潤飾
+  }
 
   const btn = document.getElementById('create-video-btn');
   btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span> 送出中…';
 
   try {
-    const res = await api('heygen_create_video', { talking_photo_id, script, voice_id: voiceId, ratio: '9:16' });
+    const res = await api('heygen_create_video', payload);
     if (!res.ok) throw new Error(res.error);
 
-    const task = { video_id: res.video_id, label: document.getElementById('video-topic').value.trim() || '口播影片', status: 'processing', created: new Date().toLocaleTimeString('zh-TW'), url: null };
+    // 🛡️ 動作回退提示
+    if (res.motion_fallback) {
+      toast('⚠️ 動作控制暫不支援，影片會用預設動畫生成', 'warn');
+    }
+
+    const task = {
+      video_id: res.video_id,
+      label: document.getElementById('video-topic').value.trim() || '口播影片',
+      status: 'processing',
+      created: new Date().toLocaleTimeString('zh-TW'),
+      url: null,
+      hasMotion: S.motionEnabled && S.motionPrompt && !res.motion_fallback,
+    };
     S.videoTasks.unshift(task);
     renderTasks();
-    toast('影片生成任務已送出 🎬', 'success');
+    toast(task.hasMotion ? '影片生成任務已送出 🎬（含動作）' : '影片生成任務已送出 🎬', 'success');
     pollVideo(task);
   } catch (e) { toast('失敗：' + e.message, 'error'); }
   btn.disabled = false; btn.textContent = '🎬 生成口播影片';
@@ -579,19 +733,23 @@ function showVideoPreview(url, label) {
 function renderTasks() {
   document.getElementById('video-tasks').innerHTML = S.videoTasks.map(t => `
     <div class="video-task" style="cursor:${t.url?'pointer':'default'}" onclick="${t.url?`showVideoPreview('${t.url}','${t.label}');`:''}">
-      <div class="video-task-info"><strong>${t.label}</strong><small>${t.created} · ${t.video_id.slice(0,16)}…</small></div>
+      <div class="video-task-info">
+        <strong>${t.label} ${t.hasMotion ? '<span class="chip orange" style="margin-left:6px">動作</span>' : ''}</strong>
+        <small>${t.created} · ${t.video_id.slice(0,16)}…</small>
+      </div>
       <span class="task-badge ${t.status}">${t.status==='processing'?'渲染中…':t.status==='completed'?'完成 ✓':t.status==='failed'?'失敗':t.status}</span>
       ${t.url ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showVideoPreview('${t.url}','${t.label}')">▶ 預覽</button>` : ''}
     </div>
   `).join('');
 }
 
-// ══ 工具 ══
+// ─── 工具 ────────────────────────────────────────────────────
 function toast(msg, type = '') {
   const el = Object.assign(document.createElement('div'), { className: `toast ${type}`, textContent: msg });
   document.getElementById('toast-wrap').appendChild(el);
   setTimeout(() => el.remove(), 3100);
 }
+window.toast = toast;  // 讓 voice-modal.js 能呼叫
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
