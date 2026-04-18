@@ -45,6 +45,13 @@ const State = {
 
   audio: new Audio(),
   audioRAF: null,                // 🆕 requestAnimationFrame id
+
+  // 🚀 v2.1 效能優化
+  pageSize: 50,                  // 每頁顯示幾個
+  pageCount: 1,                  // 目前顯示到第幾頁
+  lastPlayingRowEl: null,        // 上一次播放的 row DOM 引用（精準更新用）
+  lastSelectedRowEl: null,       // 上一次選中的 row DOM 引用
+  lastProgressRowEl: null,       // 上一次進度條更新的 row
 };
 
 const LS_FAV = 'bos_voice_favorites_v1';
@@ -280,16 +287,17 @@ function bindEvents() {
   // 篩選器
   root.querySelector('#vm-search').addEventListener('input', debounce(e => {
     State.search = e.target.value.trim().toLowerCase();
+    State.pageCount = 1;   // 🚀 重設分頁
     renderList();
   }, 200));
   root.querySelector('#vm-lang').addEventListener('change', e => {
-    State.filterLang = e.target.value; renderList();
+    State.filterLang = e.target.value; State.pageCount = 1; renderList();
   });
   root.querySelector('#vm-gender').addEventListener('change', e => {
-    State.filterGender = e.target.value; renderList();
+    State.filterGender = e.target.value; State.pageCount = 1; renderList();
   });
   root.querySelector('#vm-engine').addEventListener('change', e => {
-    State.filterEngine = e.target.value; renderList();
+    State.filterEngine = e.target.value; State.pageCount = 1; renderList();
   });
 
   // 🆕 手動新增
@@ -316,6 +324,7 @@ function handleKey(e) {
 // ─── Tab 切換 ────────────────────────────────────────────────
 function switchTab(tab) {
   State.currentTab = tab;
+  State.pageCount = 1;   // 🚀 切換 tab 時重設分頁
   const root = State.rootEl;
   root.querySelectorAll('.vm-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
@@ -439,12 +448,47 @@ function renderList() {
     return;
   }
 
-  container.innerHTML = filtered.map((v, idx) => rowHTML(v, idx)).join('');
+  // 🚀 v2.1 分頁優化：預設只渲染前 N 個，避免 2305 個 DOM 同時存在
+  // 收藏 tab 通常不會超過 50 個，不做分頁也沒關係
+  const isLibrary = tab === 'library';
+  const total = filtered.length;
+  const shownCount = isLibrary ? Math.min(State.pageCount * State.pageSize, total) : total;
+  const shown = isLibrary ? filtered.slice(0, shownCount) : filtered;
 
-  // 綁定列事件
+  let html = shown.map((v, idx) => rowHTML(v, idx)).join('');
+
+  // 底部「載入更多」按鈕
+  if (isLibrary && shownCount < total) {
+    const remaining = total - shownCount;
+    html += `
+      <button class="vm-load-more" id="vm-load-more">
+        ⬇ 再載入 ${Math.min(State.pageSize, remaining)} 個（剩 ${remaining} 個）
+      </button>
+    `;
+  } else if (isLibrary && total > State.pageSize) {
+    html += `<div class="vm-list-footer">✓ 全部 ${total} 個語音已顯示</div>`;
+  }
+
+  container.innerHTML = html;
+
+  // 「載入更多」點擊
+  const loadMoreBtn = container.querySelector('#vm-load-more');
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', () => {
+      State.pageCount++;
+      renderList();
+    });
+  }
+
+  // 🚀 v2.1: 清掉舊的 DOM 引用（避免指向已不存在的節點）
+  State.lastPlayingRowEl = null;
+  State.lastSelectedRowEl = null;
+  State.lastProgressRowEl = null;
+
+  // 綁定列事件（只綁 shown 那些，不是 filtered 全部）
   container.querySelectorAll('.vm-row').forEach(row => {
     const id = row.dataset.id;
-    const v = filtered.find(x => x.id === id);
+    const v = shown.find(x => x.id === id);
     if (!v) return;
     row.addEventListener('click', (e) => {
       if (e.target.closest('.vm-star')) return;
@@ -465,6 +509,9 @@ function renderList() {
       deleteCustomVoice(v.id);
     });
   });
+
+  // 渲染完立即同步播放狀態（避免切 tab 或載入更多時 UI 不同步）
+  syncRowPlayingState();
 }
 
 function filterVoices(list) {
@@ -512,6 +559,7 @@ function rowHTML(v, idx) {
 
   return `
     <div class="vm-row ${playing ? 'playing' : ''} ${selected ? 'selected' : ''}"
+         id="vm-row-${cssSafeId(v.id)}"
          data-id="${esc(v.id)}"
          style="animation-delay:${Math.min(idx * 20, 400)}ms">
       <button class="vm-play-btn" aria-label="試聽">${playing ? '❚❚' : '▶'}</button>
@@ -612,14 +660,10 @@ function stopPlayback() {
 }
 
 function updatePlayingUI() {
-  document.querySelectorAll('.vm-row').forEach(row => {
-    const isPlaying = row.dataset.id === State.playing?.id && !State.audio.paused;
-    const isSelected = row.dataset.id === State.tentative?.id;
-    row.classList.toggle('playing', isPlaying);
-    row.classList.toggle('selected', isSelected);
-    const btn = row.querySelector('.vm-play-btn');
-    if (btn) btn.textContent = isPlaying ? '❚❚' : '▶';
-  });
+  // 🚀 v2.1 效能優化：不再 querySelectorAll 掃 2305 個 row
+  // 只動「上一次」和「這一次」相關的 2-3 個 row，從 O(N) 降到 O(1)
+  syncRowPlayingState();
+
   const player = document.getElementById('vm-player');
   if (!player) return;
   if (State.tentative) {
@@ -632,6 +676,52 @@ function updatePlayingUI() {
     player.classList.remove('show');
   }
   updateConfirmButton();
+}
+
+// 🚀 v2.1 新增：精準同步 row 狀態（只動 3 個以內的 DOM）
+function syncRowPlayingState() {
+  const playingId = State.playing?.id;
+  const selectedId = State.tentative?.id;
+  const isAudioPlaying = playingId && !State.audio.paused;
+
+  // 清掉舊的 playing row（如果換人了）
+  if (State.lastPlayingRowEl && State.lastPlayingRowEl.dataset.id !== playingId) {
+    State.lastPlayingRowEl.classList.remove('playing');
+    const oldBtn = State.lastPlayingRowEl.querySelector('.vm-play-btn');
+    if (oldBtn) oldBtn.textContent = '▶';
+    State.lastPlayingRowEl = null;
+  }
+
+  // 清掉舊的 selected row（如果換人了）
+  if (State.lastSelectedRowEl && State.lastSelectedRowEl.dataset.id !== selectedId) {
+    State.lastSelectedRowEl.classList.remove('selected');
+    State.lastSelectedRowEl = null;
+  }
+
+  // 設定新的 playing row（getElementById 一次，不掃全部）
+  if (playingId) {
+    const row = document.getElementById('vm-row-' + cssSafeId(playingId));
+    if (row) {
+      row.classList.toggle('playing', isAudioPlaying);
+      const btn = row.querySelector('.vm-play-btn');
+      if (btn) btn.textContent = isAudioPlaying ? '❚❚' : '▶';
+      if (isAudioPlaying) State.lastPlayingRowEl = row;
+    }
+  }
+
+  // 設定新的 selected row
+  if (selectedId) {
+    const row = document.getElementById('vm-row-' + cssSafeId(selectedId));
+    if (row) {
+      row.classList.add('selected');
+      State.lastSelectedRowEl = row;
+    }
+  }
+}
+
+// 把 voice_id 變成 HTML id 安全字串（voice_id 理論上都是 hex，但防呆）
+function cssSafeId(s) {
+  return String(s).replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 
 // 🔧 v2 修 bug：進度條改用 requestAnimationFrame 流暢更新
@@ -661,12 +751,28 @@ function updateProgress() {
   if (fillEl) fillEl.style.width = pct + '%';
   if (timeEl) timeEl.textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
 
-  const row = document.querySelector(`.vm-row[data-id="${CSS.escape(State.playing?.id || '')}"]`);
-  if (row) {
-    const bars = row.querySelectorAll('.vm-waveform-bar');
-    const activeCount = Math.floor((cur / dur) * bars.length);
-    bars.forEach((b, i) => b.classList.toggle('active', i < activeCount));
+  // 🚀 v2.1 效能優化：波形更新改用快取 row 引用
+  // 每 16ms 跑一次，不能每次都 querySelector
+  const playingId = State.playing?.id;
+  if (!playingId) return;
+
+  // 快取失效（換人或首次）→ 重找一次
+  if (!State.lastProgressRowEl || State.lastProgressRowEl.dataset.id !== playingId) {
+    State.lastProgressRowEl = document.getElementById('vm-row-' + cssSafeId(playingId));
   }
+  const row = State.lastProgressRowEl;
+  if (!row) return;
+
+  const bars = row.querySelectorAll('.vm-waveform-bar');
+  if (!bars.length) return;
+  const activeCount = Math.floor((cur / dur) * bars.length);
+  // 只更新跨界的那根（大部分情況 1 根），避免每次 toggle 24 根
+  bars.forEach((b, i) => {
+    const shouldActive = i < activeCount;
+    if (b.classList.contains('active') !== shouldActive) {
+      b.classList.toggle('active', shouldActive);
+    }
+  });
 }
 
 function seekPlayback(e) {
