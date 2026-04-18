@@ -52,6 +52,9 @@ const State = {
   lastPlayingRowEl: null,        // 上一次播放的 row DOM 引用（精準更新用）
   lastSelectedRowEl: null,       // 上一次選中的 row DOM 引用
   lastProgressRowEl: null,       // 上一次進度條更新的 row
+
+  // 🌏 v3 國際化精選模式
+  onlyMultilingual: true,        // 預設只顯示 Multilingual（~70 個）
 };
 
 const LS_FAV = 'bos_voice_favorites_v1';
@@ -149,7 +152,7 @@ function buildModalHTML() {
         ⭐ 我的收藏 <span class="vm-tab-count" id="vm-count-favorites">—</span>
       </button>
       <button class="vm-tab" data-tab="library">
-        🌏 HeyGen 語音庫 <span class="vm-tab-count" id="vm-count-library">—</span>
+        🌏 精選多國語言 <span class="vm-tab-count" id="vm-count-library">—</span>
       </button>
     </div>
 
@@ -158,32 +161,15 @@ function buildModalHTML() {
         <input type="text" id="vm-search" placeholder="搜尋語音名稱..." autocomplete="off">
       </div>
       <div class="vm-chip-select">
-        <select id="vm-lang">
-          <option value="all">全部語言</option>
-          <option value="zh-tw">🇹🇼 繁體中文</option>
-          <option value="cantonese">🇭🇰 粵語</option>
-          <option value="japanese">🇯🇵 日文</option>
-          <option value="chinese">🇨🇳 簡體中文</option>
-          <option value="english">🇺🇸 英文</option>
-          <option value="multilingual">🌏 多國語言</option>
-        </select>
-      </div>
-      <div class="vm-chip-select">
         <select id="vm-gender">
           <option value="all">全部性別</option>
           <option value="female">女聲</option>
           <option value="male">男聲</option>
         </select>
       </div>
-      <div class="vm-chip-select">
-        <select id="vm-engine">
-          <option value="all">全部引擎</option>
-          <option value="ElevenLabs">ElevenLabs（最擬真）</option>
-          <option value="Azure">Azure（穩定）</option>
-          <option value="HeyGen">HeyGen 自研</option>
-          <option value="Fish">Fish</option>
-        </select>
-      </div>
+      <button class="vm-filter-toggle" id="vm-filter-toggle" title="切換精選 / 全部語音">
+        <span id="vm-filter-toggle-label">🌏 精選模式</span>
+      </button>
       <button class="vm-add-btn" id="vm-add-custom-btn" title="手動新增 voice_id">
         ➕ 手動新增
       </button>
@@ -201,6 +187,7 @@ function buildModalHTML() {
         <div class="vm-sub-body">
           <div class="vm-info-box">
             💡 從 HeyGen 網頁複製你自己建立的 voice_id（例如 ElevenLabs 匯入的語音）。
+            <br>✨ <strong>建議選擇 Multilingual 引擎</strong>（ElevenLabs Multilingual v2），能講中/日/英等多語言。
             <br>開啟網址：<code style="color:#b5abff">app.heygen.com/settings?nav=API</code> 或在語音編輯頁 URL 中取得。
           </div>
           <div class="vm-field">
@@ -287,18 +274,15 @@ function bindEvents() {
   // 篩選器
   root.querySelector('#vm-search').addEventListener('input', debounce(e => {
     State.search = e.target.value.trim().toLowerCase();
-    State.pageCount = 1;   // 🚀 重設分頁
+    State.pageCount = 1;
     renderList();
   }, 200));
-  root.querySelector('#vm-lang').addEventListener('change', e => {
-    State.filterLang = e.target.value; State.pageCount = 1; renderList();
-  });
   root.querySelector('#vm-gender').addEventListener('change', e => {
     State.filterGender = e.target.value; State.pageCount = 1; renderList();
   });
-  root.querySelector('#vm-engine').addEventListener('change', e => {
-    State.filterEngine = e.target.value; State.pageCount = 1; renderList();
-  });
+
+  // 🌏 v3 精選/全部切換
+  root.querySelector('#vm-filter-toggle').addEventListener('click', toggleMultilingualFilter);
 
   // 🆕 手動新增
   root.querySelector('#vm-add-custom-btn').addEventListener('click', openCustomModal);
@@ -353,12 +337,37 @@ function switchTab(tab) {
 }
 
 function updateCountChips() {
-  // 收藏數：favorites set 的大小 + customVoices（已自動加入收藏）
   const favCount = getFavoriteVoices().length;
   const favEl = document.getElementById('vm-count-favorites');
   if (favEl) favEl.textContent = favCount;
   const libEl = document.getElementById('vm-count-library');
   if (libEl) libEl.textContent = State.voices.library.length || '—';
+
+  // 🌏 v3: 切換按鈕的顯示（精選 N 個 ↔ 全部 2305）
+  const toggleBtn = document.getElementById('vm-filter-toggle');
+  const toggleLabel = document.getElementById('vm-filter-toggle-label');
+  if (toggleLabel) {
+    if (State.onlyMultilingual) {
+      toggleLabel.innerHTML = '🔓 顯示全部 ' + (State.voices.libraryRawTotal || '2305');
+      if (toggleBtn) toggleBtn.title = '切換到完整模式（載入全部語音，包含單語言）';
+    } else {
+      toggleLabel.innerHTML = '🌏 回精選模式';
+      if (toggleBtn) toggleBtn.title = '切回精選模式（只看能跨語言的 ~70 個）';
+    }
+  }
+
+  // Tab 也改叫法
+  const libTabLabel = document.querySelector('.vm-tab[data-tab="library"]');
+  if (libTabLabel) {
+    const countSpan = libTabLabel.querySelector('.vm-tab-count');
+    const firstNode = Array.from(libTabLabel.childNodes).find(n => n.nodeType === 3);
+    if (firstNode) {
+      firstNode.textContent = State.onlyMultilingual
+        ? '🌏 精選多國語言 '
+        : '🌏 HeyGen 全語音庫 ';
+    }
+    if (countSpan) countSpan.textContent = State.voices.library.length || '—';
+  }
 }
 
 // ─── Worker 呼叫 ──────────────────────────────────────────────
@@ -375,15 +384,26 @@ async function loadLibraryVoices() {
   State.loading.library = true;
   if (State.currentTab === 'library') renderList();
   try {
-    const res = await api('heygen_list_voices');
+    const res = await api('heygen_list_voices', {
+      only_multilingual: State.onlyMultilingual,
+    });
     if (res.ok) {
       State.voices.library = res.voices || [];
       State.loaded.library = true;
+      State.voices.libraryRawTotal = res._total_raw || 0;  // 記住 2305 這個數字
       updateCountChips();
     }
   } catch (e) {}
   State.loading.library = false;
   renderList();
+}
+
+// 🌏 v3: 切換「精選 / 全部」模式
+function toggleMultilingualFilter() {
+  State.onlyMultilingual = !State.onlyMultilingual;
+  State.loaded.library = false;      // 強制重新載入
+  State.pageCount = 1;
+  loadLibraryVoices();
 }
 
 // 🆕 拿到所有「我的收藏」完整資訊（library + custom 都查）
@@ -517,19 +537,25 @@ function renderList() {
 function filterVoices(list) {
   let out = list.filter(v => {
     if (State.search && !v.name?.toLowerCase().includes(State.search)) return false;
-    if (State.filterLang !== 'all' && !langMatch(v.language, State.filterLang)) return false;
     if (State.filterGender !== 'all' && v.gender?.toLowerCase() !== State.filterGender) return false;
-    if (State.filterEngine !== 'all' && v.engine !== State.filterEngine) return false;
     return true;
   });
-  // 排序：收藏優先 → 繁中優先
+  // 排序：收藏優先 → Multilingual 優先 → OpenAI 經典語音優先
+  const openaiNames = new Set(['Coral', 'Nova', 'Onyx', 'Shimmer', 'Alloy', 'Echo', 'Fable']);
   out.sort((a, b) => {
     const favA = State.favorites.has(a.id) ? 0 : 1;
     const favB = State.favorites.has(b.id) ? 0 : 1;
     if (favA !== favB) return favA - favB;
-    const zhA = langMatch(a.language, 'zh-tw') ? 0 : 1;
-    const zhB = langMatch(b.language, 'zh-tw') ? 0 : 1;
-    if (zhA !== zhB) return zhA - zhB;
+
+    const mlA = a.is_multilingual ? 0 : 1;
+    const mlB = b.is_multilingual ? 0 : 1;
+    if (mlA !== mlB) return mlA - mlB;
+
+    // OpenAI 招牌語音優先
+    const oaA = openaiNames.has(a.name) ? 0 : 1;
+    const oaB = openaiNames.has(b.name) ? 0 : 1;
+    if (oaA !== oaB) return oaA - oaB;
+
     return 0;
   });
   return out;
@@ -556,6 +582,7 @@ function rowHTML(v, idx) {
   const engine = (v.engine || 'HeyGen').toLowerCase();
   const tagText = [v.tags?.slice(0, 3).join(' · ')].filter(Boolean).join(' · ') || v.language || '';
   const isCustom = !!v._custom;
+  const isMulti = !!v.is_multilingual;
 
   return `
     <div class="vm-row ${playing ? 'playing' : ''} ${selected ? 'selected' : ''}"
@@ -566,6 +593,7 @@ function rowHTML(v, idx) {
       <div class="vm-info">
         <div class="vm-name">
           ${esc(v.name || '未命名')}
+          ${isMulti ? '<span class="vm-multi-badge" title="支援多國語言，能講中/日/英/西等 40+ 種">🌏 Multilingual</span>' : ''}
           <span class="vm-engine-badge ${engine}">${esc(v.engine || 'HeyGen')}</span>
           ${isCustom ? '<span class="vm-custom-badge">自訂</span>' : ''}
         </div>
