@@ -1,9 +1,19 @@
 /* ═══════════════════════════════════════════════════════════════
- *  Voice Modal — Artlist 風語音選擇器
+ *  Voice Modal v2 — 收藏模式 + 手動新增 voice_id
+ *
+ *  v2 重大改動（2026-04）：
+ *    • 移除不可用的 3 個 Tab（我的語音/Clone/Design 都沒 API）
+ *    • 改成 2 個 Tab：[⭐ 我的收藏]  [🌏 HeyGen 語音庫 2305]
+ *    • 新增「手動新增 voice_id」功能
+ *      → 可以把 HeyGen 網頁上的 ElevenLabs 匯入語音（如 Morioki）
+ *        手動輸入 voice_id 加進收藏
+ *    • 修 bug：連選兩個語音會卡住（先 pause 再換 src）
+ *    • 修 bug：進度條頓頓的（改用 requestAnimationFrame）
+ *
  *  使用方式：
  *    VoiceModal.init({ workerUrl, password, onSelect: v => {...} });
- *    VoiceModal.open();                 // 打開 modal
- *    VoiceModal.getSelected();          // 取得當前選中的 voice
+ *    VoiceModal.open();
+ *    VoiceModal.getSelected();
  *  依賴：voice-modal.css
  * ═══════════════════════════════════════════════════════════════ */
 (function (global) {
@@ -16,29 +26,30 @@ const State = {
   onSelect: null,
 
   rootEl: null,
-  currentTab: 'library',    // 'library' | 'mine' | 'design' | 'clone'
-  voices: { library: [], mine: [] },
-  loading: { library: false, mine: false },
-  loaded:  { library: false, mine: false },
+  currentTab: 'favorites',   // 'favorites' | 'library'
+  voices: { library: [] },
+  loading: { library: false },
+  loaded:  { library: false },
 
   search: '',
   filterLang: 'all',
   filterGender: 'all',
   filterEngine: 'all',
+  filterFav: false,
 
-  playing: null,             // 當前播放中的 voice
-  tentative: null,           // 暫時選中（還沒按「選用此語音」）
-  confirmed: null,           // 已確認選中（最終回傳給主頁）
-  favorites: new Set(),      // 收藏的 voice_id
+  playing: null,
+  tentative: null,
+  confirmed: null,
+  favorites: new Set(),          // 收藏的 voice_id
+  customVoices: [],              // 🆕 使用者手動輸入的語音（附完整資訊）
 
   audio: new Audio(),
-  audioRAF: null,
-
-  designCandidates: [],      // voice design 結果暫存
+  audioRAF: null,                // 🆕 requestAnimationFrame id
 };
 
 const LS_FAV = 'bos_voice_favorites_v1';
 const LS_CONFIRMED = 'bos_voice_confirmed_v1';
+const LS_CUSTOM = 'bos_voice_custom_v1';    // 🆕
 
 // ─── Public API ───────────────────────────────────────────────
 const VoiceModal = {
@@ -59,6 +70,12 @@ const VoiceModal = {
       if (saved && saved.id) State.confirmed = saved;
     } catch {}
 
+    // 🆕 載入手動新增的自訂語音
+    try {
+      const saved = JSON.parse(localStorage.getItem(LS_CUSTOM) || '[]');
+      if (Array.isArray(saved)) State.customVoices = saved;
+    } catch {}
+
     // 建立 modal DOM（只建一次）
     if (!document.getElementById('vm-root')) {
       const root = document.createElement('div');
@@ -70,9 +87,14 @@ const VoiceModal = {
       bindEvents();
     }
 
-    // audio 事件
-    State.audio.addEventListener('ended', () => stopPlayback());
-    State.audio.addEventListener('timeupdate', updateProgress);
+    // audio 事件（🔧 v2: 改用 RAF 跑進度，不綁 timeupdate）
+    State.audio.addEventListener('ended', () => {
+      stopProgressLoop();
+      State.playing = null;
+      updatePlayingUI();
+    });
+    State.audio.addEventListener('play', startProgressLoop);
+    State.audio.addEventListener('pause', stopProgressLoop);
 
     // 鍵盤快捷鍵
     document.addEventListener('keydown', handleKey);
@@ -80,7 +102,7 @@ const VoiceModal = {
 
   open() {
     if (!State.rootEl) return;
-    State.tentative = State.confirmed;  // 開啟時以已確認的為預選
+    State.tentative = State.confirmed;
     State.rootEl.classList.add('open');
     switchTab(State.currentTab);
   },
@@ -110,23 +132,17 @@ function buildModalHTML() {
     <div class="vm-header">
       <div>
         <h2>選擇口播語音</h2>
-        <div class="vm-subtitle">全球數百款 AI 語音，客製你的 KOL 聲音</div>
+        <div class="vm-subtitle">收藏常用語音 · 手動輸入 HeyGen 網頁的自訂 voice_id</div>
       </div>
       <button class="vm-close" id="vm-close" aria-label="關閉">✕</button>
     </div>
 
     <div class="vm-tabs">
-      <button class="vm-tab active" data-tab="library">
+      <button class="vm-tab active" data-tab="favorites">
+        ⭐ 我的收藏 <span class="vm-tab-count" id="vm-count-favorites">—</span>
+      </button>
+      <button class="vm-tab" data-tab="library">
         🌏 HeyGen 語音庫 <span class="vm-tab-count" id="vm-count-library">—</span>
-      </button>
-      <button class="vm-tab" data-tab="mine">
-        🎤 我的語音 <span class="vm-tab-count" id="vm-count-mine">—</span>
-      </button>
-      <button class="vm-tab" data-tab="clone">
-        ➕ 建立語音複製
-      </button>
-      <button class="vm-tab" data-tab="design">
-        ✨ AI 設計語音
       </button>
     </div>
 
@@ -161,15 +177,72 @@ function buildModalHTML() {
           <option value="Fish">Fish</option>
         </select>
       </div>
-      <div class="vm-chip-select">
-        <select id="vm-favorite">
-          <option value="all">全部</option>
-          <option value="fav">⭐ 只看收藏</option>
-        </select>
-      </div>
+      <button class="vm-add-btn" id="vm-add-custom-btn" title="手動新增 voice_id">
+        ➕ 手動新增
+      </button>
     </div>
 
     <div class="vm-list-container" id="vm-list"></div>
+
+    <!-- 🆕 手動新增 voice_id Modal -->
+    <div class="vm-sub-modal" id="vm-custom-modal" style="display:none">
+      <div class="vm-sub-card">
+        <div class="vm-sub-header">
+          <h3>手動新增 voice_id</h3>
+          <button class="vm-sub-close" id="vm-custom-close">✕</button>
+        </div>
+        <div class="vm-sub-body">
+          <div class="vm-info-box">
+            💡 從 HeyGen 網頁複製你自己建立的 voice_id（例如 ElevenLabs 匯入的語音）。
+            <br>開啟網址：<code style="color:#b5abff">app.heygen.com/settings?nav=API</code> 或在語音編輯頁 URL 中取得。
+          </div>
+          <div class="vm-field">
+            <label>Voice ID（必填）</label>
+            <input type="text" id="vm-custom-id" placeholder="例：a1b2c3d4e5f6..." maxlength="64">
+          </div>
+          <div class="vm-field">
+            <label>顯示名稱（必填）</label>
+            <input type="text" id="vm-custom-name" placeholder="例：Morioki - 日混台甜美" maxlength="40">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="vm-field">
+              <label>語言</label>
+              <select id="vm-custom-lang">
+                <option value="Multilingual">多國語言</option>
+                <option value="Chinese">中文</option>
+                <option value="English">英文</option>
+                <option value="Japanese">日文</option>
+                <option value="Cantonese">粵語</option>
+              </select>
+            </div>
+            <div class="vm-field">
+              <label>性別</label>
+              <select id="vm-custom-gender">
+                <option value="female">女聲</option>
+                <option value="male">男聲</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="vm-field">
+              <label>引擎</label>
+              <select id="vm-custom-engine">
+                <option value="ElevenLabs">ElevenLabs</option>
+                <option value="HeyGen">HeyGen</option>
+                <option value="Azure">Azure</option>
+                <option value="Fish">Fish</option>
+              </select>
+            </div>
+            <div class="vm-field">
+              <label>試聽網址（選填）</label>
+              <input type="text" id="vm-custom-preview" placeholder="https://..." maxlength="500">
+            </div>
+          </div>
+          <button class="vm-btn-primary" id="vm-custom-submit">➕ 加入收藏</button>
+          <div id="vm-custom-status" style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:8px;text-align:center"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="vm-player" id="vm-player">
       <div class="vm-player-info">
@@ -218,9 +291,11 @@ function bindEvents() {
   root.querySelector('#vm-engine').addEventListener('change', e => {
     State.filterEngine = e.target.value; renderList();
   });
-  root.querySelector('#vm-favorite').addEventListener('change', e => {
-    State.filterFav = e.target.value === 'fav'; renderList();
-  });
+
+  // 🆕 手動新增
+  root.querySelector('#vm-add-custom-btn').addEventListener('click', openCustomModal);
+  root.querySelector('#vm-custom-close').addEventListener('click', closeCustomModal);
+  root.querySelector('#vm-custom-submit').addEventListener('click', submitCustomVoice);
 
   // 底部播放器
   root.querySelector('#vm-player-toggle').addEventListener('click', togglePlayback);
@@ -231,7 +306,6 @@ function bindEvents() {
 function handleKey(e) {
   if (!State.rootEl?.classList.contains('open')) return;
   if (e.key === 'Escape') { VoiceModal.close(); return; }
-  // 只有在非輸入框時響應空白鍵
   const tag = e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   if (e.key === ' ') { e.preventDefault(); togglePlayback(); }
@@ -247,26 +321,35 @@ function switchTab(tab) {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
 
-  // 篩選器僅對 library / mine 顯示
-  root.querySelector('#vm-filterbar').style.display =
-    (tab === 'library' || tab === 'mine') ? 'flex' : 'none';
+  // 兩個 Tab 都有篩選器
+  root.querySelector('#vm-filterbar').style.display = 'flex';
 
-  // 底部播放器僅對列表頁顯示
+  // 底部播放器：有暫選才顯示
   root.querySelector('#vm-player').classList.toggle(
-    'show', (tab === 'library' || tab === 'mine') && !!State.tentative
+    'show', !!State.tentative
   );
 
   if (tab === 'library') {
     if (!State.loaded.library) loadLibraryVoices();
     else renderList();
-  } else if (tab === 'mine') {
-    if (!State.loaded.mine) loadMyVoices();
-    else renderList();
-  } else if (tab === 'clone') {
-    renderCloneUI();
-  } else if (tab === 'design') {
-    renderDesignUI();
+  } else {
+    // favorites Tab
+    renderList();
+    // 如果收藏要顯示語音，library 必須先載入（才能拿到 name/preview 等）
+    if (!State.loaded.library && State.favorites.size > 0) {
+      loadLibraryVoices();
+    }
   }
+  updateCountChips();
+}
+
+function updateCountChips() {
+  // 收藏數：favorites set 的大小 + customVoices（已自動加入收藏）
+  const favCount = getFavoriteVoices().length;
+  const favEl = document.getElementById('vm-count-favorites');
+  if (favEl) favEl.textContent = favCount;
+  const libEl = document.getElementById('vm-count-library');
+  if (libEl) libEl.textContent = State.voices.library.length || '—';
 }
 
 // ─── Worker 呼叫 ──────────────────────────────────────────────
@@ -281,32 +364,36 @@ async function api(action, extra = {}) {
 
 async function loadLibraryVoices() {
   State.loading.library = true;
-  renderList();
+  if (State.currentTab === 'library') renderList();
   try {
     const res = await api('heygen_list_voices');
     if (res.ok) {
       State.voices.library = res.voices || [];
       State.loaded.library = true;
-      document.getElementById('vm-count-library').textContent = State.voices.library.length;
+      updateCountChips();
     }
   } catch (e) {}
   State.loading.library = false;
   renderList();
 }
 
-async function loadMyVoices() {
-  State.loading.mine = true;
-  renderList();
-  try {
-    const res = await api('heygen_list_my_voices');
-    if (res.ok) {
-      State.voices.mine = res.voices || [];
-      State.loaded.mine = true;
-      document.getElementById('vm-count-mine').textContent = State.voices.mine.length;
+// 🆕 拿到所有「我的收藏」完整資訊（library + custom 都查）
+function getFavoriteVoices() {
+  const libMap = {};
+  State.voices.library.forEach(v => { libMap[v.id] = v; });
+
+  const favList = [];
+  State.favorites.forEach(id => {
+    // 先從 library 找
+    if (libMap[id]) {
+      favList.push(libMap[id]);
+      return;
     }
-  } catch (e) {}
-  State.loading.mine = false;
-  renderList();
+    // 再從 customVoices 找
+    const custom = State.customVoices.find(v => v.id === id);
+    if (custom) favList.push(custom);
+  });
+  return favList;
 }
 
 // ─── 渲染列表 ────────────────────────────────────────────────
@@ -315,18 +402,33 @@ function renderList() {
   const container = document.getElementById('vm-list');
   if (!container) return;
 
-  if (tab !== 'library' && tab !== 'mine') return;
-
-  if (State.loading[tab]) {
-    container.innerHTML = '<div class="vm-loading">載入語音中…</div>';
-    return;
+  let rawList;
+  if (tab === 'library') {
+    if (State.loading.library) {
+      container.innerHTML = '<div class="vm-loading">載入語音中…</div>';
+      return;
+    }
+    rawList = State.voices.library || [];
+  } else {
+    // favorites
+    rawList = getFavoriteVoices();
   }
 
-  const rawList = State.voices[tab] || [];
   if (rawList.length === 0) {
-    container.innerHTML = tab === 'library'
-      ? '<div class="vm-empty"><div class="vm-empty-icon">🎤</div><div class="vm-empty-title">找不到語音</div><div class="vm-empty-desc">請檢查 Worker 設定或 HeyGen API 狀態</div></div>'
-      : '<div class="vm-empty"><div class="vm-empty-icon">🎤</div><div class="vm-empty-title">你還沒有自己的語音</div><div class="vm-empty-desc">切換到「建立語音複製」或「AI 設計語音」開始建立</div></div>';
+    if (tab === 'favorites') {
+      container.innerHTML = `
+        <div class="vm-empty">
+          <div class="vm-empty-icon">⭐</div>
+          <div class="vm-empty-title">還沒有收藏的語音</div>
+          <div class="vm-empty-desc">
+            切換到「HeyGen 語音庫」按 ☆ 收藏喜歡的<br>
+            或點上方「➕ 手動新增」把自己建立的 voice_id 加進來
+          </div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = '<div class="vm-empty"><div class="vm-empty-icon">🎤</div><div class="vm-empty-title">找不到語音</div><div class="vm-empty-desc">請檢查 Worker 設定或 HeyGen API 狀態</div></div>';
+    }
     return;
   }
 
@@ -346,17 +448,21 @@ function renderList() {
     if (!v) return;
     row.addEventListener('click', (e) => {
       if (e.target.closest('.vm-star')) return;
+      if (e.target.closest('.vm-delete-custom')) return;
       if (e.target.closest('.vm-play-btn')) {
         playVoice(v);
         return;
       }
-      // 點整列：暫選 + 播放
       State.tentative = v;
       playVoice(v);
     });
     row.querySelector('.vm-star')?.addEventListener('click', e => {
       e.stopPropagation();
       toggleFavorite(v.id);
+    });
+    row.querySelector('.vm-delete-custom')?.addEventListener('click', e => {
+      e.stopPropagation();
+      deleteCustomVoice(v.id);
     });
   });
 }
@@ -367,10 +473,9 @@ function filterVoices(list) {
     if (State.filterLang !== 'all' && !langMatch(v.language, State.filterLang)) return false;
     if (State.filterGender !== 'all' && v.gender?.toLowerCase() !== State.filterGender) return false;
     if (State.filterEngine !== 'all' && v.engine !== State.filterEngine) return false;
-    if (State.filterFav && !State.favorites.has(v.id)) return false;
     return true;
   });
-  // 排序：收藏優先 → 繁中優先 → 有 preview_url 優先
+  // 排序：收藏優先 → 繁中優先
   out.sort((a, b) => {
     const favA = State.favorites.has(a.id) ? 0 : 1;
     const favB = State.favorites.has(b.id) ? 0 : 1;
@@ -403,6 +508,7 @@ function rowHTML(v, idx) {
   const flag = flagForLang(v.language);
   const engine = (v.engine || 'HeyGen').toLowerCase();
   const tagText = [v.tags?.slice(0, 3).join(' · ')].filter(Boolean).join(' · ') || v.language || '';
+  const isCustom = !!v._custom;
 
   return `
     <div class="vm-row ${playing ? 'playing' : ''} ${selected ? 'selected' : ''}"
@@ -413,6 +519,7 @@ function rowHTML(v, idx) {
         <div class="vm-name">
           ${esc(v.name || '未命名')}
           <span class="vm-engine-badge ${engine}">${esc(v.engine || 'HeyGen')}</span>
+          ${isCustom ? '<span class="vm-custom-badge">自訂</span>' : ''}
         </div>
         <div class="vm-tags">${esc(tagText)}</div>
       </div>
@@ -420,11 +527,11 @@ function rowHTML(v, idx) {
       <span class="vm-flag" title="${esc(v.language || '')}">${flag}</span>
       ${v.gender ? `<span class="vm-gender-badge ${v.gender.toLowerCase()}">${v.gender.toUpperCase()}</span>` : '<span></span>'}
       <button class="vm-star ${fav ? 'starred' : ''}" aria-label="收藏">${fav ? '★' : '☆'}</button>
+      ${isCustom ? '<button class="vm-delete-custom" title="刪除自訂語音" aria-label="刪除">🗑</button>' : ''}
     </div>
   `;
 }
 
-// 生成偽隨機但穩定的波形（用 id hash 當 seed）
 function waveformHTML(id) {
   const bars = 24;
   let seed = 0;
@@ -432,7 +539,7 @@ function waveformHTML(id) {
   let html = '';
   for (let i = 0; i < bars; i++) {
     seed = (seed * 1103515245 + 12345) >>> 0;
-    const h = 20 + (seed % 70);  // 20-90% 高度
+    const h = 20 + (seed % 70);
     html += `<div class="vm-waveform-bar" style="height:${h}%"></div>`;
   }
   return html;
@@ -450,26 +557,38 @@ function flagForLang(lang = '') {
   return '🌐';
 }
 
-// ─── 播放控制 ────────────────────────────────────────────────
+// ─── 播放控制（v2: 修 bug）──────────────────────────────────
 function playVoice(v) {
   if (!v.preview_url) {
     toast('這個語音沒有試聽檔', 'warn');
     return;
   }
+
+  // 如果點的是正在播放的同一個，切換暫停/播放
   if (State.playing?.id === v.id && !State.audio.paused) {
     State.audio.pause();
-    State.playing = null;
+    // 保留 State.playing 讓 UI 顯示暫停狀態
     updatePlayingUI();
     return;
   }
 
+  // 🔧 v2 修 bug：換語音前先完全停掉舊的，避免卡住
+  try {
+    State.audio.pause();
+    State.audio.currentTime = 0;
+    // 不清 src，直接覆蓋（清了某些瀏覽器會多一次 load 延遲）
+  } catch {}
+
   State.audio.src = v.preview_url;
+  State.audio.load();  // 🔧 v2: 明確要求重新載入
+
   State.audio.play().then(() => {
     State.playing = v;
     State.tentative = v;
     updatePlayingUI();
     updateConfirmButton();
   }).catch(err => {
+    if (err.name === 'AbortError') return;  // 用戶快速連點造成的取消，忽略
     toast('試聽失敗：' + err.message, 'error');
   });
 }
@@ -477,7 +596,7 @@ function playVoice(v) {
 function togglePlayback() {
   if (!State.audio.src) return;
   if (State.audio.paused) {
-    State.audio.play();
+    State.audio.play().catch(() => {});
     document.getElementById('vm-player-toggle').textContent = '❚❚';
   } else {
     State.audio.pause();
@@ -486,22 +605,21 @@ function togglePlayback() {
 }
 
 function stopPlayback() {
-  State.audio.pause();
+  try { State.audio.pause(); } catch {}
+  stopProgressLoop();
   State.playing = null;
   updatePlayingUI();
 }
 
 function updatePlayingUI() {
-  // 更新列表高亮
   document.querySelectorAll('.vm-row').forEach(row => {
-    const isPlaying = row.dataset.id === State.playing?.id;
+    const isPlaying = row.dataset.id === State.playing?.id && !State.audio.paused;
     const isSelected = row.dataset.id === State.tentative?.id;
     row.classList.toggle('playing', isPlaying);
     row.classList.toggle('selected', isSelected);
     const btn = row.querySelector('.vm-play-btn');
     if (btn) btn.textContent = isPlaying ? '❚❚' : '▶';
   });
-  // 底部播放器
   const player = document.getElementById('vm-player');
   if (!player) return;
   if (State.tentative) {
@@ -516,16 +634,34 @@ function updatePlayingUI() {
   updateConfirmButton();
 }
 
+// 🔧 v2 修 bug：進度條改用 requestAnimationFrame 流暢更新
+function startProgressLoop() {
+  stopProgressLoop();
+  function loop() {
+    updateProgress();
+    State.audioRAF = requestAnimationFrame(loop);
+  }
+  State.audioRAF = requestAnimationFrame(loop);
+}
+
+function stopProgressLoop() {
+  if (State.audioRAF) {
+    cancelAnimationFrame(State.audioRAF);
+    State.audioRAF = null;
+  }
+}
+
 function updateProgress() {
   const cur = State.audio.currentTime;
   const dur = State.audio.duration || 0;
   if (!dur) return;
   const pct = (cur / dur) * 100;
-  document.getElementById('vm-progress-fill').style.width = pct + '%';
-  document.getElementById('vm-time').textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
+  const fillEl = document.getElementById('vm-progress-fill');
+  const timeEl = document.getElementById('vm-time');
+  if (fillEl) fillEl.style.width = pct + '%';
+  if (timeEl) timeEl.textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
 
-  // 波形進度（只改播放中那列）
-  const row = document.querySelector(`.vm-row[data-id="${State.playing?.id}"]`);
+  const row = document.querySelector(`.vm-row[data-id="${CSS.escape(State.playing?.id || '')}"]`);
   if (row) {
     const bars = row.querySelectorAll('.vm-waveform-bar');
     const activeCount = Math.floor((cur / dur) * bars.length);
@@ -547,7 +683,9 @@ function playNextInList(delta) {
   let idx = rows.findIndex(r => r.dataset.id === State.playing?.id);
   idx = (idx + delta + rows.length) % rows.length;
   const nextId = rows[idx].dataset.id;
-  const v = (State.voices[State.currentTab] || []).find(x => x.id === nextId);
+  // 從當前 tab 的資料源找
+  const source = State.currentTab === 'library' ? State.voices.library : getFavoriteVoices();
+  const v = source.find(x => x.id === nextId);
   if (v) { playVoice(v); rows[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
 }
 
@@ -557,6 +695,85 @@ function toggleFavorite(id) {
   else State.favorites.add(id);
   localStorage.setItem(LS_FAV, JSON.stringify([...State.favorites]));
   renderList();
+  updateCountChips();
+}
+
+// ─── 🆕 手動新增 voice_id ──────────────────────────────────
+function openCustomModal() {
+  const m = document.getElementById('vm-custom-modal');
+  m.style.display = 'flex';
+  // 清空表單
+  ['vm-custom-id', 'vm-custom-name', 'vm-custom-preview'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('vm-custom-status').textContent = '';
+  setTimeout(() => document.getElementById('vm-custom-id')?.focus(), 100);
+}
+
+function closeCustomModal() {
+  document.getElementById('vm-custom-modal').style.display = 'none';
+}
+
+function submitCustomVoice() {
+  const id = document.getElementById('vm-custom-id').value.trim();
+  const name = document.getElementById('vm-custom-name').value.trim();
+  const language = document.getElementById('vm-custom-lang').value;
+  const gender = document.getElementById('vm-custom-gender').value;
+  const engine = document.getElementById('vm-custom-engine').value;
+  const preview_url = document.getElementById('vm-custom-preview').value.trim();
+  const status = document.getElementById('vm-custom-status');
+
+  if (!id || id.length < 8) {
+    status.innerHTML = '<span style="color:#fa6d9b">❌ voice_id 必填，且至少 8 個字</span>';
+    return;
+  }
+  if (!name) {
+    status.innerHTML = '<span style="color:#fa6d9b">❌ 顯示名稱必填</span>';
+    return;
+  }
+
+  // 檢查重複
+  if (State.customVoices.some(v => v.id === id)) {
+    status.innerHTML = '<span style="color:#ffa94d">⚠️ 這個 voice_id 已經新增過了</span>';
+    return;
+  }
+
+  const newVoice = {
+    id,
+    name,
+    language,
+    gender,
+    engine,
+    preview_url,
+    tags: [],
+    _custom: true,  // 標記是自訂的
+  };
+
+  State.customVoices.push(newVoice);
+  localStorage.setItem(LS_CUSTOM, JSON.stringify(State.customVoices));
+
+  // 自動加入收藏
+  State.favorites.add(id);
+  localStorage.setItem(LS_FAV, JSON.stringify([...State.favorites]));
+
+  status.innerHTML = '<span style="color:#6dfac2">✅ 已新增並加入收藏</span>';
+  setTimeout(() => {
+    closeCustomModal();
+    // 切到收藏 Tab 給用戶看結果
+    switchTab('favorites');
+  }, 800);
+}
+
+function deleteCustomVoice(id) {
+  if (!confirm('刪除這個自訂語音？')) return;
+  State.customVoices = State.customVoices.filter(v => v.id !== id);
+  localStorage.setItem(LS_CUSTOM, JSON.stringify(State.customVoices));
+  // 同時從收藏移除
+  State.favorites.delete(id);
+  localStorage.setItem(LS_FAV, JSON.stringify([...State.favorites]));
+  renderList();
+  updateCountChips();
 }
 
 // ─── 確認選用 ────────────────────────────────────────────────
@@ -572,259 +789,6 @@ function confirmSelection() {
   localStorage.setItem(LS_CONFIRMED, JSON.stringify(State.confirmed));
   State.onSelect(State.confirmed);
   VoiceModal.close();
-}
-
-// ─── Voice Clone UI ─────────────────────────────────────────
-function renderCloneUI() {
-  const container = document.getElementById('vm-list');
-  container.innerHTML = `
-    <div class="vm-action-panel">
-      <div class="vm-action-card">
-        <div class="vm-action-title">🎤 建立語音複製</div>
-        <div class="vm-action-desc">
-          上傳 30 秒～5 分鐘的清晰人聲錄音，AI 會 60 秒內複製這個聲音。<br>
-          建議：安靜環境、近距離錄、有抑揚頓挫、包含你常用的語尾助詞（例如「對啊」「欸～」）。
-        </div>
-
-        <div class="vm-field">
-          <label>語音名稱 *</label>
-          <input type="text" id="vm-clone-name" placeholder="例：樂樂（日混台甜美）" maxlength="40">
-        </div>
-
-        <div class="vm-field">
-          <label>音檔（mp3 / wav / m4a，≤ 25MB）*</label>
-          <div class="vm-upload-drop" id="vm-clone-drop">
-            <div class="vm-upload-icon">📁</div>
-            <p><strong style="color:#b5abff">點擊上傳</strong> 或拖曳音檔進來</p>
-            <small>建議至少 30 秒清晰錄音</small>
-          </div>
-          <input type="file" id="vm-clone-file" accept="audio/*" style="display:none">
-          <div id="vm-clone-file-info" style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:6px"></div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="vm-field">
-            <label>性別</label>
-            <select id="vm-clone-gender">
-              <option value="Female">女性</option>
-              <option value="Male">男性</option>
-            </select>
-          </div>
-          <div class="vm-field">
-            <label>年齡段</label>
-            <select id="vm-clone-age">
-              <option value="Young Adult">年輕（20-30）</option>
-              <option value="Adult">成熟（30-50）</option>
-              <option value="Mature">中年（50+）</option>
-              <option value="Teenager">青少年</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="vm-field">
-          <label>口音描述（可選）</label>
-          <input type="text" id="vm-clone-accent" placeholder="例：台灣國語、日文口音、港式華語" maxlength="60">
-        </div>
-
-        <button class="vm-btn-primary" id="vm-clone-submit" disabled>
-          🪄 建立語音複製
-        </button>
-        <div id="vm-clone-status" style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:10px;text-align:center"></div>
-      </div>
-    </div>
-  `;
-  bindCloneUI();
-}
-
-function bindCloneUI() {
-  const drop = document.getElementById('vm-clone-drop');
-  const file = document.getElementById('vm-clone-file');
-  const info = document.getElementById('vm-clone-file-info');
-  const submit = document.getElementById('vm-clone-submit');
-  let chosenFile = null;
-
-  drop.addEventListener('click', () => file.click());
-  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
-  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
-  drop.addEventListener('drop', e => {
-    e.preventDefault(); drop.classList.remove('drag');
-    const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('audio/')) { chosenFile = f; showFile(f); }
-  });
-  file.addEventListener('change', e => {
-    const f = e.target.files[0]; if (f) { chosenFile = f; showFile(f); }
-  });
-
-  function showFile(f) {
-    info.innerHTML = `✓ 已選：<strong style="color:#6dfac2">${esc(f.name)}</strong> (${(f.size/1024/1024).toFixed(2)} MB)`;
-    updateSubmit();
-  }
-
-  document.getElementById('vm-clone-name').addEventListener('input', updateSubmit);
-  function updateSubmit() {
-    const hasName = document.getElementById('vm-clone-name').value.trim();
-    submit.disabled = !(hasName && chosenFile);
-  }
-
-  submit.addEventListener('click', async () => {
-    if (!chosenFile) return;
-    submit.disabled = true;
-    const status = document.getElementById('vm-clone-status');
-    status.textContent = '📤 上傳音檔中…';
-
-    try {
-      // Step 1: 上傳音檔到 Worker，取得 asset_url
-      const up = await fetch(State.workerUrl + '/voice_upload', {
-        method: 'POST',
-        headers: { 'Content-Type': chosenFile.type, 'X-Password': State.password },
-        body: chosenFile,
-      });
-      const upRes = await up.json();
-      if (!upRes.ok) throw new Error(upRes.error || '上傳失敗');
-
-      status.textContent = '🪄 建立語音複製中（約 30 秒）…';
-
-      // Step 2: 觸發 clone
-      const res = await api('heygen_clone_voice', {
-        name: document.getElementById('vm-clone-name').value.trim(),
-        asset_url: upRes.asset_url || upRes.asset_id,
-        gender: document.getElementById('vm-clone-gender').value,
-        age: document.getElementById('vm-clone-age').value,
-        accent: document.getElementById('vm-clone-accent').value.trim(),
-      });
-
-      if (!res.ok) throw new Error(res.error);
-
-      status.innerHTML = `✅ 建立成功！語音 ID: <code style="color:#b5abff">${res.voice_id.slice(0,12)}…</code><br>切回「我的語音」查看`;
-      State.loaded.mine = false;  // 強制下次 reload
-      setTimeout(() => switchTab('mine'), 1500);
-    } catch (e) {
-      status.innerHTML = `<span style="color:#fa6d9b">❌ ${e.message}</span>`;
-      submit.disabled = false;
-    }
-  });
-}
-
-// ─── Voice Design UI ────────────────────────────────────────
-function renderDesignUI() {
-  const container = document.getElementById('vm-list');
-  container.innerHTML = `
-    <div class="vm-action-panel">
-      <div class="vm-action-card">
-        <div class="vm-action-title">✨ AI 設計語音</div>
-        <div class="vm-action-desc">
-          用文字描述你想要的聲音，AI 會生成 3 款候選讓你試聽挑選。<br>
-          越具體效果越好：性別、年齡、情緒、口音、使用場景都可以寫進去。
-        </div>
-
-        <div class="vm-field">
-          <label>語音名稱</label>
-          <input type="text" id="vm-design-name" placeholder="例：日混台甜美女聲" maxlength="40">
-        </div>
-
-        <div class="vm-field">
-          <label>聲音描述 *（至少 20 字，建議 50-150 字）</label>
-          <textarea id="vm-design-prompt" placeholder="年輕女性，台灣國語帶一點日文口音，親切健談，像在日本長大的台灣女生。語氣有活力但不吵，說話節奏偏慢，尾音會微微上揚。適合講生活、美妝、旅遊類的內容。" maxlength="500"></textarea>
-          <div class="vm-template-chips">
-            <span class="vm-template-chip" data-tpl="tw-jp-sweet">日混台甜美</span>
-            <span class="vm-template-chip" data-tpl="tw-jp-smart">日混台知性</span>
-            <span class="vm-template-chip" data-tpl="hk-warm">香港溫柔</span>
-            <span class="vm-template-chip" data-tpl="tw-mom">台灣媽媽</span>
-            <span class="vm-template-chip" data-tpl="tw-gz">台灣女孩鄰家</span>
-            <span class="vm-template-chip" data-tpl="m-biz">商務男性沉穩</span>
-          </div>
-        </div>
-
-        <button class="vm-btn-primary" id="vm-design-submit">
-          ✨ 生成 3 款候選語音
-        </button>
-        <div id="vm-design-status" style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:10px;text-align:center"></div>
-        <div id="vm-design-result" style="margin-top:16px"></div>
-      </div>
-    </div>
-  `;
-  bindDesignUI();
-}
-
-const DESIGN_TEMPLATES = {
-  'tw-jp-sweet': '年輕女性，台灣國語帶一點日文口音，親切甜美，像在日本長大後回台灣的女生。聲音清亮有活力，說話時偶爾會有日文語助詞的輕微尾音（ね、よ）。適合講美妝保養、日系時尚、生活 Vlog。',
-  'tw-jp-smart': '30 歲女性，台灣國語但帶日文口音，聲音知性成熟，說話節奏沉穩清晰。像是日本長大的台灣留學生，說話時偶爾會不自覺地加入日文習慣的停頓。適合講品牌故事、產品開箱、職場分享。',
-  'hk-warm': '30 多歲香港女性，說話溫柔但有自信，國語帶粵語腔，尾音常上揚。像鄰家姊姊，說話時給人安心感。適合講育兒、家居生活、療癒系內容。',
-  'tw-mom': '35 歲台灣媽媽，說話親切自然，有點隨性，像在跟朋友分享家庭生活。聲音帶有溫暖的笑意，偶爾會因為興奮而語速加快。適合講親子育兒、家庭料理、生活雜物開箱。',
-  'tw-gz': '25 歲台灣女生，說話甜美自然，像大學同學，偶爾會用「欸欸」「真的假的」開場。聲音年輕有活力，尾音會微微拉長。適合講穿搭、聚餐、旅遊分享。',
-  'm-biz': '40 歲男性，低沉磁性的嗓音，說話穩重但不死板，吐字清晰。像是成功的商務人士，說話時有一種讓人信服的氣場。適合講品牌理念、產品專業解說、財經內容。',
-};
-
-function bindDesignUI() {
-  const promptEl = document.getElementById('vm-design-prompt');
-  document.querySelectorAll('.vm-template-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      promptEl.value = DESIGN_TEMPLATES[chip.dataset.tpl] || '';
-    });
-  });
-
-  document.getElementById('vm-design-submit').addEventListener('click', async () => {
-    const prompt = promptEl.value.trim();
-    const name = document.getElementById('vm-design-name').value.trim() || `Designed ${Date.now()}`;
-    if (prompt.length < 10) { toast('描述太短，至少 10 字', 'warn'); return; }
-
-    const btn = document.getElementById('vm-design-submit');
-    const status = document.getElementById('vm-design-status');
-    btn.disabled = true;
-    status.textContent = '✨ 生成中（約 30-60 秒）…';
-
-    try {
-      const res = await api('heygen_design_voice', { prompt, name, num_candidates: 3 });
-      if (!res.ok) throw new Error(res.error);
-
-      status.textContent = '✅ 生成完成！試聽 3 款候選：';
-      State.designCandidates = res.candidates || [];
-      renderDesignCandidates();
-    } catch (e) {
-      status.innerHTML = `<span style="color:#fa6d9b">❌ ${e.message}</span>`;
-    }
-    btn.disabled = false;
-  });
-}
-
-function renderDesignCandidates() {
-  const result = document.getElementById('vm-design-result');
-  if (!result) return;
-  result.innerHTML = State.designCandidates.map((c, i) => `
-    <div class="vm-row" data-id="${esc(c.id)}" style="margin-top:10px">
-      <button class="vm-play-btn" data-url="${esc(c.preview_url || '')}">▶</button>
-      <div class="vm-info">
-        <div class="vm-name">候選 ${i + 1}：${esc(c.name || '—')}</div>
-        <div class="vm-tags">Voice ID: ${esc(c.id?.slice(0, 16) || '—')}…</div>
-      </div>
-      <div></div><div></div><div></div>
-      <button class="vm-select-btn" data-select="${esc(c.id)}" style="padding:8px 14px;font-size:12px">使用此候選</button>
-    </div>
-  `).join('');
-
-  result.querySelectorAll('.vm-play-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const url = btn.dataset.url;
-      if (!url) { toast('沒有試聽檔', 'warn'); return; }
-      State.audio.src = url;
-      State.audio.play();
-    });
-  });
-  result.querySelectorAll('[data-select]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.select;
-      const c = State.designCandidates.find(x => x.id === id);
-      if (!c) return;
-      State.confirmed = {
-        id: c.id, name: c.name, preview_url: c.preview_url,
-        language: 'Designed', gender: '', engine: 'HeyGen',
-      };
-      localStorage.setItem(LS_CONFIRMED, JSON.stringify(State.confirmed));
-      State.onSelect(State.confirmed);
-      VoiceModal.close();
-    });
-  });
 }
 
 // ─── 工具 ────────────────────────────────────────────────────
@@ -851,9 +815,7 @@ function debounce(fn, wait) {
 }
 
 function toast(msg, type = '') {
-  // 延用主頁的 toast（如果有）
   if (typeof window.toast === 'function') return window.toast(msg, type);
-  // 否則用原生 alert fallback
   console.log('[Voice Modal]', type, msg);
 }
 
