@@ -129,6 +129,31 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .chip{font-size:10px;font-family:'Syne',sans-serif;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(124,109,250,.15);color:var(--accent);text-transform:uppercase;}
 .chip.green{background:rgba(109,250,194,.12);color:var(--accent3);}
 .chip.orange{background:rgba(255,169,77,.15);color:#ffa94d;}
+
+/* ══════════════════════════════════════════════════════════════ */
+/*  Step 1: KOL 卡片 v2 - 精緻化升級                                 */
+/*  - 橫向卡片保持（1 欄）                                            */
+/*  - 無圖時首字彩色圓圈                                              */
+/*  - hover 發光 + 選中彩條 + 頭像光暈                                */
+/* ══════════════════════════════════════════════════════════════ */
+.kol-card-v2{background:linear-gradient(135deg,var(--surface2) 0%,rgba(26,26,36,.6) 100%);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;animation:kolFadeIn .3s ease both;}
+.kol-card-v2::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,109,250,.1),transparent 60%);opacity:0;transition:opacity .25s;pointer-events:none;}
+.kol-card-v2:hover::before{opacity:1;}
+.kol-card-v2:hover{border-color:rgba(124,109,250,.35);transform:translateX(2px);}
+.kol-card-v2.selected{border-color:var(--accent);background:linear-gradient(135deg,rgba(124,109,250,.12) 0%,rgba(124,109,250,.03) 100%);}
+.kol-card-v2.selected::after{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:0 2px 2px 0;}
+.kol-avatar-v2{width:44px;height:44px;border-radius:10px;flex-shrink:0;position:relative;overflow:hidden;background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:white;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+.kol-avatar-v2 img{width:100%;height:100%;object-fit:cover;display:block;}
+.kol-card-v2.selected .kol-avatar-v2{box-shadow:0 0 0 2px var(--bg),0 0 0 4px rgba(124,109,250,.5);}
+.kol-info-v2{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.kol-name-v2{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
+.kol-meta-v2{font-size:10.5px;color:var(--text-dim);font-family:'Syne',sans-serif;letter-spacing:.02em;display:flex;align-items:center;gap:6px;}
+.kol-meta-v2 .status-dot{width:5px;height:5px;border-radius:50%;background:var(--accent3);box-shadow:0 0 6px rgba(109,250,194,.6);}
+.kol-del-v2{width:26px;height:26px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--text-dim);cursor:pointer;opacity:0;transition:all .2s;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.kol-card-v2:hover .kol-del-v2{opacity:1;}
+.kol-del-v2:hover{background:rgba(250,109,155,.12);border-color:rgba(250,109,155,.3);color:var(--accent2);}
+.kol-count-chip{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(124,109,250,.15);color:var(--accent);margin-left:auto;}
+@keyframes kolFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
 <body>
@@ -151,7 +176,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="layout">
     <!-- 左側：KOL 形象庫 -->
     <div class="panel">
-      <div class="panel-title"><div class="dot"></div>KOL 形象庫</div>
+      <div class="panel-title">
+        <div class="dot"></div>
+        KOL 形象庫
+        <span class="kol-count-chip" id="kol-count" style="display:none">0</span>
+      </div>
 
       <div class="kol-list" id="kol-list">
         <div class="kol-empty">載入中…</div>
@@ -304,12 +333,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <script>
 // ══════════════════════════════════════════════════════════════
-//  KOL 主頁邏輯  v3
+//  KOL 主頁邏輯  v3.1 (Step 1: 卡片精緻化)
 //  變更：
-//   • 語音改走 VoiceModal 模組
-//   • 新增 motion prompt 傳入 createVideo
-//   • AI 腳本生成改走 Worker proxy（修掉前端直 call Anthropic）
-//   • Credit 預估即時顯示
+//   • KOL 形象庫卡片升級為 v2 視覺（彩色首字頭像、發光、選中彩條）
+//   • 修掉 selectKol 的 onclick JSON 注入問題（改 event delegation）
+//   • 新增 KOL 計數 chip
+//   • 其他所有功能完全不變
 // ══════════════════════════════════════════════════════════════
 
 const WORKER   = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
@@ -319,9 +348,9 @@ const S = {
   photoFile: null,
   photoMime: null,
   selectedKol: null,
-  selectedVoice: null,        // 🆕 由 VoiceModal 回填
-  motionEnabled: false,       // 🆕 動作開關
-  motionPrompt: '',           // 🆕 動作描述（從 preset 或 custom 取）
+  selectedVoice: null,
+  motionEnabled: false,
+  motionPrompt: '',
   videoTasks: [],
 };
 
@@ -337,7 +366,6 @@ async function api(action, extra = {}) {
 
 // ─── 初始化 ──────────────────────────────────────────────────
 (async function init() {
-  // 先初始化語音 modal
   VoiceModal.init({
     workerUrl: WORKER,
     password: PASSWORD,
@@ -349,7 +377,6 @@ async function api(action, extra = {}) {
     },
   });
 
-  // 如果上次有選過，恢復顯示
   const saved = VoiceModal.getSelected();
   if (saved) {
     S.selectedVoice = saved;
@@ -382,7 +409,6 @@ function toggleMotion() {
   const block = document.getElementById('motion-block');
   block.classList.toggle('on', S.motionEnabled);
   if (!S.motionEnabled) {
-    // 關掉時清除選中的 preset，但保留 custom 文字
     S.motionPrompt = '';
     document.querySelectorAll('.motion-preset').forEach(p => p.classList.remove('active'));
   } else {
@@ -395,7 +421,7 @@ document.querySelectorAll('.motion-preset').forEach(el => {
   el.addEventListener('click', () => {
     document.querySelectorAll('.motion-preset').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
-    document.getElementById('motion-custom').value = '';  // 清除 custom
+    document.getElementById('motion-custom').value = '';
     S.motionPrompt = el.dataset.prompt;
     updateCreditEstimate();
   });
@@ -404,7 +430,6 @@ document.querySelectorAll('.motion-preset').forEach(el => {
 document.getElementById('motion-custom').addEventListener('input', function () {
   const val = this.value.trim();
   if (val) {
-    // 有 custom 時，取消所有 preset 選中
     document.querySelectorAll('.motion-preset').forEach(p => p.classList.remove('active'));
     S.motionPrompt = val;
   } else {
@@ -420,8 +445,6 @@ function syncMotionPrompt() {
 }
 
 // ─── Credit 預估 ────────────────────────────────────────────
-// 規則：中文約每秒 3.5 字，3 秒 = 1 credit
-//       啟用動作 + 有 prompt → 2x credits
 function updateCreditEstimate() {
   const script = document.getElementById('script-output')?.value || '';
   const chars = script.trim().length;
@@ -437,9 +460,14 @@ function updateCreditEstimate() {
   el.classList.toggle('high', useMotion);
 }
 
-// ─── KOL 形象庫 ─────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  KOL 形象庫（Step 1: 卡片 v2）
+// ══════════════════════════════════════════════════════════════
+
 async function loadKolList() {
-  document.getElementById('kol-list').innerHTML = '<div class="kol-empty">載入中…</div>';
+  const listEl = document.getElementById('kol-list');
+  const countEl = document.getElementById('kol-count');
+  listEl.innerHTML = '<div class="kol-empty">載入中…</div>';
 
   const [apiRes] = await Promise.all([api('heygen_list_groups')]);
   const apiGroups = apiRes.ok ? (apiRes.groups || []) : [];
@@ -449,34 +477,156 @@ async function loadKolList() {
   const localOnly = localKols.filter(k => !apiIds.has(k.id));
   const allKols = [...localOnly, ...apiGroups];
 
+  // 更新計數 chip
+  if (countEl) {
+    if (allKols.length > 0) {
+      countEl.textContent = allKols.length;
+      countEl.style.display = '';
+    } else {
+      countEl.style.display = 'none';
+    }
+  }
+
   if (!allKols.length) {
-    document.getElementById('kol-list').innerHTML = '<div class="kol-empty">尚無 KOL 形象，從下方新增</div>';
+    listEl.innerHTML = '<div class="kol-empty">尚無 KOL 形象，從下方新增</div>';
     return;
   }
 
-  document.getElementById('kol-list').innerHTML = allKols.map(g => `
-    <div class="kol-card" id="kol-${g.id}" onclick='selectKol(${JSON.stringify(g).replace(/'/g,"\\'")})'>
-      <img class="kol-avatar" src="${g.image_url||''}" onerror="this.style.display='none'" alt="">
-      <div class="kol-info">
-        <div class="kol-name">${g.name}</div>
-        <div class="kol-meta">ID: ${g.id.slice(0,12)}…</div>
+  // 快取 KOL 清單到 window，讓 event handler 查得到完整物件
+  window._kolCache = {};
+  allKols.forEach(g => { window._kolCache[g.id] = g; });
+
+  // 渲染卡片
+  listEl.innerHTML = allKols.map(g => renderKolCardV2(g)).join('');
+
+  // Event delegation：點卡片選定、點 🗑 刪除
+  // 先移除舊 listener（避免重複綁定）
+  listEl.removeEventListener('click', handleKolListClick);
+  listEl.addEventListener('click', handleKolListClick);
+
+  // 如果已選定，還原 selected 狀態
+  if (S.selectedKol) {
+    const sel = listEl.querySelector(`[data-kol-id="${S.selectedKol.id}"]`);
+    if (sel) sel.classList.add('selected');
+  }
+}
+
+// 單張卡片 HTML（v2）
+function renderKolCardV2(g) {
+  const hasImage = g.image_url && String(g.image_url).trim();
+  const idShort = String(g.id).slice(0, 8);
+  const nameEsc = escapeHtml(g.name || '');
+  const initial = escapeHtml(getInitial(g.name));
+  const bgColor = getColorForName(g.name || '');
+
+  const avatarInner = hasImage
+    ? `<img src="${escapeHtml(g.image_url)}" alt="" onerror="this.outerHTML='<span>${initial}</span>';this.parentElement.style.background='${bgColor}';">`
+    : `<span>${initial}</span>`;
+
+  const avatarStyle = hasImage ? '' : `style="background:${bgColor}"`;
+
+  return `
+    <div class="kol-card-v2" data-kol-id="${escapeHtml(g.id)}">
+      <div class="kol-avatar-v2" ${avatarStyle}>
+        ${avatarInner}
       </div>
-      <button class="kol-del" onclick="event.stopPropagation();deleteKol('${g.id}','${g.name}')">🗑</button>
+      <div class="kol-info-v2">
+        <div class="kol-name-v2">${nameEsc}</div>
+        <div class="kol-meta-v2">
+          <span class="status-dot"></span>
+          <span>ID ${idShort}</span>
+        </div>
+      </div>
+      <button class="kol-del-v2" data-action="delete" title="刪除">🗑</button>
     </div>
-  `).join('');
+  `;
+}
+
+// 取名字首字（中文取第 1 字，英文取前 2 字母大寫）
+function getInitial(name) {
+  if (!name) return '?';
+  const trimmed = String(name).trim();
+  if (!trimmed) return '?';
+  const firstChar = trimmed.charAt(0);
+  // 中文 / 日韓文字 → 取第一個字
+  if (/[\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/.test(firstChar)) {
+    return firstChar;
+  }
+  // 英文/數字 → 取前 2 字母大寫
+  return trimmed.slice(0, 2).toUpperCase();
+}
+
+// 根據名字生成穩定的彩色背景（相同名字永遠同色）
+function getColorForName(name) {
+  const colors = [
+    'linear-gradient(135deg,#7c6dfa,#a78bfa)',  // 紫
+    'linear-gradient(135deg,#fa6d9b,#ff8fb3)',  // 粉
+    'linear-gradient(135deg,#6dfac2,#4ecdc4)',  // 青
+    'linear-gradient(135deg,#ffa94d,#ffc078)',  // 橘
+    'linear-gradient(135deg,#4dabf7,#74c0fc)',  // 藍
+    'linear-gradient(135deg,#f783ac,#faa2c1)',  // 玫
+    'linear-gradient(135deg,#63e6be,#8ce99a)',  // 綠
+    'linear-gradient(135deg,#ffd43b,#ffe066)',  // 黃
+  ];
+  const str = String(name || '');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
+// HTML 跳脫（修 onclick 注入問題）
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// 統一處理點擊（event delegation）
+function handleKolListClick(e) {
+  const card = e.target.closest('.kol-card-v2');
+  if (!card) return;
+  const kolId = card.dataset.kolId;
+  const kol = window._kolCache?.[kolId];
+  if (!kol) return;
+
+  // 點刪除按鈕
+  if (e.target.closest('[data-action="delete"]')) {
+    e.stopPropagation();
+    deleteKol(kol.id, kol.name);
+    return;
+  }
+
+  // 點卡片本身 → 選定 KOL
+  selectKol(kol);
 }
 
 function selectKol(g) {
   S.selectedKol = g;
-  document.querySelectorAll('.kol-card').forEach(c => c.classList.remove('selected'));
-  const card = document.getElementById('kol-' + g.id);
+  document.querySelectorAll('.kol-card-v2').forEach(c => c.classList.remove('selected'));
+  const card = document.querySelector(`[data-kol-id="${CSS.escape(g.id)}"]`);
   if (card) card.classList.add('selected');
+
+  // 右側 banner：圖片或首字頭像
+  const hasImage = g.image_url && String(g.image_url).trim();
+  const initial = escapeHtml(getInitial(g.name));
+  const bgColor = getColorForName(g.name || '');
+  const avatarHtml = hasImage
+    ? `<img src="${escapeHtml(g.image_url)}" onerror="this.outerHTML='<div style=\\'width:52px;height:52px;border-radius:8px;background:${bgColor};display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:18px;color:white;\\'>${initial}</div>'" alt="">`
+    : `<div style="width:52px;height:52px;border-radius:8px;background:${bgColor};display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:18px;color:white;">${initial}</div>`;
+
   document.getElementById('selected-kol-banner').innerHTML = `
     <div class="selected-kol-banner">
-      <img src="${g.image_url||''}" onerror="this.style.display='none'" alt="">
+      ${avatarHtml}
       <div class="info">
-        <strong>${g.name}</strong>
-        <small>talking_photo_id: ${g.id}</small>
+        <strong>${escapeHtml(g.name)}</strong>
+        <small>talking_photo_id: ${escapeHtml(g.id)}</small>
       </div>
       <span class="chip green">已選定</span>
     </div>
@@ -489,10 +639,15 @@ async function deleteKol(id, name) {
   if (!confirm(`確定刪除「${name}」？此操作無法復原。`)) return;
   const res = await api('heygen_delete_group', { group_id: id });
   if (res.ok) {
-    // 同時從 localStorage 移除
     const localKols = JSON.parse(localStorage.getItem('kol_library') || '[]');
     localStorage.setItem('kol_library', JSON.stringify(localKols.filter(k => k.id !== id)));
     toast(`已刪除 ${name}`, 'success');
+    // 如果刪的是當前選定的，清空選定狀態
+    if (S.selectedKol?.id === id) {
+      S.selectedKol = null;
+      document.getElementById('selected-kol-banner').innerHTML = '<div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>';
+      document.getElementById('create-video-btn').disabled = true;
+    }
     loadKolList();
   } else toast('刪除失敗：' + res.error, 'error');
 }
@@ -596,7 +751,7 @@ document.querySelectorAll('.scene-card').forEach(c => {
   });
 });
 
-// ─── AI 腳本生成（改走 Worker proxy）────────────────────────
+// ─── AI 腳本生成（走 Worker proxy）──────────────────────────
 async function generateScript() {
   const topic = document.getElementById('video-topic').value.trim();
   if (!topic) { toast('請輸入影片主題', 'error'); return; }
@@ -643,13 +798,12 @@ async function createVideo() {
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
   const script = document.getElementById('script-output').value.trim();
   if (!script) { toast('請先輸入腳本', 'error'); return; }
-  // 🛡️ 語音缺省時使用繁中女聲 fallback（Worker 也會再次兜底，雙重保險）
-  const FALLBACK_VOICE_ID = 'd7bbcdd6964c47bdaae26decade4a933';  // HsiaoChen - Friendly
+  const FALLBACK_VOICE_ID = 'd7bbcdd6964c47bdaae26decade4a933';
   if (!S.selectedVoice) {
     if (!confirm('你還沒選擇語音，將使用預設繁中女聲（HsiaoChen），要繼續嗎？')) return;
   }
 
-  syncMotionPrompt();  // 再次同步動作描述
+  syncMotionPrompt();
 
   const talking_photo_id = S.selectedKol.talking_photo_id || S.selectedKol.id;
   const payload = {
@@ -661,7 +815,7 @@ async function createVideo() {
 
   if (S.motionEnabled && S.motionPrompt) {
     payload.motion_prompt = S.motionPrompt;
-    payload.enhance_motion = true;  // 預設開啟 AI 潤飾
+    payload.enhance_motion = true;
   }
 
   const btn = document.getElementById('create-video-btn');
@@ -671,7 +825,6 @@ async function createVideo() {
     const res = await api('heygen_create_video', payload);
     if (!res.ok) throw new Error(res.error);
 
-    // 🛡️ 動作回退提示
     if (res.motion_fallback) {
       toast('⚠️ 動作控制暫不支援，影片會用預設動畫生成', 'warn');
     }
@@ -717,13 +870,13 @@ function showVideoPreview(url, label) {
   const preview = document.getElementById('video-preview-section');
   preview.innerHTML = `
     <div style="margin-top:16px">
-      <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent3)"></div>${label}</div>
-      <video src="${url}" controls autoplay playsinline
+      <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent3)"></div>${escapeHtml(label)}</div>
+      <video src="${escapeHtml(url)}" controls autoplay playsinline
         style="width:100%;border-radius:var(--radius-sm);background:#000;max-height:500px;display:block">
       </video>
       <div class="btn-row" style="margin-top:10px">
-        <a href="${url}" download class="btn btn-ghost btn-sm">⬇ 下載影片</a>
-        <a href="${url}" target="_blank" class="btn btn-ghost btn-sm">🔗 開新分頁</a>
+        <a href="${escapeHtml(url)}" download class="btn btn-ghost btn-sm">⬇ 下載影片</a>
+        <a href="${escapeHtml(url)}" target="_blank" class="btn btn-ghost btn-sm">🔗 開新分頁</a>
       </div>
     </div>
   `;
@@ -732,15 +885,24 @@ function showVideoPreview(url, label) {
 
 function renderTasks() {
   document.getElementById('video-tasks').innerHTML = S.videoTasks.map(t => `
-    <div class="video-task" style="cursor:${t.url?'pointer':'default'}" onclick="${t.url?`showVideoPreview('${t.url}','${t.label}');`:''}">
+    <div class="video-task" style="cursor:${t.url?'pointer':'default'}" data-url="${escapeHtml(t.url||'')}" data-label="${escapeHtml(t.label)}">
       <div class="video-task-info">
-        <strong>${t.label} ${t.hasMotion ? '<span class="chip orange" style="margin-left:6px">動作</span>' : ''}</strong>
-        <small>${t.created} · ${t.video_id.slice(0,16)}…</small>
+        <strong>${escapeHtml(t.label)} ${t.hasMotion ? '<span class="chip orange" style="margin-left:6px">動作</span>' : ''}</strong>
+        <small>${t.created} · ${escapeHtml(String(t.video_id).slice(0,16))}…</small>
       </div>
       <span class="task-badge ${t.status}">${t.status==='processing'?'渲染中…':t.status==='completed'?'完成 ✓':t.status==='failed'?'失敗':t.status}</span>
-      ${t.url ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showVideoPreview('${t.url}','${t.label}')">▶ 預覽</button>` : ''}
+      ${t.url ? `<button class="btn btn-ghost btn-sm task-preview-btn">▶ 預覽</button>` : ''}
     </div>
   `).join('');
+
+  // Event delegation for task preview
+  document.getElementById('video-tasks').querySelectorAll('.video-task').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const url = el.dataset.url;
+      const label = el.dataset.label;
+      if (url) showVideoPreview(url, label);
+    });
+  });
 }
 
 // ─── 工具 ────────────────────────────────────────────────────
@@ -749,7 +911,7 @@ function toast(msg, type = '') {
   document.getElementById('toast-wrap').appendChild(el);
   setTimeout(() => el.remove(), 3100);
 }
-window.toast = toast;  // 讓 voice-modal.js 能呼叫
+window.toast = toast;
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
