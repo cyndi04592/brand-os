@@ -1,7 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
- *  Voice Modal — Artlist 風語音選擇器
+ *  Voice Modal — Artlist 風語音選擇器  v3.1
  *  延續 Brand OS 色系（深黑 + 紫/粉漸層）
  *  獨立樣式，不影響 kol.html 本體
+ *
+ *  🆕 v3.1 (2026-04): 新增語言 chip bar
+ *    • .vm-langbar + .vm-lang-chip 在 library tab 顯示
+ *    • 🌏 全部 / 🌐 多國語言 / 🇹🇼 中文 / 🇯🇵 日文
  *
  *  🔧 v1.1 hotfix (2026-04):
  *    • 修掉播放時出現超大藍圈的 bug
@@ -116,6 +120,68 @@
 }
 .vm-tab.active .vm-tab-count {
   background: linear-gradient(135deg, #7c6dfa, #fa6d9b);
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+ *  🆕 v3.1 語言 chip bar（亞洲業務精選用）
+ *  放在 .vm-tabs 下方、.vm-filterbar 上方
+ *  只在 library tab 顯示（JS 控制 display）
+ * ═══════════════════════════════════════════════════════════════ */
+.vm-langbar {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding: 12px 28px 6px;
+  background: rgba(10, 10, 15, 0.25);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.vm-langbar::-webkit-scrollbar { display: none; }
+
+.vm-lang-chip {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.vm-lang-chip:hover {
+  background: rgba(124, 109, 250, 0.08);
+  border-color: rgba(124, 109, 250, 0.3);
+  color: #fff;
+}
+.vm-lang-chip.active {
+  background: linear-gradient(135deg, rgba(124, 109, 250, 0.25), rgba(250, 109, 155, 0.15));
+  border-color: #7c6dfa;
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(124, 109, 250, 0.25);
+}
+
+.vm-lang-count {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  min-width: 20px;
+  text-align: center;
+}
+.vm-lang-chip.active .vm-lang-count {
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
 
@@ -527,6 +593,8 @@
   .vm-header { padding: 14px 18px; }
   .vm-tabs { padding: 0 18px; overflow-x: auto; }
   .vm-tab { padding: 12px 14px; font-size: 12px; }
+  .vm-langbar { padding: 10px 18px 4px; gap: 6px; }
+  .vm-lang-chip { padding: 7px 13px; font-size: 11px; }
   .vm-filterbar { padding: 12px 18px; gap: 8px; }
   .vm-list-container { padding: 4px 12px 140px; }
   .vm-row { padding: 10px 10px; grid-template-columns: 40px 1fr auto auto; gap: 10px; }
@@ -827,12 +895,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
- *  v2 新元素（2026-04）
- *   • .vm-add-btn：手動新增按鈕（在篩選器列右側）
- *   • .vm-sub-modal：手動新增用的子 Modal
- *   • .vm-custom-badge：自訂語音標記
- *   • .vm-delete-custom：刪除自訂語音按鈕
- *   • .vm-info-box：提示說明框
+ *  v2 元素（2026-04）
  * ═══════════════════════════════════════════════════════════════ */
 
 /* 手動新增按鈕 */
