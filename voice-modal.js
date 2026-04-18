@@ -1,20 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════
- *  Voice Modal v2 — 收藏模式 + 手動新增 voice_id
+ *  Voice Modal v3.1 — 亞洲業務語系精選
  *
- *  v2 重大改動（2026-04）：
- *    • 移除不可用的 3 個 Tab（我的語音/Clone/Design 都沒 API）
- *    • 改成 2 個 Tab：[⭐ 我的收藏]  [🌏 HeyGen 語音庫 2305]
- *    • 新增「手動新增 voice_id」功能
- *      → 可以把 HeyGen 網頁上的 ElevenLabs 匯入語音（如 Morioki）
- *        手動輸入 voice_id 加進收藏
- *    • 修 bug：連選兩個語音會卡住（先 pause 再換 src）
- *    • 修 bug：進度條頓頓的（改用 requestAnimationFrame）
+ *  v3.1 重大改動（2026-04）：
+ *    • Worker v3.6 合作：一次載 116 個（Multilingual 70 + 中文 25 + 日文 21）
+ *    • 新增語言 chip 群組（🌏 全部 / 🌐 多國語言 / 🇹🇼 中文 / 🇯🇵 日文）
+ *      切換 chip 純前端過濾，不打 API（毫秒級切換，不 LAG）
+ *    • 保留「顯示全部 2305」逃生門
+ *    • animation-delay 收緊到 200ms 上限（v3 是 400ms，切換時會卡）
  *
- *  使用方式：
- *    VoiceModal.init({ workerUrl, password, onSelect: v => {...} });
- *    VoiceModal.open();
- *    VoiceModal.getSelected();
- *  依賴：voice-modal.css
+ *  v3 功能完整保留：
+ *    • 收藏模式 ⭐
+ *    • 手動新增 voice_id ➕
+ *    • 自訂語音 _custom 標記
+ *    • 音訊播放 / 波形同步 / 分頁渲染
+ *    • 鍵盤快捷鍵（Space/Esc/↑↓）
+ *
+ *  依賴：voice-modal.css v3.1
  * ═══════════════════════════════════════════════════════════════ */
 (function (global) {
 'use strict';
@@ -27,39 +28,36 @@ const State = {
 
   rootEl: null,
   currentTab: 'favorites',   // 'favorites' | 'library'
-  voices: { library: [] },
+  voices: { library: [], libraryRawTotal: 0 },
   loading: { library: false },
   loaded:  { library: false },
 
   search: '',
-  filterLang: 'all',
   filterGender: 'all',
-  filterEngine: 'all',
-  filterFav: false,
+  filterLang: 'all',        // 🆕 v3.1: 'all' | 'multilingual' | 'chinese' | 'japanese'
 
   playing: null,
   tentative: null,
   confirmed: null,
-  favorites: new Set(),          // 收藏的 voice_id
-  customVoices: [],              // 🆕 使用者手動輸入的語音（附完整資訊）
+  favorites: new Set(),
+  customVoices: [],
 
   audio: new Audio(),
-  audioRAF: null,                // 🆕 requestAnimationFrame id
+  audioRAF: null,
 
-  // 🚀 v2.1 效能優化
-  pageSize: 50,                  // 每頁顯示幾個
-  pageCount: 1,                  // 目前顯示到第幾頁
-  lastPlayingRowEl: null,        // 上一次播放的 row DOM 引用（精準更新用）
-  lastSelectedRowEl: null,       // 上一次選中的 row DOM 引用
-  lastProgressRowEl: null,       // 上一次進度條更新的 row
+  pageSize: 50,
+  pageCount: 1,
+  lastPlayingRowEl: null,
+  lastSelectedRowEl: null,
+  lastProgressRowEl: null,
 
-  // 🌏 v3 國際化精選模式
-  onlyMultilingual: true,        // 預設只顯示 Multilingual（~70 個）
+  // v3.1: 統一用 brandOSFilter 取代 onlyMultilingual
+  brandOSFilter: true,      // true = 精選 116 個  false = 全部 2305
 };
 
 const LS_FAV = 'bos_voice_favorites_v1';
 const LS_CONFIRMED = 'bos_voice_confirmed_v1';
-const LS_CUSTOM = 'bos_voice_custom_v1';    // 🆕
+const LS_CUSTOM = 'bos_voice_custom_v1';
 
 // ─── Public API ───────────────────────────────────────────────
 const VoiceModal = {
@@ -68,25 +66,21 @@ const VoiceModal = {
     State.password  = opts.password;
     State.onSelect  = opts.onSelect || function () {};
 
-    // 載入本地收藏
     try {
       const saved = JSON.parse(localStorage.getItem(LS_FAV) || '[]');
       State.favorites = new Set(saved);
     } catch {}
 
-    // 載入上次確認的語音
     try {
       const saved = JSON.parse(localStorage.getItem(LS_CONFIRMED) || 'null');
       if (saved && saved.id) State.confirmed = saved;
     } catch {}
 
-    // 🆕 載入手動新增的自訂語音
     try {
       const saved = JSON.parse(localStorage.getItem(LS_CUSTOM) || '[]');
       if (Array.isArray(saved)) State.customVoices = saved;
     } catch {}
 
-    // 建立 modal DOM（只建一次）
     if (!document.getElementById('vm-root')) {
       const root = document.createElement('div');
       root.id = 'vm-root';
@@ -97,7 +91,6 @@ const VoiceModal = {
       bindEvents();
     }
 
-    // audio 事件（🔧 v2: 改用 RAF 跑進度，不綁 timeupdate）
     State.audio.addEventListener('ended', () => {
       stopProgressLoop();
       State.playing = null;
@@ -106,7 +99,6 @@ const VoiceModal = {
     State.audio.addEventListener('play', startProgressLoop);
     State.audio.addEventListener('pause', stopProgressLoop);
 
-    // 鍵盤快捷鍵
     document.addEventListener('keydown', handleKey);
   },
 
@@ -142,7 +134,7 @@ function buildModalHTML() {
     <div class="vm-header">
       <div>
         <h2>選擇口播語音</h2>
-        <div class="vm-subtitle">收藏常用語音 · 手動輸入 HeyGen 網頁的自訂 voice_id</div>
+        <div class="vm-subtitle">亞洲市場精選・多國語言 + 原生中文 + 原生日文</div>
       </div>
       <button class="vm-close" id="vm-close" aria-label="關閉">✕</button>
     </div>
@@ -152,7 +144,23 @@ function buildModalHTML() {
         ⭐ 我的收藏 <span class="vm-tab-count" id="vm-count-favorites">—</span>
       </button>
       <button class="vm-tab" data-tab="library">
-        🌏 精選多國語言 <span class="vm-tab-count" id="vm-count-library">—</span>
+        🌏 亞洲業務精選 <span class="vm-tab-count" id="vm-count-library">—</span>
+      </button>
+    </div>
+
+    <!-- 🆕 v3.1 語言 chip 群組（library tab 才顯示） -->
+    <div class="vm-langbar" id="vm-langbar" style="display:none">
+      <button class="vm-lang-chip active" data-lang="all">
+        🌏 全部 <span class="vm-lang-count" data-count="all">—</span>
+      </button>
+      <button class="vm-lang-chip" data-lang="multilingual">
+        🌐 多國語言 <span class="vm-lang-count" data-count="multilingual">—</span>
+      </button>
+      <button class="vm-lang-chip" data-lang="chinese">
+        🇹🇼 中文 <span class="vm-lang-count" data-count="chinese">—</span>
+      </button>
+      <button class="vm-lang-chip" data-lang="japanese">
+        🇯🇵 日文 <span class="vm-lang-count" data-count="japanese">—</span>
       </button>
     </div>
 
@@ -168,7 +176,7 @@ function buildModalHTML() {
         </select>
       </div>
       <button class="vm-filter-toggle" id="vm-filter-toggle" title="切換精選 / 全部語音">
-        <span id="vm-filter-toggle-label">🌏 精選模式</span>
+        <span id="vm-filter-toggle-label">🔓 顯示全部 2305</span>
       </button>
       <button class="vm-add-btn" id="vm-add-custom-btn" title="手動新增 voice_id">
         ➕ 手動新增
@@ -177,7 +185,6 @@ function buildModalHTML() {
 
     <div class="vm-list-container" id="vm-list"></div>
 
-    <!-- 🆕 手動新增 voice_id Modal -->
     <div class="vm-sub-modal" id="vm-custom-modal" style="display:none">
       <div class="vm-sub-card">
         <div class="vm-sub-header">
@@ -204,8 +211,8 @@ function buildModalHTML() {
               <select id="vm-custom-lang">
                 <option value="Multilingual">多國語言</option>
                 <option value="Chinese">中文</option>
-                <option value="English">英文</option>
                 <option value="Japanese">日文</option>
+                <option value="English">英文</option>
                 <option value="Cantonese">粵語</option>
               </select>
             </div>
@@ -266,12 +273,15 @@ function bindEvents() {
     if (e.target === root) VoiceModal.close();
   });
 
-  // Tab 切換
   root.querySelectorAll('.vm-tab').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
-  // 篩選器
+  // 🆕 v3.1 語言 chip 切換（純前端，0ms）
+  root.querySelectorAll('.vm-lang-chip').forEach(chip => {
+    chip.addEventListener('click', () => switchLangFilter(chip.dataset.lang));
+  });
+
   root.querySelector('#vm-search').addEventListener('input', debounce(e => {
     State.search = e.target.value.trim().toLowerCase();
     State.pageCount = 1;
@@ -281,15 +291,12 @@ function bindEvents() {
     State.filterGender = e.target.value; State.pageCount = 1; renderList();
   });
 
-  // 🌏 v3 精選/全部切換
-  root.querySelector('#vm-filter-toggle').addEventListener('click', toggleMultilingualFilter);
+  root.querySelector('#vm-filter-toggle').addEventListener('click', toggleBrandOSFilter);
 
-  // 🆕 手動新增
   root.querySelector('#vm-add-custom-btn').addEventListener('click', openCustomModal);
   root.querySelector('#vm-custom-close').addEventListener('click', closeCustomModal);
   root.querySelector('#vm-custom-submit').addEventListener('click', submitCustomVoice);
 
-  // 底部播放器
   root.querySelector('#vm-player-toggle').addEventListener('click', togglePlayback);
   root.querySelector('#vm-progress').addEventListener('click', seekPlayback);
   root.querySelector('#vm-confirm-btn').addEventListener('click', confirmSelection);
@@ -308,16 +315,18 @@ function handleKey(e) {
 // ─── Tab 切換 ────────────────────────────────────────────────
 function switchTab(tab) {
   State.currentTab = tab;
-  State.pageCount = 1;   // 🚀 切換 tab 時重設分頁
+  State.pageCount = 1;
   const root = State.rootEl;
   root.querySelectorAll('.vm-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
 
-  // 兩個 Tab 都有篩選器
+  // 🆕 v3.1: 只有 library tab 顯示語言 chip bar
+  const langbar = root.querySelector('#vm-langbar');
+  if (langbar) langbar.style.display = tab === 'library' ? 'flex' : 'none';
+
   root.querySelector('#vm-filterbar').style.display = 'flex';
 
-  // 底部播放器：有暫選才顯示
   root.querySelector('#vm-player').classList.toggle(
     'show', !!State.tentative
   );
@@ -326,14 +335,22 @@ function switchTab(tab) {
     if (!State.loaded.library) loadLibraryVoices();
     else renderList();
   } else {
-    // favorites Tab
     renderList();
-    // 如果收藏要顯示語音，library 必須先載入（才能拿到 name/preview 等）
     if (!State.loaded.library && State.favorites.size > 0) {
       loadLibraryVoices();
     }
   }
   updateCountChips();
+}
+
+// 🆕 v3.1 語言 chip 切換（純前端過濾，不打 API）
+function switchLangFilter(lang) {
+  State.filterLang = lang;
+  State.pageCount = 1;
+  State.rootEl.querySelectorAll('.vm-lang-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.lang === lang);
+  });
+  renderList();
 }
 
 function updateCountChips() {
@@ -343,31 +360,54 @@ function updateCountChips() {
   const libEl = document.getElementById('vm-count-library');
   if (libEl) libEl.textContent = State.voices.library.length || '—';
 
-  // 🌏 v3: 切換按鈕的顯示（精選 N 個 ↔ 全部 2305）
-  const toggleBtn = document.getElementById('vm-filter-toggle');
+  // 精選/全部切換按鈕文字
   const toggleLabel = document.getElementById('vm-filter-toggle-label');
+  const toggleBtn = document.getElementById('vm-filter-toggle');
   if (toggleLabel) {
-    if (State.onlyMultilingual) {
+    if (State.brandOSFilter) {
       toggleLabel.innerHTML = '🔓 顯示全部 ' + (State.voices.libraryRawTotal || '2305');
-      if (toggleBtn) toggleBtn.title = '切換到完整模式（載入全部語音，包含單語言）';
+      if (toggleBtn) toggleBtn.title = '切換到完整模式（載入 HeyGen 全部 2305 個語音）';
     } else {
-      toggleLabel.innerHTML = '🌏 回精選模式';
-      if (toggleBtn) toggleBtn.title = '切回精選模式（只看能跨語言的 ~70 個）';
+      toggleLabel.innerHTML = '🌏 回亞洲精選';
+      if (toggleBtn) toggleBtn.title = '切回精選模式（只看多國語言 + 中文 + 日文 共 116 個）';
     }
   }
 
-  // Tab 也改叫法
-  const libTabLabel = document.querySelector('.vm-tab[data-tab="library"]');
-  if (libTabLabel) {
-    const countSpan = libTabLabel.querySelector('.vm-tab-count');
-    const firstNode = Array.from(libTabLabel.childNodes).find(n => n.nodeType === 3);
+  // Tab 標題
+  const libTab = document.querySelector('.vm-tab[data-tab="library"]');
+  if (libTab) {
+    const countSpan = libTab.querySelector('.vm-tab-count');
+    const firstNode = Array.from(libTab.childNodes).find(n => n.nodeType === 3);
     if (firstNode) {
-      firstNode.textContent = State.onlyMultilingual
-        ? '🌏 精選多國語言 '
+      firstNode.textContent = State.brandOSFilter
+        ? '🌏 亞洲業務精選 '
         : '🌏 HeyGen 全語音庫 ';
     }
     if (countSpan) countSpan.textContent = State.voices.library.length || '—';
   }
+
+  // 🆕 v3.1 更新每個語言 chip 的數字
+  updateLangChipCounts();
+}
+
+// 🆕 v3.1 計算每個語言 chip 的數量（考慮 search + gender 過濾後的）
+function updateLangChipCounts() {
+  const list = State.voices.library || [];
+  const base = list.filter(v => {
+    if (State.search && !v.name?.toLowerCase().includes(State.search)) return false;
+    if (State.filterGender !== 'all' && v.gender?.toLowerCase() !== State.filterGender) return false;
+    return true;
+  });
+  const counts = {
+    all: base.length,
+    multilingual: base.filter(v => v.category === 'multilingual').length,
+    chinese: base.filter(v => v.category === 'chinese').length,
+    japanese: base.filter(v => v.category === 'japanese').length,
+  };
+  document.querySelectorAll('.vm-lang-count').forEach(el => {
+    const key = el.dataset.count;
+    el.textContent = counts[key] != null ? counts[key] : '—';
+  });
 }
 
 // ─── Worker 呼叫 ──────────────────────────────────────────────
@@ -385,12 +425,12 @@ async function loadLibraryVoices() {
   if (State.currentTab === 'library') renderList();
   try {
     const res = await api('heygen_list_voices', {
-      only_multilingual: State.onlyMultilingual,
+      only_for_brandos: State.brandOSFilter,
     });
     if (res.ok) {
       State.voices.library = res.voices || [];
+      State.voices.libraryRawTotal = res._total_raw || 0;
       State.loaded.library = true;
-      State.voices.libraryRawTotal = res._total_raw || 0;  // 記住 2305 這個數字
       updateCountChips();
     }
   } catch (e) {}
@@ -398,27 +438,29 @@ async function loadLibraryVoices() {
   renderList();
 }
 
-// 🌏 v3: 切換「精選 / 全部」模式
-function toggleMultilingualFilter() {
-  State.onlyMultilingual = !State.onlyMultilingual;
-  State.loaded.library = false;      // 強制重新載入
+// 🌏 切換「亞洲精選 / 全部 2305」模式（會重打 API）
+function toggleBrandOSFilter() {
+  State.brandOSFilter = !State.brandOSFilter;
+  State.loaded.library = false;
   State.pageCount = 1;
+  // 切到「全部」時，語言 chip 自動切回「全部」避免篩選怪怪
+  State.filterLang = 'all';
+  State.rootEl.querySelectorAll('.vm-lang-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.lang === 'all');
+  });
   loadLibraryVoices();
 }
 
-// 🆕 拿到所有「我的收藏」完整資訊（library + custom 都查）
 function getFavoriteVoices() {
   const libMap = {};
   State.voices.library.forEach(v => { libMap[v.id] = v; });
 
   const favList = [];
   State.favorites.forEach(id => {
-    // 先從 library 找
     if (libMap[id]) {
       favList.push(libMap[id]);
       return;
     }
-    // 再從 customVoices 找
     const custom = State.customVoices.find(v => v.id === id);
     if (custom) favList.push(custom);
   });
@@ -439,7 +481,6 @@ function renderList() {
     }
     rawList = State.voices.library || [];
   } else {
-    // favorites
     rawList = getFavoriteVoices();
   }
 
@@ -450,7 +491,7 @@ function renderList() {
           <div class="vm-empty-icon">⭐</div>
           <div class="vm-empty-title">還沒有收藏的語音</div>
           <div class="vm-empty-desc">
-            切換到「HeyGen 語音庫」按 ☆ 收藏喜歡的<br>
+            切換到「亞洲業務精選」按 ☆ 收藏喜歡的<br>
             或點上方「➕ 手動新增」把自己建立的 voice_id 加進來
           </div>
         </div>
@@ -458,18 +499,18 @@ function renderList() {
     } else {
       container.innerHTML = '<div class="vm-empty"><div class="vm-empty-icon">🎤</div><div class="vm-empty-title">找不到語音</div><div class="vm-empty-desc">請檢查 Worker 設定或 HeyGen API 狀態</div></div>';
     }
+    updateLangChipCounts();
     return;
   }
 
   const filtered = filterVoices(rawList);
+  updateLangChipCounts();
 
   if (filtered.length === 0) {
     container.innerHTML = '<div class="vm-empty"><div class="vm-empty-icon">🔍</div><div class="vm-empty-title">沒有符合條件的語音</div><div class="vm-empty-desc">試試調整篩選條件或搜尋關鍵字</div></div>';
     return;
   }
 
-  // 🚀 v2.1 分頁優化：預設只渲染前 N 個，避免 2305 個 DOM 同時存在
-  // 收藏 tab 通常不會超過 50 個，不做分頁也沒關係
   const isLibrary = tab === 'library';
   const total = filtered.length;
   const shownCount = isLibrary ? Math.min(State.pageCount * State.pageSize, total) : total;
@@ -477,7 +518,6 @@ function renderList() {
 
   let html = shown.map((v, idx) => rowHTML(v, idx)).join('');
 
-  // 底部「載入更多」按鈕
   if (isLibrary && shownCount < total) {
     const remaining = total - shownCount;
     html += `
@@ -491,7 +531,6 @@ function renderList() {
 
   container.innerHTML = html;
 
-  // 「載入更多」點擊
   const loadMoreBtn = container.querySelector('#vm-load-more');
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener('click', () => {
@@ -500,12 +539,10 @@ function renderList() {
     });
   }
 
-  // 🚀 v2.1: 清掉舊的 DOM 引用（避免指向已不存在的節點）
   State.lastPlayingRowEl = null;
   State.lastSelectedRowEl = null;
   State.lastProgressRowEl = null;
 
-  // 綁定列事件（只綁 shown 那些，不是 filtered 全部）
   container.querySelectorAll('.vm-row').forEach(row => {
     const id = row.dataset.id;
     const v = shown.find(x => x.id === id);
@@ -530,16 +567,21 @@ function renderList() {
     });
   });
 
-  // 渲染完立即同步播放狀態（避免切 tab 或載入更多時 UI 不同步）
   syncRowPlayingState();
 }
 
+// 🔧 v3.1 過濾邏輯：search + gender + 語言 chip
 function filterVoices(list) {
   let out = list.filter(v => {
     if (State.search && !v.name?.toLowerCase().includes(State.search)) return false;
     if (State.filterGender !== 'all' && v.gender?.toLowerCase() !== State.filterGender) return false;
+    // 🆕 v3.1 語言 chip 過濾（只有 library tab 才套用）
+    if (State.currentTab === 'library' && State.filterLang !== 'all') {
+      if (v.category !== State.filterLang) return false;
+    }
     return true;
   });
+
   // 排序：收藏優先 → Multilingual 優先 → OpenAI 經典語音優先
   const openaiNames = new Set(['Coral', 'Nova', 'Onyx', 'Shimmer', 'Alloy', 'Echo', 'Fable']);
   out.sort((a, b) => {
@@ -551,7 +593,6 @@ function filterVoices(list) {
     const mlB = b.is_multilingual ? 0 : 1;
     if (mlA !== mlB) return mlA - mlB;
 
-    // OpenAI 招牌語音優先
     const oaA = openaiNames.has(a.name) ? 0 : 1;
     const oaB = openaiNames.has(b.name) ? 0 : 1;
     if (oaA !== oaB) return oaA - oaB;
@@ -561,34 +602,23 @@ function filterVoices(list) {
   return out;
 }
 
-function langMatch(voiceLang, filter) {
-  const L = (voiceLang || '').toLowerCase();
-  if (filter === 'all') return true;
-  if (filter === 'zh-tw') return L.includes('chinese') || L.includes('taiwan') || L.includes('mandarin');
-  if (filter === 'chinese') return L.includes('chinese') || L.includes('mandarin');
-  if (filter === 'cantonese') return L.includes('cantonese');
-  if (filter === 'japanese') return L.includes('japanese');
-  if (filter === 'english') return L.includes('english');
-  if (filter === 'multilingual') return L.includes('multilingual');
-  return true;
-}
-
 // ─── Row HTML ────────────────────────────────────────────────
 function rowHTML(v, idx) {
   const playing = State.playing?.id === v.id;
   const selected = State.tentative?.id === v.id;
   const fav = State.favorites.has(v.id);
-  const flag = flagForLang(v.language);
+  const flag = flagForLang(v.language, v.category);
   const engine = (v.engine || 'HeyGen').toLowerCase();
   const tagText = [v.tags?.slice(0, 3).join(' · ')].filter(Boolean).join(' · ') || v.language || '';
   const isCustom = !!v._custom;
   const isMulti = !!v.is_multilingual;
 
+  // v3.1 效能：animation-delay 上限從 400ms 收到 200ms
   return `
     <div class="vm-row ${playing ? 'playing' : ''} ${selected ? 'selected' : ''}"
          id="vm-row-${cssSafeId(v.id)}"
          data-id="${esc(v.id)}"
-         style="animation-delay:${Math.min(idx * 20, 400)}ms">
+         style="animation-delay:${Math.min(idx * 15, 200)}ms">
       <button class="vm-play-btn" aria-label="試聽">${playing ? '❚❚' : '▶'}</button>
       <div class="vm-info">
         <div class="vm-name">
@@ -621,7 +651,11 @@ function waveformHTML(id) {
   return html;
 }
 
-function flagForLang(lang = '') {
+// v3.1: 優先用 category 決定 flag（比 language 字串解析準）
+function flagForLang(lang = '', category = '') {
+  if (category === 'multilingual') return '🌏';
+  if (category === 'chinese') return '🇹🇼';
+  if (category === 'japanese') return '🇯🇵';
   const L = lang.toLowerCase();
   if (L.includes('cantonese')) return '🇭🇰';
   if (L.includes('japanese')) return '🇯🇵';
@@ -633,30 +667,26 @@ function flagForLang(lang = '') {
   return '🌐';
 }
 
-// ─── 播放控制（v2: 修 bug）──────────────────────────────────
+// ─── 播放控制 ────────────────────────────────────────────────
 function playVoice(v) {
   if (!v.preview_url) {
     toast('這個語音沒有試聽檔', 'warn');
     return;
   }
 
-  // 如果點的是正在播放的同一個，切換暫停/播放
   if (State.playing?.id === v.id && !State.audio.paused) {
     State.audio.pause();
-    // 保留 State.playing 讓 UI 顯示暫停狀態
     updatePlayingUI();
     return;
   }
 
-  // 🔧 v2 修 bug：換語音前先完全停掉舊的，避免卡住
   try {
     State.audio.pause();
     State.audio.currentTime = 0;
-    // 不清 src，直接覆蓋（清了某些瀏覽器會多一次 load 延遲）
   } catch {}
 
   State.audio.src = v.preview_url;
-  State.audio.load();  // 🔧 v2: 明確要求重新載入
+  State.audio.load();
 
   State.audio.play().then(() => {
     State.playing = v;
@@ -664,7 +694,7 @@ function playVoice(v) {
     updatePlayingUI();
     updateConfirmButton();
   }).catch(err => {
-    if (err.name === 'AbortError') return;  // 用戶快速連點造成的取消，忽略
+    if (err.name === 'AbortError') return;
     toast('試聽失敗：' + err.message, 'error');
   });
 }
@@ -688,8 +718,6 @@ function stopPlayback() {
 }
 
 function updatePlayingUI() {
-  // 🚀 v2.1 效能優化：不再 querySelectorAll 掃 2305 個 row
-  // 只動「上一次」和「這一次」相關的 2-3 個 row，從 O(N) 降到 O(1)
   syncRowPlayingState();
 
   const player = document.getElementById('vm-player');
@@ -706,13 +734,11 @@ function updatePlayingUI() {
   updateConfirmButton();
 }
 
-// 🚀 v2.1 新增：精準同步 row 狀態（只動 3 個以內的 DOM）
 function syncRowPlayingState() {
   const playingId = State.playing?.id;
   const selectedId = State.tentative?.id;
   const isAudioPlaying = playingId && !State.audio.paused;
 
-  // 清掉舊的 playing row（如果換人了）
   if (State.lastPlayingRowEl && State.lastPlayingRowEl.dataset.id !== playingId) {
     State.lastPlayingRowEl.classList.remove('playing');
     const oldBtn = State.lastPlayingRowEl.querySelector('.vm-play-btn');
@@ -720,13 +746,11 @@ function syncRowPlayingState() {
     State.lastPlayingRowEl = null;
   }
 
-  // 清掉舊的 selected row（如果換人了）
   if (State.lastSelectedRowEl && State.lastSelectedRowEl.dataset.id !== selectedId) {
     State.lastSelectedRowEl.classList.remove('selected');
     State.lastSelectedRowEl = null;
   }
 
-  // 設定新的 playing row（getElementById 一次，不掃全部）
   if (playingId) {
     const row = document.getElementById('vm-row-' + cssSafeId(playingId));
     if (row) {
@@ -737,7 +761,6 @@ function syncRowPlayingState() {
     }
   }
 
-  // 設定新的 selected row
   if (selectedId) {
     const row = document.getElementById('vm-row-' + cssSafeId(selectedId));
     if (row) {
@@ -747,12 +770,10 @@ function syncRowPlayingState() {
   }
 }
 
-// 把 voice_id 變成 HTML id 安全字串（voice_id 理論上都是 hex，但防呆）
 function cssSafeId(s) {
   return String(s).replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 
-// 🔧 v2 修 bug：進度條改用 requestAnimationFrame 流暢更新
 function startProgressLoop() {
   stopProgressLoop();
   function loop() {
@@ -779,12 +800,9 @@ function updateProgress() {
   if (fillEl) fillEl.style.width = pct + '%';
   if (timeEl) timeEl.textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
 
-  // 🚀 v2.1 效能優化：波形更新改用快取 row 引用
-  // 每 16ms 跑一次，不能每次都 querySelector
   const playingId = State.playing?.id;
   if (!playingId) return;
 
-  // 快取失效（換人或首次）→ 重找一次
   if (!State.lastProgressRowEl || State.lastProgressRowEl.dataset.id !== playingId) {
     State.lastProgressRowEl = document.getElementById('vm-row-' + cssSafeId(playingId));
   }
@@ -794,7 +812,6 @@ function updateProgress() {
   const bars = row.querySelectorAll('.vm-waveform-bar');
   if (!bars.length) return;
   const activeCount = Math.floor((cur / dur) * bars.length);
-  // 只更新跨界的那根（大部分情況 1 根），避免每次 toggle 24 根
   bars.forEach((b, i) => {
     const shouldActive = i < activeCount;
     if (b.classList.contains('active') !== shouldActive) {
@@ -817,7 +834,6 @@ function playNextInList(delta) {
   let idx = rows.findIndex(r => r.dataset.id === State.playing?.id);
   idx = (idx + delta + rows.length) % rows.length;
   const nextId = rows[idx].dataset.id;
-  // 從當前 tab 的資料源找
   const source = State.currentTab === 'library' ? State.voices.library : getFavoriteVoices();
   const v = source.find(x => x.id === nextId);
   if (v) { playVoice(v); rows[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
@@ -832,11 +848,10 @@ function toggleFavorite(id) {
   updateCountChips();
 }
 
-// ─── 🆕 手動新增 voice_id ──────────────────────────────────
+// ─── 手動新增 voice_id ──────────────────────────────────
 function openCustomModal() {
   const m = document.getElementById('vm-custom-modal');
   m.style.display = 'flex';
-  // 清空表單
   ['vm-custom-id', 'vm-custom-name', 'vm-custom-preview'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -867,11 +882,16 @@ function submitCustomVoice() {
     return;
   }
 
-  // 檢查重複
   if (State.customVoices.some(v => v.id === id)) {
     status.innerHTML = '<span style="color:#ffa94d">⚠️ 這個 voice_id 已經新增過了</span>';
     return;
   }
+
+  // 🆕 v3.1: 自訂語音也給 category 欄位
+  let category = 'other';
+  if (language === 'Multilingual') category = 'multilingual';
+  else if (language === 'Chinese') category = 'chinese';
+  else if (language === 'Japanese') category = 'japanese';
 
   const newVoice = {
     id,
@@ -881,20 +901,20 @@ function submitCustomVoice() {
     engine,
     preview_url,
     tags: [],
-    _custom: true,  // 標記是自訂的
+    category,
+    is_multilingual: category === 'multilingual',
+    _custom: true,
   };
 
   State.customVoices.push(newVoice);
   localStorage.setItem(LS_CUSTOM, JSON.stringify(State.customVoices));
 
-  // 自動加入收藏
   State.favorites.add(id);
   localStorage.setItem(LS_FAV, JSON.stringify([...State.favorites]));
 
   status.innerHTML = '<span style="color:#6dfac2">✅ 已新增並加入收藏</span>';
   setTimeout(() => {
     closeCustomModal();
-    // 切到收藏 Tab 給用戶看結果
     switchTab('favorites');
   }, 800);
 }
@@ -903,7 +923,6 @@ function deleteCustomVoice(id) {
   if (!confirm('刪除這個自訂語音？')) return;
   State.customVoices = State.customVoices.filter(v => v.id !== id);
   localStorage.setItem(LS_CUSTOM, JSON.stringify(State.customVoices));
-  // 同時從收藏移除
   State.favorites.delete(id);
   localStorage.setItem(LS_FAV, JSON.stringify([...State.favorites]));
   renderList();
