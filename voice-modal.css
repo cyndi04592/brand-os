@@ -1004,3 +1004,42 @@
   font-size: 12px;
   font-weight: 500;
 }
+
+/* 🌏 v3 國際化精選模式 */
+
+/* 精選 / 全部切換按鈕 */
+.vm-filter-toggle {
+  padding: 9px 16px;
+  background: linear-gradient(135deg, rgba(109, 250, 194, 0.1), rgba(109, 250, 194, 0.04));
+  border: 1px solid rgba(109, 250, 194, 0.3);
+  border-radius: 10px;
+  color: #6dfac2;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.vm-filter-toggle:hover {
+  background: linear-gradient(135deg, rgba(109, 250, 194, 0.2), rgba(109, 250, 194, 0.1));
+  border-color: #6dfac2;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Multilingual 標記 */
+.vm-multi-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, rgba(109, 250, 194, 0.18), rgba(109, 250, 194, 0.08));
+  color: #6dfac2;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  border: 1px solid rgba(109, 250, 194, 0.25);
+}
