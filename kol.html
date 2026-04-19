@@ -531,9 +531,11 @@ async function onBrandChange() {
   document.getElementById('selected-kol-banner').innerHTML = '<div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>';
   document.getElementById('create-video-btn').disabled = true;
 
-  // 平行載入 personas + 形象庫 + Drive 照片
+  // ⚠️ 順序重要：必須先載入 personas,因為 loadKolList 和 loadDrivePhotos 都會讀 S.personas
+  await loadPersonas(brandId);
+
+  // personas 有了,剩下兩個可以平行跑
   await Promise.all([
-    loadPersonas(brandId),
     loadKolList(brandId),
     loadDrivePhotos(brandId),
   ]);
@@ -885,10 +887,10 @@ async function confirmDrivePhotos() {
       'success'
     );
 
-    // 重新整理
+    // 重新整理(先載入 personas,再平行載其他兩個)
     clearDriveSelection();
+    await loadPersonas(S.currentBrandId);
     await Promise.all([
-      loadPersonas(S.currentBrandId),
       loadKolList(S.currentBrandId),
       loadDrivePhotos(S.currentBrandId),
     ]);
@@ -908,8 +910,9 @@ async function refreshAll() {
     return;
   }
   toast('重新載入中…');
+  // 先載入 personas,再平行載其他兩個
+  await loadPersonas(S.currentBrandId);
   await Promise.all([
-    loadPersonas(S.currentBrandId),
     loadKolList(S.currentBrandId),
     loadDrivePhotos(S.currentBrandId),
   ]);
