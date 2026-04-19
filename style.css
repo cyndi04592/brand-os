@@ -408,3 +408,72 @@ body {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.25; transform: scale(0.5); }
 }
+
+/* ══ KOL 數字人工作室入口按鈕(紫色系 · 對稱廣告監控)══ */
+.btn-kol-studio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1.5px solid var(--purple);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--purple);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+/* 橫向光暈掃描(從左到右,有別於廣告監控的縱向掃描) */
+.btn-kol-studio::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: -30%;
+  width: 30%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(184, 158, 212, 0.35),
+    transparent);
+  animation: kol-sweep 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes kol-sweep {
+  0%   { left: -30%; opacity: 0; }
+  20%  { opacity: 0.8; }
+  70%  { opacity: 0.8; }
+  100% { left: 130%; opacity: 0; }
+}
+.btn-kol-studio:hover {
+  background: rgba(184, 158, 212, 0.12);
+  transform: translateY(-1px);
+}
+.btn-kol-studio:active { transform: scale(0.98); }
+
+/* 三個小點代表 AI 對話 · 依序呼吸 */
+.kol-pulse-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: 1px;
+}
+.kol-pulse-dots i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--purple);
+  display: inline-block;
+  animation: kol-dot-breath 1.6s ease-in-out infinite;
+}
+.kol-pulse-dots i:nth-child(2) { animation-delay: 0.2s; }
+.kol-pulse-dots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes kol-dot-breath {
+  0%, 100% { opacity: 0.3; transform: scale(0.7); }
+  50%       { opacity: 1;   transform: scale(1.1); }
+}
