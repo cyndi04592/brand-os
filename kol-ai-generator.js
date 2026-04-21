@@ -376,26 +376,32 @@ function injectStyle() {
     backdrop-filter: blur(6px);
   }
   .kai-img-actions {
-    position: absolute; bottom: 6px; left: 6px; right: 6px;
+    position: absolute; bottom: 8px; left: 8px; right: 8px;
     display: flex; gap: 6px;
   }
   .kai-img-btn {
-    flex: 1; padding: 6px 8px;
-    background: rgba(10,10,15,0.85); color: #f0f0f8;
-    border: 1px solid rgba(255,255,255,0.12); border-radius: 5px;
-    font-size: 10.5px; font-family: 'Noto Sans TC', sans-serif;
-    font-weight: 600; cursor: pointer;
-    backdrop-filter: blur(8px);
+    flex: 1; padding: 10px 8px;
+    background: rgba(10,10,15,0.92); color: #f0f0f8;
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
+    font-size: 13px; font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700; cursor: pointer;
+    backdrop-filter: blur(10px);
     transition: all .15s;
+    letter-spacing: .02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .kai-img-btn.view-btn {
+    flex: 0 0 44px; padding: 10px 0; font-size: 16px;
   }
   .kai-img-btn:hover:not(:disabled) {
-    background: rgba(124,109,250,0.3);
+    background: rgba(124,109,250,0.4);
     border-color: #7c6dfa;
+    transform: translateY(-1px);
   }
-  .kai-img-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .kai-img-btn:disabled { opacity: .6; cursor: not-allowed; }
   .kai-img-btn.saved {
-    background: rgba(109,250,194,0.2); color: #6dfac2;
-    border-color: rgba(109,250,194,0.4);
+    background: rgba(109,250,194,0.25); color: #6dfac2;
+    border-color: rgba(109,250,194,0.5);
   }
   .kai-img-card.picked {
     border-color: #6dfac2;
@@ -1090,7 +1096,7 @@ function renderGallery() {
             ${img.saved ? 'disabled' : ''}>
             ${img.saved ? '✅ 已存' : '📁 存 Drive'}
           </button>
-          <button class="kai-img-btn" data-act="view" data-idx="${i}">🔍</button>
+          <button class="kai-img-btn view-btn" data-act="view" data-idx="${i}" title="開新分頁查看原圖">🔍</button>
         </div>
       </div>
     `;
