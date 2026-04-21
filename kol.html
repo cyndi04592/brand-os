@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KOL 數字人工作室 — Brand OS v4</title>
+<title>KOL 數字人工作室 — Brand OS v4.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="voice-modal.css">
@@ -21,6 +21,45 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .topbar-title{font-size:13px;color:var(--text-dim);}
 .topbar-badge{margin-left:auto;font-size:10px;font-family:'Syne',sans-serif;font-weight:700;padding:3px 10px;border-radius:20px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;}
 .main{padding-top:56px;min-height:100vh;position:relative;z-index:1;}
+
+/* 🆕 v4.1: 三層願景說明區塊 */
+.vision-banner{max-width:1100px;margin:20px auto 0;padding:0 24px;}
+.vision-card{
+  background:linear-gradient(135deg,rgba(124,109,250,.08) 0%,rgba(250,109,155,.05) 100%);
+  border:1px solid rgba(124,109,250,.18);
+  border-radius:var(--radius);
+  padding:20px 24px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:18px;
+  position:relative;
+  overflow:hidden;
+}
+.vision-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--accent3),var(--accent),var(--accent2));
+}
+@media(max-width:768px){.vision-card{grid-template-columns:1fr;gap:14px;padding:18px 20px;}}
+.vision-col{display:flex;flex-direction:column;gap:6px;position:relative;padding-left:14px;}
+.vision-col::before{
+  content:'';position:absolute;left:0;top:4px;bottom:4px;width:2px;border-radius:2px;
+}
+.vision-col.now::before{background:var(--accent3);}
+.vision-col.next::before{background:var(--accent);}
+.vision-col.future::before{background:var(--accent2);}
+.vision-stage{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
+.vision-col.now .vision-stage{color:var(--accent3);}
+.vision-col.next .vision-stage{color:var(--accent);}
+.vision-col.future .vision-stage{color:var(--accent2);}
+.vision-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.3;}
+.vision-desc{font-size:11.5px;color:var(--text-dim);line-height:1.55;}
+.vision-badge{
+  display:inline-block;font-size:9px;font-family:'Syne',sans-serif;font-weight:700;
+  padding:2px 7px;border-radius:8px;margin-left:4px;letter-spacing:.03em;
+}
+.vision-badge.live{background:rgba(109,250,194,.15);color:var(--accent3);}
+.vision-badge.dev{background:rgba(124,109,250,.15);color:var(--accent);}
+.vision-badge.plan{background:rgba(250,109,155,.15);color:var(--accent2);}
 
 /* 🆕 v4: 頂部全域品牌選擇器 */
 .brand-switcher{max-width:1100px;margin:0 auto;padding:24px 24px 0;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
@@ -124,6 +163,46 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .selected-kol-banner .info strong{font-size:14px;display:block;}
 .selected-kol-banner .info small{font-size:11px;color:var(--text-dim);}
 
+/* 🆕 v4.1: Look 選擇器 */
+.look-picker{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.look-picker-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.look-picker-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase;}
+.look-picker-hint{font-size:10.5px;color:var(--text-dim);}
+.look-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+@media(max-width:500px){.look-grid{grid-template-columns:repeat(4,1fr);}}
+.look-item{
+  aspect-ratio:3/4;border-radius:8px;overflow:hidden;background:var(--surface);
+  position:relative;cursor:pointer;transition:all .2s;border:2px solid transparent;
+}
+.look-item:hover{border-color:rgba(124,109,250,.5);transform:translateY(-2px);}
+.look-item.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,109,250,.25);}
+.look-item.selected::after{
+  content:'✓';position:absolute;top:4px;right:4px;
+  width:18px;height:18px;background:var(--accent);color:white;border-radius:50%;
+  font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+.look-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.look-item .look-placeholder{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  color:var(--text-dim);font-size:20px;background:linear-gradient(135deg,var(--surface2),var(--surface));
+}
+.look-item .look-tag{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(0deg,rgba(0,0,0,.85) 0%,transparent 100%);
+  padding:10px 6px 4px;
+  font-size:9px;color:#fff;text-align:center;
+  font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.02em;
+  text-overflow:ellipsis;overflow:hidden;white-space:nowrap;
+}
+.look-item.base-look::before{
+  content:'BASE';position:absolute;top:4px;left:4px;
+  font-size:8px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.05em;
+  padding:2px 5px;border-radius:4px;
+  background:rgba(109,250,194,.9);color:#0a0a0f;
+  z-index:2;
+}
+
 /* 場景 */
 .scene-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;}
 @media(max-width:500px){.scene-grid{grid-template-columns:repeat(2,1fr);}}
@@ -172,10 +251,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 .btn-success{background:linear-gradient(135deg,var(--accent3),#4ecdc4);color:#0a0a0f;font-weight:700;box-shadow:0 4px 16px rgba(109,250,194,.3);}
 
-/* Credit 預估 */
-.credit-est{font-size:11px;color:var(--text-dim);margin-top:8px;display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+/* 🆕 v4.1: Credit 預估 — credits + USD 雙顯示 */
+.credit-est{font-size:11px;color:var(--text-dim);margin-top:8px;display:flex;align-items:center;gap:10px;justify-content:flex-end;flex-wrap:wrap;}
 .credit-est .num{font-family:'Syne',sans-serif;font-weight:700;color:var(--accent);}
 .credit-est .num.high{color:#ffa94d;}
+.credit-est .usd{font-family:'Syne',sans-serif;font-weight:700;color:var(--accent3);margin-left:4px;}
+.credit-est .usd.high{color:#ffa94d;}
+.credit-est .sep{opacity:.3;}
 
 /* Toast */
 .toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;}
@@ -234,11 +316,33 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a class="topbar-logo" href="index.html">Brand <span>OS</span></a>
   <div class="topbar-sep"></div>
   <span class="topbar-title">KOL 數字人工作室</span>
-  <div class="topbar-badge">v4 · Drive 模式</div>
+  <div class="topbar-badge">v4.1 · 單 Look 定型版</div>
 </header>
 
 <main class="main">
-  <!-- 🆕 v4: 頂部全域品牌選擇器 -->
+
+  <!-- 🆕 v4.1: 三層願景說明區塊 -->
+  <div class="vision-banner">
+    <div class="vision-card">
+      <div class="vision-col now">
+        <div class="vision-stage">🎬 現在 · Live <span class="vision-badge live">穩定版</span></div>
+        <div class="vision-title">單張照片口播</div>
+        <div class="vision-desc">一張 KOL 照片 + 品牌靈魂書 + 人設 → AI 生成真人口播短影音,穩定可直接交客戶上場。</div>
+      </div>
+      <div class="vision-col next">
+        <div class="vision-stage">✨ 下一版 · Soon <span class="vision-badge dev">開發中</span></div>
+        <div class="vision-title">Avatar 電影鏡頭</div>
+        <div class="vision-desc">多張 KOL 照片自動訓練 → AI 產出電影感連貫短影音,Avatar 可走動換環境,無需攝影師。</div>
+      </div>
+      <div class="vision-col future">
+        <div class="vision-stage">🚀 完整版 · Roadmap <span class="vision-badge plan">規劃中</span></div>
+        <div class="vision-title">KOL 自動經營系統</div>
+        <div class="vision-desc">Brand OS 當你的數字人 KOL 經紀人,自動規劃每週/每月內容主題,像真人一樣分享生活、排程發文。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v4: 頂部全域品牌選擇器 -->
   <div class="brand-switcher">
     <span class="brand-switcher-label">🎯 當前品牌</span>
     <select class="brand-switcher-select" id="brand-switcher" onchange="onBrandChange()">
@@ -276,7 +380,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div class="kol-empty">載入中…</div>
       </div>
 
-      <!-- 🆕 v4: Drive 照片 Gallery -->
+      <!-- v4: Drive 照片 Gallery -->
       <div class="drive-section">
         <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent2)"></div>Drive 照片庫</div>
 
@@ -300,11 +404,22 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
     <!-- 右側:影片生成 -->
     <div class="right-panel">
-      <!-- 已選 KOL -->
+      <!-- 已選 KOL + Look 選擇器 -->
       <div class="panel">
         <div class="panel-title"><div class="dot" style="background:var(--accent3)"></div>目前選定的 KOL</div>
         <div id="selected-kol-banner">
           <div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>
+        </div>
+
+        <!-- 🆕 v4.1: Look 選擇器(選定 KOL 後出現)-->
+        <div class="look-picker" id="look-picker" style="display:none">
+          <div class="look-picker-header">
+            <span class="look-picker-title">🖼 造型選擇(Look)</span>
+            <span class="look-picker-hint" id="look-picker-hint">預設 Base Look · 可點縮圖切換</span>
+          </div>
+          <div class="look-grid" id="look-grid">
+            <div class="kol-empty" style="grid-column:1/-1;padding:20px">載入 Look 中…</div>
+          </div>
         </div>
       </div>
 
@@ -376,9 +491,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
 
-        <!-- Credit 預估 -->
+        <!-- 🆕 v4.1: Credit 預估 — credits + USD 雙顯示 -->
         <div class="credit-est">
-          預估消耗:<span class="num" id="credit-est">— credits</span>
+          <span>預估消耗:</span>
+          <span class="num" id="credit-est">— credits</span>
+          <span class="sep">·</span>
+          <span class="usd" id="usd-est">— USD</span>
         </div>
 
         <div class="btn-row">
@@ -401,27 +519,48 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <script>
 // ══════════════════════════════════════════════════════════════
-//  KOL 工作室 v4 — Drive 讀取模式
+//  KOL 工作室 v4.1 — 2026-04-21
 //
-//  變更:
-//   • 移除電腦上傳
+//  v4.1 改動(保持 v4 架構,只加/修必要項):
+//   • 🔧 Bug 修復:幽靈 voice_id → 改 Morioki 真 ID
+//                   (df8b601598534e809e2baac52360dc7f)
+//   • 🔧 Bug 修復:預設語音提示文字 → 日女聲 Morioki
+//   • 🔧 Bug 修復:Credit 公式 → 實測 $0.05/秒(原 20c/min 過高)
+//   • 🆕 功能:Credit + USD 雙顯示
+//   • 🆕 功能:三層願景說明區塊(頁首橫幅)
+//   • 🆕 功能:Look 選擇器 MVP(選 KOL 後顯示 Look 縮圖,可切換)
+//
+//  v4 保留:
 //   • 頂部品牌全域下拉
 //   • 形象庫依品牌過濾
-//   • 新增 Drive Gallery (點照片建立/加入 Avatar Group)
+//   • Drive Gallery (點照片建立/加入 Avatar Group)
 // ══════════════════════════════════════════════════════════════
 
 const WORKER = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
 
+// 🆕 v4.1: Morioki 真實 voice_id(取代幽靈 d7bbcdd...)
+const DEFAULT_VOICE_ID = 'df8b601598534e809e2baac52360dc7f';
+const DEFAULT_VOICE_NAME = '日女聲(Morioki)';
+
+// 🆕 v4.1: HeyGen 實測計費 $0.05/秒
+const COST_PER_SECOND_USD = 0.05;
+const CREDITS_PER_SECOND = 0.05 / 0.01;  // 假設 1 credit = $0.01,僅參考
+// ↑ 實際 HeyGen credit 單位依方案,這裡保留 credits 單位給使用者熟悉感
+// 真實成本以 USD 為準
+
 const S = {
-  currentBrandId: '',       // 🆕 當前選的品牌
-  brands: [],                // 🆕 所有品牌清單
-  personas: [],              // 當前品牌的人設
-  drivePhotos: null,         // 當前品牌的 Drive 照片資料
-  selectedDrivePhotos: {},   // 選中的照片 { personaName: [fileId, fileId] }
-  selectedPersonaForDrive: '', // Drive 操作的目標 persona
-  selectedKol: null,         // 已選的 KOL(生影片用)
+  currentBrandId: '',
+  brands: [],
+  personas: [],
+  drivePhotos: null,
+  selectedDrivePhotos: {},
+  selectedPersonaForDrive: '',
+  selectedKol: null,
+  selectedLookId: '',        // 🆕 v4.1: 當前選定的 Look ID
+  selectedLookName: '',      // 🆕 v4.1: Look 顯示名稱
+  availableLooks: [],        // 🆕 v4.1: 當前 KOL 的所有 Looks
   selectedVoice: null,
   motionEnabled: false,
   motionPrompt: '',
@@ -510,6 +649,9 @@ async function onBrandChange() {
   S.selectedDrivePhotos = {};
   S.selectedPersonaForDrive = '';
   S.selectedKol = null;
+  S.selectedLookId = '';           // 🆕 v4.1: 重置 Look
+  S.selectedLookName = '';
+  S.availableLooks = [];
 
   if (!brandId) {
     document.getElementById('no-brand-panel').style.display = '';
@@ -529,12 +671,12 @@ async function onBrandChange() {
 
   // 清空選定狀態
   document.getElementById('selected-kol-banner').innerHTML = '<div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>';
+  document.getElementById('look-picker').style.display = 'none';  // 🆕
   document.getElementById('create-video-btn').disabled = true;
 
   // ⚠️ 順序重要：必須先載入 personas,因為 loadKolList 和 loadDrivePhotos 都會讀 S.personas
   await loadPersonas(brandId);
 
-  // personas 有了,剩下兩個可以平行跑
   await Promise.all([
     loadKolList(brandId),
     loadDrivePhotos(brandId),
@@ -558,7 +700,6 @@ async function loadKolList(brandId) {
   const countEl = document.getElementById('kol-count');
   listEl.innerHTML = '<div class="kol-empty">載入中…</div>';
 
-  // 把該品牌已綁定的 persona(有 talking_photo_id 的)顯示為形象庫
   const boundPersonas = S.personas.filter(p => p.talking_photo_id && String(p.talking_photo_id).trim());
 
   if (countEl) {
@@ -581,19 +722,21 @@ async function loadKolList(brandId) {
     return;
   }
 
-  // 平行抓每個 persona 對應 Group 的圖片
+  // 平行抓每個 persona 對應 Group 的圖片 + Looks
   const groupsData = await Promise.all(
     boundPersonas.map(async p => {
       try {
         const res = await api('heygen_list_group_avatars', { group_id: p.talking_photo_id });
-        const firstLook = (res.avatars || [])[0];
+        const avatars = res.avatars || [];
+        const firstLook = avatars[0];
         return {
           persona: p,
           image_url: firstLook?.image_url || '',
-          look_count: res.avatars?.length || 0,
+          look_count: avatars.length,
+          looks: avatars,   // 🆕 v4.1: 快取整組 Looks
         };
       } catch (e) {
-        return { persona: p, image_url: '', look_count: 0 };
+        return { persona: p, image_url: '', look_count: 0, looks: [] };
       }
     })
   );
@@ -608,6 +751,7 @@ async function loadKolList(brandId) {
       talking_photo_id: g.persona.talking_photo_id,
       persona: g.persona,
       look_count: g.look_count,
+      looks: g.looks,   // 🆕 v4.1
     };
   });
 
@@ -660,10 +804,25 @@ function handleKolListClick(e) {
 
 function selectKol(g) {
   S.selectedKol = g;
+  S.availableLooks = g.looks || [];   // 🆕 v4.1: 快取 Looks
+
+  // 🆕 v4.1: 預設選 Base Look(= Group ID)
+  //         找出 avatars 中 ID 等於 group_id 的那張,就是 Base
+  const baseLook = S.availableLooks.find(a => a.id === g.id);
+  S.selectedLookId = baseLook?.id || g.id;  // 回退到 group_id(保持既有行為)
+  S.selectedLookName = baseLook?.name || 'Base Look';
+
   document.querySelectorAll('.kol-card-v2').forEach(c => c.classList.remove('selected'));
   const card = document.querySelector(`[data-kol-id="${CSS.escape(g.id)}"]`);
   if (card) card.classList.add('selected');
 
+  renderSelectedKolBanner(g);
+  renderLookPicker();   // 🆕 v4.1: 渲染 Look 選擇器
+  document.getElementById('create-video-btn').disabled = false;
+  toast(`已選定:${g.name}`, 'success');
+}
+
+function renderSelectedKolBanner(g) {
   const hasImage = g.image_url && String(g.image_url).trim();
   const initial = escapeHtml(getInitial(g.name));
   const bgColor = getColorForName(g.name || '');
@@ -684,8 +843,72 @@ function selectKol(g) {
       ${lookChip}
     </div>
   `;
-  document.getElementById('create-video-btn').disabled = false;
-  toast(`已選定:${g.name}`, 'success');
+}
+
+// ─── 🆕 v4.1: Look 選擇器 ─────────────────────────────────
+function renderLookPicker() {
+  const picker = document.getElementById('look-picker');
+  const grid = document.getElementById('look-grid');
+  const hint = document.getElementById('look-picker-hint');
+
+  if (!S.availableLooks || S.availableLooks.length === 0) {
+    picker.style.display = 'none';
+    return;
+  }
+
+  // 少於 2 個 Look 就不顯示選擇器(沒得選)
+  if (S.availableLooks.length < 2) {
+    picker.style.display = 'none';
+    return;
+  }
+
+  picker.style.display = 'block';
+
+  const groupId = S.selectedKol?.id || '';
+  const html = S.availableLooks.map(look => {
+    const isSelected = look.id === S.selectedLookId;
+    const isBase = look.id === groupId;
+    const hasImage = look.image_url && String(look.image_url).trim();
+    const imgHtml = hasImage
+      ? `<img src="${escapeHtml(look.image_url)}" alt="${escapeHtml(look.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder>🖼️</div>'">`
+      : `<div class="look-placeholder">🖼️</div>`;
+    const tagName = look.name || `Look ${look.id.slice(0, 6)}`;
+
+    return `
+      <div class="look-item ${isSelected ? 'selected' : ''} ${isBase ? 'base-look' : ''}"
+           data-look-id="${escapeHtml(look.id)}"
+           data-look-name="${escapeHtml(tagName)}"
+           title="${escapeHtml(tagName)}">
+        ${imgHtml}
+        <div class="look-tag">${escapeHtml(tagName)}</div>
+      </div>
+    `;
+  }).join('');
+
+  grid.innerHTML = html;
+  hint.textContent = `當前:${S.selectedLookName}`;
+
+  // Event delegation
+  grid.removeEventListener('click', handleLookClick);
+  grid.addEventListener('click', handleLookClick);
+}
+
+function handleLookClick(e) {
+  const item = e.target.closest('.look-item');
+  if (!item) return;
+  const lookId = item.dataset.lookId;
+  const lookName = item.dataset.lookName;
+  if (lookId === S.selectedLookId) return;  // 已選中,不動
+
+  S.selectedLookId = lookId;
+  S.selectedLookName = lookName;
+
+  // 更新 UI 選中狀態
+  document.querySelectorAll('.look-item').forEach(el => el.classList.remove('selected'));
+  item.classList.add('selected');
+
+  document.getElementById('look-picker-hint').textContent = `當前:${lookName}`;
+  toast(`造型切換:${lookName}`, 'success');
 }
 
 // ─── 載入該品牌的 Drive 照片 ──────────────────────────────
@@ -718,7 +941,6 @@ function renderDriveGallery() {
 
   const personas = data.personas || [];
 
-  // 根目錄有誤放的照片警告
   let rootWarn = '';
   if (data.root_photos && data.root_photos.length > 0) {
     rootWarn = `
@@ -743,17 +965,14 @@ function renderDriveGallery() {
     return;
   }
 
-  // 分區渲染每個 persona 的照片
   const sections = personas.map(p => renderPersonaSection(p)).join('');
   wrap.innerHTML = rootWarn + sections;
 
-  // Event delegation
   wrap.removeEventListener('click', handleDriveGalleryClick);
   wrap.addEventListener('click', handleDriveGalleryClick);
 }
 
 function renderPersonaSection(p) {
-  // 檢查此 persona 是否已綁定
   const personaData = S.personas.find(x => x.persona_name === p.persona_name);
   const isBound = personaData && personaData.talking_photo_id && String(personaData.talking_photo_id).trim();
 
@@ -795,7 +1014,6 @@ function handleDriveGalleryClick(e) {
   const fileId = photo.dataset.fileId;
   const personaName = photo.dataset.persona;
 
-  // 確保同一時間只能操作同一個 persona
   if (S.selectedPersonaForDrive && S.selectedPersonaForDrive !== personaName) {
     toast(`目前正在選「${S.selectedPersonaForDrive}」的照片,請先完成或清除`, 'warn');
     return;
@@ -836,7 +1054,6 @@ function updateDriveActionBar() {
 
   bar.style.display = 'flex';
 
-  // 檢查是否已綁定,顯示不同文字
   const personaData = S.personas.find(x => x.persona_name === persona);
   const isBound = personaData && personaData.talking_photo_id && String(personaData.talking_photo_id).trim();
 
@@ -887,7 +1104,6 @@ async function confirmDrivePhotos() {
       'success'
     );
 
-    // 重新整理(先載入 personas,再平行載其他兩個)
     clearDriveSelection();
     await loadPersonas(S.currentBrandId);
     await Promise.all([
@@ -910,7 +1126,6 @@ async function refreshAll() {
     return;
   }
   toast('重新載入中…');
-  // 先載入 personas,再平行載其他兩個
   await loadPersonas(S.currentBrandId);
   await Promise.all([
     loadKolList(S.currentBrandId),
@@ -924,7 +1139,7 @@ function updateVoiceTrigger() {
   const v = S.selectedVoice;
   if (!v) {
     document.getElementById('vt-name').textContent = '尚未選擇語音';
-    document.getElementById('vt-meta').textContent = '點擊開啟語音選擇器';
+    document.getElementById('vt-meta').textContent = `點擊開啟語音選擇器 · 預設:${DEFAULT_VOICE_NAME}`;
     return;
   }
   document.getElementById('vt-name').textContent = v.name + (v.language ? `  ·  ${v.language}` : '');
@@ -975,20 +1190,38 @@ function syncMotionPrompt() {
   S.motionPrompt = custom || active?.dataset.prompt || '';
 }
 
-// ─── Credit 預估 ────────────────────────────────────────────
+// ─── 🆕 v4.1: Credit 預估 — 用實測 $0.05/秒 + 雙單位顯示 ────
 function updateCreditEstimate() {
   const script = document.getElementById('script-output')?.value || '';
   const chars = script.trim().length;
+  // 中文口播速度:約 3.5 字/秒(最低抓 5 秒)
   const seconds = Math.max(5, Math.ceil(chars / 3.5));
-  const baseCredits = Math.ceil(seconds / 3);
-  const useMotion = S.motionEnabled && S.motionPrompt;
-  const totalCredits = useMotion ? baseCredits * 2 : baseCredits;
 
-  const el = document.getElementById('credit-est');
-  if (!el) return;
-  if (chars === 0) { el.textContent = '— credits'; el.classList.remove('high'); return; }
-  el.textContent = `~${totalCredits} credits(${seconds}s${useMotion ? ' · 2×' : ''})`;
-  el.classList.toggle('high', useMotion);
+  const useMotion = S.motionEnabled && S.motionPrompt;
+  // 動作會讓成本翻倍(HeyGen 動作加價)
+  const multiplier = useMotion ? 2 : 1;
+
+  // 實測計費 $0.05/秒
+  const usd = seconds * COST_PER_SECOND_USD * multiplier;
+  // Credits 顯示(參考用,HeyGen API 方案 credit 單位依計畫)
+  const credits = Math.ceil(seconds * 0.083 * multiplier);  // 5 credits/min 近似
+
+  const creditEl = document.getElementById('credit-est');
+  const usdEl = document.getElementById('usd-est');
+  if (!creditEl || !usdEl) return;
+
+  if (chars === 0) {
+    creditEl.textContent = '— credits';
+    usdEl.textContent = '— USD';
+    creditEl.classList.remove('high');
+    usdEl.classList.remove('high');
+    return;
+  }
+
+  creditEl.textContent = `~${credits} credits(${seconds}s${useMotion ? ' · 2×' : ''})`;
+  usdEl.textContent = `$${usd.toFixed(2)} USD`;
+  creditEl.classList.toggle('high', useMotion);
+  usdEl.classList.toggle('high', useMotion);
 }
 
 // ─── 場景選擇 ──────────────────────────────────────────────
@@ -1010,7 +1243,6 @@ async function generateScript() {
   document.getElementById('script-output').value = '';
 
   try {
-    // 如果有選定 KOL 且對應的 persona 存在,用 v2
     const persona = S.selectedKol?.persona;
     let res;
     if (persona && S.currentBrandId) {
@@ -1022,7 +1254,6 @@ async function generateScript() {
         duration: 30,
       });
     } else {
-      // Fallback 到 v1
       const brandObj = S.brands.find(b => b.id === S.currentBrandId);
       res = await api('ai_generate_script', {
         kol_name: S.selectedKol?.name || 'KOL',
@@ -1059,18 +1290,22 @@ async function createVideo() {
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
   const script = document.getElementById('script-output').value.trim();
   if (!script) { toast('請先輸入腳本', 'error'); return; }
-  const FALLBACK_VOICE_ID = 'd7bbcdd6964c47bdaae26decade4a933';
+
+  // 🔧 v4.1: 修正預設 voice_id + 正確提示文字
   if (!S.selectedVoice) {
-    if (!confirm('你還沒選擇語音,將使用預設繁中女聲(HsiaoChen),要繼續嗎?')) return;
+    if (!confirm(`你還沒選擇語音,將使用預設${DEFAULT_VOICE_NAME},要繼續嗎?`)) return;
   }
 
   syncMotionPrompt();
 
-  const talking_photo_id = S.selectedKol.talking_photo_id || S.selectedKol.id;
+  // 🆕 v4.1: 優先用選定的 Look ID,回退到 Group ID(Base Look)
+  const talking_photo_id = S.selectedLookId || S.selectedKol.talking_photo_id || S.selectedKol.id;
+  const lookLabel = S.selectedLookName || 'Base Look';
+
   const payload = {
     talking_photo_id,
     script,
-    voice_id: S.selectedVoice?.id || FALLBACK_VOICE_ID,
+    voice_id: S.selectedVoice?.id || DEFAULT_VOICE_ID,   // 🔧 v4.1: 真 Morioki
     ratio: '9:16',
   };
 
@@ -1090,13 +1325,15 @@ async function createVideo() {
       toast('⚠️ 動作控制暫不支援,影片會用預設動畫生成', 'warn');
     }
 
+    const topicText = document.getElementById('video-topic').value.trim() || '口播影片';
     const task = {
       video_id: res.video_id,
-      label: document.getElementById('video-topic').value.trim() || '口播影片',
+      label: `${topicText} · ${lookLabel}`,
       status: 'processing',
       created: new Date().toLocaleTimeString('zh-TW'),
       url: null,
       hasMotion: S.motionEnabled && S.motionPrompt && !res.motion_fallback,
+      lookName: lookLabel,
     };
     S.videoTasks.unshift(task);
     renderTasks();
