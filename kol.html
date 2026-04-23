@@ -296,6 +296,37 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .ref-drive-locked .emoji{font-size:28px;display:block;margin-bottom:8px;}
 
 /* Seedance 設定 */
+/* 🆕 v5.1: 場景網格 */
+.scene-grid-v2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:4px;}
+@media(max-width:500px){.scene-grid-v2{grid-template-columns:1fr;}}
+.scene-card-v2{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px 14px 12px;cursor:pointer;transition:all .2s;
+  display:flex;flex-direction:column;gap:6px;min-height:72px;
+  position:relative;overflow:hidden;
+}
+.scene-card-v2:hover{border-color:rgba(124,109,250,.55);transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,109,250,.12);}
+.scene-card-v2.selected{border-color:var(--accent);background:linear-gradient(135deg,rgba(124,109,250,.15) 0%,rgba(124,109,250,.03) 100%);}
+.scene-card-v2.selected::after{content:'✓';position:absolute;top:8px;right:10px;width:18px;height:18px;background:var(--accent);color:white;border-radius:50%;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.scene-card-v2 .scene-label{font-size:13.5px;font-weight:600;color:var(--text);}
+.scene-card-v2 .scene-hint{font-size:10.5px;color:var(--text-dim);line-height:1.4;}
+.scene-card-v2 .scene-type-pill{
+  display:inline-block;font-size:9px;font-family:'Syne',sans-serif;font-weight:700;
+  padding:1px 6px;border-radius:8px;letter-spacing:.04em;
+  background:rgba(255,255,255,.05);color:var(--text-dim);width:fit-content;
+}
+.scene-card-v2 .scene-type-pill.indoor{background:rgba(109,250,194,.12);color:var(--accent3);}
+.scene-card-v2 .scene-type-pill.outdoor{background:rgba(255,169,77,.15);color:#ffa94d;}
+
+/* 當前配置摘要 */
+.scene-summary{
+  margin-top:8px;padding:10px 12px;background:rgba(124,109,250,.06);
+  border:1px solid rgba(124,109,250,.18);border-radius:var(--radius-sm);
+  border-left:3px solid var(--accent);
+}
+.scene-summary-line{font-size:12px;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.scene-summary-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase;}
+.scene-summary-hint{font-size:10.5px;color:var(--text-dim);margin-top:4px;font-style:italic;}
 .seedance-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .seedance-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .seedance-radio{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text-mid);font-weight:500;}
@@ -580,20 +611,33 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="panel">
         <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>電影鏡頭設定 · Seedance 2.0</div>
 
+        <!-- 🆕 v5.1: 場景網格(點一下直接套用) -->
         <div class="form-group" style="margin-top:0">
-          <label class="form-label">Prompt 範本</label>
-          <select class="form-select" id="seedance-template" onchange="applyPromptTemplate()">
-            <option value="custom">自訂(空白)</option>
-            <option value="la">LACEZ 內衣試穿(廚房情境)</option>
-            <option value="moz">MOZ 配件展示(咖啡廳)</option>
-            <option value="ka">巧福家電示範(廚房)</option>
+          <label class="form-label">🎬 場景(點一下直接生成)</label>
+          <div class="scene-grid-v2" id="scene-grid-cine">
+            <div class="kol-empty" style="grid-column:1/-1;padding:16px;font-size:12px">選品牌後載入場景…</div>
+          </div>
+        </div>
+
+        <!-- 🆕 v5.1: 地標庫(戶外場景可疊加) -->
+        <div class="form-group" id="location-picker-group" style="display:none">
+          <label class="form-label">📍 地標(選填,只在戶外場景生效)</label>
+          <select class="form-select" id="location-picker" onchange="onLocationChange()">
+            <option value="none">— 不指定地標(用場景預設)—</option>
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Prompt(用 [Image1] 指 KOL,[Image2] 起是商品照)</label>
+        <!-- 🆕 v5.1: 當前配置摘要 -->
+        <div class="scene-summary" id="scene-summary" style="display:none">
+          <div class="scene-summary-line"><span class="scene-summary-label">當前配置:</span><span id="scene-summary-text">—</span></div>
+          <div class="scene-summary-hint" id="scene-summary-hint">—</div>
+        </div>
+
+        <!-- Debug mode: 只在 URL ?debug=1 時顯示 prompt -->
+        <div class="form-group" id="debug-prompt-wrap" style="display:none">
+          <label class="form-label" style="color:#ffa94d">🔧 Debug: 底層 Prompt(?debug=1 模式)</label>
           <div class="script-wrap">
-            <textarea id="seedance-prompt" placeholder="A woman [Image1] sits in a warm daylight kitchen, gently holds up product [Image2]..."></textarea>
+            <textarea id="seedance-prompt" readonly style="min-height:100px;font-size:11px;color:var(--text-dim)"></textarea>
             <span class="char-count" id="seedance-prompt-count">0 字</span>
           </div>
         </div>
@@ -746,12 +790,260 @@ const BRAND_PRODUCT_FOLDERS = {
 };
 
 // 🆕 v5.0: Prompt 範本庫
-const SEEDANCE_TEMPLATES = {
-  custom: '',
-  la: 'A woman [Image1] sits in a warm daylight kitchen, gently holds up the product [Image2] close to her chest, smiles and speaks directly to camera, natural lip sync, soft morning light, Taiwanese Mandarin accent, lifestyle vlog style',
-  moz: 'A person [Image1] casually holds the accessory [Image2] while walking through a cozy cafe, natural movement, speaks directly to camera with natural lip sync, warm ambient light, Taiwanese Mandarin accent',
-  ka: 'A person [Image1] stands in a modern home kitchen and demonstrates the appliance [Image2], shows it from multiple angles with natural gestures, speaks directly to camera, natural lip sync, bright daylight, Taiwanese Mandarin accent',
+// ══════════════════════════════════════════════════════════════
+//  🆕 v5.1: 場景庫 + 地標庫 + Prompt 組合引擎
+//
+//  設計哲學(RA 2026-04-23 定調):
+//  「連 AI 都騙得過的真實感」— 不是完美畫面,是真實瑕疵
+//  - 禁用:perfect / flawless / studio / professional model / commercial
+//  - 必加:底片顆粒、手持抖動、毛孔質感、35mm、自然光、真實背景
+//
+//  資料結構:場景 × 地標 正交組合
+//  - 室內場景:固定 setting,不吃地標
+//  - 戶外場景:setting 可被地標 override
+//  - UI 只露「品牌 · 場景 · 地標」三個下拉,prompt 後端組
+// ══════════════════════════════════════════════════════════════
+
+// 攝影參數:一致化 realism 元素(所有場景共用)
+const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, subtle film grain, visible natural skin texture with pores and peach fuzz, no heavy beauty filter, authentic documentary realism, Taiwanese Mandarin accent, natural lip sync';
+
+// 品牌的 KOL 互動動作(每個品牌不同,但都用 [Image1] + [Image2] 模板)
+const BRAND_ACTIONS = {
+  la: 'A woman [Image1] {VERB} the product [Image2] close to her chest with a gentle smile, speaks directly to camera',
+  moz: 'A person [Image1] {VERB} the accessory [Image2] naturally in hand, speaks directly to camera with relaxed tone',
+  ka: 'A person [Image1] {VERB} the appliance [Image2] with subtle demonstration gestures, speaks directly to camera',
 };
+
+// 場景庫(每個品牌各自的常用情境,type: indoor / outdoor)
+const SCENE_LIBRARY = {
+  la: {  // LACEZ
+    kitchen_morning: {
+      label: '🍳 廚房晨光',
+      hint: '自然晨光 · 手持 vlog 感 · 真實質感',
+      type: 'indoor',
+      verb: 'gently holds up',
+      setting: 'her own casual kitchen in soft morning daylight, lived-in details like a coffee cup, morning light spilling on countertop',
+      light: 'soft natural window light, golden hour backlight, ambient window spill',
+      extra: 'ISO 400 subtle grain, slight camera breath, candid lifestyle aesthetic',
+    },
+    cafe_afternoon: {
+      label: '☕ 咖啡廳午後',
+      hint: '窗光+暖鎢絲 · 獨立咖啡廳靜謐',
+      type: 'indoor',
+      verb: 'softly shows',
+      setting: 'a cozy indie café counter in warm afternoon light, natural café ambience with plants, books, coffee machine softly out of focus',
+      light: 'window sidelight plus warm tungsten fill from café lamps',
+      extra: 'ISO 640 cinematic grain, moderate depth of field with visible wooden texture behind',
+    },
+    outdoor_garden: {
+      label: '🌿 戶外綠意',
+      hint: '金色時光 · 襯衫被風吹動',
+      type: 'outdoor',
+      verb: 'gently displays',
+      setting: 'a sunlit outdoor garden with real foliage, slightly blurred natural greenery, breeze gently moves her hair and clothing',
+      light: 'golden hour sidelight, soft backlit rim light on hair',
+      extra: 'ISO 200 fine grain, slight handheld camera shake, available daylight only',
+    },
+    urban_night: {
+      label: '🌃 夜間街頭',
+      hint: '霓虹反射 · 極端光線下的臉一致性',
+      type: 'outdoor',
+      verb: 'subtly showcases',
+      setting: 'a quiet urban side street at night, wet pavement reflections, distant passersby softly blurred',
+      light: 'neon reflections on skin, magenta and cyan color spill from nearby signs, warm vending machine glow',
+      extra: 'ISO 1600 visible grain for low-light authenticity, handheld travel vlog aesthetic',
+    },
+  },
+  moz: {
+    cafe_weekend: {
+      label: '☕ 週末咖啡廳',
+      hint: 'MOZ 配件日常場景',
+      type: 'indoor',
+      verb: 'casually holds',
+      setting: 'a relaxed weekend café, wooden table, coffee mug nearby',
+      light: 'warm window light with soft ambient café lamps',
+      extra: 'ISO 400 film grain, shallow natural depth of field',
+    },
+    commute_train: {
+      label: '🚇 通勤列車',
+      hint: '日常通勤,MOZ 作為生活伴侶',
+      type: 'indoor',
+      verb: 'naturally carries',
+      setting: 'a bright metro train interior, passengers softly blurred in distance',
+      light: 'cool overhead fluorescent mixed with warm window light passing by',
+      extra: 'ISO 800 grain, slight handheld vibration from train movement',
+    },
+  },
+  ka: {
+    kitchen_demo: {
+      label: '🍳 廚房示範',
+      hint: '真實家庭廚房,家電自然融入',
+      type: 'indoor',
+      verb: 'calmly demonstrates',
+      setting: 'a real family kitchen countertop with lived-in details, cutting board, fresh ingredients nearby',
+      light: 'bright overhead kitchen light plus warm window spill',
+      extra: 'ISO 200 clean grain, static tripod framing, slight focus breathing',
+    },
+    breakfast_morning: {
+      label: '🥞 早餐時光',
+      hint: '溫暖家庭早餐情境',
+      type: 'indoor',
+      verb: 'joyfully presents',
+      setting: 'a sunlit breakfast table, fresh morning spread, real home ambience',
+      light: 'warm morning sunlight through curtains, soft natural rim',
+      extra: 'ISO 400 grain, handheld vlog feel, intimate family atmosphere',
+    },
+  },
+};
+
+// 🏛️ 地標庫(戶外場景可疊加,override 場景的 setting)
+const LOCATIONS = {
+  none: { label: '— 不指定地標 —', keywords: null },
+
+  // 🇯🇵 日本東京
+  jp_shibuya_scramble: {
+    label: '🇯🇵 東京涉谷 · Scramble 十字路口',
+    keywords: 'the famous Shibuya Scramble Crossing in Tokyo, massive LED billboards on tall buildings, crowds of pedestrians, TSUTAYA building visible, iconic neon signs above',
+    compatible: ['outdoor'],
+  },
+  jp_shibuya_109: {
+    label: '🇯🇵 東京涉谷 · 109 百貨前',
+    keywords: 'in front of Shibuya 109 department store Tokyo, distinctive cylindrical building with the 109 logo, busy street-level view',
+    compatible: ['outdoor'],
+  },
+  jp_harajuku_takeshita: {
+    label: '🇯🇵 東京原宿 · 竹下通',
+    keywords: 'on Takeshita Street in Harajuku Tokyo, narrow pedestrian shopping street, colorful crêpe shops and youth fashion stores, kawaii pastel signage',
+    compatible: ['outdoor'],
+  },
+  jp_omotesando: {
+    label: '🇯🇵 東京表參道',
+    keywords: 'the tree-lined Omotesando boulevard in Tokyo, zelkova trees overhead, upscale fashion storefronts, European-style promenade',
+    compatible: ['outdoor'],
+  },
+  jp_ginza: {
+    label: '🇯🇵 東京銀座 · 中央通',
+    keywords: 'Ginza Chuo-dori in Tokyo, luxury flagship stores lining the street, Wako clock tower in background, elegant urban atmosphere',
+    compatible: ['outdoor'],
+  },
+  jp_daikanyama: {
+    label: '🇯🇵 東京代官山 · T-Site',
+    keywords: 'Daikanyama T-Site in Tokyo, iconic Tsutaya bookstore complex, tree-lined quiet street, literary and stylish cafés nearby',
+    compatible: ['outdoor'],
+  },
+  jp_asakusa_kaminarimon: {
+    label: '🇯🇵 東京淺草 · 雷門',
+    keywords: 'Kaminarimon Gate in Asakusa Tokyo, giant red paper lantern with Japanese characters, traditional Japanese architecture, Nakamise shopping street behind',
+    compatible: ['outdoor'],
+  },
+  jp_shinjuku_kabukicho: {
+    label: '🇯🇵 東京新宿 · 歌舞伎町',
+    keywords: 'Kabukicho in Shinjuku Tokyo at night, dense neon signs stacked vertically, red Kabukicho gate in view, cyberpunk-like atmosphere',
+    compatible: ['outdoor'],
+  },
+
+  // 🇹🇼 台灣
+  tw_taipei_101: {
+    label: '🇹🇼 台北 · 101 大樓前',
+    keywords: 'in front of Taipei 101 in Xinyi District, iconic bamboo-shaped skyscraper towering in background, modern plaza with granite flooring',
+    compatible: ['outdoor'],
+  },
+  tw_taipei_yongkang: {
+    label: '🇹🇼 台北 · 永康街',
+    keywords: 'Yongkang Street in Taipei, quaint lane with independent cafés and teahouses, brick-paved sidewalk, vintage Taiwan charm',
+    compatible: ['outdoor'],
+  },
+  tw_taichung_shenji: {
+    label: '🇹🇼 台中 · 審計新村',
+    keywords: 'Shenji New Village in Taichung, refurbished former government dormitories now a creative market, pastel-painted walls, small craft shops',
+    compatible: ['outdoor'],
+  },
+  tw_tainan_shennong: {
+    label: '🇹🇼 台南 · 神農街',
+    keywords: 'Shennong Street in Tainan, narrow historic street with traditional red-brick Qing-era buildings, wooden shutters, ancient capital atmosphere',
+    compatible: ['outdoor'],
+  },
+
+  // 🇭🇰 香港
+  hk_central_ifc: {
+    label: '🇭🇰 香港中環 · IFC',
+    keywords: 'IFC Mall area in Central Hong Kong, modern glass skyscraper facade, Star Ferry pier nearby, Victoria Harbour in distance',
+    compatible: ['outdoor'],
+  },
+  hk_tsimshatsui: {
+    label: '🇭🇰 尖沙咀 · 星光大道',
+    keywords: 'Tsim Sha Tsui Avenue of Stars in Hong Kong, Victoria Harbour view with Hong Kong Island skyline across the water, waterfront promenade',
+    compatible: ['outdoor'],
+  },
+  hk_hollywood_road: {
+    label: '🇭🇰 中環 · 荷李活道',
+    keywords: 'Hollywood Road in Central Hong Kong, steep sloped street with antique shops, colonial-era buildings, blend of old and new',
+    compatible: ['outdoor'],
+  },
+
+  // 🇫🇷 歐洲
+  fr_paris_eiffel: {
+    label: '🇫🇷 巴黎 · 艾菲爾鐵塔',
+    keywords: 'in front of the Eiffel Tower in Paris, iron lattice tower towering in background, Champ de Mars lawn, Parisian atmosphere',
+    compatible: ['outdoor'],
+  },
+  fr_paris_marais: {
+    label: '🇫🇷 巴黎 · 瑪黑區',
+    keywords: 'Le Marais district in Paris, medieval cobblestone streets, wrought-iron balconies, boutique storefronts, 17th century architecture',
+    compatible: ['outdoor'],
+  },
+  it_milano_duomo: {
+    label: '🇮🇹 米蘭 · Duomo 大教堂',
+    keywords: 'Piazza del Duomo in Milan, gothic marble cathedral facade with intricate spires, open plaza with pigeons, European elegance',
+    compatible: ['outdoor'],
+  },
+
+  // 🇺🇸 美國
+  us_ny_brooklyn_bridge: {
+    label: '🇺🇸 紐約 · 布魯克林大橋',
+    keywords: 'Brooklyn Bridge in New York, stone arches and steel cables, Manhattan skyline visible in background, pedestrian walkway',
+    compatible: ['outdoor'],
+  },
+  us_ny_soho: {
+    label: '🇺🇸 紐約 · SoHo',
+    keywords: 'SoHo district Manhattan New York, cast-iron architecture facades, cobblestone streets, fashion boutiques, industrial chic',
+    compatible: ['outdoor'],
+  },
+  us_sf_golden_gate: {
+    label: '🇺🇸 舊金山 · 金門大橋',
+    keywords: 'Golden Gate Bridge in San Francisco, iconic international orange suspension bridge in background, bay waters, Marin headlands',
+    compatible: ['outdoor'],
+  },
+};
+
+// 🧪 Prompt 組合引擎
+function composeSeedancePrompt(brandId, sceneId, locationId) {
+  const scenes = SCENE_LIBRARY[brandId] || {};
+  const scene = scenes[sceneId];
+  if (!scene) return '';
+
+  const action = (BRAND_ACTIONS[brandId] || BRAND_ACTIONS.la).replace('{VERB}', scene.verb);
+
+  // 地標覆蓋戶外場景的 setting(室內場景不吃地標)
+  let settingText = scene.setting;
+  if (scene.type === 'outdoor' && locationId && locationId !== 'none') {
+    const loc = LOCATIONS[locationId];
+    if (loc && loc.keywords && loc.compatible?.includes('outdoor')) {
+      settingText = loc.keywords;
+    }
+  }
+
+  // 組合順序:動作 + 場景 + 燈光 + 額外 + REALISM 基底
+  const parts = [
+    action,
+    'in ' + settingText,
+    scene.light,
+    scene.extra,
+    REALISM_BASE,
+  ].filter(Boolean);
+
+  return parts.join(', ');
+}
 
 const S = {
   currentMode: 'talking',    // 🆕 v5.0: talking / cinematic / system
@@ -772,6 +1064,8 @@ const S = {
 
   // 🆕 v5.0: 電影鏡頭模式狀態
   seedanceProductUrls: [],        // 陣列存 URL 字串
+  selectedSceneId: '',            // 🆕 v5.1: 當前場景 id
+  selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
   seedanceParams: {
     resolution: '720p',
     duration: '5',
@@ -895,6 +1189,12 @@ async function gasPost(action, extra = {}) {
     });
   });
 
+  // 🆕 v5.1: debug mode — URL ?debug=1 才顯示底層 prompt textarea
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('debug') === '1') {
+    document.getElementById('debug-prompt-wrap').style.display = '';
+  }
+
   await loadBrands();
   updateCreditEstimate();
   updateSeedanceCostEstimate();
@@ -971,6 +1271,11 @@ async function onBrandChange() {
   S.selectedLookId = '';
   S.selectedLookName = '';
   S.availableLooks = [];
+  // 🆕 v5.1: 重置場景/地標
+  S.selectedSceneId = '';
+  S.selectedLocationId = 'none';
+  document.getElementById('scene-summary').style.display = 'none';
+  document.getElementById('seedance-prompt').value = '';
 
   if (!brandId) {
     document.getElementById('no-brand-panel').style.display = '';
@@ -998,6 +1303,9 @@ async function onBrandChange() {
   document.getElementById('create-seedance-btn').disabled = true;
 
   await loadPersonas(brandId);
+
+  // 🆕 v5.1: 載入該品牌的場景庫
+  renderSceneGrid();
 
   await Promise.all([
     loadKolList(brandId),
@@ -1699,11 +2007,119 @@ function renderRefList() {
   countEl.classList.toggle('warn', S.seedanceProductUrls.length >= 8);
 }
 
-function applyPromptTemplate() {
-  const tpl = document.getElementById('seedance-template').value;
-  const text = SEEDANCE_TEMPLATES[tpl] || '';
-  document.getElementById('seedance-prompt').value = text;
-  document.getElementById('seedance-prompt-count').textContent = text.length + ' 字';
+// 🆕 v5.1: 場景系統 - 渲染場景網格
+function renderSceneGrid() {
+  const grid = document.getElementById('scene-grid-cine');
+  if (!grid) return;
+
+  const brandId = S.currentBrandId;
+  const scenes = SCENE_LIBRARY[brandId];
+
+  if (!scenes) {
+    grid.innerHTML = `<div class="kol-empty" style="grid-column:1/-1;padding:16px;font-size:12px">此品牌尚未建立場景庫<br><small>後續會補上</small></div>`;
+    document.getElementById('location-picker-group').style.display = 'none';
+    return;
+  }
+
+  grid.innerHTML = Object.entries(scenes).map(([id, s]) => {
+    const isSelected = id === S.selectedSceneId;
+    return `
+      <div class="scene-card-v2 ${isSelected ? 'selected' : ''}" data-scene-id="${escapeHtml(id)}">
+        <div class="scene-label">${escapeHtml(s.label)}</div>
+        <div class="scene-hint">${escapeHtml(s.hint)}</div>
+        <span class="scene-type-pill ${s.type}">${s.type === 'indoor' ? '室內' : '戶外 · 可加地標'}</span>
+      </div>
+    `;
+  }).join('');
+
+  grid.removeEventListener('click', handleSceneCardClick);
+  grid.addEventListener('click', handleSceneCardClick);
+
+  // 地標下拉:始終渲染,但只在戶外場景時顯示
+  renderLocationPicker();
+}
+
+function renderLocationPicker() {
+  const picker = document.getElementById('location-picker');
+  if (!picker) return;
+
+  const currentScene = SCENE_LIBRARY[S.currentBrandId]?.[S.selectedSceneId];
+  const showPicker = currentScene?.type === 'outdoor';
+  document.getElementById('location-picker-group').style.display = showPicker ? '' : 'none';
+
+  if (!showPicker) {
+    S.selectedLocationId = 'none';
+    return;
+  }
+
+  picker.innerHTML = Object.entries(LOCATIONS).map(([id, loc]) => {
+    if (id === 'none') return `<option value="none">${escapeHtml(loc.label)}</option>`;
+    return `<option value="${escapeHtml(id)}">${escapeHtml(loc.label)}</option>`;
+  }).join('');
+  picker.value = S.selectedLocationId || 'none';
+}
+
+function handleSceneCardClick(e) {
+  const card = e.target.closest('.scene-card-v2');
+  if (!card) return;
+  const sceneId = card.dataset.sceneId;
+  if (!sceneId) return;
+
+  S.selectedSceneId = sceneId;
+  // 切換場景時重置地標(避免戶外→室內殘留)
+  S.selectedLocationId = 'none';
+
+  // UI 更新
+  document.querySelectorAll('.scene-card-v2').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+
+  // 地標下拉顯示/隱藏
+  renderLocationPicker();
+
+  // 組 prompt + 更新摘要
+  syncScenePrompt();
+  updateSeedanceSubmitButton();
+}
+
+function onLocationChange() {
+  const val = document.getElementById('location-picker').value;
+  S.selectedLocationId = val;
+  syncScenePrompt();
+}
+
+// 組 prompt 並更新各處顯示
+function syncScenePrompt() {
+  const brandId = S.currentBrandId;
+  const sceneId = S.selectedSceneId;
+  const locationId = S.selectedLocationId;
+
+  const scene = SCENE_LIBRARY[brandId]?.[sceneId];
+  const summaryEl = document.getElementById('scene-summary');
+  const summaryText = document.getElementById('scene-summary-text');
+  const summaryHint = document.getElementById('scene-summary-hint');
+
+  if (!scene) {
+    summaryEl.style.display = 'none';
+    document.getElementById('seedance-prompt').value = '';
+    document.getElementById('seedance-prompt-count').textContent = '0 字';
+    return;
+  }
+
+  // 配置摘要文字
+  const brandLabel = S.brands.find(b => b.id === brandId)?.name || brandId;
+  let configText = `${brandLabel} · ${scene.label}`;
+  if (scene.type === 'outdoor' && locationId && locationId !== 'none') {
+    const loc = LOCATIONS[locationId];
+    if (loc) configText += ` · ${loc.label}`;
+  }
+  summaryText.textContent = configText;
+  summaryHint.textContent = scene.hint;
+  summaryEl.style.display = '';
+
+  // 組 prompt(debug mode 顯示用)
+  const prompt = composeSeedancePrompt(brandId, sceneId, locationId);
+  document.getElementById('seedance-prompt').value = prompt;
+  document.getElementById('seedance-prompt-count').textContent = prompt.length + ' 字';
 }
 
 function toggleSeedanceAudio() {
@@ -1733,11 +2149,11 @@ function updateSeedanceSubmitButton() {
   const btn = document.getElementById('create-seedance-btn');
   if (!btn) return;
   const hasKol = !!S.selectedKol;
-  const hasPrompt = (document.getElementById('seedance-prompt')?.value || '').trim().length > 0;
-  btn.disabled = !(hasKol && hasPrompt);
+  const hasScene = !!S.selectedSceneId;  // 🆕 v5.1: 改為檢查是否選了場景
+  btn.disabled = !(hasKol && hasScene);
 }
 
-document.getElementById('seedance-prompt').addEventListener('input', updateSeedanceSubmitButton);
+// 場景/地標變動時更新按鈕(input event 已不適用,由 syncScenePrompt 手動觸發)
 
 function updateSeedanceCostEstimate() {
   const el = document.getElementById('seedance-cost-est');
@@ -1750,15 +2166,24 @@ function updateSeedanceCostEstimate() {
 }
 
 function copySeedancePrompt() {
-  const t = document.getElementById('seedance-prompt').value;
-  if (!t) { toast('尚無 prompt', 'error'); return; }
+  // 🆕 v5.1: 從 composer 組,不依賴 textarea(非 debug 時 textarea 可能沒值)
+  let t = '';
+  if (S.selectedSceneId) {
+    t = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId);
+  } else {
+    t = document.getElementById('seedance-prompt').value;
+  }
+  if (!t) { toast('請先選場景', 'error'); return; }
   navigator.clipboard.writeText(t).then(() => toast('已複製 ✓', 'success'));
 }
 
 async function createSeedanceVideo() {
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
-  let prompt = document.getElementById('seedance-prompt').value.trim();
-  if (!prompt) { toast('請輸入 prompt', 'error'); return; }
+  if (!S.selectedSceneId) { toast('請選擇一個場景', 'error'); return; }
+
+  // 🆕 v5.1: 從場景 + 地標組 prompt(後端邏輯,使用者看不到)
+  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId);
+  if (!prompt) { toast('組 prompt 失敗,場景資料異常', 'error'); return; }
 
   // KOL 臉一致性:自動加指令
   if (S.seedanceFaceConsistency && !/consistent facial features/i.test(prompt)) {
