@@ -506,6 +506,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .queue-cost{font-size:11px;color:var(--text-dim);font-family:'Syne',sans-serif;}
 .seedance-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .seedance-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.seedance-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+@media(max-width:480px){.seedance-grid-4{grid-template-columns:repeat(2,1fr);}}
+.seedance-radio.multi-shot{position:relative;background:linear-gradient(135deg,rgba(250,109,155,.12) 0%,rgba(124,109,250,.12) 100%);border-color:rgba(250,109,155,.4);}
+.seedance-radio.multi-shot.active{background:linear-gradient(135deg,rgba(250,109,155,.25) 0%,rgba(124,109,250,.25) 100%);border-color:#fa6d9b;box-shadow:0 0 0 2px rgba(250,109,155,.2);}
+.duration-hint{font-size:10px;color:#fa6d9b;font-weight:600;margin-left:8px;display:none;}
+.duration-hint.show{display:inline;}
 .seedance-radio{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text-mid);font-weight:500;}
 .seedance-radio:hover{border-color:rgba(124,109,250,.4);}
 .seedance-radio.active{background:rgba(124,109,250,.15);border-color:var(--accent);color:var(--accent);font-weight:700;}
@@ -891,10 +897,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             </div>
           </div>
           <div class="form-group" style="margin-top:0">
-            <label class="form-label">時長(秒)</label>
-            <div class="seedance-grid-3" data-group="duration">
+            <label class="form-label">時長(秒) <span class="duration-hint" id="duration-hint">15s = 多鏡頭模式 🎬</span></label>
+            <div class="seedance-grid-4" data-group="duration">
               <div class="seedance-radio active" data-value="5">5s</div>
               <div class="seedance-radio" data-value="10">10s</div>
+              <div class="seedance-radio multi-shot" data-value="15">15s ✨</div>
               <div class="seedance-radio" data-value="auto">auto</div>
             </div>
           </div>
@@ -1627,7 +1634,7 @@ const CAMERA_MOVEMENTS = {
   },
 };
 
-function composeSeedancePrompt(brandId, sceneId, locationId, movementId) {
+function composeSeedancePrompt(brandId, sceneId, locationId, movementId, duration) {
   const scenes = SCENE_LIBRARY[brandId] || {};
   const scene = scenes[sceneId];
   if (!scene) return '';
@@ -1643,13 +1650,17 @@ function composeSeedancePrompt(brandId, sceneId, locationId, movementId) {
     }
   }
 
-  // 🎥 運鏡:優先用場景客製版本,沒有就 fallback 通用
+  // 🔥 v5.6: 15 秒多鏡頭模式 — 單次產生 3 個 shot,內建轉場
+  if (duration === '15' || duration === 15) {
+    return composeMultiShotPrompt(brandId, scene, action, settingText, movementId);
+  }
+
+  // 單鏡頭模式(5s / 10s / auto)— 原本邏輯
   let movementText = '';
   if (movementId) {
     movementText = scene.movements?.[movementId] || CAMERA_MOVEMENTS[movementId]?.fallback || '';
   }
 
-  // 組合順序:動作 + 場景 + 燈光 + 運鏡 + 服裝指南 + extra + REALISM 基底 + 故事弧(如有)
   const parts = [
     action,
     'in ' + settingText,
@@ -1660,7 +1671,7 @@ function composeSeedancePrompt(brandId, sceneId, locationId, movementId) {
     REALISM_BASE,
   ].filter(Boolean);
 
-  // 🆕 v5.4: 故事弧淺版 — 故事定位 + 情緒基調 + 主推產品暗示
+  // 故事弧淺版
   const storyArc = S.storyArc || {};
   const arcParts = [];
   if (storyArc.tone) arcParts.push('emotional tone: ' + storyArc.tone);
@@ -1671,6 +1682,72 @@ function composeSeedancePrompt(brandId, sceneId, locationId, movementId) {
   }
 
   return parts.join(', ');
+}
+
+// 🎬 v5.6: 15 秒多鏡頭 prompt 組合(官方推薦格式)
+// 依據 fal.ai Seedance 2.0 官方文件:duration=15 時可在 prompt 中以 Shot 1/2/3 標記多個鏡頭
+function composeMultiShotPrompt(brandId, scene, action, settingText, baseMovementId) {
+  const movements = scene.movements || {};
+
+  // 自動挑 3 個鏡頭(若使用者選了基礎運鏡,作為第 2 個 shot)
+  const shotSequence = pickThreeShotsForScene(movements, baseMovementId);
+
+  // 主角描述(跨 shot 一致)
+  const subjectDesc = `A woman [Image1] ${scene.outfit ? 'wearing ' + scene.outfit : ''}, consistent facial features and identity across all shots`;
+
+  // 三段 prompt
+  const shot1 = `Shot 1 (0-5s): ${subjectDesc}, ${shotSequence[0].text}, in ${settingText}, ${scene.light}`;
+  const shot2 = `Shot 2 (5-10s): Natural cut transition. ${action}, ${shotSequence[1].text}, same scene continues, ${scene.light}`;
+  const shot3 = `Shot 3 (10-15s): Smooth cut. ${shotSequence[2].text}, emotional closing beat, ${scene.light}`;
+
+  // 故事弧
+  const storyArc = S.storyArc || {};
+  const arcParts = [];
+  if (storyArc.tone) arcParts.push('emotional tone throughout: ' + storyArc.tone);
+  if (storyArc.theme) arcParts.push('overall theme: ' + storyArc.theme);
+  if (storyArc.productHint) arcParts.push('subtle product emphasis: ' + storyArc.productHint);
+  const arcLine = arcParts.length > 0
+    ? arcParts.join(', ') + ', no explicit brand name mentioned, natural lifestyle integration.'
+    : '';
+
+  // 底部一致性與品質指示
+  const footer = [
+    scene.extra,
+    REALISM_BASE,
+    arcLine,
+    'IMPORTANT: keep subject face and outfit consistent across all three shots, use natural cuts not hard jumps, single-take vlog feeling.',
+  ].filter(Boolean).join(' ');
+
+  return [shot1, shot2, shot3, footer].join('. ');
+}
+
+// 從場景的 movements 中挑 3 個不同鏡頭組成序列
+function pickThreeShotsForScene(movements, baseMovementId) {
+  const allKeys = Object.keys(movements);
+  if (allKeys.length === 0) {
+    // 沒有客製 movements,用 CAMERA_MOVEMENTS fallback
+    return [
+      { id: 'static', text: CAMERA_MOVEMENTS.static.fallback },
+      { id: 'walk_through', text: CAMERA_MOVEMENTS.walk_through.fallback },
+      { id: 'pullback_reveal', text: CAMERA_MOVEMENTS.pullback_reveal.fallback },
+    ];
+  }
+
+  // 策略:開場靜態 → 中段用戶選擇(或走動) → 結尾拉鏡揭示
+  const picks = [];
+  picks.push({ id: 'static', text: movements.static || CAMERA_MOVEMENTS.static.fallback });
+
+  const middle = baseMovementId && baseMovementId !== 'static'
+    ? baseMovementId
+    : (movements.walk_through ? 'walk_through' : allKeys.find(k => k !== 'static'));
+  picks.push({ id: middle, text: movements[middle] || CAMERA_MOVEMENTS[middle]?.fallback || '' });
+
+  const ending = movements.pullback_reveal ? 'pullback_reveal'
+    : movements.dolly_in ? 'dolly_in'
+    : allKeys.find(k => k !== 'static' && k !== middle);
+  picks.push({ id: ending, text: movements[ending] || CAMERA_MOVEMENTS[ending]?.fallback || '' });
+
+  return picks;
 }
 
 const S = {
@@ -1816,6 +1893,10 @@ async function gasPost(action, extra = {}) {
       r.classList.add('active');
       S.seedanceParams[group] = r.dataset.value;
       updateSeedanceCostEstimate();
+      // 🔥 v5.6: duration 切換會影響 prompt 模式(15s = 多鏡頭)
+      if (group === 'duration' && S.selectedSceneId) {
+        syncScenePrompt();
+      }
     });
   });
 
@@ -3013,9 +3094,14 @@ function syncScenePrompt() {
   summaryEl.style.display = '';
 
   // 組 prompt(debug mode 顯示用)
-  const prompt = composeSeedancePrompt(brandId, sceneId, locationId, movementId);
+  const duration = S.seedanceParams?.duration || '5';
+  const prompt = composeSeedancePrompt(brandId, sceneId, locationId, movementId, duration);
   document.getElementById('seedance-prompt').value = prompt;
   document.getElementById('seedance-prompt-count').textContent = prompt.length + ' 字';
+
+  // 🔥 v5.6: 15s 多鏡頭模式提示
+  const hint = document.getElementById('duration-hint');
+  if (hint) hint.classList.toggle('show', String(duration) === '15');
 }
 
 function toggleSeedanceAudio() {
@@ -3065,7 +3151,7 @@ function copySeedancePrompt() {
   // 🆕 v5.1: 從 composer 組,不依賴 textarea(非 debug 時 textarea 可能沒值)
   let t = '';
   if (S.selectedSceneId) {
-    t = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId);
+    t = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId, S.seedanceParams?.duration || '5');
   } else {
     t = document.getElementById('seedance-prompt').value;
   }
@@ -3080,8 +3166,8 @@ async function createSeedanceVideo() {
     if (!confirm('你沒加任何商品照,影片裡的 [Image2] 指涉會無對應圖(fal.ai 可能拒絕或效果不佳)。\n\n純展示 KOL 情境(無帶貨)可以繼續,要繼續嗎?')) return;
   }
 
-  // 🆕 v5.1+5.3: 從場景 + 地標 + 運鏡組 prompt(後端邏輯,使用者看不到)
-  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId);
+  // 🆕 v5.1+5.3+5.6: 從場景 + 地標 + 運鏡 + 時長組 prompt(15s 自動切多鏡頭模式)
+  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId, S.seedanceParams?.duration || '5');
   if (!prompt) { toast('組 prompt 失敗,場景資料異常', 'error'); return; }
 
   // KOL 臉一致性:自動加指令
