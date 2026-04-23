@@ -351,6 +351,30 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .scene-summary-line{font-size:12px;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .scene-summary-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase;}
 .scene-summary-hint{font-size:10.5px;color:var(--text-dim);margin-top:4px;font-style:italic;}
+
+/* 🎥 v5.3: 運鏡選擇網格 */
+.movement-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:4px;}
+@media(max-width:640px){.movement-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:400px){.movement-grid{grid-template-columns:repeat(2,1fr);}}
+.movement-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 6px 8px;cursor:pointer;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  position:relative;min-height:68px;
+}
+.movement-card:hover{border-color:rgba(124,109,250,.55);transform:translateY(-1px);}
+.movement-card.selected{
+  background:linear-gradient(135deg,rgba(124,109,250,.2) 0%,rgba(124,109,250,.05) 100%);
+  border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,109,250,.2);
+}
+.movement-card .movement-label{font-size:11.5px;font-weight:600;color:var(--text);line-height:1.2;text-align:center;}
+.movement-card .movement-hint{font-size:9.5px;color:var(--text-dim);line-height:1.3;text-align:center;}
+.movement-card .movement-dur{
+  font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.04em;
+  padding:1px 5px;border-radius:6px;margin-top:2px;
+  background:rgba(109,250,194,.12);color:var(--accent3);
+}
+.movement-card.selected .movement-dur{background:rgba(124,109,250,.2);color:var(--accent);}
 .seedance-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .seedance-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .seedance-radio{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text-mid);font-weight:500;}
@@ -649,6 +673,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </select>
         </div>
 
+        <!-- 🆕 v5.3: 運鏡選擇器(所有場景共用) -->
+        <div class="form-group" id="movement-picker-group" style="display:none">
+          <label class="form-label">🎥 運鏡(選了會自動調整時長)</label>
+          <div class="movement-grid" id="movement-grid"></div>
+        </div>
+
         <!-- 🆕 v5.1: 當前配置摘要 -->
         <div class="scene-summary" id="scene-summary" style="display:none">
           <div class="scene-summary-line"><span class="scene-summary-label">當前配置:</span><span id="scene-summary-text">—</span></div>
@@ -847,6 +877,13 @@ const SCENE_LIBRARY = {
       setting: 'her own casual kitchen in soft morning daylight, lived-in details like a coffee cup, morning light spilling on countertop',
       light: 'soft natural window light, golden hour backlight, ambient window spill',
       extra: 'ISO 400 subtle grain, slight camera breath, candid lifestyle aesthetic',
+      movements: {
+        static: 'subject stands or leans against the kitchen counter, static tripod framing with subtle handheld breathing, speaks directly to camera in place',
+        walk_through: 'subject walks slowly from the kitchen counter to the adjacent dining table area, camera performs a smooth handheld tracking shot following her across the space, she turns to face camera mid-walk and continues speaking, reveals the flow between kitchen and dining area',
+        dolly_in: 'slow dolly-in toward subject from medium shot at the kitchen island to intimate close-up, kitchen details blur into soft bokeh behind her, emotional closeness grows',
+        orbit: 'smooth orbital camera movement around subject at the kitchen counter, 180-degree arc revealing different angles of the morning kitchen, subject remains centered with gentle rotation awareness',
+        pullback_reveal: 'camera starts tight on her face and slowly pulls back to reveal the whole sunlit kitchen environment — coffee cup, window spilling light, the everyday morning feel',
+      },
     },
     cafe_afternoon: {
       label: '☕ 咖啡廳午後',
@@ -856,6 +893,13 @@ const SCENE_LIBRARY = {
       setting: 'a cozy indie café counter in warm afternoon light, natural café ambience with plants, books, coffee machine softly out of focus',
       light: 'window sidelight plus warm tungsten fill from café lamps',
       extra: 'ISO 640 cinematic grain, moderate depth of field with visible wooden texture behind',
+      movements: {
+        static: 'subject sits at the café counter with a coffee mug beside her, static framing with subtle café ambience, speaks directly to camera naturally',
+        walk_through: 'subject walks slowly from the café entrance past wooden tables to her favorite corner seat, camera performs a handheld tracking shot following her through the warm-lit café interior, she settles down and turns to camera',
+        dolly_in: 'slow dolly-in from a wide shot of the café to subject at her seat, café details soften into bokeh, warm tungsten glow embraces her face',
+        orbit: 'smooth orbital movement around subject at the café table, 180-degree arc passing by window light on one side and warm lamps on the other, revealing the café atmosphere',
+        pullback_reveal: 'camera starts close on her hands holding the product over the café table, slowly pulls back and up to reveal her, then the whole cozy café space with plants and books',
+      },
     },
     outdoor_garden: {
       label: '🌿 戶外綠意',
@@ -865,6 +909,13 @@ const SCENE_LIBRARY = {
       setting: 'a sunlit outdoor garden with real foliage, slightly blurred natural greenery, breeze gently moves her hair and clothing',
       light: 'golden hour sidelight, soft backlit rim light on hair',
       extra: 'ISO 200 fine grain, slight handheld camera shake, available daylight only',
+      movements: {
+        static: 'subject stands among natural foliage with golden light catching her hair, gentle breeze movement, speaks directly to camera with calm warmth',
+        walk_through: 'subject walks slowly along a garden path or open natural space, camera follows handheld from a slight distance, she glances back and smiles toward camera, the environment flows past naturally',
+        dolly_in: 'slow dolly-in toward subject from a wide environmental shot to intimate close-up, golden hour rim light intensifies on her face, foliage blurs behind',
+        orbit: 'smooth orbital camera around subject in the garden, 180-degree arc with sunlight shifting from rim to front as camera moves, natural environment rotates around her',
+        pullback_reveal: 'camera starts tight on her expression and slowly pulls back to reveal the full outdoor setting — trees, grass, the open sky, creating a sense of openness',
+      },
     },
     urban_night: {
       label: '🌃 夜間街頭',
@@ -874,6 +925,13 @@ const SCENE_LIBRARY = {
       setting: 'a quiet urban side street at night, wet pavement reflections, distant passersby softly blurred',
       light: 'neon reflections on skin, magenta and cyan color spill from nearby signs, warm vending machine glow',
       extra: 'ISO 1600 visible grain for low-light authenticity, handheld travel vlog aesthetic',
+      movements: {
+        static: 'subject stands still on the neon-lit street, face catching shifting magenta and cyan light, speaks directly to camera with nighttime intimacy',
+        walk_through: 'subject walks slowly down the neon-reflective street, camera performs a handheld tracking shot alongside her, neon signs and street details glide past in the background, she turns to camera mid-walk',
+        dolly_in: 'slow dolly-in from a wide street establishing shot to intimate close-up on her face, neon reflections grow larger on her skin as camera approaches',
+        orbit: 'smooth orbital camera around subject on the street, 180-degree arc where different neon signs wash her face in shifting colors — magenta, cyan, warm amber from vending machines',
+        pullback_reveal: 'camera starts close on the product in her hand lit by neon, slowly pulls back and up to reveal her standing on the wet reflective street, then widens to show the full neon-lit urban scene',
+      },
     },
   },
   moz: {
@@ -885,6 +943,13 @@ const SCENE_LIBRARY = {
       setting: 'a relaxed weekend café, wooden table, coffee mug nearby',
       light: 'warm window light with soft ambient café lamps',
       extra: 'ISO 400 film grain, shallow natural depth of field',
+      movements: {
+        static: 'subject sits at the wooden café table, coffee mug and MOZ accessory in view, static framing with subtle weekend calm, speaks directly to camera',
+        walk_through: 'subject walks into the weekend café carrying the accessory, camera tracks handheld as she finds her table, sits down and turns toward camera with a relaxed smile',
+        dolly_in: 'slow dolly-in from a wide café shot to close-up on subject and accessory, warm afternoon window light grows softer and more intimate',
+        orbit: 'smooth orbital camera around subject at the café table, 180-degree arc passing through window light and café ambience, accessory catches light from different angles',
+        pullback_reveal: 'camera starts close on the MOZ accessory on the table, slowly pulls back to reveal her hands, then her face, then the full cozy weekend café setting',
+      },
     },
     commute_train: {
       label: '🚇 通勤列車',
@@ -894,6 +959,13 @@ const SCENE_LIBRARY = {
       setting: 'a bright metro train interior, passengers softly blurred in distance',
       light: 'cool overhead fluorescent mixed with warm window light passing by',
       extra: 'ISO 800 grain, slight handheld vibration from train movement',
+      movements: {
+        static: 'subject stands or sits in the train, accessory in hand, slight train vibration moves her naturally, speaks directly to camera with commuter calm',
+        walk_through: 'subject walks through the train car from one end toward camera, other passengers blurred, handheld tracking shot, she pauses near camera and speaks',
+        dolly_in: 'slow dolly-in from a wide train interior shot to close-up on subject, train windows outside flash with passing light, creates rhythmic intimacy',
+        orbit: 'smooth orbital camera around subject in the train car, 180-degree arc where fluorescent overhead light meets passing window daylight, accessory remains in clear view',
+        pullback_reveal: 'camera starts close on her hand holding the accessory, slowly pulls back to reveal her full posture, then the whole train car with other commuters — establishing daily life context',
+      },
     },
   },
   ka: {
@@ -905,6 +977,13 @@ const SCENE_LIBRARY = {
       setting: 'a real family kitchen countertop with lived-in details, cutting board, fresh ingredients nearby',
       light: 'bright overhead kitchen light plus warm window spill',
       extra: 'ISO 200 clean grain, static tripod framing, slight focus breathing',
+      movements: {
+        static: 'subject stands at the kitchen counter with the appliance in front of her, static framing focuses on demonstration gestures, speaks directly to camera with practical warmth',
+        walk_through: 'subject walks from fridge to counter carrying the appliance, places it down on the cutting board area, camera follows handheld, she turns to face camera and begins demonstration',
+        dolly_in: 'slow dolly-in from a wide kitchen shot to close-up on the appliance and her demonstrating hands, details of the appliance grow clearer as camera approaches',
+        orbit: 'smooth orbital camera around the appliance on the counter with subject behind it, 180-degree arc showing the appliance from multiple angles while she speaks',
+        pullback_reveal: 'camera starts close on the appliance interface or key feature, slowly pulls back to reveal her hands using it, then her face, then the full family kitchen environment',
+      },
     },
     breakfast_morning: {
       label: '🥞 早餐時光',
@@ -914,6 +993,13 @@ const SCENE_LIBRARY = {
       setting: 'a sunlit breakfast table, fresh morning spread, real home ambience',
       light: 'warm morning sunlight through curtains, soft natural rim',
       extra: 'ISO 400 grain, handheld vlog feel, intimate family atmosphere',
+      movements: {
+        static: 'subject sits at the breakfast table with the appliance beside her, morning light falls naturally, static framing with subtle warmth, speaks directly to camera',
+        walk_through: 'subject walks from the kitchen carrying a plate with the appliance output, camera follows handheld, she sits down at the breakfast table and turns to camera with a warm smile',
+        dolly_in: 'slow dolly-in from a wide breakfast table shot to close-up on the appliance and her expression, morning sunlight wraps around her face',
+        orbit: 'smooth orbital camera around the breakfast table, 180-degree arc revealing the appliance, the food, and her from multiple angles',
+        pullback_reveal: 'camera starts close on the appliance-made breakfast item, slowly pulls back to reveal her hands, then her smiling face, then the whole sunlit family breakfast scene',
+      },
     },
   },
 };
@@ -1039,7 +1125,41 @@ const LOCATIONS = {
 };
 
 // 🧪 Prompt 組合引擎
-function composeSeedancePrompt(brandId, sceneId, locationId) {
+// 🎥 v5.3: 運鏡元資料(UI label + 時長建議 + 通用 fallback)
+const CAMERA_MOVEMENTS = {
+  static: {
+    label: '📷 靜態說話',
+    hint: '站在原地講話',
+    duration_suggest: 5,
+    fallback: 'static tripod framing with subtle handheld breathing, subject speaks directly to camera in place',
+  },
+  walk_through: {
+    label: '🚶 走動轉場',
+    hint: '空間移動 · 生活感',
+    duration_suggest: 10,
+    fallback: 'subject walks slowly through the space, camera performs a smooth handheld tracking shot following her movement, subject turns to face camera mid-walk',
+  },
+  dolly_in: {
+    label: '🎥 慢速推鏡',
+    hint: '拉近情緒',
+    duration_suggest: 10,
+    fallback: 'slow dolly-in toward subject from medium shot to close-up, background softly blurs as camera approaches',
+  },
+  orbit: {
+    label: '🔄 環繞鏡頭',
+    hint: '360° 氛圍',
+    duration_suggest: 10,
+    fallback: 'smooth orbital camera movement around subject, 180-degree arc, subject remains relatively centered',
+  },
+  pullback_reveal: {
+    label: '↖️ 拉鏡揭示',
+    hint: '空間感建立',
+    duration_suggest: 10,
+    fallback: 'camera starts close on subject and slowly pulls back to reveal the entire environment and atmosphere',
+  },
+};
+
+function composeSeedancePrompt(brandId, sceneId, locationId, movementId) {
   const scenes = SCENE_LIBRARY[brandId] || {};
   const scene = scenes[sceneId];
   if (!scene) return '';
@@ -1055,11 +1175,18 @@ function composeSeedancePrompt(brandId, sceneId, locationId) {
     }
   }
 
-  // 組合順序:動作 + 場景 + 燈光 + 額外 + REALISM 基底
+  // 🎥 運鏡:優先用場景客製版本,沒有就 fallback 通用
+  let movementText = '';
+  if (movementId) {
+    movementText = scene.movements?.[movementId] || CAMERA_MOVEMENTS[movementId]?.fallback || '';
+  }
+
+  // 組合順序:動作 + 場景 + 燈光 + 運鏡 + extra + REALISM 基底
   const parts = [
     action,
     'in ' + settingText,
     scene.light,
+    movementText,
     scene.extra,
     REALISM_BASE,
   ].filter(Boolean);
@@ -1088,6 +1215,7 @@ const S = {
   seedanceProductUrls: [],        // 陣列存 URL 字串
   selectedSceneId: '',            // 🆕 v5.1: 當前場景 id
   selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
+  selectedMovementId: 'static',   // 🆕 v5.3: 當前運鏡 id,預設靜態
   seedanceParams: {
     resolution: '720p',
     duration: '5',
@@ -1296,8 +1424,11 @@ async function onBrandChange() {
   // 🆕 v5.1: 重置場景/地標
   S.selectedSceneId = '';
   S.selectedLocationId = 'none';
+  S.selectedMovementId = 'static';  // 🆕 v5.3: 重置運鏡為預設靜態
   document.getElementById('scene-summary').style.display = 'none';
   document.getElementById('seedance-prompt').value = '';
+  const mpGroup = document.getElementById('movement-picker-group');
+  if (mpGroup) mpGroup.style.display = 'none';
 
   if (!brandId) {
     document.getElementById('no-brand-panel').style.display = '';
@@ -2252,6 +2383,8 @@ function handleSceneCardClick(e) {
 
   // 地標下拉顯示/隱藏
   renderLocationPicker();
+  // 🎥 v5.3: 運鏡選擇器出現
+  renderMovementPicker();
 
   // 組 prompt + 更新摘要
   syncScenePrompt();
@@ -2264,11 +2397,68 @@ function onLocationChange() {
   syncScenePrompt();
 }
 
+// 🎥 v5.3: 渲染運鏡選擇器
+function renderMovementPicker() {
+  const grid = document.getElementById('movement-grid');
+  const group = document.getElementById('movement-picker-group');
+  if (!grid || !group) return;
+
+  // 沒選場景就隱藏運鏡選擇
+  if (!S.selectedSceneId) {
+    group.style.display = 'none';
+    return;
+  }
+
+  group.style.display = '';
+
+  grid.innerHTML = Object.entries(CAMERA_MOVEMENTS).map(([id, m]) => {
+    const isSelected = id === S.selectedMovementId;
+    return `
+      <div class="movement-card ${isSelected ? 'selected' : ''}" data-movement-id="${escapeHtml(id)}" title="${escapeHtml(m.hint)}">
+        <div class="movement-label">${escapeHtml(m.label)}</div>
+        <div class="movement-hint">${escapeHtml(m.hint)}</div>
+        <div class="movement-dur">${m.duration_suggest}s</div>
+      </div>
+    `;
+  }).join('');
+
+  grid.removeEventListener('click', handleMovementClick);
+  grid.addEventListener('click', handleMovementClick);
+}
+
+function handleMovementClick(e) {
+  const card = e.target.closest('.movement-card');
+  if (!card) return;
+  const movementId = card.dataset.movementId;
+  if (!movementId || movementId === S.selectedMovementId) return;
+
+  S.selectedMovementId = movementId;
+
+  // UI 更新
+  document.querySelectorAll('.movement-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+
+  // 🎯 自動調整時長(建議秒數)
+  const suggestSec = CAMERA_MOVEMENTS[movementId]?.duration_suggest;
+  if (suggestSec) {
+    const targetVal = String(suggestSec);
+    // 切換右側時長 radio
+    document.querySelectorAll('[data-group="duration"] .seedance-radio').forEach(r => {
+      r.classList.toggle('active', r.dataset.value === targetVal);
+    });
+    S.seedanceParams.duration = targetVal;
+    updateSeedanceCostEstimate();
+  }
+
+  syncScenePrompt();
+}
+
 // 組 prompt 並更新各處顯示
 function syncScenePrompt() {
   const brandId = S.currentBrandId;
   const sceneId = S.selectedSceneId;
   const locationId = S.selectedLocationId;
+  const movementId = S.selectedMovementId;
 
   const scene = SCENE_LIBRARY[brandId]?.[sceneId];
   const summaryEl = document.getElementById('scene-summary');
@@ -2289,12 +2479,16 @@ function syncScenePrompt() {
     const loc = LOCATIONS[locationId];
     if (loc) configText += ` · ${loc.label}`;
   }
+  if (movementId) {
+    const m = CAMERA_MOVEMENTS[movementId];
+    if (m) configText += ` · ${m.label}`;
+  }
   summaryText.textContent = configText;
   summaryHint.textContent = scene.hint;
   summaryEl.style.display = '';
 
   // 組 prompt(debug mode 顯示用)
-  const prompt = composeSeedancePrompt(brandId, sceneId, locationId);
+  const prompt = composeSeedancePrompt(brandId, sceneId, locationId, movementId);
   document.getElementById('seedance-prompt').value = prompt;
   document.getElementById('seedance-prompt-count').textContent = prompt.length + ' 字';
 }
@@ -2346,7 +2540,7 @@ function copySeedancePrompt() {
   // 🆕 v5.1: 從 composer 組,不依賴 textarea(非 debug 時 textarea 可能沒值)
   let t = '';
   if (S.selectedSceneId) {
-    t = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId);
+    t = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId);
   } else {
     t = document.getElementById('seedance-prompt').value;
   }
@@ -2361,8 +2555,8 @@ async function createSeedanceVideo() {
     if (!confirm('你沒加任何商品照,影片裡的 [Image2] 指涉會無對應圖(fal.ai 可能拒絕或效果不佳)。\n\n純展示 KOL 情境(無帶貨)可以繼續,要繼續嗎?')) return;
   }
 
-  // 🆕 v5.1: 從場景 + 地標組 prompt(後端邏輯,使用者看不到)
-  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId);
+  // 🆕 v5.1+5.3: 從場景 + 地標 + 運鏡組 prompt(後端邏輯,使用者看不到)
+  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId);
   if (!prompt) { toast('組 prompt 失敗,場景資料異常', 'error'); return; }
 
   // KOL 臉一致性:自動加指令
