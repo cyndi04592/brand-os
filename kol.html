@@ -375,6 +375,22 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   background:rgba(109,250,194,.12);color:var(--accent3);
 }
 .movement-card.selected .movement-dur{background:rgba(124,109,250,.2);color:var(--accent);}
+
+/* 📖 v5.4: 故事弧區塊 */
+.story-arc-block{border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:14px;overflow:hidden;}
+.story-arc-head{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--surface2);transition:background .2s;user-select:none;}
+.story-arc-head:hover{background:rgba(124,109,250,.06);}
+.story-arc-arrow{transition:transform .2s;font-size:10px;}
+.story-arc-block.open .story-arc-arrow{transform:rotate(90deg);}
+.story-arc-title{flex:1;font-size:12px;font-weight:600;color:var(--text-mid);}
+.story-arc-chip{font-size:10px;font-family:'Syne',sans-serif;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(124,109,250,.15);color:var(--accent);text-transform:uppercase;letter-spacing:.04em;}
+.story-arc-chip.set{background:rgba(109,250,194,.15);color:var(--accent3);}
+.story-arc-body{padding:14px;border-top:1px solid var(--border);}
+.story-arc-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:640px){.story-arc-row{grid-template-columns:1fr;}}
+.story-arc-field{display:flex;flex-direction:column;gap:4px;}
+.story-arc-field label{font-size:10.5px;font-weight:600;color:var(--text-dim);}
+.story-arc-hint{font-size:10.5px;color:var(--text-dim);margin-top:10px;line-height:1.6;padding:10px;background:rgba(124,109,250,.06);border-left:2px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;}
 .seedance-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .seedance-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .seedance-radio{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text-mid);font-weight:500;}
@@ -679,6 +695,62 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           <div class="movement-grid" id="movement-grid"></div>
         </div>
 
+        <!-- 🆕 v5.4: 故事弧三欄(淺版 · 加進 prompt 引導 AI) -->
+        <div class="story-arc-block" id="story-arc-block" style="display:none">
+          <div class="story-arc-head" onclick="toggleStoryArc()">
+            <span class="story-arc-arrow" id="story-arc-arrow">▶</span>
+            <span class="story-arc-title">📖 故事弧(選填 · 讓 AI KOL 有主題性)</span>
+            <span class="story-arc-chip" id="story-arc-chip">未設定</span>
+          </div>
+          <div class="story-arc-body" id="story-arc-body" style="display:none">
+            <div class="story-arc-row">
+              <div class="story-arc-field">
+                <label>🎬 故事定位</label>
+                <select class="form-select" id="story-arc-theme" onchange="onStoryArcChange()">
+                  <option value="">— 不指定(一般 vlog)—</option>
+                  <option value="daily vlog slice of life">📅 日常 vlog</option>
+                  <option value="casual complaint about work stress">💼 工作抱怨</option>
+                  <option value="motherhood daily struggle and joy">👶 媽媽經</option>
+                  <option value="fashion outfit sharing">👗 穿搭分享</option>
+                  <option value="travel journal vlog">✈️ 旅遊 vlog</option>
+                  <option value="cozy after-work unwinding">🛋️ 下班放鬆</option>
+                  <option value="weekend self-care ritual">🛁 週末 me-time</option>
+                  <option value="quiet reflection moment">🌙 安靜獨處</option>
+                </select>
+              </div>
+              <div class="story-arc-field">
+                <label>💭 情緒基調</label>
+                <select class="form-select" id="story-arc-tone" onchange="onStoryArcChange()">
+                  <option value="">— 不指定 —</option>
+                  <option value="warm and gentle">🤍 溫暖療癒</option>
+                  <option value="witty and slightly sarcastic">😏 幽默犀利</option>
+                  <option value="tired but content">😮‍💨 疲憊而滿足</option>
+                  <option value="relaxed and playful">😌 輕鬆俏皮</option>
+                  <option value="confident and independent">💪 自信獨立</option>
+                  <option value="nostalgic and soft">🕊 懷舊柔軟</option>
+                  <option value="excited and energetic">✨ 興奮期待</option>
+                </select>
+              </div>
+              <div class="story-arc-field">
+                <label>💎 主推產品(自然帶入)</label>
+                <select class="form-select" id="story-arc-product" onchange="onStoryArcChange()">
+                  <option value="">— 不強調 —</option>
+                  <option value="comfortable wireless bra shown subtly through outfit">無鋼圈內衣</option>
+                  <option value="seamless strapless bra naturally worn">無肩帶內衣</option>
+                  <option value="soft lightweight panties hinted casually">內褲日常</option>
+                  <option value="cozy sleepwear worn at home">居家睡衣</option>
+                  <option value="supportive sports bra in everyday context">運動內衣</option>
+                  <option value="lace lingerie set tastefully implied">蕾絲系列</option>
+                </select>
+              </div>
+            </div>
+            <div class="story-arc-hint">
+              💡 這三個欄位會加進 prompt 引導 AI,讓 KOL 有主題性但不說品名(符合自然植入)。<br>
+              明天會接入品牌靈魂書 + KOL 人設書,變成真正的 KOL 經營系統。
+            </div>
+          </div>
+        </div>
+
         <!-- 🆕 v5.1: 當前配置摘要 -->
         <div class="scene-summary" id="scene-summary" style="display:none">
           <div class="scene-summary-line"><span class="scene-summary-label">當前配置:</span><span id="scene-summary-text">—</span></div>
@@ -876,6 +948,7 @@ const SCENE_LIBRARY = {
       verb: 'gently holds up',
       setting: 'her own casual kitchen in soft morning daylight, lived-in details like a coffee cup, morning light spilling on countertop',
       light: 'soft natural window light, golden hour backlight, ambient window spill',
+      outfit: 'casual homewear: soft cotton top or oversized sweater with relaxed pants or leggings, no decorative bows or ornaments, natural everyday wear',
       extra: 'ISO 400 subtle grain, slight camera breath, candid lifestyle aesthetic',
       movements: {
         static: 'subject stands or leans against the kitchen counter, static tripod framing with subtle handheld breathing, speaks directly to camera in place',
@@ -892,6 +965,7 @@ const SCENE_LIBRARY = {
       verb: 'softly shows',
       setting: 'a cozy indie café counter in warm afternoon light, natural café ambience with plants, books, coffee machine softly out of focus',
       light: 'window sidelight plus warm tungsten fill from café lamps',
+      outfit: 'minimalist neutral-tone outfit: silk blouse or fine knit top with simple trousers or pencil skirt, NO decorative bows, NO excessive ornaments, clean Japandi aesthetic',
       extra: 'ISO 640 cinematic grain, moderate depth of field with visible wooden texture behind',
       movements: {
         static: 'subject sits at the café counter with a coffee mug beside her, static framing with subtle café ambience, speaks directly to camera naturally',
@@ -908,6 +982,7 @@ const SCENE_LIBRARY = {
       verb: 'gently displays',
       setting: 'a sunlit outdoor garden with real foliage, slightly blurred natural greenery, breeze gently moves her hair and clothing',
       light: 'golden hour sidelight, soft backlit rim light on hair',
+      outfit: 'light airy outdoor wear: flowing linen dress or loose white blouse with soft wide-leg pants, breathable natural fabrics, no structured formal elements',
       extra: 'ISO 200 fine grain, slight handheld camera shake, available daylight only',
       movements: {
         static: 'subject stands among natural foliage with golden light catching her hair, gentle breeze movement, speaks directly to camera with calm warmth',
@@ -924,6 +999,7 @@ const SCENE_LIBRARY = {
       verb: 'subtly showcases',
       setting: 'a quiet urban side street at night, wet pavement reflections, distant passersby softly blurred',
       light: 'neon reflections on skin, magenta and cyan color spill from nearby signs, warm vending machine glow',
+      outfit: 'urban casual: simple denim or cargo pants with a fitted basic tee or minimalist jacket, understated quality fabrics, no flashy embellishments',
       extra: 'ISO 1600 visible grain for low-light authenticity, handheld travel vlog aesthetic',
       movements: {
         static: 'subject stands still on the neon-lit street, face catching shifting magenta and cyan light, speaks directly to camera with nighttime intimacy',
@@ -942,6 +1018,7 @@ const SCENE_LIBRARY = {
       verb: 'casually holds',
       setting: 'a relaxed weekend café, wooden table, coffee mug nearby',
       light: 'warm window light with soft ambient café lamps',
+      outfit: 'weekend relaxed: soft knit sweater or oversized button-down with comfortable wide pants, natural earth-tone palette, no elaborate accessories',
       extra: 'ISO 400 film grain, shallow natural depth of field',
       movements: {
         static: 'subject sits at the wooden café table, coffee mug and MOZ accessory in view, static framing with subtle weekend calm, speaks directly to camera',
@@ -958,6 +1035,7 @@ const SCENE_LIBRARY = {
       verb: 'naturally carries',
       setting: 'a bright metro train interior, passengers softly blurred in distance',
       light: 'cool overhead fluorescent mixed with warm window light passing by',
+      outfit: 'commuter smart-casual: simple blazer or cardigan over a plain tee, slim pants, practical modern workwear without ornamental details',
       extra: 'ISO 800 grain, slight handheld vibration from train movement',
       movements: {
         static: 'subject stands or sits in the train, accessory in hand, slight train vibration moves her naturally, speaks directly to camera with commuter calm',
@@ -976,6 +1054,7 @@ const SCENE_LIBRARY = {
       verb: 'calmly demonstrates',
       setting: 'a real family kitchen countertop with lived-in details, cutting board, fresh ingredients nearby',
       light: 'bright overhead kitchen light plus warm window spill',
+      outfit: 'practical home cook attire: plain t-shirt or short-sleeve blouse with comfortable pants, maybe a simple apron, no fancy accessories',
       extra: 'ISO 200 clean grain, static tripod framing, slight focus breathing',
       movements: {
         static: 'subject stands at the kitchen counter with the appliance in front of her, static framing focuses on demonstration gestures, speaks directly to camera with practical warmth',
@@ -992,6 +1071,7 @@ const SCENE_LIBRARY = {
       verb: 'joyfully presents',
       setting: 'a sunlit breakfast table, fresh morning spread, real home ambience',
       light: 'warm morning sunlight through curtains, soft natural rim',
+      outfit: 'cozy morning homewear: soft pajama top or comfortable loose tee with casual shorts or long pants, natural no-makeup morning look, no styled accessories',
       extra: 'ISO 400 grain, handheld vlog feel, intimate family atmosphere',
       movements: {
         static: 'subject sits at the breakfast table with the appliance beside her, morning light falls naturally, static framing with subtle warmth, speaks directly to camera',
@@ -1181,15 +1261,26 @@ function composeSeedancePrompt(brandId, sceneId, locationId, movementId) {
     movementText = scene.movements?.[movementId] || CAMERA_MOVEMENTS[movementId]?.fallback || '';
   }
 
-  // 組合順序:動作 + 場景 + 燈光 + 運鏡 + extra + REALISM 基底
+  // 組合順序:動作 + 場景 + 燈光 + 運鏡 + 服裝指南 + extra + REALISM 基底 + 故事弧(如有)
   const parts = [
     action,
     'in ' + settingText,
     scene.light,
     movementText,
+    scene.outfit ? 'wearing ' + scene.outfit : null,
     scene.extra,
     REALISM_BASE,
   ].filter(Boolean);
+
+  // 🆕 v5.4: 故事弧淺版 — 故事定位 + 情緒基調 + 主推產品暗示
+  const storyArc = S.storyArc || {};
+  const arcParts = [];
+  if (storyArc.tone) arcParts.push('emotional tone: ' + storyArc.tone);
+  if (storyArc.theme) arcParts.push('content theme: ' + storyArc.theme);
+  if (storyArc.productHint) arcParts.push('subtle product emphasis: ' + storyArc.productHint);
+  if (arcParts.length > 0) {
+    parts.push(arcParts.join(', ') + ', no explicit brand name mentioned, natural lifestyle integration');
+  }
 
   return parts.join(', ');
 }
@@ -1216,6 +1307,7 @@ const S = {
   selectedSceneId: '',            // 🆕 v5.1: 當前場景 id
   selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
   selectedMovementId: 'static',   // 🆕 v5.3: 當前運鏡 id,預設靜態
+  storyArc: { theme: '', tone: '', productHint: '' },  // 🆕 v5.4: 故事弧
   seedanceParams: {
     resolution: '720p',
     duration: '5',
@@ -1425,10 +1517,25 @@ async function onBrandChange() {
   S.selectedSceneId = '';
   S.selectedLocationId = 'none';
   S.selectedMovementId = 'static';  // 🆕 v5.3: 重置運鏡為預設靜態
+  S.storyArc = { theme: '', tone: '', productHint: '' };  // 🆕 v5.4: 重置故事弧
   document.getElementById('scene-summary').style.display = 'none';
   document.getElementById('seedance-prompt').value = '';
   const mpGroup = document.getElementById('movement-picker-group');
   if (mpGroup) mpGroup.style.display = 'none';
+  const saBlock = document.getElementById('story-arc-block');
+  if (saBlock) {
+    saBlock.style.display = 'none';
+    saBlock.classList.remove('open');
+    document.getElementById('story-arc-body').style.display = 'none';
+    const chip = document.getElementById('story-arc-chip');
+    if (chip) { chip.textContent = '未設定'; chip.classList.remove('set'); }
+    const themeSel = document.getElementById('story-arc-theme');
+    const toneSel = document.getElementById('story-arc-tone');
+    const prodSel = document.getElementById('story-arc-product');
+    if (themeSel) themeSel.value = '';
+    if (toneSel) toneSel.value = '';
+    if (prodSel) prodSel.value = '';
+  }
 
   if (!brandId) {
     document.getElementById('no-brand-panel').style.display = '';
@@ -2385,6 +2492,8 @@ function handleSceneCardClick(e) {
   renderLocationPicker();
   // 🎥 v5.3: 運鏡選擇器出現
   renderMovementPicker();
+  // 📖 v5.4: 故事弧區塊也跟場景一起出現
+  document.getElementById('story-arc-block').style.display = '';
 
   // 組 prompt + 更新摘要
   syncScenePrompt();
@@ -2442,12 +2551,40 @@ function handleMovementClick(e) {
   const suggestSec = CAMERA_MOVEMENTS[movementId]?.duration_suggest;
   if (suggestSec) {
     const targetVal = String(suggestSec);
-    // 切換右側時長 radio
     document.querySelectorAll('[data-group="duration"] .seedance-radio').forEach(r => {
       r.classList.toggle('active', r.dataset.value === targetVal);
     });
     S.seedanceParams.duration = targetVal;
     updateSeedanceCostEstimate();
+  }
+
+  syncScenePrompt();
+}
+
+// 📖 v5.4: 故事弧切換
+function toggleStoryArc() {
+  const block = document.getElementById('story-arc-block');
+  const body = document.getElementById('story-arc-body');
+  const isOpen = block.classList.toggle('open');
+  body.style.display = isOpen ? '' : 'none';
+}
+
+function onStoryArcChange() {
+  S.storyArc = {
+    theme: document.getElementById('story-arc-theme').value,
+    tone: document.getElementById('story-arc-tone').value,
+    productHint: document.getElementById('story-arc-product').value,
+  };
+
+  // 更新 chip 顯示
+  const chip = document.getElementById('story-arc-chip');
+  const setCount = Object.values(S.storyArc).filter(Boolean).length;
+  if (setCount > 0) {
+    chip.textContent = `已設 ${setCount}/3`;
+    chip.classList.add('set');
+  } else {
+    chip.textContent = '未設定';
+    chip.classList.remove('set');
   }
 
   syncScenePrompt();
