@@ -295,6 +295,30 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .ref-drive-locked{text-align:center;padding:28px 16px;color:var(--text-dim);font-size:12px;line-height:1.7;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--radius-sm);}
 .ref-drive-locked .emoji{font-size:28px;display:block;margin-bottom:8px;}
 
+/* 🆕 v5.1: Drive 商品照 Gallery(電影鏡頭模式) */
+.drive-product-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.drive-product-item{
+  aspect-ratio:1;border-radius:6px;overflow:hidden;background:var(--surface2);
+  position:relative;cursor:pointer;transition:all .2s;border:2px solid transparent;
+}
+.drive-product-item:hover{border-color:rgba(124,109,250,.5);transform:scale(1.03);}
+.drive-product-item.selected{border-color:var(--accent);}
+.drive-product-item.selected::after{
+  content:'✓';position:absolute;top:4px;right:4px;
+  width:18px;height:18px;background:var(--accent);color:white;border-radius:50%;
+  font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;
+  box-shadow:0 2px 8px rgba(0,0,0,.4);
+}
+.drive-product-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.drive-product-item .drive-name{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(0deg,rgba(0,0,0,.8) 0%,transparent 100%);
+  padding:8px 6px 4px;font-size:10px;color:#fff;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:'Syne',sans-serif;font-weight:600;
+}
+.drive-product-refresh{margin-top:10px;text-align:center;}
+
 /* Seedance 設定 */
 /* 🆕 v5.1: 場景網格 */
 .scene-grid-v2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:4px;}
@@ -569,7 +593,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
         <div class="ref-tabs">
           <button class="ref-tab active" data-ref-tab="url" onclick="switchRefTab('url')">⌨️ 手動 URL</button>
-          <button class="ref-tab" data-ref-tab="drive" onclick="switchRefTab('drive')">📁 從 Drive 選<span class="lock">🔒</span></button>
+          <button class="ref-tab" data-ref-tab="drive" onclick="switchRefTab('drive')" id="ref-tab-drive">📁 從 Drive 選<span class="lock" id="ref-tab-drive-lock">🔒</span></button>
         </div>
 
         <div class="ref-tab-panel active" id="ref-panel-url">
@@ -582,10 +606,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
 
         <div class="ref-tab-panel" id="ref-panel-drive">
-          <div class="ref-drive-locked">
-            <span class="emoji">🔒</span>
-            <strong>Drive 選擇器 · 明天解鎖</strong><br>
-            <small>今晚先用「手動 URL」模式完整跑通<br>明天建好 <code>LACEZ/照片/商品照/</code> 資料夾即可解鎖</small>
+          <div id="drive-product-gallery-wrap">
+            <div class="kol-empty" style="padding:28px 16px;font-size:12px">選品牌後載入 Drive 照片…</div>
           </div>
         </div>
       </div>
@@ -782,11 +804,11 @@ const SEEDANCE_PRICE = {
   standard: { '720p': 0.3024, '1080p': 0.6048, '480p': 0.1512 },
 };
 
-// 🆕 v5.0: 品牌 → 商品照 Drive folderId 對照表(明天補)
+// 🆕 v5.0: 品牌 → 商品照 Drive folderId 對照表
 const BRAND_PRODUCT_FOLDERS = {
-  // 'la': 'XXXX', // LACEZ 明天建好後補
-  // 'moz': 'XXXX',
-  // 'ka': 'XXXX',
+  'la': '1floyhhNxkCl72GxkWWGv_Kcl03AvCEfz',  // LACEZ 商品照
+  // 'moz': 'XXXX',  // 後續補
+  // 'ka': 'XXXX',   // 後續補
 };
 
 // 🆕 v5.0: Prompt 範本庫
@@ -1306,6 +1328,16 @@ async function onBrandChange() {
 
   // 🆕 v5.1: 載入該品牌的場景庫
   renderSceneGrid();
+
+  // 🆕 v5.1: 更新 Drive tab 鎖頭狀態
+  const lockIcon = document.getElementById('ref-tab-drive-lock');
+  if (lockIcon) {
+    lockIcon.style.display = BRAND_PRODUCT_FOLDERS[brandId] ? 'none' : '';
+  }
+  // 如果當前在 drive tab,切回 url(避免空白)
+  if (document.querySelector('.ref-tab[data-ref-tab="drive"].active') && !BRAND_PRODUCT_FOLDERS[brandId]) {
+    switchRefTab('url');
+  }
 
   await Promise.all([
     loadKolList(brandId),
@@ -1961,10 +1993,148 @@ function switchRefTab(tab) {
   document.querySelector(`.ref-tab[data-ref-tab="${tab}"]`)?.classList.add('active');
   document.getElementById(`ref-panel-${tab}`)?.classList.add('active');
 
-  if (tab === 'drive' && !BRAND_PRODUCT_FOLDERS[S.currentBrandId]) {
-    // 目前沒有任何品牌有 folderId,直接顯示「明天解鎖」提示
-    // (已在 HTML 裡寫好了)
+  if (tab === 'drive') {
+    loadDriveProducts();
   }
+}
+
+// 🆕 v5.1: 載入品牌的 Drive 商品照
+async function loadDriveProducts() {
+  const wrap = document.getElementById('drive-product-gallery-wrap');
+  if (!wrap) return;
+
+  const folderId = BRAND_PRODUCT_FOLDERS[S.currentBrandId];
+  if (!folderId) {
+    wrap.innerHTML = `
+      <div class="ref-drive-locked">
+        <span class="emoji">🔒</span>
+        <strong>此品牌尚未設定商品照資料夾</strong><br>
+        <small>等管理員補上 Drive folderId 即可解鎖</small>
+      </div>
+    `;
+    return;
+  }
+
+  // 使用快取避免重複呼叫
+  const cacheKey = 'drive_products_' + folderId;
+  if (window._driveProductsCache?.[cacheKey]) {
+    renderDriveProducts(window._driveProductsCache[cacheKey]);
+    return;
+  }
+
+  wrap.innerHTML = '<div class="kol-empty" style="padding:28px 16px;font-size:12px"><span class="spin">⏳</span> 讀取 Drive 商品照中…</div>';
+
+  try {
+    const res = await api('drive_files', { folderId });
+    if (!res.ok) throw new Error(res.error || '讀取失敗');
+
+    // 過濾只留圖片
+    const files = (res.files || []).filter(f =>
+      f.mimeType && /^image\//.test(f.mimeType)
+    );
+
+    window._driveProductsCache = window._driveProductsCache || {};
+    window._driveProductsCache[cacheKey] = files;
+
+    renderDriveProducts(files);
+  } catch (e) {
+    wrap.innerHTML = `
+      <div class="ref-drive-locked">
+        <span class="emoji">❌</span>
+        <strong>讀取失敗</strong><br>
+        <small>${escapeHtml(e.message)}</small>
+        <div class="drive-product-refresh">
+          <button class="btn btn-ghost btn-sm" onclick="reloadDriveProducts()">🔄 重試</button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function reloadDriveProducts() {
+  const folderId = BRAND_PRODUCT_FOLDERS[S.currentBrandId];
+  if (folderId && window._driveProductsCache) {
+    delete window._driveProductsCache['drive_products_' + folderId];
+  }
+  loadDriveProducts();
+}
+
+function renderDriveProducts(files) {
+  const wrap = document.getElementById('drive-product-gallery-wrap');
+  if (!files || files.length === 0) {
+    wrap.innerHTML = `
+      <div class="ref-drive-locked">
+        <span class="emoji">📁</span>
+        <strong>資料夾裡沒照片</strong><br>
+        <small>上傳幾張 LACEZ 商品照到 Drive 再回來按重試</small>
+        <div class="drive-product-refresh">
+          <button class="btn btn-ghost btn-sm" onclick="reloadDriveProducts()">🔄 重試</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // 升級縮圖解析度:Google thumbnailLink 後面有 =s400,改成 =s1200 得到更清晰的圖
+  const upgradedFiles = files.map(f => ({
+    ...f,
+    hiResUrl: (f.thumbnailLink || '').replace(/=s\d+/, '=s1200'),
+  }));
+
+  const html = `
+    <div class="drive-product-gallery">
+      ${upgradedFiles.map(f => {
+        // 檢查是否已加入(用 hiResUrl 比對)
+        const isSelected = S.seedanceProductUrls.includes(f.hiResUrl);
+        return `
+          <div class="drive-product-item ${isSelected ? 'selected' : ''}"
+               data-hi-res="${escapeHtml(f.hiResUrl)}"
+               data-thumb="${escapeHtml(f.thumbnailLink || '')}"
+               data-name="${escapeHtml(f.name || '')}"
+               title="${escapeHtml(f.name || '')}">
+            <img src="${escapeHtml(f.thumbnailLink)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f>🖼️</div>'">
+            <div class="drive-name">${escapeHtml(f.name || '')}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div class="drive-product-refresh">
+      <button class="btn btn-ghost btn-sm" onclick="reloadDriveProducts()">🔄 重新整理</button>
+      <span style="margin-left:10px;font-size:10.5px;color:var(--text-dim);font-family:'Syne',sans-serif">共 ${upgradedFiles.length} 張</span>
+    </div>
+  `;
+
+  wrap.innerHTML = html;
+
+  // Event delegation
+  wrap.querySelectorAll('.drive-product-item').forEach(item => {
+    item.addEventListener('click', handleDriveProductClick);
+  });
+}
+
+function handleDriveProductClick(e) {
+  const item = e.currentTarget;
+  const hiResUrl = item.dataset.hiRes;
+  if (!hiResUrl) return;
+
+  const idx = S.seedanceProductUrls.indexOf(hiResUrl);
+  if (idx >= 0) {
+    // 已選 → 移除
+    S.seedanceProductUrls.splice(idx, 1);
+    item.classList.remove('selected');
+  } else {
+    // 未選 → 加入
+    if (S.seedanceProductUrls.length >= 9) {
+      toast('最多 9 張(含 KOL 肖像)', 'warn');
+      return;
+    }
+    S.seedanceProductUrls.push(hiResUrl);
+    item.classList.add('selected');
+  }
+
+  renderRefList();
+  updateSeedanceSubmitButton();
+  updateSeedanceCostEstimate();
 }
 
 function addProductUrl() {
@@ -1983,10 +2153,17 @@ function addProductUrl() {
 }
 
 function removeProductUrl(index) {
+  const removedUrl = S.seedanceProductUrls[index];
   S.seedanceProductUrls.splice(index, 1);
   renderRefList();
   updateSeedanceSubmitButton();
   updateSeedanceCostEstimate();
+
+  // 🆕 v5.1: 同步 Drive Gallery 的選中狀態
+  if (removedUrl) {
+    document.querySelectorAll(`.drive-product-item[data-hi-res="${CSS.escape(removedUrl)}"]`)
+      .forEach(el => el.classList.remove('selected'));
+  }
 }
 
 function renderRefList() {
@@ -2180,6 +2357,9 @@ function copySeedancePrompt() {
 async function createSeedanceVideo() {
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
   if (!S.selectedSceneId) { toast('請選擇一個場景', 'error'); return; }
+  if (S.seedanceProductUrls.length === 0) {
+    if (!confirm('你沒加任何商品照,影片裡的 [Image2] 指涉會無對應圖(fal.ai 可能拒絕或效果不佳)。\n\n純展示 KOL 情境(無帶貨)可以繼續,要繼續嗎?')) return;
+  }
 
   // 🆕 v5.1: 從場景 + 地標組 prompt(後端邏輯,使用者看不到)
   let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId);
