@@ -391,6 +391,119 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .story-arc-field{display:flex;flex-direction:column;gap:4px;}
 .story-arc-field label{font-size:10.5px;font-weight:600;color:var(--text-dim);}
 .story-arc-hint{font-size:10.5px;color:var(--text-dim);margin-top:10px;line-height:1.6;padding:10px;background:rgba(124,109,250,.06);border-left:2px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;}
+
+/* 🚀 v5.5 · 系統模式(Phase 0 UI 骨架) */
+.system-wrap{max-width:1100px;margin:0 auto;padding:0 24px 80px;}
+.system-alpha-banner{
+  background:linear-gradient(135deg,rgba(255,169,77,.12) 0%,rgba(255,169,77,.04) 100%);
+  border:1px solid rgba(255,169,77,.3);border-radius:var(--radius);
+  padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:20px;
+}
+.system-alpha-icon{font-size:22px;flex-shrink:0;}
+.system-alpha-text{display:flex;flex-direction:column;gap:2px;}
+.system-alpha-text strong{color:#ffa94d;font-size:13px;}
+.system-alpha-text span{color:var(--text-dim);font-size:11.5px;}
+
+.system-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;}
+@media(max-width:900px){.system-grid{grid-template-columns:1fr;}}
+.system-col-left,.system-col-right{display:flex;flex-direction:column;gap:20px;}
+.system-panel{position:relative;}
+
+/* KOL 切換器 */
+.system-kol-switcher{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;}
+.system-kol-card{
+  flex:1;min-width:220px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;gap:12px;
+  cursor:pointer;transition:all .2s;
+}
+.system-kol-card:hover{border-color:rgba(124,109,250,.4);}
+.system-kol-card.selected{border-color:var(--accent);background:linear-gradient(135deg,rgba(124,109,250,.15) 0%,rgba(124,109,250,.03) 100%);}
+.system-kol-avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:white;flex-shrink:0;}
+.system-kol-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.system-kol-info strong{font-size:13px;}
+.system-kol-info small{font-size:10.5px;color:var(--text-dim);}
+.system-kol-add{
+  background:transparent;border:1px dashed var(--border);border-radius:var(--radius-sm);
+  color:var(--text-dim);font-size:12px;padding:10px 18px;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;transition:all .2s;
+}
+.system-kol-add:hover{border-color:var(--accent);color:var(--accent);}
+
+/* 人設卡片 */
+.persona-card,.soul-card{display:flex;flex-direction:column;gap:10px;}
+.persona-row,.soul-row{display:flex;gap:12px;font-size:12px;line-height:1.6;padding:6px 0;border-bottom:1px dashed var(--border);}
+.persona-row:last-child,.soul-row:last-child{border-bottom:none;}
+.persona-label,.soul-label{flex-shrink:0;width:70px;color:var(--text-dim);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.04em;}
+.persona-value,.soul-value{flex:1;color:var(--text);}
+.soul-tagline{
+  font-size:16px;font-weight:700;text-align:center;padding:14px;
+  background:linear-gradient(135deg,rgba(250,109,155,.12) 0%,rgba(124,109,250,.08) 100%);
+  border-radius:var(--radius-sm);margin-bottom:6px;
+  background-clip:text;-webkit-background-clip:text;
+  color:var(--text);font-style:italic;
+}
+.soul-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.soul-tag{font-size:11px;padding:3px 8px;background:rgba(124,109,250,.15);color:var(--accent);border-radius:10px;font-family:'Syne',sans-serif;font-weight:600;}
+.soul-link-hint{font-size:10.5px;color:var(--text-dim);margin-top:10px;padding:8px 10px;background:rgba(124,109,250,.06);border-radius:var(--radius-sm);border-left:2px solid var(--accent);}
+
+/* 產品輪替 */
+.product-rotation{display:flex;flex-direction:column;gap:4px;}
+.rotation-row{display:grid;grid-template-columns:50px 1fr 60px;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm);align-items:center;font-size:12px;border:1px solid transparent;}
+.rotation-row.active{border-color:var(--accent);background:linear-gradient(135deg,rgba(124,109,250,.15) 0%,rgba(124,109,250,.03) 100%);}
+.rotation-week{font-family:'Syne',sans-serif;font-weight:700;color:var(--accent);font-size:13px;}
+.rotation-prod{color:var(--text);}
+.rotation-row.active .rotation-prod{font-weight:600;}
+.rotation-posts{font-size:11px;color:var(--text-dim);text-align:right;font-family:'Syne',sans-serif;}
+
+/* 日曆 */
+.calendar-hint{font-size:12px;color:var(--text);margin-bottom:12px;padding:10px 12px;background:rgba(124,109,250,.06);border-radius:var(--radius-sm);border-left:2px solid var(--accent);}
+.calendar-hint strong{color:var(--accent);}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-cell{
+  aspect-ratio:1;background:var(--surface2);border:1px solid var(--border);
+  border-radius:5px;padding:5px 4px;display:flex;flex-direction:column;gap:2px;
+  font-size:10px;overflow:hidden;position:relative;
+}
+.cal-cell.head{
+  aspect-ratio:auto;min-height:24px;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:10.5px;color:var(--text-dim);
+  background:transparent;border:none;padding:4px 0;
+}
+.cal-cell .n{font-size:10px;color:var(--text-dim);font-family:'Syne',sans-serif;font-weight:600;}
+.cal-cell .ev{font-size:8.5px;line-height:1.2;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-cell.past{opacity:0.6;}
+.cal-cell.past.posted{background:rgba(109,250,194,.08);border-color:rgba(109,250,194,.3);opacity:1;}
+.cal-cell.past.posted .ev{color:var(--accent3);}
+.cal-cell.today{background:rgba(255,169,77,.12);border-color:#ffa94d;}
+.cal-cell.today .n{color:#ffa94d;font-weight:700;}
+.cal-cell.today .ev{color:#ffa94d;}
+.cal-cell.planned{background:rgba(124,109,250,.08);border-color:rgba(124,109,250,.25);}
+.cal-cell.planned .ev{color:var(--accent);}
+.cal-legend{display:flex;gap:14px;margin-top:10px;font-size:10.5px;color:var(--text-dim);}
+.cal-legend span{display:flex;align-items:center;gap:4px;}
+.cal-legend .dot{width:8px;height:8px;border-radius:50%;}
+
+/* 單集企劃 */
+.episode-card{background:var(--surface2);border-radius:var(--radius-sm);padding:14px;display:flex;flex-direction:column;gap:12px;}
+.ep-section{display:flex;flex-direction:column;gap:4px;padding-bottom:10px;border-bottom:1px dashed var(--border);}
+.ep-section:last-of-type{border-bottom:none;}
+.ep-head{font-size:11px;font-weight:700;color:var(--text-dim);font-family:'Syne',sans-serif;letter-spacing:.04em;}
+.ep-body{font-size:12.5px;line-height:1.7;color:var(--text);display:flex;flex-wrap:wrap;gap:4px;}
+.ep-body.ep-caption{font-size:12px;line-height:1.8;background:rgba(124,109,250,.06);padding:10px 12px;border-radius:var(--radius-sm);border-left:2px solid var(--accent);flex-direction:column;}
+.ep-actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--border);}
+
+/* 批次佇列 */
+.queue-list{display:flex;flex-direction:column;gap:6px;}
+.queue-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);}
+.queue-status{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.queue-done{background:rgba(109,250,194,.15);color:var(--accent3);}
+.queue-progress{background:rgba(124,109,250,.15);color:var(--accent);}
+.queue-pending{background:rgba(255,255,255,.05);color:var(--text-dim);}
+.queue-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.queue-info strong{font-size:12.5px;}
+.queue-info small{font-size:10.5px;color:var(--text-dim);}
+.queue-footer{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.queue-cost{font-size:11px;color:var(--text-dim);font-family:'Syne',sans-serif;}
 .seedance-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .seedance-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .seedance-radio{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text-mid);font-weight:500;}
@@ -456,8 +569,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div class="vision-title">Avatar 電影鏡頭</div>
         <div class="vision-desc">多張 KOL 照片 + 商品照 reference → Seedance 2.0 AI 產出電影感短影音,含環境走動與自然運鏡。</div>
       </div>
-      <div class="vision-col future disabled" data-mode="system">
-        <div class="vision-stage">🚀 完整版 · Roadmap <span class="vision-badge locked">🔒 規劃中</span></div>
+      <div class="vision-col future" data-mode="system">
+        <div class="vision-stage">🚀 完整版 · Alpha <span class="vision-badge dev">雛形</span></div>
         <div class="vision-title">KOL 自動經營系統</div>
         <div class="vision-desc">Brand OS 當你的數字人 KOL 經紀人,自動規劃每週/每月內容主題,像真人一樣分享生活、排程發文。</div>
       </div>
@@ -855,13 +968,288 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- 🚀 模式 C:經營系統(placeholder) -->
+  <!-- 🚀 模式 C:KOL 自動經營系統 · Phase 0 雛形 -->
   <!-- ═══════════════════════════════════════════════════════ -->
   <div id="main-layout-system" style="display:none">
-    <div class="no-brand-msg">
-      <span class="emoji">🚀</span>
-      <h3>KOL 自動經營系統 — 規劃中</h3>
-      <p>此模式目前未開放,將於完整版推出。<br>屆時 Brand OS 會自動規劃每週內容主題、排程發文、分析成效。</p>
+    <div class="system-wrap">
+
+      <!-- Alert banner -->
+      <div class="system-alpha-banner">
+        <span class="system-alpha-icon">⚠️</span>
+        <div class="system-alpha-text">
+          <strong>Phase 0 · UI 雛形</strong>
+          <span>純模型,所有資料為示意,功能尚未接入後端。可操作感受流程。</span>
+        </div>
+      </div>
+
+      <!-- 頂部 KOL 選擇器 -->
+      <div class="panel">
+        <div class="panel-title"><div class="dot" style="background:var(--accent3)"></div>🎭 經營中的 KOL</div>
+        <div class="system-kol-switcher">
+          <div class="system-kol-card selected">
+            <div class="system-kol-avatar" style="background:linear-gradient(135deg,#fa6d9b,#ff8fb3)">E</div>
+            <div class="system-kol-info">
+              <strong>Elaine</strong>
+              <small>LACEZ · 25-30 · 上班族文青</small>
+            </div>
+            <span class="chip green">經營中</span>
+          </div>
+          <div class="system-kol-card">
+            <div class="system-kol-avatar" style="background:linear-gradient(135deg,#7c6dfa,#a78bfa)">M</div>
+            <div class="system-kol-info">
+              <strong>Misaki</strong>
+              <small>LACEZ · 30-35 · 混血感時尚</small>
+            </div>
+            <span class="chip">待啟用</span>
+          </div>
+          <button class="system-kol-add">+ 新增 KOL</button>
+        </div>
+      </div>
+
+      <!-- 兩欄排版:左側 KOL 人設/靈魂/產品 + 右側 日曆/企劃/批次 -->
+      <div class="system-grid">
+
+        <!-- 左欄 -->
+        <div class="system-col-left">
+
+          <!-- 1. KOL 人設書 -->
+          <div class="panel system-panel">
+            <div class="panel-title">
+              <div class="dot"></div>
+              🎭 Elaine · 人設書
+              <span class="chip orange" style="margin-left:auto">🟡 Phase 1 做</span>
+            </div>
+            <div class="persona-card">
+              <div class="persona-row">
+                <span class="persona-label">背景</span>
+                <span class="persona-value">25-30 歲台北上班族,文青女性,住在永康街附近的單身小套房</span>
+              </div>
+              <div class="persona-row">
+                <span class="persona-label">職業</span>
+                <span class="persona-value">設計公司視覺設計師,週間加班、週末咖啡廳閱讀</span>
+              </div>
+              <div class="persona-row">
+                <span class="persona-label">語氣</span>
+                <span class="persona-value">溫暖療癒 + 一點點幽默犀利,對生活有觀察力</span>
+              </div>
+              <div class="persona-row">
+                <span class="persona-label">關心議題</span>
+                <span class="persona-value">職場壓力、自我關愛、小品旅行、日系時尚</span>
+              </div>
+              <div class="persona-row">
+                <span class="persona-label">穿搭偏好</span>
+                <span class="persona-value">極簡日系、米白奶茶色、絲質針織、不愛誇張配件</span>
+              </div>
+              <div class="persona-row">
+                <span class="persona-label">口頭禪</span>
+                <span class="persona-value">「欸...」「我就是這種人啦」「真的沒辦法了」</span>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm btn-full" style="margin-top:12px">✏️ 編輯人設(Phase 1 開放)</button>
+          </div>
+
+          <!-- 2. 品牌靈魂書連結 -->
+          <div class="panel system-panel">
+            <div class="panel-title">
+              <div class="dot" style="background:var(--accent2)"></div>
+              📘 LACEZ · 品牌靈魂書
+              <span class="chip orange" style="margin-left:auto">🟡 明天接</span>
+            </div>
+            <div class="soul-card">
+              <div class="soul-tagline">「Sending you love and light」</div>
+              <div class="soul-row">
+                <span class="soul-label">定位</span>
+                <span class="soul-value">MIT 功能性內衣,溫柔自在的女性關愛</span>
+              </div>
+              <div class="soul-row">
+                <span class="soul-label">關鍵字</span>
+                <div class="soul-tags">
+                  <span class="soul-tag">lace</span>
+                  <span class="soul-tag">elegant</span>
+                  <span class="soul-tag">soft glow</span>
+                  <span class="soul-tag">wire-free</span>
+                  <span class="soul-tag">comfortable confidence</span>
+                </div>
+              </div>
+              <div class="soul-row">
+                <span class="soul-label">TA</span>
+                <span class="soul-value">25-45 歲女性 B-G 罩杯,追求日常舒適的質感</span>
+              </div>
+            </div>
+            <div class="soul-link-hint">
+              💡 人設書 × 品牌靈魂書 = KOL 知道怎麼自然帶出品牌精神,不違和
+            </div>
+          </div>
+
+          <!-- 3. 產品輪替表 -->
+          <div class="panel system-panel">
+            <div class="panel-title">
+              <div class="dot" style="background:var(--accent3)"></div>
+              💎 產品輪替排程
+              <span class="chip orange" style="margin-left:auto">🟡 Phase 2</span>
+            </div>
+            <div class="product-rotation">
+              <div class="rotation-row">
+                <div class="rotation-week">W17</div>
+                <div class="rotation-prod">無鋼圈舒適內衣</div>
+                <div class="rotation-posts">3 篇</div>
+              </div>
+              <div class="rotation-row active">
+                <div class="rotation-week">W18</div>
+                <div class="rotation-prod">無肩帶款(主推 ↑)</div>
+                <div class="rotation-posts">5 篇</div>
+              </div>
+              <div class="rotation-row">
+                <div class="rotation-week">W19</div>
+                <div class="rotation-prod">內褲日常系列</div>
+                <div class="rotation-posts">4 篇</div>
+              </div>
+              <div class="rotation-row">
+                <div class="rotation-week">W20</div>
+                <div class="rotation-prod">睡衣 / 居家服</div>
+                <div class="rotation-posts">3 篇</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 右欄 -->
+        <div class="system-col-right">
+
+          <!-- 4. 本月內容日曆 -->
+          <div class="panel system-panel">
+            <div class="panel-title">
+              <div class="dot" style="background:var(--accent)"></div>
+              📅 本月內容日曆 · 2026 四月
+              <span class="chip orange" style="margin-left:auto">🟡 Phase 2</span>
+            </div>
+            <div class="calendar-hint">本週主軸:<strong>「下班後的我」</strong> · 搭配無肩帶系列隱性植入</div>
+            <div class="calendar-grid">
+              <div class="cal-cell head">日</div>
+              <div class="cal-cell head">一</div>
+              <div class="cal-cell head">二</div>
+              <div class="cal-cell head">三</div>
+              <div class="cal-cell head">四</div>
+              <div class="cal-cell head">五</div>
+              <div class="cal-cell head">六</div>
+              <div class="cal-cell past"><span class="n">20</span></div>
+              <div class="cal-cell past posted"><span class="n">21</span><span class="ev">📝 工作抱怨</span></div>
+              <div class="cal-cell past"><span class="n">22</span></div>
+              <div class="cal-cell past posted"><span class="n">23</span><span class="ev">🛋 下班放鬆</span></div>
+              <div class="cal-cell today"><span class="n">24 · 今天</span><span class="ev planned">⏳ 咖啡廳午後</span></div>
+              <div class="cal-cell planned"><span class="n">25</span><span class="ev planned">🌿 週五戶外</span></div>
+              <div class="cal-cell"><span class="n">26</span></div>
+              <div class="cal-cell planned"><span class="n">27</span><span class="ev planned">📖 週末讀書</span></div>
+              <div class="cal-cell"><span class="n">28</span></div>
+              <div class="cal-cell planned"><span class="n">29</span><span class="ev planned">🥞 早餐分享</span></div>
+              <div class="cal-cell"><span class="n">30</span></div>
+              <div class="cal-cell"><span class="n">1</span></div>
+              <div class="cal-cell"><span class="n">2</span></div>
+              <div class="cal-cell"><span class="n">3</span></div>
+            </div>
+            <div class="cal-legend">
+              <span><span class="dot" style="background:var(--accent3)"></span>已發</span>
+              <span><span class="dot" style="background:var(--accent)"></span>預定</span>
+              <span><span class="dot" style="background:#ffa94d"></span>今日</span>
+            </div>
+          </div>
+
+          <!-- 5. 單集企劃(Trello 卡風) -->
+          <div class="panel system-panel">
+            <div class="panel-title">
+              <div class="dot" style="background:var(--accent2)"></div>
+              📝 下一集企劃:4/24 咖啡廳午後
+              <span class="chip orange" style="margin-left:auto">🟡 Phase 2</span>
+            </div>
+            <div class="episode-card">
+              <div class="ep-section">
+                <div class="ep-head">🎬 故事情境</div>
+                <div class="ep-body">加班到 7 點後走進巷弄咖啡廳放空,和自己對話一下,邊啜拿鐵邊跟粉絲講今天遇到的事</div>
+              </div>
+              <div class="ep-section">
+                <div class="ep-head">💭 情緒基調</div>
+                <div class="ep-body"><span class="chip">😏 幽默犀利</span> <span class="chip">😮‍💨 疲憊而滿足</span></div>
+              </div>
+              <div class="ep-section">
+                <div class="ep-head">💎 隱性主推產品</div>
+                <div class="ep-body">無肩帶內衣(W18 主推)· 從 prompt 自然引導:開會脫下外套感到肩膀自在</div>
+              </div>
+              <div class="ep-section">
+                <div class="ep-head">🎥 影片配置</div>
+                <div class="ep-body">
+                  <span class="chip">☕ 咖啡廳午後</span>
+                  <span class="chip">🚶 走動轉場</span>
+                  <span class="chip">⏱ 10s · 720p · 9:16</span>
+                </div>
+              </div>
+              <div class="ep-section">
+                <div class="ep-head">📝 社群貼文(AI 生成)</div>
+                <div class="ep-body ep-caption">
+                  今天完全是那種「我還好嗎」的一天 ☕️<br>
+                  加班加到 7 點才離開,肩膀僵到像石頭。<br>
+                  走進這間常來的小咖啡廳,才終於肩鬆下來...<br><br>
+                  #下班時間 #加班人生 #自我療癒 #好日子
+                </div>
+              </div>
+              <div class="ep-actions">
+                <button class="btn btn-primary btn-sm">🎬 立刻生成影片</button>
+                <button class="btn btn-ghost btn-sm">✏️ 編輯企劃</button>
+                <button class="btn btn-ghost btn-sm">📅 調整時間</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. 批次生成佇列 -->
+          <div class="panel system-panel">
+            <div class="panel-title">
+              <div class="dot" style="background:var(--accent3)"></div>
+              🎬 批次生成佇列
+              <span class="chip orange" style="margin-left:auto">🟡 Phase 3</span>
+            </div>
+            <div class="queue-list">
+              <div class="queue-item">
+                <div class="queue-status queue-done">✓</div>
+                <div class="queue-info">
+                  <strong>4/23 · 下班放鬆</strong>
+                  <small>Elaine · 咖啡廳午後 · 10s · 完成</small>
+                </div>
+                <span class="chip green">已生成</span>
+              </div>
+              <div class="queue-item">
+                <div class="queue-status queue-progress"><span class="spin">⏳</span></div>
+                <div class="queue-info">
+                  <strong>4/24 · 咖啡廳午後(加班版)</strong>
+                  <small>Elaine · 走動轉場 · 10s · 生成中</small>
+                </div>
+                <span class="chip">IN_PROGRESS</span>
+              </div>
+              <div class="queue-item">
+                <div class="queue-status queue-pending">⏸</div>
+                <div class="queue-info">
+                  <strong>4/25 · 週五戶外</strong>
+                  <small>Elaine · 戶外綠意 · 10s · 待排程</small>
+                </div>
+                <span class="chip">PENDING</span>
+              </div>
+              <div class="queue-item">
+                <div class="queue-status queue-pending">⏸</div>
+                <div class="queue-info">
+                  <strong>4/27 · 週末讀書</strong>
+                  <small>Elaine · 咖啡廳 · 5s · 待排程</small>
+                </div>
+                <span class="chip">PENDING</span>
+              </div>
+            </div>
+            <div class="queue-footer">
+              <button class="btn btn-primary btn-sm">▶️ 開始批次生成(4 支)</button>
+              <span class="queue-cost">預估:$7.26 USD · 約 10 分鐘</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   </div>
 </main>
@@ -1467,7 +1855,7 @@ function switchMode(mode) {
   const subtitles = {
     talking: '管理品牌的 KOL 形象庫,從 Google Drive 讀取照片一鍵建立 Avatar Group',
     cinematic: 'Seedance 2.0 reference-to-video — 選 KOL 形象 + 商品照 + Prompt 生出電影感短影音',
-    system: 'KOL 自動經營系統 · 規劃中',
+    system: 'KOL 自動經營系統 · Phase 0 UI 雛形 — 純模型,明天接入資料',
   };
   document.getElementById('page-subtitle').textContent = subtitles[mode];
 
