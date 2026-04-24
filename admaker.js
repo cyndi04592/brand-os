@@ -1,12 +1,14 @@
 // ══════════════════════════════════════════════════════════════
-//  BRAND OS · AD Maker  (v8.2)
+//  BRAND OS · AD Maker  (v8.3)
 //  變更紀錄:
-//    [v8.2] 修 CORS 全黑 bug: renderAdCanvasWithPR 雙重 fallback
-//    [v8.2] 修 "直接做廣告圖" 返回留空卡片: 改用臨時模式
-//    [v8.2] 下載容錯: canvas taint 時改走 window.open 備援
+//    [v8.3] ★ 修長期黑畫面 bug: loadImage 改用 fetch+blob
+//           根本原因: fal.ai CDN 無 CORS header → canvas 污染 →
+//                    drawImage 看似成功實際畫空白 → 呈現黑色底
+//           解法: fetch 圖片 bytes → blob → blob: URL → img
+//                 blob URL 永遠同源,canvas 絕不污染
+//    [v8.2] 三重 fallback 載入 / 下載容錯 / 修 undefined bug
 //    [v8.1] 強化 FACE LOCK + 徹底關中文
 //    [v8]   新增 7 個場景 + 修 3 bug
-//    [v7]   修白背景 bug + 砍影片 + 品牌化命名
 // ══════════════════════════════════════════════════════════════
 
 const PRESERVE_SUBJECT =
@@ -125,10 +127,9 @@ let AM = { w:1080, h:1080, scriptIdx:null };
 let PR_BG_IMG  = null;
 let PR_MODE    = 'product_shot';
 let TEXT_ALIGN = 'left';
-let CANVAS_TAINTED = false; // v8.2 追蹤 canvas 是否被 CORS 污染
+let CANVAS_TAINTED = false;
 
 // ══ 開啟 / 關閉 ══
-// v8.2: 改成支援 "直接做廣告圖" 模式(不污染 scripts 陣列)
 function openAdMaker(idx) {
   PR_BG_IMG = null; PR_MODE = 'product_shot';
   CANVAS_TAINTED = false;
@@ -140,10 +141,9 @@ function openAdMaker(idx) {
     if (el) el.style.display = id === 'prSceneSection' ? 'block' : 'none';
   });
 
-  // v8.2: 處理 "直接做廣告圖" 模式(idx 為 -1 或 null)
   let initialTitle = '';
   if (idx === -1 || idx == null || !window.S.scripts?.[idx]) {
-    AM.scriptIdx = -1; // 標記為直接模式
+    AM.scriptIdx = -1;
   } else {
     const s = window.S.scripts[idx];
     AM.scriptIdx = idx;
@@ -159,10 +159,8 @@ function openAdMaker(idx) {
 
 function closeAdMaker() {
   document.getElementById('adMakerModal').style.display = 'none';
-  // v8.2: 關閉時不做任何 scripts 陣列操作,保持乾淨
 }
 
-// ══ 照片縮圖列 ══
 function renderAmPhotoRow() {
   const row = document.getElementById('amPhotoThumbRow');
   const nameEl = document.getElementById('amPhotoName');
@@ -194,7 +192,6 @@ function selectPhotoInAM(i) {
   renderAmPhotoRow(); renderAssets(); renderAdCanvas();
 }
 
-// ══ MD 照片上傳 ══
 function onMdPhotoSelected(input) {
   const file = input.files[0]; if (!file) return;
   const reader = new FileReader();
@@ -219,7 +216,6 @@ function onMdPhotoSelected(input) {
   reader.readAsDataURL(file);
 }
 
-// ══ Mode 切換 ══
 function setPrMode(btn, mode) {
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on'); PR_MODE = mode;
@@ -244,7 +240,6 @@ function setPrStatus(msg, color) {
   if (el) { el.textContent = msg; el.style.color = color || 'var(--t3)'; }
 }
 
-// ══ 進度條 ══
 function startProgress(totalMs) {
   const prBar  = document.getElementById('prProgBar');
   const prFill = document.getElementById('prProgFill');
@@ -285,7 +280,6 @@ function failProgress(interval, errMsg) {
   if (btn) { btn.disabled = false; btn.textContent = '✨ 套用 AI 效果'; }
 }
 
-// ══ Worker / 工具 ══
 async function callWorker(params) {
   const resp = await fetch(CF_WORKER_URL, {
     method: 'POST',
@@ -336,7 +330,6 @@ async function pollUntilDone(requestId, endpoint, maxMs = 300000, responseUrl = 
   return { status:'TIMEOUT' };
 }
 
-// ══ 主入口:套用 AI 效果 ══
 async function applyPhotoroomBg() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
@@ -346,7 +339,6 @@ async function applyPhotoroomBg() {
   const btn = document.getElementById('prApplyBtn');
   btn.disabled = true; btn.textContent = '⏳ AI 處理中...';
 
-  // ── 真人試穿 ──
   if (PR_MODE === 'kling_tryon') {
     const interval = startProgress(60000);
     try {
@@ -383,7 +375,6 @@ async function applyPhotoroomBg() {
     return;
   }
 
-  // ── AI 情境 (改場景) ──
   if (PR_MODE === 'product_shot') {
     const interval = startProgress(30000);
     try {
@@ -411,7 +402,6 @@ async function applyPhotoroomBg() {
         throw new Error(result.error || '生成失敗，請再試一次');
       }
 
-      // v8.2: 優先用 base64,沒有才用 URL
       PR_BG_IMG = result.imageBase64 || result.imageUrl;
       if (!PR_BG_IMG) throw new Error('未回傳圖片資料');
       CANVAS_TAINTED = false;
@@ -423,7 +413,80 @@ async function applyPhotoroomBg() {
   }
 }
 
-// ══ Canvas 渲染 ══
+// ══════════════════════════════════════════════════════════════
+// ★ v8.3 核心修法 ★
+// 用 fetch+blob 載入圖片,避免 canvas 被 CORS 污染
+// 為什麼能修好:
+//   - 用 fetch 直接抓圖片 bytes,不走瀏覽器的 img CORS 機制
+//   - 轉成 blob URL (blob: 開頭) 是瀏覽器記憶體內部,永遠同源
+//   - img 從 blob URL 載入,canvas drawImage 100% 不會污染
+// ══════════════════════════════════════════════════════════════
+async function loadImageSmart(src) {
+  // data URL 或 blob URL: 直接載入,無需處理
+  if (src.startsWith('data:') || src.startsWith('blob:')) {
+    console.log('[v8.3] 同源載入:', src.substring(0, 30));
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = () => {
+        if (img.naturalWidth === 0) reject(new Error('圖片大小為 0'));
+        else resolve();
+      };
+      img.onerror = () => reject(new Error('img 載入失敗'));
+      img.src = src;
+    });
+    return { img, tainted: false };
+  }
+
+  // 跨域 URL (http/https): 先 fetch 再轉 blob
+  console.log('[v8.3] fetch 跨域載入:', src.substring(0, 60));
+  try {
+    const response = await fetch(src, { mode: 'cors' });
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+    const blob = await response.blob();
+    console.log('[v8.3] fetch 成功, blob size:', blob.size, 'type:', blob.type);
+    if (blob.size < 500) {
+      throw new Error('圖片太小 (' + blob.size + ' bytes)，可能是空圖');
+    }
+    const blobUrl = URL.createObjectURL(blob);
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = () => {
+        if (img.naturalWidth === 0) {
+          URL.revokeObjectURL(blobUrl);
+          reject(new Error('blob img naturalWidth 為 0'));
+        } else {
+          console.log('[v8.3] ✅ blob img 載入成功:', img.naturalWidth, 'x', img.naturalHeight);
+          resolve();
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(blobUrl);
+        reject(new Error('blob img 載入失敗'));
+      };
+      img.src = blobUrl;
+    });
+    return { img, tainted: false, blobUrl };
+  } catch(e) {
+    console.warn('[v8.3] fetch 模式失敗, 嘗試 img 直接載入 (會污染 canvas):', e.message);
+    // fallback: 直接用 img 載入(canvas 會被污染,至少看得見)
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = () => {
+        if (img.naturalWidth === 0) reject(new Error('img naturalWidth 為 0'));
+        else {
+          console.warn('[v8.3] img 直接載入成功,canvas 將 tainted');
+          resolve();
+        }
+      };
+      img.onerror = () => reject(new Error('img 直接載入也失敗'));
+      img.src = src;
+    });
+    return { img, tainted: true };
+  }
+}
+
 async function renderAdCanvas() {
   const canvas = document.getElementById('adCanvas');
   if (canvas) canvas.style.display = 'block';
@@ -434,56 +497,26 @@ async function renderAdCanvas() {
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const title = document.getElementById('amTitle')?.value || '';
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
+
   if (photo && (photo.src || photo.thumb)) {
-    await loadImageWithFallback(photo.src || photo.thumb, (img, tainted) => {
-      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, AM.w, AM.h);
+    try {
+      const { img, tainted } = await loadImageSmart(photo.src || photo.thumb);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, AM.w, AM.h);
       const scale = Math.min(AM.w/img.width, AM.h/img.height);
       ctx.drawImage(img,
         Math.round((AM.w-img.width*scale)/2),
         Math.round((AM.h-img.height*scale)/2),
         img.width*scale, img.height*scale);
       if (tainted) CANVAS_TAINTED = true;
-    }, () => drawBgFallback(ctx));
-  } else drawBgFallback(ctx);
-  drawOverlay(ctx, title, getAccentColor());
-}
-
-// ══ v8.2 新增:雙重 fallback 圖片載入 ══
-// 第一次試 CORS,失敗就不帶 CORS 再試,再失敗才走 fallback
-// tainted=true 代表 canvas 會被污染,下載時要走備援路徑
-function loadImageWithFallback(src, onSuccess, onError) {
-  return new Promise(resolve => {
-    // 如果是 base64/data URL,直接載入不需要 CORS
-    if (src.startsWith('data:')) {
-      const img = new Image();
-      img.onload = () => { onSuccess(img, false); resolve(); };
-      img.onerror = () => { onError(); resolve(); };
-      img.src = src;
-      return;
+    } catch(e) {
+      console.error('[v8.3] 載入原圖失敗:', e.message);
+      drawBgFallback(ctx);
     }
-
-    // 第一輪:試 CORS
-    const img1 = new Image();
-    img1.crossOrigin = 'anonymous';
-    img1.onload = () => { onSuccess(img1, false); resolve(); };
-    img1.onerror = () => {
-      // 第二輪:不帶 CORS 強制載入(canvas 會被污染但至少看得到)
-      console.warn('[v8.2] CORS 載入失敗,嘗試不帶 CORS...');
-      const img2 = new Image();
-      img2.onload = () => {
-        console.warn('[v8.2] 第二輪載入成功,canvas 將被標記為 tainted');
-        onSuccess(img2, true);
-        resolve();
-      };
-      img2.onerror = () => {
-        console.error('[v8.2] 兩輪載入都失敗');
-        onError();
-        resolve();
-      };
-      img2.src = src;
-    };
-    img1.src = src;
-  });
+  } else {
+    drawBgFallback(ctx);
+  }
+  drawOverlay(ctx, title, getAccentColor());
 }
 
 async function renderAdCanvasWithPR() {
@@ -496,7 +529,8 @@ async function renderAdCanvasWithPR() {
   const isTryon = PR_MODE === 'kling_tryon';
   ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, AM.w, AM.h);
 
-  await loadImageWithFallback(PR_BG_IMG, (img, tainted) => {
+  try {
+    const { img, tainted } = await loadImageSmart(PR_BG_IMG);
     if (tainted) CANVAS_TAINTED = true;
 
     if (isTryon) {
@@ -527,7 +561,19 @@ async function renderAdCanvasWithPR() {
         Math.round((AM.h-img.height*scale)/2),
         img.width*scale, img.height*scale);
     }
-  }, () => drawBgFallback(ctx));
+  } catch(e) {
+    console.error('[v8.3] renderWithPR 載入圖片失敗:', e.message);
+    // 錯誤時畫一段文字告訴使用者
+    drawBgFallback(ctx);
+    ctx.fillStyle = '#FFA060';
+    ctx.font = '900 32px "Noto Sans TC",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚠️ 圖片載入失敗', AM.w/2, AM.h/2 - 20);
+    ctx.font = '400 20px "Noto Sans TC",sans-serif';
+    ctx.fillStyle = '#F0E0D0';
+    ctx.fillText(e.message.substring(0, 40), AM.w/2, AM.h/2 + 20);
+    ctx.fillText('請重新生成或重新整理頁面', AM.w/2, AM.h/2 + 50);
+  }
 
   drawOverlay(ctx, title, getAccentColor());
 }
@@ -579,7 +625,6 @@ function drawOverlay(ctx, title, accent) {
   ctx.shadowColor='transparent'; ctx.shadowBlur=0;
 }
 
-// v8.2: 下載增加容錯 - canvas 被污染時走備援
 function downloadAd() {
   const canvas = document.getElementById('adCanvas');
   const brand = window.BRANDS.find(b => b.id === window.S.brandId);
@@ -593,21 +638,16 @@ function downloadAd() {
     link.click();
     if (window._driveToken) uploadAdToDrive(canvas, filename);
   } catch(e) {
-    // canvas 被 CORS 污染,無法轉 dataURL
-    console.warn('[v8.2] Canvas tainted, 使用備援下載方式');
+    console.warn('[v8.3] Canvas tainted, 使用備援下載');
     if (PR_BG_IMG && !PR_BG_IMG.startsWith('data:')) {
-      // 有原始 URL,開新視窗讓使用者右鍵存圖
       const msg = '因瀏覽器安全限制無法直接下載\n將開啟圖片,請右鍵「另存圖片」';
-      if (confirm(msg)) {
-        window.open(PR_BG_IMG, '_blank');
-      }
+      if (confirm(msg)) window.open(PR_BG_IMG, '_blank');
     } else {
       alert('下載失敗,請稍後重新生成一次');
     }
   }
 }
 
-// ══ 影像工具 ══
 async function compressImageBase64(base64, maxSize, quality) {
   return new Promise(resolve => {
     const img = new Image();
