@@ -41,7 +41,7 @@
     <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">
       <img src="logo.webp" alt="RB Design &amp; Creative" style="height:80px;width:auto;object-fit:contain;margin-bottom:16px;" onerror="this.style.display='none'">
       <div class="login-title">Brand OS</div>
-      <div class="login-sub">RABY D&amp;C · v6</div>
+      <div class="login-sub">RABY D&amp;C · v7</div>
     </div>
     <div class="login-desc">芮比廣告行銷內部系統<br>請使用公司 Google 帳號登入</div>
     <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
@@ -68,7 +68,7 @@
     <img src="logo.webp" alt="RB" style="height:36px;width:auto;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
     <div style="display:flex;flex-direction:column;line-height:1;">
       <span class="nav-logo">Brand OS</span>
-      <span style="font-size:8px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';margin-top:1px;">RABY D&amp;C · v6</span>
+      <span style="font-size:8px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';margin-top:1px;">RABY D&amp;C · v7</span>
     </div>
   </div>
   <div class="nav-brands" id="navBrands"></div>
@@ -243,18 +243,20 @@
       <div style="border:1px solid rgba(157,110,248,0.3);border-radius:10px;overflow:hidden;flex-shrink:0;">
         <div style="padding:7px 12px;background:rgba(232,96,58,0.1);font-size:9px;font-weight:700;letter-spacing:2px;color:#E8603A;">AI 影像處理功能</div>
 
-        <!-- 三個主要模式按鈕 -->
+        <!-- 兩個主要模式按鈕 -->
         <div style="padding:8px 10px;border-bottom:1px solid var(--line);">
           <div style="display:grid;grid-template-columns:1fr;gap:4px;">
-            <button class="pr-mode-btn on" onclick="setPrMode(this,'product_shot')" style="border-color:rgba(91,200,200,0.6);color:var(--sky);font-weight:900;padding:8px;">✨ AI 場景升級（Flux Kontext）</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')" style="border-color:rgba(232,160,58,0.6);color:#E8A03A;font-weight:900;padding:8px;">👗 真人 MD 試穿</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'seedance_video')" style="border-color:rgba(184,158,212,0.6);color:#B89ED4;font-weight:900;padding:8px;">🎬 影片生成（Kling / Seedance）</button>
+            <button class="pr-mode-btn on" onclick="setPrMode(this,'product_shot')" style="border-color:rgba(91,200,200,0.6);color:var(--sky);font-weight:900;padding:8px;">✨ AI 情境生成</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')" style="border-color:rgba(232,160,58,0.6);color:#E8A03A;font-weight:900;padding:8px;">👗 AI 真人試穿</button>
+          </div>
+          <div style="margin-top:6px;padding:6px 8px;background:rgba(184,158,212,0.08);border-radius:5px;border:1px solid rgba(184,158,212,0.2);font-size:9px;color:var(--t3);line-height:1.6;">
+            🎬 需要影片？請至 <a href="kol.html" style="color:#B89ED4;font-weight:900;text-decoration:none;">數字人工作室 →</a>
           </div>
         </div>
 
-        <!-- AI 電商場景：場景選擇 -->
+        <!-- AI 情境生成：場景選擇 -->
         <div id="prSceneSection" style="padding:8px 10px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">選擇電商場景</div>
+          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">選擇情境場景</div>
           <div style="font-size:9px;color:var(--sky);margin-bottom:6px;line-height:1.6;">直接改圖：保留人物商品，只改背景/光線/氛圍 ✨</div>
           <div id="prSceneGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
             <div style="grid-column:1/-1;font-size:8px;color:var(--t3);letter-spacing:1.5px;padding:4px 2px 2px;font-weight:700;">── 通用場景 ──</div>
@@ -289,16 +291,16 @@
             <input id="prCustomPrompt" type="text" placeholder="自訂場景（英文，留空則用上方按鈕）" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;">
           </div>
           <div style="font-size:9px;color:var(--t3);line-height:1.6;margin-top:6px;padding:6px 8px;background:rgba(91,200,200,0.06);border-radius:5px;border:1px solid rgba(91,200,200,0.15);">
-            💡 Flux Pro Kontext 直接改圖<br>
+            💡 AI 直接改圖技術<br>
             · 保留所有人物/商品位置不動<br>
             · 只改背景/光線/氛圍<br>
-            · 約 10-20 秒，$0.04/張
+            · 約 10-20 秒
           </div>
         </div>
 
-        <!-- MD 試穿 -->
+        <!-- AI 真人試穿 -->
         <div id="prVirtualSection" style="display:none;padding:8px 10px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:#E8A03A;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">真人 MD 試穿設定</div>
+          <div style="font-size:8px;color:#E8A03A;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">AI 真人試穿設定</div>
           <div style="font-size:9px;color:var(--t3);margin-bottom:6px;line-height:1.6;">上傳MD照片 + 左側選商品圖 → 生成試穿效果</div>
           <div style="margin-bottom:6px;">
             <div class="sel-lbl">MD 照片（全身清晰）</div>
@@ -309,56 +311,9 @@
             <input type="file" id="mdPhotoInput" accept="image/*" style="display:none;" onchange="onMdPhotoSelected(this)">
           </div>
           <div style="font-size:9px;color:var(--t3);line-height:1.6;padding:6px 8px;background:rgba(232,160,58,0.06);border-radius:5px;border:1px solid rgba(232,160,58,0.2);">
-            💡 Kling Kolors 試穿<br>
+            💡 AI 真人試穿技術<br>
             · MD照片建議：全身、正面、背景簡單<br>
-            · 約 30-90 秒，每張約 NT$2
-          </div>
-        </div>
-
-        <!-- 影片生成 -->
-        <div id="prVideoSection" style="display:none;padding:8px 10px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:#B89ED4;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">🎬 影片生成設定</div>
-          <div style="font-size:9px;color:var(--t3);margin-bottom:8px;line-height:1.6;">選左側產品照片 → 生成短影音素材</div>
-          <div style="margin-bottom:6px;">
-            <div class="sel-lbl">影片運鏡描述（選填）</div>
-            <textarea id="videoPrompt" rows="2" placeholder="例：slow zoom in, product rotating, soft morning light, lifestyle feeling" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;resize:none;margin-top:4px;line-height:1.5;"></textarea>
-          </div>
-          <div style="margin-bottom:6px;">
-            <div class="sel-lbl">AI 模型</div>
-            <select id="videoModel" class="sel" style="width:100%;margin-top:4px;" onchange="updateVideoDurationOptions()">
-              <option value="seedance" selected>🎬 Seedance 2.0（純產品，$0.24/秒）</option>
-              <option value="kling">🎥 Kling v3 Pro（帶人像，$0.11/秒）</option>
-            </select>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-            <div>
-              <div class="sel-lbl">時長</div>
-              <select id="videoDuration" class="sel" style="width:100%;margin-top:4px;">
-                <option value="4">4 秒（$0.96）</option>
-                <option value="5" selected>5 秒（$1.20）</option>
-                <option value="8">8 秒（$1.92）</option>
-                <option value="10">10 秒（$2.40）</option>
-              </select>
-            </div>
-            <div>
-              <div class="sel-lbl">比例</div>
-              <select id="videoRatio" class="sel" style="width:100%;margin-top:4px;">
-                <option value="9:16" selected>9:16 直式（限動）</option>
-                <option value="1:1">1:1 方形（貼文）</option>
-                <option value="16:9">16:9 橫式（YouTube）</option>
-              </select>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-            <input type="checkbox" id="videoAudio" checked style="accent-color:#B89ED4;">
-            <label for="videoAudio" style="font-size:10px;color:var(--t2);cursor:pointer;">生成原生音效（推薦開啟）</label>
-          </div>
-          <div style="font-size:9px;color:var(--t3);line-height:1.6;padding:6px 8px;background:rgba(184,158,212,0.08);border-radius:5px;border:1px solid rgba(184,158,212,0.2);">
-            💡 影片生成請保持頁面開啟<br>
-            · Kling 5秒 ≈ 4-5 分鐘<br>
-            · Kling 10秒 ≈ 8-10 分鐘<br>
-            · Seedance ≈ 1-2 分鐘<br>
-            · 生成完自動顯示下載按鈕
+            · 約 30-90 秒
           </div>
         </div>
 
