@@ -3791,7 +3791,9 @@ function renderEpisodeCard() {
   let draft = {};
   try { draft = JSON.parse(localStorage.getItem(lsKey) || '{}') || {}; } catch (_) {}
 
-  const scenes = SCENE_LIBRARY[S.currentBrandId] || {};
+  const scenes = (typeof getScenesForBrand === 'function')
+    ? getScenesForBrand(S.currentBrandId)
+    : (SCENE_LIBRARY[S.currentBrandId] || {});
   const sceneOptions = Object.entries(scenes).map(([id, s]) =>
     `<option value="${escapeHtml(id)}" ${draft.sceneId === id ? 'selected' : ''}>${escapeHtml(s.label)}</option>`
   ).join('');
@@ -5082,6 +5084,7 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
 
   
 </script>
+<script src="kol-universal-scenes.js"></script>
 <script src="kol-ai-generator.js"></script>
 </body>
 </html>
