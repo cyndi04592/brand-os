@@ -1,16 +1,22 @@
 // ══════════════════════════════════════════
 //  brands.js — 左側品牌樹、商品列表、Nav品牌按鈕
+//  v8.4: 移除 emoji icon 渲染(試算表 icon 欄位保留不動)
 // ══════════════════════════════════════════
 
 // ══ Nav 品牌按鈕 ══
+// v8.4: 此函式保留但 nav 已移除品牌 logo 排,因此實際不會顯示
+// 保留是為了向下相容(避免其他地方呼叫此函式報錯)
 function renderNavBrands() {
-  document.getElementById('navBrands').innerHTML = window.BRANDS.map(b =>
+  const el = document.getElementById('navBrands');
+  if (!el) return; // nav 已經沒有這個元素,直接 return
+  el.innerHTML = window.BRANDS.map(b =>
     `<button class="nb ${b.navColor||'gold'} ${window.S.brandId===b.id?'on':''}"
       onclick="clickBrand('${b.id}')">${b.name}</button>`
   ).join('');
 }
 
 // ══ 左側品牌樹（accordion）══
+// v8.4: 移除 <span class="br-icon"> 整段,品牌列表只顯示文字
 function renderBrandTree() {
   document.getElementById('brandTree').innerHTML = window.BRANDS.map(b => {
     const isOpen = window.S.openBrand === b.id;
@@ -23,7 +29,6 @@ function renderBrandTree() {
     return `<div>
       <div class="brand-row ${window.S.brandId===b.id&&!window.S.subId?'on':''}"
         onclick="clickBrand('${b.id}')">
-        <span class="br-icon">${b.icon}</span>
         <div class="br-info">
           <div class="br-name">${b.name}</div>
           <div class="br-sub">${b.subs.length}個系列</div>
@@ -115,6 +120,7 @@ function clickProd(subId, prodId) {
 }
 
 // ══ 更新中間品牌/商品顯示 ══
+// v8.4: 移除 ${brand.icon} 不顯示 emoji
 function updateCtx() {
   const brand = window.BRANDS.find(b => b.id === window.S.brandId);
   const sub   = brand?.subs.find(s => s.id === window.S.subId);
@@ -127,7 +133,7 @@ function updateCtx() {
     return;
   }
   bEl.style.color = sc.c;
-  bEl.textContent = `${brand.icon} ${brand.name}${sub ? ' › ' + sub.name : ''}`;
+  bEl.textContent = `${brand.name}${sub ? ' › ' + sub.name : ''}`;
   pEl.style.color   = window.S.prod ? 'var(--t1)' : 'var(--t3)';
   pEl.textContent   = window.S.prod ? window.S.prod.name : '← 先選商品';
 }
