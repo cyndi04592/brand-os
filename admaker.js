@@ -1,11 +1,9 @@
 // ══════════════════════════════════════════════════════════════
-//  BRAND OS · AD Maker  (v8.4)
+//  BRAND OS · AD Maker  (v9.0)
 //  變更紀錄:
-//    [v8.4] ★ 黑圖偵測: blob < 30KB 判定為 safety fallback,
-//           自動重試一次,仍失敗則顯示專業警示
-//    [v8.4] ★ Softening prefix: 所有 prompt 加入商業廣告語境,
-//           降低 Flux safety classifier 被觸發機率
-//    [v8.4] ★ 刪除數字人影片導流提示 (商業戰略調整)
+//    [v9.0] 新增 3 個內衣/泳裝安全場景:
+//           tropical_resort / poolside_luxe / spa_morning
+//    [v8.4] 黑圖偵測 + 自動重試 + Softening prompt
 //    [v8.3] fetch+blob 載入圖片避免 canvas CORS 污染
 //    [v8.2] 三重 fallback / 下載容錯 / 修 undefined bug
 //    [v8.1] 強化 FACE LOCK + 徹底關中文
@@ -21,7 +19,6 @@ const FACE_LOCK =
 const NO_ASIAN_TEXT =
   ' STRICTLY NO Chinese, Japanese, Korean, or any East Asian characters anywhere in the image. Use ONLY English letters, numbers, or pure abstract neon shapes and glowing light patterns. Any visible signage must be in clear English only or be non-textual light glows.';
 
-// v8.4 新增: 商業廣告語境,降低 safety classifier 被觸發率
 const COMMERCIAL_CONTEXT =
   'Professional commercial product advertisement, mainstream retail catalog photography, ' +
   'acceptable for major retailers and department stores. ';
@@ -88,6 +85,15 @@ const PRODUCT_SCENES = {
   summer_hot:
     `${COMMERCIAL_CONTEXT}Replace the background with a vibrant hot summer scene. Choose a natural variation: either a sunny tropical beach with turquoise water and palm tree shadows, or a poolside with crystal blue water and bright white tiles, or a bright summer garden with cicada-loud greenery and flare highlights. Intense golden sunlight creating strong warm highlights, visible sun flare, shimmering heat haze. Saturated tropical color palette with azure blues, sun yellows, and coral pinks. Refreshing atmospheric feel. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, bright summer daylight.`,
 
+  tropical_resort:
+    `${COMMERCIAL_CONTEXT}Swimwear and beach lifestyle photography. Replace the background with a luxurious tropical resort beach scene. Choose from: Maldives overwater villa deck with crystal turquoise water, or Bali private beach with white sand and coconut palms, or Phuket infinity pool edge with ocean horizon. Warm golden afternoon sunlight, gentle ocean breeze atmosphere, soft palm shadow patterns. Sophisticated resort wear catalog aesthetic, similar to Victoria's Secret Swim campaign or Seafolly lookbook. Saturated azure and teal ocean tones, warm sand neutrals. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, bright resort daylight.`,
+
+  poolside_luxe:
+    `${COMMERCIAL_CONTEXT}Poolside swimwear editorial photography. Replace the background with a modern luxury villa poolside scene. Choose from: Beverly Hills modernist villa pool with white stone deck and tropical plants, or Miami Art Deco hotel poolside with pastel blue tiles, or LA Hollywood Hills pool with city view in background. Bright midday sunlight creating sparkling water reflections and crisp shadows, clean minimal architecture, turquoise pool water. High-end swimwear campaign aesthetic like La Perla or Eres catalog. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/5.6, sharp bright daylight.`,
+
+  spa_morning:
+    `${COMMERCIAL_CONTEXT}Bright minimal spa and wellness lounge lifestyle scene. Replace the background with a serene upscale spa interior. Choose from: Scandinavian-minimalist spa with light oak rattan chair and white sheer curtains, or Japanese onsen-inspired lounge with tatami and shoji screens diffusing morning light, or Aman resort-style private relaxation lounge. Fresh morning sunlight streaming through large windows creating soft bright glow, pale neutral palette of white, sand, and soft sage. Clean airy wellness catalog aesthetic like Lululemon or Aritzia lookbook. Include subtle props: a ceramic vase with a single branch, a rolled towel. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
+
   japan_premium:
     `${COMMERCIAL_CONTEXT}Transform the entire scene into premium Japanese wabi-sabi aesthetic. Replace surface with aged hinoki cypress wood or dark charcoal stone slate, replace background with soft washi paper texture or blurred shoji screen with warm interior light behind. Add subtle Japanese design elements: a small ceramic tea cup in the far background bokeh, a single dried branch or bamboo leaf. Soft diffused side lighting 4000K, low saturation, muted earth tones (beige, sumi black, soft green), contemplative mono-no-aware atmosphere.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/2.`,
 
@@ -134,10 +140,9 @@ let PR_BG_IMG  = null;
 let PR_MODE    = 'product_shot';
 let TEXT_ALIGN = 'left';
 let CANVAS_TAINTED = false;
-let LAST_BLOB_SIZE = 0; // v8.4: 追蹤最近一次 blob 大小用於黑圖偵測
+let LAST_BLOB_SIZE = 0;
 
-// v8.4 常數: blob 大小門檻
-const BLACK_IMAGE_THRESHOLD = 30000; // 小於 30KB 判定為黑圖
+const BLACK_IMAGE_THRESHOLD = 30000;
 
 function openAdMaker(idx) {
   PR_BG_IMG = null; PR_MODE = 'product_shot';
@@ -187,7 +192,7 @@ function renderAmPhotoRow() {
       : '<span style="font-size:16px;">🖼️</span>';
     return `<div onclick="selectPhotoInAM(${i})" title="${f.name}"
       style="width:36px;height:36px;border-radius:5px;overflow:hidden;flex-shrink:0;cursor:pointer;
-             border:2px solid ${isSelected?'#5BC8C8':'rgba(255,255,255,0.1)'};background:var(--bg4);
+             border:2px solid ${isSelected?'#C9A665':'rgba(255,255,255,0.1)'};background:var(--bg4);
              display:flex;align-items:center;justify-content:center;">${imgHtml}</div>`;
   }).join('');
   if (nameEl) nameEl.textContent = window.S.selPhoto !== null
@@ -339,10 +344,6 @@ async function pollUntilDone(requestId, endpoint, maxMs = 300000, responseUrl = 
   return { status:'TIMEOUT' };
 }
 
-// ══════════════════════════════════════════════════════════════
-// v8.4 核心: 黑圖偵測 + 自動重試
-// 回傳: { ok: true, imageUrl, blobSize } 或 { ok: false, reason, blobSize }
-// ══════════════════════════════════════════════════════════════
 async function submitFluxAndCheckBlob(scenePrompt, paddedBase64) {
   const imageUrl = await uploadToFal(paddedBase64);
 
@@ -362,30 +363,26 @@ async function submitFluxAndCheckBlob(scenePrompt, paddedBase64) {
   const falUrl = result.imageBase64 || result.imageUrl;
   if (!falUrl) throw new Error('未回傳圖片資料');
 
-  // 如果是 base64,直接用(通常沒黑圖問題)
   if (falUrl.startsWith('data:')) {
     return { ok: true, imageUrl: falUrl, blobSize: 0 };
   }
 
-  // 跨域 URL: 先 fetch 檢查大小
   try {
     const resp = await fetch(falUrl, { mode: 'cors' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const blob = await resp.blob();
-    console.log('[v8.4] 下載圖片, size:', blob.size, 'type:', blob.type);
+    console.log('[v9.0] 下載圖片, size:', blob.size, 'type:', blob.type);
     LAST_BLOB_SIZE = blob.size;
 
     if (blob.size < BLACK_IMAGE_THRESHOLD) {
-      console.warn('[v8.4] ⚠️ 偵測到黑圖! size:', blob.size, '< 門檻', BLACK_IMAGE_THRESHOLD);
+      console.warn('[v9.0] ⚠️ 偵測到黑圖! size:', blob.size, '< 門檻', BLACK_IMAGE_THRESHOLD);
       return { ok: false, reason: 'BLACK_IMAGE', blobSize: blob.size };
     }
 
-    // 正常圖片,轉 blob URL 讓 canvas 可用
     const blobUrl = URL.createObjectURL(blob);
     return { ok: true, imageUrl: blobUrl, blobSize: blob.size, originalUrl: falUrl };
   } catch(fetchErr) {
-    // fetch 失敗 fallback 到原 URL,無法檢查大小
-    console.warn('[v8.4] fetch 檢查失敗,使用原 URL:', fetchErr.message);
+    console.warn('[v9.0] fetch 檢查失敗,使用原 URL:', fetchErr.message);
     return { ok: true, imageUrl: falUrl, blobSize: -1 };
   }
 }
@@ -435,7 +432,6 @@ async function applyPhotoroomBg() {
     return;
   }
 
-  // ══ AI 情境 (v8.4 加入黑圖偵測 + 自動重試) ══
   if (PR_MODE === 'product_shot') {
     const interval = startProgress(30000);
     try {
@@ -449,19 +445,16 @@ async function applyPhotoroomBg() {
 
       setPrStatus('🎨 AI 情境生成中...', 'var(--t3)');
 
-      // 第一次嘗試
       let result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
 
-      // 如果黑圖,自動重試一次
       if (!result.ok && result.reason === 'BLACK_IMAGE') {
-        console.warn('[v8.4] 第一次被擋,自動重試中...');
-        setPrStatus('🔄 內容審查擋下,重試中...', 'var(--orange)');
+        console.warn('[v9.0] 第一次被擋,自動重試中...');
+        setPrStatus('🔄 內容審查擋下,重試中...', '#E8C878');
         result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
       }
 
-      // 仍然黑圖,顯示警示
       if (!result.ok && result.reason === 'BLACK_IMAGE') {
-        console.error('[v8.4] 兩次都被擋,顯示警示');
+        console.error('[v9.0] 兩次都被擋,顯示警示');
         finishProgress(interval);
         setPrStatus('⚠️ AI 內容審查擋下,請改用真人試穿或換場景', 'var(--red)');
         showBlackImageWarning(result.blobSize);
@@ -482,56 +475,48 @@ async function applyPhotoroomBg() {
   }
 }
 
-// v8.4: 黑圖警示畫在 canvas 上(客戶看得到)
 function showBlackImageWarning(blobSize) {
   const canvas = document.getElementById('adCanvas');
   if (!canvas) return;
   canvas.width = AM.w; canvas.height = AM.h;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-  // 背景漸層
   const grad = ctx.createLinearGradient(0,0,0,AM.h);
-  grad.addColorStop(0, '#2a1a1a');
-  grad.addColorStop(1, '#1a1010');
+  grad.addColorStop(0, '#1A1510');
+  grad.addColorStop(1, '#0A0A0B');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, AM.w, AM.h);
 
-  // 警示圖示
-  ctx.fillStyle = '#FFA060';
+  ctx.fillStyle = '#C9A665';
   ctx.font = '900 140px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('⚠️', AM.w/2, AM.h/2 - 150);
 
-  // 主標題
-  ctx.fillStyle = '#FFD8B8';
+  ctx.fillStyle = '#FAFAFA';
   ctx.font = '900 44px "Noto Sans TC",sans-serif';
   ctx.fillText('AI 內容審查擋下了這張圖', AM.w/2, AM.h/2 - 50);
 
-  // 副標題
-  ctx.fillStyle = '#C8A898';
+  ctx.fillStyle = '#B8B4A8';
   ctx.font = '500 22px "Noto Sans TC",sans-serif';
   const kbSize = blobSize > 0 ? `（Flux 回傳 ${Math.round(blobSize/1024)} KB 黑圖）` : '';
   if (kbSize) ctx.fillText(kbSize, AM.w/2, AM.h/2 - 10);
 
-  // 建議標題
-  ctx.fillStyle = '#E8603A';
+  ctx.fillStyle = '#C9A665';
   ctx.font = '900 26px "Noto Sans TC",sans-serif';
   ctx.fillText('建議改用:', AM.w/2, AM.h/2 + 60);
 
-  // 建議內容
-  ctx.fillStyle = '#F0E0D0';
+  ctx.fillStyle = '#E8C878';
   ctx.font = '500 22px "Noto Sans TC",sans-serif';
   const suggestions = [
     '👗  改用「AI 真人試穿」(內衣類推薦)',
-    '🏊‍♀️  換場景: 炎熱夏日、質感白棚',
+    '🏊‍♀️  換場景: 炎熱夏日/熱帶渡假/Spa 晨光',
     '🔄  或換一張商品照再試'
   ];
   suggestions.forEach((s, i) => {
     ctx.fillText(s, AM.w/2, AM.h/2 + 110 + i * 42);
   });
 
-  // 底部說明
-  ctx.fillStyle = '#8A7060';
+  ctx.fillStyle = '#6A6860';
   ctx.font = '400 16px "Noto Sans TC",sans-serif';
   ctx.fillText('已自動重試一次,AI 仍判定此組合為敏感內容', AM.w/2, AM.h - 60);
 }
@@ -659,9 +644,9 @@ async function renderAdCanvasWithPR() {
         img.width*scale, img.height*scale);
     }
   } catch(e) {
-    console.error('[v8.4] render 失敗:', e.message);
+    console.error('[v9.0] render 失敗:', e.message);
     drawBgFallback(ctx);
-    ctx.fillStyle = '#FFA060';
+    ctx.fillStyle = '#C9A665';
     ctx.font = '900 32px "Noto Sans TC",sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('⚠️ 圖片載入失敗', AM.w/2, AM.h/2 - 20);
@@ -675,12 +660,12 @@ async function renderAdCanvasWithPR() {
 
 function getAccentColor() {
   const brand = window.BRANDS.find(b => b.id === window.S.brandId);
-  return { gold:'#E8603A', red:'#E8603A', sky:'#5BC8C8', mint:'#7ED4B0', purple:'#B89ED4', brown:'#C8A870' }[brand?.navColor] || '#E8603A';
+  return { gold:'#C9A665', red:'#E8603A', sky:'#5BC8C8', mint:'#7ED4B0', purple:'#B89ED4', brown:'#C8A870' }[brand?.navColor] || '#C9A665';
 }
 
 function drawBgFallback(ctx) {
   const grad = ctx.createLinearGradient(0,0,AM.w,AM.h);
-  grad.addColorStop(0,'#1a1020'); grad.addColorStop(1,'#0d0d1a');
+  grad.addColorStop(0,'#14141a'); grad.addColorStop(1,'#0a0a0b');
   ctx.fillStyle = grad; ctx.fillRect(0,0,AM.w,AM.h);
 }
 
