@@ -1618,29 +1618,74 @@ const CAMERA_MOVEMENTS = {
   },
 };
 
+// ════════════════════════════════════════════════════════════════════
+//  🔴 P0 Bug Hotfix · v5.11.2
+//  
+//  用法:把 kol.html 裡原本的 composeSeedancePrompt 整段換成這段
+//  位置:約第 1372 行
+//  
+//  修了什麼:
+//    - 原本只查 SCENE_LIBRARY[brandId](BRAND_SCENES)
+//    - 現在透過 getScenesForBrand(brandId) 讀合併後的 scenes
+//    - 45 個通用場景入口從「生不出 prompt」變成「正常運作」
+// ════════════════════════════════════════════════════════════════════
+
 function composeSeedancePrompt(brandId, sceneId, locationId, movementId, duration, opts) {
   opts = opts || {};
-  const scenes = SCENE_LIBRARY[brandId] || {};
+
+  // 🔴 v5.11.2 HOTFIX: 改用 getScenesForBrand 才能讀到 UNIVERSAL_POOL
+  const scenes = (typeof window.getScenesForBrand === 'function')
+    ? window.getScenesForBrand(brandId)
+    : (SCENE_LIBRARY[brandId] || {});
   const scene = scenes[sceneId];
   if (!scene) return '';
 
-  // 🎯 v5.8: action 同時替換 {VERB} 和 {PRODUCT_CONTEXT}(LACEZ 場景驅動情境)
-  let action = (BRAND_ACTIONS[brandId] || BRAND_ACTIONS.la).replace('{VERB}', scene.verb);
+  // 🎯 v5.8 + v6.0: action 同時替換 {VERB} 和 {PRODUCT_CONTEXT}
+  // 支援兩種場景格式:
+  //   新:scene.product_context_template(UNIVERSAL_POOL)+ brand.brand_type
+  //   舊:scene.product_context(BRAND_SCENES.la)
+  let action = (BRAND_ACTIONS[brandId] || BRAND_ACTIONS.la).replace('{VERB}', scene.verb || 'naturally engages with the scene');
+
   if (action.includes('{PRODUCT_CONTEXT}')) {
-    const productCtx = scene.product_context || 'the product is present in the scene naturally';
+    let productCtx = '';
+
+    // 優先順序:
+    // 1. 場景自帶 product_context(LACEZ 專屬那種固定文案)
+    // 2. 場景的 product_context_template + 品牌 brand_type action
+    // 3. resolveSceneProductContext 輔助函式
+    // 4. fallback 文字
+    if (scene.product_context) {
+      productCtx = scene.product_context;
+    } else if (scene.product_context_template) {
+      const brand = (window.S?.brands || []).find(b => b.id === brandId);
+      if (typeof window.resolveSceneProductContext === 'function') {
+        productCtx = window.resolveSceneProductContext(scene, brand);
+      } else {
+        // 手動替換 {BRAND_ACTION}
+        const brandAction = brand?.brand_type && window.BRAND_TYPE_ACTIONS
+          ? (window.BRAND_TYPE_ACTIONS[brand.brand_type] || window.BRAND_TYPE_ACTIONS.default)
+          : 'the product held or interacted with naturally';
+        productCtx = scene.product_context_template.replace('{BRAND_ACTION}', brandAction);
+      }
+    } else {
+      productCtx = 'the product is present in the scene naturally';
+    }
     action = action.replace('{PRODUCT_CONTEXT}', productCtx);
   }
 
   // 地標覆蓋戶外場景的 setting(室內場景不吃地標)
-  let settingText = scene.setting;
-  if (scene.type === 'outdoor' && locationId && locationId !== 'none') {
+  // 🎯 v6.0: 同時支援 scene.setting(舊)和 scene.env_prompt(新)
+  let settingText = scene.setting || scene.env_prompt || '';
+  const sceneType = scene.type || (scene.indoor ? 'indoor' : 'outdoor');
+
+  if (sceneType === 'outdoor' && locationId && locationId !== 'none') {
     const loc = LOCATIONS[locationId];
     if (loc && loc.keywords && loc.compatible?.includes('outdoor')) {
       settingText = loc.keywords;
     }
   }
 
-  // 🔥 v5.6: 15 秒多鏡頭模式 — 單次產生 3 個 shot,內建轉場
+  // 🔥 v5.6: 15 秒多鏡頭模式
   if (duration === '15' || duration === 15) {
     return composeMultiShotPrompt(brandId, scene, action, settingText, movementId, opts);
   }
@@ -1671,11 +1716,12 @@ function composeSeedancePrompt(brandId, sceneId, locationId, movementId, duratio
     parts.push(arcParts.join(', ') + ', no explicit brand name mentioned, natural lifestyle integration');
   }
 
-  // 🆕 v5.7: 注入人設書 / 品牌靈魂 / 產品輪替(episode 模式)
+  // 注入人設書 / 品牌靈魂 / 產品輪替(episode 模式)
   const episodeOverlay = buildEpisodeOverlay(opts);
   if (episodeOverlay) parts.push(episodeOverlay);
 
   return parts.join(', ');
+}
 }
 
 // 🎬 v5.6: 15 秒多鏡頭 prompt(官方推薦格式)
