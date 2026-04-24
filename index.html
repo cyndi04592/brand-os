@@ -41,7 +41,7 @@
     <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">
       <img src="logo.webp" alt="RB Design &amp; Creative" style="height:80px;width:auto;object-fit:contain;margin-bottom:16px;" onerror="this.style.display='none'">
       <div class="login-title">Brand OS</div>
-      <div class="login-sub">RABY D&amp;C · v7</div>
+      <div class="login-sub">RABY D&amp;C · v8</div>
     </div>
     <div class="login-desc">芮比廣告行銷內部系統<br>請使用公司 Google 帳號登入</div>
     <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
@@ -68,7 +68,7 @@
     <img src="logo.webp" alt="RB" style="height:36px;width:auto;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
     <div style="display:flex;flex-direction:column;line-height:1;">
       <span class="nav-logo">Brand OS</span>
-      <span style="font-size:8px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';margin-top:1px;">RABY D&amp;C · v7</span>
+      <span style="font-size:8px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';margin-top:1px;">RABY D&amp;C · v8</span>
     </div>
   </div>
   <div class="nav-brands" id="navBrands"></div>
@@ -259,6 +259,7 @@
           <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">選擇情境場景</div>
           <div style="font-size:9px;color:var(--sky);margin-bottom:6px;line-height:1.6;">直接改圖：保留人物商品，只改背景/光線/氛圍 ✨</div>
           <div id="prSceneGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+
             <div style="grid-column:1/-1;font-size:8px;color:var(--t3);letter-spacing:1.5px;padding:4px 2px 2px;font-weight:700;">── 通用場景 ──</div>
             <button class="pr-scene-btn on" onclick="setPrScene(this,'studio_white')">質感白棚</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'dark_luxury')">質感黑金</button>
@@ -277,10 +278,24 @@
             <button class="pr-scene-btn"    onclick="setPrScene(this,'snack_playful')">活潑繽紛</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'sport_energy')">運動能量</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'jewelry_dark')" style="grid-column:1/-1;">珠寶首飾</button>
+
+            <!-- ══ v8 新增:風格化場景 ══ -->
+            <div style="grid-column:1/-1;font-size:8px;color:#E8603A;letter-spacing:1.5px;padding:6px 2px 2px;font-weight:700;">── ✨ 風格升級 ──</div>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'design_editorial')">文青設計</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'summer_hot')">炎熱夏日</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'japan_premium')">日式質感</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'kpop_korea')">韓風 K-POP</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'american_wild')" style="grid-column:1/-1;">美式狂野</button>
+
+            <!-- ══ v8 新增:客戶專屬 ══ -->
+            <div style="grid-column:1/-1;font-size:8px;color:#E8A03A;letter-spacing:1.5px;padding:6px 2px 2px;font-weight:700;">── 🏆 客戶專屬 ──</div>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'hk_banquet_gold')">港式金宴</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'tw_retro_ad')">台式復古</button>
+
             <div style="grid-column:1/-1;font-size:8px;color:var(--t3);letter-spacing:1.5px;padding:6px 2px 2px;font-weight:700;">── 美食升級（保留擺盤）──</div>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_drama')">米其林黑暗</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_japanese')">日式枯山水</button>
-            <button class="pr-scene-btn"    onclick="setPrScene(this,'food_cantonese')">港式金宴</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'food_cantonese')">港式金宴(菜)</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_korean')">韓式石鍋</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_taiwanese')">台式古早味</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_french')">法式精品</button>
