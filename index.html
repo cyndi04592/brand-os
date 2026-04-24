@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brand OS · 文案+廣告圖</title>
+<title>Brand OS · RABY D&C</title>
 
 <!-- ★ WebView 偵測 — 最優先執行 -->
 <script>
@@ -20,10 +20,10 @@
   if (/MicroMessenger/i.test(ua) || /Telegram/i.test(ua)) {
     var isWechat = /MicroMessenger/i.test(ua);
     document.addEventListener('DOMContentLoaded', function() {
-      document.body.innerHTML = '<div style="position:fixed;inset:0;background:#0E0E0F;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;font-family:sans-serif;z-index:99999;">' +
+      document.body.innerHTML = '<div style="position:fixed;inset:0;background:#0A0A0B;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;font-family:sans-serif;z-index:99999;">' +
         '<div style="font-size:64px;margin-bottom:24px;">' + (isWechat ? '💬' : '✈️') + '</div>' +
-        '<div style="font-size:22px;font-weight:900;color:#E8A03A;margin-bottom:16px;">請用瀏覽器開啟</div>' +
-        '<div style="font-size:15px;color:#A09890;line-height:2.4;">' +
+        '<div style="font-size:22px;font-weight:900;color:#C9A665;margin-bottom:16px;">請用瀏覽器開啟</div>' +
+        '<div style="font-size:15px;color:#B8B4A8;line-height:2.4;">' +
         (isWechat ? '點右上角 <strong style="color:#fff">···</strong><br>選擇「在瀏覽器中開啟」' : '點右上角選單<br>選擇 Open in Safari / Chrome') +
         '</div></div>';
     });
@@ -38,10 +38,10 @@
 <!-- ══ 登入畫面 ══ -->
 <div id="loginOverlay">
   <div class="login-card">
-    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">
-      <img src="logo.webp" alt="RB Design &amp; Creative" style="height:80px;width:auto;object-fit:contain;margin-bottom:16px;" onerror="this.style.display='none'">
-      <div class="login-title">Brand OS</div>
-      <div class="login-sub">RABY D&amp;C · v8.4</div>
+    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:32px;">
+      <img src="logo.webp" alt="RABY D&C" style="height:96px;width:auto;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(201,166,101,0.15));" onerror="this.style.display='none'">
+      <div class="login-title">BRAND OS</div>
+      <div class="login-sub">RABY D&amp;C · v9.0</div>
     </div>
     <div class="login-desc">芮比廣告行銷內部系統<br>請使用公司 Google 帳號登入</div>
     <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
@@ -49,7 +49,7 @@
       使用 Google 帳號登入
     </button>
     <div class="login-err" id="loginErr"></div>
-    <div style="text-align:center;margin-top:12px;">
+    <div style="text-align:center;margin-top:14px;">
       <span onclick="showPasswordLogin()" style="font-size:11px;color:rgba(91,200,200,0.7);cursor:pointer;text-decoration:underline;letter-spacing:0.5px;">其他方式登入</span>
     </div>
     <div class="login-footer">僅限授權帳號 · 系統自動驗證身份</div>
@@ -62,25 +62,34 @@
   <p id="initMsg">初始化 Brand OS 系統...</p>
 </div>
 
-<!-- ══ Nav (v8.4 簡化版) ══ -->
+<!-- ══ Nav (v9.0 純 logo 版) ══ -->
 <nav class="nav">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <img src="logo.webp" alt="RB" style="height:36px;width:auto;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
-    <div style="display:flex;flex-direction:column;line-height:1;">
-      <span class="nav-logo">Brand OS</span>
-      <span style="font-size:8px;color:#A08040;letter-spacing:2px;font-family:'DM Mono';margin-top:1px;">RABY D&amp;C · v8.4</span>
-    </div>
+  <!-- 左側: 只留 logo (Brand OS 文字已移除) -->
+  <div class="nav-logo-wrap">
+    <img src="logo.webp" alt="RABY D&C" style="height:40px;width:auto;object-fit:contain;position:relative;z-index:1;" onerror="this.style.display='none'">
   </div>
+
+  <!-- 中間 flex 間距 -->
   <div style="flex:1;"></div>
-  <div style="display:flex;align-items:center;gap:6px;">
-    <span style="font-size:10px;color:#E8603A;white-space:nowrap;font-weight:700;letter-spacing:1px;margin-right:8px;">✦ RABY BRAND OS</span>
-  </div>
+
+  <!-- 右側: 版本膠囊 + 功能按鈕 -->
   <div class="nav-right">
-    <a href="privacy.html" target="_blank" style="font-size:10px;color:rgba(160,144,128,0.6);text-decoration:none;white-space:nowrap;" title="隱私政策">隱私政策</a>
+    <!-- v9.0 版本膠囊 -->
+    <span class="version-capsule">
+      <span class="dot"></span>
+      v9.0 · Beta
+    </span>
+
+    <a href="privacy.html" target="_blank" style="font-size:10px;color:rgba(104,100,96,0.6);text-decoration:none;white-space:nowrap;margin:0 8px;letter-spacing:0.5px;" title="隱私政策">隱私政策</a>
+
     <a href="monitor.html" class="btn-ads-monitor" title="廣告監控儀表板"><svg width="15" height="15" viewBox="0 0 36 36" fill="none" style="flex-shrink:0;"><circle cx="18" cy="18" r="14" stroke="#FF6600" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/><circle cx="18" cy="18" r="8.5" stroke="#FF6600" stroke-width="1.2" opacity="0.7"/><circle cx="18" cy="18" r="2.5" fill="#FF6600"/><line x1="18" y1="18" x2="18" y2="4" stroke="#FF6600" stroke-width="1.5" stroke-linecap="round"/></svg><span>廣告監控</span><span class="monitor-live-dot"></span></a>
-    <button onclick="goAdmin()" style="padding:4px 12px;border-radius:6px;border:1px solid #E8603A;background:rgba(232,96,58,0.12);color:#E8603A;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">⚙️ 後台</button>
-    <button id="logoutBtn" onclick="doLogout()" style="display:none;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--t3);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">登出</button>
-    <button id="driveLoginBtn" onclick="driveLogin()" style="padding:4px 12px;border-radius:6px;border:1px solid var(--sky);background:var(--sky2);color:var(--sky);font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;">· 連結 Drive</button>
+
+    <button onclick="goAdmin()" style="padding:5px 13px;border-radius:6px;border:1px solid rgba(201,166,101,0.4);background:rgba(201,166,101,0.06);color:#C9A665;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;" onmouseover="this.style.background='rgba(201,166,101,0.14)'" onmouseout="this.style.background='rgba(201,166,101,0.06)'">⚙ 後台</button>
+
+    <button id="logoutBtn" onclick="doLogout()" style="display:none;padding:5px 13px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#B8B4A8;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">登出</button>
+
+    <button id="driveLoginBtn" onclick="driveLogin()" style="padding:5px 13px;border-radius:6px;border:1px solid #5BC8C8;background:rgba(91,200,200,0.08);color:#5BC8C8;font-family:'Noto Sans TC';font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">· 連結 Drive</button>
+
     <div class="drive-dot" id="driveDot"></div>
     <span class="drive-label drive-warning-text" id="driveLabel">· 請先連結 Drive</span>
   </div>
@@ -91,13 +100,13 @@
 
   <!-- 左側:品牌 + 商品 -->
   <div class="left" style="display:flex;flex-direction:column;overflow:hidden;">
-    <div style="padding:12px 14px 6px;flex-shrink:0;">
+    <div style="padding:16px 16px 6px;flex-shrink:0;">
       <div class="l-sec">品牌 · 商品</div>
     </div>
-    <div style="overflow-y:auto;flex:1;padding:0 14px 10px;">
+    <div style="overflow-y:auto;flex:1;padding:0 16px 12px;">
       <div id="brandTree"></div>
       <div class="prod-scroll" id="prodList">
-        <div class="empty" style="padding:24px 10px;">
+        <div class="empty" style="padding:28px 10px;">
           <div class="empty-ico">·</div>
           <div class="empty-p">← 選品牌 再選商品</div>
         </div>
@@ -110,10 +119,10 @@
     <div class="gen-bar">
       <div class="gb-row1">
         <div class="gb-ctx">
-          <div class="gb-brand" id="gbBrand" style="color:var(--t3)">尚未選擇品牌</div>
-          <div class="gb-prod"  id="gbProd"  style="color:var(--t3)">← 先選商品</div>
+          <div class="gb-brand" id="gbBrand" style="color:#6A6860">尚未選擇品牌</div>
+          <div class="gb-prod"  id="gbProd"  style="color:#6A6860">← 先選商品</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
           <div class="sel-lbl">目標受眾</div>
           <select class="sel" id="selAud">
             <optgroup label="── 電商／消費品 ──">
@@ -144,13 +153,13 @@
             </optgroup>
           </select>
         </div>
-        <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
           <div class="sel-lbl">組數</div>
           <select class="sel" id="selN" style="width:72px">
             <option>1組</option><option>5組</option><option>10組</option><option selected>20組</option>
           </select>
         </div>
-        <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
           <div class="sel-lbl">文案長度</div>
           <select class="sel" id="selCopyLength" style="width:80px">
             <option value="short">短文案</option><option value="medium" selected>中等</option><option value="long">長文案</option>
@@ -180,19 +189,19 @@
   <!-- 右側:Drive 素材庫 -->
   <div class="right">
     <div class="drive-cfg">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div class="l-sec" style="margin-bottom:0;">Drive 素材庫</div>
-        <button onclick="openAdMakerDirect()" style="padding:4px 10px;border-radius:6px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap;">🎨 直接做廣告圖</button>
+        <button onclick="openAdMakerDirect()" style="padding:5px 11px;border-radius:7px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap;letter-spacing:0.5px;box-shadow:0 2px 8px rgba(232,96,58,0.25);">🎨 直接做廣告圖</button>
       </div>
-      <div id="driveWarningBanner" style="display:block;margin-bottom:8px;padding:10px 12px;background:rgba(212,24,46,0.15);border:1.5px solid #D4182E;border-radius:8px;text-align:center;">
-        <div class="drive-warning-text" style="font-size:12px;font-weight:900;color:#FF4D6A;margin-bottom:4px;">· 尚未連結 Google Drive</div>
-        <div style="font-size:10px;color:#FF8099;margin-bottom:8px;">必須先連結才能抓取素材庫</div>
-        <button onclick="driveLogin()" style="padding:6px 16px;background:#D4182E;border:none;border-radius:6px;color:#fff;font-family:'Noto Sans TC';font-size:11px;font-weight:900;cursor:pointer;">· 立即連結 Drive</button>
+      <div id="driveWarningBanner" style="display:block;margin-bottom:10px;padding:11px 13px;background:rgba(212,24,46,0.12);border:1.5px solid rgba(212,24,46,0.5);border-radius:10px;text-align:center;">
+        <div class="drive-warning-text" style="font-size:12px;font-weight:900;color:#FF4D6A;margin-bottom:5px;letter-spacing:0.5px;">· 尚未連結 Google Drive</div>
+        <div style="font-size:10px;color:#FF8099;margin-bottom:9px;letter-spacing:0.3px;">必須先連結才能抓取素材庫</div>
+        <button onclick="driveLogin()" style="padding:7px 18px;background:#D4182E;border:none;border-radius:7px;color:#fff;font-family:'Noto Sans TC';font-size:11px;font-weight:900;cursor:pointer;letter-spacing:0.5px;">· 立即連結 Drive</button>
       </div>
       <input type="hidden" id="inPhotoFolder">
       <input type="hidden" id="inVideoFolder">
-      <div style="margin-bottom:4px;">
-        <button class="fetch-btn fetch-sky" style="width:100%;font-size:11px;font-weight:900;" onclick="fetchBoth()">· 重新抓取素材</button>
+      <div style="margin-bottom:5px;">
+        <button class="fetch-btn fetch-sky" style="width:100%;font-size:11px;font-weight:900;padding:8px 12px;" onclick="fetchBoth()">· 重新抓取素材</button>
       </div>
       <div class="dcfg-hint">切換品牌自動載入對應素材</div>
     </div>
@@ -204,34 +213,34 @@
 </div><!-- end workspace -->
 
 <!-- ══ AD Maker 彈窗 ══ -->
-<div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999;overflow-y:auto;">
-  <button onclick="closeAdMaker()" style="position:fixed;top:16px;right:20px;z-index:1001;background:rgba(40,40,40,0.95);border:2px solid #E8603A;color:#E8603A;font-size:20px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;line-height:1;transition:all 0.2s;" onmouseover="this.style.background='#E8603A';this.style.color='#fff'" onmouseout="this.style.background='rgba(40,40,40,0.95)';this.style.color='#E8603A'">✕</button>
+<div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:999;overflow-y:auto;">
+  <button onclick="closeAdMaker()" style="position:fixed;top:16px;right:20px;z-index:1001;background:rgba(28,28,31,0.95);border:2px solid #C9A665;color:#C9A665;font-size:20px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;line-height:1;transition:all 0.2s;" onmouseover="this.style.background='#C9A665';this.style.color='#0A0A0B'" onmouseout="this.style.background='rgba(28,28,31,0.95)';this.style.color='#C9A665'">✕</button>
   <div style="max-width:1080px;margin:20px auto;padding:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
 
     <!-- 左側控制 -->
-    <div style="width:300px;flex-shrink:0;background:var(--bg2);border-radius:14px;border:1px solid rgba(232,96,58,0.3);padding:16px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 56px);overflow-y:auto;">
-      <div style="display:flex;align-items:center;flex-shrink:0;">
-        <span style="font-family:'Bebas Neue';font-size:17px;letter-spacing:3px;color:#E8603A">廣告圖產生器</span>
+    <div style="width:300px;flex-shrink:0;background:var(--bg2);border-radius:16px;border:1px solid rgba(201,166,101,0.25);padding:18px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 56px);overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,0.6);">
+      <div style="display:flex;align-items:center;flex-shrink:0;padding-bottom:4px;border-bottom:1px solid rgba(201,166,101,0.15);">
+        <span style="font-family:'Bebas Neue';font-size:18px;letter-spacing:4px;color:#C9A665">廣告圖產生器</span>
       </div>
 
       <!-- 選照片 -->
-      <div style="padding:8px 10px;background:var(--bg3);border-radius:8px;border:1px solid var(--line);flex-shrink:0;">
-        <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:5px;">· 選擇產品照片</div>
-        <div id="amPhotoThumbRow" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;max-height:80px;overflow-y:auto;"></div>
-        <div id="amPhotoName" style="font-size:10px;color:var(--sky);">尚未選擇</div>
+      <div style="padding:10px 12px;background:var(--bg3);border-radius:10px;border:1px solid var(--line);flex-shrink:0;">
+        <div style="font-size:8px;font-weight:700;letter-spacing:2.5px;color:#6A6860;margin-bottom:6px;">· 選擇產品照片</div>
+        <div id="amPhotoThumbRow" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;max-height:80px;overflow-y:auto;"></div>
+        <div id="amPhotoName" style="font-size:10px;color:#5BC8C8;letter-spacing:0.3px;">尚未選擇</div>
       </div>
 
       <!-- 文字設定 -->
       <div style="flex-shrink:0;">
         <div class="sel-lbl">主標題文字</div>
-        <textarea id="amTitle" rows="2" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:7px;outline:none;resize:none;margin-top:4px;line-height:1.6;" placeholder="廣告主標題（可留空直接做背景圖）" oninput="renderAdCanvas()"></textarea>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
-          <div><div class="sel-lbl">文字大小</div><input type="range" id="amFontSize" min="40" max="160" value="94" style="width:100%;accent-color:#E8603A;" oninput="document.getElementById('amFontSizeVal').textContent=this.value+'px';renderAdCanvas()"><span id="amFontSizeVal" style="font-size:9px;color:var(--t3);">94px</span></div>
-          <div><div class="sel-lbl">文字 Y 位置</div><input type="range" id="amTextY" min="10" max="95" value="80" style="width:100%;accent-color:#E8603A;" oninput="document.getElementById('amTextYVal').textContent=this.value+'%';renderAdCanvas()"><span id="amTextYVal" style="font-size:9px;color:var(--t3);">80%</span></div>
-          <div><div class="sel-lbl">暗化起始點</div><input type="range" id="amGradStart" min="0" max="80" value="38" style="width:100%;accent-color:#5BC8C8;" oninput="document.getElementById('amGradStartVal').textContent=this.value+'%';renderAdCanvas()"><span id="amGradStartVal" style="font-size:9px;color:var(--t3);">38%</span></div>
-          <div><div class="sel-lbl">暗化強度</div><input type="range" id="amGradStrength" min="20" max="98" value="85" style="width:100%;accent-color:#5BC8C8;" oninput="document.getElementById('amGradStrengthVal').textContent=this.value+'%';renderAdCanvas()"><span id="amGradStrengthVal" style="font-size:9px;color:var(--t3);">85%</span></div>
+        <textarea id="amTitle" rows="2" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:7px;color:#FAFAFA;font-family:'Noto Sans TC';font-size:12px;padding:8px;outline:none;resize:none;margin-top:4px;line-height:1.7;" placeholder="廣告主標題（可留空直接做背景圖）" oninput="renderAdCanvas()"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;">
+          <div><div class="sel-lbl">文字大小</div><input type="range" id="amFontSize" min="40" max="160" value="94" style="width:100%;accent-color:#C9A665;" oninput="document.getElementById('amFontSizeVal').textContent=this.value+'px';renderAdCanvas()"><span id="amFontSizeVal" style="font-size:9px;color:#6A6860;">94px</span></div>
+          <div><div class="sel-lbl">文字 Y 位置</div><input type="range" id="amTextY" min="10" max="95" value="80" style="width:100%;accent-color:#C9A665;" oninput="document.getElementById('amTextYVal').textContent=this.value+'%';renderAdCanvas()"><span id="amTextYVal" style="font-size:9px;color:#6A6860;">80%</span></div>
+          <div><div class="sel-lbl">暗化起始點</div><input type="range" id="amGradStart" min="0" max="80" value="38" style="width:100%;accent-color:#5BC8C8;" oninput="document.getElementById('amGradStartVal').textContent=this.value+'%';renderAdCanvas()"><span id="amGradStartVal" style="font-size:9px;color:#6A6860;">38%</span></div>
+          <div><div class="sel-lbl">暗化強度</div><input type="range" id="amGradStrength" min="20" max="98" value="85" style="width:100%;accent-color:#5BC8C8;" oninput="document.getElementById('amGradStrengthVal').textContent=this.value+'%';renderAdCanvas()"><span id="amGradStrengthVal" style="font-size:9px;color:#6A6860;">85%</span></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:8px;">
           <button onclick="setTextAlign('left',this)"   class="pr-scene-btn on" id="alignLeft">靠左</button>
           <button onclick="setTextAlign('center',this)" class="pr-scene-btn"    id="alignCenter">置中</button>
           <button onclick="setTextAlign('right',this)"  class="pr-scene-btn"    id="alignRight">靠右</button>
@@ -239,32 +248,32 @@
       </div>
 
       <!-- AI 影像處理 -->
-      <div style="border:1px solid rgba(157,110,248,0.3);border-radius:10px;overflow:hidden;flex-shrink:0;">
-        <div style="padding:7px 12px;background:rgba(232,96,58,0.1);font-size:9px;font-weight:700;letter-spacing:2px;color:#E8603A;">AI 影像處理功能</div>
+      <div style="border:1px solid rgba(201,166,101,0.3);border-radius:11px;overflow:hidden;flex-shrink:0;">
+        <div style="padding:8px 13px;background:rgba(201,166,101,0.08);font-size:9px;font-weight:700;letter-spacing:2.5px;color:#C9A665;">AI 影像處理功能</div>
 
         <!-- 兩個 AI 模式按鈕 -->
-        <div style="padding:8px 10px;border-bottom:1px solid var(--line);">
-          <div style="display:grid;grid-template-columns:1fr;gap:4px;">
-            <button class="pr-mode-btn on" onclick="setPrMode(this,'product_shot')" style="border-color:rgba(91,200,200,0.6);color:var(--sky);font-weight:900;padding:8px;">✨ AI 情境生成</button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')" style="border-color:rgba(232,160,58,0.6);color:#E8A03A;font-weight:900;padding:8px;">👗 AI 真人試穿</button>
+        <div style="padding:9px 11px;border-bottom:1px solid var(--line);">
+          <div style="display:grid;grid-template-columns:1fr;gap:5px;">
+            <button class="pr-mode-btn on" onclick="setPrMode(this,'product_shot')" style="font-weight:900;padding:9px;">✨ AI 情境生成</button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')" style="border-color:rgba(232,160,58,0.5);color:#E8C878;font-weight:900;padding:9px;">👗 AI 真人試穿</button>
           </div>
         </div>
 
         <!-- AI 情境生成:場景選擇 -->
-        <div id="prSceneSection" style="padding:8px 10px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">選擇情境場景</div>
-          <div style="font-size:9px;color:var(--sky);margin-bottom:6px;line-height:1.6;">直接改圖：保留人物商品，只改背景/光線/氛圍 ✨</div>
+        <div id="prSceneSection" style="padding:9px 11px;border-bottom:1px solid var(--line);">
+          <div style="font-size:8px;color:#6A6860;font-weight:700;letter-spacing:2px;margin-bottom:5px;">選擇情境場景</div>
+          <div style="font-size:9px;color:#5BC8C8;margin-bottom:7px;line-height:1.7;">直接改圖：保留人物商品，只改背景/光線/氛圍 ✨</div>
 
-          <!-- 內衣/貼身衣物場景推薦 -->
-          <div style="font-size:9px;color:#FFB088;margin-bottom:6px;padding:6px 8px;background:rgba(255,176,136,0.08);border-radius:5px;border:1px solid rgba(255,176,136,0.18);line-height:1.6;">
+          <!-- 內衣/貼身衣物場景推薦 (v9.0 更新) -->
+          <div style="font-size:9px;color:#E8C878;margin-bottom:7px;padding:7px 9px;background:rgba(201,166,101,0.06);border-radius:7px;border:1px solid rgba(201,166,101,0.20);line-height:1.75;">
             💡 <strong>內衣/泳裝/貼身衣物</strong>推薦場景：<br>
-            🏊‍♀️ 炎熱夏日　·　⚪ 質感白棚　·　🌫 極簡灰調　·　📖 文青設計<br>
-            <span style="color:#C89078;">其他場景可能被 AI 內容審查擋下,建議改用「AI 真人試穿」</span>
+            🏊‍♀️ 炎熱夏日　·　🌴 熱帶渡假　·　💧 泳池派對　·　🧖 Spa 晨光<br>
+            <span style="color:#B8B4A8;">(Flux 對夏日戶外場景寬容度最高)</span>
           </div>
 
-          <div id="prSceneGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+          <div id="prSceneGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
 
-            <div style="grid-column:1/-1;font-size:8px;color:var(--t3);letter-spacing:1.5px;padding:4px 2px 2px;font-weight:700;">── 通用場景 ──</div>
+            <div style="grid-column:1/-1;font-size:8px;color:#6A6860;letter-spacing:2px;padding:4px 2px 2px;font-weight:700;">── 通用場景 ──</div>
             <button class="pr-scene-btn on" onclick="setPrScene(this,'studio_white')">質感白棚</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'dark_luxury')">質感黑金</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'marble_premium')">大理石紋</button>
@@ -283,18 +292,21 @@
             <button class="pr-scene-btn"    onclick="setPrScene(this,'sport_energy')">運動能量</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'jewelry_dark')" style="grid-column:1/-1;">珠寶首飾</button>
 
-            <div style="grid-column:1/-1;font-size:8px;color:#E8603A;letter-spacing:1.5px;padding:6px 2px 2px;font-weight:700;">── ✨ 風格升級 ──</div>
+            <div style="grid-column:1/-1;font-size:8px;color:#C9A665;letter-spacing:2px;padding:6px 2px 2px;font-weight:700;">── ✨ 風格升級 ──</div>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'design_editorial')">文青設計</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'summer_hot')">炎熱夏日</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'tropical_resort')">🌴 熱帶渡假</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'poolside_luxe')">💧 泳池派對</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'spa_morning')">🧖 Spa 晨光</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'japan_premium')">日式質感</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'kpop_korea')">韓風 K-POP</button>
-            <button class="pr-scene-btn"    onclick="setPrScene(this,'american_wild')" style="grid-column:1/-1;">美式狂野</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'american_wild')">美式狂野</button>
 
-            <div style="grid-column:1/-1;font-size:8px;color:#E8A03A;letter-spacing:1.5px;padding:6px 2px 2px;font-weight:700;">── 🏆 客戶專屬 ──</div>
+            <div style="grid-column:1/-1;font-size:8px;color:#E8C878;letter-spacing:2px;padding:6px 2px 2px;font-weight:700;">── 🏆 客戶專屬 ──</div>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'hk_banquet_gold')">港式金宴</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'tw_retro_ad')">台式復古</button>
 
-            <div style="grid-column:1/-1;font-size:8px;color:var(--t3);letter-spacing:1.5px;padding:6px 2px 2px;font-weight:700;">── 美食升級（保留擺盤）──</div>
+            <div style="grid-column:1/-1;font-size:8px;color:#6A6860;letter-spacing:2px;padding:6px 2px 2px;font-weight:700;">── 美食升級（保留擺盤）──</div>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_drama')">米其林黑暗</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_japanese')">日式枯山水</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_cantonese')">港式金宴(菜)</button>
@@ -304,10 +316,10 @@
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_outdoor')">戶外野炊</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'food_bright')" style="grid-column:1/-1;">清新早午餐</button>
           </div>
-          <div id="prCustomPromptRow" style="margin-top:6px;">
-            <input id="prCustomPrompt" type="text" placeholder="自訂場景（英文，留空則用上方按鈕）" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:5px;color:var(--t1);font-family:'Noto Sans TC';font-size:10px;padding:5px 8px;outline:none;">
+          <div id="prCustomPromptRow" style="margin-top:7px;">
+            <input id="prCustomPrompt" type="text" placeholder="自訂場景（英文，留空則用上方按鈕）" style="width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:6px;color:#FAFAFA;font-family:'Noto Sans TC';font-size:10px;padding:6px 9px;outline:none;">
           </div>
-          <div style="font-size:9px;color:var(--t3);line-height:1.6;margin-top:6px;padding:6px 8px;background:rgba(91,200,200,0.06);border-radius:5px;border:1px solid rgba(91,200,200,0.15);">
+          <div style="font-size:9px;color:#6A6860;line-height:1.75;margin-top:7px;padding:7px 9px;background:rgba(91,200,200,0.05);border-radius:7px;border:1px solid rgba(91,200,200,0.15);">
             💡 AI 直接改圖技術<br>
             · 保留所有人物/商品位置不動<br>
             · 只改背景/光線/氛圍<br>
@@ -316,18 +328,18 @@
         </div>
 
         <!-- AI 真人試穿 -->
-        <div id="prVirtualSection" style="display:none;padding:8px 10px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:#E8A03A;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">AI 真人試穿設定</div>
-          <div style="font-size:9px;color:var(--t3);margin-bottom:6px;line-height:1.6;">上傳MD照片 + 左側選商品圖 → 生成試穿效果</div>
-          <div style="margin-bottom:6px;">
+        <div id="prVirtualSection" style="display:none;padding:9px 11px;border-bottom:1px solid var(--line);">
+          <div style="font-size:8px;color:#E8C878;font-weight:700;letter-spacing:2px;margin-bottom:7px;">AI 真人試穿設定</div>
+          <div style="font-size:9px;color:#6A6860;margin-bottom:7px;line-height:1.7;">上傳MD照片 + 左側選商品圖 → 生成試穿效果</div>
+          <div style="margin-bottom:7px;">
             <div class="sel-lbl">MD 照片（全身清晰）</div>
-            <div id="mdPhotoPreview" style="width:100%;height:80px;border:1.5px dashed #E8A03A;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg4);margin-top:4px;overflow:hidden;position:relative;" onclick="document.getElementById('mdPhotoInput').click()">
-              <span id="mdPhotoPlaceholder" style="font-size:10px;color:var(--t3);">點擊上傳 MD 照片</span>
+            <div id="mdPhotoPreview" style="width:100%;height:82px;border:1.5px dashed #E8C878;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg4);margin-top:5px;overflow:hidden;position:relative;" onclick="document.getElementById('mdPhotoInput').click()">
+              <span id="mdPhotoPlaceholder" style="font-size:10px;color:#6A6860;letter-spacing:0.3px;">點擊上傳 MD 照片</span>
               <img id="mdPhotoImg" style="display:none;width:100%;height:100%;object-fit:contain;" />
             </div>
             <input type="file" id="mdPhotoInput" accept="image/*" style="display:none;" onchange="onMdPhotoSelected(this)">
           </div>
-          <div style="font-size:9px;color:var(--t3);line-height:1.6;padding:6px 8px;background:rgba(232,160,58,0.06);border-radius:5px;border:1px solid rgba(232,160,58,0.2);">
+          <div style="font-size:9px;color:#6A6860;line-height:1.75;padding:7px 9px;background:rgba(232,200,120,0.05);border-radius:7px;border:1px solid rgba(232,200,120,0.18);">
             💡 AI 真人試穿技術<br>
             · MD照片建議：全身、正面、背景簡單<br>
             · 推薦用於內衣、貼身衣物<br>
@@ -336,27 +348,27 @@
         </div>
 
         <!-- 套用按鈕 -->
-        <div style="padding:8px 10px;">
-          <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:9px;border-radius:7px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;">✨ 套用 AI 效果</button>
-          <div style="margin-top:5px;">
+        <div style="padding:9px 11px;">
+          <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1.5px;box-shadow:0 4px 12px rgba(232,96,58,0.22);">✨ 套用 AI 效果</button>
+          <div style="margin-top:6px;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div id="prStatus" style="font-size:9px;color:var(--t3);min-height:14px;white-space:pre-line;"></div>
-              <span id="prPct" style="font-size:10px;font-weight:900;color:#E8603A;font-family:'DM Mono';"></span>
+              <div id="prStatus" style="font-size:9px;color:#6A6860;min-height:14px;white-space:pre-line;letter-spacing:0.3px;"></div>
+              <span id="prPct" style="font-size:10px;font-weight:900;color:#C9A665;font-family:'DM Mono';"></span>
             </div>
-            <div id="prProgBar" style="display:none;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-top:3px;">
-              <div id="prProgFill" style="height:100%;background:linear-gradient(90deg,var(--sky),#E8603A);border-radius:2px;width:0%;transition:width 0.5s ease;"></div>
+            <div id="prProgBar" style="display:none;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-top:4px;">
+              <div id="prProgFill" style="height:100%;background:linear-gradient(90deg,#5BC8C8,#C9A665,#E8603A);border-radius:2px;width:0%;transition:width 0.5s ease;"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <button id="adDownloadBtn" onclick="downloadAd()" style="width:100%;padding:9px;border-radius:8px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;flex-shrink:0;">⬇️ 下載廣告圖</button>
+      <button id="adDownloadBtn" onclick="downloadAd()" style="width:100%;padding:10px;border-radius:9px;background:linear-gradient(135deg,#C9A665,#A08040);border:none;color:#0A0A0B;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1.5px;flex-shrink:0;box-shadow:0 4px 12px rgba(201,166,101,0.25);">⬇ 下載廣告圖</button>
     </div>
 
     <!-- 右側 Canvas 預覽 -->
-    <div style="flex:1;min-width:280px;display:flex;flex-direction:column;align-items:center;gap:8px;">
-      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);" id="previewLabel">預覽 1080×1080</div>
-      <canvas id="adCanvas" style="border-radius:10px;width:100%;max-width:560px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);display:block;"></canvas>
+    <div style="flex:1;min-width:280px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2.5px;color:#6A6860;" id="previewLabel">預覽 1080×1080</div>
+      <canvas id="adCanvas" style="border-radius:12px;width:100%;max-width:560px;height:auto;box-shadow:0 16px 60px rgba(0,0,0,0.7);display:block;"></canvas>
     </div>
 
   </div>
@@ -370,7 +382,7 @@
 <script src="generator.js"></script>
 <script src="admaker.js"></script>
 <script>
-// v8.4: 直接做廣告圖 - 不污染 scripts 陣列
+// v9.0: 直接做廣告圖 - 不污染 scripts 陣列
 function openAdMakerDirect() {
   if (!window.S) { alert('請先選擇品牌和商品'); return; }
   if (!window.S.brandId) { alert('請先選擇品牌'); return; }
