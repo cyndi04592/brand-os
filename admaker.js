@@ -1,91 +1,130 @@
 // ══════════════════════════════════════════════════════════════
-//  BRAND OS · AD Maker  (v7 瘦身版)
+//  BRAND OS · AD Maker  (v8)
 //  變更紀錄:
-//    1. 修正白背景 bug: prompt 改用 "Replace" 指令式
-//    2. 智能 padding: 採樣邊緣色 + 方形原圖不 padding
-//    3. 加入場景 variation 關鍵字,避免每次長一樣
-//    4. 砍掉所有影片功能 (Seedance / Kling Video)
-//    5. 品牌化命名: Flux / Kling 等字樣從 UI 移除
+//    [v8] 新增 5 個場景: 文青設計 / 炎熱夏日 / 日式質感 / K-POP / 美式狂野
+//    [v8] 修 bug: 黑金太暗 / 夜景中文亂碼 / 人臉變形
+//    [v8] 所有場景加強 "絕對不改人臉" 指令
+//    [v8] 贈送 2 個客戶專屬場景: 港式金宴升級 / 台式復古廣告
+//    [v7] 修白背景 bug (指令式 prompt + 智能 padding)
+//    [v7] 砍影片功能
+//    [v7] 品牌化命名 (UI 不露出 Flux / Kling)
 // ══════════════════════════════════════════════════════════════
 
-// ── AI 情境 場景 prompt 庫 (v2 指令式) ──
+// ── 通用指令 (所有場景共用,強制保留人物細節) ──
+const PRESERVE_SUBJECT =
+  'CRITICAL: Do NOT modify the person face, facial features, expression, skin texture, hair, body proportions, clothing details, or any product. Keep all subjects pixel-perfect identical to the original. Only modify the background, environment, and ambient lighting.';
+
+// ── 攝影機結尾 (通用簽名) ──
+const CAM_DEFAULT = 'Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.';
+const CAM_PORTRAIT = 'Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.';
+const CAM_MACRO = 'Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.';
+
+// ── AI 情境 場景 prompt 庫 (v8) ──
 const PRODUCT_SCENES = {
 
+  // ══════════════ 通用場景 ══════════════
+
   studio_white:
-    'Replace the entire background with a clean seamless white studio backdrop, subtle gradient from bright white at top to soft grey shadow at base. Professional commercial product photography lighting with soft directional key light from upper left. Keep the product and all subjects EXACTLY unchanged in position, shape, color, and details. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, f/8, studio strobe.',
+    `Replace the entire background with a clean seamless white studio backdrop, subtle gradient from bright white at top to soft grey shadow at base. Professional commercial product photography lighting with soft directional key light from upper left. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/8, studio strobe.`,
 
   dark_luxury:
-    'Replace the entire background with pure deep matte black void. Add dramatic single-source side rim lighting with warm golden highlights on product edges, creating strong chiaroscuro contrast. Subtle smoke atmosphere in background. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, f/4, dramatic lighting.',
+    `Replace the background with a rich deep charcoal-to-black gradient (NOT pure black void - keep it visible and atmospheric). Add strong warm golden rim lighting wrapping around the product and subject edges, plus a soft key light from upper left to keep the subject clearly illuminated and well-exposed. The overall image must remain BRIGHT and READABLE - the face and product must be clearly visible. Luxury magazine advertisement aesthetic with rich golden highlights. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
 
   marble_premium:
-    'Replace the entire scene: foreground surface becomes polished Italian Calacatta marble with natural grey veining, background becomes dark charcoal gradient wall. Add warm golden accent rim lighting from upper right. Luxury product photography aesthetic. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    `Replace the scene: foreground surface becomes polished Italian Calacatta marble with natural grey veining, background becomes dark charcoal gradient wall. Add warm golden accent rim lighting from upper right. Luxury product photography aesthetic. ${PRESERVE_SUBJECT} ${CAM_DEFAULT}`,
 
   minimal_grey:
-    'Replace the entire background with a smooth light-to-medium grey seamless gradient, no texture. Soft diffused softbox lighting from above creating gentle shadow beneath product. Minimalist Scandinavian aesthetic. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    `Replace the background with a smooth light-to-medium grey seamless gradient, no texture. Soft diffused softbox lighting from above creating gentle shadow beneath product. Minimalist Scandinavian aesthetic. ${PRESERVE_SUBJECT} ${CAM_DEFAULT}`,
 
   forest_outdoor:
-    'Replace the entire background with a lush atmospheric forest scene. Choose a natural variation: either Japanese cedar with morning mist, or temperate deciduous forest with autumn light, or tropical jungle with dense green foliage. Dappled golden sunlight filtering through canopy creating bokeh highlights. Visible depth with blurred trees in far background. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, f/2.8, shallow depth of field.',
+    `Replace the background with a lush atmospheric forest scene. Choose a natural variation: either Japanese cedar with morning mist, or temperate deciduous forest with autumn light, or tropical jungle with dense green foliage. Dappled golden sunlight filtering through canopy creating bokeh highlights. Visible depth with blurred trees in far background. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/2.8, shallow depth of field.`,
 
   night_city:
-    'Replace the entire background with a cinematic night cityscape. Blurred neon signs in warm orange, cool blue, and magenta pink creating rich bokeh circles. Wet street reflections if ground is visible. Cyberpunk atmospheric haze. Neon rim light naturally illuminating product edges. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.4, heavy bokeh.',
+    `Replace the background with a cinematic Tokyo-style night cityscape. Blurred neon signs with ONLY English letters, Japanese katakana, or abstract neon shapes - ABSOLUTELY NO Chinese characters, no recognizable text. Warm orange, cool blue, and magenta pink neon creating rich bokeh circles. Wet street reflections if ground is visible. Cyberpunk atmospheric haze. Neon rim light naturally illuminating product edges. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.4, heavy bokeh.`,
 
   lifestyle_home:
-    'Replace the entire scene with a warm Scandinavian home interior. Aged light oak wooden surface in foreground, soft-focus background showing white linen curtains with morning sunlight filtering through, hint of potted green plants. Warm 4000K natural lighting, cozy hygge atmosphere. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.',
+    `Replace the scene with a warm Scandinavian home interior. Aged light oak wooden surface in foreground, soft-focus background showing white linen curtains with morning sunlight filtering through, hint of potted green plants. Warm 4000K natural lighting, cozy hygge atmosphere. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
 
   tech_space:
-    'Replace the entire background with a deep space atmosphere. Earth curvature softly glowing at lower horizon, dark cosmic backdrop with subtle star field, purple-to-blue atmospheric gradient rim light. Flagship tech product photography aesthetic, clean futuristic. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    `Replace the background with a deep space atmosphere. Earth curvature softly glowing at lower horizon, dark cosmic backdrop with subtle star field, purple-to-blue atmospheric gradient rim light. Flagship tech product photography aesthetic, clean futuristic. ${PRESERVE_SUBJECT} ${CAM_DEFAULT}`,
 
   fashion_minimal:
-    'Replace the entire background with clean off-white to warm beige seamless studio gradient. Soft natural light from large window on the left creating gentle falloff. High-end fashion editorial aesthetic. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.',
+    `Replace the background with clean off-white to warm beige seamless studio gradient. Soft natural light from large window on the left creating gentle falloff. High-end fashion editorial aesthetic. ${PRESERVE_SUBJECT} ${CAM_PORTRAIT}`,
 
   fashion_outdoor:
-    'Replace the entire background with a golden hour urban or natural street scene. Choose a natural variation: either Tokyo Shibuya crossing, or Paris cobblestone alley, or New York SoHo, or European park path. Warm backlight creating natural halo, bokeh environment. Editorial lifestyle fashion aesthetic. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.',
+    `Replace the background with a golden hour urban or natural street scene. Choose a natural variation: either Tokyo Shibuya crossing, or Paris cobblestone alley, or New York SoHo, or European park path. Warm backlight creating natural halo, bokeh environment. NO Chinese text on any signage - use English or abstract shapes only. Editorial lifestyle fashion aesthetic. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.`,
 
   pet_home:
-    'Replace the entire scene with a warm cozy home interior. Light wood floor with natural grain, soft-focus background of white walls with hanging green plants, morning window light from the side creating warm highlights. Gentle 4500K ambient atmosphere. Keep all subjects, products, and animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.',
+    `Replace the scene with a warm cozy home interior. Light wood floor with natural grain, soft-focus background of white walls with hanging green plants, morning window light from the side creating warm highlights. Gentle 4500K ambient atmosphere. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
 
   pet_outdoor:
-    'Replace the entire background with a sunny outdoor park scene. Fresh bright green grass foreground, blurred trees and soft sunlight flares in background, natural daylight from upper left. Keep all subjects, products, and animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8, bokeh background.',
+    `Replace the background with a sunny outdoor park scene. Fresh bright green grass foreground, blurred trees and soft sunlight flares in background, natural daylight from upper left. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8, bokeh background.`,
 
   yoga_zen:
-    'Replace the entire scene with a serene Japanese zen environment. Choose a variation: either a tatami room with shoji paper screens and soft diffused morning light, or an outdoor bamboo garden with stone path, or a minimal rock garden with raked sand. Peaceful atmospheric. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.',
+    `Replace the scene with a serene Japanese zen environment. Choose a variation: either a tatami room with shoji paper screens and soft diffused morning light, or an outdoor bamboo garden with stone path, or a minimal rock garden with raked sand. Peaceful atmospheric. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 
   wellness_bright:
-    'Replace the entire scene with a bright airy wellness studio. Large floor-to-ceiling windows with soft natural morning sunlight streaming in, white walls with subtle shadow of green plants, light wood or white floor. Fresh minimalist wellness aesthetic. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    `Replace the scene with a bright airy wellness studio. Large floor-to-ceiling windows with soft natural morning sunlight streaming in, white walls with subtle shadow of green plants, light wood or white floor. Fresh minimalist wellness aesthetic. ${PRESERVE_SUBJECT} ${CAM_DEFAULT}`,
 
   snack_playful:
-    'Replace the entire background with a bold colorful flat surface. Choose a variation: either bright warm yellow, or coral pink, or mint green, or vibrant turquoise. Add playful scattered ingredient props (nuts, fruit slices, splashes) arranged artistically. Bright fun commercial food photography. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.',
+    `Replace the background with a bold colorful flat surface. Choose a variation: either bright warm yellow, or coral pink, or mint green, or vibrant turquoise. Add playful scattered ingredient props (nuts, fruit slices, splashes) arranged artistically. Bright fun commercial food photography. ${PRESERVE_SUBJECT} ${CAM_MACRO}`,
 
   sport_energy:
-    'Replace the entire background with a bold dynamic gradient. Choose a variation: deep navy to electric orange, or black to neon green, or crimson to gold. Add subtle motion blur lines, energetic atmospheric haze. Athletic commercial photography aesthetic. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 70-200mm f/2.8 S.',
+    `Replace the background with a bold dynamic gradient. Choose a variation: deep navy to electric orange, or black to neon green, or crimson to gold. Add subtle motion blur lines, energetic atmospheric haze. Athletic commercial photography aesthetic. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 70-200mm f/2.8 S.`,
 
   jewelry_dark:
-    'Replace the entire background with pure black velvet texture. Add single dramatic overhead spotlight creating strong focused beam, subtle teal-blue reflection on dark polished glass surface below. Luxury jewelry photography aesthetic. Keep the product EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/5.6, high-key contrast.',
+    `Replace the background with pure black velvet texture. Add single dramatic overhead spotlight creating strong focused beam, subtle teal-blue reflection on dark polished glass surface below. Luxury jewelry photography aesthetic. Keep the product EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/5.6, high-key contrast.`,
 
-  // ══ 美食升級 (保留擺盤) ══
+  // ══════════════ v8 新增: 風格化場景 ══════════════
+
+  design_editorial:
+    `Replace the scene with a minimalist editorial design magazine aesthetic. Soft off-white paper-textured background with subtle beige and sage green tones, warm natural window light from the side. Add subtle design elements like thin decorative lines, small handwritten-style script accents, and delicate paper grain texture. Clean asymmetric composition with generous negative space, Kinfolk magazine aesthetic, Japanese editorial design influence. Muted desaturated color palette. NO visible text or readable characters anywhere. ${PRESERVE_SUBJECT} ${CAM_PORTRAIT}`,
+
+  summer_hot:
+    `Replace the background with a vibrant hot summer scene. Choose a natural variation: either a sunny tropical beach with turquoise water and palm tree shadows, or a poolside with crystal blue water and bright white tiles, or a bright summer garden with cicada-loud greenery and flare highlights. Intense golden sunlight creating strong warm highlights, visible sun flare, shimmering heat haze. Saturated tropical color palette with azure blues, sun yellows, and coral pinks. Refreshing atmospheric feel. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/4, bright summer daylight.`,
+
+  japan_premium:
+    `Transform the entire scene into premium Japanese wabi-sabi aesthetic. Replace surface with aged hinoki cypress wood or dark charcoal stone slate, replace background with soft washi paper texture or blurred shoji screen with warm interior light behind. Add subtle Japanese design elements: a small ceramic tea cup in the far background bokeh, a single dried branch or bamboo leaf. Soft diffused side lighting 4000K, low saturation, muted earth tones (beige, sumi black, soft green), contemplative mono-no-aware atmosphere. NO visible text or characters. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/2.`,
+
+  kpop_korea:
+    `Transform the entire scene into trendy Korean K-POP music video aesthetic. Replace background with a dreamy gradient of pastel pink, lavender purple, and soft sky blue, with subtle sparkle bokeh and soft neon light streaks. Add Y2K-inspired elements: subtle holographic light flares, soft pink and blue rim lighting on product and subject edges, dreamy atmospheric glow. High-key bright exposure, glossy aesthetic, youthful Seoul fashion magazine vibe. Hint of abstract Hangul-inspired shapes (NOT readable text) as background decoration. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.8, dreamy bokeh.`,
+
+  american_wild:
+    `Transform the entire scene into American wild west / Route 66 aesthetic. Replace background with a vast dramatic landscape: choose from either Arizona red rock desert at golden hour, or Texas highway with dusty horizon and lens flare, or Californian canyon with rugged cliffs. Warm amber-orange sunset lighting with long dramatic shadows, slight dust haze atmosphere, vintage film grain texture. Masculine rugged aesthetic, Marlboro campaign influence, cinematic wide depth. Slightly desaturated cinematic color grade (teal shadows, orange highlights). ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/5.6, sweeping landscape.`,
+
+  // ══════════════ v8 新增: 客戶專屬場景 ══════════════
+
+  hk_banquet_gold:
+    `Transform the entire scene into Hong Kong top-tier Cantonese banquet aesthetic (Fook Lam Moon / Lung King Heen level). Replace surface with pristine white tablecloth with delicate gold trim embroidery, replace background with softly blurred warm amber interior showing hints of gold filigree wall panels and red lacquered details. Add an elegant Chinese porcelain tea set and a pair of ivory chopsticks with gold tips as subtle props. Warm golden chandelier lighting from above (3000K), creating a bright luxurious atmosphere - the dish must be clearly lit and visible, NOT dark or moody. Rich gold and deep red color palette, Michelin banquet magazine aesthetic, business-entertainment dining class. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/4, bright and luxurious.`,
+
+  tw_retro_ad:
+    `Transform the entire scene into authentic 1970s-1980s Taiwanese print advertisement aesthetic. Replace background with a warmly-lit vintage Taiwanese living room scene: floral-patterned fabric sofa in soft focus, terrazzo floor tiles, wooden venetian blinds with late afternoon golden sunlight creating dappled dramatic shadows, a glass of iced barley tea on a round wooden side table as prop. Warm sepia-amber color grading with slightly faded highlights, visible paper grain texture overlay, subtle film halation, Kodachrome film tones, soft edge vignetting. Looks like a scanned vintage magazine page from 1975 Taiwan. Nostalgic warm mood. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/2.8, warm vintage film look.`,
+
+  // ══════════════ 美食升級 (保留擺盤) ══════════════
+
   food_drama:
-    'Transform the entire scene into a Michelin 3-star restaurant advertisement. Replace background with pure black void, replace surface with dark slate. Add dramatic single overhead spotlight from above, atmospheric steam wisps rising from food, warm golden rim light on dish edges. Keep all food, dishes, and hands EXACTLY unchanged in position and details. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, f/4, dramatic lighting.',
+    `Transform the scene into a Michelin 3-star restaurant advertisement. Replace background with deep charcoal gradient (not pure black), replace surface with dark slate. Add dramatic single overhead spotlight from above, atmospheric steam wisps rising from food, warm golden rim light on dish edges. The food must remain BRIGHT and clearly visible. Keep all food, dishes, and hands EXACTLY unchanged in position and details. ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
 
   food_japanese:
-    'Transform the entire scene into Japanese kappo fine dining aesthetic. Replace surface with dark charcoal aged stone slate with rough texture, replace background with deep shadowed wood wall. Soft single-source cool side lighting 4000K, wabi-sabi minimal atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.',
+    `Transform the scene into Japanese kappo fine dining aesthetic. Replace surface with dark charcoal aged stone slate with rough texture, replace background with deep shadowed wood wall. Soft single-source cool side lighting 4000K, wabi-sabi minimal atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_MACRO}`,
 
   food_cantonese:
-    'Transform the entire scene into Hong Kong Cantonese banquet aesthetic. Replace surface with dark lacquered rosewood table, replace background with deep red-gold wall with subtle Chinese pattern. Warm amber pendant light from above creating rich golden glow, traditional opulent atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    `Transform the scene into Hong Kong Cantonese banquet aesthetic. Replace surface with dark lacquered rosewood table, replace background with deep red-gold wall with subtle Chinese pattern. Warm amber pendant light from above creating rich golden glow, traditional opulent atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_DEFAULT}`,
 
   food_korean:
-    'Transform the entire scene into Korean BBQ restaurant atmosphere. Replace surface with dark volcanic stone or cast iron plate, replace background with moody dark wood with hint of charcoal grill glow. Dramatic warm backlight from behind creating orange-red rim glow on food edges, atmospheric steam. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.',
+    `Transform the scene into Korean BBQ restaurant atmosphere. Replace surface with dark volcanic stone or cast iron plate, replace background with moody dark wood with hint of charcoal grill glow. Dramatic warm backlight from behind creating orange-red rim glow on food edges, atmospheric steam. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 
   food_taiwanese:
-    'Transform the entire scene into Taiwanese traditional comfort food aesthetic. Replace surface with warm aged teak wood table with natural grain, replace background with blurred vintage tile wall or wooden partition. Soft 3800K tungsten overhead light creating warm nostalgic glow, traditional ceramic tea cup and chopsticks as props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.',
+    `Transform the scene into Taiwanese traditional comfort food aesthetic. Replace surface with warm aged teak wood table with natural grain, replace background with blurred vintage tile wall or wooden partition. Soft 3800K tungsten overhead light creating warm nostalgic glow, traditional ceramic tea cup and chopsticks as props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 
   food_french:
-    'Transform the entire scene into French fine dining editorial. Replace surface with deep navy blue linen tablecloth, replace background with soft blurred restaurant ambience. Add silver cutlery and crystal glassware as props, soft cool natural window light 5500K creating clean elegant atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.',
+    `Transform the scene into French fine dining editorial. Replace surface with deep navy blue linen tablecloth, replace background with soft blurred restaurant ambience. Add silver cutlery and crystal glassware as props, soft cool natural window light 5500K creating clean elegant atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_MACRO}`,
 
   food_outdoor:
-    'Transform the entire scene into an outdoor golden hour picnic. Replace surface with rustic wooden board or checkered cloth on grass, replace background with natural green meadow with warm sunset backlight creating halo. Rustic wooden utensil props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.',
+    `Transform the scene into an outdoor golden hour picnic. Replace surface with rustic wooden board or checkered cloth on grass, replace background with natural green meadow with warm sunset backlight creating halo. Rustic wooden utensil props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.`,
 
   food_bright:
-    'Transform the entire scene into bright Nordic brunch aesthetic. Replace surface with clean white Carrara marble, replace background with bright white wall with soft natural morning window light 6000K streaming from the side. Add fresh herb sprigs and citrus slice props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.',
+    `Transform the scene into bright Nordic brunch aesthetic. Replace surface with clean white Carrara marble, replace background with bright white wall with soft natural morning window light 6000K streaming from the side. Add fresh herb sprigs and citrus slice props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 };
 
 // ══ 狀態 ══
@@ -415,17 +454,14 @@ async function renderAdCanvasWithPR() {
     const img = new Image(); img.crossOrigin = 'anonymous';
     img.onload = () => {
       if (isTryon) {
-        // 試穿圖比例可能很長,用 cover + contain 雙層處理
         const scaleCover   = Math.max(AM.w/img.width, AM.h/img.height);
         const scaleContain = Math.min(AM.w/img.width, AM.h/img.height);
         if (1 - scaleContain/scaleCover <= 0.20) {
-          // 比例接近方形,直接 cover
           ctx.drawImage(img,
             Math.round((AM.w-img.width*scaleCover)/2),
             Math.round((AM.h-img.height*scaleCover)/2),
             img.width*scaleCover, img.height*scaleCover);
         } else {
-          // 比例差距大,先畫模糊底再畫原圖 contain
           ctx.filter = 'blur(18px)';
           ctx.drawImage(img,
             Math.round((AM.w-img.width*scaleCover)/2),
@@ -531,9 +567,6 @@ async function compressImageBase64(base64, maxSize, quality) {
 }
 
 // ── 智能 padding (v2) ──
-// 1. 方形原圖(ratio 0.85~1.15)且夠大 → 不 padding,直接用
-// 2. 需要 padding 時,採樣四個角落顏色當底色(不再用死黑色)
-//    → 避免 Flux 把黑 padding 當成背景保留
 async function padImageTo1080(base64) {
   return new Promise(resolve => {
     const img = new Image();
@@ -541,7 +574,6 @@ async function padImageTo1080(base64) {
       const w0 = img.width, h0 = img.height;
       const ratio = w0 / h0;
 
-      // 已接近方形 & 夠大 → 直接用
       if (ratio >= 0.85 && ratio <= 1.15 && Math.min(w0, h0) >= 1000) {
         resolve(base64);
         return;
@@ -552,7 +584,6 @@ async function padImageTo1080(base64) {
       canvas.width = SIZE; canvas.height = SIZE;
       const ctx = canvas.getContext('2d');
 
-      // 採樣四個角落平均色
       let fillColor = '#ffffff';
       try {
         const tmpCanvas = document.createElement('canvas');
@@ -573,7 +604,6 @@ async function padImageTo1080(base64) {
         r = Math.round(r/n); g = Math.round(g/n); b = Math.round(b/n);
         fillColor = `rgb(${r},${g},${b})`;
       } catch(e) {
-        // 跨來源圖片可能無法採樣 → 用中性灰
         fillColor = '#888888';
       }
 
