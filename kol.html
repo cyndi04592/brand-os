@@ -533,18 +533,60 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .ep-field input:focus,.ep-field textarea:focus,.ep-field select:focus{border-color:var(--accent);}
 .ep-summary{font-size:11px;color:var(--accent3);padding:6px 10px;background:rgba(109,250,194,.06);border-radius:6px;border-left:2px solid var(--accent3);line-height:1.6;}
 
-/* 🎯 v5.8: 人像模式 grid */
-.portrait-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
-.portrait-mode-card{
-  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
-  padding:9px 11px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:3px;
-  font-family:'Noto Sans TC',sans-serif;
+/* 🎯 v5.9: Tab 3 商品照選擇器 */
+.ep-product-locked{padding:16px 14px;text-align:center;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-dim);font-size:11.5px;line-height:1.7;}
+.ep-product-gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.ep-product-item{
+  position:relative;aspect-ratio:1;border-radius:var(--radius-sm);overflow:hidden;
+  border:2px solid var(--border);cursor:pointer;transition:all .15s;background:var(--surface2);
 }
-.portrait-mode-card:hover{border-color:rgba(124,109,250,.4);}
-.portrait-mode-card.selected{border-color:var(--accent);background:linear-gradient(135deg,rgba(124,109,250,.18) 0%,rgba(124,109,250,.04) 100%);}
-.portrait-mode-card .pm-title{font-size:12px;font-weight:700;color:var(--text);}
-.portrait-mode-card .pm-desc{font-size:10px;color:var(--text-dim);line-height:1.5;}
-.portrait-mode-card .pm-tag{font-size:9.5px;color:var(--accent);font-weight:600;letter-spacing:.03em;margin-top:2px;}
+.ep-product-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.ep-product-item:hover{border-color:rgba(124,109,250,.5);}
+.ep-product-item.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,109,250,.3);}
+.ep-product-item.selected::after{
+  content:'✓';position:absolute;top:4px;right:4px;width:18px;height:18px;
+  background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:700;
+}
+.ep-product-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 2px 0;}
+
+/* 🎯 v5.9: 三平台貼文 UI */
+#system-social-posts{margin-top:14px;}
+.social-posts-loading{
+  padding:14px;background:rgba(124,109,250,.08);border:1px dashed rgba(124,109,250,.3);
+  border-radius:var(--radius-sm);text-align:center;font-size:12px;color:var(--text-dim);
+}
+.social-posts-error{
+  padding:14px;background:rgba(250,109,155,.08);border:1px solid rgba(250,109,155,.3);
+  border-radius:var(--radius-sm);text-align:center;font-size:12px;color:var(--accent2);
+}
+.social-posts-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px 14px;display:flex;flex-direction:column;gap:10px;
+}
+.social-posts-header{display:flex;align-items:center;gap:10px;}
+.social-posts-header strong{font-size:12.5px;}
+.social-posts-chip{
+  font-size:10px;color:var(--accent);background:rgba(124,109,250,.12);
+  padding:2px 8px;border-radius:10px;margin-left:auto;
+}
+.social-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+.social-tab-btn{
+  background:transparent;border:none;padding:7px 14px;color:var(--text-dim);
+  font-family:'Noto Sans TC',sans-serif;font-size:12px;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .15s;
+}
+.social-tab-btn:hover{color:var(--text);}
+.social-tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+.social-panel{display:flex;flex-direction:column;gap:8px;}
+.social-meta{font-size:10.5px;color:var(--text-dim);font-family:'Syne',sans-serif;letter-spacing:.04em;}
+.social-content{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-size:12.5px;padding:10px 12px;outline:none;
+  font-family:'Noto Sans TC',sans-serif;line-height:1.7;resize:vertical;
+}
+.social-content:focus{border-color:var(--accent);}
+.social-actions{display:flex;gap:6px;}
 .seedance-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .seedance-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .seedance-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
@@ -1023,10 +1065,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
       <!-- Alert banner -->
       <div class="system-alpha-banner">
-        <span class="system-alpha-icon">🌟</span>
+        <span class="system-alpha-icon">🚀</span>
         <div class="system-alpha-text">
-          <strong>Phase 1 MVP · v5.8 · 真實感升級</strong>
-          <span>新場景「📦 居家開箱」+ 4 場景商品情境重寫 + 🎭 人像模式雙選(KOL 一致性 / 自然 vlog)。</span>
+          <strong>Phase 2 · v5.9 · 社群經營系統完整版</strong>
+          <span>商品照 REFERENCE + AI 三平台貼文(IG/脆/FB)+ ✨ AI 自動生成人設書。KOL 真的可以開始經營社群了。</span>
         </div>
       </div>
 
@@ -1176,6 +1218,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="persona-modal-content">
       <div class="persona-modal-head">
         <span class="persona-modal-title">🎭 人設書編輯 · <span id="persona-editor-name">—</span></span>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto;margin-right:8px" onclick="aiGeneratePersona()">✨ AI 幫我寫</button>
         <button class="persona-modal-close" onclick="closePersonaEditor()">✕</button>
       </div>
       <div class="persona-modal-body">
@@ -1800,6 +1843,7 @@ const S = {
 
   // 🆕 v5.0: 電影鏡頭模式狀態
   seedanceProductUrls: [],        // 陣列存 URL 字串
+  episodeProductUrls: [],         // 🎯 v5.9: Tab 3 獨立商品照狀態
   selectedSceneId: '',            // 🆕 v5.1: 當前場景 id
   selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
   selectedMovementId: 'static',   // 🆕 v5.3: 當前運鏡 id,預設靜態
@@ -3548,7 +3592,11 @@ function renderSystemPersonaCard() {
         <span class="emoji">📝</span>
         <strong style="color:var(--text)">「${escapeHtml(p.persona_name)}」人設書還是空白</strong><br>
         <small style="font-size:11px">需要填入人設才能讓 AI 生成符合角色的影片</small><br>
-        <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openPersonaEditor()">✏️ 開始填寫</button>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="aiGeneratePersona()">✨ 讓 AI 幫我寫</button>
+          <button class="btn btn-ghost btn-sm" onclick="openPersonaEditor()">✏️ 我自己填</button>
+        </div>
+        <small style="font-size:10px;color:var(--text-dim);margin-top:8px;display:block">AI 會依品牌靈魂 + KOL 照片生成 8 欄初稿,你只要微調</small>
       </div>
     `;
     return;
@@ -3808,8 +3856,8 @@ function renderEpisodeCard() {
     ['excited and energetic', '✨ 興奮期待'],
   ].map(([v, lbl]) => `<option value="${escapeHtml(v)}" ${draft.tone === v ? 'selected' : ''}>${escapeHtml(lbl)}</option>`).join('');
 
-  // 🎯 v5.8: 人像模式 toggle(natural = text-to-video / anchored = reference)
-  const portraitMode = draft.portraitMode || 'anchored';
+  // 🎯 v5.9: 商品照選擇器 HTML(Drive 縮圖網格)
+  const productPhotoBlock = renderEpisodeProductPickerHTML();
 
   wrap.innerHTML = `
     <div class="episode-edit">
@@ -3832,21 +3880,8 @@ function renderEpisodeCard() {
         <select id="ep-tone">${toneOptions}</select>
       </div>
       <div class="ep-field">
-        <label>🎭 人像模式 <small style="color:var(--text-dim);font-weight:normal">(核心品質選擇)</small></label>
-        <div class="portrait-mode-grid">
-          <label class="portrait-mode-card ${portraitMode === 'anchored' ? 'selected' : ''}">
-            <input type="radio" name="ep-portrait-mode" value="anchored" ${portraitMode === 'anchored' ? 'checked' : ''} style="display:none">
-            <div class="pm-title">🎯 KOL 一致性</div>
-            <div class="pm-desc">使用 KOL 肖像為 reference<br>臉部一致但稍銳利</div>
-            <div class="pm-tag">預設 · 商品影片</div>
-          </label>
-          <label class="portrait-mode-card ${portraitMode === 'natural' ? 'selected' : ''}">
-            <input type="radio" name="ep-portrait-mode" value="natural" ${portraitMode === 'natural' ? 'checked' : ''} style="display:none">
-            <div class="pm-title">🌟 自然 vlog</div>
-            <div class="pm-desc">純文字生成,Seedance 腦補人臉<br>最自然但每次臉不同</div>
-            <div class="pm-tag">追劇內容 · 生活感</div>
-          </label>
-        </div>
+        <label>💎 商品照 REFERENCE <small style="color:var(--text-dim);font-weight:normal">(讓 Seedance 生出真實商品而非腦補)</small></label>
+        ${productPhotoBlock}
       </div>
       <div class="ep-summary">
         💎 <strong>本週主推產品:</strong>${product ? escapeHtml(product.name) : '無(請先設產品輪替)'}
@@ -3854,11 +3889,12 @@ function renderEpisodeCard() {
         <br>✨ 生成時會自動套用:${escapeHtml(persona.persona_name)} 人設 + ${escapeHtml(S.brands.find(b=>b.id===S.currentBrandId)?.name || '')} 靈魂 + 產品不經意植入
       </div>
       <div class="ep-actions" style="padding-top:6px">
-        <button class="btn btn-success" onclick="generateEpisode()">🎬 立刻生成影片</button>
+        <button class="btn btn-success" onclick="generateEpisode()">🎬 生成影片 + 三平台貼文</button>
         <button class="btn btn-ghost btn-sm" onclick="saveEpisodeDraft()">💾 存草稿</button>
         <span style="font-size:10.5px;color:var(--text-dim);margin-left:auto;align-self:center">Seedance · 10s · 720p · Fast</span>
       </div>
       <div id="system-episode-task"></div>
+      <div id="system-social-posts"></div>
     </div>
   `;
 
@@ -3869,28 +3905,147 @@ function renderEpisodeCard() {
   });
   const sit = document.getElementById('ep-situation');
   if (sit) sit.addEventListener('input', () => saveEpisodeDraft(true));
-  // 🎯 v5.8: portraitMode radio listener
-  document.querySelectorAll('input[name="ep-portrait-mode"]').forEach(el => {
-    el.addEventListener('change', () => {
-      // 更新卡片選中狀態
-      document.querySelectorAll('.portrait-mode-card').forEach(c => c.classList.remove('selected'));
-      el.closest('.portrait-mode-card')?.classList.add('selected');
-      saveEpisodeDraft(true);
-    });
+
+  // 🎯 v5.9: 自動載入 Drive 商品照
+  loadEpisodeProducts();
+}
+
+// 🎯 v5.9: Tab 3 商品照選擇器(簡化版 · 僅 Drive + 單一 grid)
+function renderEpisodeProductPickerHTML() {
+  const brandId = S.currentBrandId;
+  const folderId = BRAND_PRODUCT_FOLDERS[brandId];
+  if (!folderId) {
+    return `<div class="ep-product-locked">🔒 此品牌尚未設定商品照 Drive 資料夾<br><small>影片可生成但商品會是 AI 腦補,不是真實商品</small></div>`;
+  }
+  const selected = S.episodeProductUrls || [];
+  return `
+    <div id="ep-product-picker">
+      <div id="ep-product-gallery-wrap">
+        <div class="kol-empty" style="padding:18px 14px;font-size:11.5px"><span class="spin">⏳</span> 讀取 Drive 商品照中…</div>
+      </div>
+      <div class="ep-product-footer">
+        <span style="font-size:10.5px;color:var(--text-dim)">已選 <span id="ep-product-count">${selected.length}</span> 張(建議 1-3 張最清晰的)</span>
+        <button class="btn btn-ghost btn-sm" onclick="reloadEpisodeProducts()">🔄 重新整理</button>
+      </div>
+    </div>
+  `;
+}
+
+async function loadEpisodeProducts() {
+  const brandId = S.currentBrandId;
+  if (!brandId) return;
+  const folderId = BRAND_PRODUCT_FOLDERS[brandId];
+  if (!folderId) return;
+
+  const wrap = document.getElementById('ep-product-gallery-wrap');
+  if (!wrap) return;
+
+  const cacheKey = 'drive_products_' + folderId;
+  const cache = window._driveProductsCache?.[cacheKey];
+  if (cache) {
+    renderEpisodeProducts(cache);
+    return;
+  }
+
+  wrap.innerHTML = '<div class="kol-empty" style="padding:18px 14px;font-size:11.5px"><span class="spin">⏳</span> 讀取 Drive 商品照中…</div>';
+
+  try {
+    const res = await api('drive_files', { folderId });
+    if (!res.ok) throw new Error(res.error || '讀取失敗');
+
+    const files = (res.files || []).filter(f =>
+      f.mimeType && /^image\//.test(f.mimeType)
+    );
+
+    window._driveProductsCache = window._driveProductsCache || {};
+    window._driveProductsCache[cacheKey] = files;
+
+    renderEpisodeProducts(files);
+  } catch (e) {
+    wrap.innerHTML = `
+      <div class="ep-product-locked">
+        ❌ 讀取失敗:${escapeHtml(e.message)}
+        <button class="btn btn-ghost btn-sm" onclick="reloadEpisodeProducts()" style="margin-top:6px">🔄 重試</button>
+      </div>
+    `;
+  }
+}
+
+function reloadEpisodeProducts() {
+  const folderId = BRAND_PRODUCT_FOLDERS[S.currentBrandId];
+  if (folderId && window._driveProductsCache) {
+    delete window._driveProductsCache['drive_products_' + folderId];
+  }
+  loadEpisodeProducts();
+}
+
+function renderEpisodeProducts(files) {
+  const wrap = document.getElementById('ep-product-gallery-wrap');
+  if (!wrap) return;
+  if (!files || files.length === 0) {
+    wrap.innerHTML = `<div class="ep-product-locked">📁 資料夾裡沒照片<br><small>上傳幾張商品照到 Drive 再回來按重試</small></div>`;
+    return;
+  }
+
+  const upgradedFiles = files.map(f => ({
+    ...f,
+    hiResUrl: (f.thumbnailLink || '').replace(/=s\d+/, '=s1200'),
+  }));
+
+  const html = `
+    <div class="ep-product-gallery">
+      ${upgradedFiles.map(f => {
+        const isSelected = S.episodeProductUrls.includes(f.hiResUrl);
+        return `
+          <div class="ep-product-item ${isSelected ? 'selected' : ''}"
+               data-hi-res="${escapeHtml(f.hiResUrl)}"
+               data-name="${escapeHtml(f.name || '')}"
+               title="${escapeHtml(f.name || '')}">
+            <img src="${escapeHtml(f.thumbnailLink)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f>🖼️</div>'">
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.ep-product-item').forEach(item => {
+    item.addEventListener('click', handleEpisodeProductClick);
   });
+}
+
+function handleEpisodeProductClick(e) {
+  const item = e.currentTarget;
+  const hiResUrl = item.dataset.hiRes;
+  if (!hiResUrl) return;
+
+  const idx = S.episodeProductUrls.indexOf(hiResUrl);
+  if (idx >= 0) {
+    S.episodeProductUrls.splice(idx, 1);
+    item.classList.remove('selected');
+  } else {
+    if (S.episodeProductUrls.length >= 4) {
+      toast('Tab 3 最多 4 張商品照', 'warn');
+      return;
+    }
+    S.episodeProductUrls.push(hiResUrl);
+    item.classList.add('selected');
+  }
+
+  const countEl = document.getElementById('ep-product-count');
+  if (countEl) countEl.textContent = S.episodeProductUrls.length;
 }
 
 function saveEpisodeDraft(silent) {
   const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
   if (!persona || !S.currentBrandId) return;
   const lsKey = LS_EPISODE_KEY + S.currentBrandId + '_' + persona.persona_id;
-  const selectedMode = document.querySelector('input[name="ep-portrait-mode"]:checked')?.value || 'anchored';
   const draft = {
     situation: document.getElementById('ep-situation')?.value || '',
     sceneId: document.getElementById('ep-scene')?.value || '',
     movementId: document.getElementById('ep-movement')?.value || '',
     tone: document.getElementById('ep-tone')?.value || '',
-    portraitMode: selectedMode,
     savedAt: new Date().toISOString(),
   };
   localStorage.setItem(lsKey, JSON.stringify(draft));
@@ -3900,35 +4055,34 @@ function saveEpisodeDraft(silent) {
 async function generateEpisode() {
   const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
   if (!persona) { toast('請先選 KOL', 'error'); return; }
+  if (!persona.talking_photo_id) { toast('KOL 尚未綁定 HeyGen 照片', 'error'); return; }
 
   const situation = document.getElementById('ep-situation')?.value?.trim() || '';
   const sceneId = document.getElementById('ep-scene')?.value || '';
   const movementId = document.getElementById('ep-movement')?.value || 'static';
   const tone = document.getElementById('ep-tone')?.value || '';
-  const portraitMode = document.querySelector('input[name="ep-portrait-mode"]:checked')?.value || 'anchored';
 
   if (!sceneId) { toast('請選場景', 'error'); return; }
   if (!situation) {
     if (!confirm('你沒填「故事情境」,AI 會只依 KOL 人設生成泛用 vlog。要繼續嗎?')) return;
   }
 
-  // 🎯 v5.8: anchored 模式才需要 HeyGen 肖像;natural 模式純文字生成
-  if (portraitMode === 'anchored' && !persona.talking_photo_id) {
-    toast('KOL 一致性模式需綁定 HeyGen 照片,或改用「自然 vlog」模式', 'error');
-    return;
+  // 🎯 v5.9: 檢查商品照(建議但不強制)
+  const productImageUrls = [...(S.episodeProductUrls || [])];
+  if (productImageUrls.length === 0) {
+    const proceedWithoutProduct = confirm('⚠️ 你沒選商品照,Seedance 會腦補一個商品(可能跟真實商品差很多)。\n\n建議回去選 1-3 張 LACEZ 官方商品照,然後再生成。\n\n還是要繼續?');
+    if (!proceedWithoutProduct) return;
   }
 
   saveEpisodeDraft(true);
 
-  // 依 portraitMode 決定是否取得 KOL 肖像 URL
+  // 取得 KOL 肖像 URL
   let kolImageUrl = '';
-  if (portraitMode === 'anchored') {
-    try {
-      const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
-      kolImageUrl = res?.avatars?.[0]?.image_url || '';
-    } catch (_) {}
-    if (!kolImageUrl) { toast('無法取得 KOL 肖像 URL,請至形象庫檢查', 'error'); return; }
-  }
+  try {
+    const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
+    kolImageUrl = res?.avatars?.[0]?.image_url || '';
+  } catch (_) {}
+  if (!kolImageUrl) { toast('無法取得 KOL 肖像 URL,請至形象庫檢查', 'error'); return; }
 
   const product = getCurrentRotationProduct();
 
@@ -3947,25 +4101,24 @@ async function generateEpisode() {
       },
       product: product,
       situation: situation,
-      portraitMode: portraitMode,  // 讓 composer 知道模式
     },
   };
 
-  // 暫時把 S.storyArc.tone 設為使用者選的 tone(讓 composer 吸收)
+  // 暫時把 S.storyArc.tone 設為使用者選的 tone
   const prevArc = { ...S.storyArc };
   S.storyArc = { ...S.storyArc, tone: tone };
 
   const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, '10', opts);
-  S.storyArc = prevArc;  // 還原
+  S.storyArc = prevArc;
 
   if (!prompt) { toast('組 prompt 失敗', 'error'); return; }
 
   const taskBox = document.getElementById('system-episode-task');
-  if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>⏳ 送出中…(${portraitMode === 'natural' ? '🌟 自然 vlog' : '🎯 KOL 一致性'})</strong></div></div>`;
+  if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>⏳ 送出影片中…</strong></div></div>`;
 
   const payload = {
-    kolImageUrl,  // natural 模式為空字串,Worker 端應視為 text-to-video
-    productImageUrls: [],
+    kolImageUrl,
+    productImageUrls,  // 🎯 v5.9: 送真實商品照
     prompt,
     resolution: '720p',
     duration: '10',
@@ -3974,31 +4127,38 @@ async function generateEpisode() {
     tier: 'fast',
     brandId: S.currentBrandId,
     kolName: persona.persona_name,
-    portraitMode: portraitMode,  // 傳給 Worker(若有用到)
   };
 
-  try {
-    const res = await api('seedance_submit', payload);
-    if (!res.ok) throw new Error(res.error);
+  // 🎯 v5.9: 影片和貼文並行觸發
+  const videoPromise = (async () => {
+    try {
+      const res = await api('seedance_submit', payload);
+      if (!res.ok) throw new Error(res.error);
 
-    const task = {
-      requestId: res.requestId,
-      endpoint: res.endpoint,
-      responseUrl: res.responseUrl,
-      statusUrl: res.statusUrl,
-      label: `${persona.persona_name} · ${portraitMode === 'natural' ? '🌟 自然 vlog' : '🎯 一致性'} · 10s`,
-      status: 'IN_QUEUE',
-      created: new Date().toLocaleTimeString('zh-TW'),
-      startTime: Date.now(),
-      url: null,
-    };
-    renderEpisodeTask(task);
-    toast('🎬 企劃影片送出,約 1-2 分鐘', 'success');
-    pollEpisodeTask(task);
-  } catch (e) {
-    if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong style="color:var(--accent2)">❌ ${escapeHtml(e.message)}</strong></div></div>`;
-    toast('提交失敗:' + e.message, 'error');
-  }
+      const task = {
+        requestId: res.requestId,
+        endpoint: res.endpoint,
+        responseUrl: res.responseUrl,
+        statusUrl: res.statusUrl,
+        label: `${persona.persona_name} · 單集企劃 · 10s`,
+        status: 'IN_QUEUE',
+        created: new Date().toLocaleTimeString('zh-TW'),
+        startTime: Date.now(),
+        url: null,
+      };
+      renderEpisodeTask(task);
+      toast('🎬 影片送出,約 1-2 分鐘', 'success');
+      pollEpisodeTask(task);
+    } catch (e) {
+      if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong style="color:var(--accent2)">❌ ${escapeHtml(e.message)}</strong></div></div>`;
+      toast('影片提交失敗:' + e.message, 'error');
+    }
+  })();
+
+  // 🎯 v5.9: 同時觸發 AI 貼文生成(不卡影片)
+  generateSocialPosts({ persona, product, situation, sceneId, movementId, tone }).catch(e => {
+    console.error('貼文生成失敗:', e);
+  });
 }
 
 function renderEpisodeTask(task) {
@@ -4068,6 +4228,219 @@ async function pollEpisodeTask(task) {
   }, 2000);
 }
 
+// 🎯 v5.9: AI 三平台貼文生成
+async function generateSocialPosts(ctx) {
+  const wrap = document.getElementById('system-social-posts');
+  if (!wrap) return;
+  const { persona, product, situation, sceneId, movementId, tone } = ctx;
+
+  wrap.innerHTML = `
+    <div class="social-posts-loading">
+      <span class="spin">⏳</span> AI 正在幫你寫 IG/脆/FB 三平台貼文…
+    </div>
+  `;
+
+  const brand = S.brands.find(b => b.id === S.currentBrandId) || {};
+  const scene = SCENE_LIBRARY[S.currentBrandId]?.[sceneId] || {};
+  const movement = CAMERA_MOVEMENTS[movementId] || {};
+
+  try {
+    const res = await api('ai_generate_social_posts', {
+      kolName: persona.persona_name,
+      kolBackground: persona.background || '',
+      kolPersonality: persona.personality || '',
+      kolSpeakingStyle: persona.speaking_style || '',
+      kolCatchphrases: Array.isArray(persona.catchphrases) ? persona.catchphrases.join(', ') : (persona.catchphrases || ''),
+      kolTabooWords: Array.isArray(persona.taboo_words) ? persona.taboo_words.join(', ') : (persona.taboo_words || ''),
+      kolSignatureTopics: Array.isArray(persona.signature_topics) ? persona.signature_topics.join(', ') : (persona.signature_topics || ''),
+      brandName: brand.name || '',
+      brandSoul: brand.soul || '',
+      brandAdStyle: Array.isArray(brand.adStyle) ? brand.adStyle.join(', ') : (brand.adStyle || ''),
+      brandHashtags: Array.isArray(brand.hashtags) ? brand.hashtags.join(' ') : (brand.hashtags || ''),
+      productName: product?.name || '',
+      productTag: product?.tag || '',
+      situation: situation || '',
+      sceneLabel: scene.label || '',
+      movementLabel: movement.label || '',
+      tone: tone || '',
+    });
+
+    if (!res.ok) throw new Error(res.error || '貼文生成失敗');
+
+    renderSocialPosts(res.posts);
+  } catch (e) {
+    wrap.innerHTML = `
+      <div class="social-posts-error">
+        ❌ AI 貼文生成失敗:${escapeHtml(e.message)}
+        <button class="btn btn-ghost btn-sm" style="margin-left:10px" onclick="generateSocialPosts(${JSON.stringify(ctx).replace(/"/g, '&quot;')})">🔄 重試</button>
+      </div>
+    `;
+  }
+}
+
+function renderSocialPosts(posts) {
+  const wrap = document.getElementById('system-social-posts');
+  if (!wrap) return;
+
+  // 三平台的 HTML
+  const ig = posts.ig || { caption: '', hashtags: [] };
+  const threads = posts.threads || { text: '' };
+  const fb = posts.fb || { caption: '', hashtags: [], cta_question: '' };
+
+  const igFull = `${ig.caption || ''}\n\n${(ig.hashtags || []).join(' ')}`.trim();
+  const threadsFull = (threads.text || '').trim();
+  const fbFull = `${fb.caption || ''}${fb.cta_question ? '\n\n' + fb.cta_question : ''}${fb.hashtags?.length ? '\n\n' + fb.hashtags.join(' ') : ''}`.trim();
+
+  wrap.innerHTML = `
+    <div class="social-posts-card">
+      <div class="social-posts-header">
+        <strong>📱 三平台貼文 · AI 優化</strong>
+        <span class="social-posts-chip">✨ 依 ${escapeHtml(S.personas.find(p => p.persona_id === systemSelectedPersonaId)?.persona_name || '')} 人設</span>
+      </div>
+      <div class="social-tabs">
+        <button class="social-tab-btn active" data-tab="ig">📱 IG</button>
+        <button class="social-tab-btn" data-tab="threads">🧵 脆</button>
+        <button class="social-tab-btn" data-tab="fb">📘 FB 粉專</button>
+      </div>
+
+      <!-- IG -->
+      <div class="social-panel" data-panel="ig">
+        <div class="social-meta">文案 ${(ig.caption || '').length} 字 · Hashtag ${(ig.hashtags || []).length} 個</div>
+        <textarea class="social-content" id="social-ig-text" rows="8">${escapeHtml(igFull)}</textarea>
+        <div class="social-actions">
+          <button class="btn btn-success btn-sm" onclick="copySocialPost('ig')">📋 複製全文</button>
+          <button class="btn btn-ghost btn-sm" onclick="regenerateOneSocial('ig')">✨ 重寫</button>
+        </div>
+      </div>
+
+      <!-- Threads -->
+      <div class="social-panel" data-panel="threads" style="display:none">
+        <div class="social-meta">文字為王 · ${(threads.text || '').length} 字</div>
+        <textarea class="social-content" id="social-threads-text" rows="6">${escapeHtml(threadsFull)}</textarea>
+        <div class="social-actions">
+          <button class="btn btn-success btn-sm" onclick="copySocialPost('threads')">📋 複製全文</button>
+          <button class="btn btn-ghost btn-sm" onclick="regenerateOneSocial('threads')">✨ 重寫</button>
+        </div>
+      </div>
+
+      <!-- FB -->
+      <div class="social-panel" data-panel="fb" style="display:none">
+        <div class="social-meta">${(fb.caption || '').length} 字 + CTA 問句</div>
+        <textarea class="social-content" id="social-fb-text" rows="12">${escapeHtml(fbFull)}</textarea>
+        <div class="social-actions">
+          <button class="btn btn-success btn-sm" onclick="copySocialPost('fb')">📋 複製全文</button>
+          <button class="btn btn-ghost btn-sm" onclick="regenerateOneSocial('fb')">✨ 重寫</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // tab 切換
+  wrap.querySelectorAll('.social-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      wrap.querySelectorAll('.social-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      wrap.querySelectorAll('.social-panel').forEach(p => {
+        p.style.display = p.dataset.panel === tab ? 'block' : 'none';
+      });
+    });
+  });
+}
+
+function copySocialPost(platform) {
+  const textarea = document.getElementById(`social-${platform}-text`);
+  if (!textarea) return;
+  navigator.clipboard.writeText(textarea.value).then(() => {
+    toast(`✅ ${platform.toUpperCase()} 貼文已複製`, 'success');
+  }).catch(() => {
+    // fallback
+    textarea.select();
+    document.execCommand('copy');
+    toast(`✅ ${platform.toUpperCase()} 貼文已複製`, 'success');
+  });
+}
+
+async function regenerateOneSocial(platform) {
+  // 重新生成單一平台 - 簡化版:重新觸發全部,使用者自行切 tab
+  const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
+  if (!persona) return;
+  const situation = document.getElementById('ep-situation')?.value?.trim() || '';
+  const sceneId = document.getElementById('ep-scene')?.value || '';
+  const movementId = document.getElementById('ep-movement')?.value || 'static';
+  const tone = document.getElementById('ep-tone')?.value || '';
+  const product = getCurrentRotationProduct();
+  toast('重新生成三平台貼文中…', 'info');
+  await generateSocialPosts({ persona, product, situation, sceneId, movementId, tone });
+}
+
+// 🎯 v5.9: AI 生成 KOL 人設書
+async function aiGeneratePersona() {
+  const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
+  if (!persona) { toast('請先選 KOL', 'error'); return; }
+
+  if (!confirm(`AI 即將依 ${persona.persona_name} 的照片 + ${S.brands.find(b=>b.id===S.currentBrandId)?.name || ''} 品牌靈魂生成 8 欄人設書初稿。\n\n已填的欄位會被覆蓋,確定要繼續?`)) return;
+
+  // 取得 KOL 肖像 URL
+  let kolImageUrl = '';
+  if (persona.talking_photo_id) {
+    try {
+      const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
+      kolImageUrl = res?.avatars?.[0]?.image_url || '';
+    } catch (_) {}
+  }
+
+  const brand = S.brands.find(b => b.id === S.currentBrandId) || {};
+
+  toast('✨ AI 正在生成人設書…', 'info');
+
+  try {
+    const res = await api('ai_generate_persona', {
+      personaName: persona.persona_name,
+      personaType: persona.persona_type || 'independent',
+      kolImageUrl: kolImageUrl,
+      brandName: brand.name || '',
+      brandSoul: brand.soul || '',
+      brandAdStyle: Array.isArray(brand.adStyle) ? brand.adStyle.join(', ') : (brand.adStyle || ''),
+    });
+
+    if (!res.ok) throw new Error(res.error || 'AI 生成失敗');
+
+    // 把結果填進 Modal 欄位(若 Modal 已開)或直接存 GAS
+    const modalOpen = document.getElementById('persona-editor-modal')?.classList.contains('open');
+    const data = res.persona || {};
+
+    if (modalOpen) {
+      // Modal 開著 → 填進欄位
+      document.getElementById('pe-background').value = data.background || '';
+      document.getElementById('pe-personality').value = data.personality || '';
+      document.getElementById('pe-speaking-style').value = data.speaking_style || '';
+      document.getElementById('pe-role-relationship').value = data.role_relationship || '';
+      document.getElementById('pe-catchphrases').value = Array.isArray(data.catchphrases) ? data.catchphrases.join(', ') : (data.catchphrases || '');
+      document.getElementById('pe-taboo-words').value = Array.isArray(data.taboo_words) ? data.taboo_words.join(', ') : (data.taboo_words || '');
+      document.getElementById('pe-signature-topics').value = Array.isArray(data.signature_topics) ? data.signature_topics.join(', ') : (data.signature_topics || '');
+      document.getElementById('pe-forbidden-topics').value = Array.isArray(data.forbidden_topics) ? data.forbidden_topics.join(', ') : (data.forbidden_topics || '');
+      toast('✨ AI 人設書已生成,請微調後儲存', 'success');
+    } else {
+      // Modal 沒開 → 開 Modal 並填入
+      openPersonaEditor();
+      setTimeout(() => {
+        document.getElementById('pe-background').value = data.background || '';
+        document.getElementById('pe-personality').value = data.personality || '';
+        document.getElementById('pe-speaking-style').value = data.speaking_style || '';
+        document.getElementById('pe-role-relationship').value = data.role_relationship || '';
+        document.getElementById('pe-catchphrases').value = Array.isArray(data.catchphrases) ? data.catchphrases.join(', ') : (data.catchphrases || '');
+        document.getElementById('pe-taboo-words').value = Array.isArray(data.taboo_words) ? data.taboo_words.join(', ') : (data.taboo_words || '');
+        document.getElementById('pe-signature-topics').value = Array.isArray(data.signature_topics) ? data.signature_topics.join(', ') : (data.signature_topics || '');
+        document.getElementById('pe-forbidden-topics').value = Array.isArray(data.forbidden_topics) ? data.forbidden_topics.join(', ') : (data.forbidden_topics || '');
+        toast('✨ AI 人設書已生成,請微調後儲存', 'success');
+      }, 100);
+    }
+  } catch (e) {
+    toast('AI 生成失敗:' + e.message, 'error');
+  }
+}
+
 // ─── 工具 ─────────────────────────────────────────────────
 function getInitial(name) {
   if (!name) return '?';
@@ -4106,4 +4479,3 @@ window.toast = toast;
 <script src="kol-ai-generator.js"></script>
 </body>
 </html>
-
