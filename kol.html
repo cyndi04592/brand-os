@@ -633,6 +633,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .seedance-task-meta{font-size:10.5px;color:var(--text-dim);margin-top:8px;font-family:'Syne',sans-serif;display:flex;gap:14px;flex-wrap:wrap;}
 .seedance-task-meta .lbl{color:var(--text-dim);}
 .seedance-task-meta .val{color:var(--text);font-weight:600;}
+
+/* 🆕 v5.10 · Story Memory 專用樣式 */
+.cal-cell.clickable{cursor:pointer;transition:all .15s;}
+.cal-cell.clickable:hover{border-color:var(--accent);background:rgba(124,109,250,.08);transform:scale(1.04);z-index:2;}
+.queue-item.queue-failed{opacity:.7;}
+.queue-status.queue-failed{background:rgba(250,109,155,.15);color:var(--accent2);}
 </style>
 </head>
 <body>
@@ -640,7 +646,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a class="topbar-logo" href="index.html">Brand <span>OS</span></a>
   <div class="topbar-sep"></div>
   <span class="topbar-title">KOL 數字人工作室</span>
-  <div class="topbar-badge">v5.0 · Dev(電影鏡頭整合)</div>
+  <div class="topbar-badge">v5.10 · Dev(劇情記憶)</div>
 </header>
 
 <main class="main">
@@ -1067,8 +1073,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="system-alpha-banner">
         <span class="system-alpha-icon">🚀</span>
         <div class="system-alpha-text">
-          <strong>Phase 2 · v5.9 · 社群經營系統完整版</strong>
-          <span>商品照 REFERENCE + AI 三平台貼文(IG/脆/FB)+ ✨ AI 自動生成人設書。KOL 真的可以開始經營社群了。</span>
+          <strong>Phase 3 · v5.10 · KOL 劇情記憶系統</strong>
+          <span>日曆接真資料 · 每集自動存檔 · 每集都變成 KOL 的劇情記憶。這不是工具,是 AI KOL 的人生。</span>
         </div>
       </div>
 
@@ -1127,45 +1133,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <!-- 右欄 -->
         <div class="system-col-right">
 
-          <!-- 4. 本月內容日曆(Phase 2 維持示意) -->
-          <div class="panel system-panel">
+         <!-- 4. 本月內容日曆(v5.10 · 真資料) -->
+          <div class="panel system-panel" id="system-calendar-wrap">
             <div class="panel-title">
               <div class="dot" style="background:var(--accent)"></div>
-              📅 本月內容日曆 · 2026 四月
-              <span class="chip orange" style="margin-left:auto">🟡 Phase 2 Mock</span>
+              📅 本月內容日曆
+              <span class="chip" style="margin-left:auto">載入中…</span>
             </div>
-            <div class="calendar-hint" id="system-calendar-hint">本週主軸依產品輪替自動產生</div>
-            <div class="calendar-grid">
-              <div class="cal-cell head">日</div>
-              <div class="cal-cell head">一</div>
-              <div class="cal-cell head">二</div>
-              <div class="cal-cell head">三</div>
-              <div class="cal-cell head">四</div>
-              <div class="cal-cell head">五</div>
-              <div class="cal-cell head">六</div>
-              <div class="cal-cell past"><span class="n">20</span></div>
-              <div class="cal-cell past posted"><span class="n">21</span><span class="ev">📝 工作抱怨</span></div>
-              <div class="cal-cell past"><span class="n">22</span></div>
-              <div class="cal-cell past posted"><span class="n">23</span><span class="ev">🛋 下班放鬆</span></div>
-              <div class="cal-cell today"><span class="n">24 · 今天</span><span class="ev planned">⏳ 咖啡廳午後</span></div>
-              <div class="cal-cell planned"><span class="n">25</span><span class="ev planned">🌿 週五戶外</span></div>
-              <div class="cal-cell"><span class="n">26</span></div>
-              <div class="cal-cell planned"><span class="n">27</span><span class="ev planned">📖 週末讀書</span></div>
-              <div class="cal-cell"><span class="n">28</span></div>
-              <div class="cal-cell planned"><span class="n">29</span><span class="ev planned">🥞 早餐分享</span></div>
-              <div class="cal-cell"><span class="n">30</span></div>
-              <div class="cal-cell"><span class="n">1</span></div>
-              <div class="cal-cell"><span class="n">2</span></div>
-              <div class="cal-cell"><span class="n">3</span></div>
-            </div>
-            <div class="cal-legend">
-              <span><span class="dot" style="background:var(--accent3)"></span>已發</span>
-              <span><span class="dot" style="background:var(--accent)"></span>預定</span>
-              <span><span class="dot" style="background:#ffa94d"></span>今日</span>
-            </div>
+            <div class="kol-empty" style="padding:16px">選 KOL 以載入日曆…</div>
           </div>
-
-          <!-- 5. 單集企劃(真編輯 + 真生成) -->
           <div class="panel system-panel">
             <div class="panel-title">
               <div class="dot" style="background:var(--accent2)"></div>
@@ -1177,29 +1153,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             </div>
           </div>
 
-          <!-- 6. 批次生成佇列(Phase 3 維持示意) -->
-          <div class="panel system-panel">
+<!-- 6. KOL 劇情記憶(v5.10 · 真 Episodes) -->
+          <div class="panel system-panel" id="system-queue-wrap">
             <div class="panel-title">
               <div class="dot" style="background:var(--accent3)"></div>
-              🎬 批次生成佇列
-              <span class="chip orange" style="margin-left:auto">🟡 Phase 3 Mock</span>
+              🎬 KOL 劇情記憶
+              <span class="chip" style="margin-left:auto">載入中…</span>
             </div>
-            <div class="queue-list">
-              <div class="queue-item">
-                <div class="queue-status queue-done">✓</div>
-                <div class="queue-info">
-                  <strong>4/23 · 下班放鬆</strong>
-                  <small>咖啡廳午後 · 10s · 完成</small>
-                </div>
-                <span class="chip green">已生成</span>
-              </div>
-              <div class="queue-item">
-                <div class="queue-status queue-pending">⏸</div>
-                <div class="queue-info">
-                  <strong>4/25 · 週五戶外</strong>
-                  <small>戶外綠意 · 10s · 待排程</small>
-                </div>
-                <span class="chip">PENDING</span>
+            <div class="kol-empty" style="padding:16px">選 KOL 以載入歷程…</div>
+          </div>
               </div>
             </div>
           </div>
@@ -3475,8 +3437,10 @@ async function renderSystemTab() {
   if (!systemSelectedPersonaId && S.personas.length > 0) {
     systemSelectedPersonaId = S.personas[0].persona_id;
   }
-  renderSystemPersonaCard();
+renderSystemPersonaCard();
+  renderSystemCalendar();    // 🆕 v5.10: 真資料日曆
   renderEpisodeCard();
+  renderSystemQueue();       // 🆕 v5.10: KOL 劇情記憶
 }
 
 // 🚀 v5.7.1: 背景載入 HeyGen 頭像(供 Tab 3 用)
@@ -3888,10 +3852,17 @@ function renderEpisodeCard() {
         ${product?.tag ? '<br>🏷️ 定位:' + escapeHtml(product.tag) : ''}
         <br>✨ 生成時會自動套用:${escapeHtml(persona.persona_name)} 人設 + ${escapeHtml(S.brands.find(b=>b.id===S.currentBrandId)?.name || '')} 靈魂 + 產品不經意植入
       </div>
-      <div class="ep-actions" style="padding-top:6px">
-        <button class="btn btn-success" onclick="generateEpisode()">🎬 生成影片 + 三平台貼文</button>
-        <button class="btn btn-ghost btn-sm" onclick="saveEpisodeDraft()">💾 存草稿</button>
-        <span style="font-size:10.5px;color:var(--text-dim);margin-left:auto;align-self:center">Seedance · 10s · 720p · Fast</span>
+<div class="ep-actions" style="padding-top:6px;flex-direction:column;align-items:stretch;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-success" onclick="generateEpisodeV510('all')" style="flex:1;min-width:180px">🚀 全套生成 <small style="opacity:.85">$1.22</small></button>
+          <button class="btn btn-primary" onclick="generateEpisodeV510('video')">🎬 只影片 <small style="opacity:.85">$1.21</small></button>
+          <button class="btn btn-ghost" onclick="generateEpisodeV510('posts')">✍️ 只貼文 <small style="opacity:.85">$0.006</small></button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:10.5px;color:var(--text-dim)">
+          <button class="btn btn-ghost btn-sm" onclick="saveEpisodeDraft()">💾 存草稿</button>
+          <span style="margin-left:auto">Seedance · 10s · 720p · Fast</span>
+        </div>
+      </div>
       </div>
       <div id="system-episode-task"></div>
       <div id="system-social-posts"></div>
@@ -4475,6 +4446,652 @@ function toast(msg, type = '') {
   setTimeout(() => el.remove(), 3100);
 }
 window.toast = toast;
+
+// ════════════════════════════════════════════════════════════════════
+//  Brand OS · KOL Studio v5.10 — Story Memory Module
+//
+//  新增/取代:
+//   • CALENDAR_TOPIC_MAP      — 日曆主題 → 場景/故事/情緒對應表
+//   • Episode/Calendar API    — 連 GAS 新 actions
+//   • renderSystemCalendar    — 改讀 GAS,取代寫死 HTML
+//   • renderSystemQueue       — 改讀真 Episodes,取代 Phase 3 Mock
+//   • handleCalendarCellClick — 點日曆格子 → 填單集企劃
+//   • generateEpisodeV510     — 取代 generateEpisode,拆 3 個按鈕
+//   • saveEpisodeToGAS        — 存草稿/成功後回寫狀態
+// ════════════════════════════════════════════════════════════════════
+
+// 📋 日曆主題 → 單集企劃自動對應
+// 當使用者點日曆某一天,這個 mapping 告訴 UI 該帶出什麼場景/故事框
+const CALENDAR_TOPIC_MAP = {
+  // LACEZ 專用(la)
+  '咖啡廳午後':  { sceneId: 'cafe_afternoon',  storyFrame: 'daily vlog slice of life', tone: 'warm and gentle' },
+  '下班放鬆':    { sceneId: 'home_unboxing',   storyFrame: 'cozy after-work unwinding', tone: 'tired but content' },
+  '工作抱怨':    { sceneId: 'urban_night',      storyFrame: 'casual complaint about work stress', tone: 'witty and slightly sarcastic' },
+  '週五戶外':    { sceneId: 'outdoor_garden',  storyFrame: 'travel journal vlog', tone: 'excited and energetic' },
+  '週末讀書':    { sceneId: 'cafe_afternoon',  storyFrame: 'weekend self-care ritual', tone: 'nostalgic and soft' },
+  '早餐分享':    { sceneId: 'kitchen_morning',  storyFrame: 'daily vlog slice of life', tone: 'relaxed and playful' },
+  'me-time':     { sceneId: 'home_unboxing',   storyFrame: 'weekend self-care ritual', tone: 'warm and gentle' },
+  '安靜獨處':    { sceneId: 'home_unboxing',   storyFrame: 'quiet reflection moment', tone: 'nostalgic and soft' },
+  '穿搭分享':    { sceneId: 'urban_night',      storyFrame: 'fashion outfit sharing', tone: 'confident and independent' },
+  '媽媽經':      { sceneId: 'kitchen_morning',  storyFrame: 'motherhood daily struggle and joy', tone: 'tired but content' },
+};
+
+// ─── Episode / Calendar API wrappers ────────────────────────────────
+async function apiListEpisodes(brandId, kolId, limit) {
+  const qs = new URLSearchParams({
+    action: 'listEpisodes',
+    password: PASSWORD,
+    brandId: brandId || '',
+    kolId: kolId || '',
+    limit: String(limit || 20),
+  }).toString();
+  const r = await fetch(`${GAS_URL}?${qs}`);
+  return r.json();
+}
+
+async function apiSaveEpisode(data) {
+  return await gasPost('saveEpisode', { data });
+}
+
+async function apiUpdateEpisodeStatus(id, fields) {
+  return await gasPost('updateEpisodeStatus', { id, fields });
+}
+
+async function apiListCalendar(brandId, kolId, year, month) {
+  const qs = new URLSearchParams({
+    action: 'listCalendar',
+    password: PASSWORD,
+    brandId: brandId || '',
+    kolId: kolId || '',
+    year: String(year),
+    month: String(month),
+  }).toString();
+  const r = await fetch(`${GAS_URL}?${qs}`);
+  return r.json();
+}
+
+async function apiSaveCalendar(data) {
+  return await gasPost('saveCalendar', { data });
+}
+
+async function apiDeleteCalendar(id) {
+  return await gasPost('deleteCalendar', { id });
+}
+
+// ─── v5.10: Calendar renderer(取代舊的寫死日曆)────────────────────
+async function renderSystemCalendar() {
+  const wrap = document.getElementById('system-calendar-wrap');
+  if (!wrap) return;
+
+  const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
+  if (!persona || !S.currentBrandId) {
+    wrap.innerHTML = '<div class="kol-empty" style="padding:16px">選 KOL 以載入日曆…</div>';
+    return;
+  }
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const monthLabel = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'][month - 1];
+
+  wrap.innerHTML = `
+    <div class="panel-title">
+      <div class="dot" style="background:var(--accent)"></div>
+      📅 本月內容日曆 · ${year} ${monthLabel}
+      <span class="chip green" style="margin-left:auto">🟢 真資料</span>
+    </div>
+    <div class="calendar-hint">點任一天 → 自動填入右側單集企劃 · 可排規劃或追溯紀錄</div>
+    <div id="system-calendar-grid" class="calendar-grid">
+      <div class="kol-empty" style="grid-column:1/-1;padding:20px"><span class="spin">⏳</span> 載入中…</div>
+    </div>
+    <div class="cal-legend">
+      <span><span class="dot" style="background:var(--accent3)"></span>已生成</span>
+      <span><span class="dot" style="background:var(--accent)"></span>已規劃</span>
+      <span><span class="dot" style="background:#ffa94d"></span>今日</span>
+      <span><span class="dot" style="background:rgba(255,255,255,.2)"></span>空白可點</span>
+    </div>
+  `;
+
+  try {
+    // 並行讀 Calendar 和 Episodes(追溯 episode_id 用)
+    const [calRes, epRes] = await Promise.all([
+      apiListCalendar(S.currentBrandId, persona.persona_id, year, month),
+      apiListEpisodes(S.currentBrandId, persona.persona_id, 60),
+    ]);
+
+    if (!calRes.ok) throw new Error(calRes.error || 'Calendar 讀取失敗');
+
+    const entries = calRes.entries || [];
+    const episodes = epRes.ok ? (epRes.episodes || []) : [];
+
+    // 把 entries 索引為 date map,方便日曆格子查
+    const byDate = {};
+    for (const e of entries) {
+      // scheduled_date 可能是 Date 物件或字串
+      const dateKey = normalizeDate(e.scheduled_date);
+      if (dateKey) byDate[dateKey] = e;
+    }
+
+    // 把 episodes 依 calendar_date 索引(處理舊資料 / 手動生成的)
+    const epsByDate = {};
+    for (const e of episodes) {
+      if (e.video_status === 'done' && e.calendar_date) {
+        const dateKey = normalizeDate(e.calendar_date);
+        if (dateKey) {
+          epsByDate[dateKey] = epsByDate[dateKey] || [];
+          epsByDate[dateKey].push(e);
+        }
+      }
+    }
+
+    renderCalendarCells(year, month, byDate, epsByDate);
+    S._calendarByDate = byDate;
+    S._episodesByDate = epsByDate;
+  } catch (e) {
+    const grid = document.getElementById('system-calendar-grid');
+    if (grid) grid.innerHTML = `<div class="kol-empty" style="grid-column:1/-1;padding:20px;color:var(--accent2)">❌ ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function normalizeDate(d) {
+  if (!d) return '';
+  if (typeof d === 'string') {
+    // 可能是 '2026-04-25' 或 '2026-04-25T...'
+    return d.slice(0, 10);
+  }
+  if (d instanceof Date) {
+    const yy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+  return '';
+}
+
+function renderCalendarCells(year, month, byDate, epsByDate) {
+  const grid = document.getElementById('system-calendar-grid');
+  if (!grid) return;
+
+  const firstOfMonth = new Date(year, month - 1, 1);
+  const lastOfMonth = new Date(year, month, 0);
+  const today = new Date();
+  const todayKey = normalizeDate(today);
+
+  // 頭列:日~六
+  let html = '';
+  ['日','一','二','三','四','五','六'].forEach(d => {
+    html += `<div class="cal-cell head">${d}</div>`;
+  });
+
+  // 前置空格(第一天之前)
+  const startPad = firstOfMonth.getDay();
+  for (let i = 0; i < startPad; i++) {
+    html += `<div class="cal-cell" style="opacity:.2"></div>`;
+  }
+
+  // 日期格子
+  for (let day = 1; day <= lastOfMonth.getDate(); day++) {
+    const dateKey = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const entry = byDate[dateKey];
+    const eps = epsByDate[dateKey] || [];
+    const isToday = dateKey === todayKey;
+    const isPast = new Date(dateKey) < new Date(todayKey);
+    const isPosted = eps.length > 0;
+
+    const classes = ['cal-cell', 'clickable'];
+    if (isToday) classes.push('today');
+    if (isPast && !isPosted && !entry) classes.push('past');
+    if (isPosted) classes.push('past', 'posted');
+    if (entry && !isPosted) classes.push('planned');
+
+    let eventHtml = '';
+    if (isPosted) {
+      eventHtml = `<span class="ev">✅ ${escapeHtml(eps[0].calendar_topic || '已發布')}</span>`;
+    } else if (entry) {
+      const prefix = isToday ? '⏳' : '📍';
+      eventHtml = `<span class="ev">${prefix} ${escapeHtml(entry.calendar_topic || '已排程')}</span>`;
+    }
+
+    const dayLabel = isToday ? `${day} · 今天` : String(day);
+
+    html += `<div class="${classes.join(' ')}" data-date="${dateKey}" data-has-entry="${!!entry}" data-has-episode="${isPosted}">
+      <span class="n">${dayLabel}</span>
+      ${eventHtml}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+
+  // 綁事件
+  grid.removeEventListener('click', handleCalendarCellClick);
+  grid.addEventListener('click', handleCalendarCellClick);
+}
+
+function handleCalendarCellClick(e) {
+  const cell = e.target.closest('.cal-cell.clickable');
+  if (!cell) return;
+  const dateKey = cell.dataset.date;
+  if (!dateKey) return;
+
+  // 如果該日已發布過 → 顯示已發 episode
+  const eps = S._episodesByDate?.[dateKey] || [];
+  if (eps.length > 0) {
+    showPastEpisode(eps[0]);
+    return;
+  }
+
+  // 否則當作規劃這一天,帶出單集企劃
+  const entry = S._calendarByDate?.[dateKey];
+  const topic = entry?.calendar_topic || '';
+  const mapping = topic ? CALENDAR_TOPIC_MAP[topic] : null;
+
+  // 把日曆資料套到單集企劃欄位
+  applyCalendarToEpisode(dateKey, topic, entry, mapping);
+}
+
+function applyCalendarToEpisode(dateKey, topic, entry, mapping) {
+  // 如果還沒渲染企劃卡,先觸發
+  renderEpisodeCard();
+  // 等 DOM 更新
+  setTimeout(() => {
+    // 套日曆主題到 scenario 欄作為靈感(不覆蓋已填內容)
+    const sitEl = document.getElementById('ep-situation');
+    if (sitEl && !sitEl.value.trim() && topic) {
+      sitEl.placeholder = `今天是「${topic}」…(點 AI 幫我寫,或自己發揮)`;
+    }
+
+    // 套場景
+    const sceneEl = document.getElementById('ep-scene');
+    if (sceneEl && mapping?.sceneId) {
+      // 確認該 option 存在
+      const opt = Array.from(sceneEl.options).find(o => o.value === mapping.sceneId);
+      if (opt) sceneEl.value = mapping.sceneId;
+    }
+
+    // 套情緒
+    const toneEl = document.getElementById('ep-tone');
+    if (toneEl && mapping?.tone) {
+      const opt = Array.from(toneEl.options).find(o => o.value === mapping.tone);
+      if (opt) toneEl.value = mapping.tone;
+    }
+
+    // 儲存當前規劃日期到 state,生成時寫入 episode
+    S._pendingCalendarDate = dateKey;
+    S._pendingCalendarTopic = topic || '';
+
+    // 滾到單集企劃
+    const epCard = document.getElementById('system-episode-card');
+    if (epCard) epCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    toast(`📅 已套用 ${dateKey}${topic ? ' · ' + topic : ''}`, 'success');
+
+    // 順便把這筆日曆寫回 GAS(標記為使用者「鎖定」了這天)
+    if (!entry && dateKey && S.currentBrandId && systemSelectedPersonaId) {
+      apiSaveCalendar({
+        brandId: S.currentBrandId,
+        kolId: systemSelectedPersonaId,
+        scheduled_date: dateKey,
+        calendar_topic: topic || '',
+        story_frame: mapping?.storyFrame || '',
+        emotion_hint: mapping?.tone || '',
+        status: 'planned',
+        auto_generated: false,
+      }).catch(() => {});
+    }
+  }, 50);
+}
+
+function showPastEpisode(ep) {
+  // 簡單版:直接跳到 episode 資訊(可擴充為 modal)
+  const info = `📅 ${ep.calendar_date || '-'}\n主題:${ep.calendar_topic || '-'}\n場景:${ep.scene_id || '-'}\n狀態:${ep.video_status}\n\n故事:${(ep.scenario || '無').slice(0, 100)}`;
+  if (ep.video_url) {
+    if (confirm(info + '\n\n要開啟影片嗎?')) {
+      window.open(ep.video_url, '_blank');
+    }
+  } else {
+    alert(info);
+  }
+}
+
+// ─── v5.10: Queue renderer(取代 Phase 3 Mock)─────────────────────
+async function renderSystemQueue() {
+  const wrap = document.getElementById('system-queue-wrap');
+  if (!wrap) return;
+
+  const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
+  if (!persona || !S.currentBrandId) {
+    wrap.innerHTML = '<div class="kol-empty" style="padding:16px">選 KOL 以載入歷程…</div>';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div class="panel-title">
+      <div class="dot" style="background:var(--accent3)"></div>
+      🎬 KOL 劇情記憶 · 最近 20 集
+      <span class="chip green" style="margin-left:auto">🟢 真 Episodes</span>
+    </div>
+    <div id="system-queue-list" class="queue-list">
+      <div class="kol-empty" style="padding:20px"><span class="spin">⏳</span> 讀取中…</div>
+    </div>
+  `;
+
+  try {
+    const res = await apiListEpisodes(S.currentBrandId, persona.persona_id, 20);
+    if (!res.ok) throw new Error(res.error || '讀取失敗');
+
+    const eps = res.episodes || [];
+    const listEl = document.getElementById('system-queue-list');
+
+    if (eps.length === 0) {
+      listEl.innerHTML = `
+        <div class="kol-empty" style="padding:24px 16px">
+          <span class="emoji">📖</span>
+          還沒有任何集數<br>
+          <small>生成第一支影片後,這裡就會變成 KOL 的劇情連載</small>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = eps.map(ep => {
+      const statusIcon = ep.video_status === 'done' ? '✓' :
+                        ep.video_status === 'generating' ? '⏳' :
+                        ep.video_status === 'failed' ? '❌' : '📋';
+      const statusClass = ep.video_status === 'done' ? 'queue-done' :
+                         ep.video_status === 'failed' ? 'queue-failed' :
+                         ep.video_status === 'generating' ? 'queue-progress' : 'queue-pending';
+      const statusChip = ep.video_status === 'done' ? '<span class="chip green">已生成</span>' :
+                        ep.video_status === 'failed' ? '<span class="chip" style="background:rgba(250,109,155,.15);color:var(--accent2)">失敗</span>' :
+                        ep.video_status === 'generating' ? '<span class="chip">生成中</span>' :
+                        '<span class="chip">草稿</span>';
+
+      const dateShort = ep.calendar_date ? String(ep.calendar_date).slice(5, 10).replace('-', '/') : '—';
+      const sceneLabel = SCENE_LIBRARY[ep.brandId]?.[ep.scene_id]?.label || ep.scene_id || '未分類';
+      const costLine = (ep.video_cost_usd || ep.posts_cost_usd) ?
+        ` · $${((ep.video_cost_usd || 0) + (ep.posts_cost_usd || 0)).toFixed(2)}` : '';
+
+      return `
+        <div class="queue-item" data-episode-id="${escapeHtml(ep.id)}" style="cursor:pointer">
+          <div class="queue-status ${statusClass}">${statusIcon}</div>
+          <div class="queue-info">
+            <strong>${escapeHtml(dateShort)} · ${escapeHtml(ep.calendar_topic || ep.story_frame || '未命名集')}</strong>
+            <small>${escapeHtml(sceneLabel)} · ${ep.duration || 10}s${costLine}</small>
+          </div>
+          ${statusChip}
+        </div>
+      `;
+    }).join('');
+
+    // 綁點擊
+    listEl.querySelectorAll('.queue-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const epId = item.dataset.episodeId;
+        const ep = eps.find(e => e.id === epId);
+        if (ep) showPastEpisode(ep);
+      });
+    });
+
+    // 累計成本顯示
+    const totalCost = eps.reduce((s, e) => s + (parseFloat(e.video_cost_usd) || 0) + (parseFloat(e.posts_cost_usd) || 0), 0);
+    listEl.insertAdjacentHTML('beforeend', `
+      <div class="queue-footer">
+        <span class="queue-cost">累計 ${eps.length} 集 · 總成本 $${totalCost.toFixed(2)} USD</span>
+      </div>
+    `);
+  } catch (e) {
+    const listEl = document.getElementById('system-queue-list');
+    if (listEl) listEl.innerHTML = `<div class="kol-empty" style="padding:20px;color:var(--accent2)">❌ ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+// ─── v5.10: 生成影片 + 貼文 · 拆 3 個按鈕 ───────────────────────────
+// mode: 'video' | 'posts' | 'all'
+async function generateEpisodeV510(mode) {
+  mode = mode || 'all';
+
+  const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
+  if (!persona) { toast('請先選 KOL', 'error'); return; }
+
+  const situation = document.getElementById('ep-situation')?.value?.trim() || '';
+  const sceneId = document.getElementById('ep-scene')?.value || '';
+  const movementId = document.getElementById('ep-movement')?.value || 'static';
+  const tone = document.getElementById('ep-tone')?.value || '';
+
+  if (mode !== 'posts' && !sceneId) { toast('請選場景', 'error'); return; }
+  if (!situation && mode !== 'posts') {
+    if (!confirm('你沒填「故事情境」,AI 會只依 KOL 人設生成泛用 vlog。要繼續嗎?')) return;
+  }
+
+  saveEpisodeDraft(true);
+
+  const product = getCurrentRotationProduct();
+  const productImageUrls = [...(S.episodeProductUrls || [])];
+
+  if (mode !== 'posts' && productImageUrls.length === 0) {
+    const ok = confirm('⚠️ 你沒選商品照,Seedance 會腦補商品(跟真實差很多)。\n\n建議先選 1-3 張官方商品照。\n\n還是要繼續?');
+    if (!ok) return;
+  }
+
+  // 1. 先在 Episodes 建一筆 planned
+  const now = new Date();
+  const calendarDate = S._pendingCalendarDate || normalizeDate(now);
+  const calendarTopic = S._pendingCalendarTopic || '';
+
+  const episodeData = {
+    brandId: S.currentBrandId,
+    kolId: persona.persona_id,
+    calendar_date: calendarDate,
+    calendar_topic: calendarTopic,
+    scene_id: sceneId,
+    story_frame: document.getElementById('ep-scene')?.selectedOptions?.[0]?.text || '',
+    emotion: tone,
+    product_name: product?.name || '',
+    camera_movement: movementId,
+    scenario: situation,
+    reference_images: productImageUrls,
+    duration: 10,
+    aspect: '9:16',
+    quality: 'fast',
+    resolution: '720p',
+    video_status: mode === 'posts' ? 'skipped' : 'planned',
+    posts_status: mode === 'video' ? 'skipped' : 'pending',
+  };
+
+  let episodeId = null;
+  try {
+    const saved = await apiSaveEpisode(episodeData);
+    if (saved.ok) episodeId = saved.id;
+  } catch (e) {
+    console.error('saveEpisode 失敗(不阻塞):', e);
+  }
+
+  // 2. 依 mode 決定要跑什麼
+  const tasks = [];
+  if (mode === 'video' || mode === 'all') {
+    tasks.push(runVideoGeneration(persona, product, sceneId, movementId, tone, situation, productImageUrls, episodeId));
+  }
+  if (mode === 'posts' || mode === 'all') {
+    tasks.push(runPostsGeneration(persona, product, situation, sceneId, movementId, tone, episodeId));
+  }
+
+  await Promise.allSettled(tasks);
+
+  // 3. 刷新日曆/佇列
+  renderSystemCalendar();
+  renderSystemQueue();
+}
+
+async function runVideoGeneration(persona, product, sceneId, movementId, tone, situation, productImageUrls, episodeId) {
+  if (!persona.talking_photo_id) {
+    toast('KOL 尚未綁定 HeyGen 照片,無法生成影片', 'error');
+    return;
+  }
+
+  // 取 KOL 頭像 URL
+  let kolImageUrl = '';
+  try {
+    const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
+    kolImageUrl = res?.avatars?.[0]?.image_url || '';
+  } catch (_) {}
+  if (!kolImageUrl) {
+    toast('無法取得 KOL 肖像 URL', 'error');
+    if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: 'KOL 肖像 URL 取不到' });
+    return;
+  }
+
+  // 組 prompt
+  const prevArc = { ...S.storyArc };
+  S.storyArc = { ...S.storyArc, tone };
+  const opts = {
+    episode: {
+      persona: {
+        persona_name: persona.persona_name,
+        background: persona.background,
+        personality: persona.personality,
+        speaking_style: persona.speaking_style,
+        role_relationship: persona.role_relationship,
+        signature_topics: persona.signature_topics,
+        taboo_words: persona.taboo_words,
+        forbidden_topics: persona.forbidden_topics,
+      },
+      product,
+      situation,
+    },
+  };
+  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, '10', opts);
+  S.storyArc = prevArc;
+
+  if (!prompt) { toast('組 prompt 失敗', 'error'); return; }
+
+  // 回寫 prompt 到 episode
+  if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'generating', notes: '' }).catch(() => {});
+
+  const taskBox = document.getElementById('system-episode-task');
+  if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>⏳ 送出影片中…</strong></div></div>`;
+
+  const payload = {
+    kolImageUrl,
+    productImageUrls,
+    prompt,
+    resolution: '720p',
+    duration: '10',
+    aspectRatio: '9:16',
+    generateAudio: true,
+    tier: 'fast',
+    brandId: S.currentBrandId,
+    kolName: persona.persona_name,
+  };
+
+  try {
+    const res = await api('seedance_submit', payload);
+    if (!res.ok) throw new Error(res.error);
+
+    const task = {
+      requestId: res.requestId,
+      endpoint: res.endpoint,
+      responseUrl: res.responseUrl,
+      statusUrl: res.statusUrl,
+      label: `${persona.persona_name} · 單集 · 10s`,
+      status: 'IN_QUEUE',
+      created: new Date().toLocaleTimeString('zh-TW'),
+      startTime: Date.now(),
+      url: null,
+      episodeId,
+    };
+    renderEpisodeTask(task);
+    toast('🎬 影片送出,約 1-2 分鐘', 'success');
+    pollEpisodeTaskV510(task);
+  } catch (e) {
+    if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong style="color:var(--accent2)">❌ ${escapeHtml(e.message)}</strong></div></div>`;
+    toast('影片提交失敗:' + e.message, 'error');
+    if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: e.message });
+  }
+}
+
+async function pollEpisodeTaskV510(task) {
+  let count = 0;
+  const t = setInterval(async () => {
+    if (++count > 150) {
+      clearInterval(t);
+      task.status = 'FAILED';
+      task.error = 'Timeout (5min)';
+      renderEpisodeTask(task);
+      if (task.episodeId) apiUpdateEpisodeStatus(task.episodeId, { video_status: 'failed', notes: 'Timeout' });
+      return;
+    }
+    try {
+      const res = await api('fal_poll', {
+        requestId: task.requestId,
+        endpoint: task.endpoint,
+        responseUrl: task.responseUrl,
+        statusUrl: task.statusUrl,
+      });
+      if (res.status === 'FAILED') {
+        clearInterval(t);
+        task.status = 'FAILED';
+        task.error = res.error || '任務失敗';
+        renderEpisodeTask(task);
+        if (task.episodeId) apiUpdateEpisodeStatus(task.episodeId, { video_status: 'failed', notes: task.error });
+        toast('生成失敗:' + task.error, 'error');
+        return;
+      }
+      task.status = res.status;
+      if (res.status === 'COMPLETED') {
+        clearInterval(t);
+        task.url = res.videoUrl;
+        task.elapsed = Math.round((Date.now() - task.startTime) / 1000);
+        renderEpisodeTask(task);
+
+        // 回寫 Episode
+        if (task.episodeId) {
+          apiUpdateEpisodeStatus(task.episodeId, {
+            video_status: 'done',
+            video_url: res.videoUrl,
+            video_cost_usd: 1.21,
+            fal_request_id: task.requestId,
+            video_elapsed_sec: task.elapsed,
+          }).catch(() => {});
+        }
+
+        toast('🎉 影片完成', 'success');
+        // 刷新佇列(新集數出現)
+        setTimeout(() => renderSystemQueue(), 500);
+      } else {
+        renderEpisodeTask(task);
+      }
+    } catch (e) { console.warn('poll error', e); }
+  }, 2000);
+}
+
+async function runPostsGeneration(persona, product, situation, sceneId, movementId, tone, episodeId) {
+  // 呼叫原本的貼文生成(不變),只是多了 episodeId 寫回
+  const ctx = { persona, product, situation, sceneId, movementId, tone };
+  try {
+    await generateSocialPosts(ctx);
+
+    // 從 DOM 抓剛生成的貼文文字(generateSocialPosts 已經 render 好了)
+    const igText = document.getElementById('social-ig-text')?.value || '';
+    const threadsText = document.getElementById('social-threads-text')?.value || '';
+    const fbText = document.getElementById('social-fb-text')?.value || '';
+
+    if (episodeId) {
+      apiUpdateEpisodeStatus(episodeId, {
+        posts_status: 'done',
+        post_ig: igText,
+        post_threads: threadsText,
+        post_fb: fbText,
+        posts_cost_usd: 0.006,
+      }).catch(() => {});
+    }
+  } catch (e) {
+    if (episodeId) apiUpdateEpisodeStatus(episodeId, { posts_status: 'failed', notes: e.message });
+  }
+}
+
+// ─── v5.10: 重寫 renderEpisodeCard 的按鈕區(保留其餘不變)──────
+// 注意:這段會在下面的 patch 指引中說明怎麼取代原本的按鈕 HTML
+
+  
 </script>
 <script src="kol-ai-generator.js"></script>
 </body>
