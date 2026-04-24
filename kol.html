@@ -3346,7 +3346,7 @@ const LS_EPISODE_KEY  = 'kol_episode_draft_';     // + brandId + '_' + personaId
 // 注意:S.selectedKol 是 talking/cine 共用,不能污染
 let systemSelectedPersonaId = '';
 
-function renderSystemTab() {
+async function renderSystemTab() {
   // Tab 3 全部依賴 S.personas(已在 loadPersonas 裡載好)+ S.brands + S.products
   if (!S.currentBrandId) {
     document.getElementById('system-kol-switcher').innerHTML = '<div class="kol-empty" style="padding:16px">請先選品牌以載入 KOL…</div>';
@@ -3359,6 +3359,15 @@ function renderSystemTab() {
     return;
   }
 
+  // 🚀 v5.7.1: 確保 _kolCache 有資料(Tab 3 頭像需要)
+  // 如果 cache 空的(使用者直接進 Tab 3 沒先看 Tab 1),背景去撈一次
+  const needPhotoLookup = S.personas.some(p =>
+    p.talking_photo_id && !window._kolCache?.[p.talking_photo_id]
+  );
+  if (needPhotoLookup) {
+    ensureKolCache();  // async,不 await — 先 render 空的,載好再 re-render
+  }
+
   renderSystemKolSwitcher();
   renderBrandSoulCard();
   renderProductRotation();
@@ -3368,6 +3377,37 @@ function renderSystemTab() {
   }
   renderSystemPersonaCard();
   renderEpisodeCard();
+}
+
+// 🚀 v5.7.1: 背景載入 HeyGen 頭像(供 Tab 3 用)
+async function ensureKolCache() {
+  window._kolCache = window._kolCache || {};
+  const toLoad = S.personas.filter(p =>
+    p.talking_photo_id && !window._kolCache[p.talking_photo_id]
+  );
+  if (toLoad.length === 0) return;
+
+  await Promise.all(toLoad.map(async p => {
+    try {
+      const res = await api('heygen_list_group_avatars', { group_id: p.talking_photo_id });
+      const avatars = res.avatars || [];
+      const firstLook = avatars[0];
+      window._kolCache[p.talking_photo_id] = {
+        id: p.talking_photo_id,
+        name: p.persona_name,
+        image_url: firstLook?.image_url || '',
+        talking_photo_id: p.talking_photo_id,
+        persona: p,
+        look_count: avatars.length,
+        looks: avatars,
+      };
+    } catch (_) {}
+  }));
+
+  // 載完再重畫(若使用者還在 Tab 3)
+  if (S.currentMode === 'system') {
+    renderSystemKolSwitcher();
+  }
 }
 
 // ─── KOL 切換器 ────────────────────────────
@@ -3392,9 +3432,17 @@ function renderSystemKolSwitcher() {
         ? '<span class="chip orange">人設待填</span>'
         : '<span class="chip">未綁照片</span>';
 
+    // 🚀 v5.7.1: 從 Tab 1 的 _kolCache 撈真頭像 URL
+    const kolCached = hasPhoto ? window._kolCache?.[p.talking_photo_id] : null;
+    const imgUrl = kolCached?.image_url || '';
+    const avatarInner = imgUrl
+      ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.persona_name)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.outerHTML='<span>${escapeHtml(initial)}</span>';this.parentElement.style.background='${bg}';">`
+      : `<span>${escapeHtml(initial)}</span>`;
+    const avatarStyle = imgUrl ? 'overflow:hidden' : `background:${bg}`;
+
     return `
       <div class="system-kol-card ${isSelected ? 'selected' : ''}" data-persona-id="${escapeHtml(p.persona_id)}">
-        <div class="system-kol-avatar" style="background:${bg}">${escapeHtml(initial)}</div>
+        <div class="system-kol-avatar" style="${avatarStyle}">${avatarInner}</div>
         <div class="system-kol-info">
           <strong>${escapeHtml(p.persona_name)}</strong>
           <small>${escapeHtml(S.brands.find(b=>b.id===p.brand_id)?.name || p.brand_id)} · ${escapeHtml(p.persona_type || 'independent')}</small>
