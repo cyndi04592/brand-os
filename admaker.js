@@ -1,96 +1,106 @@
-// ── Flux Pro Kontext 場景 prompt 庫（直接改原圖，不去背）──
-// 核心原則：保留所有人物/商品/前景，只改背景/光線/氛圍
+// ══════════════════════════════════════════════════════════════
+//  BRAND OS · AD Maker  (v7 瘦身版)
+//  變更紀錄:
+//    1. 修正白背景 bug: prompt 改用 "Replace" 指令式
+//    2. 智能 padding: 採樣邊緣色 + 方形原圖不 padding
+//    3. 加入場景 variation 關鍵字,避免每次長一樣
+//    4. 砍掉所有影片功能 (Seedance / Kling Video)
+//    5. 品牌化命名: Flux / Kling 等字樣從 UI 移除
+// ══════════════════════════════════════════════════════════════
+
+// ── AI 情境 場景 prompt 庫 (v2 指令式) ──
 const PRODUCT_SCENES = {
 
   studio_white:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to premium seamless white studio backdrop with subtle gradient shadow at base. Add soft directional key light matching the product existing light source direction. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with a clean seamless white studio backdrop, subtle gradient from bright white at top to soft grey shadow at base. Professional commercial product photography lighting with soft directional key light from upper left. Keep the product and all subjects EXACTLY unchanged in position, shape, color, and details. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, f/8, studio strobe.',
 
   dark_luxury:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to deep matte black. Add dramatic single-source side lighting with golden rim light complementing product color tones. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with pure deep matte black void. Add dramatic single-source side rim lighting with warm golden highlights on product edges, creating strong chiaroscuro contrast. Subtle smoke atmosphere in background. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, f/4, dramatic lighting.',
 
   marble_premium:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change surface and background to Italian Calacatta marble with dark charcoal upper background. Add dramatic golden accent rim lighting. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire scene: foreground surface becomes polished Italian Calacatta marble with natural grey veining, background becomes dark charcoal gradient wall. Add warm golden accent rim lighting from upper right. Luxury product photography aesthetic. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   minimal_grey:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to light grey seamless gradient. Add diffused soft box lighting. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with a smooth light-to-medium grey seamless gradient, no texture. Soft diffused softbox lighting from above creating gentle shadow beneath product. Minimalist Scandinavian aesthetic. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   forest_outdoor:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to lush Japanese cedar forest with dappled golden morning light filtering through trees, misty atmosphere. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with a lush atmospheric forest scene. Choose a natural variation: either Japanese cedar with morning mist, or temperate deciduous forest with autumn light, or tropical jungle with dense green foliage. Dappled golden sunlight filtering through canopy creating bokeh highlights. Visible depth with blurred trees in far background. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, f/2.8, shallow depth of field.',
 
   night_city:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to beautiful night cityscape with warm neon bokeh lights reflecting naturally onto product edges. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with a cinematic night cityscape. Blurred neon signs in warm orange, cool blue, and magenta pink creating rich bokeh circles. Wet street reflections if ground is visible. Cyberpunk atmospheric haze. Neon rim light naturally illuminating product edges. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.4, heavy bokeh.',
 
   lifestyle_home:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to warm Scandinavian home interior with large window soft natural morning light, aged oak surface. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire scene with a warm Scandinavian home interior. Aged light oak wooden surface in foreground, soft-focus background showing white linen curtains with morning sunlight filtering through, hint of potted green plants. Warm 4000K natural lighting, cozy hygge atmosphere. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.',
 
   tech_space:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to deep space atmosphere with Earth curvature glow at horizon, dark cosmic backdrop, subtle blue-purple atmospheric rim light. Style like OnePlus or Samsung flagship photography. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with a deep space atmosphere. Earth curvature softly glowing at lower horizon, dark cosmic backdrop with subtle star field, purple-to-blue atmospheric gradient rim light. Flagship tech product photography aesthetic, clean futuristic. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   fashion_minimal:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to clean off-white warm beige seamless studio, soft natural light from left window, fashion editorial aesthetic. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with clean off-white to warm beige seamless studio gradient. Soft natural light from large window on the left creating gentle falloff. High-end fashion editorial aesthetic. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.',
 
   fashion_outdoor:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to golden hour urban street or park setting, bokeh city or nature background, warm lifestyle fashion photography. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with a golden hour urban or natural street scene. Choose a natural variation: either Tokyo Shibuya crossing, or Paris cobblestone alley, or New York SoHo, or European park path. Warm backlight creating natural halo, bokeh environment. Editorial lifestyle fashion aesthetic. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.',
 
   pet_home:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to warm cozy home interior with soft morning window light, wood floor, soft-focus green plants. Warm 4500K ambient light. Keep ALL subjects products people animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire scene with a warm cozy home interior. Light wood floor with natural grain, soft-focus background of white walls with hanging green plants, morning window light from the side creating warm highlights. Gentle 4500K ambient atmosphere. Keep all subjects, products, and animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.',
 
   pet_outdoor:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to sunny outdoor park with fresh green grass, soft natural sunlight, bokeh trees in background. Keep ALL subjects products people animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with a sunny outdoor park scene. Fresh bright green grass foreground, blurred trees and soft sunlight flares in background, natural daylight from upper left. Keep all subjects, products, and animals EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8, bokeh background.',
 
   yoga_zen:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to serene Japanese zen interior or outdoor bamboo garden with soft diffused morning light, peaceful minimal atmosphere. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire scene with a serene Japanese zen environment. Choose a variation: either a tatami room with shoji paper screens and soft diffused morning light, or an outdoor bamboo garden with stone path, or a minimal rock garden with raked sand. Peaceful atmospheric. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.',
 
   wellness_bright:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to bright airy studio with large windows and natural morning light, white walls with subtle plant shadow, clean wellness lifestyle aesthetic. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire scene with a bright airy wellness studio. Large floor-to-ceiling windows with soft natural morning sunlight streaming in, white walls with subtle shadow of green plants, light wood or white floor. Fresh minimalist wellness aesthetic. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   snack_playful:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to bold colorful surface in warm yellow or coral, playful scattered ingredients as props, bright fun commercial food photography. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with a bold colorful flat surface. Choose a variation: either bright warm yellow, or coral pink, or mint green, or vibrant turquoise. Add playful scattered ingredient props (nuts, fruit slices, splashes) arranged artistically. Bright fun commercial food photography. Keep the product and all subjects EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.',
 
   sport_energy:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to bold gradient deep navy and electric orange, dynamic motion energy atmosphere, athletic lifestyle photography. Keep ALL subjects products people EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Replace the entire background with a bold dynamic gradient. Choose a variation: deep navy to electric orange, or black to neon green, or crimson to gold. Add subtle motion blur lines, energetic atmospheric haze. Athletic commercial photography aesthetic. Keep the subject and all products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 70-200mm f/2.8 S.',
 
   jewelry_dark:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Change background to pure black velvet with single dramatic spotlight and subtle teal reflection on dark glass surface. Keep ALL subjects products EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4.',
+    'Replace the entire background with pure black velvet texture. Add single dramatic overhead spotlight creating strong focused beam, subtle teal-blue reflection on dark polished glass surface below. Luxury jewelry photography aesthetic. Keep the product EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/5.6, high-key contrast.',
 
-  // ══ 美食升級（保留擺盤）══
+  // ══ 美食升級 (保留擺盤) ══
   food_drama:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background and table surface. Transform into Michelin 3-star advertisement. Change background to pure black, add dramatic single spotlight from above, atmospheric steam wisps, warm golden rim light. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform the entire scene into a Michelin 3-star restaurant advertisement. Replace background with pure black void, replace surface with dark slate. Add dramatic single overhead spotlight from above, atmospheric steam wisps rising from food, warm golden rim light on dish edges. Keep all food, dishes, and hands EXACTLY unchanged in position and details. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S, f/4, dramatic lighting.',
 
   food_japanese:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background and surface. Transform into Japanese kappo cuisine. Change surface to dark charcoal aged stone slate, soft single-source cool side lighting 4000K. Wabi-sabi minimal. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform the entire scene into Japanese kappo fine dining aesthetic. Replace surface with dark charcoal aged stone slate with rough texture, replace background with deep shadowed wood wall. Soft single-source cool side lighting 4000K, wabi-sabi minimal atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.',
 
   food_cantonese:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background and surface. Transform into Hong Kong Cantonese banquet. Change surface to dark lacquered rosewood, warm amber pendant light. Gold and red tones reflect warmly. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform the entire scene into Hong Kong Cantonese banquet aesthetic. Replace surface with dark lacquered rosewood table, replace background with deep red-gold wall with subtle Chinese pattern. Warm amber pendant light from above creating rich golden glow, traditional opulent atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
 
   food_korean:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background and surface. Transform into Korean BBQ atmosphere. Change surface to dark volcanic stone, dramatic warm backlight from behind, orange-red glow on food surface edges. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform the entire scene into Korean BBQ restaurant atmosphere. Replace surface with dark volcanic stone or cast iron plate, replace background with moody dark wood with hint of charcoal grill glow. Dramatic warm backlight from behind creating orange-red rim glow on food edges, atmospheric steam. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.',
 
   food_taiwanese:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background and surface. Transform into Taiwanese comfort food. Change surface to warm aged teak wood, soft 3800K tungsten overhead light. Traditional ceramic tea cup props. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform the entire scene into Taiwanese traditional comfort food aesthetic. Replace surface with warm aged teak wood table with natural grain, replace background with blurred vintage tile wall or wooden partition. Soft 3800K tungsten overhead light creating warm nostalgic glow, traditional ceramic tea cup and chopsticks as props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.',
 
   food_french:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background and surface. Transform into French fine dining editorial. Change surface to deep navy blue linen tablecloth, silver cutlery props, soft cool natural window light 5500K. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform the entire scene into French fine dining editorial. Replace surface with deep navy blue linen tablecloth, replace background with soft blurred restaurant ambience. Add silver cutlery and crystal glassware as props, soft cool natural window light 5500K creating clean elegant atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.',
 
   food_outdoor:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background. Transform into outdoor golden hour picnic. Change background to natural green grass meadow with warm golden sunset light. Rustic wooden props. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform the entire scene into an outdoor golden hour picnic. Replace surface with rustic wooden board or checkered cloth on grass, replace background with natural green meadow with warm sunset backlight creating halo. Rustic wooden utensil props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.',
 
   food_bright:
-    'Expand the canvas to fill a perfect 1080x1080 square by seamlessly extending the background and surface. Transform into bright Nordic brunch. Change surface to clean white marble, soft natural morning window light 6000K. Fresh herb and lemon slice props. Keep ALL food dishes hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.',
+    'Transform the entire scene into bright Nordic brunch aesthetic. Replace surface with clean white Carrara marble, replace background with bright white wall with soft natural morning window light 6000K streaming from the side. Add fresh herb sprigs and citrus slice props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.',
 };
 
+// ══ 狀態 ══
 let AM = { w:1080, h:1080, scriptIdx:null };
 let PR_BG_IMG  = null;
 let PR_MODE    = 'product_shot';
 let TEXT_ALIGN = 'left';
 
-// ══ 開啟 AD Maker ══
+// ══ 開啟 / 關閉 ══
 function openAdMaker(idx) {
   PR_BG_IMG = null; PR_MODE = 'product_shot';
   setPrStatus('', '');
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('.pr-mode-btn')?.classList.add('on');
-  ['prSceneSection','prVirtualSection','prVideoSection'].forEach(id => {
+  ['prSceneSection','prVirtualSection'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = id === 'prSceneSection' ? 'block' : 'none';
   });
@@ -165,9 +175,8 @@ function onMdPhotoSelected(input) {
 function setPrMode(btn, mode) {
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on'); PR_MODE = mode;
-  document.getElementById('prSceneSection').style.display   = mode === 'product_shot'   ? 'block' : 'none';
-  document.getElementById('prVirtualSection').style.display = mode === 'kling_tryon'    ? 'block' : 'none';
-  document.getElementById('prVideoSection').style.display   = mode === 'seedance_video' ? 'block' : 'none';
+  document.getElementById('prSceneSection').style.display   = mode === 'product_shot' ? 'block' : 'none';
+  document.getElementById('prVirtualSection').style.display = mode === 'kling_tryon'  ? 'block' : 'none';
 }
 
 function setPrScene(btn, scene) {
@@ -228,7 +237,7 @@ function failProgress(interval, errMsg) {
   if (btn) { btn.disabled = false; btn.textContent = '✨ 套用 AI 效果'; }
 }
 
-// ══ Worker 呼叫 ══
+// ══ Worker / 工具 ══
 async function callWorker(params) {
   const resp = await fetch(CF_WORKER_URL, {
     method: 'POST',
@@ -239,12 +248,6 @@ async function callWorker(params) {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function getImageUrl(photo) {
-  return photo?.thumbnailLink
-    ? photo.thumbnailLink.replace(/=s\d+$/, '=s1200')
-    : null;
-}
 
 async function uploadToFal(base64) {
   const match = base64.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -285,26 +288,8 @@ async function pollUntilDone(requestId, endpoint, maxMs = 300000, responseUrl = 
   return { status:'TIMEOUT' };
 }
 
-function updateVideoDurationOptions() {
-  const model = document.getElementById('videoModel')?.value;
-  const sel = document.getElementById('videoDuration');
-  if (!sel) return;
-  if (model === 'kling') {
-    sel.innerHTML = `
-      <option value="5" selected>5 秒（$0.56）</option>
-      <option value="10">10 秒（$1.12）</option>`;
-  } else {
-    sel.innerHTML = `
-      <option value="4">4 秒（$0.96）</option>
-      <option value="5" selected>5 秒（$1.20）</option>
-      <option value="8">8 秒（$1.92）</option>
-      <option value="10">10 秒（$2.40）</option>`;
-  }
-}
-
+// ══ 主入口:套用 AI 效果 ══
 async function applyPhotoroomBg() {
-  if (PR_MODE === 'seedance_video') { await applySeedanceVideo(); return; }
-
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
   const imgSrc = photo.src || photo.thumb;
@@ -313,6 +298,7 @@ async function applyPhotoroomBg() {
   const btn = document.getElementById('prApplyBtn');
   btn.disabled = true; btn.textContent = '⏳ AI 處理中...';
 
+  // ── 真人試穿 ──
   if (PR_MODE === 'kling_tryon') {
     const interval = startProgress(60000);
     try {
@@ -328,7 +314,7 @@ async function applyPhotoroomBg() {
         garmentImageBase64: compressed
       });
       if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
-      setPrStatus('⏳ Kling 試穿中（約30-90秒）...', 'var(--t3)');
+      setPrStatus('⏳ AI 試穿中（約30-90秒）...', 'var(--t3)');
       let result = await pollUntilDone(submitData.requestId, submitData.endpoint, 180000, submitData.responseUrl, submitData.statusUrl);
       if (result.status === 'TIMEOUT') {
         setPrStatus('🔄 超時，最後查詢一次...', 'var(--t3)');
@@ -348,6 +334,7 @@ async function applyPhotoroomBg() {
     return;
   }
 
+  // ── AI 情境 (改場景) ──
   if (PR_MODE === 'product_shot') {
     const interval = startProgress(30000);
     try {
@@ -360,7 +347,7 @@ async function applyPhotoroomBg() {
       const customPrompt = document.getElementById('prCustomPrompt')?.value?.trim();
       const scenePrompt = customPrompt || PRODUCT_SCENES[sceneKey] || PRODUCT_SCENES.studio_white;
 
-      setPrStatus('🎨 Flux Kontext 改圖中...', 'var(--t3)');
+      setPrStatus('🎨 AI 情境生成中...', 'var(--t3)');
       const submitData = await callWorker({
         action: 'flux_kontext_submit',
         imageUrl,
@@ -380,111 +367,13 @@ async function applyPhotoroomBg() {
 
       await renderAdCanvasWithPR();
       finishProgress(interval);
-      setPrStatus('✅ AI 電商場景完成！', 'var(--mint)');
+      setPrStatus('✅ AI 情境生成完成！', 'var(--mint)');
     } catch(e) { failProgress(interval, e.message); }
-    return;
   }
 }
 
-async function applySeedanceVideo() {
-  const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
-  if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
-  const imgSrc = photo.src || photo.thumb;
-  if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
-
-  const btn = document.getElementById('prApplyBtn');
-  btn.disabled = true; btn.textContent = '⏳ 影片生成中...';
-  const interval = startProgress(120000);
-
-  const videoPrompt   = document.getElementById('videoPrompt')?.value?.trim() || '';
-  const videoDuration = parseInt(document.getElementById('videoDuration')?.value || 5);
-  const videoRatio    = document.getElementById('videoRatio')?.value || '9:16';
-  const videoAudio    = document.getElementById('videoAudio')?.checked !== false;
-  const brand         = window.BRANDS.find(b => b.id === window.S.brandId);
-  const defaultPrompt = `cinematic smooth camera movement, professional advertising, high quality commercial video, ${brand?.adStyle||'elegant lifestyle'}, soft natural lighting`;
-
-  try {
-    const blob = await urlToBlob(imgSrc);
-    const base64 = await blobToBase64(blob);
-    const compressed = await compressImageBase64(base64, 1200, 0.88);
-    const imageUrlVideo = getImageUrl(photo) || await uploadToFal(compressed);
-
-    const videoModel    = document.getElementById('videoModel')?.value || 'seedance';
-    const isKling       = videoModel === 'kling';
-    const videoEndpoint = isKling
-      ? 'fal-ai/kling-video/v3/pro/image-to-video'
-      : 'bytedance/seedance-2.0/image-to-video';
-
-    setPrStatus(`📤 送出 ${isKling ? 'Kling v3' : 'Seedance 2.0'} 任務...`, 'var(--t3)');
-    const submitData = await callWorker({
-      action: 'fal_video_submit',
-      endpoint: videoEndpoint,
-      payload: {
-        image_url: imageUrlVideo,
-        prompt: videoPrompt || defaultPrompt,
-        duration: String(videoDuration),
-        aspect_ratio: videoRatio,
-        generate_audio: videoAudio,
-        resolution: '720p'
-      }
-    });
-    if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
-
-    const requestId = submitData.requestId;
-    const maxWait = isKling && videoDuration >= 10 ? 900000 : 600000;
-    setPrStatus(`🎬 ${isKling ? 'Kling v3' : 'Seedance 2.0'} 生成中...`, 'var(--t3)');
-    let result = await pollUntilDone(requestId, videoEndpoint, maxWait, submitData.responseUrl, submitData.statusUrl);
-
-    if (result.status === 'TIMEOUT') {
-      setPrStatus('🔄 超時，最後查詢一次...', 'var(--t3)');
-      for (let i = 0; i < 3; i++) {
-        await sleep(5000);
-        result = await callWorker({ action:'fal_poll', requestId, endpoint: videoEndpoint, responseUrl: submitData.responseUrl, statusUrl: submitData.statusUrl });
-        if (result.status === 'COMPLETED' && result.videoUrl) break;
-      }
-    }
-
-    if (result.status === 'FAILED') throw new Error(result.error || '影片生成失敗');
-
-    if (result.videoUrl) {
-      finishProgress(interval);
-      showVideoResult(result.videoUrl);
-      setPrStatus('✅ 影片生成完成！', 'var(--mint)');
-    } else {
-      finishProgress(interval);
-      setPrStatus('⏳ 影片仍在生成，請稍後重新開啟廣告圖功能再試', 'var(--gold)');
-      if (btn) btn.textContent = '✨ 套用 AI 效果';
-    }
-  } catch(e) { failProgress(interval, e.message); }
-}
-
-function showVideoResult(videoUrl) {
-  const canvas = document.getElementById('adCanvas');
-  if (canvas) canvas.style.display = 'none';
-  let videoEl = document.getElementById('adVideoPreview');
-  if (!videoEl) {
-    videoEl = document.createElement('video');
-    videoEl.id = 'adVideoPreview';
-    videoEl.controls = true; videoEl.loop = true; videoEl.autoplay = true;
-    videoEl.style.cssText = 'border-radius:10px;width:100%;max-width:560px;height:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);display:block;';
-    canvas?.parentNode?.insertBefore(videoEl, canvas);
-  }
-  videoEl.src = videoUrl; videoEl.style.display = 'block';
-  const dlBtn = document.getElementById('adDownloadBtn');
-  if (dlBtn) {
-    dlBtn.textContent = '⬇️ 下載影片';
-    dlBtn.onclick = () => {
-      const a = document.createElement('a');
-      a.href = videoUrl;
-      a.download = `video_${Date.now()}.mp4`;
-      a.click();
-    };
-  }
-}
-
+// ══ Canvas 渲染 ══
 async function renderAdCanvas() {
-  const videoEl = document.getElementById('adVideoPreview');
-  if (videoEl) videoEl.style.display = 'none';
   const canvas = document.getElementById('adCanvas');
   if (canvas) canvas.style.display = 'block';
   if (PR_BG_IMG) { await renderAdCanvasWithPR(); return; }
@@ -526,14 +415,17 @@ async function renderAdCanvasWithPR() {
     const img = new Image(); img.crossOrigin = 'anonymous';
     img.onload = () => {
       if (isTryon) {
+        // 試穿圖比例可能很長,用 cover + contain 雙層處理
         const scaleCover   = Math.max(AM.w/img.width, AM.h/img.height);
         const scaleContain = Math.min(AM.w/img.width, AM.h/img.height);
         if (1 - scaleContain/scaleCover <= 0.20) {
+          // 比例接近方形,直接 cover
           ctx.drawImage(img,
             Math.round((AM.w-img.width*scaleCover)/2),
             Math.round((AM.h-img.height*scaleCover)/2),
             img.width*scaleCover, img.height*scaleCover);
         } else {
+          // 比例差距大,先畫模糊底再畫原圖 contain
           ctx.filter = 'blur(18px)';
           ctx.drawImage(img,
             Math.round((AM.w-img.width*scaleCover)/2),
@@ -619,6 +511,7 @@ function downloadAd() {
   if (window._driveToken) uploadAdToDrive(canvas, filename);
 }
 
+// ══ 影像工具 ══
 async function compressImageBase64(base64, maxSize, quality) {
   return new Promise(resolve => {
     const img = new Image();
@@ -637,19 +530,59 @@ async function compressImageBase64(base64, maxSize, quality) {
   });
 }
 
+// ── 智能 padding (v2) ──
+// 1. 方形原圖(ratio 0.85~1.15)且夠大 → 不 padding,直接用
+// 2. 需要 padding 時,採樣四個角落顏色當底色(不再用死黑色)
+//    → 避免 Flux 把黑 padding 當成背景保留
 async function padImageTo1080(base64) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
+      const w0 = img.width, h0 = img.height;
+      const ratio = w0 / h0;
+
+      // 已接近方形 & 夠大 → 直接用
+      if (ratio >= 0.85 && ratio <= 1.15 && Math.min(w0, h0) >= 1000) {
+        resolve(base64);
+        return;
+      }
+
       const SIZE = 1080;
       const canvas = document.createElement('canvas');
       canvas.width = SIZE; canvas.height = SIZE;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#000000';
+
+      // 採樣四個角落平均色
+      let fillColor = '#ffffff';
+      try {
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = w0; tmpCanvas.height = h0;
+        const tmpCtx = tmpCanvas.getContext('2d');
+        tmpCtx.drawImage(img, 0, 0);
+        const sampleSize = Math.max(10, Math.floor(Math.min(w0, h0) * 0.02));
+        const corners = [
+          tmpCtx.getImageData(0, 0, sampleSize, sampleSize).data,
+          tmpCtx.getImageData(w0-sampleSize, 0, sampleSize, sampleSize).data,
+          tmpCtx.getImageData(0, h0-sampleSize, sampleSize, sampleSize).data,
+          tmpCtx.getImageData(w0-sampleSize, h0-sampleSize, sampleSize, sampleSize).data,
+        ];
+        let r=0, g=0, b=0, n=0;
+        corners.forEach(d => {
+          for (let i=0; i<d.length; i+=4) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; }
+        });
+        r = Math.round(r/n); g = Math.round(g/n); b = Math.round(b/n);
+        fillColor = `rgb(${r},${g},${b})`;
+      } catch(e) {
+        // 跨來源圖片可能無法採樣 → 用中性灰
+        fillColor = '#888888';
+      }
+
+      ctx.fillStyle = fillColor;
       ctx.fillRect(0, 0, SIZE, SIZE);
-      const scale = Math.min(SIZE / img.width, SIZE / img.height);
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
+
+      const scale = Math.min(SIZE / w0, SIZE / h0);
+      const w = Math.round(w0 * scale);
+      const h = Math.round(h0 * scale);
       const x = Math.round((SIZE - w) / 2);
       const y = Math.round((SIZE - h) / 2);
       ctx.drawImage(img, x, y, w, h);
