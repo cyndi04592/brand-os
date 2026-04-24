@@ -1,159 +1,230 @@
 // ════════════════════════════════════════════════════════════════════
-//  Brand OS · KOL Studio v5.11 — Universal Scenes & Brand Type Actions
-//  通用場景庫(全品牌共用)+ 品牌類型動作模板
+//  Brand OS · KOL Studio v5.11.1 — Universal Scenes
+//  通用場景庫(全品牌共用)+ 品牌專屬場景(cf/ka/flm/la/moz)
 //
-//  載入順序要求:此檔必須在 kol.html 主 script 之前載入
-//  使用方式:kol.html 用 getScenesForBrand(brandId) 取得合併後場景
+//  結構:
+//   ▸ UNIVERSAL_POOL   : 5 個通用場景(所有品牌都能用)
+//   ▸ BRAND_SCENES     : 品牌專屬場景(la/cf/ka/flm/moz)
+//   ▸ BRAND_TYPE_ACTIONS : 15 類品牌動作模板
+//
+//  LACEZ DNA 設計原則:
+//   1. 反 AI 完美:毛孔、底片顆粒、ISO 400-1600、35mm、手持 vlog
+//   2. 禁用:perfect / flawless / studio / professional
+//   3. 商品動作抽象化:用 {BRAND_ACTION} 變數
+//
+//  載入要求:kol.html 主 script 之前必須載入此檔
 // ════════════════════════════════════════════════════════════════════
 
-// ── 10 個通用場景(全品牌共用)─────────────────────────────────
-// 設計原則:
-//   1. 場景 = 物理環境 + 氛圍(不綁任何品牌屬性)
-//   2. product_context 用 {BRAND_ACTION} 變數,由品牌動作模板填入
-//   3. REALISM_BASE 反完美元素:底片顆粒、手持抖動、毛孔、35mm 鏡頭
-const UNIVERSAL_SCENES = {
-  // 1. 廚房晨光(室內 · 溫暖)
-  u_kitchen_morning: {
-    label: '🌅 廚房晨光',
-    hint: '早晨自然光 · 溫暖居家感',
-    indoor: true,
-    env_prompt: 'cozy home kitchen in the morning, soft natural sunlight streaming through window, warm wooden countertop, casual lived-in atmosphere',
-    mood_default: 'warm and gentle',
-    product_context_template: '{BRAND_ACTION} on the kitchen counter while preparing morning routine',
-    duration_default: 10,
-    universal: true,
+// 🌐 通用場景 pool(5 個 · 所有品牌共用)
+const UNIVERSAL_POOL = {
+  kitchen_morning: {
+    label: '🥞 廚房晨光',
+    hint: '晨光感 · 早起儀式',
+    indoor: true, type: 'indoor',
+    env_prompt: 'cozy home kitchen in early morning, soft natural sunlight through the window, wooden countertop with subtle lived-in clutter, 35mm film grain, handheld vlog feel, ISO 800, visible skin pores and peach fuzz',
+    product_context_template: '{BRAND_ACTION} naturally placed on the kitchen counter while preparing the morning',
+    mood_default: 'warm and unhurried', duration_default: 10,
   },
-
-  // 2. 咖啡廳午後(室內 · 文青)
-  u_cafe_afternoon: {
+  cafe_afternoon: {
     label: '☕ 咖啡廳午後',
-    hint: '慵懶 me time · 文青氛圍',
-    indoor: true,
-    env_prompt: 'quiet independent cafe in afternoon, warm amber lighting, wooden table with coffee cup and notebook, soft background blur of other patrons',
-    mood_default: 'relaxed and thoughtful',
-    product_context_template: '{BRAND_ACTION} while enjoying coffee alone',
-    duration_default: 10,
-    universal: true,
+    hint: '文青氛圍 · me time',
+    indoor: true, type: 'indoor',
+    env_prompt: 'quiet independent cafe in afternoon, warm amber ambient lighting, wooden table with coffee cup and small notebook, soft background blur, handheld vlog feel, 35mm film grain, visible skin texture',
+    product_context_template: '{BRAND_ACTION} casually on the cafe table while enjoying coffee alone',
+    mood_default: 'relaxed and thoughtful', duration_default: 10,
   },
-
-  // 3. 戶外綠意(戶外 · 自然)
-  u_outdoor_garden: {
+  outdoor_garden: {
     label: '🌿 戶外綠意',
     hint: '公園 / 花園 · 陽光感',
-    indoor: false,
-    env_prompt: 'lush urban park or garden in golden hour, dappled sunlight through leaves, green foliage background, fresh outdoor air feeling',
-    mood_default: 'peaceful and refreshing',
-    product_context_template: '{BRAND_ACTION} while taking a walk outdoors',
-    duration_default: 10,
-    universal: true,
+    indoor: false, type: 'outdoor',
+    env_prompt: 'lush urban park or garden in golden hour, dappled sunlight through leaves, green foliage background, handheld vlog style, 35mm film grain',
+    product_context_template: '{BRAND_ACTION} while taking a peaceful walk outdoors',
+    mood_default: 'peaceful and refreshing', duration_default: 10,
   },
-
-  // 4. 夜間街頭(戶外 · 城市)
-  u_urban_night: {
+  urban_night: {
     label: '🌃 夜間街頭',
     hint: '霓虹城市 · 下班氛圍',
-    indoor: false,
-    env_prompt: 'urban street at night, soft neon and shop lights reflecting on wet pavement, hint of passing cars bokeh, moody atmospheric lighting',
-    mood_default: 'cinematic and contemplative',
-    product_context_template: 'carrying a paper bag with {BRAND_ACTION} after finishing work',
-    duration_default: 10,
-    universal: true,
+    indoor: false, type: 'outdoor',
+    env_prompt: 'urban street at night, soft neon and shop lights reflecting on wet pavement, hint of passing cars bokeh, moody cinematic lighting, handheld vlog feel, 35mm, ISO 1600',
+    product_context_template: 'carrying {BRAND_ACTION} after finishing work, neon reflecting on the bag',
+    mood_default: 'cinematic and contemplative', duration_default: 10,
   },
-
-  // 5. 居家開箱(室內 · 開箱儀式感)
-  u_home_unboxing: {
+  home_unboxing: {
     label: '📦 居家開箱',
-    hint: '開箱 → 展示 → 分享',
-    indoor: true,
-    env_prompt: 'modern minimal home living room, soft overhead lighting, white sofa or wooden desk with a package delivered on it, candid at-home vibe',
-    mood_default: 'excited but natural',
-    product_context_template: 'unboxing the package, gently revealing and showing {BRAND_ACTION}',
-    duration_default: 15,  // 開箱建議 15s 走敘事
-    universal: true,
-  },
-
-  // 6. 臥室放鬆(室內 · 私密)
-  u_bedroom_cozy: {
-    label: '🛏️ 臥室放鬆',
-    hint: '床邊 / 晚安 / 私密感',
-    indoor: true,
-    env_prompt: 'cozy bedroom with soft bedside lamp, neutral bedding, evening wind-down atmosphere, intimate personal space feeling',
-    mood_default: 'calm and intimate',
-    product_context_template: '{BRAND_ACTION} during evening wind-down routine',
-    duration_default: 10,
-    universal: true,
-  },
-
-  // 7. 辦公桌(室內 · 工作)
-  u_office_workdesk: {
-    label: '💼 辦公桌',
-    hint: '工作場景 / 午休',
-    indoor: true,
-    env_prompt: 'modern home office or workplace desk, laptop and stationery, soft daylight from side window, professional but relaxed setting',
-    mood_default: 'focused but human',
-    product_context_template: '{BRAND_ACTION} during a short break between tasks',
-    duration_default: 10,
-    universal: true,
-  },
-
-  // 8. 健身 / Wellness(室內 · 活力)
-  u_gym_wellness: {
-    label: '🧘 健身 Wellness',
-    hint: '運動 / 瑜伽 / 健康',
-    indoor: true,
-    env_prompt: 'bright wellness studio or home gym corner, yoga mat on wooden floor, soft morning light from tall windows, active but not sweaty feeling',
-    mood_default: 'energetic and refreshed',
-    product_context_template: '{BRAND_ACTION} after a wellness session',
-    duration_default: 10,
-    universal: true,
-  },
-
-  // 9. 餐廳聚餐(室內/戶外 · 社交)
-  u_restaurant_meal: {
-    label: '🍽️ 餐廳聚餐',
-    hint: '和朋友吃飯 · 分享感',
-    indoor: true,
-    env_prompt: 'warm restaurant interior or outdoor terrace dining, ambient dinner lighting, plates and glasses on table, social but intimate setting',
-    mood_default: 'happy and shared',
-    product_context_template: '{BRAND_ACTION} while dining with friends',
-    duration_default: 10,
-    universal: true,
-  },
-
-  // 10. 通勤路上(戶外 · 過場)
-  u_commute_transit: {
-    label: '🚇 通勤路上',
-    hint: '捷運 / 公車 / 路上',
-    indoor: false,
-    env_prompt: 'metro station or city street during commute hours, dynamic background of people walking, natural urban lighting, vlog-style handheld feel',
-    mood_default: 'everyday and real',
-    product_context_template: '{BRAND_ACTION} during daily commute',
-    duration_default: 10,
-    universal: true,
+    hint: '🌟 黃金樣本 · 走進→開箱→展示',
+    indoor: true, type: 'indoor',
+    env_prompt: 'modern minimal home living room with soft white curtains and natural window light, wooden desk or white sofa, package delivered on the surface, candid at-home vibe, handheld vlog feel, 35mm film grain, ISO 800, skin pores visible',
+    product_context_template: 'walking in, sitting down, gently unboxing the package and revealing {BRAND_ACTION} with genuine excitement',
+    mood_default: 'genuine and unhurried', duration_default: 15,
   },
 };
 
-// ── 品牌類型動作模板 ──────────────────────────────────────────
-// 當品牌使用通用場景時,{BRAND_ACTION} 會被替換成以下對應動作
+// 🎯 品牌專屬場景
+const BRAND_SCENES = {
+  // ═══ 👙 LACEZ · 內衣(保留原 5 個,RA 個人品牌)═══
+  la: {
+    la_kitchen_morning: {
+      label: '🥞 廚房晨光', hint: 'LACEZ · 晨光內衣搭配',
+      indoor: true, type: 'indoor',
+      env_prompt: 'cozy home kitchen in early morning, soft sunlight through window, wooden countertop with coffee mug and small plant, 35mm film grain, ISO 800, visible skin pores and peach fuzz, candid handheld vlog feel',
+      product_context: 'LACEZ lingerie naturally placed on the kitchen counter beside a coffee mug, not worn, just present as part of the morning routine',
+      mood_default: 'warm and gentle', duration_default: 10,
+    },
+    la_cafe_afternoon: {
+      label: '☕ 咖啡廳午後', hint: 'LACEZ · 手機展示不實拿',
+      indoor: true, type: 'indoor',
+      env_prompt: 'independent cafe in warm afternoon light, wooden table with latte and phone, handheld vlog feel, 35mm, visible skin pores',
+      product_context: 'showing LACEZ lingerie product page on phone screen, not physically holding the garment',
+      mood_default: 'relaxed and thoughtful', duration_default: 10,
+    },
+    la_outdoor_garden: {
+      label: '🌿 戶外綠意', hint: 'LACEZ · 純氛圍 vlog 不出現商品',
+      indoor: false, type: 'outdoor',
+      env_prompt: 'lush green urban park, golden hour dappled sunlight, fresh air feeling, handheld vlog, 35mm film grain',
+      product_context: 'no product shown, pure atmospheric vlog focusing on comfortable lifestyle mood',
+      mood_default: 'peaceful and refreshing', duration_default: 10,
+    },
+    la_urban_night: {
+      label: '🌃 夜間街頭', hint: 'LACEZ · 紙袋拎手剛買完',
+      indoor: false, type: 'outdoor',
+      env_prompt: 'urban street at night, neon shop lights reflecting on wet pavement, moody cinematic, handheld, 35mm, ISO 1600',
+      product_context: 'carrying a LACEZ paper shopping bag after shopping, neon reflections on the bag',
+      mood_default: 'cinematic', duration_default: 10,
+    },
+    la_home_unboxing: {
+      label: '📦 居家開箱', hint: '🌟 LACEZ 黃金樣本',
+      indoor: true, type: 'indoor',
+      env_prompt: 'modern minimal home living room with white curtains and soft window light, wooden desk with LACEZ package, candid at-home vibe, handheld vlog, 35mm, ISO 800, skin pores visible',
+      product_context: 'walking into the room, sitting down, gently opening the LACEZ paper bag, revealing the lingerie piece with genuine soft excitement',
+      mood_default: 'genuine and unhurried', duration_default: 15,
+    },
+  },
+
+  // ═══ 🍳 cf 巧福 · 家電(原 ka kitchen_demo/breakfast_morning 搬家)═══
+  cf: {
+    cf_kitchen_demo: {
+      label: '🍳 廚房示範', hint: '巧福 · 家電操作',
+      indoor: true, type: 'indoor',
+      env_prompt: 'bright home kitchen with wooden countertop, natural daylight, clean but lived-in feel, 35mm film grain, handheld vlog perspective, visible skin pores',
+      product_context: 'demonstrating the Chofu appliance in natural kitchen use, showing how it fits into daily life',
+      mood_default: 'warm and practical', duration_default: 10,
+    },
+    cf_breakfast_morning: {
+      label: '🌅 早餐煮食', hint: '巧福 · 晨間家電使用',
+      indoor: true, type: 'indoor',
+      env_prompt: 'morning kitchen with soft sunlight, breakfast items on the counter, casual at-home vibe, handheld feel, 35mm, natural skin texture',
+      product_context: 'using the Chofu appliance while preparing breakfast, steam and morning light',
+      mood_default: 'cozy and caring', duration_default: 10,
+    },
+    cf_living_relax: {
+      label: '🛋️ 客廳放鬆', hint: '巧福 · 遠紅外線居家療癒',
+      indoor: true, type: 'indoor',
+      env_prompt: 'warm minimalist living room, soft lamp light, comfortable sofa, evening wind-down atmosphere, 35mm, handheld, visible skin details',
+      product_context: 'using the Chofu health appliance on the sofa, relaxing at the end of the day',
+      mood_default: 'healing and calm', duration_default: 10,
+    },
+  },
+
+  // ═══ 🧘 ka 空瑪那 · 瑜珈療癒(全新專屬場景)═══
+  ka: {
+    ka_yoga_studio_morning: {
+      label: '🧘 瑜珈教室晨光', hint: '空瑪那 · 早晨瑜珈課',
+      indoor: true, type: 'indoor',
+      env_prompt: 'serene yoga studio with wooden floor, morning sunlight streaming through tall windows, yoga mats laid out, clean minimal aesthetic, handheld vlog feel, 35mm film grain, natural skin tones',
+      product_context_template: '{BRAND_ACTION} during morning yoga practice in a studio',
+      mood_default: 'calm and focused', duration_default: 10,
+    },
+    ka_meditation_cushion: {
+      label: '🪷 冥想坐墊', hint: '空瑪那 · 冥想靜心',
+      indoor: true, type: 'indoor',
+      env_prompt: 'quiet meditation room with soft natural light, single meditation cushion on wooden floor, minimal zen aesthetic, subtle incense smoke, 35mm, handheld, visible skin texture',
+      product_context_template: '{BRAND_ACTION} during meditation, eyes softly closed, peaceful breath',
+      mood_default: 'peaceful and centered', duration_default: 10,
+    },
+    ka_sound_bowl_healing: {
+      label: '🎵 頌缽療癒', hint: '空瑪那 · 宸甄老師招牌',
+      indoor: true, type: 'indoor',
+      env_prompt: 'sound bowl healing room, warm ambient candle light, brass sound bowls and ritual tools on natural wood, quiet spiritual atmosphere, 35mm film grain, handheld contemplative vlog feel',
+      product_context_template: '{BRAND_ACTION} surrounded by sound bowls during a healing session',
+      mood_default: 'sacred and gentle', duration_default: 15,
+    },
+    ka_outdoor_yoga: {
+      label: '🌳 戶外瑜珈', hint: '空瑪那 · 自然練習',
+      indoor: false, type: 'outdoor',
+      env_prompt: 'outdoor yoga practice in a peaceful park at golden hour, green grass, dappled sunlight, handheld vlog feel, 35mm film grain',
+      product_context_template: '{BRAND_ACTION} practicing yoga poses outdoors, connecting with nature',
+      mood_default: 'free and grounded', duration_default: 10,
+    },
+  },
+
+  // ═══ 🥢 flm 香港福臨門 · 高端粵菜 ═══
+  flm: {
+    flm_dim_sum_morning: {
+      label: '🥟 茶樓點心', hint: '福臨門 · 港式早茶',
+      indoor: true, type: 'indoor',
+      env_prompt: 'elegant Hong Kong Cantonese tea house interior, morning light, traditional round dining tables, bamboo steamer baskets, warm ambient lighting, 35mm film grain, handheld vlog feel',
+      product_context_template: 'enjoying {BRAND_ACTION} dim sum with traditional Chinese tea in an authentic Cantonese setting',
+      mood_default: 'nostalgic and refined', duration_default: 10,
+    },
+    flm_fine_dining: {
+      label: '🍽️ 高端擺盤', hint: '福臨門 · 精緻粵菜',
+      indoor: true, type: 'indoor',
+      env_prompt: 'upscale Cantonese restaurant with warm golden lighting, immaculate white tablecloth, artistic plating, hint of red and gold Chinese aesthetic, 35mm handheld, visible food texture',
+      product_context_template: 'savoring {BRAND_ACTION} fine Cantonese cuisine with appreciation for the plating',
+      mood_default: 'sophisticated and celebratory', duration_default: 10,
+    },
+    flm_chef_craft: {
+      label: '👨‍🍳 主廚手路菜', hint: '福臨門 · 廚房烹飪',
+      indoor: true, type: 'indoor',
+      env_prompt: 'professional Cantonese kitchen, flames leaping from wok, chef hands moving skillfully, dynamic cooking action, warm kitchen lighting, handheld, 35mm film grain',
+      product_context_template: 'chef skillfully preparing {BRAND_ACTION} signature Cantonese dish with wok technique',
+      mood_default: 'dynamic and masterful', duration_default: 10,
+    },
+  },
+
+  // ═══ 👕 moz 瑞典駝鹿 · 保留原 2 個 ═══
+  moz: {
+    moz_cafe_weekend: {
+      label: '☕ 週末咖啡廳', hint: 'MOZ · 北歐穿搭感',
+      indoor: true, type: 'indoor',
+      env_prompt: 'cozy Nordic-style cafe on weekend morning, light wood interior, soft daylight, minimalist aesthetic, 35mm film grain, handheld vlog feel',
+      product_context_template: 'wearing MOZ {BRAND_ACTION} casually in a weekend cafe moment',
+      mood_default: 'relaxed Nordic vibe', duration_default: 10,
+    },
+    moz_commute_train: {
+      label: '🚇 通勤列車', hint: 'MOZ · 城市通勤',
+      indoor: false, type: 'outdoor',
+      env_prompt: 'modern city metro station during commute hours, natural daylight, dynamic urban background, handheld vlog style, 35mm film grain',
+      product_context_template: 'MOZ {BRAND_ACTION} during daily urban commute',
+      mood_default: 'everyday and real', duration_default: 10,
+    },
+  },
+};
+
+// 🎭 品牌類型動作模板(15 類)
 const BRAND_TYPE_ACTIONS = {
-  fashion_lingerie:   'wearing the lingerie naturally under comfortable loungewear, adjusting the strap subtly',
-  fashion_apparel:    'wearing the outfit, showing off the fit with a natural twirl',
-  beauty_skincare:    'applying the skincare product gently, touching face afterward',
-  beauty_makeup:      'applying the makeup, checking the mirror',
-  food_snack:         'opening the snack package, taking a bite, smiling at camera',
-  food_beverage:      'taking a sip from the beverage, enjoying the flavor',
-  appliance_kitchen:  'demonstrating the kitchen appliance, showing it in use',
-  appliance_beauty:   'using the beauty device on face or body, showing the effect',
-  jewelry_accessory:  'wearing the accessory, it catches the light subtly',
-  health_supplement:  'holding the supplement bottle, taking it with water',
-  home_lifestyle:     'using the home product naturally in the space',
-  default:            'holding the product, interacting with it naturally',
+  fashion_lingerie:   'the lingerie piece placed naturally or worn comfortably under loungewear',
+  fashion_apparel:    'the garment worn with natural styling',
+  fashion_shoes:      'the shoes worn or placed beside, showing the design',
+  beauty_skincare:    'the skincare product applied gently, light touch on face',
+  beauty_makeup:      'the makeup product applied with natural everyday look',
+  food_snack:         'the snack opened and tasted, genuine enjoyment',
+  food_beverage:      'the beverage being sipped, savoring the flavor',
+  appliance_kitchen:  'the kitchen appliance demonstrated in natural use',
+  appliance_beauty:   'the beauty device being used on face or body',
+  jewelry_accessory:  'the accessory subtly worn, catching the light',
+  health_supplement:  'the supplement held or taken with water',
+  home_lifestyle:     'the home product used naturally in everyday setting',
+  yoga_wellness:      'wearing comfortable yoga attire, grounded and centered',
+  food_cuisine:       'the dish presented and tasted with appreciation',
+  default:            'the product held or interacted with naturally',
 };
 
-// ── 品牌類型中文標籤(給 onboard.html 下拉用)───────────────────
+// 🏷️ 品牌類型中文標籤(給 onboard.html 下拉用)
 const BRAND_TYPE_LABELS = {
   fashion_lingerie:   '👙 內衣 / 貼身衣物',
-  fashion_apparel:    '👚 服飾 / 鞋包',
+  fashion_apparel:    '👚 服飾',
+  fashion_shoes:      '👟 鞋 / 包',
   beauty_skincare:    '🧴 保養品',
   beauty_makeup:      '💄 彩妝',
   food_snack:         '🍪 零食 / 食品',
@@ -163,49 +234,48 @@ const BRAND_TYPE_LABELS = {
   jewelry_accessory:  '💍 珠寶 / 配件',
   health_supplement:  '💊 保健品',
   home_lifestyle:     '🏠 居家生活',
+  yoga_wellness:      '🧘 瑜珈 / 身心靈',
+  food_cuisine:       '🥢 餐飲 / 料理',
   default:            '📦 其他',
 };
 
-// ── 組合函式:拿某品牌可用的全部場景 ─────────────────────────
-// 邏輯:
-//   1. 先取通用場景(10 個)
-//   2. 再疊上品牌專屬場景(la / moz / ka 原有的)
-//   3. 同 key 的話品牌專屬覆蓋通用(保留你已驗證好的)
+// 🎯 核心函式:拿某品牌可用的場景
+// LACEZ (la) → 只用自家 5 個
+// 其他有專屬的 → 專屬 + 通用 pool
+// 沒專屬的 → 只用通用 pool
 window.getScenesForBrand = function(brandId) {
-  const universal = UNIVERSAL_SCENES || {};
-  const brandSpecific = (typeof SCENE_LIBRARY !== 'undefined' && SCENE_LIBRARY[brandId]) || {};
-  const merged = { ...universal, ...brandSpecific };
-  
-  // 🆕 自動補齊 type 欄位,讓 Tab 2 的 scene-type-pill 能正確顯示
-  Object.keys(merged).forEach(key => {
-    const s = merged[key];
-    if (!s.type) {
-      s.type = s.indoor === false ? 'outdoor' : 'indoor';
-    }
-  });
-  
-  return merged;
+  if (!brandId) return { ...UNIVERSAL_POOL };
+  const brandSpecific = BRAND_SCENES[brandId] || {};
+  const hasBrandScenes = Object.keys(brandSpecific).length > 0;
+  if (brandId === 'la') return { ...brandSpecific };
+  if (hasBrandScenes) return { ...brandSpecific, ...UNIVERSAL_POOL };
+  return { ...UNIVERSAL_POOL };
 };
 
-// ── 組合函式:拿某品牌的動作模板 ────────────────────────────────
-// 邏輯:讀 brand.brand_type(GAS 那邊要在 brands sheet 補這欄)
+// 🎭 拿品牌類型對應的動作模板
 window.getBrandActionTemplate = function(brand) {
   if (!brand) return BRAND_TYPE_ACTIONS.default;
   const brandType = brand.brand_type || brand.type || 'default';
   return BRAND_TYPE_ACTIONS[brandType] || BRAND_TYPE_ACTIONS.default;
 };
 
-// ── 組合函式:給通用場景填上品牌動作 ────────────────────────────
+// 🎨 把場景 template 裡的 {BRAND_ACTION} 替換成實際動作
 window.resolveSceneProductContext = function(scene, brand) {
   if (!scene) return '';
-  const template = scene.product_context_template || scene.product_context || '';
+  if (scene.product_context && !scene.product_context_template) {
+    return scene.product_context;
+  }
+  const template = scene.product_context_template || '';
   const brandAction = window.getBrandActionTemplate(brand);
   return template.replace('{BRAND_ACTION}', brandAction);
 };
 
-// ── 匯出(給 debug 用)─────────────────────────────────────────
-window.UNIVERSAL_SCENES = UNIVERSAL_SCENES;
+// 📦 匯出
+window.UNIVERSAL_POOL = UNIVERSAL_POOL;
+window.BRAND_SCENES = BRAND_SCENES;
 window.BRAND_TYPE_ACTIONS = BRAND_TYPE_ACTIONS;
 window.BRAND_TYPE_LABELS = BRAND_TYPE_LABELS;
+// 相容舊 SCENE_LIBRARY 名稱
+window.SCENE_LIBRARY = BRAND_SCENES;
 
-console.log('[KOL v5.11] Universal scenes loaded:', Object.keys(UNIVERSAL_SCENES).length, 'scenes');
+console.log('KOL Universal Scenes loaded:', Object.keys(UNIVERSAL_POOL).length + ' universal + ' + Object.keys(BRAND_SCENES).length + ' brands with specifics');
