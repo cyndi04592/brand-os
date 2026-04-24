@@ -804,10 +804,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
 
         <div class="credit-est">
-          <span>預估消耗:</span>
-          <span class="num" id="credit-est">— credits</span>
-          <span class="sep">·</span>
-          <span class="usd" id="usd-est">— USD</span>
+          <span>預估耗時:</span>
+          <span class="num" id="credit-est">~ 3 分鐘</span>
         </div>
 
         <div class="btn-row">
@@ -1048,8 +1046,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
 
         <div class="credit-est">
-          <span>預估成本:</span>
-          <span class="usd" id="seedance-cost-est">— USD</span>
+          <span>預估耗時:</span>
+          <span class="usd" id="seedance-cost-est">~ 2 分鐘</span>
         </div>
 
         <div class="btn-row">
@@ -2568,26 +2566,19 @@ function updateCreditEstimate() {
   const chars = script.trim().length;
   const seconds = Math.max(5, Math.ceil(chars / 3.5));
   const useMotion = S.motionEnabled && S.motionPrompt;
-  const multiplier = useMotion ? 2 : 1;
-  const usd = seconds * COST_PER_SECOND_USD * multiplier;
-  const credits = Math.ceil(seconds * 0.083 * multiplier);
 
   const creditEl = document.getElementById('credit-est');
-  const usdEl = document.getElementById('usd-est');
-  if (!creditEl || !usdEl) return;
+  if (!creditEl) return;
 
   if (chars === 0) {
-    creditEl.textContent = '— credits';
-    usdEl.textContent = '— USD';
+    creditEl.textContent = '~ 填入腳本後估算';
     creditEl.classList.remove('high');
-    usdEl.classList.remove('high');
     return;
   }
 
-  creditEl.textContent = `~${credits} credits(${seconds}s${useMotion ? ' · 2×' : ''})`;
-  usdEl.textContent = `$${usd.toFixed(2)} USD`;
+  const estMinutes = useMotion ? 4 : 3;
+  creditEl.textContent = `~ ${estMinutes} 分鐘(${seconds}s 影片${useMotion ? ' · 含動作' : ''})`;
   creditEl.classList.toggle('high', useMotion);
-  usdEl.classList.toggle('high', useMotion);
 }
 
 // ─── AI 腳本生成(口播)────────────────────────────────────
@@ -3186,10 +3177,9 @@ function updateSeedanceCostEstimate() {
   const el = document.getElementById('seedance-cost-est');
   if (!el) return;
   const p = S.seedanceParams;
-  const pricePerSec = (SEEDANCE_PRICE[p.tier] && SEEDANCE_PRICE[p.tier][p.resolution]) || 0.2419;
   const seconds = (p.duration === 'auto') ? 10 : parseInt(p.duration);
-  const total = pricePerSec * seconds;
-  el.textContent = `$${total.toFixed(2)} USD(${p.tier} ${p.resolution} × ${seconds}s)`;
+  const minutes = p.tier === 'standard' ? 3 : 2;
+  el.textContent = `~ ${minutes} 分鐘(${p.resolution} × ${seconds}s)`;
 }
 
 function copySeedancePrompt() {
@@ -3854,9 +3844,10 @@ function renderEpisodeCard() {
       </div>
 <div class="ep-actions" style="padding-top:6px;flex-direction:column;align-items:stretch;gap:8px">
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-success" onclick="generateEpisodeV510('all')" style="flex:1;min-width:180px">🚀 全套生成 <small style="opacity:.85">$1.22</small></button>
-          <button class="btn btn-primary" onclick="generateEpisodeV510('video')">🎬 只影片 <small style="opacity:.85">$1.21</small></button>
-          <button class="btn btn-ghost" onclick="generateEpisodeV510('posts')">✍️ 只貼文 <small style="opacity:.85">$0.006</small></button>
+          <button class="btn btn-success" onclick="generateEpisodeV510('all')" style="flex:1;min-width:180px">🚀 全套生成</button>
+          <button class="btn btn-primary" onclick="generateEpisodeV510('video')">🎬 只影片</button>
+          <button class="btn btn-ghost" onclick="generateEpisodeV510('posts')">✍️ 只貼文</button>
+        </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:10.5px;color:var(--text-dim)">
           <button class="btn btn-ghost btn-sm" onclick="saveEpisodeDraft()">💾 存草稿</button>
@@ -4807,8 +4798,7 @@ async function renderSystemQueue() {
 
       const dateShort = ep.calendar_date ? String(ep.calendar_date).slice(5, 10).replace('-', '/') : '—';
       const sceneLabel = SCENE_LIBRARY[ep.brandId]?.[ep.scene_id]?.label || ep.scene_id || '未分類';
-      const costLine = (ep.video_cost_usd || ep.posts_cost_usd) ?
-        ` · $${((ep.video_cost_usd || 0) + (ep.posts_cost_usd || 0)).toFixed(2)}` : '';
+      const costLine = '';
 
       return `
         <div class="queue-item" data-episode-id="${escapeHtml(ep.id)}" style="cursor:pointer">
@@ -4831,11 +4821,10 @@ async function renderSystemQueue() {
       });
     });
 
-    // 累計成本顯示
-    const totalCost = eps.reduce((s, e) => s + (parseFloat(e.video_cost_usd) || 0) + (parseFloat(e.posts_cost_usd) || 0), 0);
+   // 累計集數顯示
     listEl.insertAdjacentHTML('beforeend', `
       <div class="queue-footer">
-        <span class="queue-cost">累計 ${eps.length} 集 · 總成本 $${totalCost.toFixed(2)} USD</span>
+        <span class="queue-cost">累計 ${eps.length} 集</span>
       </div>
     `);
   } catch (e) {
