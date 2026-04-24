@@ -62,7 +62,7 @@
   <p id="initMsg">初始化 Brand OS 系統...</p>
 </div>
 
-<!-- ══ Nav (v8.4 簡化: 砍掉品牌 logo 排 + 數字人按鈕) ══ -->
+<!-- ══ Nav (v8.4 簡化版) ══ -->
 <nav class="nav">
   <div style="display:flex;align-items:center;gap:10px;">
     <img src="logo.webp" alt="RB" style="height:36px;width:auto;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
@@ -242,7 +242,7 @@
       <div style="border:1px solid rgba(157,110,248,0.3);border-radius:10px;overflow:hidden;flex-shrink:0;">
         <div style="padding:7px 12px;background:rgba(232,96,58,0.1);font-size:9px;font-weight:700;letter-spacing:2px;color:#E8603A;">AI 影像處理功能</div>
 
-        <!-- v8.4: 砍掉數字人工作室導流,只保留兩個 AI 模式按鈕 -->
+        <!-- 兩個 AI 模式按鈕 -->
         <div style="padding:8px 10px;border-bottom:1px solid var(--line);">
           <div style="display:grid;grid-template-columns:1fr;gap:4px;">
             <button class="pr-mode-btn on" onclick="setPrMode(this,'product_shot')" style="border-color:rgba(91,200,200,0.6);color:var(--sky);font-weight:900;padding:8px;">✨ AI 情境生成</button>
@@ -255,7 +255,7 @@
           <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">選擇情境場景</div>
           <div style="font-size:9px;color:var(--sky);margin-bottom:6px;line-height:1.6;">直接改圖：保留人物商品，只改背景/光線/氛圍 ✨</div>
 
-          <!-- v8.4 新增: 內衣/貼身衣物場景推薦 -->
+          <!-- 內衣/貼身衣物場景推薦 -->
           <div style="font-size:9px;color:#FFB088;margin-bottom:6px;padding:6px 8px;background:rgba(255,176,136,0.08);border-radius:5px;border:1px solid rgba(255,176,136,0.18);line-height:1.6;">
             💡 <strong>內衣/泳裝/貼身衣物</strong>推薦場景：<br>
             🏊‍♀️ 炎熱夏日　·　⚪ 質感白棚　·　🌫 極簡灰調　·　📖 文青設計<br>
@@ -377,26 +377,6 @@ function openAdMakerDirect() {
   if (!window.S.scripts) window.S.scripts = [];
   openAdMaker(-1);
 }
-
-// v8.4: 覆寫 brand tree 的 emoji 顯示 - 如果 brands.js 本來有用 emoji,
-// 這裡提供一個 hook 讓 renderBrandTree 後可以清掉 emoji 字元
-// 讓品牌列表只顯示名稱,不顯示符號
-window.addEventListener('load', () => {
-  // 觀察 brandTree 內容變化,自動清除 emoji 符號
-  const brandTree = document.getElementById('brandTree');
-  if (!brandTree) return;
-
-  const cleanEmoji = () => {
-    // 移除常見 emoji 符號(只針對品牌名前的裝飾符號)
-    brandTree.querySelectorAll('.brand-ico, .brand-emoji, [class*="emoji"]').forEach(el => {
-      el.style.display = 'none';
-    });
-  };
-
-  const observer = new MutationObserver(cleanEmoji);
-  observer.observe(brandTree, { childList: true, subtree: true });
-  cleanEmoji();
-});
 </script>
 
 <!-- Google OAuth（最後載入，完成後呼叫 initGoogleAuth）-->
