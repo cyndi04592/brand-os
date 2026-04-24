@@ -1,106 +1,116 @@
 // ══════════════════════════════════════════════════════════════
-//  BRAND OS · AD Maker  (v8)
+//  BRAND OS · AD Maker  (v8.1)
 //  變更紀錄:
-//    [v8] 新增 5 個場景: 文青設計 / 炎熱夏日 / 日式質感 / K-POP / 美式狂野
-//    [v8] 修 bug: 黑金太暗 / 夜景中文亂碼 / 人臉變形
-//    [v8] 所有場景加強 "絕對不改人臉" 指令
-//    [v8] 贈送 2 個客戶專屬場景: 港式金宴升級 / 台式復古廣告
-//    [v7] 修白背景 bug (指令式 prompt + 智能 padding)
-//    [v7] 砍影片功能
-//    [v7] 品牌化命名 (UI 不露出 Flux / Kling)
+//    [v8.1] 強化臉部鎖定指令 (FACE LOCK) - 改善模特兒臉型變形
+//    [v8.1] 徹底關閉中文招牌 - 夜景/街拍改為純英文+抽象
+//    [v8]   新增 5 個場景: 文青設計/炎熱夏日/日式質感/K-POP/美式狂野
+//    [v8]   新增客戶場景: 港式金宴 / 台式復古
+//    [v8]   修 bug: 黑金太暗 / 夜景中文亂碼 / 人臉變形
+//    [v7]   修白背景 bug + 砍影片 + 品牌化命名
 // ══════════════════════════════════════════════════════════════
 
-// ── 通用指令 (所有場景共用,強制保留人物細節) ──
+// ── 通用指令 (v8.1 強化版) ──
+// 分成兩個等級: 商品保留 + 臉部鎖定
 const PRESERVE_SUBJECT =
-  'CRITICAL: Do NOT modify the person face, facial features, expression, skin texture, hair, body proportions, clothing details, or any product. Keep all subjects pixel-perfect identical to the original. Only modify the background, environment, and ambient lighting.';
+  'CRITICAL: Do NOT modify any product, person body proportions, clothing details, or accessories. Keep all subjects pixel-perfect identical to the original. Only modify the background, environment, and ambient lighting.';
 
-// ── 攝影機結尾 (通用簽名) ──
+// v8.1 新增: 有人物時額外套用這段 (臉部超強鎖定)
+const FACE_LOCK =
+  ' ULTRA CRITICAL FACE LOCK: The person face must be 100% identical to the original - preserve exact eye shape and position, nose shape, mouth shape, jawline, cheekbones, face proportions, skin tone, freckles, moles, eyebrows, and all micro facial features. Treat the face as a protected frozen region that MUST NOT be regenerated or altered in any way. The person must look like the exact same individual.';
+
+// v8.1 新增: 完全禁止任何東亞文字 (給夜景/街拍類)
+const NO_ASIAN_TEXT =
+  ' STRICTLY NO Chinese, Japanese, Korean, or any East Asian characters anywhere in the image. Use ONLY English letters, numbers, or pure abstract neon shapes and glowing light patterns. Any visible signage must be in clear English only or be non-textual light glows.';
+
+// ── 攝影機簽名 ──
 const CAM_DEFAULT = 'Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.';
 const CAM_PORTRAIT = 'Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.';
 const CAM_MACRO = 'Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.';
 
-// ── AI 情境 場景 prompt 庫 (v8) ──
+// ── 場景 prompt 庫 ──
 const PRODUCT_SCENES = {
 
   // ══════════════ 通用場景 ══════════════
 
   studio_white:
-    `Replace the entire background with a clean seamless white studio backdrop, subtle gradient from bright white at top to soft grey shadow at base. Professional commercial product photography lighting with soft directional key light from upper left. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/8, studio strobe.`,
+    `Replace the entire background with a clean seamless white studio backdrop, subtle gradient from bright white at top to soft grey shadow at base. Professional commercial product photography lighting with soft directional key light from upper left. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/8, studio strobe.`,
 
   dark_luxury:
-    `Replace the background with a rich deep charcoal-to-black gradient (NOT pure black void - keep it visible and atmospheric). Add strong warm golden rim lighting wrapping around the product and subject edges, plus a soft key light from upper left to keep the subject clearly illuminated and well-exposed. The overall image must remain BRIGHT and READABLE - the face and product must be clearly visible. Luxury magazine advertisement aesthetic with rich golden highlights. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
+    `Replace the background with a rich deep charcoal-to-black gradient (NOT pure black void - keep it visible and atmospheric). Add strong warm golden rim lighting wrapping around the product and subject edges, plus a soft key light from upper left to keep the subject clearly illuminated and well-exposed. The overall image must remain BRIGHT and READABLE - the face and product must be clearly visible. Luxury magazine advertisement aesthetic with rich golden highlights. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
 
   marble_premium:
-    `Replace the scene: foreground surface becomes polished Italian Calacatta marble with natural grey veining, background becomes dark charcoal gradient wall. Add warm golden accent rim lighting from upper right. Luxury product photography aesthetic. ${PRESERVE_SUBJECT} ${CAM_DEFAULT}`,
+    `Replace the scene: foreground surface becomes polished Italian Calacatta marble with natural grey veining, background becomes dark charcoal gradient wall. Add warm golden accent rim lighting from upper right. Luxury product photography aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
 
   minimal_grey:
-    `Replace the background with a smooth light-to-medium grey seamless gradient, no texture. Soft diffused softbox lighting from above creating gentle shadow beneath product. Minimalist Scandinavian aesthetic. ${PRESERVE_SUBJECT} ${CAM_DEFAULT}`,
+    `Replace the background with a smooth light-to-medium grey seamless gradient, no texture. Soft diffused softbox lighting from above creating gentle shadow beneath product. Minimalist Scandinavian aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
 
   forest_outdoor:
-    `Replace the background with a lush atmospheric forest scene. Choose a natural variation: either Japanese cedar with morning mist, or temperate deciduous forest with autumn light, or tropical jungle with dense green foliage. Dappled golden sunlight filtering through canopy creating bokeh highlights. Visible depth with blurred trees in far background. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/2.8, shallow depth of field.`,
+    `Replace the background with a lush atmospheric forest scene. Choose a natural variation: either Japanese cedar with morning mist, or temperate deciduous forest with autumn light, or tropical jungle with dense green foliage. Dappled golden sunlight filtering through canopy creating bokeh highlights. Visible depth with blurred trees in far background. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/2.8, shallow depth of field.`,
 
+  // v8.1: 徹底關中文
   night_city:
-    `Replace the background with a cinematic Tokyo-style night cityscape. Blurred neon signs with ONLY English letters, Japanese katakana, or abstract neon shapes - ABSOLUTELY NO Chinese characters, no recognizable text. Warm orange, cool blue, and magenta pink neon creating rich bokeh circles. Wet street reflections if ground is visible. Cyberpunk atmospheric haze. Neon rim light naturally illuminating product edges. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.4, heavy bokeh.`,
+    `Replace the background with a cinematic futuristic night cityscape. Blurred abstract neon light streaks and glowing orbs in warm orange, cool blue, electric magenta, and cyan creating rich bokeh. Wet reflective street surface if visible. Cyberpunk atmospheric haze with colored fog. Neon rim light naturally illuminating product and subject edges.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.4, heavy bokeh.`,
 
   lifestyle_home:
-    `Replace the scene with a warm Scandinavian home interior. Aged light oak wooden surface in foreground, soft-focus background showing white linen curtains with morning sunlight filtering through, hint of potted green plants. Warm 4000K natural lighting, cozy hygge atmosphere. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
+    `Replace the scene with a warm Scandinavian home interior. Aged light oak wooden surface in foreground, soft-focus background showing white linen curtains with morning sunlight filtering through, hint of potted green plants. Warm 4000K natural lighting, cozy hygge atmosphere. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
 
   tech_space:
-    `Replace the background with a deep space atmosphere. Earth curvature softly glowing at lower horizon, dark cosmic backdrop with subtle star field, purple-to-blue atmospheric gradient rim light. Flagship tech product photography aesthetic, clean futuristic. ${PRESERVE_SUBJECT} ${CAM_DEFAULT}`,
+    `Replace the background with a deep space atmosphere. Earth curvature softly glowing at lower horizon, dark cosmic backdrop with subtle star field, purple-to-blue atmospheric gradient rim light. Flagship tech product photography aesthetic, clean futuristic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
 
   fashion_minimal:
-    `Replace the background with clean off-white to warm beige seamless studio gradient. Soft natural light from large window on the left creating gentle falloff. High-end fashion editorial aesthetic. ${PRESERVE_SUBJECT} ${CAM_PORTRAIT}`,
+    `Replace the background with clean off-white to warm beige seamless studio gradient. Soft natural light from large window on the left creating gentle falloff. High-end fashion editorial aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
 
+  // v8.1: 徹底關中文
   fashion_outdoor:
-    `Replace the background with a golden hour urban or natural street scene. Choose a natural variation: either Tokyo Shibuya crossing, or Paris cobblestone alley, or New York SoHo, or European park path. Warm backlight creating natural halo, bokeh environment. NO Chinese text on any signage - use English or abstract shapes only. Editorial lifestyle fashion aesthetic. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.`,
+    `Replace the background with a golden hour urban or natural street scene. Choose a natural variation: either European cobblestone alley, or New York SoHo brownstone, or Parisian boulevard, or London South Bank, or California palm-lined street. Warm backlight creating natural halo, bokeh environment.${NO_ASIAN_TEXT} Editorial lifestyle fashion aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.`,
 
   pet_home:
-    `Replace the scene with a warm cozy home interior. Light wood floor with natural grain, soft-focus background of white walls with hanging green plants, morning window light from the side creating warm highlights. Gentle 4500K ambient atmosphere. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
+    `Replace the scene with a warm cozy home interior. Light wood floor with natural grain, soft-focus background of white walls with hanging green plants, morning window light from the side creating warm highlights. Gentle 4500K ambient atmosphere. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
 
   pet_outdoor:
-    `Replace the background with a sunny outdoor park scene. Fresh bright green grass foreground, blurred trees and soft sunlight flares in background, natural daylight from upper left. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8, bokeh background.`,
+    `Replace the background with a sunny outdoor park scene. Fresh bright green grass foreground, blurred trees and soft sunlight flares in background, natural daylight from upper left. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8, bokeh background.`,
 
   yoga_zen:
-    `Replace the scene with a serene Japanese zen environment. Choose a variation: either a tatami room with shoji paper screens and soft diffused morning light, or an outdoor bamboo garden with stone path, or a minimal rock garden with raked sand. Peaceful atmospheric. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
+    `Replace the scene with a serene Japanese zen environment. Choose a variation: either a tatami room with shoji paper screens and soft diffused morning light, or an outdoor bamboo garden with stone path, or a minimal rock garden with raked sand. Peaceful atmospheric. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 
   wellness_bright:
-    `Replace the scene with a bright airy wellness studio. Large floor-to-ceiling windows with soft natural morning sunlight streaming in, white walls with subtle shadow of green plants, light wood or white floor. Fresh minimalist wellness aesthetic. ${PRESERVE_SUBJECT} ${CAM_DEFAULT}`,
+    `Replace the scene with a bright airy wellness studio. Large floor-to-ceiling windows with soft natural morning sunlight streaming in, white walls with subtle shadow of green plants, light wood or white floor. Fresh minimalist wellness aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
 
   snack_playful:
-    `Replace the background with a bold colorful flat surface. Choose a variation: either bright warm yellow, or coral pink, or mint green, or vibrant turquoise. Add playful scattered ingredient props (nuts, fruit slices, splashes) arranged artistically. Bright fun commercial food photography. ${PRESERVE_SUBJECT} ${CAM_MACRO}`,
+    `Replace the background with a bold colorful flat surface. Choose a variation: either bright warm yellow, or coral pink, or mint green, or vibrant turquoise. Add playful scattered ingredient props (nuts, fruit slices, splashes) arranged artistically. Bright fun commercial food photography. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_MACRO}`,
 
   sport_energy:
-    `Replace the background with a bold dynamic gradient. Choose a variation: deep navy to electric orange, or black to neon green, or crimson to gold. Add subtle motion blur lines, energetic atmospheric haze. Athletic commercial photography aesthetic. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 70-200mm f/2.8 S.`,
+    `Replace the background with a bold dynamic gradient. Choose a variation: deep navy to electric orange, or black to neon green, or crimson to gold. Add subtle motion blur lines, energetic atmospheric haze. Athletic commercial photography aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 70-200mm f/2.8 S.`,
 
   jewelry_dark:
     `Replace the background with pure black velvet texture. Add single dramatic overhead spotlight creating strong focused beam, subtle teal-blue reflection on dark polished glass surface below. Luxury jewelry photography aesthetic. Keep the product EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/5.6, high-key contrast.`,
 
-  // ══════════════ v8 新增: 風格化場景 ══════════════
+  // ══════════════ v8 風格化場景 (全部加強 FACE LOCK) ══════════════
 
   design_editorial:
-    `Replace the scene with a minimalist editorial design magazine aesthetic. Soft off-white paper-textured background with subtle beige and sage green tones, warm natural window light from the side. Add subtle design elements like thin decorative lines, small handwritten-style script accents, and delicate paper grain texture. Clean asymmetric composition with generous negative space, Kinfolk magazine aesthetic, Japanese editorial design influence. Muted desaturated color palette. NO visible text or readable characters anywhere. ${PRESERVE_SUBJECT} ${CAM_PORTRAIT}`,
+    `Replace the scene with a minimalist editorial design magazine aesthetic. Soft off-white paper-textured background with subtle beige and sage green tones, warm natural window light from the side. Add subtle design elements like thin decorative lines and delicate paper grain texture. Clean asymmetric composition with generous negative space, Kinfolk magazine aesthetic, Japanese editorial design influence. Muted desaturated color palette.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
 
   summer_hot:
-    `Replace the background with a vibrant hot summer scene. Choose a natural variation: either a sunny tropical beach with turquoise water and palm tree shadows, or a poolside with crystal blue water and bright white tiles, or a bright summer garden with cicada-loud greenery and flare highlights. Intense golden sunlight creating strong warm highlights, visible sun flare, shimmering heat haze. Saturated tropical color palette with azure blues, sun yellows, and coral pinks. Refreshing atmospheric feel. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/4, bright summer daylight.`,
+    `Replace the background with a vibrant hot summer scene. Choose a natural variation: either a sunny tropical beach with turquoise water and palm tree shadows, or a poolside with crystal blue water and bright white tiles, or a bright summer garden with cicada-loud greenery and flare highlights. Intense golden sunlight creating strong warm highlights, visible sun flare, shimmering heat haze. Saturated tropical color palette with azure blues, sun yellows, and coral pinks. Refreshing atmospheric feel. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, bright summer daylight.`,
 
   japan_premium:
-    `Transform the entire scene into premium Japanese wabi-sabi aesthetic. Replace surface with aged hinoki cypress wood or dark charcoal stone slate, replace background with soft washi paper texture or blurred shoji screen with warm interior light behind. Add subtle Japanese design elements: a small ceramic tea cup in the far background bokeh, a single dried branch or bamboo leaf. Soft diffused side lighting 4000K, low saturation, muted earth tones (beige, sumi black, soft green), contemplative mono-no-aware atmosphere. NO visible text or characters. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/2.`,
+    `Transform the entire scene into premium Japanese wabi-sabi aesthetic. Replace surface with aged hinoki cypress wood or dark charcoal stone slate, replace background with soft washi paper texture or blurred shoji screen with warm interior light behind. Add subtle Japanese design elements: a small ceramic tea cup in the far background bokeh, a single dried branch or bamboo leaf. Soft diffused side lighting 4000K, low saturation, muted earth tones (beige, sumi black, soft green), contemplative mono-no-aware atmosphere.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/2.`,
 
   kpop_korea:
-    `Transform the entire scene into trendy Korean K-POP music video aesthetic. Replace background with a dreamy gradient of pastel pink, lavender purple, and soft sky blue, with subtle sparkle bokeh and soft neon light streaks. Add Y2K-inspired elements: subtle holographic light flares, soft pink and blue rim lighting on product and subject edges, dreamy atmospheric glow. High-key bright exposure, glossy aesthetic, youthful Seoul fashion magazine vibe. Hint of abstract Hangul-inspired shapes (NOT readable text) as background decoration. ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.8, dreamy bokeh.`,
+    `Transform the entire scene into trendy Korean K-POP music video aesthetic. Replace background with a dreamy gradient of pastel pink, lavender purple, and soft sky blue, with subtle sparkle bokeh and soft neon light streaks. Add Y2K-inspired elements: subtle holographic light flares, soft pink and blue rim lighting on product and subject edges, dreamy atmospheric glow. High-key bright exposure, glossy aesthetic, youthful Seoul fashion magazine vibe.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.8, dreamy bokeh.`,
 
   american_wild:
-    `Transform the entire scene into American wild west / Route 66 aesthetic. Replace background with a vast dramatic landscape: choose from either Arizona red rock desert at golden hour, or Texas highway with dusty horizon and lens flare, or Californian canyon with rugged cliffs. Warm amber-orange sunset lighting with long dramatic shadows, slight dust haze atmosphere, vintage film grain texture. Masculine rugged aesthetic, Marlboro campaign influence, cinematic wide depth. Slightly desaturated cinematic color grade (teal shadows, orange highlights). ${PRESERVE_SUBJECT} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/5.6, sweeping landscape.`,
+    `Transform the entire scene into American wild west / Route 66 aesthetic. Replace background with a vast dramatic landscape: choose from either Arizona red rock desert at golden hour, or Texas highway with dusty horizon and lens flare, or Californian canyon with rugged cliffs. Warm amber-orange sunset lighting with long dramatic shadows, slight dust haze atmosphere, vintage film grain texture. Masculine rugged aesthetic, Marlboro campaign influence, cinematic wide depth. Slightly desaturated cinematic color grade (teal shadows, orange highlights). ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/5.6, sweeping landscape.`,
 
-  // ══════════════ v8 新增: 客戶專屬場景 ══════════════
+  // ══════════════ 客戶專屬 ══════════════
 
   hk_banquet_gold:
-    `Transform the entire scene into Hong Kong top-tier Cantonese banquet aesthetic (Fook Lam Moon / Lung King Heen level). Replace surface with pristine white tablecloth with delicate gold trim embroidery, replace background with softly blurred warm amber interior showing hints of gold filigree wall panels and red lacquered details. Add an elegant Chinese porcelain tea set and a pair of ivory chopsticks with gold tips as subtle props. Warm golden chandelier lighting from above (3000K), creating a bright luxurious atmosphere - the dish must be clearly lit and visible, NOT dark or moody. Rich gold and deep red color palette, Michelin banquet magazine aesthetic, business-entertainment dining class. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/4, bright and luxurious.`,
+    `Transform the entire scene into Hong Kong top-tier Cantonese banquet aesthetic (Fook Lam Moon / Lung King Heen level). Replace surface with pristine white tablecloth with delicate gold trim embroidery, replace background with softly blurred warm amber interior showing hints of gold filigree wall panels and red lacquered details. Add an elegant Chinese porcelain tea set and a pair of ivory chopsticks with gold tips as subtle props. Warm golden chandelier lighting from above (3000K), creating a bright luxurious atmosphere - the dish must be clearly lit and visible, NOT dark or moody. Rich gold and deep red color palette, Michelin banquet magazine aesthetic, business-entertainment dining class. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, bright and luxurious.`,
 
   tw_retro_ad:
-    `Transform the entire scene into authentic 1970s-1980s Taiwanese print advertisement aesthetic. Replace background with a warmly-lit vintage Taiwanese living room scene: floral-patterned fabric sofa in soft focus, terrazzo floor tiles, wooden venetian blinds with late afternoon golden sunlight creating dappled dramatic shadows, a glass of iced barley tea on a round wooden side table as prop. Warm sepia-amber color grading with slightly faded highlights, visible paper grain texture overlay, subtle film halation, Kodachrome film tones, soft edge vignetting. Looks like a scanned vintage magazine page from 1975 Taiwan. Nostalgic warm mood. ${PRESERVE_SUBJECT} ${CAM_DEFAULT} f/2.8, warm vintage film look.`,
+    `Transform the entire scene into authentic 1970s-1980s Taiwanese print advertisement aesthetic. Replace background with a warmly-lit vintage Taiwanese living room scene: floral-patterned fabric sofa in soft focus, terrazzo floor tiles, wooden venetian blinds with late afternoon golden sunlight creating dappled dramatic shadows, a glass of iced barley tea on a round wooden side table as prop. Warm sepia-amber color grading with slightly faded highlights, visible paper grain texture overlay, subtle film halation, Kodachrome film tones, soft edge vignetting. Looks like a scanned vintage magazine page from 1975 Taiwan. Nostalgic warm mood. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/2.8, warm vintage film look.`,
 
-  // ══════════════ 美食升級 (保留擺盤) ══════════════
+  // ══════════════ 美食升級 (食物類,不需要 FACE LOCK) ══════════════
 
   food_drama:
     `Transform the scene into a Michelin 3-star restaurant advertisement. Replace background with deep charcoal gradient (not pure black), replace surface with dark slate. Add dramatic single overhead spotlight from above, atmospheric steam wisps rising from food, warm golden rim light on dish edges. The food must remain BRIGHT and clearly visible. Keep all food, dishes, and hands EXACTLY unchanged in position and details. ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
@@ -109,7 +119,7 @@ const PRODUCT_SCENES = {
     `Transform the scene into Japanese kappo fine dining aesthetic. Replace surface with dark charcoal aged stone slate with rough texture, replace background with deep shadowed wood wall. Soft single-source cool side lighting 4000K, wabi-sabi minimal atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_MACRO}`,
 
   food_cantonese:
-    `Transform the scene into Hong Kong Cantonese banquet aesthetic. Replace surface with dark lacquered rosewood table, replace background with deep red-gold wall with subtle Chinese pattern. Warm amber pendant light from above creating rich golden glow, traditional opulent atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_DEFAULT}`,
+    `Transform the scene into Hong Kong Cantonese banquet aesthetic. Replace surface with dark lacquered rosewood table, replace background with deep red-gold wall with subtle abstract pattern. Warm amber pendant light from above creating rich golden glow, traditional opulent atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_DEFAULT}`,
 
   food_korean:
     `Transform the scene into Korean BBQ restaurant atmosphere. Replace surface with dark volcanic stone or cast iron plate, replace background with moody dark wood with hint of charcoal grill glow. Dramatic warm backlight from behind creating orange-red rim glow on food edges, atmospheric steam. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
@@ -566,7 +576,6 @@ async function compressImageBase64(base64, maxSize, quality) {
   });
 }
 
-// ── 智能 padding (v2) ──
 async function padImageTo1080(base64) {
   return new Promise(resolve => {
     const img = new Image();
