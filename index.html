@@ -31,6 +31,11 @@
 })();
 </script>
 
+<!-- v9.1: 字體系統 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&family=Caveat:wght@500;700&family=Noto+Serif+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -41,7 +46,7 @@
     <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:32px;">
       <img src="logo.webp" alt="RABY D&C" style="height:96px;width:auto;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(201,166,101,0.15));" onerror="this.style.display='none'">
       <div class="login-title">BRAND OS</div>
-      <div class="login-sub">RABY D&amp;C · v9.0</div>
+      <div class="login-sub">RABY D&amp;C · v9.1</div>
     </div>
     <div class="login-desc">芮比廣告行銷內部系統<br>請使用公司 Google 帳號登入</div>
     <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
@@ -77,7 +82,7 @@
     <!-- v9.0 版本膠囊 -->
     <span class="version-capsule">
       <span class="dot"></span>
-      v9.0 · Beta
+      v9.1 · Beta
     </span>
 
     <a href="monitor.html" class="btn-ads-monitor" title="廣告監控儀表板"><svg width="15" height="15" viewBox="0 0 36 36" fill="none" style="flex-shrink:0;"><circle cx="18" cy="18" r="14" stroke="#FF6600" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/><circle cx="18" cy="18" r="8.5" stroke="#FF6600" stroke-width="1.2" opacity="0.7"/><circle cx="18" cy="18" r="2.5" fill="#FF6600"/><line x1="18" y1="18" x2="18" y2="4" stroke="#FF6600" stroke-width="1.5" stroke-linecap="round"/></svg><span>廣告監控</span><span class="monitor-live-dot"></span></a>
@@ -245,6 +250,17 @@
           <button onclick="setTextAlign('center',this)" class="pr-scene-btn"    id="alignCenter">置中</button>
           <button onclick="setTextAlign('right',this)"  class="pr-scene-btn"    id="alignRight">靠右</button>
         </div>
+
+        <!-- v9.1: 字體風格 -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
+          <div class="sel-lbl" style="margin-bottom:5px;">字體風格</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+            <button onclick="setTextFont('bold',this)"   class="pr-scene-btn on" id="fontBold"   title="電商快消 (巧福/旺味)"><span style="font-family:'Noto Sans TC';font-weight:900;font-size:11px;">粗黑 <span style="font-size:8px;color:var(--t3);">·電商</span></span></button>
+            <button onclick="setTextFont('serif',this)"  class="pr-scene-btn"    id="fontSerif"  title="精品時尚 (LACEZ/RADESIGN)"><span style="font-family:'Playfair Display',serif;font-weight:500;font-size:12px;font-style:italic;">Serif <span style="font-size:8px;color:var(--t3);font-style:normal;">·精品</span></span></button>
+            <button onclick="setTextFont('light',this)"  class="pr-scene-btn"    id="fontLight"  title="文青設計 (MOZ/設計家電)"><span style="font-family:'Inter',sans-serif;font-weight:300;font-size:11px;letter-spacing:1px;">Light <span style="font-size:8px;color:var(--t3);">·文青</span></span></button>
+            <button onclick="setTextFont('script',this)" class="pr-scene-btn"    id="fontScript" title="手寫裝飾 (古早味/手作)"><span style="font-family:'Caveat',cursive;font-weight:700;font-size:14px;">Script <span style="font-size:8px;color:var(--t3);font-family:'Noto Sans TC';">·手寫</span></span></button>
+          </div>
+        </div>
       </div>
 
       <!-- AI 影像處理 -->
@@ -264,11 +280,12 @@
           <div style="font-size:8px;color:#6A6860;font-weight:700;letter-spacing:2px;margin-bottom:5px;">選擇情境場景</div>
           <div style="font-size:9px;color:#5BC8C8;margin-bottom:7px;line-height:1.7;">直接改圖：保留人物商品，只改背景/光線/氛圍 ✨</div>
 
-          <!-- 內衣/貼身衣物場景推薦 (v9.0 更新) -->
+          <!-- 內衣/貼身衣物場景推薦 (v9.1 更新) -->
           <div style="font-size:9px;color:#E8C878;margin-bottom:7px;padding:7px 9px;background:rgba(201,166,101,0.06);border-radius:7px;border:1px solid rgba(201,166,101,0.20);line-height:1.75;">
             💡 <strong>內衣/泳裝/貼身衣物</strong>推薦場景：<br>
-            🏊‍♀️ 炎熱夏日　·　🌴 熱帶渡假　·　💧 泳池派對　·　🧖 Spa 晨光<br>
-            <span style="color:#B8B4A8;">(Flux 對夏日戶外場景寬容度最高)</span>
+            🏊‍♀️ 炎熱夏日　·　🌴 熱帶渡假　·　💧 泳池派對<br>
+            🏝️ 沖繩海邊　·　☀️ 峇里晴空<br>
+            <span style="color:#B8B4A8;">(Flux 對海邊/戶外日光場景寬容度最高)</span>
           </div>
 
           <div id="prSceneGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
@@ -297,7 +314,8 @@
             <button class="pr-scene-btn"    onclick="setPrScene(this,'summer_hot')">炎熱夏日</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'tropical_resort')">🌴 熱帶渡假</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'poolside_luxe')">💧 泳池派對</button>
-            <button class="pr-scene-btn"    onclick="setPrScene(this,'spa_morning')">🧖 Spa 晨光</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'okinawa_beach')">🏝️ 沖繩海邊</button>
+            <button class="pr-scene-btn"    onclick="setPrScene(this,'bali_sunrise')">☀️ 峇里晴空</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'japan_premium')">日式質感</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'kpop_korea')">韓風 K-POP</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'american_wild')">美式狂野</button>
@@ -382,7 +400,7 @@
       <span class="footer-divider">·</span>
       <span class="footer-product">BRAND OS</span>
       <span class="footer-divider">·</span>
-      <span class="footer-version">v9.0 Beta</span>
+      <span class="footer-version">v9.1 Beta</span>
     </div>
     <div class="footer-right">
       <a href="privacy.html" target="_blank" class="footer-link">隱私政策</a>
