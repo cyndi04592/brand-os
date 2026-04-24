@@ -1,8 +1,9 @@
 // ══════════════════════════════════════════════════════════════
-//  BRAND OS · AD Maker  (v9.0)
+//  BRAND OS · AD Maker  (v9.1)
 //  變更紀錄:
-//    [v9.0] 新增 3 個內衣/泳裝安全場景:
-//           tropical_resort / poolside_luxe / spa_morning
+//    [v9.1] 字體系統: 4 種風格 (精品Serif/粗黑/文青Sans/手寫裝飾)
+//    [v9.1] 場景調整: 刪 spa_morning, 新增 okinawa_beach + bali_sunrise
+//    [v9.1] 新增 3 個內衣/泳裝安全場景
 //    [v8.4] 黑圖偵測 + 自動重試 + Softening prompt
 //    [v8.3] fetch+blob 載入圖片避免 canvas CORS 污染
 //    [v8.2] 三重 fallback / 下載容錯 / 修 undefined bug
@@ -91,8 +92,11 @@ const PRODUCT_SCENES = {
   poolside_luxe:
     `${COMMERCIAL_CONTEXT}Poolside swimwear editorial photography. Replace the background with a modern luxury villa poolside scene. Choose from: Beverly Hills modernist villa pool with white stone deck and tropical plants, or Miami Art Deco hotel poolside with pastel blue tiles, or LA Hollywood Hills pool with city view in background. Bright midday sunlight creating sparkling water reflections and crisp shadows, clean minimal architecture, turquoise pool water. High-end swimwear campaign aesthetic like La Perla or Eres catalog. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/5.6, sharp bright daylight.`,
 
-  spa_morning:
-    `${COMMERCIAL_CONTEXT}Bright minimal spa and wellness lounge lifestyle scene. Replace the background with a serene upscale spa interior. Choose from: Scandinavian-minimalist spa with light oak rattan chair and white sheer curtains, or Japanese onsen-inspired lounge with tatami and shoji screens diffusing morning light, or Aman resort-style private relaxation lounge. Fresh morning sunlight streaming through large windows creating soft bright glow, pale neutral palette of white, sand, and soft sage. Clean airy wellness catalog aesthetic like Lululemon or Aritzia lookbook. Include subtle props: a ceramic vase with a single branch, a rolled towel. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
+  okinawa_beach:
+    `${COMMERCIAL_CONTEXT}Okinawa beach resort morning lifestyle photography, swimwear and beachwear aesthetic. Replace the background with an authentic Okinawa beach scene. Choose from: Okinawa main island Emerald Beach with white coral sand and turquoise ocean at sunrise, or Ishigaki Island beach with coconut palm trees silhouettes against pastel morning sky, or Miyakojima beach with crystal clear shallow water reflecting soft pink dawn clouds. Gentle morning sunlight with soft warm glow, tropical sea breeze atmosphere, subtle pastel color palette (pale blue, coral pink, warm cream). Luxury Japanese resort magazine aesthetic like LEON or CLASSY, or Ryokan Rinka-Iwa campaign. Include subtle props: a white beach towel on pale wood deck, a shell. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, soft morning daylight.`,
+
+  bali_sunrise:
+    `${COMMERCIAL_CONTEXT}Bali sunrise beach resort swimwear lifestyle photography. Replace the background with a picturesque Bali beach scene. Choose from: Uluwatu cliff edge with infinity ocean view and golden sunrise rays, or Nusa Dua private beach with white sand and distant palm grove silhouettes, or Seminyak beach deck with sea-facing daybed and early morning golden haze. Warm tropical golden hour lighting, lens flare from rising sun, saturated warm tones (amber gold, teal ocean, coral sky). High-end tropical resort campaign aesthetic like COMO Shambhala or Bulgari Bali lookbook. Soft atmospheric haze, palm frond shadows. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, warm sunrise light.`,
 
   japan_premium:
     `${COMMERCIAL_CONTEXT}Transform the entire scene into premium Japanese wabi-sabi aesthetic. Replace surface with aged hinoki cypress wood or dark charcoal stone slate, replace background with soft washi paper texture or blurred shoji screen with warm interior light behind. Add subtle Japanese design elements: a small ceramic tea cup in the far background bokeh, a single dried branch or bamboo leaf. Soft diffused side lighting 4000K, low saturation, muted earth tones (beige, sumi black, soft green), contemplative mono-no-aware atmosphere.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/2.`,
@@ -139,6 +143,7 @@ let AM = { w:1080, h:1080, scriptIdx:null };
 let PR_BG_IMG  = null;
 let PR_MODE    = 'product_shot';
 let TEXT_ALIGN = 'left';
+let TEXT_FONT  = 'bold';  // v9.1: bold / serif / light / script
 let CANVAS_TAINTED = false;
 let LAST_BLOB_SIZE = 0;
 
@@ -247,6 +252,49 @@ function setTextAlign(align, btn) {
   TEXT_ALIGN = align;
   ['alignLeft','alignCenter','alignRight'].forEach(id => document.getElementById(id)?.classList.remove('on'));
   btn.classList.add('on'); renderAdCanvas();
+}
+
+// v9.1: 字體風格切換
+function setTextFont(fontKey, btn) {
+  TEXT_FONT = fontKey;
+  ['fontBold','fontSerif','fontLight','fontScript'].forEach(id => document.getElementById(id)?.classList.remove('on'));
+  btn.classList.add('on');
+  renderAdCanvas();
+}
+
+// v9.1: 字體風格對應 CSS font-family + 粗細
+function getFontStyle() {
+  switch(TEXT_FONT) {
+    case 'serif':
+      // 精品細 Serif (LACEZ/RADESIGN/精品內衣)
+      return {
+        family: "'Playfair Display', 'Cormorant Garamond', 'Noto Serif TC', serif",
+        weight: 500,
+        letterSpacing: 0.02
+      };
+    case 'light':
+      // 文青細 Sans (MOZ/設計家電)
+      return {
+        family: "'Inter', 'Noto Sans TC', sans-serif",
+        weight: 300,
+        letterSpacing: 0.05
+      };
+    case 'script':
+      // 手寫裝飾 (古早味/手作)
+      return {
+        family: "'Caveat', 'Noto Serif TC', cursive",
+        weight: 700,
+        letterSpacing: 0
+      };
+    case 'bold':
+    default:
+      // 粗黑體 (電商/快消/巧福/旺味)
+      return {
+        family: "'Noto Sans TC', sans-serif",
+        weight: 900,
+        letterSpacing: 0
+      };
+  }
 }
 
 function setPrStatus(msg, color) {
@@ -371,18 +419,18 @@ async function submitFluxAndCheckBlob(scenePrompt, paddedBase64) {
     const resp = await fetch(falUrl, { mode: 'cors' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const blob = await resp.blob();
-    console.log('[v9.0] 下載圖片, size:', blob.size, 'type:', blob.type);
+    console.log('[v9.1] 下載圖片, size:', blob.size, 'type:', blob.type);
     LAST_BLOB_SIZE = blob.size;
 
     if (blob.size < BLACK_IMAGE_THRESHOLD) {
-      console.warn('[v9.0] ⚠️ 偵測到黑圖! size:', blob.size, '< 門檻', BLACK_IMAGE_THRESHOLD);
+      console.warn('[v9.1] ⚠️ 偵測到黑圖! size:', blob.size, '< 門檻', BLACK_IMAGE_THRESHOLD);
       return { ok: false, reason: 'BLACK_IMAGE', blobSize: blob.size };
     }
 
     const blobUrl = URL.createObjectURL(blob);
     return { ok: true, imageUrl: blobUrl, blobSize: blob.size, originalUrl: falUrl };
   } catch(fetchErr) {
-    console.warn('[v9.0] fetch 檢查失敗,使用原 URL:', fetchErr.message);
+    console.warn('[v9.1] fetch 檢查失敗,使用原 URL:', fetchErr.message);
     return { ok: true, imageUrl: falUrl, blobSize: -1 };
   }
 }
@@ -448,13 +496,13 @@ async function applyPhotoroomBg() {
       let result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
 
       if (!result.ok && result.reason === 'BLACK_IMAGE') {
-        console.warn('[v9.0] 第一次被擋,自動重試中...');
+        console.warn('[v9.1] 第一次被擋,自動重試中...');
         setPrStatus('🔄 內容審查擋下,重試中...', '#E8C878');
         result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
       }
 
       if (!result.ok && result.reason === 'BLACK_IMAGE') {
-        console.error('[v9.0] 兩次都被擋,顯示警示');
+        console.error('[v9.1] 兩次都被擋,顯示警示');
         finishProgress(interval);
         setPrStatus('⚠️ AI 內容審查擋下,請改用真人試穿或換場景', 'var(--red)');
         showBlackImageWarning(result.blobSize);
@@ -509,7 +557,7 @@ function showBlackImageWarning(blobSize) {
   ctx.font = '500 22px "Noto Sans TC",sans-serif';
   const suggestions = [
     '👗  改用「AI 真人試穿」(內衣類推薦)',
-    '🏊‍♀️  換場景: 炎熱夏日/熱帶渡假/Spa 晨光',
+    '🏝️  換海邊場景: 炎熱夏日/熱帶渡假/沖繩海邊',
     '🔄  或換一張商品照再試'
   ];
   suggestions.forEach((s, i) => {
@@ -644,7 +692,7 @@ async function renderAdCanvasWithPR() {
         img.width*scale, img.height*scale);
     }
   } catch(e) {
-    console.error('[v9.0] render 失敗:', e.message);
+    console.error('[v9.1] render 失敗:', e.message);
     drawBgFallback(ctx);
     ctx.fillStyle = '#C9A665';
     ctx.font = '900 32px "Noto Sans TC",sans-serif';
@@ -692,17 +740,27 @@ function drawOverlay(ctx, title, accent) {
   const baseFontSize = parseInt(document.getElementById('amFontSize')?.value||94);
   const textYPct = parseInt(document.getElementById('amTextY')?.value||80)/100;
   const align = TEXT_ALIGN||'left';
-  ctx.font = `900 ${baseFontSize}px 'Noto Sans TC',sans-serif`;
+
+  // v9.1: 使用字體風格
+  const fontStyle = getFontStyle();
+  ctx.font = `${fontStyle.weight} ${baseFontSize}px ${fontStyle.family}`;
   ctx.textAlign = align;
+
   const tx = align==='left' ? Math.round(W*0.07) : align==='right' ? Math.round(W*0.93) : Math.round(W/2);
   const lines = autoLines(ctx, title, W*0.86);
-  const lineH = baseFontSize*1.18;
+  const lineH = baseFontSize * (TEXT_FONT === 'script' ? 1.1 : 1.18);
   const ty = Math.round(H*textYPct) - (lines.length-1)*lineH;
   lines.forEach((line, i) => {
     ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=20; ctx.shadowOffsetY=4;
-    ctx.fillStyle='#FFFFFF'; ctx.fillText(line, tx, ty+i*lineH);
+    ctx.fillStyle='#FFFFFF';
+    // v9.1: Serif/Light 字體加字距
+    if (fontStyle.letterSpacing > 0 && ctx.letterSpacing !== undefined) {
+      ctx.letterSpacing = `${fontStyle.letterSpacing}em`;
+    }
+    ctx.fillText(line, tx, ty+i*lineH);
   });
   ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+  if (ctx.letterSpacing !== undefined) ctx.letterSpacing = '0em';
 }
 
 function downloadAd() {
