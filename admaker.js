@@ -1,37 +1,28 @@
 // ══════════════════════════════════════════════════════════════
-//  BRAND OS · AD Maker  (v8.1)
+//  BRAND OS · AD Maker  (v8.2)
 //  變更紀錄:
-//    [v8.1] 強化臉部鎖定指令 (FACE LOCK) - 改善模特兒臉型變形
-//    [v8.1] 徹底關閉中文招牌 - 夜景/街拍改為純英文+抽象
-//    [v8]   新增 5 個場景: 文青設計/炎熱夏日/日式質感/K-POP/美式狂野
-//    [v8]   新增客戶場景: 港式金宴 / 台式復古
-//    [v8]   修 bug: 黑金太暗 / 夜景中文亂碼 / 人臉變形
+//    [v8.2] 修 CORS 全黑 bug: renderAdCanvasWithPR 雙重 fallback
+//    [v8.2] 修 "直接做廣告圖" 返回留空卡片: 改用臨時模式
+//    [v8.2] 下載容錯: canvas taint 時改走 window.open 備援
+//    [v8.1] 強化 FACE LOCK + 徹底關中文
+//    [v8]   新增 7 個場景 + 修 3 bug
 //    [v7]   修白背景 bug + 砍影片 + 品牌化命名
 // ══════════════════════════════════════════════════════════════
 
-// ── 通用指令 (v8.1 強化版) ──
-// 分成兩個等級: 商品保留 + 臉部鎖定
 const PRESERVE_SUBJECT =
   'CRITICAL: Do NOT modify any product, person body proportions, clothing details, or accessories. Keep all subjects pixel-perfect identical to the original. Only modify the background, environment, and ambient lighting.';
 
-// v8.1 新增: 有人物時額外套用這段 (臉部超強鎖定)
 const FACE_LOCK =
   ' ULTRA CRITICAL FACE LOCK: The person face must be 100% identical to the original - preserve exact eye shape and position, nose shape, mouth shape, jawline, cheekbones, face proportions, skin tone, freckles, moles, eyebrows, and all micro facial features. Treat the face as a protected frozen region that MUST NOT be regenerated or altered in any way. The person must look like the exact same individual.';
 
-// v8.1 新增: 完全禁止任何東亞文字 (給夜景/街拍類)
 const NO_ASIAN_TEXT =
   ' STRICTLY NO Chinese, Japanese, Korean, or any East Asian characters anywhere in the image. Use ONLY English letters, numbers, or pure abstract neon shapes and glowing light patterns. Any visible signage must be in clear English only or be non-textual light glows.';
 
-// ── 攝影機簽名 ──
 const CAM_DEFAULT = 'Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.';
 const CAM_PORTRAIT = 'Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.';
 const CAM_MACRO = 'Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.';
 
-// ── 場景 prompt 庫 ──
 const PRODUCT_SCENES = {
-
-  // ══════════════ 通用場景 ══════════════
-
   studio_white:
     `Replace the entire background with a clean seamless white studio backdrop, subtle gradient from bright white at top to soft grey shadow at base. Professional commercial product photography lighting with soft directional key light from upper left. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/8, studio strobe.`,
 
@@ -47,7 +38,6 @@ const PRODUCT_SCENES = {
   forest_outdoor:
     `Replace the background with a lush atmospheric forest scene. Choose a natural variation: either Japanese cedar with morning mist, or temperate deciduous forest with autumn light, or tropical jungle with dense green foliage. Dappled golden sunlight filtering through canopy creating bokeh highlights. Visible depth with blurred trees in far background. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/2.8, shallow depth of field.`,
 
-  // v8.1: 徹底關中文
   night_city:
     `Replace the background with a cinematic futuristic night cityscape. Blurred abstract neon light streaks and glowing orbs in warm orange, cool blue, electric magenta, and cyan creating rich bokeh. Wet reflective street surface if visible. Cyberpunk atmospheric haze with colored fog. Neon rim light naturally illuminating product and subject edges.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.4, heavy bokeh.`,
 
@@ -60,7 +50,6 @@ const PRODUCT_SCENES = {
   fashion_minimal:
     `Replace the background with clean off-white to warm beige seamless studio gradient. Soft natural light from large window on the left creating gentle falloff. High-end fashion editorial aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
 
-  // v8.1: 徹底關中文
   fashion_outdoor:
     `Replace the background with a golden hour urban or natural street scene. Choose a natural variation: either European cobblestone alley, or New York SoHo brownstone, or Parisian boulevard, or London South Bank, or California palm-lined street. Warm backlight creating natural halo, bokeh environment.${NO_ASIAN_TEXT} Editorial lifestyle fashion aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.`,
 
@@ -85,8 +74,6 @@ const PRODUCT_SCENES = {
   jewelry_dark:
     `Replace the background with pure black velvet texture. Add single dramatic overhead spotlight creating strong focused beam, subtle teal-blue reflection on dark polished glass surface below. Luxury jewelry photography aesthetic. Keep the product EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/5.6, high-key contrast.`,
 
-  // ══════════════ v8 風格化場景 (全部加強 FACE LOCK) ══════════════
-
   design_editorial:
     `Replace the scene with a minimalist editorial design magazine aesthetic. Soft off-white paper-textured background with subtle beige and sage green tones, warm natural window light from the side. Add subtle design elements like thin decorative lines and delicate paper grain texture. Clean asymmetric composition with generous negative space, Kinfolk magazine aesthetic, Japanese editorial design influence. Muted desaturated color palette.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
 
@@ -102,15 +89,11 @@ const PRODUCT_SCENES = {
   american_wild:
     `Transform the entire scene into American wild west / Route 66 aesthetic. Replace background with a vast dramatic landscape: choose from either Arizona red rock desert at golden hour, or Texas highway with dusty horizon and lens flare, or Californian canyon with rugged cliffs. Warm amber-orange sunset lighting with long dramatic shadows, slight dust haze atmosphere, vintage film grain texture. Masculine rugged aesthetic, Marlboro campaign influence, cinematic wide depth. Slightly desaturated cinematic color grade (teal shadows, orange highlights). ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/5.6, sweeping landscape.`,
 
-  // ══════════════ 客戶專屬 ══════════════
-
   hk_banquet_gold:
     `Transform the entire scene into Hong Kong top-tier Cantonese banquet aesthetic (Fook Lam Moon / Lung King Heen level). Replace surface with pristine white tablecloth with delicate gold trim embroidery, replace background with softly blurred warm amber interior showing hints of gold filigree wall panels and red lacquered details. Add an elegant Chinese porcelain tea set and a pair of ivory chopsticks with gold tips as subtle props. Warm golden chandelier lighting from above (3000K), creating a bright luxurious atmosphere - the dish must be clearly lit and visible, NOT dark or moody. Rich gold and deep red color palette, Michelin banquet magazine aesthetic, business-entertainment dining class. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, bright and luxurious.`,
 
   tw_retro_ad:
     `Transform the entire scene into authentic 1970s-1980s Taiwanese print advertisement aesthetic. Replace background with a warmly-lit vintage Taiwanese living room scene: floral-patterned fabric sofa in soft focus, terrazzo floor tiles, wooden venetian blinds with late afternoon golden sunlight creating dappled dramatic shadows, a glass of iced barley tea on a round wooden side table as prop. Warm sepia-amber color grading with slightly faded highlights, visible paper grain texture overlay, subtle film halation, Kodachrome film tones, soft edge vignetting. Looks like a scanned vintage magazine page from 1975 Taiwan. Nostalgic warm mood. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/2.8, warm vintage film look.`,
-
-  // ══════════════ 美食升級 (食物類,不需要 FACE LOCK) ══════════════
 
   food_drama:
     `Transform the scene into a Michelin 3-star restaurant advertisement. Replace background with deep charcoal gradient (not pure black), replace surface with dark slate. Add dramatic single overhead spotlight from above, atmospheric steam wisps rising from food, warm golden rim light on dish edges. The food must remain BRIGHT and clearly visible. Keep all food, dishes, and hands EXACTLY unchanged in position and details. ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
@@ -142,10 +125,13 @@ let AM = { w:1080, h:1080, scriptIdx:null };
 let PR_BG_IMG  = null;
 let PR_MODE    = 'product_shot';
 let TEXT_ALIGN = 'left';
+let CANVAS_TAINTED = false; // v8.2 追蹤 canvas 是否被 CORS 污染
 
 // ══ 開啟 / 關閉 ══
+// v8.2: 改成支援 "直接做廣告圖" 模式(不污染 scripts 陣列)
 function openAdMaker(idx) {
   PR_BG_IMG = null; PR_MODE = 'product_shot';
+  CANVAS_TAINTED = false;
   setPrStatus('', '');
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('.pr-mode-btn')?.classList.add('on');
@@ -153,16 +139,28 @@ function openAdMaker(idx) {
     const el = document.getElementById(id);
     if (el) el.style.display = id === 'prSceneSection' ? 'block' : 'none';
   });
-  const s = window.S.scripts[idx];
-  AM.scriptIdx = idx;
-  document.getElementById('amTitle').value = s.hook?.script || '';
+
+  // v8.2: 處理 "直接做廣告圖" 模式(idx 為 -1 或 null)
+  let initialTitle = '';
+  if (idx === -1 || idx == null || !window.S.scripts?.[idx]) {
+    AM.scriptIdx = -1; // 標記為直接模式
+  } else {
+    const s = window.S.scripts[idx];
+    AM.scriptIdx = idx;
+    initialTitle = s.hook?.script || '';
+  }
+
+  document.getElementById('amTitle').value = initialTitle;
   document.getElementById('prCustomPrompt').value = '';
   renderAmPhotoRow();
   document.getElementById('adMakerModal').style.display = 'block';
   renderAdCanvas();
 }
 
-function closeAdMaker() { document.getElementById('adMakerModal').style.display = 'none'; }
+function closeAdMaker() {
+  document.getElementById('adMakerModal').style.display = 'none';
+  // v8.2: 關閉時不做任何 scripts 陣列操作,保持乾淨
+}
 
 // ══ 照片縮圖列 ══
 function renderAmPhotoRow() {
@@ -192,6 +190,7 @@ function renderAmPhotoRow() {
 
 function selectPhotoInAM(i) {
   window.S.selPhoto = i; PR_BG_IMG = null;
+  CANVAS_TAINTED = false;
   renderAmPhotoRow(); renderAssets(); renderAdCanvas();
 }
 
@@ -376,6 +375,7 @@ async function applyPhotoroomBg() {
       if (result.status === 'FAILED') throw new Error(result.error || '試穿失敗');
       if (!result.imageUrl && !result.imageBase64) throw new Error('試穿超時，請再試一次');
       PR_BG_IMG = result.imageUrl || result.imageBase64;
+      CANVAS_TAINTED = false;
       await renderAdCanvasWithPR();
       finishProgress(interval);
       setPrStatus('✅ MD 試穿完成！', 'var(--mint)');
@@ -411,8 +411,10 @@ async function applyPhotoroomBg() {
         throw new Error(result.error || '生成失敗，請再試一次');
       }
 
-      PR_BG_IMG = result.imageUrl;
-      if (!PR_BG_IMG) throw new Error('未回傳圖片 URL');
+      // v8.2: 優先用 base64,沒有才用 URL
+      PR_BG_IMG = result.imageBase64 || result.imageUrl;
+      if (!PR_BG_IMG) throw new Error('未回傳圖片資料');
+      CANVAS_TAINTED = false;
 
       await renderAdCanvasWithPR();
       finishProgress(interval);
@@ -428,74 +430,105 @@ async function renderAdCanvas() {
   if (PR_BG_IMG) { await renderAdCanvasWithPR(); return; }
   if (!canvas) return;
   canvas.width = AM.w; canvas.height = AM.h;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const title = document.getElementById('amTitle')?.value || '';
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (photo && (photo.src || photo.thumb)) {
-    await new Promise(resolve => {
-      const img = new Image(); img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, AM.w, AM.h);
-        const scale = Math.min(AM.w/img.width, AM.h/img.height);
-        ctx.drawImage(img,
-          Math.round((AM.w-img.width*scale)/2),
-          Math.round((AM.h-img.height*scale)/2),
-          img.width*scale, img.height*scale);
-        resolve();
-      };
-      img.onerror = () => { drawBgFallback(ctx); resolve(); };
-      img.src = photo.src || photo.thumb;
-    });
+    await loadImageWithFallback(photo.src || photo.thumb, (img, tainted) => {
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, AM.w, AM.h);
+      const scale = Math.min(AM.w/img.width, AM.h/img.height);
+      ctx.drawImage(img,
+        Math.round((AM.w-img.width*scale)/2),
+        Math.round((AM.h-img.height*scale)/2),
+        img.width*scale, img.height*scale);
+      if (tainted) CANVAS_TAINTED = true;
+    }, () => drawBgFallback(ctx));
   } else drawBgFallback(ctx);
   drawOverlay(ctx, title, getAccentColor());
+}
+
+// ══ v8.2 新增:雙重 fallback 圖片載入 ══
+// 第一次試 CORS,失敗就不帶 CORS 再試,再失敗才走 fallback
+// tainted=true 代表 canvas 會被污染,下載時要走備援路徑
+function loadImageWithFallback(src, onSuccess, onError) {
+  return new Promise(resolve => {
+    // 如果是 base64/data URL,直接載入不需要 CORS
+    if (src.startsWith('data:')) {
+      const img = new Image();
+      img.onload = () => { onSuccess(img, false); resolve(); };
+      img.onerror = () => { onError(); resolve(); };
+      img.src = src;
+      return;
+    }
+
+    // 第一輪:試 CORS
+    const img1 = new Image();
+    img1.crossOrigin = 'anonymous';
+    img1.onload = () => { onSuccess(img1, false); resolve(); };
+    img1.onerror = () => {
+      // 第二輪:不帶 CORS 強制載入(canvas 會被污染但至少看得到)
+      console.warn('[v8.2] CORS 載入失敗,嘗試不帶 CORS...');
+      const img2 = new Image();
+      img2.onload = () => {
+        console.warn('[v8.2] 第二輪載入成功,canvas 將被標記為 tainted');
+        onSuccess(img2, true);
+        resolve();
+      };
+      img2.onerror = () => {
+        console.error('[v8.2] 兩輪載入都失敗');
+        onError();
+        resolve();
+      };
+      img2.src = src;
+    };
+    img1.src = src;
+  });
 }
 
 async function renderAdCanvasWithPR() {
   const canvas = document.getElementById('adCanvas');
   if (!canvas) return;
   canvas.width = AM.w; canvas.height = AM.h;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const title = document.getElementById('amTitle')?.value || '';
   const isTryon = PR_MODE === 'kling_tryon';
   ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, AM.w, AM.h);
-  await new Promise(resolve => {
-    const img = new Image(); img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      if (isTryon) {
-        const scaleCover   = Math.max(AM.w/img.width, AM.h/img.height);
-        const scaleContain = Math.min(AM.w/img.width, AM.h/img.height);
-        if (1 - scaleContain/scaleCover <= 0.20) {
-          ctx.drawImage(img,
-            Math.round((AM.w-img.width*scaleCover)/2),
-            Math.round((AM.h-img.height*scaleCover)/2),
-            img.width*scaleCover, img.height*scaleCover);
-        } else {
-          ctx.filter = 'blur(18px)';
-          ctx.drawImage(img,
-            Math.round((AM.w-img.width*scaleCover)/2),
-            Math.round((AM.h-img.height*scaleCover)/2),
-            img.width*scaleCover, img.height*scaleCover);
-          ctx.filter = 'none';
-          ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0,0,AM.w,AM.h);
-          ctx.drawImage(img,
-            Math.round((AM.w-img.width*scaleContain)/2),
-            Math.round((AM.h-img.height*scaleContain)/2),
-            img.width*scaleContain, img.height*scaleContain);
-        }
-      } else {
-        const scale = Math.min(AM.w/img.width, AM.h/img.height);
+
+  await loadImageWithFallback(PR_BG_IMG, (img, tainted) => {
+    if (tainted) CANVAS_TAINTED = true;
+
+    if (isTryon) {
+      const scaleCover   = Math.max(AM.w/img.width, AM.h/img.height);
+      const scaleContain = Math.min(AM.w/img.width, AM.h/img.height);
+      if (1 - scaleContain/scaleCover <= 0.20) {
         ctx.drawImage(img,
-          Math.round((AM.w-img.width*scale)/2),
-          Math.round((AM.h-img.height*scale)/2),
-          img.width*scale, img.height*scale);
+          Math.round((AM.w-img.width*scaleCover)/2),
+          Math.round((AM.h-img.height*scaleCover)/2),
+          img.width*scaleCover, img.height*scaleCover);
+      } else {
+        ctx.filter = 'blur(18px)';
+        ctx.drawImage(img,
+          Math.round((AM.w-img.width*scaleCover)/2),
+          Math.round((AM.h-img.height*scaleCover)/2),
+          img.width*scaleCover, img.height*scaleCover);
+        ctx.filter = 'none';
+        ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0,0,AM.w,AM.h);
+        ctx.drawImage(img,
+          Math.round((AM.w-img.width*scaleContain)/2),
+          Math.round((AM.h-img.height*scaleContain)/2),
+          img.width*scaleContain, img.height*scaleContain);
       }
-      resolve();
-    };
-    img.onerror = () => { drawBgFallback(ctx); resolve(); };
-    img.src = PR_BG_IMG;
-  });
+    } else {
+      const scale = Math.min(AM.w/img.width, AM.h/img.height);
+      ctx.drawImage(img,
+        Math.round((AM.w-img.width*scale)/2),
+        Math.round((AM.h-img.height*scale)/2),
+        img.width*scale, img.height*scale);
+    }
+  }, () => drawBgFallback(ctx));
+
   drawOverlay(ctx, title, getAccentColor());
 }
 
@@ -546,15 +579,32 @@ function drawOverlay(ctx, title, accent) {
   ctx.shadowColor='transparent'; ctx.shadowBlur=0;
 }
 
+// v8.2: 下載增加容錯 - canvas 被污染時走備援
 function downloadAd() {
   const canvas = document.getElementById('adCanvas');
   const brand = window.BRANDS.find(b => b.id === window.S.brandId);
   const filename = `${brand?.name||'ad'}_${window.S.prod?.name||'img'}.jpg`.replace(/[^\w\u4e00-\u9fff\-_.]/g,'_');
-  const link = document.createElement('a');
-  link.download = filename;
-  link.href = canvas.toDataURL('image/jpeg', 0.92);
-  link.click();
-  if (window._driveToken) uploadAdToDrive(canvas, filename);
+
+  try {
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+    if (window._driveToken) uploadAdToDrive(canvas, filename);
+  } catch(e) {
+    // canvas 被 CORS 污染,無法轉 dataURL
+    console.warn('[v8.2] Canvas tainted, 使用備援下載方式');
+    if (PR_BG_IMG && !PR_BG_IMG.startsWith('data:')) {
+      // 有原始 URL,開新視窗讓使用者右鍵存圖
+      const msg = '因瀏覽器安全限制無法直接下載\n將開啟圖片,請右鍵「另存圖片」';
+      if (confirm(msg)) {
+        window.open(PR_BG_IMG, '_blank');
+      }
+    } else {
+      alert('下載失敗,請稍後重新生成一次');
+    }
+  }
 }
 
 // ══ 影像工具 ══
@@ -591,13 +641,13 @@ async function padImageTo1080(base64) {
       const SIZE = 1080;
       const canvas = document.createElement('canvas');
       canvas.width = SIZE; canvas.height = SIZE;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
       let fillColor = '#ffffff';
       try {
         const tmpCanvas = document.createElement('canvas');
         tmpCanvas.width = w0; tmpCanvas.height = h0;
-        const tmpCtx = tmpCanvas.getContext('2d');
+        const tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
         tmpCtx.drawImage(img, 0, 0);
         const sampleSize = Math.max(10, Math.floor(Math.min(w0, h0) * 0.02));
         const corners = [
