@@ -2933,7 +2933,9 @@ function renderSceneGrid() {
   if (!grid) return;
 
   const brandId = S.currentBrandId;
-  const scenes = SCENE_LIBRARY[brandId];
+  const scenes = (typeof getScenesForBrand === 'function')
+    ? getScenesForBrand(brandId)
+    : SCENE_LIBRARY[brandId];
 
   if (!scenes) {
     grid.innerHTML = `<div class="kol-empty" style="grid-column:1/-1;padding:16px;font-size:12px">此品牌尚未建立場景庫<br><small>後續會補上</small></div>`;
