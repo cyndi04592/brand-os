@@ -174,7 +174,17 @@ const BRAND_TYPE_LABELS = {
 window.getScenesForBrand = function(brandId) {
   const universal = UNIVERSAL_SCENES || {};
   const brandSpecific = (typeof SCENE_LIBRARY !== 'undefined' && SCENE_LIBRARY[brandId]) || {};
-  return { ...universal, ...brandSpecific };
+  const merged = { ...universal, ...brandSpecific };
+  
+  // 🆕 自動補齊 type 欄位,讓 Tab 2 的 scene-type-pill 能正確顯示
+  Object.keys(merged).forEach(key => {
+    const s = merged[key];
+    if (!s.type) {
+      s.type = s.indoor === false ? 'outdoor' : 'indoor';
+    }
+  });
+  
+  return merged;
 };
 
 // ── 組合函式:拿某品牌的動作模板 ────────────────────────────────
