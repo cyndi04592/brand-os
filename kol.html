@@ -1226,6 +1226,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="toast-wrap" id="toast-wrap"></div>
 
 <script src="voice-modal.js"></script>
+<script src="kol-universal-scenes.js"></script>
+<script src="kol-ai-generator.js"></script>
 
 <script>
 // ══════════════════════════════════════════════════════════════
@@ -1295,173 +1297,9 @@ const BRAND_ACTIONS = {
   ka: 'A person [Image1] {VERB} the appliance [Image2] with subtle demonstration gestures, speaks directly to camera',
 };
 
-// 場景庫(每個品牌各自的常用情境,type: indoor / outdoor)
-const SCENE_LIBRARY = {
-  la: {  // LACEZ
-    kitchen_morning: {
-      label: '🍳 廚房晨光',
-      hint: '晨光感 · 商品自然放置 · 早起儀式',
-      type: 'indoor',
-      verb: 'talks casually about her morning routine',
-      product_context: 'the product rests naturally on the kitchen counter next to her coffee mug as a subtle detail, she occasionally glances at it warmly but does not hold it up',
-      setting: 'her own casual kitchen in soft morning daylight, lived-in details like a coffee cup, crumpled napkin, morning light spilling on countertop',
-      light: 'soft natural window light, golden hour backlight, ambient window spill',
-      outfit: 'casual homewear: soft cotton top or oversized T-shirt with relaxed pants or pajama shorts, no decorative bows or ornaments, authentic just-woke-up feel',
-      extra: 'ISO 400 subtle grain, slight camera breath, candid lifestyle aesthetic',
-      movements: {
-        static: 'subject stands or leans against the kitchen counter, static tripod framing with subtle handheld breathing, speaks directly to camera in place',
-        walk_through: 'subject walks slowly from the kitchen counter to the adjacent dining table area, camera performs a smooth handheld tracking shot following her across the space, she turns to face camera mid-walk and continues speaking, reveals the flow between kitchen and dining area',
-        dolly_in: 'slow dolly-in toward subject from medium shot at the kitchen island to intimate close-up, kitchen details blur into soft bokeh behind her, emotional closeness grows',
-        orbit: 'smooth orbital camera movement around subject at the kitchen counter, 180-degree arc revealing different angles of the morning kitchen, subject remains centered with gentle rotation awareness',
-        pullback_reveal: 'camera starts tight on her face and slowly pulls back to reveal the whole sunlit kitchen environment — coffee cup, window spilling light, the everyday morning feel',
-      },
-    },
-    cafe_afternoon: {
-      label: '☕ 咖啡廳午後',
-      hint: '手機展示 · 閨蜜私聊感 · 不實拿商品',
-      type: 'indoor',
-      verb: 'chats softly about her recent purchase',
-      product_context: 'she holds her phone showing a photo of the product to a friend across the café table, the product itself never appears in her hands, just discussed naturally over coffee',
-      setting: 'a cozy indie café counter in warm afternoon light, natural café ambience with plants, books, coffee machine softly out of focus, iced coffee or latte on table',
-      light: 'window sidelight plus warm tungsten fill from café lamps',
-      outfit: 'minimalist neutral-tone outfit: silk blouse or fine knit top with simple trousers or pencil skirt, NO decorative bows, NO excessive ornaments, clean Japandi aesthetic',
-      extra: 'ISO 640 cinematic grain, moderate depth of field with visible wooden texture behind',
-      movements: {
-        static: 'subject sits at the café counter with a coffee mug beside her, static framing with subtle café ambience, speaks directly to camera naturally',
-        walk_through: 'subject walks slowly from the café entrance past wooden tables to her favorite corner seat, camera performs a handheld tracking shot following her through the warm-lit café interior, she settles down and turns to camera',
-        dolly_in: 'slow dolly-in from a wide shot of the café to subject at her seat, café details soften into bokeh, warm tungsten glow embraces her face',
-        orbit: 'smooth orbital movement around subject at the café table, 180-degree arc passing by window light on one side and warm lamps on the other, revealing the café atmosphere',
-        pullback_reveal: 'camera starts close on her hands holding her phone over the café table, slowly pulls back and up to reveal her, then the whole cozy café space with plants and books',
-      },
-    },
-    outdoor_garden: {
-      label: '🌿 戶外綠意',
-      hint: '純氛圍 vlog · 不出現商品',
-      type: 'outdoor',
-      verb: 'shares a quiet thought while walking',
-      product_context: 'the product does not appear in this scene at all, this is a pure lifestyle vlog moment focused on the mood and atmosphere, brand presence implied only through her authentic comfort and confidence',
-      setting: 'a sunlit outdoor garden with real foliage, slightly blurred natural greenery, breeze gently moves her hair and clothing',
-      light: 'golden hour sidelight, soft backlit rim light on hair',
-      outfit: 'light airy outdoor wear: flowing linen dress or loose white blouse with soft wide-leg pants, breathable natural fabrics, no structured formal elements',
-      extra: 'ISO 200 fine grain, slight handheld camera shake, available daylight only',
-      movements: {
-        static: 'subject stands among natural foliage with golden light catching her hair, gentle breeze movement, speaks directly to camera with calm warmth',
-        walk_through: 'subject walks slowly along a garden path or open natural space, camera follows handheld from a slight distance, she glances back and smiles toward camera, the environment flows past naturally',
-        dolly_in: 'slow dolly-in toward subject from a wide environmental shot to intimate close-up, golden hour rim light intensifies on her face, foliage blurs behind',
-        orbit: 'smooth orbital camera around subject in the garden, 180-degree arc with sunlight shifting from rim to front as camera moves, natural environment rotates around her',
-        pullback_reveal: 'camera starts tight on her expression and slowly pulls back to reveal the full outdoor setting — trees, grass, the open sky, creating a sense of openness',
-      },
-    },
-    urban_night: {
-      label: '🌃 夜間街頭',
-      hint: '紙袋拎手 · 剛買完回家 · 霓虹反射',
-      type: 'outdoor',
-      verb: 'walks home casually after shopping',
-      product_context: 'a branded LACEZ paper shopping bag hangs from her wrist, she lightly pats or swings it while talking about just picking it up, the product stays inside the bag and is never pulled out on the street',
-      setting: 'a quiet urban side street at night, wet pavement reflections, distant passersby softly blurred',
-      light: 'neon reflections on skin, magenta and cyan color spill from nearby signs, warm vending machine glow',
-      outfit: 'urban casual: simple denim or cargo pants with a fitted basic tee or minimalist jacket, understated quality fabrics, no flashy embellishments',
-      extra: 'ISO 1600 visible grain for low-light authenticity, handheld travel vlog aesthetic',
-      movements: {
-        static: 'subject stands still on the neon-lit street with the shopping bag in hand, face catching shifting magenta and cyan light, speaks directly to camera with nighttime intimacy',
-        walk_through: 'subject walks slowly down the neon-reflective street carrying the shopping bag, camera performs a handheld tracking shot alongside her, neon signs and street details glide past in the background, she turns to camera mid-walk',
-        dolly_in: 'slow dolly-in from a wide street establishing shot to intimate close-up on her face, shopping bag visible at her side, neon reflections grow larger on her skin as camera approaches',
-        orbit: 'smooth orbital camera around subject on the street, 180-degree arc where different neon signs wash her face in shifting colors — magenta, cyan, warm amber from vending machines, bag swings gently',
-        pullback_reveal: 'camera starts close on the shopping bag in her hand lit by neon, slowly pulls back and up to reveal her standing on the wet reflective street, then widens to show the full neon-lit urban scene',
-      },
-    },
-    home_unboxing: {
-      label: '📦 居家開箱',
-      hint: '🌟 黃金樣本 · 走進房間→開箱→展示 · 最自然',
-      type: 'indoor',
-      verb: 'unboxes her new purchase at home',
-      product_context: 'she holds a branded LACEZ paper packaging bag, carefully tears open the seal, reaches inside and pulls out the product to show to camera, the full unboxing narrative unfolds naturally — this is the GOLDEN PATTERN that feels most authentic',
-      setting: 'her own bright bedroom or living room with sheer white curtains softly diffusing sunlight, simple wooden shelves with small personal items in background, wardrobe or built-in closet visible, clean minimalist Japandi home aesthetic with real lived-in feel',
-      light: 'large soft diffused daylight through sheer curtains as main light, warm ambient fill from the room, natural shadow gradients, no harsh studio lighting',
-      outfit: 'super casual homewear: plain white oversized T-shirt with relaxed light-wash jeans or comfy pants, absolutely no decorative elements, truly just-at-home look, barefoot or wearing simple house slippers',
-      extra: 'ISO 400 authentic grain, slight handheld breath, full body framing possible, complete narrative arc in single take, document-style unboxing realism',
-      movements: {
-        static: 'subject stands centered in the bright room holding the packaging, static tripod framing, she greets camera with a warm smile then slowly unwraps and reveals the product in one continuous natural take',
-        walk_through: 'subject walks in from a doorway holding the package, camera follows her briefly as she moves into the center of the room, she stops, looks at camera, and begins the unboxing sequence — complete story arc: entrance → greeting → unwrap → reveal',
-        dolly_in: 'slow dolly-in from a wide room establishing shot to medium close-up as she unwraps, the product emergence from the packaging becomes the emotional focal point',
-        orbit: 'subtle orbital around her as she unboxes, gentle 90-degree arc revealing the room from different angles while she remains centered on the unboxing action',
-        pullback_reveal: 'camera starts tight on her hands tearing open the packaging, slowly pulls back to reveal her face reacting with joy, then continues pulling back to show the whole bright sunlit room',
-      },
-    },
-  },
-  moz: {
-    cafe_weekend: {
-      label: '☕ 週末咖啡廳',
-      hint: 'MOZ 配件日常場景',
-      type: 'indoor',
-      verb: 'casually holds',
-      setting: 'a relaxed weekend café, wooden table, coffee mug nearby',
-      light: 'warm window light with soft ambient café lamps',
-      outfit: 'weekend relaxed: soft knit sweater or oversized button-down with comfortable wide pants, natural earth-tone palette, no elaborate accessories',
-      extra: 'ISO 400 film grain, shallow natural depth of field',
-      movements: {
-        static: 'subject sits at the wooden café table, coffee mug and MOZ accessory in view, static framing with subtle weekend calm, speaks directly to camera',
-        walk_through: 'subject walks into the weekend café carrying the accessory, camera tracks handheld as she finds her table, sits down and turns toward camera with a relaxed smile',
-        dolly_in: 'slow dolly-in from a wide café shot to close-up on subject and accessory, warm afternoon window light grows softer and more intimate',
-        orbit: 'smooth orbital camera around subject at the café table, 180-degree arc passing through window light and café ambience, accessory catches light from different angles',
-        pullback_reveal: 'camera starts close on the MOZ accessory on the table, slowly pulls back to reveal her hands, then her face, then the full cozy weekend café setting',
-      },
-    },
-    commute_train: {
-      label: '🚇 通勤列車',
-      hint: '日常通勤,MOZ 作為生活伴侶',
-      type: 'indoor',
-      verb: 'naturally carries',
-      setting: 'a bright metro train interior, passengers softly blurred in distance',
-      light: 'cool overhead fluorescent mixed with warm window light passing by',
-      outfit: 'commuter smart-casual: simple blazer or cardigan over a plain tee, slim pants, practical modern workwear without ornamental details',
-      extra: 'ISO 800 grain, slight handheld vibration from train movement',
-      movements: {
-        static: 'subject stands or sits in the train, accessory in hand, slight train vibration moves her naturally, speaks directly to camera with commuter calm',
-        walk_through: 'subject walks through the train car from one end toward camera, other passengers blurred, handheld tracking shot, she pauses near camera and speaks',
-        dolly_in: 'slow dolly-in from a wide train interior shot to close-up on subject, train windows outside flash with passing light, creates rhythmic intimacy',
-        orbit: 'smooth orbital camera around subject in the train car, 180-degree arc where fluorescent overhead light meets passing window daylight, accessory remains in clear view',
-        pullback_reveal: 'camera starts close on her hand holding the accessory, slowly pulls back to reveal her full posture, then the whole train car with other commuters — establishing daily life context',
-      },
-    },
-  },
-  ka: {
-    kitchen_demo: {
-      label: '🍳 廚房示範',
-      hint: '真實家庭廚房,家電自然融入',
-      type: 'indoor',
-      verb: 'calmly demonstrates',
-      setting: 'a real family kitchen countertop with lived-in details, cutting board, fresh ingredients nearby',
-      light: 'bright overhead kitchen light plus warm window spill',
-      outfit: 'practical home cook attire: plain t-shirt or short-sleeve blouse with comfortable pants, maybe a simple apron, no fancy accessories',
-      extra: 'ISO 200 clean grain, static tripod framing, slight focus breathing',
-      movements: {
-        static: 'subject stands at the kitchen counter with the appliance in front of her, static framing focuses on demonstration gestures, speaks directly to camera with practical warmth',
-        walk_through: 'subject walks from fridge to counter carrying the appliance, places it down on the cutting board area, camera follows handheld, she turns to face camera and begins demonstration',
-        dolly_in: 'slow dolly-in from a wide kitchen shot to close-up on the appliance and her demonstrating hands, details of the appliance grow clearer as camera approaches',
-        orbit: 'smooth orbital camera around the appliance on the counter with subject behind it, 180-degree arc showing the appliance from multiple angles while she speaks',
-        pullback_reveal: 'camera starts close on the appliance interface or key feature, slowly pulls back to reveal her hands using it, then her face, then the full family kitchen environment',
-      },
-    },
-    breakfast_morning: {
-      label: '🥞 早餐時光',
-      hint: '溫暖家庭早餐情境',
-      type: 'indoor',
-      verb: 'joyfully presents',
-      setting: 'a sunlit breakfast table, fresh morning spread, real home ambience',
-      light: 'warm morning sunlight through curtains, soft natural rim',
-      outfit: 'cozy morning homewear: soft pajama top or comfortable loose tee with casual shorts or long pants, natural no-makeup morning look, no styled accessories',
-      extra: 'ISO 400 grain, handheld vlog feel, intimate family atmosphere',
-      movements: {
-        static: 'subject sits at the breakfast table with the appliance beside her, morning light falls naturally, static framing with subtle warmth, speaks directly to camera',
-        walk_through: 'subject walks from the kitchen carrying a plate with the appliance output, camera follows handheld, she sits down at the breakfast table and turns to camera with a warm smile',
-        dolly_in: 'slow dolly-in from a wide breakfast table shot to close-up on the appliance and her expression, morning sunlight wraps around her face',
-        orbit: 'smooth orbital camera around the breakfast table, 180-degree arc revealing the appliance, the food, and her from multiple angles',
-        pullback_reveal: 'camera starts close on the appliance-made breakfast item, slowly pulls back to reveal her hands, then her smiling face, then the whole sunlit family breakfast scene',
-      },
-    },
-  },
-};
+// v5.11.2: 舊 SCENE_LIBRARY 已刪除,改由 kol-universal-scenes.js 提供
+// 為相容 kol.html 內其他函式的直接引用,提供空 fallback
+const SCENE_LIBRARY = window.SCENE_LIBRARY || {};
 
 // 🏛️ 地標庫(戶外場景可疊加,override 場景的 setting)
 const LOCATIONS = {
@@ -3010,14 +2848,18 @@ function renderLocationPicker() {
   const picker = document.getElementById('location-picker');
   if (!picker) return;
 
-  const currentScene = SCENE_LIBRARY[S.currentBrandId]?.[S.selectedSceneId];
-  const showPicker = currentScene?.type === 'outdoor';
-  document.getElementById('location-picker-group').style.display = showPicker ? '' : 'none';
+  // v5.11.2 hotfix: 用 getScenesForBrand + 相容 type/indoor 雙格式
+  const allScenes = (typeof window.getScenesForBrand === 'function')
+    ? window.getScenesForBrand(S.currentBrandId)
+    : (window.SCENE_LIBRARY?.[S.currentBrandId] || {});
+  const currentScene = allScenes[S.selectedSceneId];
+  const isOutdoor = currentScene?.type === 'outdoor' || currentScene?.indoor === false;
+  document.getElementById('location-picker-group').style.display = isOutdoor ? '' : 'none';
 
-  if (!showPicker) {
-    S.selectedLocationId = 'none';
-    return;
-  }
+if (!isOutdoor) {
+  S.selectedLocationId = 'none';
+  return;
+}
 
   picker.innerHTML = Object.entries(LOCATIONS).map(([id, loc]) => {
     if (id === 'none') return `<option value="none">${escapeHtml(loc.label)}</option>`;
@@ -3149,7 +2991,11 @@ function syncScenePrompt() {
   const locationId = S.selectedLocationId;
   const movementId = S.selectedMovementId;
 
-  const scene = SCENE_LIBRARY[brandId]?.[sceneId];
+  // v5.11.2 hotfix: 用 getScenesForBrand 才能讀到 UNIVERSAL_POOL 通用場景
+  const scenes = (typeof window.getScenesForBrand === 'function')
+    ? window.getScenesForBrand(brandId)
+    : (window.SCENE_LIBRARY?.[brandId] || {});
+  const scene = scenes[sceneId];
   const summaryEl = document.getElementById('scene-summary');
   const summaryText = document.getElementById('scene-summary-text');
   const summaryHint = document.getElementById('scene-summary-hint');
@@ -3161,10 +3007,12 @@ function syncScenePrompt() {
     return;
   }
 
-  // 配置摘要文字
+// 配置摘要文字
   const brandLabel = S.brands.find(b => b.id === brandId)?.name || brandId;
   let configText = `${brandLabel} · ${scene.label}`;
-  if (scene.type === 'outdoor' && locationId && locationId !== 'none') {
+  // v5.11.2 hotfix: 相容新舊場景格式(type='outdoor' 或 indoor=false)
+  const isOutdoor = scene.type === 'outdoor' || scene.indoor === false;
+  if (isOutdoor && locationId && locationId !== 'none') {
     const loc = LOCATIONS[locationId];
     if (loc) configText += ` · ${loc.label}`;
   }
@@ -4251,8 +4099,12 @@ async function generateSocialPosts(ctx) {
     </div>
   `;
 
-  const brand = S.brands.find(b => b.id === S.currentBrandId) || {};
-  const scene = SCENE_LIBRARY[S.currentBrandId]?.[sceneId] || {};
+ const brand = S.brands.find(b => b.id === S.currentBrandId) || {};
+  // v5.11.2 hotfix
+  const sceneLib = (typeof window.getScenesForBrand === 'function')
+    ? window.getScenesForBrand(S.currentBrandId)
+    : (window.SCENE_LIBRARY?.[S.currentBrandId] || {});
+  const scene = sceneLib[sceneId] || {};
   const movement = CAMERA_MOVEMENTS[movementId] || {};
 
   try {
@@ -4845,8 +4697,12 @@ async function renderSystemQueue() {
                         ep.video_status === 'generating' ? '<span class="chip">生成中</span>' :
                         '<span class="chip">草稿</span>';
 
-      const dateShort = ep.calendar_date ? String(ep.calendar_date).slice(5, 10).replace('-', '/') : '—';
-      const sceneLabel = SCENE_LIBRARY[ep.brandId]?.[ep.scene_id]?.label || ep.scene_id || '未分類';
+     const dateShort = ep.calendar_date ? String(ep.calendar_date).slice(5, 10).replace('-', '/') : '—';
+      // v5.11.2 hotfix
+      const epScenes = (typeof window.getScenesForBrand === 'function')
+        ? window.getScenesForBrand(ep.brandId)
+        : (window.SCENE_LIBRARY?.[ep.brandId] || {});
+      const sceneLabel = epScenes[ep.scene_id]?.label || ep.scene_id || '未分類';
       const costLine = '';
 
       return `
@@ -5131,7 +4987,6 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
 
   
 </script>
-<script src="kol-universal-scenes.js"></script>
-<script src="kol-ai-generator.js"></script>
+
 </body>
 </html>
