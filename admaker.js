@@ -1,12 +1,13 @@
 // ══════════════════════════════════════════════════════════════
-//  BRAND OS · AD Maker  (v8.3)
+//  BRAND OS · AD Maker  (v8.4)
 //  變更紀錄:
-//    [v8.3] ★ 修長期黑畫面 bug: loadImage 改用 fetch+blob
-//           根本原因: fal.ai CDN 無 CORS header → canvas 污染 →
-//                    drawImage 看似成功實際畫空白 → 呈現黑色底
-//           解法: fetch 圖片 bytes → blob → blob: URL → img
-//                 blob URL 永遠同源,canvas 絕不污染
-//    [v8.2] 三重 fallback 載入 / 下載容錯 / 修 undefined bug
+//    [v8.4] ★ 黑圖偵測: blob < 30KB 判定為 safety fallback,
+//           自動重試一次,仍失敗則顯示專業警示
+//    [v8.4] ★ Softening prefix: 所有 prompt 加入商業廣告語境,
+//           降低 Flux safety classifier 被觸發機率
+//    [v8.4] ★ 刪除數字人影片導流提示 (商業戰略調整)
+//    [v8.3] fetch+blob 載入圖片避免 canvas CORS 污染
+//    [v8.2] 三重 fallback / 下載容錯 / 修 undefined bug
 //    [v8.1] 強化 FACE LOCK + 徹底關中文
 //    [v8]   新增 7 個場景 + 修 3 bug
 // ══════════════════════════════════════════════════════════════
@@ -20,106 +21,111 @@ const FACE_LOCK =
 const NO_ASIAN_TEXT =
   ' STRICTLY NO Chinese, Japanese, Korean, or any East Asian characters anywhere in the image. Use ONLY English letters, numbers, or pure abstract neon shapes and glowing light patterns. Any visible signage must be in clear English only or be non-textual light glows.';
 
+// v8.4 新增: 商業廣告語境,降低 safety classifier 被觸發率
+const COMMERCIAL_CONTEXT =
+  'Professional commercial product advertisement, mainstream retail catalog photography, ' +
+  'acceptable for major retailers and department stores. ';
+
 const CAM_DEFAULT = 'Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.';
 const CAM_PORTRAIT = 'Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.';
 const CAM_MACRO = 'Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.';
 
 const PRODUCT_SCENES = {
   studio_white:
-    `Replace the entire background with a clean seamless white studio backdrop, subtle gradient from bright white at top to soft grey shadow at base. Professional commercial product photography lighting with soft directional key light from upper left. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/8, studio strobe.`,
+    `${COMMERCIAL_CONTEXT}Replace the entire background with a clean seamless white studio backdrop, subtle gradient from bright white at top to soft grey shadow at base. Professional commercial product photography lighting with soft directional key light from upper left. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/8, studio strobe.`,
 
   dark_luxury:
-    `Replace the background with a rich deep charcoal-to-black gradient (NOT pure black void - keep it visible and atmospheric). Add strong warm golden rim lighting wrapping around the product and subject edges, plus a soft key light from upper left to keep the subject clearly illuminated and well-exposed. The overall image must remain BRIGHT and READABLE - the face and product must be clearly visible. Luxury magazine advertisement aesthetic with rich golden highlights. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a rich deep charcoal-to-black gradient (NOT pure black void - keep it visible and atmospheric). Add strong warm golden rim lighting wrapping around the product and subject edges, plus a soft key light from upper left to keep the subject clearly illuminated and well-exposed. The overall image must remain BRIGHT and READABLE - the face and product must be clearly visible. Luxury magazine advertisement aesthetic with rich golden highlights. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
 
   marble_premium:
-    `Replace the scene: foreground surface becomes polished Italian Calacatta marble with natural grey veining, background becomes dark charcoal gradient wall. Add warm golden accent rim lighting from upper right. Luxury product photography aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
+    `${COMMERCIAL_CONTEXT}Replace the scene: foreground surface becomes polished Italian Calacatta marble with natural grey veining, background becomes dark charcoal gradient wall. Add warm golden accent rim lighting from upper right. Luxury product photography aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
 
   minimal_grey:
-    `Replace the background with a smooth light-to-medium grey seamless gradient, no texture. Soft diffused softbox lighting from above creating gentle shadow beneath product. Minimalist Scandinavian aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a smooth light-to-medium grey seamless gradient, no texture. Soft diffused softbox lighting from above creating gentle shadow beneath product. Minimalist Scandinavian aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
 
   forest_outdoor:
-    `Replace the background with a lush atmospheric forest scene. Choose a natural variation: either Japanese cedar with morning mist, or temperate deciduous forest with autumn light, or tropical jungle with dense green foliage. Dappled golden sunlight filtering through canopy creating bokeh highlights. Visible depth with blurred trees in far background. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/2.8, shallow depth of field.`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a lush atmospheric forest scene. Choose a natural variation: either Japanese cedar with morning mist, or temperate deciduous forest with autumn light, or tropical jungle with dense green foliage. Dappled golden sunlight filtering through canopy creating bokeh highlights. Visible depth with blurred trees in far background. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/2.8, shallow depth of field.`,
 
   night_city:
-    `Replace the background with a cinematic futuristic night cityscape. Blurred abstract neon light streaks and glowing orbs in warm orange, cool blue, electric magenta, and cyan creating rich bokeh. Wet reflective street surface if visible. Cyberpunk atmospheric haze with colored fog. Neon rim light naturally illuminating product and subject edges.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.4, heavy bokeh.`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a cinematic futuristic night cityscape. Blurred abstract neon light streaks and glowing orbs in warm orange, cool blue, electric magenta, and cyan creating rich bokeh. Wet reflective street surface if visible. Cyberpunk atmospheric haze with colored fog. Neon rim light naturally illuminating product and subject edges.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.4, heavy bokeh.`,
 
   lifestyle_home:
-    `Replace the scene with a warm Scandinavian home interior. Aged light oak wooden surface in foreground, soft-focus background showing white linen curtains with morning sunlight filtering through, hint of potted green plants. Warm 4000K natural lighting, cozy hygge atmosphere. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
+    `${COMMERCIAL_CONTEXT}Replace the scene with a warm Scandinavian home interior. Aged light oak wooden surface in foreground, soft-focus background showing white linen curtains with morning sunlight filtering through, hint of potted green plants. Warm 4000K natural lighting, cozy hygge atmosphere. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
 
   tech_space:
-    `Replace the background with a deep space atmosphere. Earth curvature softly glowing at lower horizon, dark cosmic backdrop with subtle star field, purple-to-blue atmospheric gradient rim light. Flagship tech product photography aesthetic, clean futuristic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a deep space atmosphere. Earth curvature softly glowing at lower horizon, dark cosmic backdrop with subtle star field, purple-to-blue atmospheric gradient rim light. Flagship tech product photography aesthetic, clean futuristic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
 
   fashion_minimal:
-    `Replace the background with clean off-white to warm beige seamless studio gradient. Soft natural light from large window on the left creating gentle falloff. High-end fashion editorial aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
+    `${COMMERCIAL_CONTEXT}Replace the background with clean off-white to warm beige seamless studio gradient. Soft natural light from large window on the left creating gentle falloff. High-end fashion editorial aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
 
   fashion_outdoor:
-    `Replace the background with a golden hour urban or natural street scene. Choose a natural variation: either European cobblestone alley, or New York SoHo brownstone, or Parisian boulevard, or London South Bank, or California palm-lined street. Warm backlight creating natural halo, bokeh environment.${NO_ASIAN_TEXT} Editorial lifestyle fashion aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a golden hour urban or natural street scene. Choose a natural variation: either European cobblestone alley, or New York SoHo brownstone, or Parisian boulevard, or London South Bank, or California palm-lined street. Warm backlight creating natural halo, bokeh environment.${NO_ASIAN_TEXT} Editorial lifestyle fashion aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.`,
 
   pet_home:
-    `Replace the scene with a warm cozy home interior. Light wood floor with natural grain, soft-focus background of white walls with hanging green plants, morning window light from the side creating warm highlights. Gentle 4500K ambient atmosphere. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
+    `${COMMERCIAL_CONTEXT}Replace the scene with a warm cozy home interior. Light wood floor with natural grain, soft-focus background of white walls with hanging green plants, morning window light from the side creating warm highlights. Gentle 4500K ambient atmosphere. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/2.8.`,
 
   pet_outdoor:
-    `Replace the background with a sunny outdoor park scene. Fresh bright green grass foreground, blurred trees and soft sunlight flares in background, natural daylight from upper left. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8, bokeh background.`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a sunny outdoor park scene. Fresh bright green grass foreground, blurred trees and soft sunlight flares in background, natural daylight from upper left. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8, bokeh background.`,
 
   yoga_zen:
-    `Replace the scene with a serene Japanese zen environment. Choose a variation: either a tatami room with shoji paper screens and soft diffused morning light, or an outdoor bamboo garden with stone path, or a minimal rock garden with raked sand. Peaceful atmospheric. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
+    `${COMMERCIAL_CONTEXT}Replace the scene with a serene Japanese zen environment. Choose a variation: either a tatami room with shoji paper screens and soft diffused morning light, or an outdoor bamboo garden with stone path, or a minimal rock garden with raked sand. Peaceful atmospheric. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 
   wellness_bright:
-    `Replace the scene with a bright airy wellness studio. Large floor-to-ceiling windows with soft natural morning sunlight streaming in, white walls with subtle shadow of green plants, light wood or white floor. Fresh minimalist wellness aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
+    `${COMMERCIAL_CONTEXT}Replace the scene with a bright airy wellness studio. Large floor-to-ceiling windows with soft natural morning sunlight streaming in, white walls with subtle shadow of green plants, light wood or white floor. Fresh minimalist wellness aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT}`,
 
   snack_playful:
-    `Replace the background with a bold colorful flat surface. Choose a variation: either bright warm yellow, or coral pink, or mint green, or vibrant turquoise. Add playful scattered ingredient props (nuts, fruit slices, splashes) arranged artistically. Bright fun commercial food photography. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_MACRO}`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a bold colorful flat surface. Choose a variation: either bright warm yellow, or coral pink, or mint green, or vibrant turquoise. Add playful scattered ingredient props (nuts, fruit slices, splashes) arranged artistically. Bright fun commercial food photography. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_MACRO}`,
 
   sport_energy:
-    `Replace the background with a bold dynamic gradient. Choose a variation: deep navy to electric orange, or black to neon green, or crimson to gold. Add subtle motion blur lines, energetic atmospheric haze. Athletic commercial photography aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 70-200mm f/2.8 S.`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a bold dynamic gradient. Choose a variation: deep navy to electric orange, or black to neon green, or crimson to gold. Add subtle motion blur lines, energetic atmospheric haze. Athletic commercial photography aesthetic. ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 70-200mm f/2.8 S.`,
 
   jewelry_dark:
-    `Replace the background with pure black velvet texture. Add single dramatic overhead spotlight creating strong focused beam, subtle teal-blue reflection on dark polished glass surface below. Luxury jewelry photography aesthetic. Keep the product EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/5.6, high-key contrast.`,
+    `${COMMERCIAL_CONTEXT}Replace the background with pure black velvet texture. Add single dramatic overhead spotlight creating strong focused beam, subtle teal-blue reflection on dark polished glass surface below. Luxury jewelry photography aesthetic. Keep the product EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/5.6, high-key contrast.`,
 
   design_editorial:
-    `Replace the scene with a minimalist editorial design magazine aesthetic. Soft off-white paper-textured background with subtle beige and sage green tones, warm natural window light from the side. Add subtle design elements like thin decorative lines and delicate paper grain texture. Clean asymmetric composition with generous negative space, Kinfolk magazine aesthetic, Japanese editorial design influence. Muted desaturated color palette.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
+    `${COMMERCIAL_CONTEXT}Replace the scene with a minimalist editorial design magazine aesthetic. Soft off-white paper-textured background with subtle beige and sage green tones, warm natural window light from the side. Add subtle design elements like thin decorative lines and delicate paper grain texture. Clean asymmetric composition with generous negative space, Kinfolk magazine aesthetic, Japanese editorial design influence. Muted desaturated color palette.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_PORTRAIT}`,
 
   summer_hot:
-    `Replace the background with a vibrant hot summer scene. Choose a natural variation: either a sunny tropical beach with turquoise water and palm tree shadows, or a poolside with crystal blue water and bright white tiles, or a bright summer garden with cicada-loud greenery and flare highlights. Intense golden sunlight creating strong warm highlights, visible sun flare, shimmering heat haze. Saturated tropical color palette with azure blues, sun yellows, and coral pinks. Refreshing atmospheric feel. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, bright summer daylight.`,
+    `${COMMERCIAL_CONTEXT}Replace the background with a vibrant hot summer scene. Choose a natural variation: either a sunny tropical beach with turquoise water and palm tree shadows, or a poolside with crystal blue water and bright white tiles, or a bright summer garden with cicada-loud greenery and flare highlights. Intense golden sunlight creating strong warm highlights, visible sun flare, shimmering heat haze. Saturated tropical color palette with azure blues, sun yellows, and coral pinks. Refreshing atmospheric feel. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, bright summer daylight.`,
 
   japan_premium:
-    `Transform the entire scene into premium Japanese wabi-sabi aesthetic. Replace surface with aged hinoki cypress wood or dark charcoal stone slate, replace background with soft washi paper texture or blurred shoji screen with warm interior light behind. Add subtle Japanese design elements: a small ceramic tea cup in the far background bokeh, a single dried branch or bamboo leaf. Soft diffused side lighting 4000K, low saturation, muted earth tones (beige, sumi black, soft green), contemplative mono-no-aware atmosphere.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/2.`,
+    `${COMMERCIAL_CONTEXT}Transform the entire scene into premium Japanese wabi-sabi aesthetic. Replace surface with aged hinoki cypress wood or dark charcoal stone slate, replace background with soft washi paper texture or blurred shoji screen with warm interior light behind. Add subtle Japanese design elements: a small ceramic tea cup in the far background bokeh, a single dried branch or bamboo leaf. Soft diffused side lighting 4000K, low saturation, muted earth tones (beige, sumi black, soft green), contemplative mono-no-aware atmosphere.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/2.`,
 
   kpop_korea:
-    `Transform the entire scene into trendy Korean K-POP music video aesthetic. Replace background with a dreamy gradient of pastel pink, lavender purple, and soft sky blue, with subtle sparkle bokeh and soft neon light streaks. Add Y2K-inspired elements: subtle holographic light flares, soft pink and blue rim lighting on product and subject edges, dreamy atmospheric glow. High-key bright exposure, glossy aesthetic, youthful Seoul fashion magazine vibe.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.8, dreamy bokeh.`,
+    `${COMMERCIAL_CONTEXT}Transform the entire scene into trendy Korean K-POP music video aesthetic. Replace background with a dreamy gradient of pastel pink, lavender purple, and soft sky blue, with subtle sparkle bokeh and soft neon light streaks. Add Y2K-inspired elements: subtle holographic light flares, soft pink and blue rim lighting on product and subject edges, dreamy atmospheric glow. High-key bright exposure, glossy aesthetic, youthful Seoul fashion magazine vibe.${NO_ASIAN_TEXT} ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S, f/1.8, dreamy bokeh.`,
 
   american_wild:
-    `Transform the entire scene into American wild west / Route 66 aesthetic. Replace background with a vast dramatic landscape: choose from either Arizona red rock desert at golden hour, or Texas highway with dusty horizon and lens flare, or Californian canyon with rugged cliffs. Warm amber-orange sunset lighting with long dramatic shadows, slight dust haze atmosphere, vintage film grain texture. Masculine rugged aesthetic, Marlboro campaign influence, cinematic wide depth. Slightly desaturated cinematic color grade (teal shadows, orange highlights). ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/5.6, sweeping landscape.`,
+    `${COMMERCIAL_CONTEXT}Transform the entire scene into American wild west / Route 66 aesthetic. Replace background with a vast dramatic landscape: choose from either Arizona red rock desert at golden hour, or Texas highway with dusty horizon and lens flare, or Californian canyon with rugged cliffs. Warm amber-orange sunset lighting with long dramatic shadows, slight dust haze atmosphere, vintage film grain texture. Masculine rugged aesthetic, Marlboro campaign influence, cinematic wide depth. Slightly desaturated cinematic color grade (teal shadows, orange highlights). ${PRESERVE_SUBJECT}${FACE_LOCK} Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S, f/5.6, sweeping landscape.`,
 
   hk_banquet_gold:
-    `Transform the entire scene into Hong Kong top-tier Cantonese banquet aesthetic (Fook Lam Moon / Lung King Heen level). Replace surface with pristine white tablecloth with delicate gold trim embroidery, replace background with softly blurred warm amber interior showing hints of gold filigree wall panels and red lacquered details. Add an elegant Chinese porcelain tea set and a pair of ivory chopsticks with gold tips as subtle props. Warm golden chandelier lighting from above (3000K), creating a bright luxurious atmosphere - the dish must be clearly lit and visible, NOT dark or moody. Rich gold and deep red color palette, Michelin banquet magazine aesthetic, business-entertainment dining class. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, bright and luxurious.`,
+    `${COMMERCIAL_CONTEXT}Transform the entire scene into Hong Kong top-tier Cantonese banquet aesthetic (Fook Lam Moon / Lung King Heen level). Replace surface with pristine white tablecloth with delicate gold trim embroidery, replace background with softly blurred warm amber interior showing hints of gold filigree wall panels and red lacquered details. Add an elegant Chinese porcelain tea set and a pair of ivory chopsticks with gold tips as subtle props. Warm golden chandelier lighting from above (3000K), creating a bright luxurious atmosphere - the dish must be clearly lit and visible, NOT dark or moody. Rich gold and deep red color palette, Michelin banquet magazine aesthetic, business-entertainment dining class. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/4, bright and luxurious.`,
 
   tw_retro_ad:
-    `Transform the entire scene into authentic 1970s-1980s Taiwanese print advertisement aesthetic. Replace background with a warmly-lit vintage Taiwanese living room scene: floral-patterned fabric sofa in soft focus, terrazzo floor tiles, wooden venetian blinds with late afternoon golden sunlight creating dappled dramatic shadows, a glass of iced barley tea on a round wooden side table as prop. Warm sepia-amber color grading with slightly faded highlights, visible paper grain texture overlay, subtle film halation, Kodachrome film tones, soft edge vignetting. Looks like a scanned vintage magazine page from 1975 Taiwan. Nostalgic warm mood. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/2.8, warm vintage film look.`,
+    `${COMMERCIAL_CONTEXT}Transform the entire scene into authentic 1970s-1980s Taiwanese print advertisement aesthetic. Replace background with a warmly-lit vintage Taiwanese living room scene: floral-patterned fabric sofa in soft focus, terrazzo floor tiles, wooden venetian blinds with late afternoon golden sunlight creating dappled dramatic shadows, a glass of iced barley tea on a round wooden side table as prop. Warm sepia-amber color grading with slightly faded highlights, visible paper grain texture overlay, subtle film halation, Kodachrome film tones, soft edge vignetting. Looks like a scanned vintage magazine page from 1975 Taiwan. Nostalgic warm mood. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/2.8, warm vintage film look.`,
 
   food_drama:
-    `Transform the scene into a Michelin 3-star restaurant advertisement. Replace background with deep charcoal gradient (not pure black), replace surface with dark slate. Add dramatic single overhead spotlight from above, atmospheric steam wisps rising from food, warm golden rim light on dish edges. The food must remain BRIGHT and clearly visible. Keep all food, dishes, and hands EXACTLY unchanged in position and details. ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
+    `${COMMERCIAL_CONTEXT}Transform the scene into a Michelin 3-star restaurant advertisement. Replace background with deep charcoal gradient (not pure black), replace surface with dark slate. Add dramatic single overhead spotlight from above, atmospheric steam wisps rising from food, warm golden rim light on dish edges. The food must remain BRIGHT and clearly visible. Keep all food, dishes, and hands EXACTLY unchanged in position and details. ${CAM_DEFAULT} f/4, dramatic but well-lit.`,
 
   food_japanese:
-    `Transform the scene into Japanese kappo fine dining aesthetic. Replace surface with dark charcoal aged stone slate with rough texture, replace background with deep shadowed wood wall. Soft single-source cool side lighting 4000K, wabi-sabi minimal atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_MACRO}`,
+    `${COMMERCIAL_CONTEXT}Transform the scene into Japanese kappo fine dining aesthetic. Replace surface with dark charcoal aged stone slate with rough texture, replace background with deep shadowed wood wall. Soft single-source cool side lighting 4000K, wabi-sabi minimal atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_MACRO}`,
 
   food_cantonese:
-    `Transform the scene into Hong Kong Cantonese banquet aesthetic. Replace surface with dark lacquered rosewood table, replace background with deep red-gold wall with subtle abstract pattern. Warm amber pendant light from above creating rich golden glow, traditional opulent atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_DEFAULT}`,
+    `${COMMERCIAL_CONTEXT}Transform the scene into Hong Kong Cantonese banquet aesthetic. Replace surface with dark lacquered rosewood table, replace background with deep red-gold wall with subtle abstract pattern. Warm amber pendant light from above creating rich golden glow, traditional opulent atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_DEFAULT}`,
 
   food_korean:
-    `Transform the scene into Korean BBQ restaurant atmosphere. Replace surface with dark volcanic stone or cast iron plate, replace background with moody dark wood with hint of charcoal grill glow. Dramatic warm backlight from behind creating orange-red rim glow on food edges, atmospheric steam. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
+    `${COMMERCIAL_CONTEXT}Transform the scene into Korean BBQ restaurant atmosphere. Replace surface with dark volcanic stone or cast iron plate, replace background with moody dark wood with hint of charcoal grill glow. Dramatic warm backlight from behind creating orange-red rim glow on food edges, atmospheric steam. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 
   food_taiwanese:
-    `Transform the scene into Taiwanese traditional comfort food aesthetic. Replace surface with warm aged teak wood table with natural grain, replace background with blurred vintage tile wall or wooden partition. Soft 3800K tungsten overhead light creating warm nostalgic glow, traditional ceramic tea cup and chopsticks as props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
+    `${COMMERCIAL_CONTEXT}Transform the scene into Taiwanese traditional comfort food aesthetic. Replace surface with warm aged teak wood table with natural grain, replace background with blurred vintage tile wall or wooden partition. Soft 3800K tungsten overhead light creating warm nostalgic glow, traditional ceramic tea cup and chopsticks as props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 
   food_french:
-    `Transform the scene into French fine dining editorial. Replace surface with deep navy blue linen tablecloth, replace background with soft blurred restaurant ambience. Add silver cutlery and crystal glassware as props, soft cool natural window light 5500K creating clean elegant atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_MACRO}`,
+    `${COMMERCIAL_CONTEXT}Transform the scene into French fine dining editorial. Replace surface with deep navy blue linen tablecloth, replace background with soft blurred restaurant ambience. Add silver cutlery and crystal glassware as props, soft cool natural window light 5500K creating clean elegant atmosphere. Keep all food, dishes, and hands EXACTLY unchanged. ${CAM_MACRO}`,
 
   food_outdoor:
-    `Transform the scene into an outdoor golden hour picnic. Replace surface with rustic wooden board or checkered cloth on grass, replace background with natural green meadow with warm sunset backlight creating halo. Rustic wooden utensil props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.`,
+    `${COMMERCIAL_CONTEXT}Transform the scene into an outdoor golden hour picnic. Replace surface with rustic wooden board or checkered cloth on grass, replace background with natural green meadow with warm sunset backlight creating halo. Rustic wooden utensil props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2, shallow depth.`,
 
   food_bright:
-    `Transform the scene into bright Nordic brunch aesthetic. Replace surface with clean white Carrara marble, replace background with bright white wall with soft natural morning window light 6000K streaming from the side. Add fresh herb sprigs and citrus slice props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
+    `${COMMERCIAL_CONTEXT}Transform the scene into bright Nordic brunch aesthetic. Replace surface with clean white Carrara marble, replace background with bright white wall with soft natural morning window light 6000K streaming from the side. Add fresh herb sprigs and citrus slice props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 };
 
 // ══ 狀態 ══
@@ -128,8 +134,11 @@ let PR_BG_IMG  = null;
 let PR_MODE    = 'product_shot';
 let TEXT_ALIGN = 'left';
 let CANVAS_TAINTED = false;
+let LAST_BLOB_SIZE = 0; // v8.4: 追蹤最近一次 blob 大小用於黑圖偵測
 
-// ══ 開啟 / 關閉 ══
+// v8.4 常數: blob 大小門檻
+const BLACK_IMAGE_THRESHOLD = 30000; // 小於 30KB 判定為黑圖
+
 function openAdMaker(idx) {
   PR_BG_IMG = null; PR_MODE = 'product_shot';
   CANVAS_TAINTED = false;
@@ -330,6 +339,57 @@ async function pollUntilDone(requestId, endpoint, maxMs = 300000, responseUrl = 
   return { status:'TIMEOUT' };
 }
 
+// ══════════════════════════════════════════════════════════════
+// v8.4 核心: 黑圖偵測 + 自動重試
+// 回傳: { ok: true, imageUrl, blobSize } 或 { ok: false, reason, blobSize }
+// ══════════════════════════════════════════════════════════════
+async function submitFluxAndCheckBlob(scenePrompt, paddedBase64) {
+  const imageUrl = await uploadToFal(paddedBase64);
+
+  const submitData = await callWorker({
+    action: 'flux_kontext_submit',
+    imageUrl,
+    prompt: scenePrompt
+  });
+  if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
+
+  const result = await pollUntilDone(submitData.requestId, submitData.endpoint, 120000, submitData.responseUrl, submitData.statusUrl);
+
+  if (result.status === 'TIMEOUT' || result.status === 'FAILED') {
+    throw new Error(result.error || '生成失敗');
+  }
+
+  const falUrl = result.imageBase64 || result.imageUrl;
+  if (!falUrl) throw new Error('未回傳圖片資料');
+
+  // 如果是 base64,直接用(通常沒黑圖問題)
+  if (falUrl.startsWith('data:')) {
+    return { ok: true, imageUrl: falUrl, blobSize: 0 };
+  }
+
+  // 跨域 URL: 先 fetch 檢查大小
+  try {
+    const resp = await fetch(falUrl, { mode: 'cors' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const blob = await resp.blob();
+    console.log('[v8.4] 下載圖片, size:', blob.size, 'type:', blob.type);
+    LAST_BLOB_SIZE = blob.size;
+
+    if (blob.size < BLACK_IMAGE_THRESHOLD) {
+      console.warn('[v8.4] ⚠️ 偵測到黑圖! size:', blob.size, '< 門檻', BLACK_IMAGE_THRESHOLD);
+      return { ok: false, reason: 'BLACK_IMAGE', blobSize: blob.size };
+    }
+
+    // 正常圖片,轉 blob URL 讓 canvas 可用
+    const blobUrl = URL.createObjectURL(blob);
+    return { ok: true, imageUrl: blobUrl, blobSize: blob.size, originalUrl: falUrl };
+  } catch(fetchErr) {
+    // fetch 失敗 fallback 到原 URL,無法檢查大小
+    console.warn('[v8.4] fetch 檢查失敗,使用原 URL:', fetchErr.message);
+    return { ok: true, imageUrl: falUrl, blobSize: -1 };
+  }
+}
+
 async function applyPhotoroomBg() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
@@ -375,56 +435,109 @@ async function applyPhotoroomBg() {
     return;
   }
 
+  // ══ AI 情境 (v8.4 加入黑圖偵測 + 自動重試) ══
   if (PR_MODE === 'product_shot') {
     const interval = startProgress(30000);
     try {
       const blob = await urlToBlob(imgSrc);
       const base64 = await blobToBase64(blob);
       const paddedBase64 = await padImageTo1080(base64);
-      const imageUrl = await uploadToFal(paddedBase64);
 
       const sceneKey = document.getElementById('prSceneSection')?.dataset?.scene || 'studio_white';
       const customPrompt = document.getElementById('prCustomPrompt')?.value?.trim();
       const scenePrompt = customPrompt || PRODUCT_SCENES[sceneKey] || PRODUCT_SCENES.studio_white;
 
       setPrStatus('🎨 AI 情境生成中...', 'var(--t3)');
-      const submitData = await callWorker({
-        action: 'flux_kontext_submit',
-        imageUrl,
-        prompt: scenePrompt
-      });
-      if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
-      setPrStatus('⏳ 生成中（約10-20秒）...', 'var(--t3)');
-      let result = await pollUntilDone(submitData.requestId, submitData.endpoint, 120000, submitData.responseUrl, submitData.statusUrl);
+      // 第一次嘗試
+      let result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
 
-      if (result.status === 'TIMEOUT' || result.status === 'FAILED') {
-        throw new Error(result.error || '生成失敗，請再試一次');
+      // 如果黑圖,自動重試一次
+      if (!result.ok && result.reason === 'BLACK_IMAGE') {
+        console.warn('[v8.4] 第一次被擋,自動重試中...');
+        setPrStatus('🔄 內容審查擋下,重試中...', 'var(--orange)');
+        result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
       }
 
-      PR_BG_IMG = result.imageBase64 || result.imageUrl;
-      if (!PR_BG_IMG) throw new Error('未回傳圖片資料');
-      CANVAS_TAINTED = false;
+      // 仍然黑圖,顯示警示
+      if (!result.ok && result.reason === 'BLACK_IMAGE') {
+        console.error('[v8.4] 兩次都被擋,顯示警示');
+        finishProgress(interval);
+        setPrStatus('⚠️ AI 內容審查擋下,請改用真人試穿或換場景', 'var(--red)');
+        showBlackImageWarning(result.blobSize);
+        return;
+      }
 
+      PR_BG_IMG = result.imageUrl;
+      CANVAS_TAINTED = false;
       await renderAdCanvasWithPR();
       finishProgress(interval);
-      setPrStatus('✅ AI 情境生成完成！', 'var(--mint)');
+
+      if (result.blobSize > 0) {
+        setPrStatus(`✅ AI 情境生成完成！(${Math.round(result.blobSize/1024)} KB)`, 'var(--mint)');
+      } else {
+        setPrStatus('✅ AI 情境生成完成！', 'var(--mint)');
+      }
     } catch(e) { failProgress(interval, e.message); }
   }
 }
 
-// ══════════════════════════════════════════════════════════════
-// ★ v8.3 核心修法 ★
-// 用 fetch+blob 載入圖片,避免 canvas 被 CORS 污染
-// 為什麼能修好:
-//   - 用 fetch 直接抓圖片 bytes,不走瀏覽器的 img CORS 機制
-//   - 轉成 blob URL (blob: 開頭) 是瀏覽器記憶體內部,永遠同源
-//   - img 從 blob URL 載入,canvas drawImage 100% 不會污染
-// ══════════════════════════════════════════════════════════════
+// v8.4: 黑圖警示畫在 canvas 上(客戶看得到)
+function showBlackImageWarning(blobSize) {
+  const canvas = document.getElementById('adCanvas');
+  if (!canvas) return;
+  canvas.width = AM.w; canvas.height = AM.h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  // 背景漸層
+  const grad = ctx.createLinearGradient(0,0,0,AM.h);
+  grad.addColorStop(0, '#2a1a1a');
+  grad.addColorStop(1, '#1a1010');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, AM.w, AM.h);
+
+  // 警示圖示
+  ctx.fillStyle = '#FFA060';
+  ctx.font = '900 140px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('⚠️', AM.w/2, AM.h/2 - 150);
+
+  // 主標題
+  ctx.fillStyle = '#FFD8B8';
+  ctx.font = '900 44px "Noto Sans TC",sans-serif';
+  ctx.fillText('AI 內容審查擋下了這張圖', AM.w/2, AM.h/2 - 50);
+
+  // 副標題
+  ctx.fillStyle = '#C8A898';
+  ctx.font = '500 22px "Noto Sans TC",sans-serif';
+  const kbSize = blobSize > 0 ? `（Flux 回傳 ${Math.round(blobSize/1024)} KB 黑圖）` : '';
+  if (kbSize) ctx.fillText(kbSize, AM.w/2, AM.h/2 - 10);
+
+  // 建議標題
+  ctx.fillStyle = '#E8603A';
+  ctx.font = '900 26px "Noto Sans TC",sans-serif';
+  ctx.fillText('建議改用:', AM.w/2, AM.h/2 + 60);
+
+  // 建議內容
+  ctx.fillStyle = '#F0E0D0';
+  ctx.font = '500 22px "Noto Sans TC",sans-serif';
+  const suggestions = [
+    '👗  改用「AI 真人試穿」(內衣類推薦)',
+    '🏊‍♀️  換場景: 炎熱夏日、質感白棚',
+    '🔄  或換一張商品照再試'
+  ];
+  suggestions.forEach((s, i) => {
+    ctx.fillText(s, AM.w/2, AM.h/2 + 110 + i * 42);
+  });
+
+  // 底部說明
+  ctx.fillStyle = '#8A7060';
+  ctx.font = '400 16px "Noto Sans TC",sans-serif';
+  ctx.fillText('已自動重試一次,AI 仍判定此組合為敏感內容', AM.w/2, AM.h - 60);
+}
+
 async function loadImageSmart(src) {
-  // data URL 或 blob URL: 直接載入,無需處理
   if (src.startsWith('data:') || src.startsWith('blob:')) {
-    console.log('[v8.3] 同源載入:', src.substring(0, 30));
     const img = new Image();
     await new Promise((resolve, reject) => {
       img.onload = () => {
@@ -437,29 +550,19 @@ async function loadImageSmart(src) {
     return { img, tainted: false };
   }
 
-  // 跨域 URL (http/https): 先 fetch 再轉 blob
-  console.log('[v8.3] fetch 跨域載入:', src.substring(0, 60));
   try {
     const response = await fetch(src, { mode: 'cors' });
-    if (!response.ok) {
-      throw new Error('HTTP ' + response.status);
-    }
+    if (!response.ok) throw new Error('HTTP ' + response.status);
     const blob = await response.blob();
-    console.log('[v8.3] fetch 成功, blob size:', blob.size, 'type:', blob.type);
-    if (blob.size < 500) {
-      throw new Error('圖片太小 (' + blob.size + ' bytes)，可能是空圖');
-    }
+    if (blob.size < 500) throw new Error('圖片太小');
     const blobUrl = URL.createObjectURL(blob);
     const img = new Image();
     await new Promise((resolve, reject) => {
       img.onload = () => {
         if (img.naturalWidth === 0) {
           URL.revokeObjectURL(blobUrl);
-          reject(new Error('blob img naturalWidth 為 0'));
-        } else {
-          console.log('[v8.3] ✅ blob img 載入成功:', img.naturalWidth, 'x', img.naturalHeight);
-          resolve();
-        }
+          reject(new Error('naturalWidth 為 0'));
+        } else resolve();
       };
       img.onerror = () => {
         URL.revokeObjectURL(blobUrl);
@@ -469,16 +572,11 @@ async function loadImageSmart(src) {
     });
     return { img, tainted: false, blobUrl };
   } catch(e) {
-    console.warn('[v8.3] fetch 模式失敗, 嘗試 img 直接載入 (會污染 canvas):', e.message);
-    // fallback: 直接用 img 載入(canvas 會被污染,至少看得見)
     const img = new Image();
     await new Promise((resolve, reject) => {
       img.onload = () => {
-        if (img.naturalWidth === 0) reject(new Error('img naturalWidth 為 0'));
-        else {
-          console.warn('[v8.3] img 直接載入成功,canvas 將 tainted');
-          resolve();
-        }
+        if (img.naturalWidth === 0) reject(new Error('naturalWidth 為 0'));
+        else resolve();
       };
       img.onerror = () => reject(new Error('img 直接載入也失敗'));
       img.src = src;
@@ -510,7 +608,6 @@ async function renderAdCanvas() {
         img.width*scale, img.height*scale);
       if (tainted) CANVAS_TAINTED = true;
     } catch(e) {
-      console.error('[v8.3] 載入原圖失敗:', e.message);
       drawBgFallback(ctx);
     }
   } else {
@@ -562,8 +659,7 @@ async function renderAdCanvasWithPR() {
         img.width*scale, img.height*scale);
     }
   } catch(e) {
-    console.error('[v8.3] renderWithPR 載入圖片失敗:', e.message);
-    // 錯誤時畫一段文字告訴使用者
+    console.error('[v8.4] render 失敗:', e.message);
     drawBgFallback(ctx);
     ctx.fillStyle = '#FFA060';
     ctx.font = '900 32px "Noto Sans TC",sans-serif';
@@ -571,8 +667,7 @@ async function renderAdCanvasWithPR() {
     ctx.fillText('⚠️ 圖片載入失敗', AM.w/2, AM.h/2 - 20);
     ctx.font = '400 20px "Noto Sans TC",sans-serif';
     ctx.fillStyle = '#F0E0D0';
-    ctx.fillText(e.message.substring(0, 40), AM.w/2, AM.h/2 + 20);
-    ctx.fillText('請重新生成或重新整理頁面', AM.w/2, AM.h/2 + 50);
+    ctx.fillText('請重新生成或重新整理頁面', AM.w/2, AM.h/2 + 30);
   }
 
   drawOverlay(ctx, title, getAccentColor());
@@ -638,7 +733,6 @@ function downloadAd() {
     link.click();
     if (window._driveToken) uploadAdToDrive(canvas, filename);
   } catch(e) {
-    console.warn('[v8.3] Canvas tainted, 使用備援下載');
     if (PR_BG_IMG && !PR_BG_IMG.startsWith('data:')) {
       const msg = '因瀏覽器安全限制無法直接下載\n將開啟圖片,請右鍵「另存圖片」';
       if (confirm(msg)) window.open(PR_BG_IMG, '_blank');
