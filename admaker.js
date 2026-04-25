@@ -238,8 +238,11 @@ function onMdPhotoSelected(input) {
 function setPrMode(btn, mode) {
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on'); PR_MODE = mode;
-  document.getElementById('prSceneSection').style.display   = mode === 'product_shot' ? 'block' : 'none';
-  document.getElementById('prVirtualSection').style.display = mode === 'kling_tryon'  ? 'block' : 'none';
+  // v10.0: 三個模式切換顯示對應 section
+  document.getElementById('prSceneSection').style.display     = mode === 'product_shot' ? 'block' : 'none';
+  document.getElementById('prVirtualSection').style.display   = mode === 'kling_tryon'  ? 'block' : 'none';
+  const gpt = document.getElementById('prGptPosterSection');
+  if (gpt) gpt.style.display = mode === 'gpt_poster' ? 'block' : 'none';
 }
 
 function setPrScene(btn, scene) {
@@ -436,12 +439,20 @@ async function submitFluxAndCheckBlob(scenePrompt, paddedBase64) {
 }
 
 async function applyPhotoroomBg() {
+  const btn = document.getElementById('prApplyBtn');
+
+  // v10.0: GPT 海報模式不需要商品照,走獨立分支
+  if (PR_MODE === 'gpt_poster') {
+    btn.disabled = true; btn.textContent = '⏳ AI 海報生成中...';
+    await generateGptPoster();
+    return;
+  }
+
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
   const imgSrc = photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
 
-  const btn = document.getElementById('prApplyBtn');
   btn.disabled = true; btn.textContent = '⏳ AI 處理中...';
 
   if (PR_MODE === 'kling_tryon') {
@@ -872,4 +883,229 @@ function blobToBase64(blob) {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ★ v10.0 新增: GPT Image 2 海報生成模組
+//   - 4 種版型: 1圖精品 / 2格對比 / 4格樣本 / 復古海報
+//   - 自動帶入品牌名、副品牌名、商品名、adStyle
+//   - GPT Image 2 中文文字渲染完美,不需要再疊字
+// ═══════════════════════════════════════════════════════════════════════
+
+// 版型樣版 - 用英文描述結構,中文字只放「要顯示在海報上的文字」
+const POSTER_LAYOUTS = {
+  single_luxury: {
+    label: '🖼️ 單圖精品風',
+    desc: '單一主視覺,大面積留白,精品雜誌感',
+    buildPrompt: ({ brand, subBrand, product, headline, subHeadline, adStyle }) => `
+A single-subject luxury editorial poster for ${brand}${subBrand ? ' · ' + subBrand : ''}.
+Vertical poster layout, 4:3 portrait. Large clean negative space, minimalist composition.
+Subject: a beautifully photographed ${product} placed center-left, soft directional studio lighting, cinematic depth.
+
+Text on poster (render with pixel-perfect Traditional Chinese typography, elegant serif):
+- Large headline at top-right: "${headline}"
+- Smaller subheadline below: "${subHeadline}"
+- Tiny brand mark at bottom: "${brand}"
+
+Aesthetic direction: ${adStyle || 'premium, editorial, magazine-quality, refined'}.
+Color palette: restrained, muted tones with one subtle accent color.
+Print-quality, Vogue/Kinfolk editorial feel, NOT over-designed.
+`.trim()
+  },
+
+  dual_compare: {
+    label: '🔀 雙格對比',
+    desc: '左右兩格對比,強調 Before/After 或兩個賣點',
+    buildPrompt: ({ brand, subBrand, product, headline, subHeadline, adStyle }) => `
+A two-panel split-screen advertising poster for ${brand}${subBrand ? ' · ' + subBrand : ''}.
+Vertical 4:3 layout, divided into LEFT and RIGHT halves by a clean vertical line.
+
+LEFT PANEL: Problem state or "before" - muted colors, slightly desaturated, conveys the pain point.
+RIGHT PANEL: Solution state or "after" - bright, vibrant, showing ${product} in hero lighting.
+
+Text on poster (pixel-perfect Traditional Chinese, bold sans-serif):
+- Top banner spanning both panels: "${headline}"
+- Left panel small label: "前 / Before" with minimal description
+- Right panel small label: "後 / After"
+- Bottom center subheadline: "${subHeadline}"
+- Brand signature bottom-right: "${brand}"
+
+Style: ${adStyle || 'bold, confident, direct marketing, e-commerce clean'}.
+Modern commercial photography, sharp contrast between the two halves.
+`.trim()
+  },
+
+  quad_grid: {
+    label: '🔲 4 格樣本',
+    desc: '2x2 網格,展示 4 種用法/口味/場景',
+    buildPrompt: ({ brand, subBrand, product, headline, subHeadline, adStyle }) => `
+A 2x2 grid product catalog poster for ${brand}${subBrand ? ' · ' + subBrand : ''}, vertical 4:3 layout.
+Four equal panels arranged in a 2x2 grid, separated by thin clean gutters.
+
+Each panel shows ${product} in a different context (use variety):
+- Top-left: product hero shot on clean background
+- Top-right: product in lifestyle use (in-hand or in-scene)
+- Bottom-left: key ingredient or detail macro close-up
+- Bottom-right: finished result or end benefit
+
+Text on poster (pixel-perfect Traditional Chinese, strong modern sans-serif):
+- Large headline above the grid: "${headline}"
+- Subheadline below the grid: "${subHeadline}"
+- Tiny labels inside each panel (one word each, optional)
+- Brand mark bottom-right: "${brand}"
+
+Style: ${adStyle || 'clean, informative, catalog-grade, modern commerce'}.
+Consistent lighting and color treatment across all four panels for unity.
+`.trim()
+  },
+
+  retro_vintage: {
+    label: '📰 復古海報',
+    desc: '懷舊年代感,牛皮紙/老報紙/復古印刷',
+    buildPrompt: ({ brand, subBrand, product, headline, subHeadline, adStyle }) => `
+A vintage 1960s-1980s style advertisement poster for ${brand}${subBrand ? ' · ' + subBrand : ''}.
+Vertical 4:3 poster format, textured paper or aged newsprint background.
+
+Visual: ${product} illustrated or photographed with slightly over-saturated Kodachrome color,
+subtle halftone print texture, soft paper grain, edge vignetting.
+Include a small retro decorative border or frame element.
+
+Text on poster (pixel-perfect Traditional Chinese, vintage display typography -
+chunky serif or condensed sans, mixing sizes for emphasis):
+- BIG headline top: "${headline}"
+- Secondary line just below: "${subHeadline}"
+- Small tagline or description paragraph in the lower third (invent plausible retro copy
+  describing ${product}, keep it under 15 Chinese characters)
+- Brand stamp or seal bottom corner: "${brand}"
+
+Aesthetic: ${adStyle || '1975 Taiwan / Japan Showa era magazine ad, warm sepia-amber tones, nostalgic, printed paper feel'}.
+Film grain visible, slight color bleed, looks like a scanned vintage page, NOT digital.
+`.trim()
+  }
+};
+
+// 狀態
+let GPT_POSTER_LAYOUT = 'single_luxury';
+
+function setGptPosterLayout(btn, key) {
+  document.querySelectorAll('.gpt-poster-layout-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  GPT_POSTER_LAYOUT = key;
+}
+
+// 抓目前選到的品牌資料
+function getBrandContext() {
+  const brand = window.BRANDS.find(b => b.id === window.S.brandId);
+  const sub = brand?.subs?.find(s => s.id === window.S.subId);
+  const prod = window.S.prod;
+  return {
+    brand:     brand?.name || '未選品牌',
+    subBrand:  sub?.name || '',
+    product:   prod?.name || '商品',
+    adStyle:   brand?.adStyle || '',
+    hashtags:  brand?.hashtags || ''
+  };
+}
+
+async function generateGptPoster() {
+  const interval = startProgress(60000); // GPT Image 2 比較慢,給 60 秒進度條
+  try {
+    const ctx = getBrandContext();
+    const headlineEl = document.getElementById('gptHeadline');
+    const subHeadlineEl = document.getElementById('gptSubHeadline');
+
+    const headline = headlineEl?.value?.trim()
+      || document.getElementById('amTitle')?.value?.trim()
+      || '主標輸入';
+    const subHeadline = subHeadlineEl?.value?.trim() || '副標補充說明';
+
+    const layout = POSTER_LAYOUTS[GPT_POSTER_LAYOUT] || POSTER_LAYOUTS.single_luxury;
+    const prompt = layout.buildPrompt({
+      ...ctx,
+      headline,
+      subHeadline
+    });
+
+    console.log('[v10.0] GPT 海報 prompt:', prompt.substring(0, 200) + '...');
+    setPrStatus('🎨 GPT Image 2 生成中(約 30-60 秒)...', 'var(--t3)');
+
+    const submitData = await callWorker({
+      action: 'gpt_poster_submit',
+      prompt,
+      image_size: 'portrait_4_3',
+      quality: 'medium'
+    });
+    if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
+
+    setPrStatus('⏳ 等待 GPT Image 2 出圖...', 'var(--t3)');
+    let result = await pollUntilDone(
+      submitData.requestId,
+      submitData.endpoint,
+      180000, // GPT 海報最多等 3 分鐘
+      submitData.responseUrl,
+      submitData.statusUrl
+    );
+
+    if (result.status === 'TIMEOUT') {
+      setPrStatus('🔄 最後查詢一次...', 'var(--t3)');
+      for (let i = 0; i < 3; i++) {
+        await sleep(5000);
+        result = await callWorker({
+          action: 'fal_poll',
+          requestId: submitData.requestId,
+          endpoint: submitData.endpoint,
+          responseUrl: submitData.responseUrl,
+          statusUrl: submitData.statusUrl
+        });
+        if (result.status === 'COMPLETED' && result.imageUrl) break;
+      }
+    }
+
+    if (result.status === 'FAILED') throw new Error(result.error || '生成失敗');
+    if (!result.imageUrl) throw new Error('未取得海報圖片');
+
+    PR_BG_IMG = result.imageUrl;
+    CANVAS_TAINTED = false;
+
+    // GPT 海報是直式 4:3 比例 → 調整 canvas 尺寸
+    AM.w = 1080;
+    AM.h = 1440; // 4:3 portrait,符合 portrait_4_3
+    await renderGptPosterCanvas();
+    finishProgress(interval);
+    setPrStatus('✅ GPT 海報生成完成！', 'var(--mint)');
+  } catch(e) {
+    failProgress(interval, e.message);
+  }
+}
+
+// GPT 海報不疊字(GPT 自己會把字畫進圖裡),直接貼背景
+async function renderGptPosterCanvas() {
+  const canvas = document.getElementById('adCanvas');
+  if (!canvas) return;
+  canvas.width = AM.w; canvas.height = AM.h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.fillStyle = '#0A0A0B';
+  ctx.fillRect(0, 0, AM.w, AM.h);
+
+  try {
+    const { img, tainted } = await loadImageSmart(PR_BG_IMG);
+    if (tainted) CANVAS_TAINTED = true;
+    const scale = Math.min(AM.w / img.width, AM.h / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    const x = Math.round((AM.w - w) / 2);
+    const y = Math.round((AM.h - h) / 2);
+    ctx.drawImage(img, x, y, w, h);
+  } catch(e) {
+    console.error('[v10.0] GPT 海報渲染失敗:', e.message);
+    drawBgFallback(ctx);
+    ctx.fillStyle = '#FFA060';
+    ctx.font = '900 36px "Noto Sans TC",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚠️ 海報載入失敗', AM.w/2, AM.h/2);
+    ctx.font = '400 20px "Noto Sans TC",sans-serif';
+    ctx.fillText(e.message.substring(0, 40), AM.w/2, AM.h/2 + 40);
+  }
 }
