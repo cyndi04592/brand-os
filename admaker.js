@@ -885,112 +885,65 @@ function blobToBase64(blob) {
   });
 }
 
+
 // ═══════════════════════════════════════════════════════════════════════
-// ★ v10.0 新增: GPT Image 2 海報生成模組
-//   - 4 種版型: 1圖精品 / 2格對比 / 4格樣本 / 復古海報
-//   - 自動帶入品牌名、副品牌名、商品名、adStyle
-//   - GPT Image 2 中文文字渲染完美,不需要再疊字
+// ★ v10.1: 懶人 AI 廣告圖模組 (GPT Image 2 edit 模式)
+//   - 商品 100% 保留(edit 模式,不是文生圖)
+//   - 8 個靈感鍵 + 品牌 adStyle 自動串接
+//   - 生圖後可一鍵變 5 秒影片(Kling v2.1)
 // ═══════════════════════════════════════════════════════════════════════
 
-// 版型樣版 - 用英文描述結構,中文字只放「要顯示在海報上的文字」
-const POSTER_LAYOUTS = {
-  single_luxury: {
-    label: '🖼️ 單圖精品風',
-    desc: '單一主視覺,大面積留白,精品雜誌感',
-    buildPrompt: ({ brand, subBrand, product, headline, subHeadline, adStyle }) => `
-A single-subject luxury editorial poster for ${brand}${subBrand ? ' · ' + subBrand : ''}.
-Vertical poster layout, 4:3 portrait. Large clean negative space, minimalist composition.
-Subject: a beautifully photographed ${product} placed center-left, soft directional studio lighting, cinematic depth.
-
-Text on poster (render with pixel-perfect Traditional Chinese typography, elegant serif):
-- Large headline at top-right: "${headline}"
-- Smaller subheadline below: "${subHeadline}"
-- Tiny brand mark at bottom: "${brand}"
-
-Aesthetic direction: ${adStyle || 'premium, editorial, magazine-quality, refined'}.
-Color palette: restrained, muted tones with one subtle accent color.
-Print-quality, Vogue/Kinfolk editorial feel, NOT over-designed.
-`.trim()
+// 8 個靈感鍵 — 每個只描述「畫面風格方向」,不描述商品
+// 商品會由 GPT edit 模式從輸入圖自動保留
+const INSPIRATION_KEYS = {
+  summer_beach: {
+    label: '🌊 夏日海邊',
+    style: 'vibrant tropical summer scene. Sunny blue sky, turquoise ocean, sandy beach, palm tree shadows, visible sun flare, refreshing clean color palette with azure blues, coral pinks, and sun yellows. Cheerful clean commercial photography lighting.'
   },
-
-  dual_compare: {
-    label: '🔀 雙格對比',
-    desc: '左右兩格對比,強調 Before/After 或兩個賣點',
-    buildPrompt: ({ brand, subBrand, product, headline, subHeadline, adStyle }) => `
-A two-panel split-screen advertising poster for ${brand}${subBrand ? ' · ' + subBrand : ''}.
-Vertical 4:3 layout, divided into LEFT and RIGHT halves by a clean vertical line.
-
-LEFT PANEL: Problem state or "before" - muted colors, slightly desaturated, conveys the pain point.
-RIGHT PANEL: Solution state or "after" - bright, vibrant, showing ${product} in hero lighting.
-
-Text on poster (pixel-perfect Traditional Chinese, bold sans-serif):
-- Top banner spanning both panels: "${headline}"
-- Left panel small label: "前 / Before" with minimal description
-- Right panel small label: "後 / After"
-- Bottom center subheadline: "${subHeadline}"
-- Brand signature bottom-right: "${brand}"
-
-Style: ${adStyle || 'bold, confident, direct marketing, e-commerce clean'}.
-Modern commercial photography, sharp contrast between the two halves.
-`.trim()
+  japan_minimal: {
+    label: '✨ 日系極簡',
+    style: 'Japanese minimalist editorial aesthetic. Off-white paper-textured background with warm beige and sage green tones, soft natural window light from the side, subtle dried branch or ceramic vase element. Generous negative space, CEREAL / Kinfolk magazine feel, muted desaturated color palette.'
   },
-
-  quad_grid: {
-    label: '🔲 4 格樣本',
-    desc: '2x2 網格,展示 4 種用法/口味/場景',
-    buildPrompt: ({ brand, subBrand, product, headline, subHeadline, adStyle }) => `
-A 2x2 grid product catalog poster for ${brand}${subBrand ? ' · ' + subBrand : ''}, vertical 4:3 layout.
-Four equal panels arranged in a 2x2 grid, separated by thin clean gutters.
-
-Each panel shows ${product} in a different context (use variety):
-- Top-left: product hero shot on clean background
-- Top-right: product in lifestyle use (in-hand or in-scene)
-- Bottom-left: key ingredient or detail macro close-up
-- Bottom-right: finished result or end benefit
-
-Text on poster (pixel-perfect Traditional Chinese, strong modern sans-serif):
-- Large headline above the grid: "${headline}"
-- Subheadline below the grid: "${subHeadline}"
-- Tiny labels inside each panel (one word each, optional)
-- Brand mark bottom-right: "${brand}"
-
-Style: ${adStyle || 'clean, informative, catalog-grade, modern commerce'}.
-Consistent lighting and color treatment across all four panels for unity.
-`.trim()
+  korean_ecom: {
+    label: '🎯 韓系電商',
+    style: 'Korean e-commerce glossy aesthetic. Dreamy gradient of pastel pink, lavender purple, soft sky blue with sparkle bokeh and holographic light flares. Hand-drawn heart and star decorative elements in white. High-key bright exposure, glossy and youthful Seoul beauty brand magazine vibe.'
   },
-
+  japan_food: {
+    label: '🍶 日式食品',
+    style: 'Japanese food editorial dark aesthetic. Deep ink-black charcoal background, single warm overhead spotlight, dramatic steam wisps, bold brush-stroke calligraphy-style accents. Rich dark tones with gold highlights, Michelin kappo restaurant aesthetic, premium Japanese artisan food packaging design feel.'
+  },
+  family_warm: {
+    label: '👶 家庭溫馨',
+    style: 'warm cozy family lifestyle scene. Soft morning sunlight streaming through window, light oak wood surfaces, hand-drawn speech bubble decorations, cute hand-written handwriting decorative elements, soft pastel palette. Friendly heartwarming tone, parenting magazine editorial feel.'
+  },
+  surreal_art: {
+    label: '🎨 超現實藝術',
+    style: 'surreal art photography. Everyday objects floating in mid-air defying gravity, upside-down cityscape reflections, liquid suspended frozen in space. Cinematic dramatic lighting, Tokyo editorial art magazine aesthetic, conceptual photography feel. Mysterious and thought-provoking atmosphere.'
+  },
+  tech_detail: {
+    label: '🏆 科技詳情頁',
+    style: 'high-tech product detail page e-commerce layout. Dark charcoal to black gradient background with orange-amber accent rim lighting. Numbered feature callouts with icons on the left side (1, 2, 3, 4 style bullets), technical specification callouts at bottom. Premium consumer electronics catalog feel, flagship smartphone launch ad aesthetic.'
+  },
   retro_vintage: {
-    label: '📰 復古海報',
-    desc: '懷舊年代感,牛皮紙/老報紙/復古印刷',
-    buildPrompt: ({ brand, subBrand, product, headline, subHeadline, adStyle }) => `
-A vintage 1960s-1980s style advertisement poster for ${brand}${subBrand ? ' · ' + subBrand : ''}.
-Vertical 4:3 poster format, textured paper or aged newsprint background.
-
-Visual: ${product} illustrated or photographed with slightly over-saturated Kodachrome color,
-subtle halftone print texture, soft paper grain, edge vignetting.
-Include a small retro decorative border or frame element.
-
-Text on poster (pixel-perfect Traditional Chinese, vintage display typography -
-chunky serif or condensed sans, mixing sizes for emphasis):
-- BIG headline top: "${headline}"
-- Secondary line just below: "${subHeadline}"
-- Small tagline or description paragraph in the lower third (invent plausible retro copy
-  describing ${product}, keep it under 15 Chinese characters)
-- Brand stamp or seal bottom corner: "${brand}"
-
-Aesthetic: ${adStyle || '1975 Taiwan / Japan Showa era magazine ad, warm sepia-amber tones, nostalgic, printed paper feel'}.
-Film grain visible, slight color bleed, looks like a scanned vintage page, NOT digital.
-`.trim()
+    label: '📰 復古印刷',
+    style: '1970s Taiwanese vintage magazine advertisement aesthetic. Warm sepia-amber color grading, visible paper grain texture overlay, slight film halation, Kodachrome tones, soft edge vignetting. Retro display serif typography mixing sizes. Nostalgic printed page feel, looks like a scanned vintage magazine from 1975.'
   }
 };
 
 // 狀態
-let GPT_POSTER_LAYOUT = 'single_luxury';
+let SELECTED_INSPIRATION = null;
+let LAST_POSTER_URL = null; // v10.1: 存最近一張海報URL,供「變影片」使用
 
-function setGptPosterLayout(btn, key) {
-  document.querySelectorAll('.gpt-poster-layout-btn').forEach(b => b.classList.remove('on'));
+function setInspiration(btn, key) {
+  document.querySelectorAll('.insp-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  GPT_POSTER_LAYOUT = key;
+  SELECTED_INSPIRATION = key;
+
+  // 把靈感風格描述填進自由描述欄 (讓使用者可以看/編輯)
+  const descEl = document.getElementById('gptStyleDesc');
+  if (descEl && INSPIRATION_KEYS[key]) {
+    descEl.value = INSPIRATION_KEYS[key].style;
+  }
 }
 
 // 抓目前選到的品牌資料
@@ -999,49 +952,107 @@ function getBrandContext() {
   const sub = brand?.subs?.find(s => s.id === window.S.subId);
   const prod = window.S.prod;
   return {
-    brand:     brand?.name || '未選品牌',
+    brand:     brand?.name || '',
     subBrand:  sub?.name || '',
-    product:   prod?.name || '商品',
+    product:   prod?.name || '',
     adStyle:   brand?.adStyle || '',
     hashtags:  brand?.hashtags || ''
   };
 }
 
+// v10.1: 核心 — 組合 prompt(商品保留鐵律 + 品牌 adStyle + 靈感風格 + 主副標)
+function buildPosterPrompt() {
+  const ctx = getBrandContext();
+  const styleDesc = document.getElementById('gptStyleDesc')?.value?.trim() || '';
+  const headline = document.getElementById('gptHeadline')?.value?.trim() || '';
+  const subHeadline = document.getElementById('gptSubHeadline')?.value?.trim() || '';
+
+  let prompt = '';
+
+  // Section 1: 商品保留鐵律(v10.1 最重要的部分)
+  prompt += `CRITICAL PRODUCT PRESERVATION (highest priority):\n`;
+  prompt += `- The product in the source image MUST be reproduced PIXEL-PERFECT identical\n`;
+  prompt += `- Preserve the exact product shape, proportions, colors, label design, logo, and all typography on the packaging\n`;
+  prompt += `- Do NOT redesign the product, do NOT invent new packaging, do NOT change the brand mark\n`;
+  prompt += `- The product is the hero — build the advertising scene AROUND it\n\n`;
+
+  // Section 2: 品牌氛圍(從 Google Sheet 帶入)
+  if (ctx.brand) prompt += `Brand context: "${ctx.brand}"${ctx.subBrand ? ' · ' + ctx.subBrand : ''}. `;
+  if (ctx.adStyle) prompt += `Brand aesthetic direction: ${ctx.adStyle}. `;
+  prompt += `\n\n`;
+
+  // Section 3: 使用者選的靈感風格(或自由描述)
+  if (styleDesc) {
+    prompt += `Visual style direction: ${styleDesc}\n\n`;
+  }
+
+  // Section 4: 版面規格
+  prompt += `Output format: vertical portrait 4:3 advertising poster layout, suitable for Instagram and e-commerce banners.\n\n`;
+
+  // Section 5: 中文文案渲染(pixel-perfect Traditional Chinese)
+  if (headline || subHeadline) {
+    prompt += `Text to render on the poster (render in pixel-perfect Traditional Chinese typography with correct glyphs, professional editorial layout):\n`;
+    if (headline) prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
+    if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
+    if (ctx.brand) prompt += `- Small brand signature at corner: "${ctx.brand}"\n`;
+    prompt += `The typography must be crisp, readable, and integrated into the design layout naturally.\n\n`;
+  }
+
+  // Section 6: 品質要求
+  prompt += `Change: background, environment, lighting, added decorative elements, typography, layout.\n`;
+  prompt += `Preserve: product identity, product details, brand marks, all text printed on the product itself.\n`;
+  prompt += `Constraints: no watermark, no extra random objects, no logo distortion, no product redesign.`;
+
+  return prompt;
+}
+
+// v10.1 主流程: 上傳商品圖 → 送 GPT edit → 拿回海報
 async function generateGptPoster() {
-  const interval = startProgress(60000); // GPT Image 2 比較慢,給 60 秒進度條
+  const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
+  if (!photo) { setPrStatus('⚠️ 請先選擇商品照片！', 'var(--red)'); return; }
+  const imgSrc = photo.src || photo.thumb;
+  if (!imgSrc) { setPrStatus('⚠️ 商品照尚未載入', 'var(--red)'); return; }
+
+  const headline = document.getElementById('gptHeadline')?.value?.trim();
+  if (!headline) {
+    setPrStatus('⚠️ 請至少填主標(大字)', 'var(--red)');
+    document.getElementById('prApplyBtn').disabled = false;
+    document.getElementById('prApplyBtn').textContent = '✨ 套用 AI 效果';
+    return;
+  }
+
+  const interval = startProgress(90000); // GPT high quality 可能要 60-90 秒
   try {
-    const ctx = getBrandContext();
-    const headlineEl = document.getElementById('gptHeadline');
-    const subHeadlineEl = document.getElementById('gptSubHeadline');
+    // Step 1: 把商品圖上傳 fal(拿到公開 URL)
+    setPrStatus('📤 上傳商品照至 fal...', 'var(--t3)');
+    const blob = await urlToBlob(imgSrc);
+    const base64 = await blobToBase64(blob);
+    const paddedBase64 = await padImageTo1080(base64);
+    const imageUrl = await uploadToFal(paddedBase64);
 
-    const headline = headlineEl?.value?.trim()
-      || document.getElementById('amTitle')?.value?.trim()
-      || '主標輸入';
-    const subHeadline = subHeadlineEl?.value?.trim() || '副標補充說明';
+    // Step 2: 組 prompt
+    const prompt = buildPosterPrompt();
+    console.log('[v10.1] 懶人廣告圖 prompt 長度:', prompt.length, '字元');
+    console.log('[v10.1] 前 300 字:', prompt.substring(0, 300));
 
-    const layout = POSTER_LAYOUTS[GPT_POSTER_LAYOUT] || POSTER_LAYOUTS.single_luxury;
-    const prompt = layout.buildPrompt({
-      ...ctx,
-      headline,
-      subHeadline
-    });
-
-    console.log('[v10.0] GPT 海報 prompt:', prompt.substring(0, 200) + '...');
-    setPrStatus('🎨 GPT Image 2 生成中(約 30-60 秒)...', 'var(--t3)');
-
+    // Step 3: 送 GPT Image 2 edit
+    setPrStatus('🎨 GPT Image 2 生成中(頂級質感約 60-90 秒)...', 'var(--t3)');
     const submitData = await callWorker({
-      action: 'gpt_poster_submit',
+      action: 'gpt_poster_edit_submit',
       prompt,
+      imageUrls: [imageUrl],
       image_size: 'portrait_4_3',
-      quality: 'medium'
+      quality: 'high',
+      num_images: 1
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
-    setPrStatus('⏳ 等待 GPT Image 2 出圖...', 'var(--t3)');
+    // Step 4: Poll
+    setPrStatus('⏳ 等待 GPT 出圖(高品質需耐心等)...', 'var(--t3)');
     let result = await pollUntilDone(
       submitData.requestId,
       submitData.endpoint,
-      180000, // GPT 海報最多等 3 分鐘
+      240000, // GPT high 最多等 4 分鐘
       submitData.responseUrl,
       submitData.statusUrl
     );
@@ -1065,20 +1076,29 @@ async function generateGptPoster() {
     if (!result.imageUrl) throw new Error('未取得海報圖片');
 
     PR_BG_IMG = result.imageUrl;
+    LAST_POSTER_URL = result.imageUrl; // v10.1: 記錄給「變影片」按鈕
     CANVAS_TAINTED = false;
 
-    // GPT 海報是直式 4:3 比例 → 調整 canvas 尺寸
+    // v10.1: 海報是直式 4:3
     AM.w = 1080;
-    AM.h = 1440; // 4:3 portrait,符合 portrait_4_3
+    AM.h = 1440;
     await renderGptPosterCanvas();
     finishProgress(interval);
-    setPrStatus('✅ GPT 海報生成完成！', 'var(--mint)');
+    setPrStatus('✅ 懶人 AI 廣告圖完成！可點「🎬 變 5 秒影片」', 'var(--mint)');
+
+    // v10.1: 顯示「變影片」按鈕
+    const videoBtn = document.getElementById('posterToVideoBtn');
+    if (videoBtn) {
+      videoBtn.style.display = 'block';
+      videoBtn.disabled = false;
+      videoBtn.textContent = '🎬 變 5 秒影片 (~NT$11)';
+    }
   } catch(e) {
     failProgress(interval, e.message);
   }
 }
 
-// GPT 海報不疊字(GPT 自己會把字畫進圖裡),直接貼背景
+// v10.1: 海報渲染(不疊字,GPT 自己把字畫進去了)
 async function renderGptPosterCanvas() {
   const canvas = document.getElementById('adCanvas');
   if (!canvas) return;
@@ -1099,7 +1119,7 @@ async function renderGptPosterCanvas() {
     const y = Math.round((AM.h - h) / 2);
     ctx.drawImage(img, x, y, w, h);
   } catch(e) {
-    console.error('[v10.0] GPT 海報渲染失敗:', e.message);
+    console.error('[v10.1] 海報渲染失敗:', e.message);
     drawBgFallback(ctx);
     ctx.fillStyle = '#FFA060';
     ctx.font = '900 36px "Noto Sans TC",sans-serif';
@@ -1108,4 +1128,98 @@ async function renderGptPosterCanvas() {
     ctx.font = '400 20px "Noto Sans TC",sans-serif';
     ctx.fillText(e.message.substring(0, 40), AM.w/2, AM.h/2 + 40);
   }
+}
+
+// v10.1: 一鍵把海報變 5 秒影片
+async function posterToVideo() {
+  if (!LAST_POSTER_URL) {
+    setPrStatus('⚠️ 請先生成海報', 'var(--red)');
+    return;
+  }
+
+  const videoBtn = document.getElementById('posterToVideoBtn');
+  videoBtn.disabled = true;
+  videoBtn.textContent = '⏳ 影片生成中...';
+
+  const interval = startProgress(120000); // Kling 可能要 2 分鐘
+
+  try {
+    setPrStatus('🎬 送出影片任務(Kling v2.1)...', 'var(--t3)');
+    const submitData = await callWorker({
+      action: 'kling_poster_video_submit',
+      imageUrl: LAST_POSTER_URL,
+      duration: 5,
+      aspect_ratio: '3:4'
+    });
+    if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
+
+    setPrStatus('⏳ Kling 影片生成中(約 90-120 秒)...', 'var(--t3)');
+    let result = await pollUntilDone(
+      submitData.requestId,
+      submitData.endpoint,
+      300000, // 5 分鐘上限
+      submitData.responseUrl,
+      submitData.statusUrl
+    );
+
+    if (result.status === 'TIMEOUT') {
+      setPrStatus('🔄 最後查詢一次...', 'var(--t3)');
+      for (let i = 0; i < 3; i++) {
+        await sleep(5000);
+        result = await callWorker({
+          action: 'fal_poll',
+          requestId: submitData.requestId,
+          endpoint: submitData.endpoint,
+          responseUrl: submitData.responseUrl,
+          statusUrl: submitData.statusUrl
+        });
+        if (result.status === 'COMPLETED' && result.videoUrl) break;
+      }
+    }
+
+    if (result.status === 'FAILED') throw new Error(result.error || '影片生成失敗');
+    if (!result.videoUrl) throw new Error('未取得影片 URL');
+
+    // 成功 → 把 canvas 換成影片播放
+    showVideoInCanvas(result.videoUrl);
+    finishProgress(interval);
+    setPrStatus('✅ 影片生成完成！可右鍵下載', 'var(--mint)');
+    videoBtn.textContent = '✅ 已生成影片';
+    videoBtn.disabled = true;
+
+  } catch(e) {
+    failProgress(interval, e.message);
+    videoBtn.disabled = false;
+    videoBtn.textContent = '🎬 變 5 秒影片 (~NT$11) — 失敗,重試';
+  }
+}
+
+// v10.1: 把 canvas 換成 video 播放器
+function showVideoInCanvas(videoUrl) {
+  const canvas = document.getElementById('adCanvas');
+  const container = canvas?.parentElement;
+  if (!container) return;
+
+  // 找有沒有舊的 video 元素,先移掉
+  const oldVideo = document.getElementById('adVideoPreview');
+  if (oldVideo) oldVideo.remove();
+
+  // canvas 暫時藏起來
+  canvas.style.display = 'none';
+
+  // 創 video 元素
+  const video = document.createElement('video');
+  video.id = 'adVideoPreview';
+  video.src = videoUrl;
+  video.controls = true;
+  video.autoplay = true;
+  video.loop = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.style.cssText = 'border-radius:12px;width:100%;max-width:560px;height:auto;box-shadow:0 16px 60px rgba(0,0,0,0.7);display:block;';
+  container.appendChild(video);
+
+  // 更新預覽標籤
+  const lbl = document.getElementById('previewLabel');
+  if (lbl) lbl.textContent = '🎬 影片預覽 5 秒循環播放';
 }
