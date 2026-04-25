@@ -240,20 +240,42 @@ Reference aesthetic: Apple product posters, Blue Bottle Coffee posters, Muji sto
 //   命中規則:用品牌名稱關鍵字模糊匹配 (chiao/巧福 → chiaofu)
 // ═══════════════════════════════════════════════════════════════════════
 const BRAND_STYLE_PACKS = {
-  // 巧福 CHIAO FU — 寶島復古電風美學
+  // 巧福 CHIAO FU — 健康家電(捕蚊燈/復古電風)
+  // ★ v10.2 fix:捕蚊燈是「氣流吸入式」,不是電擊式滅蚊燈 — 文案/視覺都要強調安靜、無電擊
   chiaofu: {
-    matchKeywords: ['chiaofu', 'chiao fu', '巧福', 'chiao', 'cf'],
+    matchKeywords: ['chiaofu', 'chiao fu', '巧福', 'chiao'],
     label: '巧福 CHIAO FU',
-    dna: `BRAND VISUAL DNA — CHIAO FU (寶島復古電風):
-- Primary brand color: deep forest green #3D5A3F (used for headlines, footer bands, accent strokes)
+    dna: `BRAND VISUAL DNA — CHIAO FU (Taiwan Health Home Appliance — Suction-type Mosquito Trap & Retro Fan):
+- Primary brand color: deep forest green #3D5A3F (used for headlines, footer bands, accent strokes, brand circular logo)
 - Secondary palette: warm cream #F5EFE5, soft beige #E8DCC8, dusty terracotta #C49B7E, retro powder blue #A8C5D0
-- Typography hierarchy: Traditional Chinese display headline in 明朝體 / Mincho Serif (large, refined, slightly squared); body copy in clean thin Sans (思源黑體 light); brand signature in custom logo treatment
+- Typography hierarchy: Traditional Chinese display headline in 明朝體 / Mincho Serif (large, refined, slightly squared); body copy in clean thin Sans (思源黑體 light); brand signature is the round "CHIAO FU" white-on-green logo
 - Photography style: warm natural daylight from upper-left window, 4500-5500K, soft shadows, slight matte film texture (not glossy)
-- Mood: nostalgic-modern Taiwan, Showa-era Taiwan domestic life, "old-but-renewed" feeling
-- Decorative elements: thin horizontal divider lines (1-2px solid green), small "CHIAO FU" circular logo mark at bottom, modest paper grain texture overlay
-- Background scenes: vintage Taiwanese home interior with mid-century furniture (Togo sofa, vinyl turntable, rattan, wooden parquet floor, framed retro posters), or sunlit Taiwanese countryside, or 1970s-style domestic still life with terrazzo floor
-- Composition habit: large generous negative space (40-50%), bottom solid green band as footer, headline text in green
-- AVOID: neon colors, sharp tech aesthetics, cluttered layouts, glossy plastic feel
+- Mood: nostalgic-modern Taiwan, Showa-era Taiwan domestic life, "old-but-renewed" feeling, quiet and gentle
+- Decorative elements: thin horizontal divider lines (1-2px solid green), the round "CHIAO FU" logo mark centered at bottom on green band, modest paper grain texture overlay
+- Background scenes: vintage Taiwanese home interior with mid-century furniture (Togo sofa, vinyl turntable, rattan, wooden parquet floor, framed retro posters), or sunlit Taiwanese countryside porch, or 1970s-style domestic still life with terrazzo floor
+- Composition habit: large generous negative space (40-50%), bottom solid green band as footer with white round logo, headline text in deep forest green
+- Product category specifics:
+  · Suction-type mosquito trap (UC-700 / UC-800LED / UC-850LED): a quiet appliance that draws mosquitoes in by airflow — NOT an electric zapper, no purple light, no zapping sound. Position as "靜音 / 無電擊 / 全家安心" (silent / no electric shock / safe for the whole family). Show in domestic scenes (bedroom corner, living room, baby room).
+  · Rechargeable mosquito swatter (UC-723): handheld, modern but quiet positioning.
+  · Retro fan (寶島復古電風): hero product, Showa-modern positioning.
+- AVOID: neon colors, electric zapper imagery (purple-light bug zappers), buzzing/electricity FX, sharp tech aesthetics, cluttered layouts, glossy plastic feel, anything that looks like an industrial pesticide product
+`
+  },
+
+  // 空瑪那 KA — 瑜珈課程品牌
+  ka_yoga: {
+    matchKeywords: ['ka', '空瑪那', 'kamana', 'yoga', '瑜珈', '瑜伽'],
+    label: '空瑪那 KA 瑜珈',
+    dna: `BRAND VISUAL DNA — KA (Yoga Studio / Wellness):
+- Primary palette: warm sand #E8DCC8, soft sage #B5C5A8, deep pine #4A5D4A, accent terracotta #C49B7E
+- Secondary: ivory cream #F5EFE8, dusty mauve #B8A8B0
+- Typography: refined Serif headline (Cormorant Garamond / Playfair) for English + 思源宋體 Light for Chinese; lots of letter-spacing; calligraphy-feel for accent words
+- Photography style: soft directional natural daylight from large window, 4500-5500K, low contrast, slight film grain, hands and body in graceful posture
+- Mood: contemplative, breathing, slow, Japanese-Korean-Indian wellness fusion (lululemon × Aesop × Ryokan)
+- Decorative elements: thin botanical line illustrations (lotus, branches), Sanskrit mantra characters as background watermark texture, wooden mala bead props, ceramic incense holder, single dried flower
+- Background scenes: minimalist yoga studio with light oak floor and white walls, traditional tatami room with shoji screens, Japanese garden stone path with moss, candle-lit retreat space, sunrise mountain meditation deck
+- Composition habit: vertical breathing space, headline placed mid-upper third, body copy in narrow column, generous 50%+ negative space, asymmetric off-center balance
+- AVOID: neon, harsh contrast, hyperactive layouts, fitness gym aesthetic (this is yoga not crossfit), overtly sexy poses, kitsch cartoon
 `
   },
 
@@ -436,21 +458,50 @@ let LAST_POSTER_URL = null;
 const BLACK_IMAGE_THRESHOLD = 30000;
 
 
-// v10.2: 根據當前品牌名自動匹配品牌風格包
+// v10.2 (v10.2.1 hotfix): 根據當前品牌名自動匹配品牌風格包
+// 修補:用「全字邊界」匹配,避免「ka」這種兩個字母誤命中其他品牌
+// 規則:
+//   - 中文關鍵字(巧福/空瑪那)用 includes() 因為中文沒有單詞邊界概念,但中文不會誤命中
+//   - 英文關鍵字用 \b 全字邊界,避免「ka」命中「daikamano」這種
+//   - 同時優先比對「最長」關鍵字,避免短的先攔截
 function detectBrandPack() {
   const brand = window.BRANDS?.find(b => b.id === window.S?.brandId);
   if (!brand) return BRAND_STYLE_PACKS.default_clean;
-  const haystack = `${brand.id || ''} ${brand.name || ''} ${brand.label || ''}`.toLowerCase();
+  const haystack = `${brand.id || ''} ${brand.name || ''} ${brand.label || ''}`.toLowerCase().trim();
+  if (!haystack) return BRAND_STYLE_PACKS.default_clean;
+
+  // 把所有非 default 的 (pack, keyword) 配對展平,並依關鍵字長度由長到短排序
+  // 這樣「chiaofu」(7字)會比「chiao」(5字)先嘗試,避免短字搶先
+  const matchPairs = [];
   for (const [key, pack] of Object.entries(BRAND_STYLE_PACKS)) {
     if (key === 'default_clean') continue;
     for (const kw of pack.matchKeywords) {
-      if (haystack.includes(kw.toLowerCase())) {
-        console.log('[v10.2] 命中品牌包:', pack.label, '(關鍵字:', kw, ')');
-        return pack;
-      }
+      matchPairs.push({ pack, keyword: kw.toLowerCase() });
     }
   }
-  console.log('[v10.2] 未命中任何品牌包,走 default_clean');
+  matchPairs.sort((a, b) => b.keyword.length - a.keyword.length);
+
+  // 中文字元判斷
+  const isChinese = (s) => /[\u4e00-\u9fff]/.test(s);
+
+  for (const { pack, keyword } of matchPairs) {
+    let hit = false;
+    if (isChinese(keyword)) {
+      // 中文關鍵字直接 includes
+      hit = haystack.includes(keyword);
+    } else {
+      // 英文關鍵字用全字邊界正則 (避免 ka 命中 sakamoto / daikamano)
+      // 對於 2-3 字短關鍵字一律用全字邊界;4 字以上仍用全字邊界,但本來誤判機率就低
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+      hit = regex.test(haystack);
+    }
+    if (hit) {
+      console.log('[v10.2.1] 命中品牌包:', pack.label, '(關鍵字:', keyword, '· haystack:', haystack, ')');
+      return pack;
+    }
+  }
+  console.log('[v10.2.1] 未命中任何品牌包,走 default_clean (haystack:', haystack, ')');
   return BRAND_STYLE_PACKS.default_clean;
 }
 
@@ -751,7 +802,7 @@ async function applyPhotoroomBg() {
   const btn = document.getElementById('prApplyBtn');
 
   if (PR_MODE === 'gpt_poster') {
-    btn.disabled = true; btn.textContent = '⏳ AI 海報生成中...';
+    btn.disabled = true; btn.textContent = '⏳ AI 廣告圖生成中...';
     await generateGptPoster();
     return;
   }
@@ -1348,6 +1399,9 @@ async function generateGptPoster() {
 
   const interval = startProgress(90000);
   try {
+    // v10.2.1 hotfix:強制刷新 badge,避免 UI 顯示與實際 prompt 用的品牌包不一致
+    updateBrandPackBadge();
+
     setPrStatus('📤 上傳商品照至 fal...', 'var(--t3)');
     const blob = await urlToBlob(imgSrc);
     const base64 = await blobToBase64(blob);
@@ -1394,7 +1448,7 @@ async function generateGptPoster() {
     }
 
     if (result.status === 'FAILED') throw new Error(result.error || '生成失敗');
-    if (!result.imageUrl) throw new Error('未取得海報圖片');
+    if (!result.imageUrl) throw new Error('未取得廣告圖片');
 
     PR_BG_IMG = result.imageUrl;
     LAST_POSTER_URL = result.imageUrl;
@@ -1440,12 +1494,12 @@ async function renderGptPosterCanvas() {
     const y = Math.round((AM.h - h) / 2);
     ctx.drawImage(img, x, y, w, h);
   } catch(e) {
-    console.error('[v10.2] 海報渲染失敗:', e.message);
+    console.error('[v10.2] 廣告圖渲染失敗:', e.message);
     drawBgFallback(ctx);
     ctx.fillStyle = '#FFA060';
     ctx.font = '900 36px "Noto Sans TC",sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('⚠️ 海報載入失敗', AM.w/2, AM.h/2);
+    ctx.fillText('⚠️ 廣告圖載入失敗', AM.w/2, AM.h/2);
     ctx.font = '400 20px "Noto Sans TC",sans-serif';
     ctx.fillText(e.message.substring(0, 40), AM.w/2, AM.h/2 + 40);
   }
@@ -1453,7 +1507,7 @@ async function renderGptPosterCanvas() {
 
 async function posterToVideo() {
   if (!LAST_POSTER_URL) {
-    setPrStatus('⚠️ 請先生成海報', 'var(--red)');
+    setPrStatus('⚠️ 請先生成廣告圖', 'var(--red)');
     return;
   }
 
