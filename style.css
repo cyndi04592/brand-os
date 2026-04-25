@@ -741,6 +741,19 @@ body::before {
   box-shadow: 0 0 12px rgba(201,166,101,0.15);
 }
 
+/* v10.0: GPT 海報版型按鈕 */
+.gpt-poster-layout-btn:hover {
+  border-color: rgba(184,158,212,0.7) !important;
+  background: rgba(184,158,212,0.08) !important;
+  color: #E8DCFF !important;
+}
+.gpt-poster-layout-btn.on {
+  background: rgba(184,158,212,0.15) !important;
+  border-color: rgba(184,158,212,0.7) !important;
+  color: #E8DCFF !important;
+  box-shadow: 0 0 14px rgba(184,158,212,0.18);
+}
+
 /* ══ Animations ══ */
 @keyframes hlNew { from { background: rgba(126,212,176,0.12); } to { background: transparent; } }
 .drive-warning-text { animation: driveFlash 1.5s ease infinite; }
