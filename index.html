@@ -272,7 +272,7 @@
           <div style="display:grid;grid-template-columns:1fr;gap:5px;">
             <button class="pr-mode-btn on" onclick="setPrMode(this,'product_shot')" style="font-weight:900;padding:9px;">✨ AI 情境生成 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換場景)</span></button>
             <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')" style="border-color:rgba(232,160,58,0.5);color:#E8C878;font-weight:900;padding:9px;">👗 AI 真人試穿 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換模特)</span></button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'gpt_poster')" style="border-color:rgba(184,158,212,0.5);background:linear-gradient(135deg,rgba(184,158,212,0.08),rgba(91,200,200,0.08));color:#C9B8E8;font-weight:900;padding:9px;">🎨 AI 海報 <span style="opacity:0.55;font-weight:400;font-size:9px;">(全新生成·GPT Image 2)</span></button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'gpt_poster')" style="border-color:rgba(184,158,212,0.5);background:linear-gradient(135deg,rgba(184,158,212,0.08),rgba(91,200,200,0.08));color:#C9B8E8;font-weight:900;padding:9px;">⚡ 懶人 AI 廣告圖 <span style="opacity:0.55;font-weight:400;font-size:9px;">(頂級·商品保留·NT$5/張)</span></button>
           </div>
         </div>
 
@@ -366,38 +366,52 @@
           </div>
         </div>
 
-        <!-- v10.0 新增: GPT Image 2 海報生成設定 -->
+        <!-- v10.1: 懶人 AI 廣告圖設定 -->
         <div id="prGptPosterSection" style="display:none;padding:9px 11px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:#C9B8E8;font-weight:700;letter-spacing:2px;margin-bottom:7px;">AI 海報版型</div>
+          <div style="font-size:8px;color:#C9B8E8;font-weight:700;letter-spacing:2px;margin-bottom:7px;">⚡ 風格靈感 (點一下填入)</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;">
-            <button class="gpt-poster-layout-btn on" onclick="setGptPosterLayout(this,'single_luxury')" style="padding:8px 5px;border-radius:7px;background:rgba(184,158,212,0.12);border:1.5px solid rgba(184,158,212,0.5);color:#E8DCFF;font-family:'Noto Sans TC';font-size:10px;font-weight:800;cursor:pointer;line-height:1.4;">🖼️ 單圖<br><span style="font-size:8px;opacity:0.7;font-weight:500;">精品風</span></button>
-            <button class="gpt-poster-layout-btn" onclick="setGptPosterLayout(this,'dual_compare')" style="padding:8px 5px;border-radius:7px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.1);color:#A0A0A8;font-family:'Noto Sans TC';font-size:10px;font-weight:800;cursor:pointer;line-height:1.4;">🔀 2格<br><span style="font-size:8px;opacity:0.7;font-weight:500;">對比</span></button>
-            <button class="gpt-poster-layout-btn" onclick="setGptPosterLayout(this,'quad_grid')" style="padding:8px 5px;border-radius:7px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.1);color:#A0A0A8;font-family:'Noto Sans TC';font-size:10px;font-weight:800;cursor:pointer;line-height:1.4;">🔲 4格<br><span style="font-size:8px;opacity:0.7;font-weight:500;">樣本</span></button>
-            <button class="gpt-poster-layout-btn" onclick="setGptPosterLayout(this,'retro_vintage')" style="padding:8px 5px;border-radius:7px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.1);color:#A0A0A8;font-family:'Noto Sans TC';font-size:10px;font-weight:800;cursor:pointer;line-height:1.4;">📰 復古<br><span style="font-size:8px;opacity:0.7;font-weight:500;">海報</span></button>
+            <button class="insp-btn" onclick="setInspiration(this,'summer_beach')">🌊 夏日海邊</button>
+            <button class="insp-btn" onclick="setInspiration(this,'japan_minimal')">✨ 日系極簡</button>
+            <button class="insp-btn" onclick="setInspiration(this,'korean_ecom')">🎯 韓系電商</button>
+            <button class="insp-btn" onclick="setInspiration(this,'japan_food')">🍶 日式食品</button>
+            <button class="insp-btn" onclick="setInspiration(this,'family_warm')">👶 家庭溫馨</button>
+            <button class="insp-btn" onclick="setInspiration(this,'surreal_art')">🎨 超現實藝術</button>
+            <button class="insp-btn" onclick="setInspiration(this,'tech_detail')">🏆 科技詳情頁</button>
+            <button class="insp-btn" onclick="setInspiration(this,'retro_vintage')">📰 復古印刷</button>
           </div>
 
           <div style="margin-bottom:7px;">
-            <div class="sel-lbl">主標 (大字)</div>
-            <input type="text" id="gptHeadline" placeholder="例: 台灣味 · 真材實料" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
+            <div class="sel-lbl">風格描述 (可微調)</div>
+            <textarea id="gptStyleDesc" rows="4" placeholder="點上方靈感鍵自動填入,或自己打想要的風格...(英文為主,中文也會懂)" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:10px;margin-top:4px;box-sizing:border-box;resize:vertical;line-height:1.5;"></textarea>
           </div>
 
           <div style="margin-bottom:7px;">
-            <div class="sel-lbl">副標 (小字)</div>
-            <input type="text" id="gptSubHeadline" placeholder="例: 全程台灣製造,百年老店品質" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
+            <div class="sel-lbl">主標 (大字·必填)</div>
+            <input type="text" id="gptHeadline" placeholder="例: 夏日美白 · 透亮無懼陽光" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
+          </div>
+
+          <div style="margin-bottom:7px;">
+            <div class="sel-lbl">副標 (小字·可略)</div>
+            <input type="text" id="gptSubHeadline" placeholder="例: 7 天勻亮有感" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
           </div>
 
           <div style="font-size:9px;color:#6A6860;line-height:1.75;padding:7px 9px;background:rgba(184,158,212,0.05);border-radius:7px;border:1px solid rgba(184,158,212,0.18);margin-top:7px;">
-            💡 GPT Image 2 · 全新文生圖<br>
-            · <b style="color:#C9B8E8;">不需要商品照</b>,從零生成海報<br>
-            · 中文字渲染完美(OpenAI 最新模型)<br>
-            · 品牌名、風格自動從左側帶入<br>
-            · 約 30-90 秒 · 每張約 NT$2.5
+            💡 <b style="color:#C9B8E8;">懶人 AI 廣告圖</b> · GPT Image 2 edit<br>
+            · <b>用左側選的商品照</b>作為基底<br>
+            · 商品盡量保留,背景/文案/構圖全換<br>
+            · 品牌 adStyle 自動串接進 prompt<br>
+            · 約 60-90 秒 · 每張約 <b style="color:#C9B8E8;">NT$5</b> (頂級質感)<br>
+            · ⚠️ 中文標籤保留率 70-85%,必要時人眼比對
           </div>
         </div>
 
         <!-- 套用按鈕 -->
         <div style="padding:9px 11px;">
           <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1.5px;box-shadow:0 4px 12px rgba(232,96,58,0.22);">✨ 套用 AI 效果</button>
+
+          <!-- v10.1: 變影片按鈕 (只在海報生成後出現) -->
+          <button onclick="posterToVideo()" id="posterToVideoBtn" style="display:none;width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,rgba(201,166,101,0.2),rgba(184,158,212,0.2));border:1.5px solid rgba(201,166,101,0.6);color:#E8DCA8;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1.5px;margin-top:6px;">🎬 變 5 秒影片 (~NT$11)</button>
+
           <div style="margin-top:6px;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <div id="prStatus" style="font-size:9px;color:#6A6860;min-height:14px;white-space:pre-line;letter-spacing:0.3px;"></div>
