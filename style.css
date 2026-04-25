@@ -1,11 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap');
 
 /* ══════════════════════════════════════════════════════════════
-   BRAND OS · v9.0  —  精品深色主題 (RABY D&C)
+   BRAND OS · v10.2  —  精品深色主題 (RABY D&C)
    變更:
+     [v10.2] 新增 .layout-btn / .flavor-btn / .context-btn 三層選擇按鈕
+     [v10.2] 三色語義區分:版式(紫)/風土(藍綠)/情境(暖橘)
      [v9.0] 色系:古銅金主色 + 純墨黑背景 + 橘紅降為 CTA 點綴
      [v9.0] 按鈕三層階級 / 卡片精品化 / 字距放寬
-     [v9.0] 新增 .version-capsule / .premium-glow / .cta-primary
    保留所有原 class,不破壞 KOL/後台/廣告監控頁面
    ══════════════════════════════════════════════════════════════ */
 
@@ -18,20 +19,20 @@
   --bg4:  #24242A;
 
   /* 主色 - 古銅金 (取代原橘紅主色地位) */
-  --gold:       #C9A665;      /* 主要金色 */
+  --gold:       #C9A665;
   --gold2:      rgba(201,166,101,0.15);
   --gold3:      rgba(201,166,101,0.06);
-  --gold-light: #E8C878;      /* hover 亮金 */
-  --gold-dark:  #A08040;      /* 深金(次要) */
+  --gold-light: #E8C878;
+  --gold-dark:  #A08040;
   --gold-glow:  rgba(201,166,101,0.25);
 
-  /* 點綴色 - 橘紅保留作 CTA (只用於必點按鈕) */
+  /* 點綴色 - 橘紅保留作 CTA */
   --accent:     #E8603A;
   --accent2:    rgba(232,96,58,0.15);
   --accent3:    rgba(232,96,58,0.08);
   --accent-dark:#C44020;
 
-  /* 向下相容 - 原 class 名稱保留 */
+  /* 向下相容 */
   --red:   #E8603A; --red2:  rgba(232,96,58,0.12);
   --peach: #E8603A; --peach2:rgba(232,96,58,0.12);
 
@@ -46,9 +47,9 @@
   --line-gold: rgba(201,166,101,0.35);
 
   /* 文字 */
-  --t1: #FAFAFA;  /* 主文字(白) */
-  --t2: #B8B4A8;  /* 次文字(暖灰) */
-  --t3: #6A6860;  /* 輔助(煙灰) */
+  --t1: #FAFAFA;
+  --t2: #B8B4A8;
+  --t3: #6A6860;
 
   /* 精品陰影 */
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
@@ -105,7 +106,6 @@ body::before {
   position: relative;
 }
 
-/* Logo 容器 - 加古銅金光暈 */
 .nav-logo-wrap {
   display: flex; align-items: center;
   position: relative;
@@ -129,7 +129,7 @@ body::before {
   color: var(--gold);
 }
 
-/* ══ 版本膠囊 (v9.0 新增) ══ */
+/* ══ 版本膠囊 ══ */
 .version-capsule {
   display: inline-flex;
   align-items: center;
@@ -174,7 +174,6 @@ body::before {
   flex-shrink: 0;
 }
 
-/* 舊 nav-brands 殘留 - 已不顯示 */
 .nav-brands { display: none; }
 
 /* ══ Drive Status ══ */
@@ -202,7 +201,7 @@ body::before {
   z-index: 1;
 }
 
-/* ══ Left Panel (品牌/商品) ══ */
+/* ══ Left Panel ══ */
 .left {
   background: var(--bg2);
   border-right: 1px solid var(--line);
@@ -225,7 +224,6 @@ body::before {
   background: linear-gradient(90deg, var(--line-gold), transparent);
 }
 
-/* 品牌卡片 (精品化) */
 .brand-row {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 12px;
@@ -338,7 +336,7 @@ body::before {
   margin-bottom: 4px;
 }
 
-/* ══ 主 CTA 按鈕 (生成、套用 AI) ══ */
+/* ══ 主 CTA 按鈕 ══ */
 .gen-btn {
   padding: 11px 26px;
   background: linear-gradient(135deg, var(--accent), var(--accent-dark));
@@ -741,7 +739,7 @@ body::before {
   box-shadow: 0 0 12px rgba(201,166,101,0.15);
 }
 
-/* v10.0: GPT 海報版型按鈕 (v10.1 已棄用但樣式保留) */
+/* v10.0 棄用版型按鈕(保留樣式向下相容) */
 .gpt-poster-layout-btn:hover {
   border-color: rgba(184,158,212,0.7) !important;
   background: rgba(184,158,212,0.08) !important;
@@ -754,7 +752,7 @@ body::before {
   box-shadow: 0 0 14px rgba(184,158,212,0.18);
 }
 
-/* v10.1: 風格靈感按鈕 (取代舊版型) */
+/* v10.1: 風格靈感按鈕 (折疊備援保留) */
 .insp-btn {
   padding: 9px 4px;
   border-radius: 7px;
@@ -781,6 +779,137 @@ body::before {
   color: #F0E8FF;
   box-shadow: 0 0 14px rgba(184,158,212,0.25);
 }
+
+/* ════════════════════════════════════════════════════════════════
+   ★ v10.2 NEW — 三層選擇按鈕 (版式 / 風土 / 情境)
+   設計邏輯:
+   - 三組不同色相區分功能,讓使用者一眼分辨「這是哪一層」
+   - 版式骨架 = 紫色 (主導視覺結構,最重要的選擇)
+   - 風土調味 = 藍綠/Sky (調味,次要選擇)
+   - 情境主題 = 暖橘 (情境氛圍,可選)
+   ════════════════════════════════════════════════════════════════ */
+
+/* ① 版式骨架按鈕 — 紫色基調(對齊 v10.1 .insp-btn 但更主導) */
+.layout-btn {
+  padding: 10px 6px;
+  border-radius: 7px;
+  background: rgba(201,184,232,0.05);
+  border: 1.5px solid rgba(201,184,232,0.30);
+  color: #C9B8E8;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: 0.18s;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+.layout-btn:hover {
+  border-color: rgba(201,184,232,0.75);
+  background: rgba(201,184,232,0.13);
+  color: #E8DCFF;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px rgba(201,184,232,0.12);
+}
+.layout-btn.on {
+  background: linear-gradient(135deg, rgba(201,184,232,0.22), rgba(184,158,212,0.18));
+  border-color: rgba(201,184,232,0.85);
+  color: #F0E8FF;
+  font-weight: 900;
+  box-shadow: 0 0 16px rgba(201,184,232,0.28),
+              inset 0 0 12px rgba(255,255,255,0.04);
+}
+.layout-btn.on::after {
+  content: '';
+  display: none; /* 預留勾勾位置 */
+}
+
+
+/* ② 風土調味按鈕 — Sky/藍綠基調 */
+.flavor-btn {
+  padding: 9px 5px;
+  border-radius: 7px;
+  background: rgba(91,200,200,0.04);
+  border: 1.5px solid rgba(91,200,200,0.25);
+  color: #8FD8D8;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: 0.18s;
+  letter-spacing: 0.4px;
+  text-align: center;
+}
+.flavor-btn:hover {
+  border-color: rgba(91,200,200,0.65);
+  background: rgba(91,200,200,0.12);
+  color: #B8E8E8;
+  transform: translateY(-1px);
+}
+.flavor-btn.on {
+  background: linear-gradient(135deg, rgba(91,200,200,0.20), rgba(91,200,200,0.10));
+  border-color: rgba(91,200,200,0.85);
+  color: #DDFFFF;
+  font-weight: 900;
+  box-shadow: 0 0 14px rgba(91,200,200,0.22);
+}
+
+
+/* ③ 情境主題按鈕 — 暖橘金基調 */
+.context-btn {
+  padding: 9px 5px;
+  border-radius: 7px;
+  background: rgba(232,200,120,0.04);
+  border: 1.5px solid rgba(232,200,120,0.25);
+  color: #E8C878;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: 0.18s;
+  letter-spacing: 0.4px;
+  text-align: center;
+}
+.context-btn:hover {
+  border-color: rgba(232,200,120,0.65);
+  background: rgba(232,200,120,0.12);
+  color: #FFE8B8;
+  transform: translateY(-1px);
+}
+.context-btn.on {
+  background: linear-gradient(135deg, rgba(232,200,120,0.20), rgba(201,166,101,0.15));
+  border-color: rgba(232,200,120,0.85);
+  color: #FFF2D0;
+  font-weight: 900;
+  box-shadow: 0 0 14px rgba(232,200,120,0.22);
+}
+
+
+/* v10.2 details 折疊區美化(舊靈感鍵備援用) */
+details[open] > summary {
+  color: #C9B8E8 !important;
+  margin-bottom: 4px;
+}
+details > summary {
+  list-style: none;
+  user-select: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary::before {
+  content: '▸ ';
+  display: inline-block;
+  transition: transform 0.2s;
+  margin-right: 2px;
+}
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
 
 /* v10.1: 變影片按鈕 hover */
 #posterToVideoBtn:hover:not(:disabled) {
@@ -824,7 +953,6 @@ body::before {
   z-index: 99999;
 }
 
-/* 登入畫面加一層精品光暈 */
 #loginOverlay::before {
   content: '';
   position: fixed;
@@ -927,7 +1055,7 @@ body::before {
   letter-spacing: 1.5px;
 }
 
-/* ══ Footer (v9.0 新增) ══ */
+/* ══ Footer ══ */
 .brand-footer {
   flex-shrink: 0;
   background: rgba(10,10,11,0.92);
@@ -1013,7 +1141,6 @@ body::before {
   .seg:last-child { border-bottom: none; }
   .dz-body { max-height: 300px; }
 
-  /* Footer mobile */
   .footer-inner {
     grid-template-columns: 1fr;
     text-align: center;
@@ -1026,7 +1153,7 @@ body::before {
   .footer-copy { text-align: center; }
 }
 
-/* ══ 廣告監控入口按鈕 (保留原樣式) ══ */
+/* ══ 廣告監控入口按鈕 ══ */
 .btn-ads-monitor {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 13px;
@@ -1078,7 +1205,7 @@ body::before {
   50% { opacity: 0.25; transform: scale(0.5); }
 }
 
-/* ══ KOL 工作室入口按鈕 (保留但已不顯示在 Brand OS nav) ══ */
+/* ══ KOL 工作室入口按鈕 ══ */
 .btn-kol-studio {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 13px;
@@ -1129,7 +1256,7 @@ body::before {
   50% { opacity: 1; transform: scale(1.1); }
 }
 
-/* ══ 小標籤 (古銅金描邊,精品風) ══ */
+/* ══ 小標籤 ══ */
 .tag-premium {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 9px;
