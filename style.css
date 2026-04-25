@@ -741,7 +741,7 @@ body::before {
   box-shadow: 0 0 12px rgba(201,166,101,0.15);
 }
 
-/* v10.0: GPT 海報版型按鈕 */
+/* v10.0: GPT 海報版型按鈕 (v10.1 已棄用但樣式保留) */
 .gpt-poster-layout-btn:hover {
   border-color: rgba(184,158,212,0.7) !important;
   background: rgba(184,158,212,0.08) !important;
@@ -752,6 +752,45 @@ body::before {
   border-color: rgba(184,158,212,0.7) !important;
   color: #E8DCFF !important;
   box-shadow: 0 0 14px rgba(184,158,212,0.18);
+}
+
+/* v10.1: 風格靈感按鈕 (取代舊版型) */
+.insp-btn {
+  padding: 9px 4px;
+  border-radius: 7px;
+  background: rgba(184,158,212,0.04);
+  border: 1.5px solid rgba(184,158,212,0.25);
+  color: #B8A8D8;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: 0.18s;
+  letter-spacing: 0.5px;
+}
+.insp-btn:hover {
+  border-color: rgba(184,158,212,0.7);
+  background: rgba(184,158,212,0.12);
+  color: #E8DCFF;
+  transform: translateY(-1px);
+}
+.insp-btn.on {
+  background: rgba(184,158,212,0.2);
+  border-color: rgba(184,158,212,0.8);
+  color: #F0E8FF;
+  box-shadow: 0 0 14px rgba(184,158,212,0.25);
+}
+
+/* v10.1: 變影片按鈕 hover */
+#posterToVideoBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg,rgba(201,166,101,0.35),rgba(184,158,212,0.35)) !important;
+  border-color: rgba(201,166,101,0.9) !important;
+  box-shadow: 0 4px 16px rgba(201,166,101,0.25);
+}
+#posterToVideoBtn:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 /* ══ Animations ══ */
