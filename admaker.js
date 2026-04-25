@@ -1,14 +1,17 @@
 // ══════════════════════════════════════════════════════════════
-//  BRAND OS · AD Maker  (v9.1)
+//  BRAND OS · AD Maker  (v10.2)
 //  變更紀錄:
-//    [v9.1] 字體系統: 4 種風格 (精品Serif/粗黑/文青Sans/手寫裝飾)
-//    [v9.1] 場景調整: 刪 spa_morning, 新增 okinawa_beach + bali_sunrise
-//    [v9.1] 新增 3 個內衣/泳裝安全場景
-//    [v8.4] 黑圖偵測 + 自動重試 + Softening prompt
-//    [v8.3] fetch+blob 載入圖片避免 canvas CORS 污染
-//    [v8.2] 三重 fallback / 下載容錯 / 修 undefined bug
-//    [v8.1] 強化 FACE LOCK + 徹底關中文
-//    [v8]   新增 7 個場景 + 修 3 bug
+//    [v10.2] ★ 5 版式骨架系統 (LAYOUT_TEMPLATES)
+//             - 雜誌封面型 / 規格分解型 / 情境寫真型 / 戲劇飛濺型 / 極簡海報型
+//    [v10.2] ★ 品牌風格包 (BRAND_STYLE_PACKS)
+//             - 巧福 CF 墨綠美學 / 咖啡店日系 / LACEZ 法式精品 / RADESIGN 街頭
+//             - 沒匹配到品牌時走 default_clean
+//    [v10.2] ★ 重組 buildPosterPrompt:版式 × 品牌包 × 風土 × 情境 四維合成
+//    [v10.2] ★ 修 bug:setPrMode 切到 gpt_poster 清乾淨靈感鍵選中狀態
+//    [v10.2] ★ UI:風格靈感區改為「版式骨架 + 風土調味」二段式選擇
+//    [v10.1] 8 靈感鍵 + GPT Image 2 edit 模式(保留作備援)
+//    [v10.1] 海報→5秒影片 (Kling v2.1)
+//    [v9.1] 字體系統 + 場景擴增
 // ══════════════════════════════════════════════════════════════
 
 const PRESERVE_SUBJECT =
@@ -28,6 +31,9 @@ const CAM_DEFAULT = 'Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.';
 const CAM_PORTRAIT = 'Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.';
 const CAM_MACRO = 'Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.';
 
+// ═══════════════════════════════════════════════════════════════════════
+//  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
+// ═══════════════════════════════════════════════════════════════════════
 const PRODUCT_SCENES = {
   studio_white:
     `${COMMERCIAL_CONTEXT}Replace the entire background with a clean seamless white studio backdrop, subtle gradient from bright white at top to soft grey shadow at base. Professional commercial product photography lighting with soft directional key light from upper left. ${PRESERVE_SUBJECT}${FACE_LOCK} ${CAM_DEFAULT} f/8, studio strobe.`,
@@ -138,17 +144,320 @@ const PRODUCT_SCENES = {
     `${COMMERCIAL_CONTEXT}Transform the scene into bright Nordic brunch aesthetic. Replace surface with clean white Carrara marble, replace background with bright white wall with soft natural morning window light 6000K streaming from the side. Add fresh herb sprigs and citrus slice props. Keep all food, dishes, and hands EXACTLY unchanged. Shot on Nikon Z9 NIKKOR Z 35mm f/1.8 S.`,
 };
 
-// ══ 狀態 ══
+
+// ═══════════════════════════════════════════════════════════════════════
+// ★ v10.2 核心:5 版式骨架 (LAYOUT_TEMPLATES)
+//   每個版式描述「畫面長什麼樣」——商品位置 / 文字位置 / 裝飾元素 / 構圖規則
+//   不寫死美感(那部分由 BRAND_STYLE_PACKS 注入)
+// ═══════════════════════════════════════════════════════════════════════
+const LAYOUT_TEMPLATES = {
+  // 1. 雜誌封面型 (圖 2 BREW / 巧福串圖-05 致敬)
+  magazine_cover: {
+    label: '📖 雜誌封面型',
+    desc: '人物+商品+大字標題+引言區,封面雜誌排版',
+    composition: `Editorial magazine cover composition layout:
+- Top-left corner: large display title in elegant typography (the headline)
+- Upper area: small kicker text or category label above the title
+- Right or center area: the product placed as hero focal point with the model interacting naturally
+- Mid-left or bottom: short body paragraph (3-4 lines) describing the product story
+- Bottom strip: brand signature, issue/season label, and category tags
+- Generous negative space (35-45% empty area) for breathing room
+- Asymmetric grid layout, magazine spread feel
+- Use a real magazine layout grid, NOT a poster collage
+Reference aesthetic: Japanese lifestyle magazines (BRUTUS, &Premium, POPEYE), Kinfolk editorial spreads`
+  },
+
+  // 2. 規格分解型 (圖 3 COCONUT MILK / 巧福串圖-04 編號功能 / 巧福串圖-03 規格頁)
+  spec_breakdown: {
+    label: '📐 規格分解型',
+    desc: '商品+功能編號圈+規格說明,科普展示',
+    composition: `Product spec breakdown layout:
+- Center: the product placed prominently as hero
+- Around the product: 4 numbered feature callouts (01, 02, 03, 04) in circular badges with thin connecting lines pointing to specific parts
+- Each callout has a short feature title + 1-2 line description in small text
+- Top: large product name or category title
+- Bottom: technical specifications row (size, weight, power, color options) in clean horizontal layout
+- Use thin elegant lines, small geometric icons, refined typography
+- Could include exploded/floating ingredient or component visualization above the product
+Reference aesthetic: Japanese food/appliance ad spreads (UCC, Muji), Tesla spec sheets, e-commerce detail pages`
+  },
+
+  // 3. 情境寫真型 (圖 4 椰子場景 / 圖 7 木頭+植物 / 巧福串圖-05 沙發場景)
+  scene_lifestyle: {
+    label: '🌿 情境寫真型',
+    desc: '商品+情境道具+人物互動,生活場景',
+    composition: `Lifestyle scene photography layout:
+- Product placed naturally within a curated everyday scene
+- Surround the product with thematically related supporting props (e.g. for fans: vintage radio, books, plants, ceramic vase, woven basket; for coffee: beans, cloth, fruit, ceramic cup)
+- 45-degree elevated camera angle, shallow depth of field with bokeh background
+- Soft natural directional window light from upper-left at 4000-5000K
+- Optional: a model interacting with the product naturally (sitting beside, holding, looking at it)
+- Title text overlaid on the upper third with generous space, body text on the side
+- Brand mark small at bottom corner
+- The scene must feel REAL, not staged — like a documentary lifestyle photo
+Reference aesthetic: Kinfolk lifestyle photography, Muji homeware catalogs, Japanese living magazines`
+  },
+
+  // 4. 戲劇飛濺型 (圖 5 椰子飛濺 / 圖 3 上半部材料噴飛)
+  dramatic_splash: {
+    label: '💥 戲劇飛濺型',
+    desc: '商品懸浮+材料飛濺,動態爆發力',
+    composition: `Dramatic splash hero photography layout:
+- Product is the absolute center hero, visually prominent and razor-sharp
+- Liquid splashes, ingredient particles, or component pieces frozen mid-air around the product as if exploding outward
+- Optional: product appears to be floating or suspended (no visible support)
+- Frozen high-speed motion: water droplets, splash crowns, particle bursts
+- Dramatic single key light from one side creating strong rim lighting
+- Atmospheric color saturation pumped up
+- Background can be either a contextual nature scene (foliage, wood) or a clean gradient
+- Minimal text — just a bold short product name on top, optional one-line tagline
+- High contrast, cinematic punch
+Reference aesthetic: Pinterest food photography hero shots, premium beverage commercials, Japanese drink ads`
+  },
+
+  // 5. 極簡海報型 (圖 6 Creamy Layer / 巧福串圖-05 大字版)
+  minimal_poster: {
+    label: '✨ 極簡海報型',
+    desc: '商品大特寫+大字標題+極簡裝飾',
+    composition: `Minimal poster layout:
+- Product centered, slightly off-axis (rule of thirds), occupying 40-55% of vertical canvas
+- Single large bold display headline (Serif or strong Sans) at top, 2 lines maximum
+- Subtitle in smaller refined typography below headline
+- Tiny brand logo signature at top-center or bottom-center
+- Very minimal supporting elements: maybe a thin decorative line, a small icon, a price tag
+- Bottom: 3-4 short product feature tags separated by middle-dots or thin vertical bars
+- Generous negative space (50%+ empty)
+- Soft natural directional lighting on product
+- Background is plain or near-plain (single color wash, soft gradient, paper texture)
+Reference aesthetic: Apple product posters, Blue Bottle Coffee posters, Muji store displays, Aesop magazine ads`
+  }
+};
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// ★ v10.2 核心:品牌風格包 (BRAND_STYLE_PACKS)
+//   把每個品牌的視覺 DNA 寫死,系統會根據當前 brandId 自動套上去
+//   命中規則:用品牌名稱關鍵字模糊匹配 (chiao/巧福 → chiaofu)
+// ═══════════════════════════════════════════════════════════════════════
+const BRAND_STYLE_PACKS = {
+  // 巧福 CHIAO FU — 寶島復古電風美學
+  chiaofu: {
+    matchKeywords: ['chiaofu', 'chiao fu', '巧福', 'chiao', 'cf'],
+    label: '巧福 CHIAO FU',
+    dna: `BRAND VISUAL DNA — CHIAO FU (寶島復古電風):
+- Primary brand color: deep forest green #3D5A3F (used for headlines, footer bands, accent strokes)
+- Secondary palette: warm cream #F5EFE5, soft beige #E8DCC8, dusty terracotta #C49B7E, retro powder blue #A8C5D0
+- Typography hierarchy: Traditional Chinese display headline in 明朝體 / Mincho Serif (large, refined, slightly squared); body copy in clean thin Sans (思源黑體 light); brand signature in custom logo treatment
+- Photography style: warm natural daylight from upper-left window, 4500-5500K, soft shadows, slight matte film texture (not glossy)
+- Mood: nostalgic-modern Taiwan, Showa-era Taiwan domestic life, "old-but-renewed" feeling
+- Decorative elements: thin horizontal divider lines (1-2px solid green), small "CHIAO FU" circular logo mark at bottom, modest paper grain texture overlay
+- Background scenes: vintage Taiwanese home interior with mid-century furniture (Togo sofa, vinyl turntable, rattan, wooden parquet floor, framed retro posters), or sunlit Taiwanese countryside, or 1970s-style domestic still life with terrazzo floor
+- Composition habit: large generous negative space (40-50%), bottom solid green band as footer, headline text in green
+- AVOID: neon colors, sharp tech aesthetics, cluttered layouts, glossy plastic feel
+`
+  },
+
+  // RABY 咖啡店日系風 (從之前對話的咖啡客戶)
+  raby_coffee: {
+    matchKeywords: ['raby', '咖啡', 'coffee', 'cafe', 'daylight'],
+    label: 'RABY 咖啡日系',
+    dna: `BRAND VISUAL DNA — Coffee Lifestyle (Japanese-Korean Hybrid):
+- Primary palette: warm ivory #F5EBD9, soft sage #B5C5A8, pottery brown #8B6F4E, accent gold #C9A665
+- Secondary: dusty pink #E8C8B8, deep coffee #3D2418
+- Typography: serif display headline in English (Playfair Display / Cormorant) + 思源宋體 Traditional Chinese; small caps for category labels; refined Italic for taglines
+- Photography style: golden hour natural side window light, 4000K warm tone, shallow DOF f/1.8-f/2.8, slight grain
+- Mood: Kinfolk magazine, Japanese ryokan morning, Korean OliveYoung clean café
+- Decorative elements: thin botanical line illustrations, small dried-flower motifs, ceramic cup props, hand-drawn underlines, decorative middle-dots, vol. number badges
+- Background scenes: Japanese wooden café interior with shoji screens, Korean modern minimal café with cream walls, Taiwanese 老屋 daylight café with terrazzo and oak
+- Composition habit: layered text columns (left-text right-image), magazine kicker labels, generous breathing space
+- AVOID: cluttered, oversaturated, hard-tech, neon
+`
+  },
+
+  // LACEZ 內衣 — 法式精品溫柔
+  lacez: {
+    matchKeywords: ['lacez', '內衣', 'lingerie', 'underwear'],
+    label: 'LACEZ 法式精品',
+    dna: `BRAND VISUAL DNA — LACEZ (Lingerie):
+- Primary palette: dusty rose #E5C4C0, ivory cream #F5EFE8, champagne nude #DDC4A8, deep wine #722F2E
+- Secondary: soft taupe #B8A89E, gold accent #C9A665
+- Typography: elegant Serif italic for headlines (Cormorant Italic / Playfair); 思源宋體 light for Chinese; refined small caps; lots of letter-spacing
+- Photography style: soft window-shaded daylight, low contrast, faint film grain, skin-warm tones
+- Mood: La Perla / Eres / French boudoir editorial, intimate elegance, NEVER overtly sexual or aggressive
+- Decorative elements: silk ribbon graphics, thin gold lines, lace texture overlays, French phrases
+- Background scenes: Parisian apartment morning light, ivory linen drapery, marble dresser, mirror reflections
+- Composition habit: portrait orientation, ample negative space, headline often italicized
+- AVOID: neon, retro Y2K, masculine sharp tech, comedy/cute
+`
+  },
+
+  // RADESIGN 鞋子 — 街頭潮流
+  radesign: {
+    matchKeywords: ['radesign', 'ra design', '鞋', 'shoe', 'sneaker', 'outlet'],
+    label: 'RADESIGN 街頭潮',
+    dna: `BRAND VISUAL DNA — RADESIGN (Footwear / Street):
+- Primary palette: charcoal black #1A1A1B, off-white #F0EDE5, asphalt grey #4A4A4D, accent neon orange #FF6A2A
+- Secondary: warm tan #C49B7E, dusty olive #6B7A4E
+- Typography: bold condensed Sans Serif (Bebas Neue / Helvetica Inserat / 思源黑體 Heavy); large numerical price/model treatment; underlined category tags
+- Photography style: high contrast, slightly desaturated, urban concrete textures, golden-hour street light or fluorescent gym light
+- Mood: AAPE / HUMAN MADE / New Balance MADE / Carhartt WIP, Tokyo Harajuku street, raw and lived-in
+- Decorative elements: tape graphics, dotted reference grids, model number stamps, hand-drawn arrows, retro athletic department badges
+- Background scenes: Tokyo back-alley wet asphalt, vintage gymnasium wood floor, brutalist concrete wall, NY SoHo cobblestone, Taipei night-market texture
+- Composition habit: dynamic asymmetric, often diagonal axis, large model number as decorative element
+- AVOID: precious-looking, soft floral, romance, marble luxury
+`
+  },
+
+  // 預設(沒匹配到任何品牌時的乾淨基底)
+  default_clean: {
+    matchKeywords: [],
+    label: '通用乾淨',
+    dna: `BRAND VISUAL DNA — Clean Generic Commercial:
+- Primary palette: soft off-white #F8F5F0, warm grey #B8B4A8, accent amber #C9A665
+- Typography: clean Sans Serif (Inter / 思源黑體 Regular), restrained letter-spacing
+- Photography style: bright soft daylight, neutral white balance, clean uncluttered
+- Mood: modern e-commerce catalog, restrained and trustworthy
+- Decorative elements: minimal, only thin lines and small icons
+- Composition habit: centered or rule-of-thirds, balanced negative space
+- AVOID: anything overly stylized
+`
+  }
+};
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// ★ v10.2 風土調味 (REGIONAL_FLAVORS)
+//   套在「版式 × 品牌包」之上的最後一層調色
+//   讓同樣的版式可以渲染出日系/韓系/歐美/復古不同感覺
+// ═══════════════════════════════════════════════════════════════════════
+const REGIONAL_FLAVORS = {
+  none: {
+    label: '— 不加調味 —',
+    flavor: ''
+  },
+  japan_kinfolk: {
+    label: '🇯🇵 日系雅致',
+    flavor: 'Add Japanese editorial flavor: muted earth tones, washi paper texture overlay, vertical Mincho serif feel, lots of negative space, single dried branch or ceramic vase prop in background bokeh, contemplative wabi-sabi atmosphere.'
+  },
+  korea_oliveyoung: {
+    label: '🇰🇷 韓系乾淨',
+    flavor: 'Add Korean beauty brand flavor: soft pastel ivory and dusty pink palette, very high-key bright exposure, glossy clean surfaces, holographic micro sparkles, dreamy soft-focus highlights, OliveYoung / Innisfree campaign vibe.'
+  },
+  showa_retro: {
+    label: '📻 昭和復古',
+    flavor: 'Add 1970s Showa-era retro flavor: slight Kodachrome film grain, faded warm highlights, terrazzo floor or vintage wallpaper background, retro objects like turntables, rotary phones, glass bottles as props, sepia-amber color cast, soft vignetting at edges.'
+  },
+  retro_future_y2k: {
+    label: '🌌 復古未來 Y2K',
+    flavor: 'Add Y2K retro-futuristic flavor: chrome metallic highlights, holographic gradient backgrounds (purple to blue to pink), bubble-shaped soft UI elements, slight CRT scan lines, 2000s techno-optimism, soft glow halations.'
+  },
+  bold_clash_2026: {
+    label: '🎨 2026 大膽撞色',
+    flavor: 'Add 2026 trend bold color clashing flavor: high-saturation contrasting color pairs (electric blue + acid yellow, bubblegum pink + lime green, terracotta orange + cobalt), oversized typography, brutalist blocky layouts, intentional roughness.'
+  },
+  ugly_cute_2026: {
+    label: '😜 2026 醜萌',
+    flavor: 'Add 2026 ugly-cute trend flavor: hand-drawn squiggly lines, intentionally awkward emoji-like decorations, mixed mismatched fonts, scrapbook-style pasted elements, casual snapshot energy, NewJeans-cover aesthetic.'
+  },
+  euro_editorial: {
+    label: '🇪🇺 歐美雜誌',
+    flavor: 'Add European editorial flavor: high contrast film tones, sharp Serif headlines (Playfair / Didot), confident large typography, minimalist graphic elements, Vogue / The Gentlewoman magazine sophistication.'
+  },
+  taiwan_nostalgia: {
+    label: '🇹🇼 台式懷舊',
+    flavor: 'Add Taiwanese nostalgia flavor: 1980s magazine paper grain, terrazzo floor, vintage Taiwanese tile patterns, faded poster colors (mustard, teal, brick), floral patterned fabric backgrounds, warm afternoon light through wooden venetian blinds.'
+  }
+};
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// ★ v10.2 情境主題 (CONTEXT_THEMES) — 沿用 v10.1 的 8 鍵但重命名為「情境」
+//   現在這層只負責「用什麼節慶/季節/狀態切入」,不再描述美學
+// ═══════════════════════════════════════════════════════════════════════
+const CONTEXT_THEMES = {
+  none: {
+    label: '— 無 —',
+    context: ''
+  },
+  summer: {
+    label: '☀️ 夏日',
+    context: 'Summer season context: hot bright daylight, refreshing cool elements, outdoor or near-window setting, light fabric and glass textures.'
+  },
+  winter_cozy: {
+    label: '🍂 冬日溫暖',
+    context: 'Winter cozy context: warm indoor setting, soft yellow tungsten light, knit blanket textures, hot beverage prop, condensation on window.'
+  },
+  festive_cny: {
+    label: '🧧 農曆新年',
+    context: 'Lunar New Year festive context: subtle red and gold accent elements, hint of plum blossom or auspicious decoration in background bokeh, warm celebratory atmosphere — but keep it tasteful, NOT loud or kitschy.'
+  },
+  back_to_school: {
+    label: '📚 開學季',
+    context: 'Back-to-school context: study desk setting, books and stationery as props, fresh autumn morning light, optimistic productive mood.'
+  },
+  unboxing: {
+    label: '📦 開箱時刻',
+    context: 'Unboxing moment context: brand box and tissue paper visible, anticipation atmosphere, hands-in-frame interaction, the product just revealed.'
+  },
+  daily_use: {
+    label: '🌱 日常使用',
+    context: 'Everyday-use context: the product naturally integrated into a real daily scene (bedroom, kitchen, living room, work desk), no staged feel.'
+  },
+  promo_sale: {
+    label: '🎯 限時促銷',
+    context: 'Promotional sale context: include a small price tag or "限時優惠 EARLY BIRD" badge, clear call-to-action visual emphasis, but keep the design refined NOT garish.'
+  },
+  gift_giving: {
+    label: '🎁 送禮場合',
+    context: 'Gift-giving context: ribbon, wrapping paper, small card, two-hands-presenting gesture, intimate warm-toned scene.'
+  }
+};
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  v10.2 狀態
+// ═══════════════════════════════════════════════════════════════════════
 let AM = { w:1080, h:1080, scriptIdx:null };
 let PR_BG_IMG  = null;
 let PR_MODE    = 'product_shot';
 let TEXT_ALIGN = 'left';
-let TEXT_FONT  = 'bold';  // v9.1: bold / serif / light / script
+let TEXT_FONT  = 'bold';
 let CANVAS_TAINTED = false;
 let LAST_BLOB_SIZE = 0;
 
+// v10.2 新狀態:版式 × 品牌包(自動) × 風土 × 情境
+let SELECTED_LAYOUT  = 'minimal_poster';   // 預設:極簡海報型
+let SELECTED_FLAVOR  = 'none';
+let SELECTED_CONTEXT = 'none';
+// v10.1 舊狀態 — 保留作備援
+let SELECTED_INSPIRATION = null;
+let LAST_POSTER_URL = null;
+
 const BLACK_IMAGE_THRESHOLD = 30000;
 
+
+// v10.2: 根據當前品牌名自動匹配品牌風格包
+function detectBrandPack() {
+  const brand = window.BRANDS?.find(b => b.id === window.S?.brandId);
+  if (!brand) return BRAND_STYLE_PACKS.default_clean;
+  const haystack = `${brand.id || ''} ${brand.name || ''} ${brand.label || ''}`.toLowerCase();
+  for (const [key, pack] of Object.entries(BRAND_STYLE_PACKS)) {
+    if (key === 'default_clean') continue;
+    for (const kw of pack.matchKeywords) {
+      if (haystack.includes(kw.toLowerCase())) {
+        console.log('[v10.2] 命中品牌包:', pack.label, '(關鍵字:', kw, ')');
+        return pack;
+      }
+    }
+  }
+  console.log('[v10.2] 未命中任何品牌包,走 default_clean');
+  return BRAND_STYLE_PACKS.default_clean;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  v9.x 原樣保留 (open/close/render/handlers/...)
+// ═══════════════════════════════════════════════════════════════════════
 function openAdMaker(idx) {
   PR_BG_IMG = null; PR_MODE = 'product_shot';
   CANVAS_TAINTED = false;
@@ -159,6 +468,9 @@ function openAdMaker(idx) {
     const el = document.getElementById(id);
     if (el) el.style.display = id === 'prSceneSection' ? 'block' : 'none';
   });
+  // v10.2: gpt_poster section 預設藏起來
+  const gpt = document.getElementById('prGptPosterSection');
+  if (gpt) gpt.style.display = 'none';
 
   let initialTitle = '';
   if (idx === -1 || idx == null || !window.S.scripts?.[idx]) {
@@ -172,6 +484,8 @@ function openAdMaker(idx) {
   document.getElementById('amTitle').value = initialTitle;
   document.getElementById('prCustomPrompt').value = '';
   renderAmPhotoRow();
+  // v10.2: 顯示當前命中的品牌包
+  updateBrandPackBadge();
   document.getElementById('adMakerModal').style.display = 'block';
   renderAdCanvas();
 }
@@ -235,14 +549,31 @@ function onMdPhotoSelected(input) {
   reader.readAsDataURL(file);
 }
 
+// v10.2: 修 bug — 切到 gpt_poster 模式時清掉舊靈感鍵狀態 + 顯示版式選擇器
 function setPrMode(btn, mode) {
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on'); PR_MODE = mode;
-  // v10.0: 三個模式切換顯示對應 section
   document.getElementById('prSceneSection').style.display     = mode === 'product_shot' ? 'block' : 'none';
   document.getElementById('prVirtualSection').style.display   = mode === 'kling_tryon'  ? 'block' : 'none';
   const gpt = document.getElementById('prGptPosterSection');
   if (gpt) gpt.style.display = mode === 'gpt_poster' ? 'block' : 'none';
+
+  // ★ v10.2 bug fix:切換模式時清掉殘留選中狀態
+  if (mode !== 'gpt_poster') {
+    SELECTED_INSPIRATION = null;
+    document.querySelectorAll('.insp-btn').forEach(b => b.classList.remove('on'));
+    document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('on'));
+    document.querySelectorAll('.flavor-btn').forEach(b => b.classList.remove('on'));
+    document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('on'));
+  }
+  if (mode === 'gpt_poster') {
+    // 切到懶人廣告圖時顯示當前品牌包
+    updateBrandPackBadge();
+    // 預設選中極簡海報 + 不調味 + 無情境
+    document.querySelector(`.layout-btn[data-layout="${SELECTED_LAYOUT}"]`)?.classList.add('on');
+    document.querySelector(`.flavor-btn[data-flavor="${SELECTED_FLAVOR}"]`)?.classList.add('on');
+    document.querySelector(`.context-btn[data-context="${SELECTED_CONTEXT}"]`)?.classList.add('on');
+  }
 }
 
 function setPrScene(btn, scene) {
@@ -257,7 +588,6 @@ function setTextAlign(align, btn) {
   btn.classList.add('on'); renderAdCanvas();
 }
 
-// v9.1: 字體風格切換
 function setTextFont(fontKey, btn) {
   TEXT_FONT = fontKey;
   ['fontBold','fontSerif','fontLight','fontScript'].forEach(id => document.getElementById(id)?.classList.remove('on'));
@@ -265,38 +595,17 @@ function setTextFont(fontKey, btn) {
   renderAdCanvas();
 }
 
-// v9.1: 字體風格對應 CSS font-family + 粗細
 function getFontStyle() {
   switch(TEXT_FONT) {
     case 'serif':
-      // 精品細 Serif (LACEZ/RADESIGN/精品內衣)
-      return {
-        family: "'Playfair Display', 'Cormorant Garamond', 'Noto Serif TC', serif",
-        weight: 500,
-        letterSpacing: 0.02
-      };
+      return { family: "'Playfair Display', 'Cormorant Garamond', 'Noto Serif TC', serif", weight: 500, letterSpacing: 0.02 };
     case 'light':
-      // 文青細 Sans (MOZ/設計家電)
-      return {
-        family: "'Inter', 'Noto Sans TC', sans-serif",
-        weight: 300,
-        letterSpacing: 0.05
-      };
+      return { family: "'Inter', 'Noto Sans TC', sans-serif", weight: 300, letterSpacing: 0.05 };
     case 'script':
-      // 手寫裝飾 (古早味/手作)
-      return {
-        family: "'Caveat', 'Noto Serif TC', cursive",
-        weight: 700,
-        letterSpacing: 0
-      };
+      return { family: "'Caveat', 'Noto Serif TC', cursive", weight: 700, letterSpacing: 0 };
     case 'bold':
     default:
-      // 粗黑體 (電商/快消/巧福/旺味)
-      return {
-        family: "'Noto Sans TC', sans-serif",
-        weight: 900,
-        letterSpacing: 0
-      };
+      return { family: "'Noto Sans TC', sans-serif", weight: 900, letterSpacing: 0 };
   }
 }
 
@@ -422,18 +731,18 @@ async function submitFluxAndCheckBlob(scenePrompt, paddedBase64) {
     const resp = await fetch(falUrl, { mode: 'cors' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const blob = await resp.blob();
-    console.log('[v9.1] 下載圖片, size:', blob.size, 'type:', blob.type);
+    console.log('[v10.2] 下載圖片, size:', blob.size, 'type:', blob.type);
     LAST_BLOB_SIZE = blob.size;
 
     if (blob.size < BLACK_IMAGE_THRESHOLD) {
-      console.warn('[v9.1] ⚠️ 偵測到黑圖! size:', blob.size, '< 門檻', BLACK_IMAGE_THRESHOLD);
+      console.warn('[v10.2] ⚠️ 偵測到黑圖! size:', blob.size, '< 門檻', BLACK_IMAGE_THRESHOLD);
       return { ok: false, reason: 'BLACK_IMAGE', blobSize: blob.size };
     }
 
     const blobUrl = URL.createObjectURL(blob);
     return { ok: true, imageUrl: blobUrl, blobSize: blob.size, originalUrl: falUrl };
   } catch(fetchErr) {
-    console.warn('[v9.1] fetch 檢查失敗,使用原 URL:', fetchErr.message);
+    console.warn('[v10.2] fetch 檢查失敗,使用原 URL:', fetchErr.message);
     return { ok: true, imageUrl: falUrl, blobSize: -1 };
   }
 }
@@ -441,7 +750,6 @@ async function submitFluxAndCheckBlob(scenePrompt, paddedBase64) {
 async function applyPhotoroomBg() {
   const btn = document.getElementById('prApplyBtn');
 
-  // v10.0: GPT 海報模式不需要商品照,走獨立分支
   if (PR_MODE === 'gpt_poster') {
     btn.disabled = true; btn.textContent = '⏳ AI 海報生成中...';
     await generateGptPoster();
@@ -507,13 +815,13 @@ async function applyPhotoroomBg() {
       let result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
 
       if (!result.ok && result.reason === 'BLACK_IMAGE') {
-        console.warn('[v9.1] 第一次被擋,自動重試中...');
+        console.warn('[v10.2] 第一次被擋,自動重試中...');
         setPrStatus('🔄 內容審查擋下,重試中...', '#E8C878');
         result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
       }
 
       if (!result.ok && result.reason === 'BLACK_IMAGE') {
-        console.error('[v9.1] 兩次都被擋,顯示警示');
+        console.error('[v10.2] 兩次都被擋,顯示警示');
         finishProgress(interval);
         setPrStatus('⚠️ AI 內容審查擋下,請改用真人試穿或換場景', 'var(--red)');
         showBlackImageWarning(result.blobSize);
@@ -539,31 +847,25 @@ function showBlackImageWarning(blobSize) {
   if (!canvas) return;
   canvas.width = AM.w; canvas.height = AM.h;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
   const grad = ctx.createLinearGradient(0,0,0,AM.h);
   grad.addColorStop(0, '#1A1510');
   grad.addColorStop(1, '#0A0A0B');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, AM.w, AM.h);
-
   ctx.fillStyle = '#C9A665';
   ctx.font = '900 140px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('⚠️', AM.w/2, AM.h/2 - 150);
-
   ctx.fillStyle = '#FAFAFA';
   ctx.font = '900 44px "Noto Sans TC",sans-serif';
   ctx.fillText('AI 內容審查擋下了這張圖', AM.w/2, AM.h/2 - 50);
-
   ctx.fillStyle = '#B8B4A8';
   ctx.font = '500 22px "Noto Sans TC",sans-serif';
   const kbSize = blobSize > 0 ? `（Flux 回傳 ${Math.round(blobSize/1024)} KB 黑圖）` : '';
   if (kbSize) ctx.fillText(kbSize, AM.w/2, AM.h/2 - 10);
-
   ctx.fillStyle = '#C9A665';
   ctx.font = '900 26px "Noto Sans TC",sans-serif';
   ctx.fillText('建議改用:', AM.w/2, AM.h/2 + 60);
-
   ctx.fillStyle = '#E8C878';
   ctx.font = '500 22px "Noto Sans TC",sans-serif';
   const suggestions = [
@@ -574,7 +876,6 @@ function showBlackImageWarning(blobSize) {
   suggestions.forEach((s, i) => {
     ctx.fillText(s, AM.w/2, AM.h/2 + 110 + i * 42);
   });
-
   ctx.fillStyle = '#6A6860';
   ctx.font = '400 16px "Noto Sans TC",sans-serif';
   ctx.fillText('已自動重試一次,AI 仍判定此組合為敏感內容', AM.w/2, AM.h - 60);
@@ -703,7 +1004,7 @@ async function renderAdCanvasWithPR() {
         img.width*scale, img.height*scale);
     }
   } catch(e) {
-    console.error('[v9.1] render 失敗:', e.message);
+    console.error('[v10.2] render 失敗:', e.message);
     drawBgFallback(ctx);
     ctx.fillStyle = '#C9A665';
     ctx.font = '900 32px "Noto Sans TC",sans-serif';
@@ -752,7 +1053,6 @@ function drawOverlay(ctx, title, accent) {
   const textYPct = parseInt(document.getElementById('amTextY')?.value||80)/100;
   const align = TEXT_ALIGN||'left';
 
-  // v9.1: 使用字體風格
   const fontStyle = getFontStyle();
   ctx.font = `${fontStyle.weight} ${baseFontSize}px ${fontStyle.family}`;
   ctx.textAlign = align;
@@ -764,7 +1064,6 @@ function drawOverlay(ctx, title, accent) {
   lines.forEach((line, i) => {
     ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=20; ctx.shadowOffsetY=4;
     ctx.fillStyle='#FFFFFF';
-    // v9.1: Serif/Light 字體加字距
     if (fontStyle.letterSpacing > 0 && ctx.letterSpacing !== undefined) {
       ctx.letterSpacing = `${fontStyle.letterSpacing}em`;
     }
@@ -887,66 +1186,64 @@ function blobToBase64(blob) {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-// ★ v10.1: 懶人 AI 廣告圖模組 (GPT Image 2 edit 模式)
-//   - 商品 100% 保留(edit 模式,不是文生圖)
-//   - 8 個靈感鍵 + 品牌 adStyle 自動串接
-//   - 生圖後可一鍵變 5 秒影片(Kling v2.1)
+// ★ v10.1 / v10.2:懶人 AI 廣告圖模組 (GPT Image 2 edit 模式)
 // ═══════════════════════════════════════════════════════════════════════
 
-// 8 個靈感鍵 — 每個只描述「畫面風格方向」,不描述商品
-// 商品會由 GPT edit 模式從輸入圖自動保留
+// v10.1 舊靈感鍵 — 保留作備援(沒選版式時用)
 const INSPIRATION_KEYS = {
-  summer_beach: {
-    label: '🌊 夏日海邊',
-    style: 'vibrant tropical summer scene. Sunny blue sky, turquoise ocean, sandy beach, palm tree shadows, visible sun flare, refreshing clean color palette with azure blues, coral pinks, and sun yellows. Cheerful clean commercial photography lighting.'
-  },
-  japan_minimal: {
-    label: '✨ 日系極簡',
-    style: 'Japanese minimalist editorial aesthetic. Off-white paper-textured background with warm beige and sage green tones, soft natural window light from the side, subtle dried branch or ceramic vase element. Generous negative space, CEREAL / Kinfolk magazine feel, muted desaturated color palette.'
-  },
-  korean_ecom: {
-    label: '🎯 韓系電商',
-    style: 'Korean e-commerce glossy aesthetic. Dreamy gradient of pastel pink, lavender purple, soft sky blue with sparkle bokeh and holographic light flares. Hand-drawn heart and star decorative elements in white. High-key bright exposure, glossy and youthful Seoul beauty brand magazine vibe.'
-  },
-  japan_food: {
-    label: '🍶 日式食品',
-    style: 'Japanese food editorial dark aesthetic. Deep ink-black charcoal background, single warm overhead spotlight, dramatic steam wisps, bold brush-stroke calligraphy-style accents. Rich dark tones with gold highlights, Michelin kappo restaurant aesthetic, premium Japanese artisan food packaging design feel.'
-  },
-  family_warm: {
-    label: '👶 家庭溫馨',
-    style: 'warm cozy family lifestyle scene. Soft morning sunlight streaming through window, light oak wood surfaces, hand-drawn speech bubble decorations, cute hand-written handwriting decorative elements, soft pastel palette. Friendly heartwarming tone, parenting magazine editorial feel.'
-  },
-  surreal_art: {
-    label: '🎨 超現實藝術',
-    style: 'surreal art photography. Everyday objects floating in mid-air defying gravity, upside-down cityscape reflections, liquid suspended frozen in space. Cinematic dramatic lighting, Tokyo editorial art magazine aesthetic, conceptual photography feel. Mysterious and thought-provoking atmosphere.'
-  },
-  tech_detail: {
-    label: '🏆 科技詳情頁',
-    style: 'high-tech product detail page e-commerce layout. Dark charcoal to black gradient background with orange-amber accent rim lighting. Numbered feature callouts with icons on the left side (1, 2, 3, 4 style bullets), technical specification callouts at bottom. Premium consumer electronics catalog feel, flagship smartphone launch ad aesthetic.'
-  },
-  retro_vintage: {
-    label: '📰 復古印刷',
-    style: '1970s Taiwanese vintage magazine advertisement aesthetic. Warm sepia-amber color grading, visible paper grain texture overlay, slight film halation, Kodachrome tones, soft edge vignetting. Retro display serif typography mixing sizes. Nostalgic printed page feel, looks like a scanned vintage magazine from 1975.'
-  }
+  summer_beach: { label: '🌊 夏日海邊', style: 'vibrant tropical summer scene...' },
+  japan_minimal: { label: '✨ 日系極簡', style: 'Japanese minimalist editorial...' },
+  korean_ecom: { label: '🎯 韓系電商', style: 'Korean e-commerce glossy...' },
+  japan_food: { label: '🍶 日式食品', style: 'Japanese food editorial dark...' },
+  family_warm: { label: '👶 家庭溫馨', style: 'warm cozy family lifestyle...' },
+  surreal_art: { label: '🎨 超現實藝術', style: 'surreal art photography...' },
+  tech_detail: { label: '🏆 科技詳情頁', style: 'high-tech product detail page...' },
+  retro_vintage: { label: '📰 復古印刷', style: '1970s Taiwanese vintage magazine...' }
 };
-
-// 狀態
-let SELECTED_INSPIRATION = null;
-let LAST_POSTER_URL = null; // v10.1: 存最近一張海報URL,供「變影片」使用
 
 function setInspiration(btn, key) {
   document.querySelectorAll('.insp-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   SELECTED_INSPIRATION = key;
-
-  // 把靈感風格描述填進自由描述欄 (讓使用者可以看/編輯)
   const descEl = document.getElementById('gptStyleDesc');
   if (descEl && INSPIRATION_KEYS[key]) {
     descEl.value = INSPIRATION_KEYS[key].style;
   }
 }
 
-// 抓目前選到的品牌資料
+// v10.2: 設版式
+function setLayout(btn, layoutKey) {
+  document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  SELECTED_LAYOUT = layoutKey;
+  console.log('[v10.2] 版式選擇:', layoutKey, LAYOUT_TEMPLATES[layoutKey]?.label);
+}
+
+// v10.2: 設風土調味
+function setFlavor(btn, flavorKey) {
+  document.querySelectorAll('.flavor-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  SELECTED_FLAVOR = flavorKey;
+  console.log('[v10.2] 風土調味:', flavorKey, REGIONAL_FLAVORS[flavorKey]?.label);
+}
+
+// v10.2: 設情境
+function setContext(btn, contextKey) {
+  document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  SELECTED_CONTEXT = contextKey;
+  console.log('[v10.2] 情境主題:', contextKey, CONTEXT_THEMES[contextKey]?.label);
+}
+
+// v10.2: 更新「目前自動套用的品牌包」標籤
+function updateBrandPackBadge() {
+  const badge = document.getElementById('brandPackBadge');
+  if (!badge) return;
+  const pack = detectBrandPack();
+  badge.textContent = pack.label;
+  badge.style.color = pack === BRAND_STYLE_PACKS.default_clean ? 'var(--t3)' : '#C9B8E8';
+}
+
 function getBrandContext() {
   const brand = window.BRANDS.find(b => b.id === window.S.brandId);
   const sub = brand?.subs?.find(s => s.id === window.S.subId);
@@ -960,53 +1257,81 @@ function getBrandContext() {
   };
 }
 
-// v10.1: 核心 — 組合 prompt(商品保留鐵律 + 品牌 adStyle + 靈感風格 + 主副標)
+// ═══════════════════════════════════════════════════════════════════════
+// ★ v10.2 核心:組合 prompt
+//   結構:[商品保留鐵律] + [品牌包DNA] + [版式骨架] + [風土調味] + [情境主題] + [文案] + [輸出規格]
+// ═══════════════════════════════════════════════════════════════════════
 function buildPosterPrompt() {
   const ctx = getBrandContext();
+  const brandPack = detectBrandPack();
+  const layout = LAYOUT_TEMPLATES[SELECTED_LAYOUT] || LAYOUT_TEMPLATES.minimal_poster;
+  const flavor = REGIONAL_FLAVORS[SELECTED_FLAVOR] || REGIONAL_FLAVORS.none;
+  const contextTheme = CONTEXT_THEMES[SELECTED_CONTEXT] || CONTEXT_THEMES.none;
+
   const styleDesc = document.getElementById('gptStyleDesc')?.value?.trim() || '';
   const headline = document.getElementById('gptHeadline')?.value?.trim() || '';
   const subHeadline = document.getElementById('gptSubHeadline')?.value?.trim() || '';
 
   let prompt = '';
 
-  // Section 1: 商品保留鐵律(v10.1 最重要的部分)
-  prompt += `CRITICAL PRODUCT PRESERVATION (highest priority):\n`;
+  // [1] 商品保留鐵律(最高優先)
+  prompt += `=== CRITICAL PRODUCT PRESERVATION (HIGHEST PRIORITY) ===\n`;
   prompt += `- The product in the source image MUST be reproduced PIXEL-PERFECT identical\n`;
-  prompt += `- Preserve the exact product shape, proportions, colors, label design, logo, and all typography on the packaging\n`;
-  prompt += `- Do NOT redesign the product, do NOT invent new packaging, do NOT change the brand mark\n`;
+  prompt += `- Preserve exact product shape, proportions, colors, label design, logo, and all packaging typography\n`;
+  prompt += `- Do NOT redesign the product, do NOT invent new packaging, do NOT alter brand marks\n`;
   prompt += `- The product is the hero — build the advertising scene AROUND it\n\n`;
 
-  // Section 2: 品牌氛圍(從 Google Sheet 帶入)
-  if (ctx.brand) prompt += `Brand context: "${ctx.brand}"${ctx.subBrand ? ' · ' + ctx.subBrand : ''}. `;
-  if (ctx.adStyle) prompt += `Brand aesthetic direction: ${ctx.adStyle}. `;
-  prompt += `\n\n`;
+  // [2] 品牌風格 DNA(從 BRAND_STYLE_PACKS 自動帶入)
+  prompt += `=== BRAND STYLE PACK ===\n`;
+  prompt += brandPack.dna + '\n';
+  if (ctx.brand) prompt += `Brand name to display (small signature): "${ctx.brand}"${ctx.subBrand ? ' · ' + ctx.subBrand : ''}\n`;
+  if (ctx.adStyle) prompt += `Additional brand direction note: ${ctx.adStyle}\n`;
+  prompt += '\n';
 
-  // Section 3: 使用者選的靈感風格(或自由描述)
-  if (styleDesc) {
-    prompt += `Visual style direction: ${styleDesc}\n\n`;
+  // [3] 版式骨架(畫面長什麼樣)
+  prompt += `=== LAYOUT FRAMEWORK ===\n`;
+  prompt += `Layout type: ${layout.label}\n`;
+  prompt += layout.composition + '\n\n';
+
+  // [4] 風土調味(可選)
+  if (flavor.flavor) {
+    prompt += `=== REGIONAL FLAVOR ===\n`;
+    prompt += flavor.flavor + '\n\n';
   }
 
-  // Section 4: 版面規格
-  prompt += `Output format: vertical portrait 4:3 advertising poster layout, suitable for Instagram and e-commerce banners.\n\n`;
+  // [5] 情境主題(可選)
+  if (contextTheme.context) {
+    prompt += `=== CONTEXTUAL THEME ===\n`;
+    prompt += contextTheme.context + '\n\n';
+  }
 
-  // Section 5: 中文文案渲染(pixel-perfect Traditional Chinese)
+  // [6] 自由風格描述(使用者手動補充,可選)
+  if (styleDesc) {
+    prompt += `=== ADDITIONAL STYLE NOTES ===\n`;
+    prompt += styleDesc + '\n\n';
+  }
+
+  // [7] 文案
   if (headline || subHeadline) {
-    prompt += `Text to render on the poster (render in pixel-perfect Traditional Chinese typography with correct glyphs, professional editorial layout):\n`;
+    prompt += `=== TEXT TO RENDER ===\n`;
+    prompt += `Render the following Traditional Chinese text with pixel-perfect typography (correct glyphs, proper spacing, professional editorial layout). Match the typography hierarchy specified in the brand DNA above.\n`;
     if (headline) prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
     if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
-    if (ctx.brand) prompt += `- Small brand signature at corner: "${ctx.brand}"\n`;
-    prompt += `The typography must be crisp, readable, and integrated into the design layout naturally.\n\n`;
+    if (ctx.brand) prompt += `- Brand signature (small, at corner or footer): "${ctx.brand}"\n`;
+    prompt += `Typography must be crisp, readable, and integrated naturally into the layout.\n\n`;
   }
 
-  // Section 6: 品質要求
-  prompt += `Change: background, environment, lighting, added decorative elements, typography, layout.\n`;
-  prompt += `Preserve: product identity, product details, brand marks, all text printed on the product itself.\n`;
-  prompt += `Constraints: no watermark, no extra random objects, no logo distortion, no product redesign.`;
+  // [8] 輸出規格
+  prompt += `=== OUTPUT SPECIFICATION ===\n`;
+  prompt += `- Vertical portrait orientation, 4:3 advertising poster (suitable for IG feed, e-commerce banner, print magazine)\n`;
+  prompt += `- High resolution, sharp typography, professional commercial photography quality\n`;
+  prompt += `- Change: background, environment, lighting, decorative graphics, typography, layout composition\n`;
+  prompt += `- Preserve: product identity, product details, brand marks, all text printed on the product itself\n`;
+  prompt += `- Constraints: no watermark, no random extra objects, no logo distortion, no product redesign\n`;
 
   return prompt;
 }
 
-// v10.1 主流程: 上傳商品圖 → 送 GPT edit → 拿回海報
 async function generateGptPoster() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇商品照片！', 'var(--red)'); return; }
@@ -1021,22 +1346,19 @@ async function generateGptPoster() {
     return;
   }
 
-  const interval = startProgress(90000); // GPT high quality 可能要 60-90 秒
+  const interval = startProgress(90000);
   try {
-    // Step 1: 把商品圖上傳 fal(拿到公開 URL)
     setPrStatus('📤 上傳商品照至 fal...', 'var(--t3)');
     const blob = await urlToBlob(imgSrc);
     const base64 = await blobToBase64(blob);
     const paddedBase64 = await padImageTo1080(base64);
     const imageUrl = await uploadToFal(paddedBase64);
 
-    // Step 2: 組 prompt
     const prompt = buildPosterPrompt();
-    console.log('[v10.1] 懶人廣告圖 prompt 長度:', prompt.length, '字元');
-    console.log('[v10.1] 前 300 字:', prompt.substring(0, 300));
+    console.log('[v10.2] 懶人廣告圖 prompt 長度:', prompt.length, '字元');
+    console.log('[v10.2] === 完整 prompt 預覽 ===\n', prompt);
 
-    // Step 3: 送 GPT Image 2 edit
-    setPrStatus('🎨 GPT Image 2 生成中(頂級質感約 60-90 秒)...', 'var(--t3)');
+    setPrStatus('🎨 GPT Image 2 生成中(品牌包+版式合成,約 60-90 秒)...', 'var(--t3)');
     const submitData = await callWorker({
       action: 'gpt_poster_edit_submit',
       prompt,
@@ -1047,12 +1369,11 @@ async function generateGptPoster() {
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
-    // Step 4: Poll
     setPrStatus('⏳ 等待 GPT 出圖(高品質需耐心等)...', 'var(--t3)');
     let result = await pollUntilDone(
       submitData.requestId,
       submitData.endpoint,
-      240000, // GPT high 最多等 4 分鐘
+      240000,
       submitData.responseUrl,
       submitData.statusUrl
     );
@@ -1076,17 +1397,18 @@ async function generateGptPoster() {
     if (!result.imageUrl) throw new Error('未取得海報圖片');
 
     PR_BG_IMG = result.imageUrl;
-    LAST_POSTER_URL = result.imageUrl; // v10.1: 記錄給「變影片」按鈕
+    LAST_POSTER_URL = result.imageUrl;
     CANVAS_TAINTED = false;
 
-    // v10.1: 海報是直式 4:3
     AM.w = 1080;
     AM.h = 1440;
     await renderGptPosterCanvas();
     finishProgress(interval);
-    setPrStatus('✅ 懶人 AI 廣告圖完成！可點「🎬 變 5 秒影片」', 'var(--mint)');
 
-    // v10.1: 顯示「變影片」按鈕
+    const brandPack = detectBrandPack();
+    const layoutLabel = LAYOUT_TEMPLATES[SELECTED_LAYOUT]?.label || '';
+    setPrStatus(`✅ 完成！[${brandPack.label} × ${layoutLabel}] 可點「🎬 變影片」`, 'var(--mint)');
+
     const videoBtn = document.getElementById('posterToVideoBtn');
     if (videoBtn) {
       videoBtn.style.display = 'block';
@@ -1098,7 +1420,6 @@ async function generateGptPoster() {
   }
 }
 
-// v10.1: 海報渲染(不疊字,GPT 自己把字畫進去了)
 async function renderGptPosterCanvas() {
   const canvas = document.getElementById('adCanvas');
   if (!canvas) return;
@@ -1119,7 +1440,7 @@ async function renderGptPosterCanvas() {
     const y = Math.round((AM.h - h) / 2);
     ctx.drawImage(img, x, y, w, h);
   } catch(e) {
-    console.error('[v10.1] 海報渲染失敗:', e.message);
+    console.error('[v10.2] 海報渲染失敗:', e.message);
     drawBgFallback(ctx);
     ctx.fillStyle = '#FFA060';
     ctx.font = '900 36px "Noto Sans TC",sans-serif';
@@ -1130,7 +1451,6 @@ async function renderGptPosterCanvas() {
   }
 }
 
-// v10.1: 一鍵把海報變 5 秒影片
 async function posterToVideo() {
   if (!LAST_POSTER_URL) {
     setPrStatus('⚠️ 請先生成海報', 'var(--red)');
@@ -1141,7 +1461,7 @@ async function posterToVideo() {
   videoBtn.disabled = true;
   videoBtn.textContent = '⏳ 影片生成中...';
 
-  const interval = startProgress(120000); // Kling 可能要 2 分鐘
+  const interval = startProgress(120000);
 
   try {
     setPrStatus('🎬 送出影片任務(Kling v2.1)...', 'var(--t3)');
@@ -1157,7 +1477,7 @@ async function posterToVideo() {
     let result = await pollUntilDone(
       submitData.requestId,
       submitData.endpoint,
-      300000, // 5 分鐘上限
+      300000,
       submitData.responseUrl,
       submitData.statusUrl
     );
@@ -1180,7 +1500,6 @@ async function posterToVideo() {
     if (result.status === 'FAILED') throw new Error(result.error || '影片生成失敗');
     if (!result.videoUrl) throw new Error('未取得影片 URL');
 
-    // 成功 → 把 canvas 換成影片播放
     showVideoInCanvas(result.videoUrl);
     finishProgress(interval);
     setPrStatus('✅ 影片生成完成！可右鍵下載', 'var(--mint)');
@@ -1194,20 +1513,16 @@ async function posterToVideo() {
   }
 }
 
-// v10.1: 把 canvas 換成 video 播放器
 function showVideoInCanvas(videoUrl) {
   const canvas = document.getElementById('adCanvas');
   const container = canvas?.parentElement;
   if (!container) return;
 
-  // 找有沒有舊的 video 元素,先移掉
   const oldVideo = document.getElementById('adVideoPreview');
   if (oldVideo) oldVideo.remove();
 
-  // canvas 暫時藏起來
   canvas.style.display = 'none';
 
-  // 創 video 元素
   const video = document.createElement('video');
   video.id = 'adVideoPreview';
   video.src = videoUrl;
@@ -1219,7 +1534,6 @@ function showVideoInCanvas(videoUrl) {
   video.style.cssText = 'border-radius:12px;width:100%;max-width:560px;height:auto;box-shadow:0 16px 60px rgba(0,0,0,0.7);display:block;';
   container.appendChild(video);
 
-  // 更新預覽標籤
   const lbl = document.getElementById('previewLabel');
   if (lbl) lbl.textContent = '🎬 影片預覽 5 秒循環播放';
 }
