@@ -46,7 +46,7 @@
     <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:32px;">
       <img src="logo.webp" alt="RABY D&C" style="height:96px;width:auto;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(201,166,101,0.15));" onerror="this.style.display='none'">
       <div class="login-title">BRAND OS</div>
-      <div class="login-sub">RABY D&amp;C · v9.1</div>
+      <div class="login-sub">RABY D&amp;C · v10.2</div>
     </div>
     <div class="login-desc">芮比廣告行銷內部系統<br>請使用公司 Google 帳號登入</div>
     <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
@@ -67,22 +67,18 @@
   <p id="initMsg">初始化 Brand OS 系統...</p>
 </div>
 
-<!-- ══ Nav (v9.0 純 logo 版) ══ -->
+<!-- ══ Nav ══ -->
 <nav class="nav">
-  <!-- 左側: 只留 logo (Brand OS 文字已移除) -->
   <div class="nav-logo-wrap">
     <img src="logo.webp" alt="RABY D&C" style="height:40px;width:auto;object-fit:contain;position:relative;z-index:1;" onerror="this.style.display='none'">
   </div>
 
-  <!-- 中間 flex 間距 -->
   <div style="flex:1;"></div>
 
-  <!-- 右側: 版本膠囊 + 功能按鈕 -->
   <div class="nav-right">
-    <!-- v9.0 版本膠囊 -->
     <span class="version-capsule">
       <span class="dot"></span>
-      v9.1 · Beta
+      v10.2 · Beta
     </span>
 
     <a href="monitor.html" class="btn-ads-monitor" title="廣告監控儀表板"><svg width="15" height="15" viewBox="0 0 36 36" fill="none" style="flex-shrink:0;"><circle cx="18" cy="18" r="14" stroke="#FF6600" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/><circle cx="18" cy="18" r="8.5" stroke="#FF6600" stroke-width="1.2" opacity="0.7"/><circle cx="18" cy="18" r="2.5" fill="#FF6600"/><line x1="18" y1="18" x2="18" y2="4" stroke="#FF6600" stroke-width="1.5" stroke-linecap="round"/></svg><span>廣告監控</span><span class="monitor-live-dot"></span></a>
@@ -251,7 +247,6 @@
           <button onclick="setTextAlign('right',this)"  class="pr-scene-btn"    id="alignRight">靠右</button>
         </div>
 
-        <!-- v9.1: 字體風格 -->
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
           <div class="sel-lbl" style="margin-bottom:5px;">字體風格</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
@@ -267,12 +262,11 @@
       <div style="border:1px solid rgba(201,166,101,0.3);border-radius:11px;overflow:hidden;flex-shrink:0;">
         <div style="padding:8px 13px;background:rgba(201,166,101,0.08);font-size:9px;font-weight:700;letter-spacing:2.5px;color:#C9A665;">AI 影像處理功能</div>
 
-        <!-- v10.0: 三個 AI 模式按鈕 -->
         <div style="padding:9px 11px;border-bottom:1px solid var(--line);">
           <div style="display:grid;grid-template-columns:1fr;gap:5px;">
             <button class="pr-mode-btn on" onclick="setPrMode(this,'product_shot')" style="font-weight:900;padding:9px;">✨ AI 情境生成 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換場景)</span></button>
             <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')" style="border-color:rgba(232,160,58,0.5);color:#E8C878;font-weight:900;padding:9px;">👗 AI 真人試穿 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換模特)</span></button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'gpt_poster')" style="border-color:rgba(184,158,212,0.5);background:linear-gradient(135deg,rgba(184,158,212,0.08),rgba(91,200,200,0.08));color:#C9B8E8;font-weight:900;padding:9px;">⚡ 懶人 AI 廣告圖 <span style="opacity:0.55;font-weight:400;font-size:9px;">(頂級·商品保留·NT$5/張)</span></button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'gpt_poster')" style="border-color:rgba(184,158,212,0.5);background:linear-gradient(135deg,rgba(184,158,212,0.08),rgba(91,200,200,0.08));color:#C9B8E8;font-weight:900;padding:9px;">⚡ 懶人 AI 廣告圖 <span style="opacity:0.55;font-weight:400;font-size:9px;">(品牌包·NT$5/張)</span></button>
           </div>
         </div>
 
@@ -281,7 +275,6 @@
           <div style="font-size:8px;color:#6A6860;font-weight:700;letter-spacing:2px;margin-bottom:5px;">選擇情境場景</div>
           <div style="font-size:9px;color:#5BC8C8;margin-bottom:7px;line-height:1.7;">直接改圖：保留人物商品，只改背景/光線/氛圍 ✨</div>
 
-          <!-- 內衣/貼身衣物場景推薦 (v9.1 更新) -->
           <div style="font-size:9px;color:#E8C878;margin-bottom:7px;padding:7px 9px;background:rgba(201,166,101,0.06);border-radius:7px;border:1px solid rgba(201,166,101,0.20);line-height:1.75;">
             💡 <strong>內衣/泳裝/貼身衣物</strong>推薦場景：<br>
             🏊‍♀️ 炎熱夏日　·　🌴 熱帶渡假　·　💧 泳池派對<br>
@@ -290,7 +283,6 @@
           </div>
 
           <div id="prSceneGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-
             <div style="grid-column:1/-1;font-size:8px;color:#6A6860;letter-spacing:2px;padding:4px 2px 2px;font-weight:700;">── 通用場景 ──</div>
             <button class="pr-scene-btn on" onclick="setPrScene(this,'studio_white')">質感白棚</button>
             <button class="pr-scene-btn"    onclick="setPrScene(this,'dark_luxury')">質感黑金</button>
@@ -366,42 +358,96 @@
           </div>
         </div>
 
-        <!-- v10.1: 懶人 AI 廣告圖設定 -->
+        <!-- ★ v10.2 重新設計:懶人 AI 廣告圖 = 版式 + 風土 + 情境 三層 -->
         <div id="prGptPosterSection" style="display:none;padding:9px 11px;border-bottom:1px solid var(--line);">
-          <div style="font-size:8px;color:#C9B8E8;font-weight:700;letter-spacing:2px;margin-bottom:7px;">⚡ 風格靈感 (點一下填入)</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;">
-            <button class="insp-btn" onclick="setInspiration(this,'summer_beach')">🌊 夏日海邊</button>
-            <button class="insp-btn" onclick="setInspiration(this,'japan_minimal')">✨ 日系極簡</button>
-            <button class="insp-btn" onclick="setInspiration(this,'korean_ecom')">🎯 韓系電商</button>
-            <button class="insp-btn" onclick="setInspiration(this,'japan_food')">🍶 日式食品</button>
-            <button class="insp-btn" onclick="setInspiration(this,'family_warm')">👶 家庭溫馨</button>
-            <button class="insp-btn" onclick="setInspiration(this,'surreal_art')">🎨 超現實藝術</button>
-            <button class="insp-btn" onclick="setInspiration(this,'tech_detail')">🏆 科技詳情頁</button>
-            <button class="insp-btn" onclick="setInspiration(this,'retro_vintage')">📰 復古印刷</button>
+
+          <!-- 品牌包自動匹配標籤 -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;padding:7px 10px;background:rgba(184,158,212,0.06);border-radius:7px;border:1px solid rgba(184,158,212,0.2);">
+            <span style="font-size:9px;color:#6A6860;letter-spacing:1px;">📦 品牌風格包</span>
+            <span id="brandPackBadge" style="font-size:11px;font-weight:900;color:#C9B8E8;letter-spacing:0.5px;">—</span>
           </div>
 
+          <!-- ① 版式骨架 -->
+          <div style="margin-bottom:11px;">
+            <div style="font-size:9px;color:#C9B8E8;font-weight:700;letter-spacing:2px;margin-bottom:6px;">① 選版式骨架</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+              <button class="layout-btn" data-layout="magazine_cover" onclick="setLayout(this,'magazine_cover')">📖 雜誌封面</button>
+              <button class="layout-btn" data-layout="spec_breakdown" onclick="setLayout(this,'spec_breakdown')">📐 規格分解</button>
+              <button class="layout-btn" data-layout="scene_lifestyle" onclick="setLayout(this,'scene_lifestyle')">🌿 情境寫真</button>
+              <button class="layout-btn" data-layout="dramatic_splash" onclick="setLayout(this,'dramatic_splash')">💥 戲劇飛濺</button>
+              <button class="layout-btn on" data-layout="minimal_poster" onclick="setLayout(this,'minimal_poster')" style="grid-column:1/-1;">✨ 極簡海報(預設)</button>
+            </div>
+          </div>
+
+          <!-- ② 風土調味 -->
+          <div style="margin-bottom:11px;">
+            <div style="font-size:9px;color:#C9B8E8;font-weight:700;letter-spacing:2px;margin-bottom:6px;">② 風土調味 <span style="font-weight:400;color:#6A6860;font-size:8px;">(可不選)</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+              <button class="flavor-btn on" data-flavor="none" onclick="setFlavor(this,'none')">— 不調味 —</button>
+              <button class="flavor-btn" data-flavor="japan_kinfolk" onclick="setFlavor(this,'japan_kinfolk')">🇯🇵 日系雅致</button>
+              <button class="flavor-btn" data-flavor="korea_oliveyoung" onclick="setFlavor(this,'korea_oliveyoung')">🇰🇷 韓系乾淨</button>
+              <button class="flavor-btn" data-flavor="showa_retro" onclick="setFlavor(this,'showa_retro')">📻 昭和復古</button>
+              <button class="flavor-btn" data-flavor="retro_future_y2k" onclick="setFlavor(this,'retro_future_y2k')">🌌 復古未來 Y2K</button>
+              <button class="flavor-btn" data-flavor="bold_clash_2026" onclick="setFlavor(this,'bold_clash_2026')">🎨 2026 撞色</button>
+              <button class="flavor-btn" data-flavor="ugly_cute_2026" onclick="setFlavor(this,'ugly_cute_2026')">😜 2026 醜萌</button>
+              <button class="flavor-btn" data-flavor="euro_editorial" onclick="setFlavor(this,'euro_editorial')">🇪🇺 歐美雜誌</button>
+              <button class="flavor-btn" data-flavor="taiwan_nostalgia" onclick="setFlavor(this,'taiwan_nostalgia')">🇹🇼 台式懷舊</button>
+            </div>
+          </div>
+
+          <!-- ③ 情境主題 -->
+          <div style="margin-bottom:11px;">
+            <div style="font-size:9px;color:#C9B8E8;font-weight:700;letter-spacing:2px;margin-bottom:6px;">③ 情境主題 <span style="font-weight:400;color:#6A6860;font-size:8px;">(可不選)</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+              <button class="context-btn on" data-context="none" onclick="setContext(this,'none')">— 無 —</button>
+              <button class="context-btn" data-context="summer" onclick="setContext(this,'summer')">☀️ 夏日</button>
+              <button class="context-btn" data-context="winter_cozy" onclick="setContext(this,'winter_cozy')">🍂 冬日溫暖</button>
+              <button class="context-btn" data-context="festive_cny" onclick="setContext(this,'festive_cny')">🧧 農曆新年</button>
+              <button class="context-btn" data-context="back_to_school" onclick="setContext(this,'back_to_school')">📚 開學季</button>
+              <button class="context-btn" data-context="unboxing" onclick="setContext(this,'unboxing')">📦 開箱時刻</button>
+              <button class="context-btn" data-context="daily_use" onclick="setContext(this,'daily_use')">🌱 日常使用</button>
+              <button class="context-btn" data-context="promo_sale" onclick="setContext(this,'promo_sale')">🎯 限時促銷</button>
+              <button class="context-btn" data-context="gift_giving" onclick="setContext(this,'gift_giving')" style="grid-column:1/-1;">🎁 送禮場合</button>
+            </div>
+          </div>
+
+          <!-- 折疊區: 8 鍵舊靈感 (備援) -->
+          <details style="margin-bottom:11px;border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:6px 9px;">
+            <summary style="font-size:9px;color:#6A6860;cursor:pointer;letter-spacing:1px;">⚡ v10.1 舊靈感鍵 (備援,點開展)</summary>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px;">
+              <button class="insp-btn" onclick="setInspiration(this,'summer_beach')">🌊 夏日海邊</button>
+              <button class="insp-btn" onclick="setInspiration(this,'japan_minimal')">✨ 日系極簡</button>
+              <button class="insp-btn" onclick="setInspiration(this,'korean_ecom')">🎯 韓系電商</button>
+              <button class="insp-btn" onclick="setInspiration(this,'japan_food')">🍶 日式食品</button>
+              <button class="insp-btn" onclick="setInspiration(this,'family_warm')">👶 家庭溫馨</button>
+              <button class="insp-btn" onclick="setInspiration(this,'surreal_art')">🎨 超現實藝術</button>
+              <button class="insp-btn" onclick="setInspiration(this,'tech_detail')">🏆 科技詳情頁</button>
+              <button class="insp-btn" onclick="setInspiration(this,'retro_vintage')">📰 復古印刷</button>
+            </div>
+          </details>
+
           <div style="margin-bottom:7px;">
-            <div class="sel-lbl">風格描述 (可微調)</div>
-            <textarea id="gptStyleDesc" rows="4" placeholder="點上方靈感鍵自動填入,或自己打想要的風格...(英文為主,中文也會懂)" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:10px;margin-top:4px;box-sizing:border-box;resize:vertical;line-height:1.5;"></textarea>
+            <div class="sel-lbl">補充風格描述 <span style="font-weight:400;color:#6A6860;font-size:8px;text-transform:none;">(可不填)</span></div>
+            <textarea id="gptStyleDesc" rows="2" placeholder="想多加什麼自己打,系統會自動疊在版式+品牌包之上..." style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:10px;margin-top:4px;box-sizing:border-box;resize:vertical;line-height:1.5;"></textarea>
           </div>
 
           <div style="margin-bottom:7px;">
             <div class="sel-lbl">主標 (大字·必填)</div>
-            <input type="text" id="gptHeadline" placeholder="例: 夏日美白 · 透亮無懼陽光" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
+            <input type="text" id="gptHeadline" placeholder="例: 那個夏天的風 · 依然還在" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
           </div>
 
           <div style="margin-bottom:7px;">
             <div class="sel-lbl">副標 (小字·可略)</div>
-            <input type="text" id="gptSubHeadline" placeholder="例: 7 天勻亮有感" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
+            <input type="text" id="gptSubHeadline" placeholder="例: 一台在家,一台隨身" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
           </div>
 
           <div style="font-size:9px;color:#6A6860;line-height:1.75;padding:7px 9px;background:rgba(184,158,212,0.05);border-radius:7px;border:1px solid rgba(184,158,212,0.18);margin-top:7px;">
-            💡 <b style="color:#C9B8E8;">懶人 AI 廣告圖</b> · GPT Image 2 edit<br>
-            · <b>用左側選的商品照</b>作為基底<br>
-            · 商品盡量保留,背景/文案/構圖全換<br>
-            · 品牌 adStyle 自動串接進 prompt<br>
-            · 約 60-90 秒 · 每張約 <b style="color:#C9B8E8;">NT$5</b> (頂級質感)<br>
-            · ⚠️ 中文標籤保留率 70-85%,必要時人眼比對
+            💡 <b style="color:#C9B8E8;">v10.2 品牌包系統</b><br>
+            · <b>左側選品牌</b>會自動套對應 DNA<br>
+            · 版式 × 品牌包 × 風土 × 情境 四層合成<br>
+            · GPT Image 2 edit · 商品 100% 保留<br>
+            · 約 60-90 秒 · 每張 NT$5 (頂級)<br>
+            · ⚠️ 中文標籤保留率 70-85%
           </div>
         </div>
 
@@ -409,7 +455,6 @@
         <div style="padding:9px 11px;">
           <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,#E8603A,#C44020);border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1.5px;box-shadow:0 4px 12px rgba(232,96,58,0.22);">✨ 套用 AI 效果</button>
 
-          <!-- v10.1: 變影片按鈕 (只在海報生成後出現) -->
           <button onclick="posterToVideo()" id="posterToVideoBtn" style="display:none;width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,rgba(201,166,101,0.2),rgba(184,158,212,0.2));border:1.5px solid rgba(201,166,101,0.6);color:#E8DCA8;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1.5px;margin-top:6px;">🎬 變 5 秒影片 (~NT$11)</button>
 
           <div style="margin-top:6px;">
@@ -436,7 +481,7 @@
   </div>
 </div><!-- end adMakerModal -->
 
-<!-- ══ Footer (v9.0 新增) ══ -->
+<!-- ══ Footer ══ -->
 <footer class="brand-footer">
   <div class="footer-inner">
     <div class="footer-left">
@@ -444,7 +489,7 @@
       <span class="footer-divider">·</span>
       <span class="footer-product">BRAND OS</span>
       <span class="footer-divider">·</span>
-      <span class="footer-version">v9.1 Beta</span>
+      <span class="footer-version">v10.2 Beta</span>
     </div>
     <div class="footer-right">
       <a href="privacy.html" target="_blank" class="footer-link">隱私政策</a>
@@ -465,7 +510,6 @@
 <script src="generator.js"></script>
 <script src="admaker.js"></script>
 <script>
-// v9.0: 直接做廣告圖 - 不污染 scripts 陣列
 function openAdMakerDirect() {
   if (!window.S) { alert('請先選擇品牌和商品'); return; }
   if (!window.S.brandId) { alert('請先選擇品牌'); return; }
@@ -474,7 +518,7 @@ function openAdMakerDirect() {
 }
 </script>
 
-<!-- Google OAuth（最後載入，完成後呼叫 initGoogleAuth）-->
+<!-- Google OAuth -->
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth();startSystem();" async defer></script>
 
 </body>
