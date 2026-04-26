@@ -161,12 +161,108 @@ tr:hover td { background: #1a1a2488; }
 .api-link-name { font-size: 12px; font-weight: 700; color: #e8e0d0; }
 .api-link-url { font-size: 9px; color: #4dc8f0; font-family: monospace; }
 .api-link-arrow { font-size: 12px; color: #444; align-self: flex-end; }
+
+/* ★ v10.4 智慧新增商品 modal */
+.smart-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 500; backdrop-filter: blur(6px); }
+.smart-modal-overlay.show { display: flex; }
+.smart-modal { background: #14141e; border: 1px solid #d4af6a44; border-radius: 16px; padding: 28px; width: 90%; max-width: 540px; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.smart-modal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.smart-modal-title { font-size: 17px; font-weight: 700; color: #d4af6a; }
+.smart-modal-sub { font-size: 11px; color: #666; margin-top: 4px; }
+.smart-modal-close { margin-left: auto; background: none; border: none; color: #666; font-size: 22px; cursor: pointer; padding: 0 4px; }
+.smart-modal-close:hover { color: #f44336; }
+.smart-input-group { margin-bottom: 16px; }
+.smart-input-group label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; letter-spacing: 0.5px; }
+.smart-input { width: 100%; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px; color: #e8e0d0; font-size: 14px; font-family: inherit; resize: vertical; }
+.smart-input:focus { outline: none; border-color: #d4af6a66; }
+.smart-input.large { min-height: 80px; font-size: 15px; }
+.smart-examples { font-size: 10px; color: #555; margin-top: 6px; line-height: 1.6; }
+.smart-examples b { color: #888; }
+.smart-action-row { display: flex; gap: 10px; margin-top: 18px; }
+.btn-ai-parse { flex: 1; background: linear-gradient(135deg, #d4af6a 0%, #e8c87a 100%); color: #0f0f13; border: none; border-radius: 10px; padding: 12px 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+.btn-ai-parse:hover { opacity: 0.9; }
+.btn-ai-parse:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ai-cancel { background: #2a2a3a; color: #888; border: none; border-radius: 10px; padding: 12px 20px; font-size: 13px; cursor: pointer; }
+.btn-ai-cancel:hover { color: #aaa; }
+
+.smart-result { margin-top: 18px; display: none; }
+.smart-result.show { display: block; }
+.smart-result-title { font-size: 11px; color: #d4af6a; letter-spacing: 1px; margin-bottom: 10px; }
+.smart-result-grid { display: grid; gap: 10px; }
+.smart-field { background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px; padding: 10px 12px; display: grid; grid-template-columns: 80px 1fr auto; gap: 10px; align-items: center; }
+.smart-field-label { font-size: 11px; color: #666; }
+.smart-field-input { background: transparent; border: none; color: #e8e0d0; font-size: 13px; font-family: inherit; width: 100%; outline: none; }
+.smart-field-input:focus { background: #1a1a24; border-radius: 4px; padding: 2px 4px; margin: -2px -4px; }
+.smart-field.confidence-high { border-color: rgba(61, 214, 140, 0.3); background: rgba(61, 214, 140, 0.05); }
+.smart-field.confidence-medium { border-color: rgba(212, 175, 106, 0.3); background: rgba(212, 175, 106, 0.05); }
+.smart-field.confidence-low { border-color: rgba(244, 67, 54, 0.3); background: rgba(244, 67, 54, 0.05); }
+.confidence-tag { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.5px; white-space: nowrap; }
+.confidence-tag.high { background: rgba(61, 214, 140, 0.15); color: #3dd68c; border: 1px solid rgba(61, 214, 140, 0.3); }
+.confidence-tag.medium { background: rgba(212, 175, 106, 0.15); color: #d4af6a; border: 1px solid rgba(212, 175, 106, 0.3); }
+.confidence-tag.low { background: rgba(244, 67, 54, 0.15); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.3); }
+.smart-reasoning { font-size: 11px; color: #888; padding: 10px 12px; background: rgba(77, 200, 240, 0.05); border: 1px solid rgba(77, 200, 240, 0.2); border-radius: 8px; margin-top: 10px; line-height: 1.6; }
+.smart-reasoning b { color: #4dc8f0; font-weight: 700; }
+.btn-confirm-add { background: #3dd68c; color: #003020; border: none; border-radius: 10px; padding: 12px 24px; font-size: 14px; font-weight: 700; cursor: pointer; flex: 1; transition: opacity 0.2s; }
+.btn-confirm-add:hover { opacity: 0.9; }
+.btn-redo { background: #2a2a3a; color: #d4af6a; border: 1px solid #d4af6a33; border-radius: 10px; padding: 12px 16px; font-size: 13px; cursor: pointer; }
+.btn-redo:hover { background: rgba(212, 175, 106, 0.1); }
+.smart-loading { text-align: center; padding: 40px 20px; }
+.smart-loading p { color: #888; font-size: 13px; margin-top: 12px; }
+.btn-smart-add { background: linear-gradient(135deg, #d4af6a 0%, #e8c87a 100%); color: #0f0f13; border: none; border-radius: 8px; padding: 6px 16px; font-size: 13px; font-weight: 700; cursor: pointer; margin-left: 8px; transition: opacity 0.2s; }
+.btn-smart-add:hover { opacity: 0.9; }
 </style>
 </head>
 <body>
 
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-box"><div class="spinner"></div><p id="loadingMsg">載入中...</p></div>
+</div>
+
+<!-- ★ v10.4: 智慧新增商品 modal -->
+<div class="smart-modal-overlay" id="smartModalOverlay" onclick="if(event.target===this)closeSmartModal()">
+  <div class="smart-modal">
+    <div class="smart-modal-header">
+      <div>
+        <div class="smart-modal-title">✨ 智慧新增商品</div>
+        <div class="smart-modal-sub">用一句話告訴 AI,自動填好欄位</div>
+      </div>
+      <button class="smart-modal-close" onclick="closeSmartModal()">✕</button>
+    </div>
+
+    <div id="smartInputView">
+      <div class="smart-input-group">
+        <label>用一句話描述</label>
+        <textarea class="smart-input large" id="smartPromptInput" placeholder="例:巧福新增復古電風扇,做嘖嘖募資"></textarea>
+        <div class="smart-examples">
+          <b>範例:</b><br>
+          · 巧福新增復古電風扇,做嘖嘖募資<br>
+          · 旺味出新口味:墨西哥辣味米香腸<br>
+          · LACEZ 推春夏新款蕾絲內衣
+        </div>
+      </div>
+      <div class="smart-action-row">
+        <button class="btn-ai-cancel" onclick="closeSmartModal()">取消</button>
+        <button class="btn-ai-parse" id="btnAiParse" onclick="aiParseProduct()">✨ AI 解析</button>
+      </div>
+    </div>
+
+    <div id="smartLoadingView" style="display:none">
+      <div class="smart-loading">
+        <div class="spinner"></div>
+        <p>AI 思考中(讀品牌資料 + 推論分類)...</p>
+      </div>
+    </div>
+
+    <div id="smartResultView" class="smart-result">
+      <div class="smart-result-title">🤖 AI 預填結果(綠=高信心 / 黃=請確認 / 紅=低信心)</div>
+      <div class="smart-result-grid" id="smartResultGrid"></div>
+      <div class="smart-reasoning" id="smartReasoning"></div>
+      <div class="smart-action-row">
+        <button class="btn-redo" onclick="resetSmartForm()">↻ 重新解析</button>
+        <button class="btn-confirm-add" onclick="confirmSmartAdd()">✅ 確認新增到列表</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="top-bar">
@@ -197,7 +293,11 @@ tr:hover td { background: #1a1a2488; }
 
   <!-- 商品管理 -->
   <div class="section" id="sec-products">
-    <div class="section-header"><h2>商品列表</h2><button class="btn-add" onclick="addProduct()">＋ 新增商品</button></div>
+    <div class="section-header">
+      <h2>商品列表</h2>
+      <button class="btn-add" onclick="addProduct()">＋ 新增商品</button>
+      <button class="btn-smart-add" onclick="openSmartModal()">✨ 智慧新增</button>
+    </div>
     <div class="filter-row">
       <select class="filter-select" id="filterBrand" onchange="renderProducts()"><option value="">全部品牌</option></select>
       <input class="filter-input" id="filterSearch" placeholder="搜尋商品名稱..." oninput="renderProducts()">
@@ -339,9 +439,15 @@ tr:hover td { background: #1a1a2488; }
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
+// ★ v10.4: worker URL,給智慧新增用
+const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
+
 let DB = { brands: [], products: [], folders: [] };
 let DELIVERS = [], STAFF = [], APPLIES = [];
 let applyFilter = 'all';
+
+// ★ v10.4: 暫存 AI 解析結果
+let SMART_LAST_PARSED = null;
 
 window.onload = async () => {
   showLoading('載入品牌資料...');
@@ -367,6 +473,164 @@ function switchTab(name) {
 }
 
 function renderAll() { renderBrands(); renderProducts(); renderFolders(); updateFilters(); }
+
+// ══════════════════════════════════════════════════════════════
+// ★ v10.4: 智慧新增商品(AI 解析自然語言)
+// ══════════════════════════════════════════════════════════════
+
+function openSmartModal() {
+  if (!DB.brands || DB.brands.length === 0) {
+    setStatus('❌ 請先新增品牌', 'err');
+    return;
+  }
+  document.getElementById('smartModalOverlay').classList.add('show');
+  document.getElementById('smartInputView').style.display = 'block';
+  document.getElementById('smartLoadingView').style.display = 'none';
+  document.getElementById('smartResultView').classList.remove('show');
+  document.getElementById('smartPromptInput').value = '';
+  setTimeout(() => document.getElementById('smartPromptInput').focus(), 100);
+}
+
+function closeSmartModal() {
+  document.getElementById('smartModalOverlay').classList.remove('show');
+  SMART_LAST_PARSED = null;
+}
+
+function resetSmartForm() {
+  document.getElementById('smartInputView').style.display = 'block';
+  document.getElementById('smartLoadingView').style.display = 'none';
+  document.getElementById('smartResultView').classList.remove('show');
+  setTimeout(() => document.getElementById('smartPromptInput').focus(), 100);
+}
+
+async function aiParseProduct() {
+  const prompt = document.getElementById('smartPromptInput').value.trim();
+  if (!prompt) { setStatus('❌ 請輸入描述', 'err'); return; }
+
+  document.getElementById('smartInputView').style.display = 'none';
+  document.getElementById('smartLoadingView').style.display = 'block';
+  document.getElementById('smartResultView').classList.remove('show');
+
+  try {
+    const r = await fetch(CF_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'ai_smart_product_parse',
+        password: PASSWORD,
+        prompt,
+        brands: DB.brands,
+        products: DB.products,
+      }),
+    });
+    const j = await r.json();
+    document.getElementById('smartLoadingView').style.display = 'none';
+
+    if (!j.ok) {
+      setStatus('❌ AI 解析失敗:' + (j.error || '未知錯誤'), 'err');
+      document.getElementById('smartInputView').style.display = 'block';
+      return;
+    }
+
+    SMART_LAST_PARSED = j.parsed;
+    renderSmartResult(j.parsed);
+  } catch(e) {
+    document.getElementById('smartLoadingView').style.display = 'none';
+    document.getElementById('smartInputView').style.display = 'block';
+    setStatus('❌ 連線失敗:' + e.message, 'err');
+  }
+}
+
+function renderSmartResult(parsed) {
+  const brand = DB.brands.find(b => b.id === parsed.brandId);
+  const brandLabel = brand ? `${brand.icon || ''} ${brand.name} (${brand.id})` : parsed.brandId;
+  const subLabel = `${parsed.subName} (${parsed.subId})${parsed.subIsNew ? ' 🆕新系列' : ''}`;
+
+  const grid = document.getElementById('smartResultGrid');
+  grid.innerHTML = `
+    <div class="smart-field confidence-${parsed.brandConfidence || 'medium'}">
+      <span class="smart-field-label">品牌</span>
+      <input class="smart-field-input" id="smartFieldBrand" value="${esc(brandLabel)}" readonly title="不可修改 — 從現有品牌列表中選">
+      <span class="confidence-tag ${parsed.brandConfidence || 'medium'}">${({high:'高信心',medium:'中信心',low:'低信心'})[parsed.brandConfidence] || '中信心'}</span>
+    </div>
+    <div class="smart-field confidence-${parsed.subConfidence || 'medium'}">
+      <span class="smart-field-label">子系列</span>
+      <input class="smart-field-input" id="smartFieldSubName" value="${esc(parsed.subName || '')}" placeholder="子系列中文名">
+      <span class="confidence-tag ${parsed.subConfidence || 'medium'}">${parsed.subIsNew ? '🆕 新建' : '沿用'}</span>
+    </div>
+    <div class="smart-field confidence-${parsed.subConfidence || 'medium'}">
+      <span class="smart-field-label">系列ID</span>
+      <input class="smart-field-input" id="smartFieldSubId" value="${esc(parsed.subId || '')}" placeholder="如 cf-fan">
+      <span class="confidence-tag ${parsed.subConfidence || 'medium'}">${({high:'高信心',medium:'中信心',low:'低信心'})[parsed.subConfidence] || '中信心'}</span>
+    </div>
+    <div class="smart-field confidence-high">
+      <span class="smart-field-label">商品名</span>
+      <input class="smart-field-input" id="smartFieldProdName" value="${esc(parsed.prodName || '')}" placeholder="商品中文全名">
+      <span class="confidence-tag high">已抓到</span>
+    </div>
+    <div class="smart-field confidence-medium">
+      <span class="smart-field-label">商品ID</span>
+      <input class="smart-field-input" id="smartFieldProdId" value="${esc(parsed.prodId || '')}" placeholder="自動編號">
+      <span class="confidence-tag medium">自動編號</span>
+    </div>
+    <div class="smart-field confidence-${parsed.tagConfidence || 'medium'}">
+      <span class="smart-field-label">標籤</span>
+      <input class="smart-field-input" id="smartFieldProdTag" value="${esc(parsed.prodTag || '')}" placeholder="如:嘖嘖募資款">
+      <span class="confidence-tag ${parsed.tagConfidence || 'medium'}">${({high:'高信心',medium:'中信心',low:'低信心'})[parsed.tagConfidence] || '中信心'}</span>
+    </div>
+    <div class="smart-field confidence-high">
+      <span class="smart-field-label">顏色</span>
+      <select class="smart-field-input" id="smartFieldSubColor" style="background:transparent;">
+        ${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${parsed.subColor===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <span class="confidence-tag high">承襲</span>
+    </div>
+  `;
+
+  document.getElementById('smartReasoning').innerHTML = `<b>AI 判斷:</b> ${esc(parsed.reasoning || '(無說明)')}`;
+  document.getElementById('smartResultView').classList.add('show');
+}
+
+function confirmSmartAdd() {
+  if (!SMART_LAST_PARSED) return;
+
+  // 從 modal 內的 input 撈使用者最後修改的值
+  const brandId = SMART_LAST_PARSED.brandId; // 這個鎖死,不允許改
+  const subName = document.getElementById('smartFieldSubName').value.trim();
+  const subId = document.getElementById('smartFieldSubId').value.trim();
+  const prodName = document.getElementById('smartFieldProdName').value.trim();
+  const prodId = document.getElementById('smartFieldProdId').value.trim();
+  const prodTag = document.getElementById('smartFieldProdTag').value.trim();
+  const subColor = document.getElementById('smartFieldSubColor').value;
+
+  if (!brandId || !subId || !prodId || !prodName) {
+    setStatus('❌ 必填欄位:子系列ID / 商品ID / 商品名', 'err');
+    return;
+  }
+
+  // 找 sub 的靈魂(從同 sub 的舊商品繼承,如果沒有就空)
+  const existingSub = DB.products.find(p => p.brandId === brandId && p.subId === subId);
+
+  DB.products.push({
+    brandId,
+    subId,
+    subName: subName || (existingSub?.subName || ''),
+    subColor: subColor || (existingSub?.subColor || 'gold'),
+    subSoul: existingSub?.subSoul || '',
+    subAdStyle: existingSub?.subAdStyle || '',
+    subHashtags: existingSub?.subHashtags || '',
+    prodId,
+    prodName,
+    prodTag,
+  });
+
+  // 切到該品牌讓使用者確認
+  document.getElementById('filterBrand').value = brandId;
+  renderProducts();
+  closeSmartModal();
+  setStatus(`✨ 已新增「${prodName}」到列表 — 記得按右上「💾 儲存全部」`, 'ok');
+}
+
 
 // ══ 品牌審核 ══
 async function loadApplyCount() {
@@ -736,7 +1000,6 @@ async function addStaff() {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setStatus('❌ Email 格式不正確','err'); return; }
   showLoading('新增中...');
   try {
-    // ★ 用 POST 送 addWhitelist，包含 targetEmail
     const r = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
@@ -757,7 +1020,6 @@ async function removeStaff(email) {
   if (!confirm(`確定移除 ${email}？\n移除後該員工立即無法登入。`)) return;
   showLoading('移除中...');
   try {
-    // ★ 修正：action 改為 removeWhitelist，用 POST 送 targetEmail
     const r = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
