@@ -1,6 +1,13 @@
 // ══════════════════════════════════════════════════════════════
-//  BRAND OS · AD Maker  (v10.2)
+//  BRAND OS · AD Maker  (v10.5)
 //  變更紀錄:
+//    [v10.5] ★ 整合 CMAP 動態擴充
+//             - fetchAndMergeBrandPacksFromGAS 載入後自動呼叫
+//               registerBrandPackColors(packs) 注入 CMAP
+//             - 之後 GAS brands.navColor='brand_xxx' 就能生效
+//    [v10.3] ★ 加 gas_brand_packs_fetch + 5 分鐘快取
+//             - BRAND_STYLE_PACKS 改成 let 可動態覆蓋
+//             - GAS 失敗自動 fallback 內建預設
 //    [v10.2] ★ 5 版式骨架系統 (LAYOUT_TEMPLATES)
 //             - 雜誌封面型 / 規格分解型 / 情境寫真型 / 戲劇飛濺型 / 極簡海報型
 //    [v10.2] ★ 品牌風格包 (BRAND_STYLE_PACKS)
@@ -348,8 +355,6 @@ let BRAND_STYLE_PACKS = {
 `
   }
 };
-
-
 // ═══════════════════════════════════════════════════════════════════════
 // ★ v10.2 風土調味 (REGIONAL_FLAVORS)
 //   套在「版式 × 品牌包」之上的最後一層調色
@@ -461,23 +466,13 @@ let LAST_POSTER_URL = null;
 const BLACK_IMAGE_THRESHOLD = 30000;
 
 
-// v10.2 (v10.2.1 hotfix): 根據當前品牌名自動匹配品牌風格包
-// 修補:用「全字邊界」匹配,避免「ka」這種兩個字母誤命中其他品牌
-// 規則:
-//   - 中文關鍵字(巧福/空瑪那)用 includes() 因為中文沒有單詞邊界概念,但中文不會誤命中
-//   - 英文關鍵字用 \b 全字邊界,避免「ka」命中「daikamano」這種
-//   - 同時優先比對「最長」關鍵字,避免短的先攔截
-//
-// v10.3 補強:支援動態載入(從 GAS 撈)
-//   - BRAND_STYLE_PACKS 已改成 let,fetchAndMergeBrandPacksFromGAS() 會直接覆蓋
-//   - 失敗時不影響:仍用內建 default 5 包
-
-// ★ v10.3:從 worker 拿 GAS brand_packs,合併進 BRAND_STYLE_PACKS
+// ★ v10.5:從 worker 拿 GAS brand_packs,合併進 BRAND_STYLE_PACKS
 //   合併規則:
 //   1. 把 GAS 的每筆 pack 組成 prompt-ready 的 dna 字串
 //   2. 以 pack_key 為鍵覆蓋本地預設(GAS 是真相來源)
 //   3. GAS 沒提供的本地預設保留(避免 GAS 沒填到時系統壞掉)
-//   4. 任何錯誤直接吞掉,fallback 到本地預設
+//   4. ★ v10.5:同時呼叫 registerBrandPackColors() 把 primary_color 注入 CMAP
+//   5. 任何錯誤直接吞掉,fallback 到本地預設
 let _BRAND_PACKS_GAS_LOADED = false;
 let _BRAND_PACKS_GAS_LOADING = false;
 async function fetchAndMergeBrandPacksFromGAS() {
@@ -491,12 +486,20 @@ async function fetchAndMergeBrandPacksFromGAS() {
     });
     const data = await resp.json();
     if (!data.ok) {
-      console.warn('[v10.3] GAS brand packs 載入失敗:', data.error, '— 維持使用內建預設');
+      console.warn('[v10.5] GAS brand packs 載入失敗:', data.error, '— 維持使用內建預設');
       return;
     }
     if (!Array.isArray(data.packs) || data.packs.length === 0) {
-      console.log('[v10.3] GAS 回傳空 brand_packs,維持內建預設');
+      console.log('[v10.5] GAS 回傳空 brand_packs,維持內建預設');
       return;
+    }
+
+    // ★ v10.5:把 brand_packs 的 primary_color 動態註冊進 CMAP
+    //    (config.js 提供 registerBrandPackColors 函式,這裡只負責呼叫)
+    if (typeof registerBrandPackColors === 'function') {
+      registerBrandPackColors(data.packs);
+    } else {
+      console.warn('[v10.5] registerBrandPackColors 函式不存在,CMAP 不會被更新。請確認 config.js 已升級到 v10.5');
     }
 
     // 組裝 dna 字串(把 sheet 的 12 個欄位拼成 prompt 一段)
@@ -528,13 +531,13 @@ async function fetchAndMergeBrandPacksFromGAS() {
 
     const gasCount = data.packs.length;
     const totalCount = Object.keys(BRAND_STYLE_PACKS).length;
-    console.log(`[v10.3] ✅ 已從 GAS 載入 ${gasCount} 個品牌包,當前總計 ${totalCount} 個 (含 default_clean)`);
-    if (data.cached) console.log(`[v10.3] (worker cache hit, age=${data.cache_age_sec}s)`);
+    console.log(`[v10.5] ✅ 已從 GAS 載入 ${gasCount} 個品牌包,當前總計 ${totalCount} 個 (含 default_clean)`);
+    if (data.cached) console.log(`[v10.5] (worker cache hit, age=${data.cache_age_sec}s)`);
 
     // 載入完成後刷新 badge(如果 modal 已開著)
     try { updateBrandPackBadge(); } catch(_) {}
   } catch (e) {
-    console.warn('[v10.3] GAS brand packs 載入錯誤:', e.message, '— 維持使用內建預設');
+    console.warn('[v10.5] GAS brand packs 載入錯誤:', e.message, '— 維持使用內建預設');
   } finally {
     _BRAND_PACKS_GAS_LOADING = false;
   }
@@ -591,7 +594,7 @@ function openAdMaker(idx) {
   CANVAS_TAINTED = false;
   setPrStatus('', '');
 
-  // v10.3: 第一次開 AdMaker 時非阻塞載入 GAS 品牌包(失敗自動 fallback)
+  // v10.5: 第一次開 AdMaker 時非阻塞載入 GAS 品牌包(失敗自動 fallback)
   fetchAndMergeBrandPacksFromGAS();
 
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
@@ -830,7 +833,7 @@ async function pollUntilDone(requestId, endpoint, maxMs = 300000, responseUrl = 
       if (prFill) prFill.style.width = pct + '%';
       if (prPct) prPct.textContent = pct + '%';
     } catch(e) {
-      console.warn('poll 單次失敗，繼續:', e.message);
+      console.warn('poll 單次失敗,繼續:', e.message);
     }
   }
   return { status:'TIMEOUT' };
@@ -889,7 +892,7 @@ async function applyPhotoroomBg() {
   }
 
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
-  if (!photo) { setPrStatus('⚠️ 請先選擇照片！', 'var(--red)'); return; }
+  if (!photo) { setPrStatus('⚠️ 請先選擇照片!', 'var(--red)'); return; }
   const imgSrc = photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
 
@@ -902,7 +905,7 @@ async function applyPhotoroomBg() {
       const base64 = await blobToBase64(blob);
       const compressed = await compressImageBase64(base64, 1500, 0.90);
       const mdImg = document.getElementById('mdPhotoImg');
-      if (!mdImg || !mdImg.src || mdImg.style.display === 'none') throw new Error('請先上傳 MD 照片！');
+      if (!mdImg || !mdImg.src || mdImg.style.display === 'none') throw new Error('請先上傳 MD 照片!');
       setPrStatus('📤 送出試穿任務...', 'var(--t3)');
       const submitData = await callWorker({
         action: 'kling_tryon_submit',
@@ -910,10 +913,10 @@ async function applyPhotoroomBg() {
         garmentImageBase64: compressed
       });
       if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
-      setPrStatus('⏳ AI 試穿中（約30-90秒）...', 'var(--t3)');
+      setPrStatus('⏳ AI 試穿中(約30-90秒)...', 'var(--t3)');
       let result = await pollUntilDone(submitData.requestId, submitData.endpoint, 180000, submitData.responseUrl, submitData.statusUrl);
       if (result.status === 'TIMEOUT') {
-        setPrStatus('🔄 超時，最後查詢一次...', 'var(--t3)');
+        setPrStatus('🔄 超時,最後查詢一次...', 'var(--t3)');
         for (let i = 0; i < 3; i++) {
           await sleep(5000);
           result = await callWorker({ action:'fal_poll', requestId: submitData.requestId, endpoint: submitData.endpoint, responseUrl: submitData.responseUrl, statusUrl: submitData.statusUrl });
@@ -921,12 +924,12 @@ async function applyPhotoroomBg() {
         }
       }
       if (result.status === 'FAILED') throw new Error(result.error || '試穿失敗');
-      if (!result.imageUrl && !result.imageBase64) throw new Error('試穿超時，請再試一次');
+      if (!result.imageUrl && !result.imageBase64) throw new Error('試穿超時,請再試一次');
       PR_BG_IMG = result.imageUrl || result.imageBase64;
       CANVAS_TAINTED = false;
       await renderAdCanvasWithPR();
       finishProgress(interval);
-      setPrStatus('✅ MD 試穿完成！', 'var(--mint)');
+      setPrStatus('✅ MD 試穿完成!', 'var(--mint)');
     } catch(e) { failProgress(interval, e.message); }
     return;
   }
@@ -966,9 +969,9 @@ async function applyPhotoroomBg() {
       finishProgress(interval);
 
       if (result.blobSize > 0) {
-        setPrStatus(`✅ AI 情境生成完成！(${Math.round(result.blobSize/1024)} KB)`, 'var(--mint)');
+        setPrStatus(`✅ AI 情境生成完成!(${Math.round(result.blobSize/1024)} KB)`, 'var(--mint)');
       } else {
-        setPrStatus('✅ AI 情境生成完成！', 'var(--mint)');
+        setPrStatus('✅ AI 情境生成完成!', 'var(--mint)');
       }
     } catch(e) { failProgress(interval, e.message); }
   }
@@ -993,7 +996,7 @@ function showBlackImageWarning(blobSize) {
   ctx.fillText('AI 內容審查擋下了這張圖', AM.w/2, AM.h/2 - 50);
   ctx.fillStyle = '#B8B4A8';
   ctx.font = '500 22px "Noto Sans TC",sans-serif';
-  const kbSize = blobSize > 0 ? `（Flux 回傳 ${Math.round(blobSize/1024)} KB 黑圖）` : '';
+  const kbSize = blobSize > 0 ? `(Flux 回傳 ${Math.round(blobSize/1024)} KB 黑圖)` : '';
   if (kbSize) ctx.fillText(kbSize, AM.w/2, AM.h/2 - 10);
   ctx.fillStyle = '#C9A665';
   ctx.font = '900 26px "Noto Sans TC",sans-serif';
@@ -1466,7 +1469,7 @@ function buildPosterPrompt() {
 
 async function generateGptPoster() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
-  if (!photo) { setPrStatus('⚠️ 請先選擇商品照片！', 'var(--red)'); return; }
+  if (!photo) { setPrStatus('⚠️ 請先選擇商品照片!', 'var(--red)'); return; }
   const imgSrc = photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 商品照尚未載入', 'var(--red)'); return; }
 
@@ -1542,7 +1545,7 @@ async function generateGptPoster() {
 
     const brandPack = detectBrandPack();
     const layoutLabel = LAYOUT_TEMPLATES[SELECTED_LAYOUT]?.label || '';
-    setPrStatus(`✅ 完成！[${brandPack.label} × ${layoutLabel}] 可點「🎬 變影片」`, 'var(--mint)');
+    setPrStatus(`✅ 完成![${brandPack.label} × ${layoutLabel}] 可點「🎬 變影片」`, 'var(--mint)');
 
     const videoBtn = document.getElementById('posterToVideoBtn');
     if (videoBtn) {
@@ -1637,7 +1640,7 @@ async function posterToVideo() {
 
     showVideoInCanvas(result.videoUrl);
     finishProgress(interval);
-    setPrStatus('✅ 影片生成完成！可右鍵下載', 'var(--mint)');
+    setPrStatus('✅ 影片生成完成!可右鍵下載', 'var(--mint)');
     videoBtn.textContent = '✅ 已生成影片';
     videoBtn.disabled = true;
 
