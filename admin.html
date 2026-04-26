@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brand OS 後台管理</title>
+<!-- 
+  ★ v10.5 變更紀錄:
+  - 動態色下拉:啟動時打 worker 拿 brand_packs,組合「6內建色 + N 個品牌專屬色」
+    影響 3 處下拉:品牌主色 / 商品 subColor / 智慧新增結果區
+  - 修 Bug:SMART_LAST_PARSED 失敗時清空(避免殘留舊資料)
+  - 修 Bug:prodId 撞號檢查(同 subId 下不允許重複)
+  - 註:addStaff 送了 name 欄但 GAS 沒接,前端標記待辦(GAS 改天補)
+-->
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f0f13; color: #e8e0d0; min-height: 100vh; }
@@ -210,6 +218,9 @@ tr:hover td { background: #1a1a2488; }
 .smart-loading p { color: #888; font-size: 13px; margin-top: 12px; }
 .btn-smart-add { background: linear-gradient(135deg, #d4af6a 0%, #e8c87a 100%); color: #0f0f13; border: none; border-radius: 8px; padding: 6px 16px; font-size: 13px; font-weight: 700; cursor: pointer; margin-left: 8px; transition: opacity 0.2s; }
 .btn-smart-add:hover { opacity: 0.9; }
+
+/* ★ v10.5 動態色下拉:品牌專屬色標示 */
+.brand-color-badge { font-size: 9px; color: #C9B8E8; opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -267,7 +278,7 @@ tr:hover td { background: #1a1a2488; }
 
 <div class="top-bar">
   <h1>⚙️ Brand OS 後台</h1>
-  <span class="badge">芮比廣告行銷</span>
+  <span class="badge">芮比廣告行銷 · v10.5</span>
   <div class="spacer"></div>
   <span class="status-msg" id="statusMsg"></span>
   <button class="btn-save-all" id="btnSaveAll" onclick="saveAll()">💾 儲存全部</button>
@@ -434,7 +445,6 @@ tr:hover td { background: #1a1a2488; }
   </div>
 
 </div>
-
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
@@ -449,17 +459,95 @@ let applyFilter = 'all';
 // ★ v10.4: 暫存 AI 解析結果
 let SMART_LAST_PARSED = null;
 
+// ★ v10.5: 動態色下拉資料(從 GAS brand_packs 載入)
+//   結構:[{ value: 'gold', label: '🟡 金 Gold', isBuiltIn: true }, ...]
+//   啟動時打 worker → 拿 packs → 組合 6 內建 + N 個 brand_xxx
+let COLOR_OPTIONS = [
+  { value: 'gold',   label: '🟡 金 Gold',     isBuiltIn: true },
+  { value: 'red',    label: '🔴 紅 Red',      isBuiltIn: true },
+  { value: 'mint',   label: '🟢 薄荷 Mint',   isBuiltIn: true },
+  { value: 'purple', label: '🟣 紫 Purple',   isBuiltIn: true },
+  { value: 'sky',    label: '🔵 天藍 Sky',    isBuiltIn: true },
+  { value: 'brown',  label: '🟤 棕 Brown',    isBuiltIn: true },
+];
+
 window.onload = async () => {
   showLoading('載入品牌資料...');
   try {
-    const r = await fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}`);
-    const j = await r.json();
-    if (j.ok) { DB = j.data; renderAll(); setStatus('✅ 載入完成', 'ok'); }
-    else setStatus('❌ ' + j.error, 'err');
-  } catch(e) { setStatus('❌ 連線失敗', 'err'); }
+    // ★ v10.5: 並行載入 brandOS 和 brand_packs(色票),都失敗也不擋網站
+    const [brandOSRes, _packsRes] = await Promise.all([
+      fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}`).then(r => r.json()).catch(e => ({ ok: false, error: e.message })),
+      loadColorOptionsFromBrandPacks().catch(e => {
+        console.warn('[v10.5] 品牌色載入失敗,使用內建 6 色:', e.message);
+      }),
+    ]);
+
+    if (brandOSRes.ok) {
+      DB = brandOSRes.data;
+      renderAll();
+      setStatus('✅ 載入完成', 'ok');
+    } else {
+      setStatus('❌ ' + (brandOSRes.error || '載入失敗'), 'err');
+    }
+  } catch(e) { setStatus('❌ 連線失敗: ' + e.message, 'err'); }
   hideLoading();
   loadApplyCount();
 };
+
+// ★ v10.5: 從 GAS brand_packs(經 worker)抓取品牌專屬色,合併到 COLOR_OPTIONS
+async function loadColorOptionsFromBrandPacks() {
+  const resp = await fetch(CF_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'gas_brand_packs_fetch', password: PASSWORD }),
+  });
+  const data = await resp.json();
+  if (!data.ok || !Array.isArray(data.packs)) {
+    console.warn('[v10.5] brand_packs 抓取失敗:', data.error || '未知');
+    return;
+  }
+
+  // 從 primary_color 字串中找出 HEX 並組成下拉選項
+  const brandColors = [];
+  for (const p of data.packs) {
+    if (!p.pack_key || !p.primary_color) continue;
+    const hexMatch = String(p.primary_color).match(/#[0-9A-Fa-f]{6}/);
+    if (!hexMatch) continue;
+    const hex = hexMatch[0];
+    brandColors.push({
+      value: `brand_${p.pack_key}`,
+      label: `🎨 ${p.label || p.pack_key} (${hex})`,
+      hex: hex,
+      isBuiltIn: false,
+    });
+  }
+
+  if (brandColors.length > 0) {
+    COLOR_OPTIONS = [...COLOR_OPTIONS, ...brandColors];
+    console.log(`[v10.5] ✅ 動態載入 ${brandColors.length} 個品牌專屬色:`, brandColors.map(c => c.value));
+  }
+}
+
+// ★ v10.5: 給下拉用的 HTML 字串生成器
+//   內建色 + 品牌專屬色用 <optgroup> 分開
+function buildColorSelectOptions(currentValue) {
+  const builtIn = COLOR_OPTIONS.filter(c => c.isBuiltIn);
+  const brandSpecific = COLOR_OPTIONS.filter(c => !c.isBuiltIn);
+
+  let html = builtIn.map(c =>
+    `<option value="${c.value}" ${currentValue === c.value ? 'selected' : ''}>${c.label}</option>`
+  ).join('');
+
+  if (brandSpecific.length > 0) {
+    html += `<optgroup label="── 品牌專屬色 ──">`;
+    html += brandSpecific.map(c =>
+      `<option value="${c.value}" ${currentValue === c.value ? 'selected' : ''}>${c.label}</option>`
+    ).join('');
+    html += `</optgroup>`;
+  }
+
+  return html;
+}
 
 function switchTab(name) {
   const tabs = ['brands','products','folders','delivers','memory','apply','staff'];
@@ -475,7 +563,7 @@ function switchTab(name) {
 function renderAll() { renderBrands(); renderProducts(); renderFolders(); updateFilters(); }
 
 // ══════════════════════════════════════════════════════════════
-// ★ v10.4: 智慧新增商品(AI 解析自然語言)
+// ★ v10.4 + v10.5: 智慧新增商品(AI 解析自然語言)
 // ══════════════════════════════════════════════════════════════
 
 function openSmartModal() {
@@ -488,6 +576,7 @@ function openSmartModal() {
   document.getElementById('smartLoadingView').style.display = 'none';
   document.getElementById('smartResultView').classList.remove('show');
   document.getElementById('smartPromptInput').value = '';
+  SMART_LAST_PARSED = null;  // ★ v10.5: 開新 modal 時清乾淨
   setTimeout(() => document.getElementById('smartPromptInput').focus(), 100);
 }
 
@@ -500,6 +589,7 @@ function resetSmartForm() {
   document.getElementById('smartInputView').style.display = 'block';
   document.getElementById('smartLoadingView').style.display = 'none';
   document.getElementById('smartResultView').classList.remove('show');
+  SMART_LAST_PARSED = null;  // ★ v10.5: 重新解析時也清
   setTimeout(() => document.getElementById('smartPromptInput').focus(), 100);
 }
 
@@ -527,6 +617,8 @@ async function aiParseProduct() {
     document.getElementById('smartLoadingView').style.display = 'none';
 
     if (!j.ok) {
+      // ★ v10.5: 失敗時清掉殘留資料(避免下次 confirmSmartAdd 用到舊的)
+      SMART_LAST_PARSED = null;
       setStatus('❌ AI 解析失敗:' + (j.error || '未知錯誤'), 'err');
       document.getElementById('smartInputView').style.display = 'block';
       return;
@@ -535,6 +627,8 @@ async function aiParseProduct() {
     SMART_LAST_PARSED = j.parsed;
     renderSmartResult(j.parsed);
   } catch(e) {
+    // ★ v10.5: catch 也要清
+    SMART_LAST_PARSED = null;
     document.getElementById('smartLoadingView').style.display = 'none';
     document.getElementById('smartInputView').style.display = 'block';
     setStatus('❌ 連線失敗:' + e.message, 'err');
@@ -544,7 +638,6 @@ async function aiParseProduct() {
 function renderSmartResult(parsed) {
   const brand = DB.brands.find(b => b.id === parsed.brandId);
   const brandLabel = brand ? `${brand.icon || ''} ${brand.name} (${brand.id})` : parsed.brandId;
-  const subLabel = `${parsed.subName} (${parsed.subId})${parsed.subIsNew ? ' 🆕新系列' : ''}`;
 
   const grid = document.getElementById('smartResultGrid');
   grid.innerHTML = `
@@ -581,7 +674,7 @@ function renderSmartResult(parsed) {
     <div class="smart-field confidence-high">
       <span class="smart-field-label">顏色</span>
       <select class="smart-field-input" id="smartFieldSubColor" style="background:transparent;">
-        ${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${parsed.subColor===c?'selected':''}>${c}</option>`).join('')}
+        ${buildColorSelectOptions(parsed.subColor || 'gold')}
       </select>
       <span class="confidence-tag high">承襲</span>
     </div>
@@ -592,20 +685,44 @@ function renderSmartResult(parsed) {
 }
 
 function confirmSmartAdd() {
-  if (!SMART_LAST_PARSED) return;
+  if (!SMART_LAST_PARSED) {
+    setStatus('❌ 請先點 ✨ AI 解析', 'err');
+    return;
+  }
 
   // 從 modal 內的 input 撈使用者最後修改的值
-  const brandId = SMART_LAST_PARSED.brandId; // 這個鎖死,不允許改
+  const brandId = SMART_LAST_PARSED.brandId; // 鎖死,不允許改
   const subName = document.getElementById('smartFieldSubName').value.trim();
   const subId = document.getElementById('smartFieldSubId').value.trim();
   const prodName = document.getElementById('smartFieldProdName').value.trim();
-  const prodId = document.getElementById('smartFieldProdId').value.trim();
+  let prodId = document.getElementById('smartFieldProdId').value.trim();
   const prodTag = document.getElementById('smartFieldProdTag').value.trim();
   const subColor = document.getElementById('smartFieldSubColor').value;
 
   if (!brandId || !subId || !prodId || !prodName) {
     setStatus('❌ 必填欄位:子系列ID / 商品ID / 商品名', 'err');
     return;
+  }
+
+  // ★ v10.5: prodId 撞號檢查 — 同 brandId+subId 下不允許重複
+  const collision = DB.products.find(p =>
+    p.brandId === brandId && p.subId === subId && p.prodId === prodId
+  );
+  if (collision) {
+    // 自動產生新編號:取 subId 下最大流水號 +1
+    const sameSubProds = DB.products.filter(p => p.brandId === brandId && p.subId === subId);
+    const maxNum = sameSubProds.reduce((max, p) => {
+      const m = String(p.prodId || '').match(/-p(\d+)$/);
+      return m ? Math.max(max, parseInt(m[1])) : max;
+    }, 0);
+    const newProdId = `${subId}-p${String(maxNum + 1).padStart(2, '0')}`;
+    if (!confirm(`⚠️ 商品 ID「${prodId}」已存在(${collision.prodName})\n\n要改用「${newProdId}」嗎?\n\n按確定 → 自動改為新編號\n按取消 → 自己改`)) {
+      // 使用者選擇自己改 → 把游標移到 prodId 欄位
+      document.getElementById('smartFieldProdId').focus();
+      document.getElementById('smartFieldProdId').select();
+      return;
+    }
+    prodId = newProdId;
   }
 
   // 找 sub 的靈魂(從同 sub 的舊商品繼承,如果沒有就空)
@@ -628,7 +745,7 @@ function confirmSmartAdd() {
   document.getElementById('filterBrand').value = brandId;
   renderProducts();
   closeSmartModal();
-  setStatus(`✨ 已新增「${prodName}」到列表 — 記得按右上「💾 儲存全部」`, 'ok');
+  setStatus(`✨ 已新增「${prodName}」(${prodId})到列表 — 記得按右上「💾 儲存全部」`, 'ok');
 }
 
 
@@ -760,7 +877,7 @@ function renderBrands() {
       </div>
       <div class="two-col">
         <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(b.id)}" oninput="DB.brands[${i}].id=this.value"></div>
-        <div class="field-row"><label>主色</label><select class="field-input" onchange="DB.brands[${i}].navColor=this.value">${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${b.navColor===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field-row"><label>主色</label><select class="field-input" onchange="DB.brands[${i}].navColor=this.value">${buildColorSelectOptions(b.navColor)}</select></div>
       </div>
       <div class="field-row"><label>品牌靈魂</label><textarea class="field-textarea" oninput="DB.brands[${i}].soul=this.value">${esc(b.soul)}</textarea></div>
       <div class="field-row"><label>廣告風格</label><input class="field-input" value="${esc(b.adStyle)}" oninput="DB.brands[${i}].adStyle=this.value"></div>
@@ -789,11 +906,16 @@ function renderProducts() {
   if (!filtered.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:#444">沒有符合的商品</td></tr>'; return; }
   tbody.innerHTML = filtered.map(p => {
     const i = DB.products.indexOf(p);
+    // ★ v10.5: 顏色下拉用內建色 vs 品牌色決定 dot 顯示
+    const isBuiltInColor = ['gold','red','mint','purple','sky','brown'].includes(p.subColor);
+    const colorDot = isBuiltInColor
+      ? `<span class="color-dot color-${p.subColor||'gold'}"></span>`
+      : `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${(COLOR_OPTIONS.find(c=>c.value===p.subColor)?.hex)||'#888'};margin-right:6px;"></span>`;
     return `<tr>
-      <td><span class="color-dot color-${p.subColor||'gold'}"></span>${esc(p.brandId)}</td>
+      <td>${colorDot}${esc(p.brandId)}</td>
       <td><input class="td-input" value="${esc(p.subId)}" oninput="DB.products[${i}].subId=this.value" style="min-width:90px"></td>
       <td><input class="td-input" value="${esc(p.subName)}" oninput="DB.products[${i}].subName=this.value" style="min-width:100px"></td>
-      <td><select class="td-input" onchange="DB.products[${i}].subColor=this.value" style="min-width:70px">${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${p.subColor===c?'selected':''}>${c}</option>`).join('')}</select></td>
+      <td><select class="td-input" onchange="DB.products[${i}].subColor=this.value;renderProducts()" style="min-width:140px">${buildColorSelectOptions(p.subColor)}</select></td>
       <td><input class="td-input" value="${esc(p.prodId)}" oninput="DB.products[${i}].prodId=this.value" style="min-width:80px"></td>
       <td><input class="td-input" value="${esc(p.prodName)}" oninput="DB.products[${i}].prodName=this.value" style="min-width:160px"></td>
       <td><input class="td-input" value="${esc(p.prodTag)}" oninput="DB.products[${i}].prodTag=this.value" style="min-width:80px"></td>
@@ -961,7 +1083,7 @@ async function deleteAdminMemory(memoryId, btnEl) {
   } catch(e) { alert('刪除失敗：'+e.message); btnEl.disabled=false; btnEl.textContent='刪除'; }
 }
 
-// ══ 員工管理 ★ 修正刪除 bug ══
+// ══ 員工管理 ══
 async function loadStaff() {
   showLoading('載入員工名單...');
   try {
@@ -1000,6 +1122,8 @@ async function addStaff() {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setStatus('❌ Email 格式不正確','err'); return; }
   showLoading('新增中...');
   try {
+    // ⚠️ 已知:GAS v4.5 的 addWhitelist 沒接 name 欄(只 appendRow targetEmail/addedAt/email)
+    //   前端送了但後端忽略,「員工姓名備註」目前不會存。GAS 改天補。
     const r = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
