@@ -1,5 +1,11 @@
 // ══════════════════════════════════════════
 //  config.js — 常數、URLs、品牌資料、顏色對照
+//  v10.5: CMAP 動態擴充 + getColor warning
+//    [v10.5] 新增 registerBrandPackColors()  
+//             - brand_packs 的 primary_color 自動註冊進 CMAP
+//             - 規則:CMAP[`brand_${pack_key}`] = { c: HEX, bg: HEX+22 }
+//    [v10.5] getColor() 找不到 key 改 console.warn 不再靜默 fallback
+//    [v10.5] 福臨門 navColor 改成 brand_flm(對應 brand_packs.pack_key)
 // ══════════════════════════════════════════
 
 // ★ 修正 GAS_URL
@@ -10,7 +16,7 @@ const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googl
 const GOOG_SCOPE = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 
-// ══ 共用狀態（所有模組共享）══
+// ══ 共用狀態(所有模組共享)══
 window.S = {
   brandId: null, subId: null, prod: null,
   photos: [], videos: [],
@@ -22,8 +28,8 @@ window.S = {
 window.BRANDS = [];
 window.BRAND_FOLDERS = {};
 
-// ══ 顏色對照表 ══
-const CMAP = {
+// ══ 顏色對照表(v10.5: 改成 let 讓 brand_packs 可動態注入)══
+let CMAP = {
   gold:   { c:'var(--gold)',   bg:'var(--gold2)' },
   red:    { c:'#FF8099',       bg:'var(--red2)' },
   sky:    { c:'var(--sky)',    bg:'var(--sky2)' },
@@ -31,22 +37,65 @@ const CMAP = {
   purple: { c:'var(--purple)', bg:'var(--purple2)' },
   brown:  { c:'#C8A870',       bg:'rgba(200,168,112,0.15)' }
 };
-function getColor(key) { return CMAP[key] || CMAP.gold; }
 
-// ★ 品牌資料（含新增香港福臨門）
+// ★ v10.5:把 brand_packs 的 primary_color 動態註冊成 CMAP key
+//   呼叫時機:admaker.js 從 GAS 撈完 brand_packs 後立刻註冊
+//   規則:CMAP[`brand_${pack_key}`] = { c: HEX, bg: HEX+'22'(透明度 13%) }
+//   範例:brand_packs sheet 有 pack_key='chiaofu', primary_color='#3D5A3F'
+//        → CMAP['brand_chiaofu'] = { c:'#3D5A3F', bg:'#3D5A3F22' }
+//        → brands sheet 寫 navColor='brand_chiaofu' 就會生效
+function registerBrandPackColors(packs) {
+  if (!Array.isArray(packs)) return 0;
+  let registered = 0;
+  for (const p of packs) {
+    if (!p.pack_key || !p.primary_color) continue;
+    
+    // 從 primary_color 字串中找出 HEX(可能是純 HEX 或長字串內含 HEX)
+    const hexMatch = String(p.primary_color).match(/#[0-9A-Fa-f]{6}/);
+    if (!hexMatch) {
+      console.warn(`[CMAP] brand_pack "${p.pack_key}" 的 primary_color 找不到 HEX 色碼`, p.primary_color);
+      continue;
+    }
+    const hex = hexMatch[0];
+    const key = `brand_${p.pack_key}`;
+    CMAP[key] = {
+      c: hex,
+      bg: hex + '22',  // 加透明度 alpha=0x22 = 13%
+    };
+    registered++;
+  }
+  if (registered > 0) {
+    console.log(`[CMAP] ✅ 從 brand_packs 動態註冊了 ${registered} 個品牌專屬色:`,
+      Object.keys(CMAP).filter(k => k.startsWith('brand_')));
+  }
+  return registered;
+}
+
+// ★ v10.5:getColor 加 warning,不再靜默 fallback 到 gold
+//   防止 GAS 寫了不存在的 navColor 卻看不出來
+function getColor(key) {
+  if (!key) return CMAP.gold;
+  if (CMAP[key]) return CMAP[key];
+  // 不在 CMAP 裡 → 警告 + fallback
+  console.warn(`[CMAP] 找不到顏色 key: "${key}",fallback 到 gold。請檢查 GAS brands.navColor 或 brand_packs.pack_key 是否對得上`);
+  return CMAP.gold;
+}
+
+// ★ 品牌資料(含新增香港福臨門)
+//   v10.5: 福臨門 navColor 改成 brand_flm(對應未來 brand_packs)
 const LOCAL_FALLBACK_DATA = {
   brands: [
     { id:'cf',  name:'巧福健康家電', icon:'🏠', navColor:'gold',   soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。', adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊', hashtags:'#居家健康 #巧福 #台灣品牌' },
-    { id:'ww',  name:'旺味米香腸',   icon:'🌾', navColor:'red',    soul:'全台首創米香腸，傳承阿公家訓。', adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景', hashtags:'#旺味米香腸 #米香腸 #台灣豬' },
+    { id:'ww',  name:'旺味米香腸',   icon:'🌾', navColor:'red',    soul:'全台首創米香腸,傳承阿公家訓。', adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景', hashtags:'#旺味米香腸 #米香腸 #台灣豬' },
     { id:'ly',  name:'琉宇醬選',     icon:'🫙', navColor:'mint',   soul:'琉宇醬選主理頂級進口醬料。', adStyle:'精緻質感、食材溯源、料理升級', hashtags:'#琉宇醬選 #好滋好滋 #PASSERI' },
-    { id:'moz', name:'MOZ瑞典駝鹿',  icon:'🦌', navColor:'sky',    soul:'瑞典駝鹿DNA，用北歐色彩與趣味設計讓日常更輕鬆愉快。', adStyle:'北歐輕鬆感、顏值日常、戶外露營風、多色搭配', hashtags:'#MOZ瑞典駝鹿 #北歐設計 #洞洞鞋 #雲朵包' },
-    { id:'ka',  name:'空瑪那',        icon:'🎯', navColor:'purple', soul:'空瑪那是台灣頂尖身心靈國際學院，由宸甄老師創立。', adStyle:'療癒禪意、國際專業、身心靈覺醒、名人背書', hashtags:'#空瑪那 #頌缽療癒 #瑜珈師資 #冥想' },
-    { id:'la',  name:'LACEZ',         icon:'💎', navColor:'mint',   soul:'LACEZ是台灣MIT內衣品牌，工廠直接賣給消費者。', adStyle:'閨蜜親切、精品感平價、MIT驕傲、穿出自信', hashtags:'#LACEZ #台灣MIT #好內衣不貴 #無鋼圈' },
-    { id:'ra',  name:'RADESIGN',      icon:'🏷️', navColor:'gold',   soul:'RADESIGN專營正版品牌鞋Outlet，百分百原廠授權。', adStyle:'直白促銷、正版保證、超值撿漏、蝦皮熱銷', hashtags:'#RADESIGN #正版outlet #品牌鞋特賣 #蝦皮' },
-    // ★ 新增：香港福臨門
-    { id:'flm', name:'香港福臨門',    icon:'🏮', navColor:'brown',
-      soul:'1948年創立於香港灣仔，近八十載粵菜傳承。米其林一星連續七年、富豪飯堂、中餐少林寺。每日新鮮食材、傳統手工烹製、百道工序成就每一味。',
-      adStyle:'高端粵菜質感、傳承匠心、米其林星級、香港在地情懷、簡體中文為主（小紅書/抖音）、港味文案風格、不涉及家族歷史',
+    { id:'moz', name:'MOZ瑞典駝鹿',  icon:'🦌', navColor:'sky',    soul:'瑞典駝鹿DNA,用北歐色彩與趣味設計讓日常更輕鬆愉快。', adStyle:'北歐輕鬆感、顏值日常、戶外露營風、多色搭配', hashtags:'#MOZ瑞典駝鹿 #北歐設計 #洞洞鞋 #雲朵包' },
+    { id:'ka',  name:'空瑪那',        icon:'🎯', navColor:'purple', soul:'空瑪那是台灣頂尖身心靈國際學院,由宸甄老師創立。', adStyle:'療癒禪意、國際專業、身心靈覺醒、名人背書', hashtags:'#空瑪那 #頌缽療癒 #瑜珈師資 #冥想' },
+    { id:'la',  name:'LACEZ',         icon:'💎', navColor:'mint',   soul:'LACEZ是台灣MIT內衣品牌,工廠直接賣給消費者。', adStyle:'閨蜜親切、精品感平價、MIT驕傲、穿出自信', hashtags:'#LACEZ #台灣MIT #好內衣不貴 #無鋼圈' },
+    { id:'ra',  name:'RADESIGN',      icon:'🏷️', navColor:'gold',   soul:'RADESIGN專營正版品牌鞋Outlet,百分百原廠授權。', adStyle:'直白促銷、正版保證、超值撿漏、蝦皮熱銷', hashtags:'#RADESIGN #正版outlet #品牌鞋特賣 #蝦皮' },
+    // ★ v10.5:福臨門 navColor 改 brand_flm(對應 brand_packs 的 pack_key)
+    { id:'flm', name:'香港福臨門',    icon:'🏮', navColor:'brand_flm',
+      soul:'1948年創立於香港灣仔,近八十載粵菜傳承。米其林一星連續七年、富豪飯堂、中餐少林寺。每日新鮮食材、傳統手工烹製、百道工序成就每一味。',
+      adStyle:'高端粵菜質感、傳承匠心、米其林星級、香港在地情懷、簡體中文為主(小紅書/抖音)、港味文案風格、不涉及家族歷史',
       hashtags:'#福臨門 #FookLamMoon #香港美食 #米其林 #粵菜 #富豪飯堂 #香港必吃' }
   ],
   products: [],
@@ -58,7 +107,6 @@ const LOCAL_FALLBACK_DATA = {
     { brandId:'ka',  photoFolderId:'1FX3-68mUz84tmWXI0BGnoQhKKv8JkpPW', videoFolderId:'13xC4onSRLQTB9J9wTot24bdPI9Yc2kj4' },
     { brandId:'la',  photoFolderId:'1Yt3NoT_ryBlj-jVvG7-sWm-UCGYQchxy', videoFolderId:'18LPs4wV2kcnT8pcJRUtm7hDax7nId5pD' },
     { brandId:'ra',  photoFolderId:'1ZJ1KVG6ae0WNG55eF4kwVsycozT6NmJM', videoFolderId:'1kUT_a5AKn71UgU1bD0-t_HR3W9OhqMY6' },
-    // ★ 新增：香港福臨門（Drive folder 待後續填入）
     { brandId:'flm', photoFolderId:'', videoFolderId:'' }
   ]
 };
@@ -137,7 +185,6 @@ const BRAND_SCENE_PROMPTS = {
     office:    'modern kitchen counter, premium sauce styling, food blogger',
     random:    null
   },
-  // ★ 新增：福臨門專屬場景（香港高端粵菜氛圍）
   flm: {
     studio:    'classic chinese restaurant interior, red lacquer and gold accents, elegant Hong Kong fine dining, professional food photography, dark moody background',
     lifestyle: 'hong kong luxury private dining room, round table, traditional chinese setting, warm chandelier light, VIP atmosphere',
