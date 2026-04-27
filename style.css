@@ -2108,3 +2108,189 @@ details[open] > summary::before { transform: rotate(90deg); }
 .login-footer {
   margin-top: 24px !important;
 }
+
+/* ════════════════════════════════════════════════
+   v11.1 Nav 美化:大字英文按鈕 + LOGO 旁版號
+   ════════════════════════════════════════════════ */
+
+/* Brand OS 主標(nav)*/
+.nav-brand-text {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  margin-left: 6px;
+}
+.nav-brand-text span {
+  color: var(--t1);
+}
+
+/* v10.5 小版號標(貼在 Brand OS 旁)*/
+.nav-version-tag {
+  font-family: 'Syne', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.10em;
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid rgba(124,109,250,0.4);
+  background: rgba(124,109,250,0.08);
+  margin-left: 6px;
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+/* nav 按鈕通用基底(大字!) */
+.nav-btn-monitor,
+.nav-btn-kol,
+.nav-btn-admin,
+.nav-btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Monitor(粉紅)*/
+.nav-btn-monitor {
+  border: 1px solid var(--accent2);
+  background: transparent;
+  color: var(--accent2);
+}
+.nav-btn-monitor:hover {
+  background: rgba(250,109,155,0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(250,109,155,0.25);
+}
+
+/* KOL Studio(紫)*/
+.nav-btn-kol {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+}
+.nav-btn-kol:hover {
+  background: rgba(124,109,250,0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(124,109,250,0.30);
+}
+.nav-btn-kol::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: -30%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(124,109,250,0.40), transparent);
+  animation: kol-sweep 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Admin(灰紫)*/
+.nav-btn-admin {
+  border: 1px solid rgba(124,109,250,0.4);
+  background: rgba(124,109,250,0.06);
+  color: var(--accent);
+}
+.nav-btn-admin:hover {
+  background: rgba(124,109,250,0.18);
+  transform: translateY(-1px);
+}
+
+/* Logout(灰)*/
+.nav-btn-logout {
+  border: 1px solid rgba(255,255,255,0.20);
+  background: rgba(255,255,255,0.04);
+  color: var(--t2);
+}
+.nav-btn-logout:hover {
+  background: rgba(255,255,255,0.10);
+  color: var(--t1);
+}
+
+/* Vision Banner 可切換 — 變大、active 高亮 */
+.vision-card {
+  cursor: default;
+}
+.vision-col {
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.vision-col:hover {
+  background: rgba(124,109,250,0.04);
+  transform: translateY(-2px);
+}
+.vision-col.active {
+  background: linear-gradient(135deg, rgba(124,109,250,0.10) 0%, rgba(250,109,155,0.04) 100%);
+  box-shadow: 0 6px 20px rgba(124,109,250,0.15);
+}
+.vision-col.active.now::before    { background: var(--accent3); width: 3px; box-shadow: 0 0 12px var(--accent3); }
+.vision-col.active.next::before   { background: var(--accent); width: 3px; box-shadow: 0 0 12px var(--accent); }
+.vision-col.active.future::before { background: var(--accent2); width: 3px; box-shadow: 0 0 12px var(--accent2); }
+.vision-col.active .vision-title {
+  color: var(--t1);
+  font-size: 16px;
+}
+
+/* User Status Bar(右欄頂部:Email + Drive 狀態)*/
+.user-status-bar {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: linear-gradient(180deg, rgba(124,109,250,0.04) 0%, transparent 100%);
+}
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  background: rgba(109,250,194,0.10);
+  border: 1px solid rgba(109,250,194,0.30);
+  color: var(--accent3);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Space Grotesk', monospace;
+  letter-spacing: 0.02em;
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.drive-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: rgba(124,109,250,0.06);
+  border: 1px solid rgba(124,109,250,0.20);
+  align-self: flex-start;
+}
+.drive-status-chip .drive-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent3);
+  box-shadow: 0 0 6px var(--accent3);
+}
+.drive-status-chip .drive-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent3);
+  letter-spacing: 0.04em;
+}
