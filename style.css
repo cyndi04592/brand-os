@@ -2069,3 +2069,42 @@ details[open] > summary::before { transform: rotate(90deg); }
 .login-footer {
   margin-top: 32px !important;
 }
+
+/* ════════════════════════════════════════════════
+   登入卡片排版 v3 — 右邊那張的緊湊版
+   LOGO 大、BRAND OS 大、按鈕窄、整體比例緊湊
+   ════════════════════════════════════════════════ */
+
+.login-card {
+  padding: 40px 36px 32px !important;
+  width: 380px !important;
+}
+
+.login-logo {
+  width: 90px !important;
+  margin: 0 auto 16px !important;
+}
+
+.login-title {
+  font-size: 48px !important;
+  margin-bottom: 0 !important;
+}
+
+.login-divider {
+  display: none !important;
+}
+
+.login-btn {
+  width: 88% !important;
+  margin: 24px auto 8px auto !important;
+  padding: 13px 16px !important;
+  font-size: 13px !important;
+}
+
+.login-other {
+  margin-top: 18px !important;
+}
+
+.login-footer {
+  margin-top: 24px !important;
+}
