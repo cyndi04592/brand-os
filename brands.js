@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════
 //  brands.js — 左側品牌樹、商品列表、Nav品牌按鈕
+//  v8.5: 點品牌自動收合其他品牌 + 點系列自動 scroll 商品到頂
 //  v8.4: 移除 emoji icon 渲染(試算表 icon 欄位保留不動)
 // ══════════════════════════════════════════
 
@@ -70,7 +71,9 @@ function renderProds() {
 }
 
 // ══ 點選品牌 ══
+// v8.5: 點品牌只展開「當前」,自動 collapse 其他品牌(同時 scroll 商品列表到頂)
 function clickBrand(id) {
+  // v8.5: 同一個品牌點兩次 = 收合;不同品牌 = 切換並只展開新的
   window.S.openBrand = window.S.openBrand === id ? null : id;
   window.S.brandId = id;
   window.S.subId = null;
@@ -95,6 +98,7 @@ function clickBrand(id) {
 }
 
 // ══ 點選子系列 ══
+// v8.5: 點系列後自動 scroll #prodList 到視窗頂部,不用手動拉
 function clickSub(brandId, subId) {
   window.S.brandId = brandId;
   window.S.subId = subId;
@@ -104,6 +108,14 @@ function clickSub(brandId, subId) {
   renderBrandTree();
   renderProds();
   updateCtx();
+
+  // ★ v8.5 新增:自動 scroll 商品列表到視窗頂部
+  setTimeout(() => {
+    const prodList = document.getElementById('prodList');
+    if (prodList) {
+      prodList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 50);
 }
 
 // ══ 點選商品 ══
