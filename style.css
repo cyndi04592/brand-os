@@ -2031,3 +2031,41 @@ details[open] > summary::before { transform: rotate(90deg); }
 .login-footer {
   margin-top: 40px !important;
 }
+
+
+/* ════════════════════════════════════════════════
+   登入卡片排版微調 v2(縮回適中尺寸)
+   ════════════════════════════════════════════════ */
+
+.login-card {
+  padding: 48px 56px 40px !important;
+  width: 460px !important;
+  max-width: 92vw !important;
+}
+
+.login-logo {
+  width: 80px !important;
+  margin: 0 auto 18px !important;
+}
+
+.login-title {
+  font-size: 42px !important;
+  margin-bottom: 0 !important;
+}
+
+.login-divider {
+  margin: 28px auto !important;
+}
+
+.login-btn {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.login-other {
+  margin-top: 22px !important;
+}
+
+.login-footer {
+  margin-top: 32px !important;
+}
