@@ -1748,7 +1748,7 @@ details[open] > summary::before { transform: rotate(90deg); }
   35%, 100% { opacity: 0; transform: translate(-180px,180px); }
 }
 
-/* RB Logo 在登入頁(透明擦黑底)*/
+/* RB Logo 在登入頁(已是真透明 PNG/webp,不需 mix-blend-mode)*/
 .login-logo {
   width: 90px;
   height: auto;
@@ -1756,8 +1756,6 @@ details[open] > summary::before { transform: rotate(90deg); }
   display: block;
   position: relative;
   z-index: 2;
-  /* 鋼板 LOGO 黑底 → mix-blend-mode: screen 把黑色變透明 */
-  mix-blend-mode: screen;
   filter:
     drop-shadow(0 0 12px rgba(124,109,250,0.40))
     drop-shadow(0 0 24px rgba(255,255,255,0.20));
@@ -1870,10 +1868,9 @@ details[open] > summary::before { transform: rotate(90deg); }
   .login-vision { font-size: 12.5px; }
 }
 
-/* Nav LOGO 圖片 */
+/* Nav LOGO 圖片(已是真透明,不需 mix-blend-mode)*/
 .nav-logo-img {
   height: 30px;
   width: auto;
-  mix-blend-mode: screen;
   filter: drop-shadow(0 0 6px rgba(124,109,250,0.40));
 }
