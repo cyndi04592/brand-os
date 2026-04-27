@@ -2294,3 +2294,97 @@ details[open] > summary::before { transform: rotate(90deg); }
   color: var(--accent3);
   letter-spacing: 0.04em;
 }
+
+/* ════════════════════════════════════════════════
+   v11.2 帳號 + Drive 一整行貼最右 + STEP 序號
+   ════════════════════════════════════════════════ */
+
+/* 帳號區塊 — 一整行,水平排 */
+.nav-account-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 10px;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+.nav-email-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  background: rgba(109,250,194,0.10);
+  border: 1px solid rgba(109,250,194,0.30);
+  color: var(--accent3);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Space Grotesk', monospace;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.nav-drive-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  background: rgba(124,109,250,0.06);
+  border: 1px solid rgba(124,109,250,0.20);
+  white-space: nowrap;
+}
+.nav-drive-chip .drive-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent3);
+  box-shadow: 0 0 6px var(--accent3);
+}
+.nav-drive-chip .drive-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent3);
+  letter-spacing: 0.04em;
+}
+
+/* STEP 序號(取代「現在·LIVE」)*/
+.step-num {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.10em;
+  background: linear-gradient(135deg, var(--accent3) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.vision-col.next .step-num {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.vision-col.future .step-num {
+  background: linear-gradient(135deg, var(--accent2) 0%, #ff8fb3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Vision 拿掉點擊 cursor(因為已不可切換)*/
+.vision-col {
+  cursor: default !important;
+}
+.vision-col:hover {
+  background: transparent !important;
+  transform: none !important;
+}
+.vision-col.active {
+  background: linear-gradient(135deg, rgba(124,109,250,0.10) 0%, rgba(250,109,155,0.04) 100%);
+  box-shadow: 0 6px 20px rgba(124,109,250,0.15);
+}
+
+/* RWD nav 換行 */
+@media(max-width: 1280px) {
+  .nav-account-row { display: none; }
+}
