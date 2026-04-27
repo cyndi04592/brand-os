@@ -1991,3 +1991,43 @@ details[open] > summary::before { transform: rotate(90deg); }
   .vision-card { grid-template-columns: 1fr; gap: 12px; }
   .page-header { padding: 18px 16px; }
 }
+
+/* ════════════════════════════════════════════════
+   登入頁排版微調(間距優化)
+   ════════════════════════════════════════════════ */
+
+/* 卡片整體 padding 加大 */
+.login-card {
+  padding: 60px 56px 50px !important;
+}
+
+/* LOGO 上下留白增加 */
+.login-logo {
+  margin: 8px auto 22px !important;
+}
+
+/* BRAND OS 大標下方留白增加 */
+.login-title {
+  margin-bottom: 28px !important;
+}
+
+/* 分隔線間距加大(從 24px → 36px) */
+.login-divider {
+  margin: 36px auto !important;
+}
+
+/* Google 登入按鈕上下留白 */
+.login-btn {
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+/* 其他方式登入跟按鈕之間距離 */
+.login-other {
+  margin-top: 26px !important;
+}
+
+/* I, MULTIPLIED 跟上方距離 */
+.login-footer {
+  margin-top: 40px !important;
+}
