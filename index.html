@@ -83,52 +83,57 @@
 <nav class="nav">
   <div class="nav-logo-wrap">
     <img src="logo.png" alt="RABY D&C" class="nav-logo-img" onerror="this.src='logo.webp'">
-    <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;letter-spacing:0.04em;color:var(--accent);margin-left:4px;">Brand <span style="color:var(--t1);">OS</span></span>
+    <span class="nav-brand-text">Brand <span>OS</span></span>
+    <span class="nav-version-tag">v10.5</span>
   </div>
 
   <div style="flex:1;"></div>
 
   <div class="nav-right">
-    <span class="version-capsule">
-      <span class="dot"></span>
-      v10.5 · Beta
-    </span>
+    <a href="monitor.html" class="nav-btn-monitor" title="廣告監控儀表板">
+      <svg width="16" height="16" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="14" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.5"/><circle cx="18" cy="18" r="8.5" stroke="currentColor" stroke-width="1.4" opacity="0.7"/><circle cx="18" cy="18" r="2.5" fill="currentColor"/><line x1="18" y1="18" x2="18" y2="4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span>Monitor</span>
+      <span class="monitor-live-dot"></span>
+    </a>
 
-    <a href="monitor.html" class="btn-ads-monitor" title="廣告監控儀表板"><svg width="15" height="15" viewBox="0 0 36 36" fill="none" style="flex-shrink:0;"><circle cx="18" cy="18" r="14" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/><circle cx="18" cy="18" r="8.5" stroke="currentColor" stroke-width="1.2" opacity="0.7"/><circle cx="18" cy="18" r="2.5" fill="currentColor"/><line x1="18" y1="18" x2="18" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>廣告監控</span><span class="monitor-live-dot"></span></a>
+    <a href="kol.html" class="nav-btn-kol" title="KOL 數字人工作室">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 19.5c0-3.5 2.9-5.5 6.5-5.5s6.5 2 6.5 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="9" r="0.8" fill="currentColor"/></svg>
+      <span>KOL Studio</span>
+      <span class="kol-pulse-dots"><i></i><i></i><i></i></span>
+    </a>
 
-    <a href="kol.html" class="btn-kol-studio" title="KOL 數字人工作室"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><circle cx="12" cy="9" r="3.2" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 19.5c0-3.5 2.9-5.5 6.5-5.5s6.5 2 6.5 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="9" r="0.8" fill="currentColor"/></svg><span>KOL 數字人</span><span class="kol-pulse-dots"><i></i><i></i><i></i></span></a>
-
-    <button onclick="goAdmin()" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(124,109,250,0.4);background:rgba(124,109,250,0.06);color:var(--accent);font-family:'Syne',sans-serif;font-size:10.5px;font-weight:700;cursor:pointer;letter-spacing:0.06em;transition:all 0.2s;" onmouseover="this.style.background='rgba(124,109,250,0.14)'" onmouseout="this.style.background='rgba(124,109,250,0.06)'">⚙ 後台</button>
-
-    <button id="logoutBtn" onclick="doLogout()" style="display:none;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:var(--t2);font-family:'Syne',sans-serif;font-size:10.5px;font-weight:700;cursor:pointer;letter-spacing:0.06em;">登出</button>
-
-    <button id="driveLoginBtn" onclick="driveLogin()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--accent3);background:rgba(109,250,194,0.08);color:var(--accent3);font-family:'Syne',sans-serif;font-size:10.5px;font-weight:700;cursor:pointer;letter-spacing:0.06em;">· 連結 Drive</button>
-
-    <div class="drive-dot" id="driveDot"></div>
-    <span class="drive-label drive-warning-text" id="driveLabel">· 請先連結 Drive</span>
+    <button onclick="goAdmin()" class="nav-btn-admin">Admin</button>
+    <button id="logoutBtn" onclick="doLogout()" class="nav-btn-logout" style="display:none;">Logout</button>
   </div>
 </nav>
 
 <!-- ══ Vision Banner + 大標題 ══ -->
 <div class="vision-wrap">
   <div class="vision-card">
-    <div class="vision-col now">
+    <div class="vision-col now active" onclick="switchVision(this)">
       <div class="vision-stage">現在 · LIVE <span class="vision-badge live">v10.5</span></div>
       <div class="vision-title">AI 廣告腳本生成</div>
-      <div class="vision-desc">9 個品牌 · 5 種版式 · 9 種風格,Claude Sonnet 4 一次生 1-20 組腳本,記憶學習區可釘文案方向。</div>
+      <div class="vision-desc">系統自動爬取品牌官網/社群,學習語氣與調性,套上小編口吻寫文案。可自由選擇目標 TA、短中長三種長度,Claude Sonnet 4 一次生 1-20 組。</div>
     </div>
-    <div class="vision-col next">
+    <div class="vision-col next" onclick="switchVision(this)">
       <div class="vision-stage">下一版 · SOON <span class="vision-badge dev">廣告圖</span></div>
       <div class="vision-title">AI 廣告圖一鍵生成</div>
       <div class="vision-desc">商品圖 + 品牌包 DNA + 場景情境 → 10 秒出雜誌級海報,GPT Image 2 商品 100% 保留。</div>
     </div>
-    <div class="vision-col future">
+    <div class="vision-col future" onclick="switchVision(this)">
       <div class="vision-stage">完整版 · ALPHA <span class="vision-badge plan">投放</span></div>
       <div class="vision-title">FB 廣告自動上架</div>
       <div class="vision-desc">圖 + 文案 + 受眾規則一鍵推到 FB Business Suite,投手不用守螢幕,LINE Bot 自動回報。</div>
     </div>
   </div>
 </div>
+
+<script>
+function switchVision(el) {
+  document.querySelectorAll('.vision-col').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+</script>
 
 <!-- 主標題 -->
 <div class="page-header">
@@ -231,15 +236,27 @@
 
   <!-- 右側:Drive 素材庫 -->
   <div class="right">
+    <!-- 帳號 + Drive 連結狀態(從 nav 移到這裡) -->
+    <div class="user-status-bar">
+      <div class="user-chip">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span id="userEmailNav">cyndi04592@gmail.com</span>
+      </div>
+      <div class="drive-status-chip" id="driveStatusChip">
+        <span class="drive-dot" id="driveDot"></span>
+        <span class="drive-label" id="driveLabel">Drive 已連結</span>
+      </div>
+    </div>
+
     <div class="drive-cfg">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div class="l-sec" style="margin-bottom:0;">Drive 素材庫</div>
         <button onclick="openAdMakerDirect()" style="padding:6px 13px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-family:'Noto Sans TC';font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(124,109,250,0.30);">🎨 直接做廣告圖</button>
       </div>
-      <div id="driveWarningBanner" style="display:block;margin-bottom:10px;padding:11px 13px;background:rgba(250,109,155,0.10);border:1.5px solid rgba(250,109,155,0.45);border-radius:10px;text-align:center;">
+      <div id="driveWarningBanner" style="display:none;margin-bottom:10px;padding:11px 13px;background:rgba(250,109,155,0.10);border:1.5px solid rgba(250,109,155,0.45);border-radius:10px;text-align:center;">
         <div class="drive-warning-text" style="font-size:12px;font-weight:900;color:var(--accent2);margin-bottom:5px;letter-spacing:0.5px;">· 尚未連結 Google Drive</div>
         <div style="font-size:10px;color:rgba(250,109,155,0.7);margin-bottom:9px;letter-spacing:0.3px;">必須先連結才能抓取素材庫</div>
-        <button onclick="driveLogin()" style="padding:8px 18px;background:linear-gradient(135deg,var(--accent2),#ff8fb3);border:none;border-radius:8px;color:#fff;font-family:'Noto Sans TC';font-size:11px;font-weight:900;cursor:pointer;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(250,109,155,0.30);">· 立即連結 Drive</button>
+        <button id="driveLoginBtn" onclick="driveLogin()" style="padding:8px 18px;background:linear-gradient(135deg,var(--accent2),#ff8fb3);border:none;border-radius:8px;color:#fff;font-family:'Noto Sans TC';font-size:11px;font-weight:900;cursor:pointer;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(250,109,155,0.30);">· 立即連結 Drive</button>
       </div>
       <input type="hidden" id="inPhotoFolder">
       <input type="hidden" id="inVideoFolder">
