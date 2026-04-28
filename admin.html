@@ -4,1369 +4,234 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brand OS 後台管理</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ══════════════════════════════════════════════════════════════
-   Brand OS · admin.html · v11.0 KOL 設計語言
-   2026-04-28: 紫粉薄荷三色 + Syne 字體
-   核心色:
-     主紫 #7C6DFA / 粉 #FA6D9B / 薄荷 #6DFAC2
-     深底 #0A0A0F / 卡 #111118 / 線 rgba(255,255,255,0.08)
-   ══════════════════════════════════════════════════════════════ */
-:root {
-  --bg: #0A0A0F;
-  --bg2: #111118;
-  --bg3: #1A1A24;
-  --bg4: #232330;
-  --line: rgba(255,255,255,0.08);
-  --line-soft: rgba(255,255,255,0.04);
-
-  /* 主色三色 */
-  --purple: #7C6DFA;
-  --purple-soft: rgba(124,109,250,0.12);
-  --purple-glow: rgba(124,109,250,0.35);
-  --pink: #FA6D9B;
-  --pink-soft: rgba(250,109,155,0.12);
-  --mint: #6DFAC2;
-  --mint-soft: rgba(109,250,194,0.12);
-
-  /* 文字 */
-  --t1: #F0F0F5;
-  --t2: #A0A0B0;
-  --t3: #606070;
-  --t4: #44445a;
-
-  /* 漸層 */
-  --grad-main: linear-gradient(135deg, #7C6DFA 0%, #FA6D9B 100%);
-  --grad-tri: linear-gradient(135deg, #7C6DFA 0%, #FA6D9B 50%, #6DFAC2 100%);
-  --grad-bg: radial-gradient(ellipse at 15% 5%, rgba(124,109,250,0.10) 0%, transparent 45%),
-             radial-gradient(ellipse at 85% 90%, rgba(250,109,155,0.08) 0%, transparent 45%),
-             radial-gradient(ellipse at 50% 50%, rgba(109,250,194,0.04) 0%, transparent 70%);
-
-  /* 字體 */
-  --font-display: 'Syne', sans-serif;
-  --font-body: 'Noto Sans TC', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-}
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: var(--font-body), -apple-system, 'Segoe UI', sans-serif;
-  background: var(--bg);
-  background-image: var(--grad-bg);
-  background-attachment: fixed;
-  color: var(--t1);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* 滾動條紫光 */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--purple), var(--pink));
-  border-radius: 4px;
-}
-
-/* ═══ Top Bar 毛玻璃 ═══ */
-.top-bar {
-  background: rgba(17,17,24,0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid var(--line);
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-.top-bar h1 {
-  font-family: var(--font-display);
-  font-size: 19px;
-  background: var(--grad-main);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 800;
-  letter-spacing: 1px;
-}
-.badge {
-  font-size: 11px;
-  background: var(--purple-soft);
-  color: var(--purple);
-  border: 1px solid rgba(124,109,250,0.35);
-  border-radius: 20px;
-  padding: 3px 12px;
-  font-weight: 600;
-}
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f0f13; color: #e8e0d0; min-height: 100vh; }
+.top-bar { background: #1a1a24; border-bottom: 1px solid #2a2a3a; padding: 14px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+.top-bar h1 { font-size: 17px; color: #d4af6a; font-weight: 700; }
+.badge { font-size: 11px; background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a44; border-radius: 20px; padding: 2px 10px; }
 .spacer { flex: 1; }
-.btn-save-all {
-  background: var(--grad-main);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 9px 22px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 16px rgba(124,109,250,0.4);
-  font-family: var(--font-body);
-}
-.btn-save-all:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(124,109,250,0.55);
-}
-.btn-save-all:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
-
-.status-msg { font-size: 13px; color: var(--t3); }
-.status-msg.ok { color: var(--mint); }
+.btn-save-all { background: #d4af6a; color: #0f0f13; border: none; border-radius: 8px; padding: 8px 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.btn-save-all:hover { background: #e8c87a; }
+.btn-save-all:disabled { background: #555; color: #888; cursor: not-allowed; }
+.status-msg { font-size: 13px; color: #888; }
+.status-msg.ok { color: #4caf50; }
 .status-msg.err { color: #f44336; }
-
-/* ═══ Tabs ═══ */
-.tabs {
-  display: flex;
-  background: rgba(17,17,24,0.6);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--line);
-  padding: 0 24px;
-  overflow-x: auto;
-}
-.tab {
-  padding: 13px 22px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--t3);
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  user-select: none;
-  white-space: nowrap;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-.tab:hover { color: var(--t2); }
-.tab.active {
-  color: var(--purple);
-  border-bottom-color: var(--purple);
-  background: linear-gradient(180deg, transparent 0%, rgba(124,109,250,0.06) 100%);
-}
+.tabs { display: flex; background: #1a1a24; border-bottom: 1px solid #2a2a3a; padding: 0 24px; overflow-x: auto; }
+.tab { padding: 12px 20px; cursor: pointer; font-size: 14px; color: #666; border-bottom: 3px solid transparent; transition: all 0.2s; user-select: none; white-space: nowrap; }
+.tab:hover { color: #aaa; }
+.tab.active { color: #d4af6a; border-bottom-color: #d4af6a; }
 .tab-pending { position: relative; }
-.tab-pending .pending-dot {
-  position: absolute;
-  top: 10px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  background: var(--pink);
-  border-radius: 50%;
-  display: none;
-  box-shadow: 0 0 8px var(--pink);
-  animation: pulseDot 1.6s ease infinite;
-}
+.tab-pending .pending-dot { position: absolute; top: 10px; right: 8px; width: 7px; height: 7px; background: #ff6080; border-radius: 50%; display: none; }
 .tab-pending .pending-dot.show { display: block; }
-@keyframes pulseDot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.2); } }
-
-/* ═══ Main ═══ */
-.main { padding: 28px; max-width: 1300px; margin: 0 auto; }
-
-.section { display: none; animation: secIn 0.35s ease; }
+.main { padding: 24px; max-width: 1300px; margin: 0 auto; }
+.section { display: none; }
 .section.active { display: block; }
-@keyframes secIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
 .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.section-header h2 {
-  font-family: var(--font-display);
-  font-size: 18px;
-  color: var(--t1);
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-.btn-add {
-  background: var(--purple-soft);
-  color: var(--purple);
-  border: 1px solid rgba(124,109,250,0.35);
-  border-radius: 10px;
-  padding: 7px 18px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-add:hover {
-  background: var(--purple);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(124,109,250,0.4);
-}
-
-/* ═══ Brand cards ═══ */
-.brands-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
-}
-.brand-card {
-  background: linear-gradient(135deg, rgba(17,17,24,0.8) 0%, rgba(26,26,36,0.6) 100%);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 20px;
-  transition: all 0.25s;
-}
-.brand-card:hover {
-  border-color: rgba(124,109,250,0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(124,109,250,0.15);
-}
-.brand-card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.brand-icon-input {
-  width: 44px;
-  text-align: center;
-  font-size: 22px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 6px;
-  color: var(--t1);
-  transition: border-color 0.2s;
-}
-.brand-icon-input:focus { outline: none; border-color: var(--purple); }
-
-.field-row { margin-bottom: 11px; }
-.field-row label {
-  display: block;
-  font-size: 10px;
-  color: var(--t3);
-  margin-bottom: 5px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 700;
-}
-.field-input, .field-textarea {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 9px 11px;
-  color: var(--t1);
-  font-size: 13px;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-.field-input:focus, .field-textarea:focus {
-  outline: none;
-  border-color: var(--purple);
-  box-shadow: 0 0 0 3px rgba(124,109,250,0.1);
-}
+.section-header h2 { font-size: 16px; }
+.btn-add { background: #2a2a3a; color: #d4af6a; border: 1px solid #d4af6a44; border-radius: 8px; padding: 6px 16px; font-size: 13px; cursor: pointer; }
+.btn-add:hover { background: #d4af6a22; }
+.brands-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.brand-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 18px; }
+.brand-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.brand-icon-input { width: 40px; text-align: center; font-size: 22px; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px; padding: 4px; color: #e8e0d0; }
+.field-row { margin-bottom: 10px; }
+.field-row label { display: block; font-size: 11px; color: #666; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.field-input, .field-textarea { width: 100%; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px; padding: 8px 10px; color: #e8e0d0; font-size: 13px; font-family: inherit; }
+.field-input:focus, .field-textarea:focus { outline: none; border-color: #d4af6a66; }
 .field-textarea { resize: vertical; min-height: 60px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.card-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
-
-.btn-delete {
-  background: none;
-  border: 1px solid rgba(244,67,54,0.3);
-  color: #f44336;
-  border-radius: 8px;
-  padding: 5px 13px;
-  font-size: 12px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-.btn-delete:hover { background: rgba(244,67,54,0.15); border-color: #f44336; }
-
-/* ═══ Filters ═══ */
-.filter-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.filter-select, .filter-input {
-  background: var(--bg2);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 9px 13px;
-  color: var(--t1);
-  font-size: 13px;
-  font-family: inherit;
-  transition: all 0.2s;
-}
+.card-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.btn-delete { background: none; border: 1px solid #f4433633; color: #f44336; border-radius: 6px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+.btn-delete:hover { background: #f4433622; }
+.filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-select, .filter-input { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px; padding: 8px 12px; color: #e8e0d0; font-size: 13px; }
 .filter-input { flex: 1; min-width: 200px; }
-.filter-select:focus, .filter-input:focus {
-  outline: none;
-  border-color: var(--purple);
-  box-shadow: 0 0 0 3px rgba(124,109,250,0.1);
-}
-
-/* ═══ Table ═══ */
-.table-wrap {
-  overflow-x: auto;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: rgba(17,17,24,0.5);
-  backdrop-filter: blur(8px);
-}
+.table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #2a2a3a; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead { background: rgba(26,26,36,0.8); }
-th {
-  padding: 11px 13px;
-  text-align: left;
-  color: var(--t3);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  white-space: nowrap;
-  font-weight: 700;
-  font-family: var(--font-display);
-}
-td {
-  padding: 9px 13px;
-  border-top: 1px solid var(--line);
-  vertical-align: middle;
-}
-tr:hover td { background: rgba(124,109,250,0.04); }
-.td-input {
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  color: var(--t1);
-  font-size: 13px;
-  padding: 5px 7px;
-  width: 100%;
-  min-width: 80px;
-  font-family: inherit;
-  transition: all 0.15s;
-}
-.td-input:focus {
-  outline: none;
-  border-color: var(--purple);
-  background: var(--bg);
-}
-.btn-row-del {
-  background: none;
-  border: none;
-  color: rgba(244,67,54,0.5);
-  cursor: pointer;
-  font-size: 16px;
-  padding: 0 4px;
-  transition: color 0.15s;
-}
+thead { background: #1a1a24; }
+th { padding: 10px 12px; text-align: left; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+td { padding: 8px 12px; border-top: 1px solid #1a1a24; vertical-align: middle; }
+tr:hover td { background: #1a1a2488; }
+.td-input { background: transparent; border: 1px solid transparent; border-radius: 6px; color: #e8e0d0; font-size: 13px; padding: 4px 6px; width: 100%; min-width: 80px; font-family: inherit; }
+.td-input:focus { outline: none; border-color: #d4af6a66; background: #0f0f13; }
+.btn-row-del { background: none; border: none; color: #f4433666; cursor: pointer; font-size: 16px; padding: 0 4px; }
 .btn-row-del:hover { color: #f44336; }
-.color-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
-/* ═══ Folder cards ═══ */
-.folders-list { display: grid; gap: 13px; }
-.folder-card {
-  background: linear-gradient(135deg, rgba(17,17,24,0.8), rgba(26,26,36,0.6));
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px;
-  transition: all 0.2s;
-}
-.folder-card:hover { border-color: rgba(124,109,250,0.3); }
-.folder-card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.folder-brand-badge {
-  background: var(--purple-soft);
-  color: var(--purple);
-  border: 1px solid rgba(124,109,250,0.3);
-  border-radius: 8px;
-  padding: 3px 12px;
-  font-size: 12px;
-  font-weight: 700;
-}
-.stat-label { font-size: 12px; color: var(--t3); margin-left: auto; font-family: var(--font-mono); }
-
-.btn-refresh {
-  background: var(--bg2);
-  color: var(--t2);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 7px 16px;
-  font-size: 12px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-.btn-refresh:hover {
-  color: var(--purple);
-  border-color: rgba(124,109,250,0.4);
-  background: var(--purple-soft);
-}
-
-.asset-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 6px;
-  text-decoration: none;
-}
-.al-photo { color: #5BC8E8; background: rgba(91,200,232,0.12); border: 1px solid rgba(91,200,232,0.4); }
-.al-video { color: var(--pink); background: var(--pink-soft); border: 1px solid rgba(250,109,155,0.4); }
-.al-none { color: var(--t4); border: 1px solid var(--line); cursor: default; }
-
-.status-select {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  color: var(--t1);
-  font-size: 11px;
-  padding: 4px 7px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.status-select:focus { outline: none; border-color: var(--purple); }
-
-/* ═══ Staff cards ═══ */
-.staff-grid { display: grid; gap: 11px; }
-.staff-card {
-  background: linear-gradient(135deg, rgba(17,17,24,0.8), rgba(26,26,36,0.6));
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  transition: all 0.2s;
-}
-.staff-card:hover { border-color: rgba(124,109,250,0.3); }
-.staff-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--grad-main);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-  color: #fff;
-  font-weight: 800;
-  box-shadow: 0 2px 10px rgba(124,109,250,0.4);
-}
+.btn-row-enrich { background: rgba(212,175,106,0.1); border: 1px solid rgba(212,175,106,0.3); color: #d4af6a; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 6px; }
+.btn-row-enrich:hover { background: rgba(212,175,106,0.2); }
+.btn-row-enrich:disabled { opacity: 0.4; cursor: not-allowed; }
+.color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.folders-list { display: grid; gap: 12px; }
+.folder-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 16px; }
+.folder-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.folder-brand-badge { background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a33; border-radius: 6px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+.stat-label { font-size: 12px; color: #888; margin-left: auto; }
+.btn-refresh { background: #2a2a3a; color: #888; border: 1px solid #3a3a4a; border-radius: 8px; padding: 6px 14px; font-size: 12px; cursor: pointer; }
+.btn-refresh:hover { color: #d4af6a; border-color: #d4af6a44; }
+.asset-link { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-decoration: none; }
+.al-photo { color: #4dc8f0; background: rgba(77,200,240,0.12); border: 1px solid #4dc8f0; }
+.al-video { color: #ff7f5c; background: rgba(255,127,92,0.12); border: 1px solid #ff7f5c; }
+.al-none { color: #44446a; border: 1px solid #2a2a3a; cursor: default; }
+.status-select { background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 6px; color: #e8e0d0; font-size: 11px; padding: 3px 6px; cursor: pointer; }
+.staff-grid { display: grid; gap: 10px; }
+.staff-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+.staff-avatar { width: 40px; height: 40px; border-radius: 50%; background: #d4af6a22; border: 2px solid #d4af6a44; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
 .staff-info { flex: 1; }
-.staff-name { font-size: 14px; font-weight: 700; color: var(--t1); }
-.staff-email { font-size: 11px; color: var(--t3); margin-top: 2px; font-family: var(--font-mono); }
-
-.staff-badge {
-  font-size: 10px;
-  padding: 3px 10px;
-  border-radius: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-.badge-admin {
-  background: var(--purple-soft);
-  color: var(--purple);
-  border: 1px solid rgba(124,109,250,0.4);
-}
-.badge-staff {
-  background: rgba(91,200,232,0.12);
-  color: #5BC8E8;
-  border: 1px solid rgba(91,200,232,0.4);
-}
-
-.add-staff-form {
-  background: linear-gradient(135deg, rgba(17,17,24,0.8), rgba(26,26,36,0.6));
-  border: 1px solid rgba(124,109,250,0.25);
-  border-radius: 14px;
-  padding: 22px;
-  margin-bottom: 22px;
-}
-.add-staff-form h3 {
-  font-family: var(--font-display);
-  font-size: 15px;
-  color: var(--purple);
-  margin-bottom: 15px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-.add-staff-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 12px;
-  align-items: end;
-}
-.btn-add-staff {
-  background: var(--grad-main);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 9px 22px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: inherit;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(124,109,250,0.35);
-}
-.btn-add-staff:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(124,109,250,0.5);
-}
-
-/* ═══ Loading ═══ */
-.loading-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(10,10,15,0.85);
-  backdrop-filter: blur(8px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
+.staff-name { font-size: 14px; font-weight: 700; color: #e8e0d0; }
+.staff-email { font-size: 11px; color: #888; margin-top: 2px; }
+.staff-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+.badge-admin { background: #d4af6a22; color: #d4af6a; border: 1px solid #d4af6a44; }
+.badge-staff { background: #4dc8f022; color: #4dc8f0; border: 1px solid #4dc8f044; }
+.add-staff-form { background: #1a1a24; border: 1px solid #d4af6a33; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+.add-staff-form h3 { font-size: 14px; color: #d4af6a; margin-bottom: 14px; }
+.add-staff-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+.btn-add-staff { background: #d4af6a; color: #0f0f13; border: none; border-radius: 8px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-add-staff:hover { background: #e8c87a; }
+.loading-overlay { position: fixed; inset: 0; background: #0f0f13cc; display: none; align-items: center; justify-content: center; z-index: 999; }
 .loading-overlay.show { display: flex; }
-.loading-box {
-  background: linear-gradient(135deg, rgba(17,17,24,0.95), rgba(26,26,36,0.85));
-  border: 1px solid rgba(124,109,250,0.3);
-  border-radius: 18px;
-  padding: 36px 52px;
-  text-align: center;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 40px rgba(124,109,250,0.15);
-}
-.loading-box p { color: var(--t2); margin-top: 14px; font-size: 14px; }
-.spinner {
-  width: 38px;
-  height: 38px;
-  border: 3px solid var(--line);
-  border-top-color: var(--purple);
-  border-right-color: var(--pink);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto;
-}
+.loading-box { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 16px; padding: 32px 48px; text-align: center; }
+.loading-box p { color: #888; margin-top: 12px; font-size: 14px; }
+.spinner { width: 36px; height: 36px; border: 3px solid #2a2a3a; border-top-color: #d4af6a; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--t4);
-}
-
-/* 商品列表色點 — 全部用紫粉薄荷三色變體 */
-.color-gold { background: #7C6DFA; }
-.color-red { background: #FA6D9B; }
-.color-mint { background: #6DFAC2; }
-.color-purple { background: #9B7FD4; }
-.color-sky { background: #5BC8E8; }
-.color-brown { background: #C8A870; }
-
-/* ═══ Memory ═══ */
-.mem-admin-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 22px;
-  flex-wrap: wrap;
-}
+.empty-state { text-align: center; padding: 60px 20px; color: #444; }
+.color-gold{background:#d4af6a}.color-red{background:#e05555}.color-mint{background:#5db8a0}.color-purple{background:#9b7fd4}.color-sky{background:#5ba8d4}.color-brown{background:#a07850}
+.mem-admin-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .mem-filter-group { display: flex; gap: 8px; }
-.mem-select {
-  background: var(--bg2);
-  border: 1px solid var(--line);
-  color: var(--t1);
-  border-radius: 8px;
-  padding: 7px 14px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.mem-select:focus { outline: none; border-color: var(--purple); }
-.mem-stats { font-size: 12px; color: var(--t3); flex: 1; font-family: var(--font-mono); }
-.mem-btn-reload {
-  background: var(--bg2);
-  border: 1px solid var(--line);
-  color: var(--purple);
-  border-radius: 8px;
-  padding: 7px 17px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-.mem-btn-reload:hover {
-  border-color: var(--purple);
-  background: var(--purple-soft);
-}
-
-.mem-admin-list { display: flex; flex-direction: column; gap: 10px; }
-.mem-loading { text-align: center; color: var(--t4); padding: 50px; }
-
-.mem-admin-card {
-  background: linear-gradient(135deg, rgba(17,17,24,0.8), rgba(26,26,36,0.6));
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px 18px;
-  display: grid;
-  grid-template-columns: 48px 1fr auto auto;
-  gap: 14px;
-  align-items: start;
-  transition: all 0.2s;
-}
-.mem-admin-card:hover {
-  border-color: rgba(124,109,250,0.3);
-  transform: translateY(-1px);
-}
-.mem-admin-rank {
-  font-size: 11px;
-  color: var(--purple);
-  font-weight: 700;
-  width: 48px;
-  text-align: center;
-  background: var(--purple-soft);
-  border-radius: 8px;
-  padding: 7px 0;
-  line-height: 1.2;
-  font-family: var(--font-mono);
-}
-.mem-admin-rank small {
-  display: block;
-  font-size: 8px;
-  color: var(--t3);
-  font-weight: 400;
-  margin-top: 2px;
-}
-.mem-admin-brand {
-  font-size: 10px;
-  color: #5BC8E8;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-.mem-admin-hook-method {
-  display: inline-block;
-  font-size: 9px;
-  background: rgba(91,200,232,0.12);
-  color: #5BC8E8;
-  border-radius: 5px;
-  padding: 2px 7px;
-  margin-bottom: 6px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-.mem-admin-hook {
-  font-size: 14px;
-  color: var(--t1);
-  font-weight: 600;
-  margin-bottom: 5px;
-  line-height: 1.5;
-}
-.mem-admin-meta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 5px;
-}
-.mem-admin-cta {
-  font-size: 11px;
-  color: rgba(250,109,155,0.85);
-  background: var(--pink-soft);
-  border-radius: 5px;
-  padding: 2px 9px;
-}
-.mem-admin-time { font-size: 10px; color: var(--t4); font-family: var(--font-mono); }
-.mem-admin-score { text-align: center; min-width: 52px; }
-.mem-score-num {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--mint);
-  line-height: 1;
-  font-family: var(--font-mono);
-}
-.mem-score-label { font-size: 9px; color: var(--t4); margin-top: 3px; }
-.mem-score-bar { font-size: 8px; color: var(--mint); letter-spacing: -1.5px; margin-top: 3px; font-family: monospace; }
-
+.mem-select { background: #1a1a24; border: 1px solid #2a2a3a; color: #e8e0d0; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.mem-select:focus { outline: none; border-color: #d4af6a; }
+.mem-stats { font-size: 12px; color: #888; flex: 1; }
+.mem-btn-reload { background: #1a1a24; border: 1px solid #2a2a3a; color: #d4af6a; border-radius: 6px; padding: 6px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.mem-btn-reload:hover { border-color: #d4af6a; background: rgba(212,175,106,0.1); }
+.mem-admin-list { display: flex; flex-direction: column; gap: 8px; }
+.mem-loading { text-align: center; color: #555; padding: 40px; }
+.mem-admin-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px 18px; display: grid; grid-template-columns: 44px 1fr auto auto; gap: 12px; align-items: start; transition: all 0.2s; }
+.mem-admin-card:hover { border-color: rgba(212,175,106,0.3); }
+.mem-admin-rank { font-size: 11px; color: #d4af6a; font-weight: 700; width: 44px; text-align: center; background: rgba(212,175,106,0.1); border-radius: 6px; padding: 6px 0; line-height: 1.2; }
+.mem-admin-rank small { display: block; font-size: 8px; color: #888; font-weight: 400; margin-top: 2px; }
+.mem-admin-brand { font-size: 10px; color: #4DC8F0; letter-spacing: 0.5px; margin-bottom: 3px; }
+.mem-admin-hook-method { display: inline-block; font-size: 9px; background: rgba(77,200,240,0.1); color: #4DC8F0; border-radius: 4px; padding: 1px 6px; margin-bottom: 6px; }
+.mem-admin-hook { font-size: 14px; color: #F0F0FF; font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
+.mem-admin-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.mem-admin-cta { font-size: 11px; color: rgba(228,184,74,0.8); background: rgba(228,184,74,0.08); border-radius: 4px; padding: 2px 8px; }
+.mem-admin-time { font-size: 10px; color: #555; }
+.mem-admin-score { text-align: center; min-width: 50px; }
+.mem-score-num { font-size: 22px; font-weight: 700; color: #3DD68C; line-height: 1; }
+.mem-score-label { font-size: 9px; color: #555; margin-top: 2px; }
+.mem-score-bar { font-size: 8px; color: #3DD68C; letter-spacing: -1.5px; margin-top: 2px; font-family: monospace; }
 .mem-admin-actions { display: flex; flex-direction: column; gap: 6px; }
-.mem-btn-del {
-  background: transparent;
-  border: 1px solid rgba(212,24,46,0.25);
-  color: rgba(212,24,46,0.6);
-  border-radius: 7px;
-  padding: 5px 11px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-.mem-btn-del:hover {
-  background: rgba(212,24,46,0.1);
-  border-color: #D4182E;
-  color: #D4182E;
-}
-
-.mem-pagination {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  margin-top: 24px;
-  flex-wrap: wrap;
-}
-.mem-page-btn {
-  background: var(--bg2);
-  border: 1px solid var(--line);
-  color: var(--t3);
-  border-radius: 7px;
-  padding: 6px 13px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: var(--font-mono);
-}
-.mem-page-btn:hover, .mem-page-btn.active {
-  border-color: var(--purple);
-  color: var(--purple);
-  background: var(--purple-soft);
-}
-
-/* ═══ Apply ═══ */
-.apply-filter-tabs {
-  display: flex;
-  gap: 7px;
-  margin-bottom: 18px;
-}
-.apply-ftab {
-  padding: 7px 16px;
-  border-radius: 9px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--t3);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-  font-weight: 600;
-}
-.apply-ftab:hover { color: var(--t2); border-color: var(--t4); }
-.apply-ftab.on {
-  border-color: var(--purple);
-  background: var(--purple-soft);
-  color: var(--purple);
-  font-weight: 700;
-}
-
-.apply-list { display: flex; flex-direction: column; gap: 13px; }
-.apply-card {
-  background: linear-gradient(135deg, rgba(17,17,24,0.8), rgba(26,26,36,0.6));
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 20px;
-  transition: all 0.25s;
-}
-.apply-card:hover { transform: translateY(-1px); }
-.apply-card.pending {
-  border-left: 3px solid var(--purple);
-  box-shadow: 0 0 24px rgba(124,109,250,0.08);
-}
-.apply-card.approved { border-left: 3px solid var(--mint); }
+.mem-btn-del { background: transparent; border: 1px solid rgba(212,24,46,0.3); color: rgba(212,24,46,0.6); border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+.mem-btn-del:hover { background: rgba(212,24,46,0.1); border-color: #D4182E; color: #D4182E; }
+.mem-pagination { display: flex; gap: 6px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+.mem-page-btn { background: #1a1a24; border: 1px solid #2a2a3a; color: #888; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.mem-page-btn:hover, .mem-page-btn.active { border-color: #d4af6a; color: #d4af6a; background: rgba(212,175,106,0.1); }
+.apply-filter-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.apply-ftab { padding: 6px 14px; border-radius: 7px; border: 1px solid #2a2a3a; background: transparent; color: #666; font-size: 12px; cursor: pointer; transition: all .15s; }
+.apply-ftab:hover { color: #aaa; }
+.apply-ftab.on { border-color: #d4af6a; background: rgba(212,175,106,0.12); color: #d4af6a; font-weight: 700; }
+.apply-list { display: flex; flex-direction: column; gap: 12px; }
+.apply-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 18px; transition: border-color .2s; }
+.apply-card.pending { border-left: 3px solid #d4af6a; }
+.apply-card.approved { border-left: 3px solid #3dd68c; }
 .apply-card.rejected { border-left: 3px solid #f44336; }
-
-.apply-card-top { display: flex; align-items: flex-start; gap: 13px; }
-.apply-icon { font-size: 34px; flex-shrink: 0; }
+.apply-card-top { display: flex; align-items: flex-start; gap: 12px; }
+.apply-icon { font-size: 32px; flex-shrink: 0; }
 .apply-info { flex: 1; min-width: 0; }
-.apply-name {
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--t1);
-  margin-bottom: 3px;
-  letter-spacing: 0.5px;
-}
-.apply-email {
-  font-size: 11px;
-  color: var(--t3);
-  font-family: var(--font-mono);
-}
-.apply-meta { font-size: 11px; color: var(--t4); margin-top: 5px; }
-
-.apply-status-badge {
-  padding: 4px 11px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  flex-shrink: 0;
-  font-family: var(--font-display);
-}
-.sb-pending {
-  background: var(--purple-soft);
-  color: var(--purple);
-  border: 1px solid rgba(124,109,250,0.4);
-}
-.sb-approved {
-  background: var(--mint-soft);
-  color: var(--mint);
-  border: 1px solid rgba(109,250,194,0.4);
-}
-.sb-rejected {
-  background: rgba(244,67,54,0.1);
-  color: #f44336;
-  border: 1px solid rgba(244,67,54,0.3);
-}
-
-.apply-soul {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 13px;
-  margin-top: 13px;
-  font-size: 11px;
-  color: var(--t2);
-  line-height: 1.9;
-  white-space: pre-wrap;
-  max-height: 145px;
-  overflow-y: auto;
-  display: none;
-}
+.apply-name { font-size: 16px; font-weight: 900; color: #e8e0d0; margin-bottom: 2px; }
+.apply-email { font-size: 11px; color: #666; font-family: monospace; }
+.apply-meta { font-size: 11px; color: #555; margin-top: 4px; }
+.apply-status-badge { padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: 1px; flex-shrink: 0; }
+.sb-pending { background: rgba(212,175,106,0.15); color: #d4af6a; border: 1px solid rgba(212,175,106,0.3); }
+.sb-approved { background: rgba(61,214,140,0.12); color: #3dd68c; border: 1px solid rgba(61,214,140,0.3); }
+.sb-rejected { background: rgba(244,67,54,0.1); color: #f44336; border: 1px solid rgba(244,67,54,0.2); }
+.apply-soul { background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 11px; color: #888; line-height: 1.8; white-space: pre-wrap; max-height: 140px; overflow-y: auto; display: none; }
 .apply-card.expanded .apply-soul { display: block; }
+.apply-info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-top: 10px; }
+.apply-info-item { font-size: 10px; color: #555; }
+.apply-info-item span { color: #aaa; }
+.apply-actions { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
+.btn-approve { padding: 7px 18px; border-radius: 7px; border: none; background: #3dd68c; color: #003020; font-family: inherit; font-size: 12px; font-weight: 900; cursor: pointer; transition: opacity .2s; }
+.btn-approve:hover { opacity: .8; }
+.btn-reject-brand { padding: 7px 18px; border-radius: 7px; border: 1px solid rgba(244,67,54,0.4); background: rgba(244,67,54,0.1); color: #f44336; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.btn-reject-brand:hover { opacity: .8; }
+.btn-toggle-soul { padding: 7px 14px; border-radius: 7px; border: 1px solid #2a2a3a; background: transparent; color: #666; font-size: 11px; cursor: pointer; margin-left: auto; }
+.btn-toggle-soul:hover { color: #d4af6a; border-color: #d4af6a44; }
+.apply-api-links { margin-top: 24px; background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 20px; }
+.api-links-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #666; margin-bottom: 14px; }
+.api-links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.api-link-card { display: flex; flex-direction: column; gap: 4px; padding: 14px; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 10px; text-decoration: none; transition: border-color .2s, transform .15s; }
+.api-link-card:hover { border-color: rgba(212,175,106,0.3); transform: translateY(-2px); }
+.api-link-icon { font-size: 22px; }
+.api-link-name { font-size: 12px; font-weight: 700; color: #e8e0d0; }
+.api-link-url { font-size: 9px; color: #4dc8f0; font-family: monospace; }
+.api-link-arrow { font-size: 12px; color: #444; align-self: flex-end; }
 
-.apply-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 7px;
-  margin-top: 11px;
-}
-.apply-info-item { font-size: 10px; color: var(--t4); }
-.apply-info-item span { color: var(--t2); }
-
-.apply-actions {
-  display: flex;
-  gap: 9px;
-  margin-top: 16px;
-  align-items: center;
-}
-.btn-approve {
-  padding: 8px 20px;
-  border-radius: 9px;
-  border: none;
-  background: linear-gradient(135deg, var(--mint), #4DD8A0);
-  color: #003020;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 900;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 3px 12px rgba(109,250,194,0.35);
-}
-.btn-approve:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(109,250,194,0.5); }
-
-.btn-reject-brand {
-  padding: 8px 20px;
-  border-radius: 9px;
-  border: 1px solid rgba(244,67,54,0.4);
-  background: rgba(244,67,54,0.1);
-  color: #f44336;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-reject-brand:hover { background: rgba(244,67,54,0.2); }
-
-.btn-toggle-soul {
-  padding: 8px 16px;
-  border-radius: 9px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--t3);
-  font-size: 11px;
-  cursor: pointer;
-  margin-left: auto;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-.btn-toggle-soul:hover {
-  color: var(--purple);
-  border-color: rgba(124,109,250,0.4);
-  background: var(--purple-soft);
-}
-
-.apply-api-links {
-  margin-top: 28px;
-  background: linear-gradient(135deg, rgba(17,17,24,0.8), rgba(26,26,36,0.6));
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 22px;
-}
-.api-links-title {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: var(--t3);
-  margin-bottom: 16px;
-  text-transform: uppercase;
-}
-.api-links-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 11px;
-}
-.api-link-card {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 15px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-.api-link-card:hover {
-  border-color: rgba(124,109,250,0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(124,109,250,0.15);
-}
-.api-link-icon { font-size: 24px; }
-.api-link-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--t1);
-}
-.api-link-url {
-  font-size: 9px;
-  color: #5BC8E8;
-  font-family: var(--font-mono);
-}
-.api-link-arrow {
-  font-size: 13px;
-  color: var(--t4);
-  align-self: flex-end;
-}
-
-/* ═══ v10.4 智慧新增商品 modal ═══ */
-.smart-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.75);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 500;
-  backdrop-filter: blur(8px);
-}
+/* ★ v11.1 智慧新增商品 modal */
+.smart-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 500; backdrop-filter: blur(6px); }
 .smart-modal-overlay.show { display: flex; }
-.smart-modal {
-  background: linear-gradient(135deg, rgba(20,20,30,0.95), rgba(26,26,36,0.85));
-  border: 1px solid rgba(124,109,250,0.4);
-  border-radius: 18px;
-  padding: 30px;
-  width: 90%;
-  max-width: 560px;
-  max-height: 88vh;
-  overflow-y: auto;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 60px rgba(124,109,250,0.15);
-}
-.smart-modal-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.smart-modal-title {
-  font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 800;
-  background: var(--grad-main);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: 1px;
-}
-.smart-modal-sub { font-size: 11px; color: var(--t3); margin-top: 4px; }
-.smart-modal-close {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: var(--t3);
-  font-size: 24px;
-  cursor: pointer;
-  padding: 0 6px;
-  transition: color 0.2s;
-}
+.smart-modal { background: #14141e; border: 1px solid #d4af6a44; border-radius: 16px; padding: 28px; width: 90%; max-width: 600px; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.smart-modal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.smart-modal-title { font-size: 17px; font-weight: 700; color: #d4af6a; }
+.smart-modal-sub { font-size: 11px; color: #666; margin-top: 4px; }
+.smart-modal-close { margin-left: auto; background: none; border: none; color: #666; font-size: 22px; cursor: pointer; padding: 0 4px; }
 .smart-modal-close:hover { color: #f44336; }
+.smart-input-group { margin-bottom: 16px; }
+.smart-input-group label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; letter-spacing: 0.5px; }
+.smart-input { width: 100%; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px; color: #e8e0d0; font-size: 14px; font-family: inherit; resize: vertical; }
+.smart-input:focus { outline: none; border-color: #d4af6a66; }
+.smart-input.large { min-height: 70px; font-size: 14px; }
+.smart-url-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.smart-url-row input { flex: 1; background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px; padding: 9px 12px; color: #e8e0d0; font-size: 12px; font-family: inherit; }
+.smart-url-row input:focus { outline: none; border-color: #d4af6a66; }
+.smart-url-hint { font-size: 10px; color: #555; margin-top: 4px; line-height: 1.6; }
+.smart-examples { font-size: 10px; color: #555; margin-top: 6px; line-height: 1.6; }
+.smart-examples b { color: #888; }
+.smart-action-row { display: flex; gap: 10px; margin-top: 18px; }
+.btn-ai-parse { flex: 1; background: linear-gradient(135deg, #d4af6a 0%, #e8c87a 100%); color: #0f0f13; border: none; border-radius: 10px; padding: 12px 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+.btn-ai-parse:hover { opacity: 0.9; }
+.btn-ai-parse:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ai-cancel { background: #2a2a3a; color: #888; border: none; border-radius: 10px; padding: 12px 20px; font-size: 13px; cursor: pointer; }
+.btn-ai-cancel:hover { color: #aaa; }
 
-.smart-input-group { margin-bottom: 18px; }
-.smart-input-group label {
-  display: block;
-  font-size: 11px;
-  color: var(--t2);
-  margin-bottom: 7px;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-}
-.smart-input {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  padding: 14px;
-  color: var(--t1);
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  transition: all 0.2s;
-}
-.smart-input:focus {
-  outline: none;
-  border-color: var(--purple);
-  box-shadow: 0 0 0 3px rgba(124,109,250,0.1);
-}
-.smart-input.large { min-height: 80px; font-size: 15px; }
-.smart-examples {
-  font-size: 10px;
-  color: var(--t4);
-  margin-top: 7px;
-  line-height: 1.7;
-}
-.smart-examples b { color: var(--t2); }
-
-.smart-action-row {
-  display: flex;
-  gap: 11px;
-  margin-top: 20px;
-}
-.btn-ai-parse {
-  flex: 1;
-  background: var(--grad-main);
-  color: #fff;
-  border: none;
-  border-radius: 11px;
-  padding: 13px 22px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-  box-shadow: 0 4px 16px rgba(124,109,250,0.4);
-  letter-spacing: 1px;
-}
-.btn-ai-parse:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(124,109,250,0.55);
-}
-.btn-ai-parse:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-.btn-ai-cancel {
-  background: var(--bg2);
-  color: var(--t3);
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  padding: 13px 22px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-.btn-ai-cancel:hover { color: var(--t2); border-color: var(--t4); }
-
-.smart-result { margin-top: 20px; display: none; }
+.smart-result { margin-top: 18px; display: none; }
 .smart-result.show { display: block; }
-.smart-result-title {
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: var(--purple);
-  letter-spacing: 1.5px;
-  margin-bottom: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-.smart-result-grid { display: grid; gap: 11px; }
-.smart-field {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 11px 13px;
-  display: grid;
-  grid-template-columns: 80px 1fr auto;
-  gap: 11px;
-  align-items: center;
-}
-.smart-field-label { font-size: 11px; color: var(--t3); font-weight: 600; }
-.smart-field-input {
-  background: transparent;
-  border: none;
-  color: var(--t1);
-  font-size: 13px;
-  font-family: inherit;
-  width: 100%;
-  outline: none;
-}
-.smart-field-input:focus {
-  background: var(--bg3);
-  border-radius: 5px;
-  padding: 3px 5px;
-  margin: -3px -5px;
-}
-.smart-field.confidence-high { border-color: rgba(109,250,194,0.3); background: rgba(109,250,194,0.04); }
-.smart-field.confidence-medium { border-color: rgba(124,109,250,0.3); background: rgba(124,109,250,0.04); }
-.smart-field.confidence-low { border-color: rgba(244,67,54,0.3); background: rgba(244,67,54,0.04); }
+.smart-result-title { font-size: 11px; color: #d4af6a; letter-spacing: 1px; margin-bottom: 10px; }
+.smart-result-grid { display: grid; gap: 10px; }
+.smart-field { background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px; padding: 10px 12px; display: grid; grid-template-columns: 80px 1fr auto; gap: 10px; align-items: center; }
+.smart-field-label { font-size: 11px; color: #666; }
+.smart-field-input { background: transparent; border: none; color: #e8e0d0; font-size: 13px; font-family: inherit; width: 100%; outline: none; }
+.smart-field-input:focus { background: #1a1a24; border-radius: 4px; padding: 2px 4px; margin: -2px -4px; }
+.smart-field.confidence-high { border-color: rgba(61, 214, 140, 0.3); background: rgba(61, 214, 140, 0.05); }
+.smart-field.confidence-medium { border-color: rgba(212, 175, 106, 0.3); background: rgba(212, 175, 106, 0.05); }
+.smart-field.confidence-low { border-color: rgba(244, 67, 54, 0.3); background: rgba(244, 67, 54, 0.05); }
+.smart-field-textarea { background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 8px; padding: 10px 12px; }
+.smart-field-textarea label { font-size: 11px; color: #666; display: block; margin-bottom: 4px; }
+.smart-field-textarea textarea { width: 100%; background: transparent; border: none; color: #e8e0d0; font-size: 12px; font-family: inherit; outline: none; resize: vertical; min-height: 36px; line-height: 1.5; }
+.confidence-tag { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.5px; white-space: nowrap; }
+.confidence-tag.high { background: rgba(61, 214, 140, 0.15); color: #3dd68c; border: 1px solid rgba(61, 214, 140, 0.3); }
+.confidence-tag.medium { background: rgba(212, 175, 106, 0.15); color: #d4af6a; border: 1px solid rgba(212, 175, 106, 0.3); }
+.confidence-tag.low { background: rgba(244, 67, 54, 0.15); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.3); }
+.smart-reasoning { font-size: 11px; color: #888; padding: 10px 12px; background: rgba(77, 200, 240, 0.05); border: 1px solid rgba(77, 200, 240, 0.2); border-radius: 8px; margin-top: 10px; line-height: 1.6; }
+.smart-reasoning b { color: #4dc8f0; font-weight: 700; }
+.smart-scrape-report { font-size: 10px; color: #888; padding: 8px 12px; background: rgba(155, 127, 212, 0.05); border: 1px solid rgba(155, 127, 212, 0.2); border-radius: 8px; margin-top: 8px; line-height: 1.6; }
+.smart-scrape-report b { color: #9b7fd4; }
+.smart-scrape-item { font-family: monospace; font-size: 10px; padding: 2px 0; }
+.smart-scrape-item.ok { color: #3dd68c; }
+.smart-scrape-item.fail { color: #f44336; }
+.btn-confirm-add { background: #3dd68c; color: #003020; border: none; border-radius: 10px; padding: 12px 24px; font-size: 14px; font-weight: 700; cursor: pointer; flex: 1; transition: opacity 0.2s; }
+.btn-confirm-add:hover { opacity: 0.9; }
+.btn-redo { background: #2a2a3a; color: #d4af6a; border: 1px solid #d4af6a33; border-radius: 10px; padding: 12px 16px; font-size: 13px; cursor: pointer; }
+.btn-redo:hover { background: rgba(212, 175, 106, 0.1); }
+.smart-loading { text-align: center; padding: 40px 20px; }
+.smart-loading p { color: #888; font-size: 13px; margin-top: 12px; }
+.btn-smart-add { background: linear-gradient(135deg, #d4af6a 0%, #e8c87a 100%); color: #0f0f13; border: none; border-radius: 8px; padding: 6px 16px; font-size: 13px; font-weight: 700; cursor: pointer; margin-left: 8px; transition: opacity 0.2s; }
+.btn-smart-add:hover { opacity: 0.9; }
 
-.confidence-tag {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 11px;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  font-family: var(--font-display);
-}
-.confidence-tag.high {
-  background: var(--mint-soft);
-  color: var(--mint);
-  border: 1px solid rgba(109,250,194,0.4);
-}
-.confidence-tag.medium {
-  background: var(--purple-soft);
-  color: var(--purple);
-  border: 1px solid rgba(124,109,250,0.4);
-}
-.confidence-tag.low {
-  background: rgba(244,67,54,0.1);
-  color: #f44336;
-  border: 1px solid rgba(244,67,54,0.3);
-}
-
-.smart-reasoning {
-  font-size: 11px;
-  color: var(--t2);
-  padding: 11px 13px;
-  background: rgba(91,200,232,0.05);
-  border: 1px solid rgba(91,200,232,0.2);
-  border-radius: 9px;
-  margin-top: 11px;
-  line-height: 1.7;
-}
-.smart-reasoning b { color: #5BC8E8; font-weight: 700; }
-
-.btn-confirm-add {
-  background: linear-gradient(135deg, var(--mint), #4DD8A0);
-  color: #003020;
-  border: none;
-  border-radius: 11px;
-  padding: 13px 26px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  flex: 1;
-  transition: all 0.2s;
-  font-family: inherit;
-  box-shadow: 0 4px 14px rgba(109,250,194,0.35);
-  letter-spacing: 1px;
-}
-.btn-confirm-add:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(109,250,194,0.5);
-}
-
-.btn-redo {
-  background: var(--bg2);
-  color: var(--purple);
-  border: 1px solid rgba(124,109,250,0.3);
-  border-radius: 11px;
-  padding: 13px 18px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-.btn-redo:hover { background: var(--purple-soft); }
-
-.smart-loading { text-align: center; padding: 44px 22px; }
-.smart-loading p { color: var(--t2); font-size: 13px; margin-top: 14px; }
-
-.btn-smart-add {
-  background: var(--grad-main);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 7px 18px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-left: 8px;
-  font-family: inherit;
-  transition: all 0.2s;
-  box-shadow: 0 3px 12px rgba(124,109,250,0.35);
-  letter-spacing: 0.5px;
-}
-.btn-smart-add:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 18px rgba(124,109,250,0.5);
-}
-
-/* ★ v11.1: 多網址列 */
-.smart-url-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  align-items: center;
-}
-.smart-url-input {
-  flex: 1;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 9px 11px;
-  color: var(--t1);
-  font-size: 12px;
-  font-family: var(--font-mono);
-  outline: none;
-  transition: all 0.2s;
-}
-.smart-url-input:focus {
-  border-color: var(--purple);
-  box-shadow: 0 0 0 3px rgba(124,109,250,0.1);
-}
-.smart-url-remove {
-  background: transparent;
-  border: 1px solid rgba(244,67,54,0.3);
-  color: #f44336;
-  border-radius: 7px;
-  width: 28px;
-  height: 32px;
-  font-size: 12px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
-.smart-url-remove:hover {
-  background: rgba(244,67,54,0.15);
-  border-color: #f44336;
-}
-.smart-url-add {
-  background: var(--purple-soft);
-  color: var(--purple);
-  border: 1px dashed rgba(124,109,250,0.4);
-  border-radius: 9px;
-  padding: 7px 14px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-  margin-top: 4px;
-}
-.smart-url-add:hover {
-  background: rgba(124,109,250,0.18);
-  border-style: solid;
-}
-.smart-url-add:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* ★ v11.1: 規格/特色色點 */
-.spec-cell {
-  font-size: 11px;
-  color: var(--t2);
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.spec-empty {
-  color: var(--t4);
-  font-style: italic;
-  font-size: 10px;
-}
-
-/* ★ v11.1: 智慧補齊按鈕(每行) */
-.btn-row-enrich {
-  background: var(--purple-soft);
-  border: 1px solid rgba(124,109,250,0.3);
-  color: var(--purple);
-  border-radius: 6px;
-  padding: 3px 9px;
-  font-size: 10px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.btn-row-enrich:hover {
-  background: var(--purple);
-  color: #fff;
-  transform: translateY(-1px);
-}
-.btn-row-enrich:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ★ v11.1: 補齊 modal(獨立的小 modal,點 ✨ 時用) */
-.enrich-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 600;
-  backdrop-filter: blur(8px);
-}
+/* ★ v11.1 補規格 modal */
+.enrich-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 500; backdrop-filter: blur(6px); }
 .enrich-modal-overlay.show { display: flex; }
-.enrich-modal {
-  background: linear-gradient(135deg, rgba(20,20,30,0.95), rgba(26,26,36,0.85));
-  border: 1px solid rgba(124,109,250,0.4);
-  border-radius: 16px;
-  padding: 26px;
-  width: 90%;
-  max-width: 520px;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 60px rgba(124,109,250,0.15);
-}
-.enrich-title {
-  font-family: var(--font-display);
-  font-size: 16px;
-  background: var(--grad-main);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 800;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
-}
-.enrich-sub {
-  font-size: 11px;
-  color: var(--t3);
-  margin-bottom: 18px;
-}
-.enrich-product-name {
-  background: var(--bg3);
-  border-radius: 8px;
-  padding: 10px 13px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: var(--t1);
-  border-left: 3px solid var(--purple);
-}
+.enrich-modal { background: #14141e; border: 1px solid #d4af6a44; border-radius: 16px; padding: 24px; width: 90%; max-width: 540px; max-height: 88vh; overflow-y: auto; }
+.enrich-target { font-size: 12px; color: #888; padding: 10px 12px; background: rgba(212,175,106,0.08); border: 1px solid rgba(212,175,106,0.2); border-radius: 8px; margin-bottom: 14px; }
+.enrich-target b { color: #d4af6a; }
 </style>
 </head>
 <body>
@@ -1375,42 +240,32 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="loading-box"><div class="spinner"></div><p id="loadingMsg">載入中...</p></div>
 </div>
 
-<!-- ★ v10.4: 智慧新增商品 modal -->
+<!-- ★ v11.1: 智慧新增商品 modal -->
 <div class="smart-modal-overlay" id="smartModalOverlay" onclick="if(event.target===this)closeSmartModal()">
   <div class="smart-modal">
     <div class="smart-modal-header">
       <div>
         <div class="smart-modal-title">✨ 智慧新增商品</div>
-        <div class="smart-modal-sub">用一句話告訴 AI,自動填好欄位</div>
+        <div class="smart-modal-sub">用一句話 + 商品網址,AI 自動爬規格</div>
       </div>
       <button class="smart-modal-close" onclick="closeSmartModal()">✕</button>
     </div>
 
     <div id="smartInputView">
       <div class="smart-input-group">
-        <label>用一句話描述 *</label>
+        <label>① 用一句話描述</label>
         <textarea class="smart-input large" id="smartPromptInput" placeholder="例:巧福新增復古電風扇,做嘖嘖募資"></textarea>
         <div class="smart-examples">
-          <b>範例:</b><br>
-          · 巧福新增復古電風扇,做嘖嘖募資<br>
-          · 旺味出新口味:墨西哥辣味米香腸<br>
-          · LACEZ 推春夏新款蕾絲內衣
+          <b>範例:</b> 巧福新增復古電風扇,做嘖嘖募資 / 旺味出新口味:墨西哥辣味米香腸
         </div>
       </div>
 
-      <!-- ★ v11.1: 商品網址(多備援) -->
       <div class="smart-input-group">
-        <label>📎 商品網址 <span style="color:var(--t3);font-weight:400;font-size:9px;">· 選填,但建議貼 1-3 個讓 AI 抓規格更準</span></label>
-        <div id="smartUrlList">
-          <div class="smart-url-row">
-            <input class="smart-url-input" type="url" placeholder="https://... (官網 / 嘖嘖 / MOMO / PChome / 蝦皮 都可以)">
-            <button class="smart-url-remove" onclick="removeSmartUrl(this)" style="display:none;" title="移除">✕</button>
-          </div>
-        </div>
-        <button class="smart-url-add" id="smartUrlAddBtn" onclick="addSmartUrl()">+ 新增備援網址</button>
-        <div class="smart-examples" style="margin-top:8px;">
-          <b style="color:var(--mint);">💡 為什麼建議多貼?</b> 品牌官網有時是 SPA,AI 抓不到規格 → 加備援連結(MOMO/嘖嘖/PChome)成功率更高
-        </div>
+        <label>② 商品網址(選填,最多 3 個)— AI 會去爬規格</label>
+        <div class="smart-url-row"><input type="url" id="smartUrl1" placeholder="https://www.zeczec.com/projects/xxxxx"></div>
+        <div class="smart-url-row"><input type="url" id="smartUrl2" placeholder="https://shopee.tw/..."></div>
+        <div class="smart-url-row"><input type="url" id="smartUrl3" placeholder="https://官網/product/..."></div>
+        <div class="smart-url-hint">💡 嘖嘖、官網、蝦皮商品頁,AI 會自動抓尺寸/容量/特色等規格</div>
       </div>
 
       <div class="smart-action-row">
@@ -1422,14 +277,15 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     <div id="smartLoadingView" style="display:none">
       <div class="smart-loading">
         <div class="spinner"></div>
-        <p>AI 思考中(讀品牌資料 + 推論分類)...</p>
+        <p id="smartLoadingMsg">AI 思考中(讀品牌資料 + 推論分類)...</p>
       </div>
     </div>
 
     <div id="smartResultView" class="smart-result">
-      <div class="smart-result-title">🤖 AI 預填結果(綠=高信心 / 紫=請確認 / 紅=低信心)</div>
+      <div class="smart-result-title">🤖 AI 預填結果(綠=高信心 / 黃=請確認 / 紅=低信心)</div>
       <div class="smart-result-grid" id="smartResultGrid"></div>
       <div class="smart-reasoning" id="smartReasoning"></div>
+      <div class="smart-scrape-report" id="smartScrapeReport" style="display:none"></div>
       <div class="smart-action-row">
         <button class="btn-redo" onclick="resetSmartForm()">↻ 重新解析</button>
         <button class="btn-confirm-add" onclick="confirmSmartAdd()">✅ 確認新增到列表</button>
@@ -1438,42 +294,49 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   </div>
 </div>
 
-<!-- ★ v11.1: 智慧補齊 modal(每行 ✨ 按鈕用) -->
+<!-- ★ v11.1: 補規格 modal(每行 ✨ 按鈕觸發) -->
 <div class="enrich-modal-overlay" id="enrichModalOverlay" onclick="if(event.target===this)closeEnrichModal()">
   <div class="enrich-modal">
-    <div class="enrich-title">✨ 智慧補齊規格</div>
-    <div class="enrich-sub">貼商品網址,AI 自動讀取規格 + 特色填入欄位</div>
-    <div class="enrich-product-name" id="enrichProductName">— 商品名 —</div>
+    <div class="smart-modal-header">
+      <div>
+        <div class="smart-modal-title">✨ AI 補規格 / 特色</div>
+        <div class="smart-modal-sub">給 AI 商品網址,自動抽出規格與賣點</div>
+      </div>
+      <button class="smart-modal-close" onclick="closeEnrichModal()">✕</button>
+    </div>
 
     <div id="enrichInputView">
+      <div class="enrich-target" id="enrichTarget"></div>
+
       <div class="smart-input-group">
-        <label>📎 商品網址(可貼 1-3 個)</label>
-        <div id="enrichUrlList">
-          <div class="smart-url-row">
-            <input class="smart-url-input" type="url" placeholder="https://...">
-            <button class="smart-url-remove" onclick="removeEnrichUrl(this)" style="display:none;">✕</button>
-          </div>
-        </div>
-        <button class="smart-url-add" id="enrichUrlAddBtn" onclick="addEnrichUrl()">+ 新增備援網址</button>
+        <label>商品網址(必填,最多 3 個)</label>
+        <div class="smart-url-row"><input type="url" id="enrichUrl1" placeholder="https://www.zeczec.com/projects/xxxxx"></div>
+        <div class="smart-url-row"><input type="url" id="enrichUrl2" placeholder="https://shopee.tw/... (可空)"></div>
+        <div class="smart-url-row"><input type="url" id="enrichUrl3" placeholder="https://官網/... (可空)"></div>
+        <div class="smart-url-hint">💡 AI 只會抓網頁中跟此商品有關的內容,不會編造</div>
       </div>
+
       <div class="smart-action-row">
         <button class="btn-ai-cancel" onclick="closeEnrichModal()">取消</button>
-        <button class="btn-ai-parse" id="btnEnrichGo" onclick="enrichRunNow()">✨ 開始抓取</button>
+        <button class="btn-ai-parse" onclick="aiEnrichProduct()">✨ 開始抽取</button>
       </div>
     </div>
 
     <div id="enrichLoadingView" style="display:none">
       <div class="smart-loading">
         <div class="spinner"></div>
-        <p id="enrichLoadingMsg">AI 讀取網頁中...</p>
+        <p>AI 正在爬網頁 + 分析規格...</p>
       </div>
     </div>
 
-    <div id="enrichResultView" style="display:none">
-      <div id="enrichResultBlock"></div>
+    <div id="enrichResultView" class="smart-result">
+      <div class="smart-result-title">🤖 AI 抽取結果</div>
+      <div class="smart-result-grid" id="enrichResultGrid"></div>
+      <div class="smart-reasoning" id="enrichReasoning"></div>
+      <div class="smart-scrape-report" id="enrichScrapeReport" style="display:none"></div>
       <div class="smart-action-row">
-        <button class="btn-ai-cancel" onclick="closeEnrichModal()">取消</button>
-        <button class="btn-confirm-add" onclick="enrichConfirm()">✅ 套用到欄位</button>
+        <button class="btn-redo" onclick="closeEnrichModal()">取消</button>
+        <button class="btn-confirm-add" onclick="confirmEnrichApply()">✅ 套用到此商品</button>
       </div>
     </div>
   </div>
@@ -1517,7 +380,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
       <input class="filter-input" id="filterSearch" placeholder="搜尋商品名稱..." oninput="renderProducts()">
     </div>
     <div class="table-wrap">
-      <table><thead><tr><th>品牌</th><th>子系列ID</th><th>子系列名</th><th>顏色</th><th>商品ID</th><th>商品名稱</th><th>標籤</th><th>規格</th><th>特色</th><th></th></tr></thead>
+      <table><thead><tr><th>品牌</th><th>子系列ID</th><th>子系列名</th><th>顏色</th><th>商品ID</th><th>商品名稱</th><th>標籤</th><th>規格</th><th>特色</th><th>AI</th><th></th></tr></thead>
       <tbody id="productsBody"></tbody></table>
     </div>
   </div>
@@ -1624,20 +487,20 @@ tr:hover td { background: rgba(124,109,250,0.04); }
       <h2>員工白名單管理</h2>
       <button class="btn-refresh" onclick="loadStaff()">🔄 重新整理</button>
     </div>
-    <div style="font-size:12px;color:var(--t3);margin-bottom:18px;line-height:1.9;">
+    <div style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.8;">
       只有在白名單內的 Google 帳號才能登入 Brand OS。<br>
-      新增員工後立即生效,刪除後立即失效。
+      新增員工後立即生效，刪除後立即失效。
     </div>
     <div class="add-staff-form">
       <h3>＋ 新增員工</h3>
       <div class="add-staff-row">
         <div>
-          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;letter-spacing:0.5px;">Google Email</label>
+          <label style="font-size:11px;color:#666;display:block;margin-bottom:4px;">Google Email</label>
           <input class="field-input" id="newStaffEmail" placeholder="staff@gmail.com" type="email">
         </div>
         <div>
-          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;letter-spacing:0.5px;">姓名備註</label>
-          <input class="field-input" id="newStaffName" placeholder="員工姓名(選填)">
+          <label style="font-size:11px;color:#666;display:block;margin-bottom:4px;">姓名備註</label>
+          <input class="field-input" id="newStaffName" placeholder="員工姓名（選填）">
         </div>
         <button class="btn-add-staff" onclick="addStaff()">＋ 加入</button>
       </div>
@@ -1653,12 +516,18 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
+// ★ v11.1: worker URL,給智慧新增 + AI 補規格用
 const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 
 let DB = { brands: [], products: [], folders: [] };
 let DELIVERS = [], STAFF = [], APPLIES = [];
 let applyFilter = 'all';
+
+// ★ v11.1: 暫存 AI 解析結果
 let SMART_LAST_PARSED = null;
+// ★ v11.1: 補規格暫存
+let ENRICH_TARGET_INDEX = -1;  // DB.products 的 index
+let ENRICH_LAST_RESULT = null;
 
 window.onload = async () => {
   showLoading('載入品牌資料...');
@@ -1685,7 +554,10 @@ function switchTab(name) {
 
 function renderAll() { renderBrands(); renderProducts(); renderFolders(); updateFilters(); }
 
-// ══ 智慧新增商品 ══
+// ══════════════════════════════════════════════════════════════
+// ★ v11.1: 智慧新增商品(AI 解析自然語言 + 爬網址)
+// ══════════════════════════════════════════════════════════════
+
 function openSmartModal() {
   if (!DB.brands || DB.brands.length === 0) {
     setStatus('❌ 請先新增品牌', 'err');
@@ -1696,60 +568,17 @@ function openSmartModal() {
   document.getElementById('smartLoadingView').style.display = 'none';
   document.getElementById('smartResultView').classList.remove('show');
   document.getElementById('smartPromptInput').value = '';
-  // ★ v11.1: 重置網址列為一個空輸入框
-  document.getElementById('smartUrlList').innerHTML = `
-    <div class="smart-url-row">
-      <input class="smart-url-input" type="url" placeholder="https://... (官網 / 嘖嘖 / MOMO / PChome / 蝦皮 都可以)">
-      <button class="smart-url-remove" onclick="removeSmartUrl(this)" style="display:none;" title="移除">✕</button>
-    </div>`;
-  document.getElementById('smartUrlAddBtn').style.display = 'inline-block';
-  document.getElementById('smartUrlAddBtn').disabled = false;
+  document.getElementById('smartUrl1').value = '';
+  document.getElementById('smartUrl2').value = '';
+  document.getElementById('smartUrl3').value = '';
   setTimeout(() => document.getElementById('smartPromptInput').focus(), 100);
 }
 
-// ★ v11.1: 多網址欄管理
-function addSmartUrl() {
-  const list = document.getElementById('smartUrlList');
-  const rows = list.querySelectorAll('.smart-url-row');
-  if (rows.length >= 3) return;
-  const newRow = document.createElement('div');
-  newRow.className = 'smart-url-row';
-  newRow.innerHTML = `
-    <input class="smart-url-input" type="url" placeholder="https://...">
-    <button class="smart-url-remove" onclick="removeSmartUrl(this)" title="移除">✕</button>`;
-  list.appendChild(newRow);
-  // 顯示所有 ✕ 按鈕
-  list.querySelectorAll('.smart-url-remove').forEach(b => b.style.display = 'inline-block');
-  if (list.querySelectorAll('.smart-url-row').length >= 3) {
-    document.getElementById('smartUrlAddBtn').disabled = true;
-  }
-}
-
-function removeSmartUrl(btn) {
-  const row = btn.closest('.smart-url-row');
-  const list = document.getElementById('smartUrlList');
-  if (list.querySelectorAll('.smart-url-row').length <= 1) return;
-  row.remove();
-  // 如果只剩一個,隱藏 ✕ 按鈕
-  if (list.querySelectorAll('.smart-url-row').length === 1) {
-    list.querySelector('.smart-url-remove').style.display = 'none';
-  }
-  document.getElementById('smartUrlAddBtn').disabled = false;
-}
-
-function getSmartUrls() {
-  const inputs = document.querySelectorAll('#smartUrlList .smart-url-input');
-  const urls = [];
-  inputs.forEach(inp => {
-    const v = inp.value.trim();
-    if (v && /^https?:\/\//i.test(v)) urls.push(v);
-  });
-  return urls;
-}
 function closeSmartModal() {
   document.getElementById('smartModalOverlay').classList.remove('show');
   SMART_LAST_PARSED = null;
 }
+
 function resetSmartForm() {
   document.getElementById('smartInputView').style.display = 'block';
   document.getElementById('smartLoadingView').style.display = 'none';
@@ -1761,19 +590,19 @@ async function aiParseProduct() {
   const prompt = document.getElementById('smartPromptInput').value.trim();
   if (!prompt) { setStatus('❌ 請輸入描述', 'err'); return; }
 
-  const urls = getSmartUrls();
+  // 收集網址
+  const urls = [
+    document.getElementById('smartUrl1').value.trim(),
+    document.getElementById('smartUrl2').value.trim(),
+    document.getElementById('smartUrl3').value.trim(),
+  ].filter(u => u && /^https?:\/\//i.test(u));
 
   document.getElementById('smartInputView').style.display = 'none';
   document.getElementById('smartLoadingView').style.display = 'block';
+  document.getElementById('smartLoadingMsg').textContent = urls.length > 0
+    ? `AI 爬 ${urls.length} 個網址 + 推論分類中(約 30 秒)...`
+    : 'AI 思考中(讀品牌資料 + 推論分類)...';
   document.getElementById('smartResultView').classList.remove('show');
-
-  // ★ v11.1: 載入訊息會根據網址數變化
-  const loadingMsg = document.querySelector('#smartLoadingView .smart-loading p');
-  if (loadingMsg) {
-    loadingMsg.textContent = urls.length > 0
-      ? `AI 思考中(讀 ${urls.length} 個網址 + 推論分類)...`
-      : 'AI 思考中(純描述模式)...';
-  }
 
   try {
     const r = await fetch(CF_WORKER_URL, {
@@ -1810,29 +639,8 @@ function renderSmartResult(parsed) {
   const brand = DB.brands.find(b => b.id === parsed.brandId);
   const brandLabel = brand ? `${brand.icon || ''} ${brand.name} (${brand.id})` : parsed.brandId;
 
-  // ★ v11.1: 爬取狀態橫條
-  let scrapeStatusHTML = '';
-  if (parsed.scrapeReport) {
-    const sr = parsed.scrapeReport;
-    if (sr.successCount > 0) {
-      scrapeStatusHTML = `<div style="background:rgba(109,250,194,0.08);border:1px solid rgba(109,250,194,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--mint);">
-        ✅ 成功從 <strong>${sr.successCount}/${sr.totalUrls}</strong> 個網址抓到規格資料</div>`;
-    } else if (sr.totalUrls > 0) {
-      scrapeStatusHTML = `<div style="background:rgba(250,109,155,0.08);border:1px solid rgba(250,109,155,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--pink);">
-        ⚠️ 所有網址都抓不到規格(SPA 或登入限制)— 規格欄保留空白,你可以手動補</div>`;
-    } else {
-      scrapeStatusHTML = `<div style="background:rgba(124,109,250,0.08);border:1px solid rgba(124,109,250,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--purple);">
-        ℹ️ 純描述模式(沒貼網址)— 規格 / 特色欄請手動補</div>`;
-    }
-  }
-
-  // ★ v11.1: 規格 / 特色用「綠色=抓到」「灰色=空」
-  const hasSpec = !!parsed.spec;
-  const hasFeat = !!parsed.feature;
-
   const grid = document.getElementById('smartResultGrid');
   grid.innerHTML = `
-    ${scrapeStatusHTML}
     <div class="smart-field confidence-${parsed.brandConfidence || 'medium'}">
       <span class="smart-field-label">品牌</span>
       <input class="smart-field-input" id="smartFieldBrand" value="${esc(brandLabel)}" readonly title="不可修改 — 從現有品牌列表中選">
@@ -1863,6 +671,14 @@ function renderSmartResult(parsed) {
       <input class="smart-field-input" id="smartFieldProdTag" value="${esc(parsed.prodTag || '')}" placeholder="如:嘖嘖募資款">
       <span class="confidence-tag ${parsed.tagConfidence || 'medium'}">${({high:'高信心',medium:'中信心',low:'低信心'})[parsed.tagConfidence] || '中信心'}</span>
     </div>
+    <div class="smart-field-textarea">
+      <label>📐 規格(spec) <span style="color:${parsed.spec ? '#3dd68c' : '#666'}">${parsed.spec ? '✓ 從網頁抓到' : '⚠️ 沒抓到/沒給網址'}</span></label>
+      <textarea id="smartFieldSpec" placeholder="例:16吋/復古銅色/無線2小時/噴霧">${esc(parsed.spec || '')}</textarea>
+    </div>
+    <div class="smart-field-textarea">
+      <label>🌟 特色(feature)</label>
+      <textarea id="smartFieldFeature" placeholder="例:嘖嘖募資/超靜音/復古設計">${esc(parsed.feature || '')}</textarea>
+    </div>
     <div class="smart-field confidence-high">
       <span class="smart-field-label">顏色</span>
       <select class="smart-field-input" id="smartFieldSubColor" style="background:transparent;">
@@ -1870,19 +686,23 @@ function renderSmartResult(parsed) {
       </select>
       <span class="confidence-tag high">承襲</span>
     </div>
-    <div class="smart-field confidence-${hasSpec?'high':'low'}">
-      <span class="smart-field-label">📐 規格</span>
-      <input class="smart-field-input" id="smartFieldSpec" value="${esc(parsed.spec || '')}" placeholder="${hasSpec?'':'抓不到 — 可手動補'}">
-      <span class="confidence-tag ${hasSpec?'high':'low'}">${hasSpec?'✓ 已抓到':'空白'}</span>
-    </div>
-    <div class="smart-field confidence-${hasFeat?'high':'low'}">
-      <span class="smart-field-label">⭐ 特色</span>
-      <input class="smart-field-input" id="smartFieldFeature" value="${esc(parsed.feature || '')}" placeholder="${hasFeat?'':'抓不到 — 可手動補'}">
-      <span class="confidence-tag ${hasFeat?'high':'low'}">${hasFeat?'✓ 已抓到':'空白'}</span>
-    </div>
   `;
 
   document.getElementById('smartReasoning').innerHTML = `<b>AI 判斷:</b> ${esc(parsed.reasoning || '(無說明)')}`;
+
+  // 顯示爬取報告
+  const reportEl = document.getElementById('smartScrapeReport');
+  if (parsed.scrapeReport && parsed.scrapeReport.totalUrls > 0) {
+    const r = parsed.scrapeReport;
+    reportEl.innerHTML = `<b>🌐 網址爬取報告:</b> 共 ${r.totalUrls} 個 / 成功 ${r.successCount} 個<br>` +
+      (r.details || []).map(d =>
+        `<div class="smart-scrape-item ${d.ok ? 'ok' : 'fail'}">${d.ok ? '✓' : '✗'} ${esc(d.url)}${d.reason ? ' — ' + esc(d.reason) : ''}</div>`
+      ).join('');
+    reportEl.style.display = 'block';
+  } else {
+    reportEl.style.display = 'none';
+  }
+
   document.getElementById('smartResultView').classList.add('show');
 }
 
@@ -1896,9 +716,8 @@ function confirmSmartAdd() {
   const prodId = document.getElementById('smartFieldProdId').value.trim();
   const prodTag = document.getElementById('smartFieldProdTag').value.trim();
   const subColor = document.getElementById('smartFieldSubColor').value;
-  // ★ v11.1
-  const spec = document.getElementById('smartFieldSpec')?.value.trim() || '';
-  const feature = document.getElementById('smartFieldFeature')?.value.trim() || '';
+  const spec = document.getElementById('smartFieldSpec').value.trim();
+  const feature = document.getElementById('smartFieldFeature').value.trim();
 
   if (!brandId || !subId || !prodId || !prodName) {
     setStatus('❌ 必填欄位:子系列ID / 商品ID / 商品名', 'err');
@@ -1918,110 +737,68 @@ function confirmSmartAdd() {
     prodId,
     prodName,
     prodTag,
-    spec,        // ★ v11.1
-    feature,     // ★ v11.1
+    spec,
+    feature,
   });
 
   document.getElementById('filterBrand').value = brandId;
   renderProducts();
   closeSmartModal();
-  const specMsg = spec ? '(含規格)' : '(規格空白,記得補)';
-  setStatus(`✨ 已新增「${prodName}」${specMsg} — 記得按右上「💾 儲存全部」`, 'ok');
+  setStatus(`✨ 已新增「${prodName}」到列表 — 記得按右上「💾 儲存全部」`, 'ok');
 }
 
-// ════════════════════════════════════════════════════════════════
-// ★ v11.1: 智慧補齊(每行 ✨ 按鈕觸發)
-// ════════════════════════════════════════════════════════════════
-
-let ENRICH_TARGET_INDEX = -1;
-let ENRICH_PARSED = null;
+// ══════════════════════════════════════════════════════════════
+// ★ v11.1: 每行 ✨ AI 補規格
+// ══════════════════════════════════════════════════════════════
 
 function openEnrichModal(productIndex) {
-  ENRICH_TARGET_INDEX = productIndex;
-  ENRICH_PARSED = null;
   const p = DB.products[productIndex];
   if (!p) return;
+  ENRICH_TARGET_INDEX = productIndex;
+  ENRICH_LAST_RESULT = null;
 
   const brand = DB.brands.find(b => b.id === p.brandId);
-  const brandLabel = brand ? `${brand.icon || ''} ${brand.name}` : p.brandId;
-
-  document.getElementById('enrichProductName').innerHTML =
-    `<strong>${esc(brandLabel)}</strong> › ${esc(p.subName||'')} › <span style="color:var(--purple);font-weight:700;">${esc(p.prodName)}</span>${p.spec?`<div style="font-size:10px;color:var(--t3);margin-top:4px;">目前規格:${esc(p.spec)}(會被覆蓋)</div>`:''}`;
+  document.getElementById('enrichTarget').innerHTML =
+    `🎯 目標商品:<b>${esc(brand?.name || p.brandId)}</b> › <b>${esc(p.subName || p.subId)}</b> › <b>${esc(p.prodName)}</b>`;
 
   document.getElementById('enrichModalOverlay').classList.add('show');
   document.getElementById('enrichInputView').style.display = 'block';
   document.getElementById('enrichLoadingView').style.display = 'none';
-  document.getElementById('enrichResultView').style.display = 'none';
-
-  // 重置網址列
-  document.getElementById('enrichUrlList').innerHTML = `
-    <div class="smart-url-row">
-      <input class="smart-url-input" type="url" placeholder="https://...">
-      <button class="smart-url-remove" onclick="removeEnrichUrl(this)" style="display:none;">✕</button>
-    </div>`;
-  document.getElementById('enrichUrlAddBtn').disabled = false;
-  setTimeout(() => document.querySelector('#enrichUrlList .smart-url-input')?.focus(), 100);
+  document.getElementById('enrichResultView').classList.remove('show');
+  document.getElementById('enrichUrl1').value = '';
+  document.getElementById('enrichUrl2').value = '';
+  document.getElementById('enrichUrl3').value = '';
+  setTimeout(() => document.getElementById('enrichUrl1').focus(), 100);
 }
 
 function closeEnrichModal() {
   document.getElementById('enrichModalOverlay').classList.remove('show');
   ENRICH_TARGET_INDEX = -1;
-  ENRICH_PARSED = null;
+  ENRICH_LAST_RESULT = null;
 }
 
-function addEnrichUrl() {
-  const list = document.getElementById('enrichUrlList');
-  const rows = list.querySelectorAll('.smart-url-row');
-  if (rows.length >= 3) return;
-  const newRow = document.createElement('div');
-  newRow.className = 'smart-url-row';
-  newRow.innerHTML = `
-    <input class="smart-url-input" type="url" placeholder="https://...">
-    <button class="smart-url-remove" onclick="removeEnrichUrl(this)">✕</button>`;
-  list.appendChild(newRow);
-  list.querySelectorAll('.smart-url-remove').forEach(b => b.style.display = 'inline-block');
-  if (list.querySelectorAll('.smart-url-row').length >= 3) {
-    document.getElementById('enrichUrlAddBtn').disabled = true;
-  }
-}
-
-function removeEnrichUrl(btn) {
-  const row = btn.closest('.smart-url-row');
-  const list = document.getElementById('enrichUrlList');
-  if (list.querySelectorAll('.smart-url-row').length <= 1) return;
-  row.remove();
-  if (list.querySelectorAll('.smart-url-row').length === 1) {
-    list.querySelector('.smart-url-remove').style.display = 'none';
-  }
-  document.getElementById('enrichUrlAddBtn').disabled = false;
-}
-
-function getEnrichUrls() {
-  const inputs = document.querySelectorAll('#enrichUrlList .smart-url-input');
-  const urls = [];
-  inputs.forEach(inp => {
-    const v = inp.value.trim();
-    if (v && /^https?:\/\//i.test(v)) urls.push(v);
-  });
-  return urls;
-}
-
-async function enrichRunNow() {
-  const urls = getEnrichUrls();
-  if (urls.length === 0) {
-    setStatus('❌ 請至少貼 1 個網址', 'err');
-    return;
-  }
-
+async function aiEnrichProduct() {
+  if (ENRICH_TARGET_INDEX < 0) return;
   const p = DB.products[ENRICH_TARGET_INDEX];
   if (!p) return;
 
+  const urls = [
+    document.getElementById('enrichUrl1').value.trim(),
+    document.getElementById('enrichUrl2').value.trim(),
+    document.getElementById('enrichUrl3').value.trim(),
+  ].filter(u => u && /^https?:\/\//i.test(u));
+
+  if (!urls.length) {
+    setStatus('❌ 請至少填一個網址', 'err');
+    return;
+  }
+
   document.getElementById('enrichInputView').style.display = 'none';
   document.getElementById('enrichLoadingView').style.display = 'block';
-  document.getElementById('enrichResultView').style.display = 'none';
-  document.getElementById('enrichLoadingMsg').textContent = `AI 讀取 ${urls.length} 個網址中...`;
+  document.getElementById('enrichResultView').classList.remove('show');
 
   try {
+    const brand = DB.brands.find(b => b.id === p.brandId);
     const r = await fetch(CF_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2029,9 +806,9 @@ async function enrichRunNow() {
         action: 'ai_product_enrich',
         password: PASSWORD,
         urls,
-        brandName: (DB.brands.find(b => b.id === p.brandId)?.name) || p.brandId,
+        brandName: brand?.name || p.brandId,
         subName: p.subName || '',
-        prodName: p.prodName,
+        prodName: p.prodName || '',
         prodTag: p.prodTag || '',
       }),
     });
@@ -2039,12 +816,12 @@ async function enrichRunNow() {
     document.getElementById('enrichLoadingView').style.display = 'none';
 
     if (!j.ok) {
-      setStatus('❌ 抓取失敗:' + (j.error || '未知'), 'err');
+      setStatus('❌ AI 抽取失敗:' + (j.error || '未知錯誤'), 'err');
       document.getElementById('enrichInputView').style.display = 'block';
       return;
     }
 
-    ENRICH_PARSED = j.parsed;
+    ENRICH_LAST_RESULT = j.parsed;
     renderEnrichResult(j.parsed);
   } catch(e) {
     document.getElementById('enrichLoadingView').style.display = 'none';
@@ -2054,48 +831,46 @@ async function enrichRunNow() {
 }
 
 function renderEnrichResult(parsed) {
-  const sr = parsed.scrapeReport || {};
-  const hasSpec = !!parsed.spec;
-  const hasFeat = !!parsed.feature;
-
-  let statusHTML = '';
-  if (sr.successCount > 0) {
-    statusHTML = `<div style="background:rgba(109,250,194,0.08);border:1px solid rgba(109,250,194,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--mint);">
-      ✅ 成功從 <strong>${sr.successCount}/${sr.totalUrls}</strong> 個網址抓到資料</div>`;
-  } else {
-    statusHTML = `<div style="background:rgba(250,109,155,0.08);border:1px solid rgba(250,109,155,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--pink);">
-      ⚠️ 所有網址都抓不到 — 可能是 SPA 或登入限制,規格欄保留空白</div>`;
-  }
-
-  document.getElementById('enrichResultBlock').innerHTML = `
-    ${statusHTML}
-    <div class="smart-field confidence-${hasSpec?'high':'low'}">
-      <span class="smart-field-label">📐 規格</span>
-      <input class="smart-field-input" id="enrichFieldSpec" value="${esc(parsed.spec || '')}" placeholder="${hasSpec?'':'抓不到 — 留空或手動補'}">
-      <span class="confidence-tag ${hasSpec?'high':'low'}">${hasSpec?'✓ 已抓到':'空白'}</span>
+  const grid = document.getElementById('enrichResultGrid');
+  grid.innerHTML = `
+    <div class="smart-field-textarea">
+      <label>📐 規格(spec) <span style="color:${parsed.spec ? '#3dd68c' : '#f44336'}">${parsed.spec ? '✓ 抓到' : '⚠️ 沒抓到'}</span></label>
+      <textarea id="enrichFieldSpec" placeholder="例:16吋/復古銅色/無線2小時">${esc(parsed.spec || '')}</textarea>
     </div>
-    <div class="smart-field confidence-${hasFeat?'high':'low'}" style="margin-top:8px;">
-      <span class="smart-field-label">⭐ 特色</span>
-      <input class="smart-field-input" id="enrichFieldFeature" value="${esc(parsed.feature || '')}" placeholder="${hasFeat?'':'抓不到 — 留空或手動補'}">
-      <span class="confidence-tag ${hasFeat?'high':'low'}">${hasFeat?'✓ 已抓到':'空白'}</span>
+    <div class="smart-field-textarea">
+      <label>🌟 特色(feature) <span style="color:${parsed.feature ? '#3dd68c' : '#f44336'}">${parsed.feature ? '✓ 抓到' : '⚠️ 沒抓到'}</span></label>
+      <textarea id="enrichFieldFeature" placeholder="例:嘖嘖募資/超靜音">${esc(parsed.feature || '')}</textarea>
     </div>
-    ${parsed.reasoning ? `<div class="smart-reasoning" style="margin-top:12px;"><b>AI 判斷:</b> ${esc(parsed.reasoning)}</div>` : ''}
   `;
 
-  document.getElementById('enrichResultView').style.display = 'block';
+  document.getElementById('enrichReasoning').innerHTML = `<b>AI 判斷:</b> ${esc(parsed.reasoning || '(無說明)')}`;
+
+  const reportEl = document.getElementById('enrichScrapeReport');
+  if (parsed.scrapeReport && parsed.scrapeReport.totalUrls > 0) {
+    const r = parsed.scrapeReport;
+    reportEl.innerHTML = `<b>🌐 網址爬取報告:</b> 共 ${r.totalUrls} 個 / 成功 ${r.successCount} 個<br>` +
+      (r.details || []).map(d =>
+        `<div class="smart-scrape-item ${d.ok ? 'ok' : 'fail'}">${d.ok ? '✓' : '✗'} ${esc(d.url)}${d.reason ? ' — ' + esc(d.reason) : ''}</div>`
+      ).join('');
+    reportEl.style.display = 'block';
+  } else {
+    reportEl.style.display = 'none';
+  }
+
+  document.getElementById('enrichResultView').classList.add('show');
 }
 
-function enrichConfirm() {
-  if (ENRICH_TARGET_INDEX < 0 || !ENRICH_PARSED) return;
-  const p = DB.products[ENRICH_TARGET_INDEX];
-  if (!p) return;
-  const spec = document.getElementById('enrichFieldSpec')?.value.trim() || '';
-  const feature = document.getElementById('enrichFieldFeature')?.value.trim() || '';
-  p.spec = spec;
-  p.feature = feature;
+function confirmEnrichApply() {
+  if (ENRICH_TARGET_INDEX < 0 || !ENRICH_LAST_RESULT) return;
+  const spec = document.getElementById('enrichFieldSpec').value.trim();
+  const feature = document.getElementById('enrichFieldFeature').value.trim();
+
+  DB.products[ENRICH_TARGET_INDEX].spec = spec;
+  DB.products[ENRICH_TARGET_INDEX].feature = feature;
+
   renderProducts();
   closeEnrichModal();
-  setStatus(`✨ 已補齊「${p.prodName}」 — 記得按右上「💾 儲存全部」`, 'ok');
+  setStatus(`✨ 已套用規格/特色 — 記得按右上「💾 儲存全部」`, 'ok');
 }
 
 
@@ -2122,7 +897,7 @@ async function loadApply() {
     const pending = APPLIES.filter(b => b.status === 'pending').length;
     document.getElementById('pendingDot').classList.toggle('show', pending > 0);
   } catch(e) {
-    document.getElementById('applyList').innerHTML = `<div class="mem-loading" style="color:#f44336">載入失敗:${e.message}</div>`;
+    document.getElementById('applyList').innerHTML = `<div class="mem-loading" style="color:#f44336">載入失敗：${e.message}</div>`;
   }
 }
 
@@ -2153,9 +928,9 @@ function renderApply() {
         <div class="apply-info">
           <div class="apply-name">${esc(b.name||'未命名品牌')}</div>
           <div class="apply-email">${esc(b.email||'')}</div>
-          <div class="apply-meta">類別:${esc(b.category||'-')} · 申請日:${date}</div>
+          <div class="apply-meta">類別：${esc(b.category||'-')} · 申請日：${date}</div>
           <div class="apply-info-grid">
-            ${b.website?`<div class="apply-info-item">🌐 <span><a href="${esc(b.website)}" target="_blank" style="color:#5BC8E8">${esc(b.website)}</a></span></div>`:''}
+            ${b.website?`<div class="apply-info-item">🌐 <span><a href="${esc(b.website)}" target="_blank" style="color:#4dc8f0">${esc(b.website)}</a></span></div>`:''}
             ${b.platforms?`<div class="apply-info-item">🛒 <span>${esc(b.platforms)}</span></div>`:''}
             ${b.audience?`<div class="apply-info-item">👥 <span>${esc(b.audience)}</span></div>`:''}
             ${b.contact?`<div class="apply-info-item">👤 <span>${esc(b.contact)} ${esc(b.phone||'')}</span></div>`:''}
@@ -2170,7 +945,7 @@ function renderApply() {
           <button class="btn-reject-brand" onclick="doReject('${esc(b.id)}')">❌ 拒絕</button>
         `:''}
         <button class="btn-toggle-soul" onclick="toggleSoul('${esc(b.id)}')">📄 靈魂書</button>
-        <button class="btn-reject-brand" style="margin-left:auto;border-color:rgba(100,100,100,0.4);color:var(--t3);background:transparent;" onclick="doDeleteBrand('${esc(b.id)}','${esc(b.name||'此品牌')}')">🗑 刪除</button>
+        <button class="btn-reject-brand" style="margin-left:auto;border-color:rgba(100,100,100,0.4);color:#666;" onclick="doDeleteBrand('${esc(b.id)}','${esc(b.name||'此品牌')}')">🗑 刪除</button>
       </div>
     </div>`;
   }).join('');
@@ -2179,19 +954,19 @@ function renderApply() {
 function toggleSoul(id) { document.getElementById('applycard-'+id)?.classList.toggle('expanded'); }
 
 async function doApprove(brandId) {
-  if (!confirm('確定核准這個品牌?')) return;
+  if (!confirm('確定核准這個品牌？')) return;
   showLoading('核准中...');
   try {
     const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId }), headers:{'Content-Type':'text/plain'} });
     const j = await r.json();
-    if (j.ok) { setStatus('✅ 品牌已核准上線!', 'ok'); await loadApply(); }
+    if (j.ok) { setStatus('✅ 品牌已核准上線！', 'ok'); await loadApply(); }
     else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 操作失敗', 'err'); }
   hideLoading();
 }
 
 async function doDeleteBrand(brandId, name) {
-  if (!confirm(`確定刪除「${name}」?`)) return;
+  if (!confirm(`確定刪除「${name}」？`)) return;
   showLoading('刪除中...');
   try {
     const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'deleteBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId }), headers:{'Content-Type':'text/plain'} });
@@ -2203,7 +978,7 @@ async function doDeleteBrand(brandId, name) {
 }
 
 async function doReject(brandId) {
-  const reason = prompt('拒絕原因(可空白):');
+  const reason = prompt('拒絕原因（可空白）：');
   if (reason === null) return;
   showLoading('處理中...');
   try {
@@ -2236,7 +1011,7 @@ function renderBrands() {
     </div>`).join('');
 }
 function addBrand() { DB.brands.push({id:'',name:'新品牌',icon:'🏷️',navColor:'gold',soul:'',adStyle:'',hashtags:''}); renderBrands(); }
-function deleteBrand(i) { if(!confirm(`確定刪除「${DB.brands[i].name}」?`))return; DB.brands.splice(i,1); renderBrands(); }
+function deleteBrand(i) { if(!confirm(`確定刪除「${DB.brands[i].name}」？`))return; DB.brands.splice(i,1); renderBrands(); }
 
 function updateFilters() {
   ['filterBrand','deliverFilterBrand'].forEach(id => {
@@ -2253,11 +1028,9 @@ function renderProducts() {
   const sf = document.getElementById('filterSearch').value.toLowerCase();
   const filtered = DB.products.filter(p => (!bf||p.brandId===bf)&&(!sf||p.prodName?.toLowerCase().includes(sf)));
   const tbody = document.getElementById('productsBody');
-  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--t4)">沒有符合的商品</td></tr>'; return; }
+  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:40px;color:#444">沒有符合的商品</td></tr>'; return; }
   tbody.innerHTML = filtered.map(p => {
     const i = DB.products.indexOf(p);
-    const specEmpty = !p.spec ? 'spec-empty' : '';
-    const featEmpty = !p.feature ? 'spec-empty' : '';
     return `<tr>
       <td><span class="color-dot color-${p.subColor||'gold'}"></span>${esc(p.brandId)}</td>
       <td><input class="td-input" value="${esc(p.subId)}" oninput="DB.products[${i}].subId=this.value" style="min-width:90px"></td>
@@ -2266,12 +1039,10 @@ function renderProducts() {
       <td><input class="td-input" value="${esc(p.prodId)}" oninput="DB.products[${i}].prodId=this.value" style="min-width:80px"></td>
       <td><input class="td-input" value="${esc(p.prodName)}" oninput="DB.products[${i}].prodName=this.value" style="min-width:160px"></td>
       <td><input class="td-input" value="${esc(p.prodTag)}" oninput="DB.products[${i}].prodTag=this.value" style="min-width:80px"></td>
-      <td><input class="td-input ${specEmpty}" value="${esc(p.spec||'')}" placeholder="如:16吋/復古銅/無線2小時" oninput="DB.products[${i}].spec=this.value" title="${esc(p.spec||'')}" style="min-width:160px"></td>
-      <td><input class="td-input ${featEmpty}" value="${esc(p.feature||'')}" placeholder="如:嘖嘖募資/噴霧涼風" oninput="DB.products[${i}].feature=this.value" title="${esc(p.feature||'')}" style="min-width:140px"></td>
-      <td style="white-space:nowrap;">
-        <button class="btn-row-enrich" onclick="openEnrichModal(${i})" title="AI 智慧補齊規格">✨</button>
-        <button class="btn-row-del" onclick="deleteProduct(${i})">✕</button>
-      </td>
+      <td><input class="td-input" value="${esc(p.spec)}" oninput="DB.products[${i}].spec=this.value" style="min-width:140px" title="規格(尺寸/容量等)"></td>
+      <td><input class="td-input" value="${esc(p.feature)}" oninput="DB.products[${i}].feature=this.value" style="min-width:140px" title="特色(賣點)"></td>
+      <td><button class="btn-row-enrich" onclick="openEnrichModal(${i})" title="AI 補規格/特色">✨</button></td>
+      <td><button class="btn-row-del" onclick="deleteProduct(${i})">✕</button></td>
     </tr>`;
   }).join('');
 }
@@ -2280,7 +1051,7 @@ function addProduct() {
   DB.products.push({brandId,subId:'',subName:'',subColor:'gold',subSoul:'',subAdStyle:'',subHashtags:'',prodId:'',prodName:'新商品',prodTag:'',spec:'',feature:''});
   renderProducts();
 }
-function deleteProduct(i) { if(!confirm(`確定刪除「${DB.products[i].prodName}」?`))return; DB.products.splice(i,1); renderProducts(); }
+function deleteProduct(i) { if(!confirm(`確定刪除「${DB.products[i].prodName}」？`))return; DB.products.splice(i,1); renderProducts(); }
 
 function renderFolders() {
   const list = document.getElementById('foldersList');
@@ -2295,15 +1066,15 @@ function renderFolders() {
       <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(f.brandId)}" oninput="DB.folders[${i}].brandId=this.value"></div>
       <div class="field-row"><label>📷 照片資料夾 ID</label><input class="field-input" value="${esc(f.photoFolderId)}" oninput="DB.folders[${i}].photoFolderId=this.value"></div>
       <div class="field-row"><label>🎬 影片資料夾 ID</label><input class="field-input" value="${esc(f.videoFolderId)}" oninput="DB.folders[${i}].videoFolderId=this.value"></div>
-      <div style="margin-top:10px;display:flex;gap:12px;">
-        <a href="https://drive.google.com/drive/folders/${f.photoFolderId}" target="_blank" style="font-size:12px;color:var(--purple);text-decoration:none;">📷 開啟照片資料夾 ↗</a>
-        <a href="https://drive.google.com/drive/folders/${f.videoFolderId}" target="_blank" style="font-size:12px;color:var(--purple);text-decoration:none;">🎬 開啟影片資料夾 ↗</a>
+      <div style="margin-top:8px;display:flex;gap:10px;">
+        <a href="https://drive.google.com/drive/folders/${f.photoFolderId}" target="_blank" style="font-size:12px;color:#d4af6a;text-decoration:none;">📷 開啟照片資料夾 ↗</a>
+        <a href="https://drive.google.com/drive/folders/${f.videoFolderId}" target="_blank" style="font-size:12px;color:#d4af6a;text-decoration:none;">🎬 開啟影片資料夾 ↗</a>
       </div>
     </div>`;
   }).join('');
 }
 function addFolder() { DB.folders.push({brandId:'',photoFolderId:'',videoFolderId:''}); renderFolders(); }
-function deleteFolder(i) { if(!confirm('確定刪除?'))return; DB.folders.splice(i,1); renderFolders(); }
+function deleteFolder(i) { if(!confirm('確定刪除？'))return; DB.folders.splice(i,1); renderFolders(); }
 
 async function loadDelivers() {
   showLoading('載入投手交付表...');
@@ -2322,16 +1093,16 @@ function renderDelivers() {
   const filtered = DELIVERS.filter(d => (!bf||d.brand===bf)&&(!sf||d.status===sf));
   document.getElementById('deliverStat').textContent = `共 ${filtered.length} 筆`;
   const tbody = document.getElementById('deliversBody');
-  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--t4)">尚無交付記錄</td></tr>'; return; }
+  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:#444">尚無交付記錄</td></tr>'; return; }
   tbody.innerHTML = filtered.map(d => {
     const brand = DB.brands.find(b=>b.id===d.brand);
     const date = d.createdAt ? new Date(d.createdAt).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
     return `<tr>
-      <td style="font-size:11px;color:var(--t3);white-space:nowrap;font-family:var(--font-mono)">${date}</td>
-      <td style="font-family:var(--font-mono);color:var(--purple);font-size:11px">${esc(d.id)}</td>
+      <td style="font-size:11px;color:#666;white-space:nowrap">${date}</td>
+      <td style="font-family:monospace;color:#d4af6a;font-size:11px">${esc(d.id)}</td>
       <td style="font-size:12px;white-space:nowrap">${brand?.icon||''} ${brand?.name||esc(d.brand)}</td>
       <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(d.product)}">${esc(d.product)}</td>
-      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)" title="${esc(d.hookScript)}">${esc(d.hookScript)}</td>
+      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#aaa" title="${esc(d.hookScript)}">${esc(d.hookScript)}</td>
       <td>${d.photoUrl?`<a class="asset-link al-photo" href="${d.photoUrl}" target="_blank">🖼️ 看</a>`:'<span class="asset-link al-none">無</span>'}</td>
       <td>${d.videoUrl?`<a class="asset-link al-video" href="${d.videoUrl}" target="_blank">🎬 看</a>`:'<span class="asset-link al-none">無</span>'}</td>
       <td><select class="status-select" onchange="updateStatus(${d._rowIndex},this.value)">
@@ -2354,7 +1125,7 @@ async function updateStatus(rowIndex, status) {
 }
 
 async function deleteDeliverRow(rowIndex) {
-  if (!confirm('確定刪除這筆交付記錄?')) return;
+  if (!confirm('確定刪除這筆交付記錄？')) return;
   try {
     await fetch(`${GAS_URL}?action=deleteDeliver&password=${PASSWORD}&rowIndex=${rowIndex}`);
     DELIVERS = DELIVERS.filter(d=>d._rowIndex!==rowIndex);
@@ -2395,7 +1166,7 @@ async function loadAdminMemory(page = 1) {
           <div class="mem-admin-meta">
             <span class="mem-admin-cta">${esc(m.ctaScript)}</span>
             <span class="mem-admin-time">${timeAgo(m.timestamp)}</span>
-            ${m.adId?`<span style="font-size:9px;color:var(--t4)">${esc(m.adId)}</span>`:''}
+            ${m.adId?`<span style="font-size:9px;color:#555">${esc(m.adId)}</span>`:''}
           </div>
         </div>
         <div class="mem-admin-score">
@@ -2410,7 +1181,7 @@ async function loadAdminMemory(page = 1) {
     }).join('');
     renderMemPagination(data.total, page);
   } catch(e) {
-    listEl.innerHTML = `<div class="mem-loading" style="color:#D4182E">載入失敗:${e.message}</div>`;
+    listEl.innerHTML = `<div class="mem-loading" style="color:#D4182E">載入失敗：${e.message}</div>`;
   }
 }
 
@@ -2425,14 +1196,14 @@ function renderMemPagination(total, currentPage) {
 }
 
 async function deleteAdminMemory(memoryId, btnEl) {
-  if (!confirm('確定刪除這筆記憶?')) return;
+  if (!confirm('確定刪除這筆記憶？')) return;
   btnEl.disabled=true; btnEl.textContent='刪除中...';
   try {
     const res = await fetch(`${GAS_URL}?action=deleteMemory&password=${PASSWORD}&memoryId=${encodeURIComponent(memoryId)}`);
     const data = await res.json();
     if (data.ok) { btnEl.closest('.mem-admin-card').remove(); setStatus('✅ 已刪除記憶','ok'); }
-    else { alert('刪除失敗:'+(data.error||'未知錯誤')); btnEl.disabled=false; btnEl.textContent='刪除'; }
-  } catch(e) { alert('刪除失敗:'+e.message); btnEl.disabled=false; btnEl.textContent='刪除'; }
+    else { alert('刪除失敗：'+(data.error||'未知錯誤')); btnEl.disabled=false; btnEl.textContent='刪除'; }
+  } catch(e) { alert('刪除失敗：'+e.message); btnEl.disabled=false; btnEl.textContent='刪除'; }
 }
 
 // ══ 員工管理 ══
@@ -2461,7 +1232,7 @@ function renderStaff() {
         <div class="staff-email">${esc(s.email)}</div>
       </div>
       <span class="staff-badge ${isAdmin?'badge-admin':'badge-staff'}">${isAdmin?'👑 管理員':'👤 員工'}</span>
-      <span style="font-size:11px;color:var(--t4);margin-left:8px;font-family:var(--font-mono)">${date}</span>
+      <span style="font-size:11px;color:#555;margin-left:8px;">${date}</span>
       ${isAdmin?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" style="margin-left:8px;font-size:18px;" title="移除">✕</button>`}
     </div>`;
   }).join('');
@@ -2491,7 +1262,7 @@ async function addStaff() {
 }
 
 async function removeStaff(email) {
-  if (!confirm(`確定移除 ${email}?\n移除後該員工立即無法登入。`)) return;
+  if (!confirm(`確定移除 ${email}？\n移除後該員工立即無法登入。`)) return;
   showLoading('移除中...');
   try {
     const r = await fetch(GAS_URL, {
@@ -2516,7 +1287,7 @@ async function saveAll() {
       body: JSON.stringify({ action:'saveBrandOS', password:PASSWORD, data:DB })
     });
     const j = await r.json();
-    if (j.ok) setStatus('✅ 儲存成功!','ok');
+    if (j.ok) setStatus('✅ 儲存成功！','ok');
     else setStatus('❌ '+j.error,'err');
   } catch(e) { setStatus('❌ 連線失敗','err'); }
   document.getElementById('btnSaveAll').disabled = false;
