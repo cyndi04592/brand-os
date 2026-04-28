@@ -2346,7 +2346,7 @@ async function doReject(brandId) {
 }
 
 // ══ 品牌管理 ══
-// ★ v11.2 預設色票表(7 品牌)— 沒設定的品牌自動帶入
+// ★ v11.2 預設色票表(9 品牌)— 沒設定的品牌自動帶入
 const BRAND_COLOR_PRESETS = {
   cf:  { primaryColor:'#D86E3C', secondaryColor:'#E8DCC4', accentColor:'#3D5A3F', colorMood:'溫暖居家、家人守護、生活科技、暖色木質' },
   ww:  { primaryColor:'#D9B96B', secondaryColor:'#2C4A2D', accentColor:'#C44329', colorMood:'台灣古早味、手工真材、烤肉聚餐、家鄉情感' },
@@ -2355,6 +2355,9 @@ const BRAND_COLOR_PRESETS = {
   la:  { primaryColor:'#9B7BC9', secondaryColor:'#E8788C', accentColor:'#D4B896', colorMood:'紫藤浪漫、蕾絲柔軟、女性曲線、舒適親膚' },
   moz: { primaryColor:'#4A6B8A', secondaryColor:'#B89770', accentColor:'#7AA84F', colorMood:'北歐極簡、駝鹿氣質、春日漫步、戶外露營' },
   ra:  { primaryColor:'#7C6DFA', secondaryColor:'#FA6D9B', accentColor:'#6DFAC2', colorMood:'當代設計、AI 自動化、品牌操作系統、未來感' },
+  // ⚠️ 進駐表自動編 ID 的兩個品牌 — ID 不可改(會搞死關聯)
+  kol_8072:  { primaryColor:'#B8302E', secondaryColor:'#C9A55B', accentColor:'#1F1A18', colorMood:'粵式經典、傳統高雅、福氣團圓、米其林質感' },  // 香港福臨門
+  ever_7011: { primaryColor:'#C9B584', secondaryColor:'#6B7A4A', accentColor:'#F4EDE0', colorMood:'天然草本、生活雜貨、北歐極簡、自然手作' },  // Every Hay
 };
 
 function renderBrands() {
