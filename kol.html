@@ -646,7 +646,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a class="topbar-logo" href="index.html">Brand <span>OS</span></a>
   <div class="topbar-sep"></div>
   <span class="topbar-title">KOL 數字人工作室</span>
-  <div class="topbar-badge">v5.10 · Dev(劇情記憶)</div>
+  <div class="topbar-badge">v5.10 · Beta</div>
 </header>
 
 <main class="main">
@@ -655,17 +655,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="vision-banner">
     <div class="vision-card">
       <div class="vision-col now active" data-mode="talking">
-        <div class="vision-stage">🎬 現在 · Live <span class="vision-badge live">口播</span></div>
+        <div class="vision-stage">STEP 1 <span class="vision-badge live">口播</span></div>
         <div class="vision-title">單張照片口播</div>
         <div class="vision-desc">一張 KOL 照片 + 品牌靈魂書 + 人設 → AI 生成真人口播短影音,穩定可直接交客戶上場。</div>
       </div>
       <div class="vision-col next" data-mode="cinematic">
-        <div class="vision-stage">✨ 下一版 · Soon <span class="vision-badge dev">電影鏡頭</span></div>
+        <div class="vision-stage">STEP 2 <span class="vision-badge live">電影鏡頭</span></div>
         <div class="vision-title">Avatar 電影鏡頭</div>
-        <div class="vision-desc">多張 KOL 照片 + 商品照 reference → Seedance 2.0 AI 產出電影感短影音,含環境走動與自然運鏡。</div>
+        <div class="vision-desc">多張 KOL 照片 + 商品照 reference → AI 產出電影感短影音,含環境走動與自然運鏡。</div>
       </div>
       <div class="vision-col future" data-mode="system">
-        <div class="vision-stage">🚀 完整版 · Alpha <span class="vision-badge dev">雛形</span></div>
+        <div class="vision-stage">STEP 3 <span class="vision-badge live">經營系統</span></div>
         <div class="vision-title">KOL 自動經營系統</div>
         <div class="vision-desc">Brand OS 當你的數字人 KOL 經紀人,自動規劃每週/每月內容主題,像真人一樣分享生活、排程發文。</div>
       </div>
@@ -785,8 +785,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div class="motion-block" id="motion-block">
           <div class="motion-head" onclick="toggleMotion()">
             <div class="motion-check"></div>
-            <div class="motion-title">🎬 啟用人物動作(Avatar IV)</div>
-            <div class="motion-warn">2× Credits</div>
+            <div class="motion-title">🎬 啟用人物動作</div>
+            <div class="motion-warn">進階模式</div>
           </div>
           <div class="motion-body">
             <div class="motion-label">快速選擇(點一個即可,或自訂)</div>
@@ -820,7 +820,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- ✨ 模式 B:電影鏡頭(Seedance 2.0) -->
+  <!-- ✨ 模式 B:電影鏡頭 -->
   <!-- ═══════════════════════════════════════════════════════ -->
   <div class="layout" id="main-layout-cinematic" style="display:none">
     <div class="panel">
@@ -877,7 +877,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       </div>
 
       <div class="panel">
-        <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>電影鏡頭設定 · Seedance 2.0</div>
+        <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>電影鏡頭設定</div>
 
         <!-- 🆕 v5.1: 場景網格(點一下直接套用) -->
         <div class="form-group" style="margin-top:0">
@@ -952,7 +952,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             </div>
             <div class="story-arc-hint">
               💡 這三個欄位會加進 prompt 引導 AI,讓 KOL 有主題性但不說品名(符合自然植入)。<br>
-              明天會接入品牌靈魂書 + KOL 人設書,變成真正的 KOL 經營系統。
+              系統自動帶入品牌靈魂書 + KOL 人設書,讓內容更有連貫性。
             </div>
           </div>
         </div>
@@ -965,7 +965,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
         <!-- Debug mode: 只在 URL ?debug=1 時顯示 prompt -->
         <div class="form-group" id="debug-prompt-wrap" style="display:none">
-          <label class="form-label" style="color:#ffa94d">🔧 Debug: 底層 Prompt(?debug=1 模式)</label>
+          <label class="form-label" style="color:#ffa94d">🔧 Debug Mode</label>
           <div class="script-wrap">
             <textarea id="seedance-prompt" readonly style="min-height:100px;font-size:11px;color:var(--text-dim)"></textarea>
             <span class="char-count" id="seedance-prompt-count">0 字</span>
@@ -1006,8 +1006,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           <div class="form-group" style="margin-top:0">
             <label class="form-label">品質 / 音效</label>
             <div class="seedance-grid-2" style="gap:6px">
-              <div class="seedance-radio active" data-group="tier" data-value="fast">Fast</div>
-              <div class="seedance-radio" data-group="tier" data-value="standard">Standard</div>
+              <div class="seedance-radio active" data-group="tier" data-value="fast">快速</div>
+              <div class="seedance-radio" data-group="tier" data-value="standard">精緻</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px;color:var(--text-dim);cursor:pointer" onclick="toggleSeedanceAudio()">
               <div id="seedance-audio-toggle" class="toggle-switch on" style="width:32px;height:18px"></div>
@@ -1021,13 +1021,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           <div class="advanced-head" onclick="toggleAdvanced()">
             <span class="advanced-arrow">▶</span>
             <span class="advanced-title">⚙️ 進階設定</span>
-            <span class="chip">Seed / 臉一致性</span>
+            <span class="chip">細節調整</span>
           </div>
           <div class="advanced-body">
             <div class="toggle-row">
               <div class="toggle-info">
-                <div class="toggle-label">🔒 Seed 鎖定</div>
-                <div class="toggle-desc">鎖定後可用固定 seed 重現同一支影片(除錯用)</div>
+                <div class="toggle-label">🔒 鎖定隨機種子</div>
+                <div class="toggle-desc">鎖定後可重現同一支影片的風格(進階用)</div>
               </div>
               <div class="toggle-switch" id="seed-toggle" onclick="toggleSeedLock()"></div>
             </div>
@@ -1038,7 +1038,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <div class="toggle-row">
               <div class="toggle-info">
                 <div class="toggle-label">🎭 KOL 臉一致性優先</div>
-                <div class="toggle-desc">開啟後自動加入 "consistent facial features" 指令,適合拍系列影片</div>
+                <div class="toggle-desc">開啟後拍系列影片時人臉更穩定一致</div>
               </div>
               <div class="toggle-switch" id="face-consistency-toggle" onclick="toggleFaceConsistency()"></div>
             </div>
@@ -1071,7 +1071,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="system-alpha-banner">
         <span class="system-alpha-icon">🚀</span>
         <div class="system-alpha-text">
-          <strong>Phase 3 · v5.10 · KOL 劇情記憶系統</strong>
+          <strong>KOL 劇情記憶系統</strong>
           <span>日曆接真資料 · 每集自動存檔 · 每集都變成 KOL 的劇情記憶。這不是工具,是 AI KOL 的人生。</span>
         </div>
       </div>
@@ -1260,7 +1260,7 @@ const CREDITS_PER_SECOND = 0.05 / 0.01;
 // Fast 720p = $0.2419/秒;Standard 720p × 0.6 (有影片輸入折扣) = $0.1814/秒
 // 但我們用的是 reference-to-video 搭配圖片輸入(不是影片),所以沒折扣
 // 參考:$0.2419 Fast / $0.3024 Standard(都是 /秒 @ 720p)
-const SEEDANCE_PRICE = {
+const VIDEO_PRICE = {
   fast:     { '720p': 0.2419, '1080p': 0.4838, '480p': 0.121 },
   standard: { '720p': 0.3024, '1080p': 0.6048, '480p': 0.1512 },
 };
@@ -1752,7 +1752,7 @@ async function gasPost(action, extra = {}) {
   document.querySelectorAll('.vision-col').forEach(col => {
     col.addEventListener('click', () => {
       if (col.classList.contains('disabled')) {
-        toast('🚀 完整版規劃中,敬請期待', 'warn');
+        toast('即將開放,敬請期待', 'warn');
         return;
       }
       const mode = col.dataset.mode;
@@ -1849,8 +1849,8 @@ function switchMode(mode) {
   // 副標題更新
   const subtitles = {
     talking: '管理品牌的 KOL 形象庫,從 Google Drive 讀取照片一鍵建立 Avatar Group',
-    cinematic: 'Seedance 2.0 reference-to-video — 選 KOL 形象 + 商品照 + Prompt 生出電影感短影音',
-    system: 'KOL 自動經營系統 · Phase 0 UI 雛形 — 純模型,明天接入資料',
+    cinematic: '電影鏡頭模式 — 選 KOL 形象 + 商品照 + 場景 → 生成電影感短影音',
+    system: 'KOL 自動經營系統 — 自動規劃內容主題、排程發文',
   };
   document.getElementById('page-subtitle').textContent = subtitles[mode];
 
