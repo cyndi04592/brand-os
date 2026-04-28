@@ -1221,6 +1221,152 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   transform: translateY(-1px);
   box-shadow: 0 5px 18px rgba(124,109,250,0.5);
 }
+
+/* ★ v11.1: 多網址列 */
+.smart-url-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.smart-url-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 11px;
+  color: var(--t1);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  outline: none;
+  transition: all 0.2s;
+}
+.smart-url-input:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(124,109,250,0.1);
+}
+.smart-url-remove {
+  background: transparent;
+  border: 1px solid rgba(244,67,54,0.3);
+  color: #f44336;
+  border-radius: 7px;
+  width: 28px;
+  height: 32px;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.smart-url-remove:hover {
+  background: rgba(244,67,54,0.15);
+  border-color: #f44336;
+}
+.smart-url-add {
+  background: var(--purple-soft);
+  color: var(--purple);
+  border: 1px dashed rgba(124,109,250,0.4);
+  border-radius: 9px;
+  padding: 7px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+.smart-url-add:hover {
+  background: rgba(124,109,250,0.18);
+  border-style: solid;
+}
+.smart-url-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ★ v11.1: 規格/特色色點 */
+.spec-cell {
+  font-size: 11px;
+  color: var(--t2);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spec-empty {
+  color: var(--t4);
+  font-style: italic;
+  font-size: 10px;
+}
+
+/* ★ v11.1: 智慧補齊按鈕(每行) */
+.btn-row-enrich {
+  background: var(--purple-soft);
+  border: 1px solid rgba(124,109,250,0.3);
+  color: var(--purple);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-row-enrich:hover {
+  background: var(--purple);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.btn-row-enrich:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ★ v11.1: 補齊 modal(獨立的小 modal,點 ✨ 時用) */
+.enrich-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 600;
+  backdrop-filter: blur(8px);
+}
+.enrich-modal-overlay.show { display: flex; }
+.enrich-modal {
+  background: linear-gradient(135deg, rgba(20,20,30,0.95), rgba(26,26,36,0.85));
+  border: 1px solid rgba(124,109,250,0.4);
+  border-radius: 16px;
+  padding: 26px;
+  width: 90%;
+  max-width: 520px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 60px rgba(124,109,250,0.15);
+}
+.enrich-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  background: var(--grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.enrich-sub {
+  font-size: 11px;
+  color: var(--t3);
+  margin-bottom: 18px;
+}
+.enrich-product-name {
+  background: var(--bg3);
+  border-radius: 8px;
+  padding: 10px 13px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--t1);
+  border-left: 3px solid var(--purple);
+}
 </style>
 </head>
 <body>
@@ -1242,7 +1388,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 
     <div id="smartInputView">
       <div class="smart-input-group">
-        <label>用一句話描述</label>
+        <label>用一句話描述 *</label>
         <textarea class="smart-input large" id="smartPromptInput" placeholder="例:巧福新增復古電風扇,做嘖嘖募資"></textarea>
         <div class="smart-examples">
           <b>範例:</b><br>
@@ -1251,6 +1397,22 @@ tr:hover td { background: rgba(124,109,250,0.04); }
           · LACEZ 推春夏新款蕾絲內衣
         </div>
       </div>
+
+      <!-- ★ v11.1: 商品網址(多備援) -->
+      <div class="smart-input-group">
+        <label>📎 商品網址 <span style="color:var(--t3);font-weight:400;font-size:9px;">· 選填,但建議貼 1-3 個讓 AI 抓規格更準</span></label>
+        <div id="smartUrlList">
+          <div class="smart-url-row">
+            <input class="smart-url-input" type="url" placeholder="https://... (官網 / 嘖嘖 / MOMO / PChome / 蝦皮 都可以)">
+            <button class="smart-url-remove" onclick="removeSmartUrl(this)" style="display:none;" title="移除">✕</button>
+          </div>
+        </div>
+        <button class="smart-url-add" id="smartUrlAddBtn" onclick="addSmartUrl()">+ 新增備援網址</button>
+        <div class="smart-examples" style="margin-top:8px;">
+          <b style="color:var(--mint);">💡 為什麼建議多貼?</b> 品牌官網有時是 SPA,AI 抓不到規格 → 加備援連結(MOMO/嘖嘖/PChome)成功率更高
+        </div>
+      </div>
+
       <div class="smart-action-row">
         <button class="btn-ai-cancel" onclick="closeSmartModal()">取消</button>
         <button class="btn-ai-parse" id="btnAiParse" onclick="aiParseProduct()">✨ AI 解析</button>
@@ -1271,6 +1433,47 @@ tr:hover td { background: rgba(124,109,250,0.04); }
       <div class="smart-action-row">
         <button class="btn-redo" onclick="resetSmartForm()">↻ 重新解析</button>
         <button class="btn-confirm-add" onclick="confirmSmartAdd()">✅ 確認新增到列表</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ★ v11.1: 智慧補齊 modal(每行 ✨ 按鈕用) -->
+<div class="enrich-modal-overlay" id="enrichModalOverlay" onclick="if(event.target===this)closeEnrichModal()">
+  <div class="enrich-modal">
+    <div class="enrich-title">✨ 智慧補齊規格</div>
+    <div class="enrich-sub">貼商品網址,AI 自動讀取規格 + 特色填入欄位</div>
+    <div class="enrich-product-name" id="enrichProductName">— 商品名 —</div>
+
+    <div id="enrichInputView">
+      <div class="smart-input-group">
+        <label>📎 商品網址(可貼 1-3 個)</label>
+        <div id="enrichUrlList">
+          <div class="smart-url-row">
+            <input class="smart-url-input" type="url" placeholder="https://...">
+            <button class="smart-url-remove" onclick="removeEnrichUrl(this)" style="display:none;">✕</button>
+          </div>
+        </div>
+        <button class="smart-url-add" id="enrichUrlAddBtn" onclick="addEnrichUrl()">+ 新增備援網址</button>
+      </div>
+      <div class="smart-action-row">
+        <button class="btn-ai-cancel" onclick="closeEnrichModal()">取消</button>
+        <button class="btn-ai-parse" id="btnEnrichGo" onclick="enrichRunNow()">✨ 開始抓取</button>
+      </div>
+    </div>
+
+    <div id="enrichLoadingView" style="display:none">
+      <div class="smart-loading">
+        <div class="spinner"></div>
+        <p id="enrichLoadingMsg">AI 讀取網頁中...</p>
+      </div>
+    </div>
+
+    <div id="enrichResultView" style="display:none">
+      <div id="enrichResultBlock"></div>
+      <div class="smart-action-row">
+        <button class="btn-ai-cancel" onclick="closeEnrichModal()">取消</button>
+        <button class="btn-confirm-add" onclick="enrichConfirm()">✅ 套用到欄位</button>
       </div>
     </div>
   </div>
@@ -1314,7 +1517,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
       <input class="filter-input" id="filterSearch" placeholder="搜尋商品名稱..." oninput="renderProducts()">
     </div>
     <div class="table-wrap">
-      <table><thead><tr><th>品牌</th><th>子系列ID</th><th>子系列名</th><th>顏色</th><th>商品ID</th><th>商品名稱</th><th>標籤</th><th></th></tr></thead>
+      <table><thead><tr><th>品牌</th><th>子系列ID</th><th>子系列名</th><th>顏色</th><th>商品ID</th><th>商品名稱</th><th>標籤</th><th>規格</th><th>特色</th><th></th></tr></thead>
       <tbody id="productsBody"></tbody></table>
     </div>
   </div>
@@ -1493,7 +1696,55 @@ function openSmartModal() {
   document.getElementById('smartLoadingView').style.display = 'none';
   document.getElementById('smartResultView').classList.remove('show');
   document.getElementById('smartPromptInput').value = '';
+  // ★ v11.1: 重置網址列為一個空輸入框
+  document.getElementById('smartUrlList').innerHTML = `
+    <div class="smart-url-row">
+      <input class="smart-url-input" type="url" placeholder="https://... (官網 / 嘖嘖 / MOMO / PChome / 蝦皮 都可以)">
+      <button class="smart-url-remove" onclick="removeSmartUrl(this)" style="display:none;" title="移除">✕</button>
+    </div>`;
+  document.getElementById('smartUrlAddBtn').style.display = 'inline-block';
+  document.getElementById('smartUrlAddBtn').disabled = false;
   setTimeout(() => document.getElementById('smartPromptInput').focus(), 100);
+}
+
+// ★ v11.1: 多網址欄管理
+function addSmartUrl() {
+  const list = document.getElementById('smartUrlList');
+  const rows = list.querySelectorAll('.smart-url-row');
+  if (rows.length >= 3) return;
+  const newRow = document.createElement('div');
+  newRow.className = 'smart-url-row';
+  newRow.innerHTML = `
+    <input class="smart-url-input" type="url" placeholder="https://...">
+    <button class="smart-url-remove" onclick="removeSmartUrl(this)" title="移除">✕</button>`;
+  list.appendChild(newRow);
+  // 顯示所有 ✕ 按鈕
+  list.querySelectorAll('.smart-url-remove').forEach(b => b.style.display = 'inline-block');
+  if (list.querySelectorAll('.smart-url-row').length >= 3) {
+    document.getElementById('smartUrlAddBtn').disabled = true;
+  }
+}
+
+function removeSmartUrl(btn) {
+  const row = btn.closest('.smart-url-row');
+  const list = document.getElementById('smartUrlList');
+  if (list.querySelectorAll('.smart-url-row').length <= 1) return;
+  row.remove();
+  // 如果只剩一個,隱藏 ✕ 按鈕
+  if (list.querySelectorAll('.smart-url-row').length === 1) {
+    list.querySelector('.smart-url-remove').style.display = 'none';
+  }
+  document.getElementById('smartUrlAddBtn').disabled = false;
+}
+
+function getSmartUrls() {
+  const inputs = document.querySelectorAll('#smartUrlList .smart-url-input');
+  const urls = [];
+  inputs.forEach(inp => {
+    const v = inp.value.trim();
+    if (v && /^https?:\/\//i.test(v)) urls.push(v);
+  });
+  return urls;
 }
 function closeSmartModal() {
   document.getElementById('smartModalOverlay').classList.remove('show');
@@ -1510,9 +1761,19 @@ async function aiParseProduct() {
   const prompt = document.getElementById('smartPromptInput').value.trim();
   if (!prompt) { setStatus('❌ 請輸入描述', 'err'); return; }
 
+  const urls = getSmartUrls();
+
   document.getElementById('smartInputView').style.display = 'none';
   document.getElementById('smartLoadingView').style.display = 'block';
   document.getElementById('smartResultView').classList.remove('show');
+
+  // ★ v11.1: 載入訊息會根據網址數變化
+  const loadingMsg = document.querySelector('#smartLoadingView .smart-loading p');
+  if (loadingMsg) {
+    loadingMsg.textContent = urls.length > 0
+      ? `AI 思考中(讀 ${urls.length} 個網址 + 推論分類)...`
+      : 'AI 思考中(純描述模式)...';
+  }
 
   try {
     const r = await fetch(CF_WORKER_URL, {
@@ -1522,6 +1783,7 @@ async function aiParseProduct() {
         action: 'ai_smart_product_parse',
         password: PASSWORD,
         prompt,
+        urls,
         brands: DB.brands,
         products: DB.products,
       }),
@@ -1548,8 +1810,29 @@ function renderSmartResult(parsed) {
   const brand = DB.brands.find(b => b.id === parsed.brandId);
   const brandLabel = brand ? `${brand.icon || ''} ${brand.name} (${brand.id})` : parsed.brandId;
 
+  // ★ v11.1: 爬取狀態橫條
+  let scrapeStatusHTML = '';
+  if (parsed.scrapeReport) {
+    const sr = parsed.scrapeReport;
+    if (sr.successCount > 0) {
+      scrapeStatusHTML = `<div style="background:rgba(109,250,194,0.08);border:1px solid rgba(109,250,194,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--mint);">
+        ✅ 成功從 <strong>${sr.successCount}/${sr.totalUrls}</strong> 個網址抓到規格資料</div>`;
+    } else if (sr.totalUrls > 0) {
+      scrapeStatusHTML = `<div style="background:rgba(250,109,155,0.08);border:1px solid rgba(250,109,155,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--pink);">
+        ⚠️ 所有網址都抓不到規格(SPA 或登入限制)— 規格欄保留空白,你可以手動補</div>`;
+    } else {
+      scrapeStatusHTML = `<div style="background:rgba(124,109,250,0.08);border:1px solid rgba(124,109,250,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--purple);">
+        ℹ️ 純描述模式(沒貼網址)— 規格 / 特色欄請手動補</div>`;
+    }
+  }
+
+  // ★ v11.1: 規格 / 特色用「綠色=抓到」「灰色=空」
+  const hasSpec = !!parsed.spec;
+  const hasFeat = !!parsed.feature;
+
   const grid = document.getElementById('smartResultGrid');
   grid.innerHTML = `
+    ${scrapeStatusHTML}
     <div class="smart-field confidence-${parsed.brandConfidence || 'medium'}">
       <span class="smart-field-label">品牌</span>
       <input class="smart-field-input" id="smartFieldBrand" value="${esc(brandLabel)}" readonly title="不可修改 — 從現有品牌列表中選">
@@ -1587,6 +1870,16 @@ function renderSmartResult(parsed) {
       </select>
       <span class="confidence-tag high">承襲</span>
     </div>
+    <div class="smart-field confidence-${hasSpec?'high':'low'}">
+      <span class="smart-field-label">📐 規格</span>
+      <input class="smart-field-input" id="smartFieldSpec" value="${esc(parsed.spec || '')}" placeholder="${hasSpec?'':'抓不到 — 可手動補'}">
+      <span class="confidence-tag ${hasSpec?'high':'low'}">${hasSpec?'✓ 已抓到':'空白'}</span>
+    </div>
+    <div class="smart-field confidence-${hasFeat?'high':'low'}">
+      <span class="smart-field-label">⭐ 特色</span>
+      <input class="smart-field-input" id="smartFieldFeature" value="${esc(parsed.feature || '')}" placeholder="${hasFeat?'':'抓不到 — 可手動補'}">
+      <span class="confidence-tag ${hasFeat?'high':'low'}">${hasFeat?'✓ 已抓到':'空白'}</span>
+    </div>
   `;
 
   document.getElementById('smartReasoning').innerHTML = `<b>AI 判斷:</b> ${esc(parsed.reasoning || '(無說明)')}`;
@@ -1603,6 +1896,9 @@ function confirmSmartAdd() {
   const prodId = document.getElementById('smartFieldProdId').value.trim();
   const prodTag = document.getElementById('smartFieldProdTag').value.trim();
   const subColor = document.getElementById('smartFieldSubColor').value;
+  // ★ v11.1
+  const spec = document.getElementById('smartFieldSpec')?.value.trim() || '';
+  const feature = document.getElementById('smartFieldFeature')?.value.trim() || '';
 
   if (!brandId || !subId || !prodId || !prodName) {
     setStatus('❌ 必填欄位:子系列ID / 商品ID / 商品名', 'err');
@@ -1622,12 +1918,184 @@ function confirmSmartAdd() {
     prodId,
     prodName,
     prodTag,
+    spec,        // ★ v11.1
+    feature,     // ★ v11.1
   });
 
   document.getElementById('filterBrand').value = brandId;
   renderProducts();
   closeSmartModal();
-  setStatus(`✨ 已新增「${prodName}」到列表 — 記得按右上「💾 儲存全部」`, 'ok');
+  const specMsg = spec ? '(含規格)' : '(規格空白,記得補)';
+  setStatus(`✨ 已新增「${prodName}」${specMsg} — 記得按右上「💾 儲存全部」`, 'ok');
+}
+
+// ════════════════════════════════════════════════════════════════
+// ★ v11.1: 智慧補齊(每行 ✨ 按鈕觸發)
+// ════════════════════════════════════════════════════════════════
+
+let ENRICH_TARGET_INDEX = -1;
+let ENRICH_PARSED = null;
+
+function openEnrichModal(productIndex) {
+  ENRICH_TARGET_INDEX = productIndex;
+  ENRICH_PARSED = null;
+  const p = DB.products[productIndex];
+  if (!p) return;
+
+  const brand = DB.brands.find(b => b.id === p.brandId);
+  const brandLabel = brand ? `${brand.icon || ''} ${brand.name}` : p.brandId;
+
+  document.getElementById('enrichProductName').innerHTML =
+    `<strong>${esc(brandLabel)}</strong> › ${esc(p.subName||'')} › <span style="color:var(--purple);font-weight:700;">${esc(p.prodName)}</span>${p.spec?`<div style="font-size:10px;color:var(--t3);margin-top:4px;">目前規格:${esc(p.spec)}(會被覆蓋)</div>`:''}`;
+
+  document.getElementById('enrichModalOverlay').classList.add('show');
+  document.getElementById('enrichInputView').style.display = 'block';
+  document.getElementById('enrichLoadingView').style.display = 'none';
+  document.getElementById('enrichResultView').style.display = 'none';
+
+  // 重置網址列
+  document.getElementById('enrichUrlList').innerHTML = `
+    <div class="smart-url-row">
+      <input class="smart-url-input" type="url" placeholder="https://...">
+      <button class="smart-url-remove" onclick="removeEnrichUrl(this)" style="display:none;">✕</button>
+    </div>`;
+  document.getElementById('enrichUrlAddBtn').disabled = false;
+  setTimeout(() => document.querySelector('#enrichUrlList .smart-url-input')?.focus(), 100);
+}
+
+function closeEnrichModal() {
+  document.getElementById('enrichModalOverlay').classList.remove('show');
+  ENRICH_TARGET_INDEX = -1;
+  ENRICH_PARSED = null;
+}
+
+function addEnrichUrl() {
+  const list = document.getElementById('enrichUrlList');
+  const rows = list.querySelectorAll('.smart-url-row');
+  if (rows.length >= 3) return;
+  const newRow = document.createElement('div');
+  newRow.className = 'smart-url-row';
+  newRow.innerHTML = `
+    <input class="smart-url-input" type="url" placeholder="https://...">
+    <button class="smart-url-remove" onclick="removeEnrichUrl(this)">✕</button>`;
+  list.appendChild(newRow);
+  list.querySelectorAll('.smart-url-remove').forEach(b => b.style.display = 'inline-block');
+  if (list.querySelectorAll('.smart-url-row').length >= 3) {
+    document.getElementById('enrichUrlAddBtn').disabled = true;
+  }
+}
+
+function removeEnrichUrl(btn) {
+  const row = btn.closest('.smart-url-row');
+  const list = document.getElementById('enrichUrlList');
+  if (list.querySelectorAll('.smart-url-row').length <= 1) return;
+  row.remove();
+  if (list.querySelectorAll('.smart-url-row').length === 1) {
+    list.querySelector('.smart-url-remove').style.display = 'none';
+  }
+  document.getElementById('enrichUrlAddBtn').disabled = false;
+}
+
+function getEnrichUrls() {
+  const inputs = document.querySelectorAll('#enrichUrlList .smart-url-input');
+  const urls = [];
+  inputs.forEach(inp => {
+    const v = inp.value.trim();
+    if (v && /^https?:\/\//i.test(v)) urls.push(v);
+  });
+  return urls;
+}
+
+async function enrichRunNow() {
+  const urls = getEnrichUrls();
+  if (urls.length === 0) {
+    setStatus('❌ 請至少貼 1 個網址', 'err');
+    return;
+  }
+
+  const p = DB.products[ENRICH_TARGET_INDEX];
+  if (!p) return;
+
+  document.getElementById('enrichInputView').style.display = 'none';
+  document.getElementById('enrichLoadingView').style.display = 'block';
+  document.getElementById('enrichResultView').style.display = 'none';
+  document.getElementById('enrichLoadingMsg').textContent = `AI 讀取 ${urls.length} 個網址中...`;
+
+  try {
+    const r = await fetch(CF_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'ai_product_enrich',
+        password: PASSWORD,
+        urls,
+        brandName: (DB.brands.find(b => b.id === p.brandId)?.name) || p.brandId,
+        subName: p.subName || '',
+        prodName: p.prodName,
+        prodTag: p.prodTag || '',
+      }),
+    });
+    const j = await r.json();
+    document.getElementById('enrichLoadingView').style.display = 'none';
+
+    if (!j.ok) {
+      setStatus('❌ 抓取失敗:' + (j.error || '未知'), 'err');
+      document.getElementById('enrichInputView').style.display = 'block';
+      return;
+    }
+
+    ENRICH_PARSED = j.parsed;
+    renderEnrichResult(j.parsed);
+  } catch(e) {
+    document.getElementById('enrichLoadingView').style.display = 'none';
+    document.getElementById('enrichInputView').style.display = 'block';
+    setStatus('❌ 連線失敗:' + e.message, 'err');
+  }
+}
+
+function renderEnrichResult(parsed) {
+  const sr = parsed.scrapeReport || {};
+  const hasSpec = !!parsed.spec;
+  const hasFeat = !!parsed.feature;
+
+  let statusHTML = '';
+  if (sr.successCount > 0) {
+    statusHTML = `<div style="background:rgba(109,250,194,0.08);border:1px solid rgba(109,250,194,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--mint);">
+      ✅ 成功從 <strong>${sr.successCount}/${sr.totalUrls}</strong> 個網址抓到資料</div>`;
+  } else {
+    statusHTML = `<div style="background:rgba(250,109,155,0.08);border:1px solid rgba(250,109,155,0.3);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:11px;color:var(--pink);">
+      ⚠️ 所有網址都抓不到 — 可能是 SPA 或登入限制,規格欄保留空白</div>`;
+  }
+
+  document.getElementById('enrichResultBlock').innerHTML = `
+    ${statusHTML}
+    <div class="smart-field confidence-${hasSpec?'high':'low'}">
+      <span class="smart-field-label">📐 規格</span>
+      <input class="smart-field-input" id="enrichFieldSpec" value="${esc(parsed.spec || '')}" placeholder="${hasSpec?'':'抓不到 — 留空或手動補'}">
+      <span class="confidence-tag ${hasSpec?'high':'low'}">${hasSpec?'✓ 已抓到':'空白'}</span>
+    </div>
+    <div class="smart-field confidence-${hasFeat?'high':'low'}" style="margin-top:8px;">
+      <span class="smart-field-label">⭐ 特色</span>
+      <input class="smart-field-input" id="enrichFieldFeature" value="${esc(parsed.feature || '')}" placeholder="${hasFeat?'':'抓不到 — 留空或手動補'}">
+      <span class="confidence-tag ${hasFeat?'high':'low'}">${hasFeat?'✓ 已抓到':'空白'}</span>
+    </div>
+    ${parsed.reasoning ? `<div class="smart-reasoning" style="margin-top:12px;"><b>AI 判斷:</b> ${esc(parsed.reasoning)}</div>` : ''}
+  `;
+
+  document.getElementById('enrichResultView').style.display = 'block';
+}
+
+function enrichConfirm() {
+  if (ENRICH_TARGET_INDEX < 0 || !ENRICH_PARSED) return;
+  const p = DB.products[ENRICH_TARGET_INDEX];
+  if (!p) return;
+  const spec = document.getElementById('enrichFieldSpec')?.value.trim() || '';
+  const feature = document.getElementById('enrichFieldFeature')?.value.trim() || '';
+  p.spec = spec;
+  p.feature = feature;
+  renderProducts();
+  closeEnrichModal();
+  setStatus(`✨ 已補齊「${p.prodName}」 — 記得按右上「💾 儲存全部」`, 'ok');
 }
 
 
@@ -1785,9 +2253,11 @@ function renderProducts() {
   const sf = document.getElementById('filterSearch').value.toLowerCase();
   const filtered = DB.products.filter(p => (!bf||p.brandId===bf)&&(!sf||p.prodName?.toLowerCase().includes(sf)));
   const tbody = document.getElementById('productsBody');
-  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--t4)">沒有符合的商品</td></tr>'; return; }
+  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--t4)">沒有符合的商品</td></tr>'; return; }
   tbody.innerHTML = filtered.map(p => {
     const i = DB.products.indexOf(p);
+    const specEmpty = !p.spec ? 'spec-empty' : '';
+    const featEmpty = !p.feature ? 'spec-empty' : '';
     return `<tr>
       <td><span class="color-dot color-${p.subColor||'gold'}"></span>${esc(p.brandId)}</td>
       <td><input class="td-input" value="${esc(p.subId)}" oninput="DB.products[${i}].subId=this.value" style="min-width:90px"></td>
@@ -1796,13 +2266,18 @@ function renderProducts() {
       <td><input class="td-input" value="${esc(p.prodId)}" oninput="DB.products[${i}].prodId=this.value" style="min-width:80px"></td>
       <td><input class="td-input" value="${esc(p.prodName)}" oninput="DB.products[${i}].prodName=this.value" style="min-width:160px"></td>
       <td><input class="td-input" value="${esc(p.prodTag)}" oninput="DB.products[${i}].prodTag=this.value" style="min-width:80px"></td>
-      <td><button class="btn-row-del" onclick="deleteProduct(${i})">✕</button></td>
+      <td><input class="td-input ${specEmpty}" value="${esc(p.spec||'')}" placeholder="如:16吋/復古銅/無線2小時" oninput="DB.products[${i}].spec=this.value" title="${esc(p.spec||'')}" style="min-width:160px"></td>
+      <td><input class="td-input ${featEmpty}" value="${esc(p.feature||'')}" placeholder="如:嘖嘖募資/噴霧涼風" oninput="DB.products[${i}].feature=this.value" title="${esc(p.feature||'')}" style="min-width:140px"></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-row-enrich" onclick="openEnrichModal(${i})" title="AI 智慧補齊規格">✨</button>
+        <button class="btn-row-del" onclick="deleteProduct(${i})">✕</button>
+      </td>
     </tr>`;
   }).join('');
 }
 function addProduct() {
   const brandId = document.getElementById('filterBrand').value||(DB.brands[0]?.id||'');
-  DB.products.push({brandId,subId:'',subName:'',subColor:'gold',subSoul:'',subAdStyle:'',subHashtags:'',prodId:'',prodName:'新商品',prodTag:''});
+  DB.products.push({brandId,subId:'',subName:'',subColor:'gold',subSoul:'',subAdStyle:'',subHashtags:'',prodId:'',prodName:'新商品',prodTag:'',spec:'',feature:''});
   renderProducts();
 }
 function deleteProduct(i) { if(!confirm(`確定刪除「${DB.products[i].prodName}」?`))return; DB.products.splice(i,1); renderProducts(); }
