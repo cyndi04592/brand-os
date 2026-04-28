@@ -1517,7 +1517,10 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 <div class="main">
 
   <div class="section active" id="sec-brands">
-    <div class="section-header"><h2>品牌列表</h2><button class="btn-add" onclick="addBrand()">＋ 新增品牌</button></div>
+    <div class="section-header">
+      <h2>品牌列表</h2>
+      <span style="font-size:11px;color:var(--t3);font-style:italic;margin-left:8px;">品牌透過「📋 品牌進駐問卷」進來,核准後才出現在這</span>
+    </div>
     <div class="brands-grid" id="brandsGrid"></div>
   </div>
 
@@ -1896,22 +1899,178 @@ function confirmSmartAdd() {
     return;
   }
 
-  const existingSub = DB.products.find(p => p.brandId === brandId && p.subId === subId);
+  // ★ v11.2: 偵測同名商品(同品牌內)
+  const newData = { brandId, subId, subName, subColor, prodId, prodName, prodTag, spec, feature };
+  const dup = findDuplicateProduct(brandId, prodName, prodId);
+  if (dup) {
+    showDuplicateModal(dup, newData);
+    return;  // 等使用者選 → 由彈窗的按鈕呼叫實際寫入
+  }
 
-  DB.products.push({
-    brandId, subId,
-    subName: subName || (existingSub?.subName || ''),
-    subColor: subColor || (existingSub?.subColor || 'gold'),
+  // 沒撞 → 直接新增
+  performSmartAdd('add', newData, -1);
+}
+
+// ★ v11.2: 找撞名(完全相同 / 相似度高 / ID 相同)
+function findDuplicateProduct(brandId, prodName, prodId) {
+  if (!prodName) return null;
+  const sameBrand = DB.products.filter(p => p.brandId === brandId);
+
+  // 條件 1:商品名完全相同
+  let dup = sameBrand.find(p => p.prodName === prodName);
+  if (dup) return { product: dup, index: DB.products.indexOf(dup), reason: '商品名完全相同' };
+
+  // 條件 2:商品 ID 完全相同
+  dup = sameBrand.find(p => p.prodId === prodId && prodId);
+  if (dup) return { product: dup, index: DB.products.indexOf(dup), reason: '商品ID重複' };
+
+  // 條件 3:相似度高(去除空白 / 標點後比對)
+  const norm = s => (s||'').replace(/[\s\-‧·、,。/()()【】\[\]]/g, '').toLowerCase();
+  const target = norm(prodName);
+  if (target.length >= 3) {
+    dup = sameBrand.find(p => {
+      const other = norm(p.prodName);
+      if (other === target) return true;
+      // 一個包含另一個(避免「電風扇」誤判)— 至少 5 字才比包含
+      if (target.length >= 5 && other.length >= 5) {
+        return target.includes(other) || other.includes(target);
+      }
+      return false;
+    });
+    if (dup) return { product: dup, index: DB.products.indexOf(dup), reason: '商品名高度相似' };
+  }
+  return null;
+}
+
+// ★ v11.2: 撞名彈窗
+function showDuplicateModal(dupInfo, newData) {
+  const old = dupInfo.product;
+  const nu = newData;
+  const brand = DB.brands.find(b => b.id === nu.brandId);
+
+  const fmt = (label, oldVal, newVal) => {
+    const oldDisp = oldVal || '<span style="color:var(--t4);font-style:italic">(空白)</span>';
+    const newDisp = newVal || '<span style="color:var(--t4);font-style:italic">(空白)</span>';
+    const same = oldVal === newVal;
+    return `<tr><td style="padding:6px 10px;color:var(--t3);font-size:11px;white-space:nowrap;">${label}</td>
+      <td style="padding:6px 10px;font-size:12px;color:${same?'var(--t3)':'var(--t1)'};">${oldDisp}</td>
+      <td style="padding:6px 10px;font-size:12px;color:${same?'var(--t3)':'var(--mint)'};font-weight:${same?'400':'600'};">${newDisp}${!same?' <span style="color:var(--mint);font-size:9px;">●</span>':''}</td></tr>`;
+  };
+
+  const html = `
+    <div class="smart-modal-overlay show" id="dupModalOverlay" style="z-index:700;" onclick="if(event.target===this)closeDupModal()">
+      <div class="smart-modal" style="max-width:680px;">
+        <div class="smart-modal-header">
+          <div>
+            <div class="smart-modal-title" style="font-size:18px;">⚠️ 偵測到同名商品</div>
+            <div class="smart-modal-sub">「${esc(nu.prodName)}」已存在於 <b style="color:var(--purple)">${esc(brand?.name||nu.brandId)}</b> · ${esc(dupInfo.reason)}</div>
+          </div>
+          <button class="smart-modal-close" onclick="closeDupModal()">✕</button>
+        </div>
+
+        <div style="background:var(--bg);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:18px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="background:rgba(124,109,250,0.08);">
+              <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--t3);font-family:var(--font-display);letter-spacing:1px;">欄位</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--t3);font-family:var(--font-display);letter-spacing:1px;">舊資料</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--mint);font-family:var(--font-display);letter-spacing:1px;">新解析</th>
+            </tr></thead>
+            <tbody>
+              ${fmt('商品ID', old.prodId, nu.prodId)}
+              ${fmt('商品名', old.prodName, nu.prodName)}
+              ${fmt('系列', old.subId, nu.subId)}
+              ${fmt('標籤', old.prodTag, nu.prodTag)}
+              ${fmt('📐 規格', old.spec, nu.spec)}
+              ${fmt('⭐ 特色', old.feature, nu.feature)}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:10px;">
+          <button onclick="resolveDuplicate('overwrite')" style="padding:14px 10px;border-radius:11px;border:1px solid rgba(244,67,54,0.4);background:rgba(244,67,54,0.06);color:#f44336;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;line-height:1.4;">
+            🔄 覆蓋舊的<br><span style="font-size:9px;font-weight:400;color:var(--t3);letter-spacing:0.3px;">用新資料蓋掉</span>
+          </button>
+          <button id="btnDupMerge" onclick="resolveDuplicate('merge')" style="padding:14px 10px;border-radius:11px;border:none;background:linear-gradient(135deg, var(--mint), #4DD8A0);color:#003020;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(109,250,194,0.35);line-height:1.4;letter-spacing:0.5px;">
+            🤝 合併(推薦)<br><span style="font-size:9px;font-weight:600;letter-spacing:0.3px;">只補空欄位,不動已有</span>
+          </button>
+          <button onclick="resolveDuplicate('new')" style="padding:14px 10px;border-radius:11px;border:1px solid rgba(124,109,250,0.4);background:var(--purple-soft);color:var(--purple);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;line-height:1.4;">
+            ➕ 新建第 2 筆<br><span style="font-size:9px;font-weight:400;color:var(--t3);letter-spacing:0.3px;">真的是不同款式</span>
+          </button>
+        </div>
+        <div style="margin-top:12px;text-align:center;">
+          <button class="btn-ai-cancel" onclick="closeDupModal()" style="padding:8px 18px;font-size:12px;">取消</button>
+        </div>
+      </div>
+    </div>`;
+
+  // 移除舊的(如果有)
+  document.getElementById('dupModalOverlay')?.remove();
+  document.body.insertAdjacentHTML('beforeend', html);
+  // 預設聚焦合併按鈕,Enter 直接執行
+  setTimeout(() => document.getElementById('btnDupMerge')?.focus(), 100);
+  // 暫存資料
+  window._DUP_PENDING = { dupInfo, newData };
+}
+
+function closeDupModal() {
+  document.getElementById('dupModalOverlay')?.remove();
+  window._DUP_PENDING = null;
+}
+
+function resolveDuplicate(action) {
+  const pending = window._DUP_PENDING;
+  if (!pending) return;
+  performSmartAdd(action, pending.newData, pending.dupInfo.index);
+  closeDupModal();
+}
+
+// ★ v11.2: 實際寫入(由 confirmSmartAdd 直接呼叫,或撞名彈窗按鈕呼叫)
+function performSmartAdd(action, nu, dupIndex) {
+  const existingSub = DB.products.find(p => p.brandId === nu.brandId && p.subId === nu.subId);
+  const subDefaults = {
+    subName: nu.subName || (existingSub?.subName || ''),
+    subColor: nu.subColor || (existingSub?.subColor || 'gold'),
     subSoul: existingSub?.subSoul || '',
     subAdStyle: existingSub?.subAdStyle || '',
     subHashtags: existingSub?.subHashtags || '',
-    prodId, prodName, prodTag, spec, feature,
-  });
+  };
 
-  document.getElementById('filterBrand').value = brandId;
+  if (action === 'add' || action === 'new') {
+    // 新建一筆
+    DB.products.push({
+      brandId: nu.brandId, subId: nu.subId,
+      ...subDefaults,
+      prodId: nu.prodId, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature,
+    });
+    setStatus(`✨ 已新增「${nu.prodName}」— 記得按右上「💾 儲存全部」`, 'ok');
+  } else if (action === 'overwrite') {
+    // 整筆替換
+    DB.products[dupIndex] = {
+      brandId: nu.brandId, subId: nu.subId,
+      ...subDefaults,
+      prodId: nu.prodId, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature,
+    };
+    setStatus(`🔄 已覆蓋「${nu.prodName}」— 記得按右上「💾 儲存全部」`, 'ok');
+  } else if (action === 'merge') {
+    // 只補空欄位
+    const old = DB.products[dupIndex];
+    DB.products[dupIndex] = {
+      ...old,
+      prodTag: old.prodTag || nu.prodTag,
+      spec: old.spec || nu.spec,
+      feature: old.feature || nu.feature,
+    };
+    const filled = [];
+    if (!old.prodTag && nu.prodTag) filled.push('標籤');
+    if (!old.spec && nu.spec) filled.push('規格');
+    if (!old.feature && nu.feature) filled.push('特色');
+    const msg = filled.length ? `🤝 已合併補上:${filled.join('、')}` : '🤝 沒有空欄位需要補(舊資料完整)';
+    setStatus(msg + ' — 記得按右上「💾 儲存全部」', 'ok');
+  }
+
+  document.getElementById('filterBrand').value = nu.brandId;
   renderProducts();
   closeSmartModal();
-  setStatus(`✨ 已新增「${prodName}」— 記得按右上「💾 儲存全部」`, 'ok');
 }
 
 // ══ 智慧補齊 ══
@@ -2187,27 +2346,78 @@ async function doReject(brandId) {
 }
 
 // ══ 品牌管理 ══
+// ★ v11.2 預設色票表(7 品牌)— 沒設定的品牌自動帶入
+const BRAND_COLOR_PRESETS = {
+  cf:  { primaryColor:'#D86E3C', secondaryColor:'#E8DCC4', accentColor:'#3D5A3F', colorMood:'溫暖居家、家人守護、生活科技、暖色木質' },
+  ww:  { primaryColor:'#D9B96B', secondaryColor:'#2C4A2D', accentColor:'#C44329', colorMood:'台灣古早味、手工真材、烤肉聚餐、家鄉情感' },
+  ly:  { primaryColor:'#2C2522', secondaryColor:'#E89B9B', accentColor:'#F0E5CE', colorMood:'精緻質感、頂級料理、零食嘴饞、義式高級' },
+  ka:  { primaryColor:'#4A3A6B', secondaryColor:'#C9A876', accentColor:'#F2EAD9', colorMood:'靈性療癒、頌缽冥想、瑜珈修行、東方禪意' },
+  la:  { primaryColor:'#9B7BC9', secondaryColor:'#E8788C', accentColor:'#D4B896', colorMood:'紫藤浪漫、蕾絲柔軟、女性曲線、舒適親膚' },
+  moz: { primaryColor:'#4A6B8A', secondaryColor:'#B89770', accentColor:'#7AA84F', colorMood:'北歐極簡、駝鹿氣質、春日漫步、戶外露營' },
+  ra:  { primaryColor:'#7C6DFA', secondaryColor:'#FA6D9B', accentColor:'#6DFAC2', colorMood:'當代設計、AI 自動化、品牌操作系統、未來感' },
+};
+
 function renderBrands() {
   const g = document.getElementById('brandsGrid');
-  if (!DB.brands.length) { g.innerHTML='<div class="empty-state"><p>尚無品牌</p></div>'; return; }
-  g.innerHTML = DB.brands.map((b,i) => `
+  if (!DB.brands.length) { g.innerHTML='<div class="empty-state"><p>尚無品牌(請從品牌進駐問卷新增)</p></div>'; return; }
+  g.innerHTML = DB.brands.map((b,i) => {
+    // 自動補預設色票(只補空欄位,不覆蓋使用者已輸入的)
+    const preset = BRAND_COLOR_PRESETS[b.id] || {};
+    const primaryColor = b.primaryColor || preset.primaryColor || '#7C6DFA';
+    const secondaryColor = b.secondaryColor || preset.secondaryColor || '#FA6D9B';
+    const accentColor = b.accentColor || preset.accentColor || '#6DFAC2';
+    const colorMood = b.colorMood || preset.colorMood || '';
+    return `
     <div class="brand-card">
       <div class="brand-card-header">
-        <input class="brand-icon-input" value="${b.icon||''}" oninput="DB.brands[${i}].icon=this.value">
+        <input class="brand-icon-input" value="${b.icon||''}" oninput="DB.brands[${i}].icon=this.value" title="ICON(暫用 emoji,LOGO 系統規劃中)">
         <input class="field-input" style="font-weight:700;font-size:15px" value="${esc(b.name)}" oninput="DB.brands[${i}].name=this.value">
       </div>
-      <div class="two-col">
-        <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(b.id)}" oninput="DB.brands[${i}].id=this.value"></div>
-        <div class="field-row"><label>主色</label><select class="field-input" onchange="DB.brands[${i}].navColor=this.value">${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${b.navColor===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(b.id)}" oninput="DB.brands[${i}].id=this.value;renderBrands()" style="font-family:var(--font-mono);font-size:12px"></div>
+
+      <div class="field-row" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">
+        <label style="color:var(--purple)">🎨 品牌色票(用於 AI 生圖 / 文案)</label>
       </div>
-      <div class="field-row"><label>品牌靈魂</label><textarea class="field-textarea" oninput="DB.brands[${i}].soul=this.value">${esc(b.soul)}</textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:9px;color:var(--t3);display:block;margin-bottom:4px;">主色</label>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="color" value="${primaryColor}" oninput="DB.brands[${i}].primaryColor=this.value;document.getElementById('hex-pri-${i}').value=this.value" style="width:34px;height:30px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:transparent;padding:1px;">
+            <input id="hex-pri-${i}" class="field-input" value="${primaryColor}" oninput="DB.brands[${i}].primaryColor=this.value" style="font-family:var(--font-mono);font-size:11px;padding:6px 8px;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:9px;color:var(--t3);display:block;margin-bottom:4px;">副色</label>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="color" value="${secondaryColor}" oninput="DB.brands[${i}].secondaryColor=this.value;document.getElementById('hex-sec-${i}').value=this.value" style="width:34px;height:30px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:transparent;padding:1px;">
+            <input id="hex-sec-${i}" class="field-input" value="${secondaryColor}" oninput="DB.brands[${i}].secondaryColor=this.value" style="font-family:var(--font-mono);font-size:11px;padding:6px 8px;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:9px;color:var(--t3);display:block;margin-bottom:4px;">點綴</label>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="color" value="${accentColor}" oninput="DB.brands[${i}].accentColor=this.value;document.getElementById('hex-acc-${i}').value=this.value" style="width:34px;height:30px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:transparent;padding:1px;">
+            <input id="hex-acc-${i}" class="field-input" value="${accentColor}" oninput="DB.brands[${i}].accentColor=this.value" style="font-family:var(--font-mono);font-size:11px;padding:6px 8px;">
+          </div>
+        </div>
+      </div>
+      <div class="field-row">
+        <label>🎭 視覺調性形容詞(給 AI 抓 mood)</label>
+        <input class="field-input" value="${esc(colorMood)}" oninput="DB.brands[${i}].colorMood=this.value" placeholder="例:溫暖居家、自然手作、復古質感">
+      </div>
+
+      <div class="field-row" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">
+        <label>品牌靈魂</label>
+        <textarea class="field-textarea" oninput="DB.brands[${i}].soul=this.value">${esc(b.soul)}</textarea>
+      </div>
       <div class="field-row"><label>廣告風格</label><input class="field-input" value="${esc(b.adStyle)}" oninput="DB.brands[${i}].adStyle=this.value"></div>
       <div class="field-row"><label>Hashtags</label><input class="field-input" value="${esc(b.hashtags)}" oninput="DB.brands[${i}].hashtags=this.value"></div>
       <div class="card-actions"><button class="btn-delete" onclick="deleteBrand(${i})">🗑 刪除品牌</button></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
-function addBrand() { DB.brands.push({id:'',name:'新品牌',icon:'🏷️',navColor:'gold',soul:'',adStyle:'',hashtags:''}); renderBrands(); }
-function deleteBrand(i) { if(!confirm(`確定刪除「${DB.brands[i].name}」?`))return; DB.brands.splice(i,1); renderBrands(); }
+// ★ v11.2: 移除 addBrand — 品牌只能透過品牌進駐問卷進來
+function deleteBrand(i) { if(!confirm(`確定刪除「${DB.brands[i].name}」?\n\n⚠️ 此動作會永久移除此品牌(用於不續約 / 欠款客戶)`))return; DB.brands.splice(i,1); renderBrands(); }
 
 function updateFilters() {
   ['filterBrand','deliverFilterBrand'].forEach(id => {
