@@ -996,7 +996,7 @@ function showBlackImageWarning(blobSize) {
   ctx.fillText('AI 內容審查擋下了這張圖', AM.w/2, AM.h/2 - 50);
   ctx.fillStyle = '#B8B4A8';
   ctx.font = '500 22px "Noto Sans TC",sans-serif';
-  const kbSize = blobSize > 0 ? `(Flux 回傳 ${Math.round(blobSize/1024)} KB 黑圖)` : '';
+  const kbSize = blobSize > 0 ? `(回傳 ${Math.round(blobSize/1024)} KB 異常圖)` : '';
   if (kbSize) ctx.fillText(kbSize, AM.w/2, AM.h/2 - 10);
   ctx.fillStyle = '#C9A665';
   ctx.font = '900 26px "Noto Sans TC",sans-serif';
@@ -1486,7 +1486,7 @@ async function generateGptPoster() {
     // v10.2.1 hotfix:強制刷新 badge,避免 UI 顯示與實際 prompt 用的品牌包不一致
     updateBrandPackBadge();
 
-    setPrStatus('📤 上傳商品照至 fal...', 'var(--t3)');
+    setPrStatus('📤 上傳商品照處理中...', 'var(--t3)');
     const blob = await urlToBlob(imgSrc);
     const base64 = await blobToBase64(blob);
     const paddedBase64 = await padImageTo1080(base64);
@@ -1496,7 +1496,7 @@ async function generateGptPoster() {
     console.log('[v10.2] 懶人廣告圖 prompt 長度:', prompt.length, '字元');
     console.log('[v10.2] === 完整 prompt 預覽 ===\n', prompt);
 
-    setPrStatus('🎨 GPT Image 2 生成中(品牌包+版式合成,約 60-90 秒)...', 'var(--t3)');
+    setPrStatus('🎨 廣告圖生成中(品牌包+版式合成,約 60-90 秒)...', 'var(--t3)');
     const submitData = await callWorker({
       action: 'gpt_poster_edit_submit',
       prompt,
@@ -1507,7 +1507,7 @@ async function generateGptPoster() {
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
-    setPrStatus('⏳ 等待 GPT 出圖(高品質需耐心等)...', 'var(--t3)');
+    setPrStatus('⏳ 出圖中(高品質需耐心等)...', 'var(--t3)');
     let result = await pollUntilDone(
       submitData.requestId,
       submitData.endpoint,
@@ -1551,7 +1551,7 @@ async function generateGptPoster() {
     if (videoBtn) {
       videoBtn.style.display = 'block';
       videoBtn.disabled = false;
-      videoBtn.textContent = '🎬 變 5 秒影片 (~NT$11)';
+      videoBtn.textContent = '🎬 變 5 秒影片';
     }
   } catch(e) {
     failProgress(interval, e.message);
@@ -1602,7 +1602,7 @@ async function posterToVideo() {
   const interval = startProgress(120000);
 
   try {
-    setPrStatus('🎬 送出影片任務(Kling v2.1)...', 'var(--t3)');
+    setPrStatus('🎬 送出影片任務...', 'var(--t3)');
     const submitData = await callWorker({
       action: 'kling_poster_video_submit',
       imageUrl: LAST_POSTER_URL,
@@ -1611,7 +1611,7 @@ async function posterToVideo() {
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
-    setPrStatus('⏳ Kling 影片生成中(約 90-120 秒)...', 'var(--t3)');
+    setPrStatus('⏳ 影片生成中(約 90-120 秒)...', 'var(--t3)');
     let result = await pollUntilDone(
       submitData.requestId,
       submitData.endpoint,
@@ -1647,7 +1647,7 @@ async function posterToVideo() {
   } catch(e) {
     failProgress(interval, e.message);
     videoBtn.disabled = false;
-    videoBtn.textContent = '🎬 變 5 秒影片 (~NT$11) — 失敗,重試';
+    videoBtn.textContent = '🎬 變 5 秒影片 — 失敗,重試';
   }
 }
 
