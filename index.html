@@ -318,7 +318,7 @@
           <div style="display:grid;grid-template-columns:1fr;gap:5px;">
             <button class="pr-mode-btn on" onclick="setPrMode(this,'product_shot')" style="font-weight:900;padding:9px;">✨ AI 情境生成 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換場景)</span></button>
             <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')" style="border-color:rgba(250,109,155,0.5);color:#FFA8C8;font-weight:900;padding:9px;">👗 AI 真人試穿 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換模特)</span></button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'gpt_poster')" style="border-color:rgba(124,109,250,0.5);background:linear-gradient(135deg,rgba(124,109,250,0.08),rgba(109,250,194,0.08));color:#C9B8E8;font-weight:900;padding:9px;">⚡ 懶人 AI 廣告圖 <span style="opacity:0.55;font-weight:400;font-size:9px;">(品牌包·NT$5/張)</span></button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'gpt_poster')" style="border-color:rgba(124,109,250,0.5);background:linear-gradient(135deg,rgba(124,109,250,0.08),rgba(109,250,194,0.08));color:#C9B8E8;font-weight:900;padding:9px;">⚡ 懶人 AI 廣告圖 <span style="opacity:0.55;font-weight:400;font-size:9px;">(品牌包模式)</span></button>
           </div>
         </div>
 
@@ -331,7 +331,7 @@
             💡 <strong>內衣/泳裝/貼身衣物</strong>推薦場景：<br>
             🏊‍♀️ 炎熱夏日　·　🌴 熱帶渡假　·　💧 泳池派對<br>
             🏝️ 沖繩海邊　·　☀️ 峇里晴空<br>
-            <span style="color:var(--t2);">(Flux 對海邊/戶外日光場景寬容度最高)</span>
+            <span style="color:var(--t2);">(戶外日光場景成功率最高/戶外日光場景寬容度最高)</span>
           </div>
 
           <div id="prSceneGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
@@ -497,8 +497,8 @@
             💡 <b style="color:#C9B8E8;">v10.2 品牌包系統</b><br>
             · <b>左側選品牌</b>會自動套對應 DNA<br>
             · 排版 × 品牌包 × 設計風格 × 情境 四層合成<br>
-            · GPT Image 2 edit · 商品 100% 保留<br>
-            · 約 60-90 秒 · 每張 NT$5 (頂級)<br>
+            · 商品 100% 保留 · 雜誌級品質<br>
+            · 約 60-90 秒<br>
             · ⚠️ 中文標籤保留率 70-85%
           </div>
         </div>
@@ -507,7 +507,7 @@
         <div style="padding:9px 11px;">
           <button onclick="applyPhotoroomBg()" id="prApplyBtn" style="width:100%;padding:11px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1.5px;box-shadow:0 4px 14px rgba(124,109,250,0.30);">✨ 套用 AI 效果</button>
 
-          <button onclick="posterToVideo()" id="posterToVideoBtn" style="display:none;width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,rgba(124,109,250,0.2),rgba(250,109,155,0.2));border:1.5px solid rgba(124,109,250,0.6);color:#E8DCFF;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1.5px;margin-top:6px;">🎬 變 5 秒影片 (~NT$11)</button>
+          <button onclick="posterToVideo()" id="posterToVideoBtn" style="display:none;width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,rgba(124,109,250,0.2),rgba(250,109,155,0.2));border:1.5px solid rgba(124,109,250,0.6);color:#E8DCFF;font-family:'Noto Sans TC';font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1.5px;margin-top:6px;">🎬 變 5 秒影片</button>
 
           <div style="margin-top:6px;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
