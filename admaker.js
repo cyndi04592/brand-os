@@ -1557,6 +1557,8 @@ async function generateGptPoster() {
     LAST_POSTER_URL = result.imageUrl;
     CANVAS_TAINTED = false;
 
+    // ★ 背景靜默存檔到 Drive(不 await,不擋畫面)
+    saveImageToDriveSilently(result.imageUrl, 'poster');
     AM.w = 1080;
     AM.h = 1440;
     await renderGptPosterCanvas();
@@ -1693,4 +1695,49 @@ function showVideoInCanvas(videoUrl) {
 
   const lbl = document.getElementById('previewLabel');
   if (lbl) lbl.textContent = '🎬 影片預覽 5 秒循環播放';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ★ 背景靜默存檔:把生成的海報落地到品牌 Drive「AI生成完成區」
+//   FAL 圖 url 會過期 → 存一份永久檔到 Drive
+//   背景跑、不擋畫面、失敗只記 log 不吵使用者
+// ═══════════════════════════════════════════════════════════════════════
+async function saveImageToDriveSilently(imageUrl, kind) {
+  try {
+    const brandId = window.S?.brandId;
+    if (!brandId) { console.warn('[存檔] 無 brandId,跳過'); return; }
+    if (!imageUrl || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      console.warn('[存檔] imageUrl 不是可存的網址,跳過');
+      return;
+    }
+
+    const reqId = (kind || 'poster') + '_' + Date.now();
+    const brand = window.BRANDS?.find(b => b.id === brandId);
+    const prod  = window.S?.prod;
+
+    const res = await callWorker({
+      action: 'save_ai_image_to_drive',
+      brandId,
+      imageUrl,
+      requestId: reqId,
+      metadata: {
+        source: 'admaker_' + (kind || 'poster'),
+        brand: brand?.name || '',
+        product: prod?.name || '',
+        generated_at: new Date().toISOString(),
+      },
+    });
+
+    if (res.ok) {
+      console.log('[存檔] ✅ 已存進 Drive:', res.drive_url);
+      const el = document.getElementById('prStatus');
+      if (el && el.textContent.includes('完成')) {
+        el.textContent += ' · ☁️ 已存雲端';
+      }
+    } else {
+      console.warn('[存檔] ⚠️ Drive 存檔失敗(不影響海報):', res.error);
+    }
+  } catch (e) {
+    console.warn('[存檔] ⚠️ 存檔錯誤(不影響海報):', e.message);
+  }
 }
