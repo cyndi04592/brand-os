@@ -269,7 +269,7 @@ function buildDataFromSheets(data) {
       soul: p.subSoul, adStyle: p.subAdStyle, hashtags: p.subHashtags, prods: []
     };
     if (p.prodId) {
-      prodByBrand[p.brandId][key].prods.push({ id: p.prodId, name: p.prodName, tag: p.prodTag });
+      prodByBrand[p.brandId][key].prods.push({ id: p.prodId, name: p.prodName, tag: p.prodTag, spec: p.spec || '', feature: p.feature || '' });
     }
   });
   window.BRANDS = (brands || []).map(b => ({
