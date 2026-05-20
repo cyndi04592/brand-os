@@ -275,6 +275,11 @@ function parseDriveId(raw) {
 }
 
 function buildDataFromSheets(data) {
+  // ★ 相容兩種格式:GAS 回的是 { ok, data:{ brands } },舊呼叫端可能直接傳 { brands }
+  //   收到外層帶 .data.brands 就自動挖一層,避免拿不到資料掉進 LOCAL_FALLBACK_DATA
+  if (data && data.data && data.data.brands && !data.brands) {
+    data = data.data;
+  }
   const { brands, products, folders } = data;
   window.BRAND_FOLDERS = {};
   (folders || []).forEach(f => {
