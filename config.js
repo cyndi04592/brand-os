@@ -80,6 +80,26 @@ function getColor(key) {
   console.warn(`[CMAP] 找不到顏色 key: "${key}",fallback 到 gold。請檢查 GAS brands.navColor 或 brand_packs.pack_key 是否對得上`);
   return CMAP.gold;
 }
+// ★ 根治 CMAP 時序問題:config.js 載入時自己先 fetch brand_packs 註冊 CMAP
+//   原本 registerBrandPackColors 只在開 AdMaker 時跑,導致主畫面載入時
+//   brand_xxx 還沒註冊 → getColor 噴 warning + fallback gold
+//   這段讓 CMAP 一開始就齊全,不依賴任何其他檔的 init 流程
+(async function autoRegisterBrandPackColors() {
+  try {
+    const resp = await fetch(CF_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'gas_brand_packs_fetch', password: GAS_PASSWORD }),
+    });
+    const data = await resp.json();
+    if (data && data.ok && Array.isArray(data.packs) && data.packs.length > 0) {
+      registerBrandPackColors(data.packs);
+      console.log('[CMAP] config.js 啟動時已預先註冊品牌色');
+    }
+  } catch (e) {
+    console.warn('[CMAP] config.js 啟動預註冊失敗(不影響功能,AdMaker 開啟時會再註冊):', e.message);
+  }
+})();
 
 // ★ 品牌資料(含新增香港福臨門)
 //   v10.5: 福臨門 navColor 改成 brand_flm(對應未來 brand_packs)
