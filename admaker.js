@@ -1388,7 +1388,12 @@ function getBrandContext() {
     subBrand:  sub?.name || '',
     product:   prod?.name || '',
     adStyle:   brand?.adStyle || '',
-    hashtags:  brand?.hashtags || ''
+    hashtags:  brand?.hashtags || '',
+    // ★ v10.6:商品本質(從 admin v11.2 加的 spec / feature 欄帶進來)
+    //    解決「同品牌不同調性商品」問題
+    //    例:巧福慈禧電風扇 vs 復古電風扇 — 品牌靈魂同,但商品本質完全相反
+    spec:      prod?.spec || '',
+    feature:   prod?.feature || ''
   };
 }
 
@@ -1417,11 +1422,24 @@ function buildPosterPrompt() {
   prompt += `- The product is the hero — build the advertising scene AROUND it\n\n`;
 
   // [2] 品牌風格 DNA(從 BRAND_STYLE_PACKS 自動帶入)
-  prompt += `=== BRAND STYLE PACK ===\n`;
+  prompt += `=== BRAND STYLE PACK (AMBIENCE ONLY — does NOT define product look) ===\n`;
   prompt += brandPack.dna + '\n';
   if (ctx.brand) prompt += `Brand name to display (small signature): "${ctx.brand}"${ctx.subBrand ? ' · ' + ctx.subBrand : ''}\n`;
   if (ctx.adStyle) prompt += `Additional brand direction note: ${ctx.adStyle}\n`;
   prompt += '\n';
+
+  // ★ v10.6:[2.5] 商品本質(關鍵新增 — 解決「同品牌不同調性商品」問題)
+  //    例:巧福品牌靈魂是「溫暖居家」,但慈禧電風扇是科技風,復古電風扇是復古風
+  //    這兩支商品外觀完全相反,必須用 spec/feature 告訴 AI 它們的「本質特徵」
+  //    本質特徵的優先級 HIGH:商品造型 / 顏色 / 材質必須符合,不可被品牌氛圍蓋過
+  if (ctx.product || ctx.spec || ctx.feature) {
+    prompt += `=== PRODUCT ESSENCE (HIGH PRIORITY — must be respected) ===\n`;
+    prompt += `This specific product variant has its OWN character that MUST be preserved regardless of brand mood or regional flavor:\n`;
+    if (ctx.product) prompt += `- Product name: "${ctx.product}"\n`;
+    if (ctx.spec)    prompt += `- Product specifications (physical traits — color, material, era, style): ${ctx.spec}\n`;
+    if (ctx.feature) prompt += `- Product features (selling points, positioning, context): ${ctx.feature}\n`;
+    prompt += `IMPORTANT: The product's intrinsic visual character (e.g. "retro brass" stays retro brass, "white minimalist tech" stays white tech) MUST override any conflicting hints from the brand pack ambience or regional flavor. The brand pack only defines AMBIENCE; the product specs define what the product LOOKS LIKE.\n\n`;
+  }
 
   // [3] 版式骨架(畫面長什麼樣)
   prompt += `=== LAYOUT FRAMEWORK ===\n`;
@@ -1430,8 +1448,9 @@ function buildPosterPrompt() {
 
   // [4] 風土調味(可選)
   if (flavor.flavor) {
-    prompt += `=== REGIONAL FLAVOR ===\n`;
-    prompt += flavor.flavor + '\n\n';
+    prompt += `=== REGIONAL FLAVOR (OVERRIDES brand pack scene hints) ===\n`;
+    prompt += flavor.flavor + '\n';
+    prompt += `CRITICAL OVERRIDE RULE: This regional flavor takes precedence over any scene description, era, or decor hinted by the brand pack. If brand pack says "warm domestic Taiwan" and flavor says "Korean clean pastel" → output MUST be Korean clean pastel (not Taiwan retro). Brand pack only contributes overall mood; flavor decides the actual visual scene.\n\n`;
   }
 
   // [5] 情境主題(可選)
