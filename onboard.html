@@ -999,20 +999,62 @@ function goStep(n){
 }
 
 function validateStep(n){
-  if(n===1){if(!v('f_name')){alert('請填寫品牌名稱');return false;}if(!v('f_contact')){alert('請填寫聯絡人姓名');return false;}}
-  if(n===2&&!v('f_story')){alert('請填寫品牌故事');return false;}
-  if(n===3){if(!v('f_category')){alert('請選擇商品類別');return false;}if(!v('f_products')){alert('請填寫主力商品或服務');return false;}}
+  // ★ 防呆 helper:網址格式檢查(有填才檢查,空的不擋因為有些欄位選填)
+  const badUrl = (id) => { const u=v(id); return u && !/^https?:\/\//i.test(u); };
+
+  if(n===1){
+    if(v('f_name').length < 2){alert('請填寫品牌名稱(至少 2 個字)');return false;}
+    if(!v('f_contact')){alert('請填寫聯絡人姓名');return false;}
+    // 官網有填但格式錯 → 擋(避免存進去一個壞網址)
+    if(badUrl('f_website')){alert('官方網站格式怪怪的,要以 http:// 或 https:// 開頭。沒有官網可以留空');return false;}
+  }
+
+  if(n===2){
+    // ★ 品牌故事是靈魂書的核心 → 太短會害 AI 生出空泛的靈魂書
+    if(v('f_story').length < 15){
+      alert('「為什麼創立品牌」再多寫一點(至少 15 字)。\n這段是 AI 寫品牌靈魂書最重要的素材,寫越具體靈魂書越準。');
+      return false;
+    }
+    // 競品網址有填但格式錯 → 擋
+    if(v('f_competitorUrls')){
+      const lines = v('f_competitorUrls').split(/\n+/).map(s=>s.trim()).filter(Boolean);
+      const bad = lines.find(u => !/^https?:\/\//i.test(u));
+      if(bad){alert('競爭對手網址格式怪怪的:「'+bad.slice(0,40)+'」\n每行要以 http:// 或 https:// 開頭,沒有可以整欄留空');return false;}
+    }
+    // ★ 軟提示:核心價值沒填,提醒但放行
+    if(!v('f_values')){
+      if(!confirm('還沒填「品牌核心價值(3個關鍵字)」。\n\n這會直接影響靈魂書的精準度,建議回去補一下。\n\n要先跳過、繼續下一步嗎?')) return false;
+    }
+  }
+
+  if(n===3){
+    if(!v('f_category')){alert('請選擇商品類別');return false;}
+    // ★ 主力商品太短 → 害 AI 抓不到商品本質
+    if(v('f_products').length < 4){
+      alert('「主力商品/服務」再寫清楚一點。\n一行一個,寫出完整商品名(例:米香腸原味 280g),AI 出圖才抓得準。');
+      return false;
+    }
+  }
+
+  if(n===4){
+    // 註:f_ref 允許純文字描述(例「Apple 的簡潔感」),所以不硬擋格式
+    // ★ 軟提示:風格沒選,提醒但放行
+    if(!v('f_style')){
+      if(!confirm('還沒選「喜歡的品牌風格」。\n\n選一個 AI 抓調性會更準,出圖更貼近你要的感覺。\n\n要先跳過、繼續下一步嗎?')) return false;
+    }
+  }
+
   if(n===45){
     const kolType=v('f_kolType');
     if(kolType==='independent'){
       const u1=v('f_kolUrl1').trim(),u2=v('f_kolUrl2').trim();
       if(!u1||!u2){alert('融合模式需要 2 個網址,請兩個都填寫');return false;}
-      if(!u1.startsWith('http')||!u2.startsWith('http')){alert('網址格式錯誤,需包含 https://');return false;}
+      if(!/^https?:\/\//i.test(u1)||!/^https?:\/\//i.test(u2)){alert('網址格式錯誤,需以 http:// 或 https:// 開頭');return false;}
       if(u1===u2){alert('兩個網址不能一樣,請選不同的網紅');return false;}
     }
     if(kolType==='brand_owner'){
       if(!v('f_ownerName')){alert('請填寫創辦人姓名');return false;}
-      if(!v('f_ownerStory')){alert('請填寫品牌故事');return false;}
+      if(v('f_ownerStory').length < 15){alert('「品牌故事」再多寫一點(至少 15 字),這段會變成創辦人數字人的開場白');return false;}
     }
   }
   return true;
