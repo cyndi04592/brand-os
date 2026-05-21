@@ -2309,17 +2309,27 @@ function renderApply() {
 function toggleSoul(id) { document.getElementById('applycard-'+id)?.classList.toggle('expanded'); }
 
 async function doApprove(brandId) {
-  if (!confirm('確定核准這個品牌?')) return;
+  // ★ ID 防呆:核准前先讓管理員指定有意義的品牌 ID(留空則沿用系統自動產生)
+  const customId = prompt(
+    '請為這個品牌指定一個「有意義的代碼 ID」(英文小寫,2-12 字)\n\n' +
+    '例:巧福→cf、空瑪那→ka、PROTEX→protex\n\n' +
+    '⚠️ 一旦核准就不能再改,請想好。\n留空 = 系統自動產生(不建議)',
+    ''
+  );
+  // 按取消 → 中止整個核准(不送出)
+  if (customId === null) return;
+
+  if (!confirm('確定核准這個品牌?' + (customId.trim() ? '\n\n品牌 ID 將設為:' + customId.trim().toLowerCase().replace(/[^a-z0-9]/g,'') : '\n\n(ID 由系統自動產生)'))) return;
+
   showLoading('核准中...');
   try {
-    const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId }), headers:{'Content-Type':'text/plain'} });
+    const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_EMAIL, brandId, customId: customId.trim() }), headers:{'Content-Type':'text/plain'} });
     const j = await r.json();
     if (j.ok) { setStatus('✅ 品牌已核准上線!', 'ok'); await loadApply(); }
     else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 操作失敗', 'err'); }
   hideLoading();
 }
-
 async function doDeleteBrand(brandId, name) {
   if (!confirm(`確定刪除「${name}」?`)) return;
   showLoading('刪除中...');
