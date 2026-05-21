@@ -1486,6 +1486,50 @@ function buildPosterPrompt() {
   return prompt;
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// ★ 雙保險備案路 helper:輪詢 Worker 的 query_ai_image
+//   每 5 秒問一次「Drive 那張圖(brandId+reqid)好了沒」
+//   找到回 { found:true, imageBase64|download_url };一直沒 → maxMs 後回 { found:false }
+//   ⚠️ Worker 已把 Drive 圖轉 base64,避開前端 CORS / tainted canvas
+// ═══════════════════════════════════════════════════════════════════════
+async function pollDriveByReqid(brandId, reqid, maxMs = 240000) {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    await sleep(5000);
+    try {
+      const r = await callWorker({ action: 'query_ai_image', brandId, reqid });
+      if (r && r.found && (r.imageBase64 || r.download_url)) {
+        return { found: true, imageBase64: r.imageBase64 || null, download_url: r.download_url || null, filename: r.filename || null };
+      }
+    } catch (e) {
+      console.warn('[雙保險] query_ai_image 單次失敗,繼續:', e.message);
+    }
+  }
+  return { found: false };
+}
+
+// ★ 小工具:回傳「第一個 resolve 成非 null 值」的 promise
+//   全部都 null(或 reject)才回 null。比 Promise.race 好:race 會被先 resolve 的 null 搶走
+async function firstTruthy(promises) {
+  return new Promise((resolve) => {
+    let remaining = promises.length;
+    let settled = false;
+    promises.forEach(p => {
+      Promise.resolve(p).then(val => {
+        if (settled) return;
+        if (val) { settled = true; resolve(val); return; }
+        remaining--;
+        if (remaining === 0 && !settled) { settled = true; resolve(null); }
+      }).catch(() => {
+        if (settled) return;
+        remaining--;
+        if (remaining === 0 && !settled) { settled = true; resolve(null); }
+      });
+    });
+    if (promises.length === 0) resolve(null);
+  });
+}
+
 async function generateGptPoster() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇商品照片!', 'var(--red)'); return; }
@@ -1500,6 +1544,11 @@ async function generateGptPoster() {
     return;
   }
 
+  // ★ 雙保險核心:reqid 在 submit「之前」就產生(13 位毫秒時間戳,對齊 saveAiImage 命名)
+  //   三邊天然對齊:前端產 → submit 帶給 FAL webhook → webhook 用它命名 → 前端用它查
+  const brandId = window.S?.brandId || '';
+  const reqid = String(Date.now());
+
   const interval = startProgress(90000);
   try {
     // v10.2.1 hotfix:強制刷新 badge,避免 UI 顯示與實際 prompt 用的品牌包不一致
@@ -1512,8 +1561,7 @@ async function generateGptPoster() {
     const imageUrl = await uploadToFal(paddedBase64);
 
     const prompt = buildPosterPrompt();
-    console.log('[v10.2] 懶人廣告圖 prompt 長度:', prompt.length, '字元');
-    console.log('[v10.2] === 完整 prompt 預覽 ===\n', prompt);
+    console.log('[v11.2] 懶人廣告圖 prompt 長度:', prompt.length, '字元 · reqid:', reqid);
 
     setPrStatus('🎨 廣告圖生成中(品牌包+版式合成,約 60-90 秒)...', 'var(--t3)');
     const submitData = await callWorker({
@@ -1522,43 +1570,64 @@ async function generateGptPoster() {
       imageUrls: [imageUrl],
       image_size: 'portrait_4_3',
       quality: 'high',
-      num_images: 1
+      num_images: 1,
+      brandId,   // ★ 帶給 FAL webhook
+      reqid      // ★ 帶給 FAL webhook
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
-    setPrStatus('⏳ 出圖中(高品質需耐心等)...', 'var(--t3)');
-    let result = await pollUntilDone(
-      submitData.requestId,
-      submitData.endpoint,
-      240000,
-      submitData.responseUrl,
-      submitData.statusUrl
-    );
+    setPrStatus('⏳ 出圖中(熱點不穩也沒關係,雲端會自動補)...', 'var(--t3)');
 
-    if (result.status === 'TIMEOUT') {
-      setPrStatus('🔄 最後查詢一次...', 'var(--t3)');
-      for (let i = 0; i < 3; i++) {
-        await sleep(5000);
-        result = await callWorker({
-          action: 'fal_poll',
-          requestId: submitData.requestId,
-          endpoint: submitData.endpoint,
-          responseUrl: submitData.responseUrl,
-          statusUrl: submitData.statusUrl
-        });
-        if (result.status === 'COMPLETED' && result.imageUrl) break;
-      }
+    // ★ 雙保險:兩條路同時跑,哪條先成功用哪條,4 分鐘都沒 → 停損
+    //   路 A(快):FAL poll —— 網路穩時最快
+    //   路 B(備案):輪詢 Drive(query_ai_image)—— 熱點斷線時靠 webhook 已存好的圖
+    const FAILSAFE_MS = 240000; // 4 分鐘停損(RA 定的)
+    const racePromises = [
+      // 路 A:FAL poll
+      (async () => {
+        const r = await pollUntilDone(
+          submitData.requestId, submitData.endpoint,
+          FAILSAFE_MS, submitData.responseUrl, submitData.statusUrl
+        );
+        if (r.status === 'COMPLETED' && r.imageUrl) {
+          return { from: 'fal', imageUrl: r.imageUrl };
+        }
+        if (r.status === 'FAILED') {
+          console.warn('[雙保險] FAL poll FAILED,改等 Drive:', r.error);
+        }
+        return null; // TIMEOUT 或 FAILED → 交給 Drive 路
+      })(),
+      // 路 B:輪詢 Drive
+      (async () => {
+        const d = await pollDriveByReqid(brandId, reqid, FAILSAFE_MS);
+        if (d.found) {
+          return { from: 'drive', imageBase64: d.imageBase64, download_url: d.download_url };
+        }
+        return null;
+      })(),
+    ];
+
+    // 等「第一個有結果(非 null)」的路;兩條都 null 才算全敗
+    let winner = await firstTruthy(racePromises);
+
+    if (!winner) {
+      // ★ 停損:4 分鐘兩條都沒 → 報錯 + 顯示 reqid(RA 防呆,方便事後 Drive 對檔)
+      throw new Error(`生成逾時(4分鐘)。圖可能仍在雲端處理,稍後可在「AI生成完成區」找代碼 ${reqid} 的圖`);
     }
 
-    if (result.status === 'FAILED') throw new Error(result.error || '生成失敗');
-    if (!result.imageUrl) throw new Error('未取得廣告圖片');
+    // 拿到圖:FAL 路給 imageUrl,Drive 路給 imageBase64(已避 CORS)或 download_url
+    const finalImg = winner.imageUrl || winner.imageBase64 || winner.download_url;
+    if (!finalImg) throw new Error('未取得廣告圖片');
 
-    PR_BG_IMG = result.imageUrl;
-    LAST_POSTER_URL = result.imageUrl;
+    PR_BG_IMG = finalImg;
+    LAST_POSTER_URL = winner.imageUrl || winner.download_url || finalImg;
     CANVAS_TAINTED = false;
 
-    // ★ 背景靜默存檔到 Drive(不 await,不擋畫面)
-    saveImageToDriveSilently(result.imageUrl, 'poster');
+    // ★ 存檔:只有「FAL 路先贏」時才需要前端補存(Drive 路代表 webhook 已存好,不用再存)
+    if (winner.from === 'fal') {
+      saveImageToDriveSilently(winner.imageUrl, 'poster', reqid);
+    }
+
     AM.w = 1080;
     AM.h = 1440;
     await renderGptPosterCanvas();
@@ -1566,7 +1635,8 @@ async function generateGptPoster() {
 
     const brandPack = detectBrandPack();
     const layoutLabel = LAYOUT_TEMPLATES[SELECTED_LAYOUT]?.label || '';
-    setPrStatus(`✅ 完成![${brandPack.label} × ${layoutLabel}] 可點「🎬 變影片」`, 'var(--mint)');
+    const srcTag = winner.from === 'drive' ? ' · ☁️雲端補圖' : '';
+    setPrStatus(`✅ 完成![${brandPack.label} × ${layoutLabel}]${srcTag} 可點「🎬 變影片」`, 'var(--mint)');
 
     const videoBtn = document.getElementById('posterToVideoBtn');
     if (videoBtn) {
@@ -1702,7 +1772,7 @@ function showVideoInCanvas(videoUrl) {
 //   FAL 圖 url 會過期 → 存一份永久檔到 Drive
 //   背景跑、不擋畫面、失敗只記 log 不吵使用者
 // ═══════════════════════════════════════════════════════════════════════
-async function saveImageToDriveSilently(imageUrl, kind) {
+async function saveImageToDriveSilently(imageUrl, kind, reqId) {
   try {
     const brandId = window.S?.brandId;
     if (!brandId) { console.warn('[存檔] 無 brandId,跳過'); return; }
@@ -1711,7 +1781,7 @@ async function saveImageToDriveSilently(imageUrl, kind) {
       return;
     }
 
-    const reqId = (kind || 'poster') + '_' + Date.now();
+    const reqId = arguments[2] || ((kind || 'poster') + '_' + Date.now());
     const brand = window.BRANDS?.find(b => b.id === brandId);
     const prod  = window.S?.prod;
 
