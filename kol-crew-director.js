@@ -94,6 +94,9 @@
       persona,
       storyArc,
       episode: opts.episode || null,
+      // 🆕 v5.13 品牌接通:UI 選的服飾品牌 → 服裝師 resolveBrandKey 讀這欄
+      //   優先 opts.outfitBrand(UI傳的),其次 persona.outfit_brand(人設書預設)
+      outfitBrand: opts.outfitBrand || persona?.outfit_brand || '',
     };
 
     // 15 秒多鏡頭
@@ -158,7 +161,10 @@
     const shotSequence = pickThreeShotsForScene(movements, ctx.movementId);
 
     const envText = CrewMembers.environment?.contribute(ctx) || '';
-    const outfitText = scene.outfit ? 'wearing ' + scene.outfit : '';
+    // 🆕 v5.13 品牌接通:多鏡頭也走服裝師(讀 ctx.outfitBrand),
+    //   服裝師內部已相容 scene.outfit;若服裝師沒註冊/回空才退回寫死邏輯
+    const outfitText = CrewMembers.wardrobe?.contribute(ctx)
+      || (scene.outfit ? 'wearing ' + scene.outfit : '');
     const lightText = scene.light || '';
 
     const subjectDesc = `A woman [Image1] ${outfitText}, consistent facial features and identity across all shots`;
