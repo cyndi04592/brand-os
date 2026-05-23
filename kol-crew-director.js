@@ -39,6 +39,8 @@
       return;
     }
     CrewMembers[role] = module;
+    // 每次有模組註冊就檢查一次,湊齊立刻接管(不靠 setTimeout 猜時序)
+    if (typeof maybeTakeover === 'function') maybeTakeover();
   }
 
   function isReady() {
@@ -230,8 +232,48 @@
     BRAND_ACTIONS,
   };
 
-  // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
-  window.composeSeedancePrompt = composePrompt;
+  // 🔥 關鍵:安全接管 kol.html 的 composeSeedancePrompt
+  // ── v5.12 安全開關 ──
+  // 策略:① 備份原版 ② 每次模組 register 就檢查 ③ 7 個湊齊立刻接管,
+  //       湊不齊則保留原版 fallback,確保任何情況都生得出 prompt。
 
-  console.log('[CrewDirector] 🎬 v5.12 Full 版就緒 · 組 prompt 責任已接管');
+  const _originalCompose =
+    (typeof window.composeSeedancePrompt === 'function')
+      ? window.composeSeedancePrompt
+      : null;
+
+  let _takenOver = false;
+
+  function maybeTakeover() {
+    if (_takenOver) return;
+    if (isReady()) {
+      window.composeSeedancePrompt = composePrompt;
+      _takenOver = true;
+      console.log('[CrewDirector] ✅ 7 模組全就緒 · 已安全接管 composeSeedancePrompt');
+    }
+  }
+
+  // 安全網:萬一某模組始終沒註冊,延遲後做最終決定(保留原版)
+  function finalDecision() {
+    if (_takenOver) return;
+    if (_originalCompose) {
+      window.composeSeedancePrompt = _originalCompose;
+      console.warn('[CrewDirector] ⚠️ 模組未完整,保留原版 composeSeedancePrompt。待實作:', status().pending);
+    } else {
+      window.composeSeedancePrompt = composePrompt;
+      console.warn('[CrewDirector] ⚠️ 模組未完整且無原版,暫用 crew 版(可能部分殘缺)');
+    }
+  }
+
+  // 先嘗試一次(萬一模組比 director 早載入)
+  maybeTakeover();
+  // 安全網延遲檢查
+  if (typeof window.setTimeout === 'function') {
+    window.setTimeout(finalDecision, 50);
+  }
+
+  // 手動重試入口
+  window.CrewDirector.retryTakeover = maybeTakeover;
+
+  console.log('[CrewDirector] 🎬 v5.12 Full 版載入 · 接管將於 7 模組就緒後自動生效');
 })();
