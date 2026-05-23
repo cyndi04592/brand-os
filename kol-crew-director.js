@@ -165,11 +165,14 @@
     //   服裝師內部已相容 scene.outfit;若服裝師沒註冊/回空才退回寫死邏輯
     const outfitText = CrewMembers.wardrobe?.contribute(ctx)
       || (scene.outfit ? 'wearing ' + scene.outfit : '');
+    // 🆕 v5.13: 多鏡頭妝容 — 只在 Shot 1 定妝一次,後兩段靠臉一致性延續(調味不擠劇情)
+    const makeupText = CrewMembers.makeup?.contribute(ctx) || '';
     const lightText = scene.light || '';
 
     const subjectDesc = `A woman [Image1] ${outfitText}, consistent facial features and identity across all shots`;
 
-    const shot1 = `Shot 1 (0-5s): ${subjectDesc}, ${shotSequence[0].text}, ${envText}, ${lightText}`;
+    const shot1Subject = makeupText ? `${subjectDesc}, ${makeupText}` : subjectDesc;
+    const shot1 = `Shot 1 (0-5s): ${shot1Subject}, ${shotSequence[0].text}, ${envText}, ${lightText}`;
     const shot2 = `Shot 2 (5-10s): Natural cut transition. ${actionLine}, ${shotSequence[1].text}, same scene continues, ${lightText}`;
     const shot3 = `Shot 3 (10-15s): Smooth cut. ${shotSequence[2].text}, emotional closing beat, ${lightText}`;
 
