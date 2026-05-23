@@ -31,8 +31,9 @@
     const parts = [];
 
     // 外貌描述(text2video 需要腦補長相)
-    if (ctx.portraitMode === 'natural' && p.persona_name) {
-      const appearance = guessAppearance(p.persona_name);
+    // v5.13: 優先讀人設書 appearance 欄位,讀不到才退回猜名字(往下相容)
+    if (ctx.portraitMode === 'natural') {
+      const appearance = resolveAppearance(p);
       if (appearance) parts.push(appearance);
     }
 
@@ -47,7 +48,36 @@
   }
 
   /**
-   * 依 persona_name 猜外貌(natural mode 用)
+   * v5.13: 決定外貌描述的來源(優先順序)
+   *   1. 人設書 appearance 欄位(GAS 表新欄位,最理想)
+   *   2. background 欄位裡若含外貌關鍵字,直接拿來用
+   *   3. 都沒有 → 退回 guessAppearance 猜名字(舊行為,往下相容)
+   * @param {Object} p - persona 資料
+   * @returns {string} 'appearance: ...' 片段
+   */
+  function resolveAppearance(p) {
+    if (!p) return '';
+
+    // 1. 明確的 appearance 欄位(最優先,你在人設書填什麼就生什麼)
+    if (p.appearance && String(p.appearance).trim()) {
+      const a = String(p.appearance).trim();
+      // 若使用者已自帶 "appearance:" 前綴就不重複加
+      return a.toLowerCase().startsWith('appearance')
+        ? a
+        : 'appearance: ' + a;
+    }
+
+    // 2. 沒有 appearance 欄位時,才退回猜名字(舊 KOL 不受影響)
+    if (p.persona_name) {
+      return guessAppearance(p.persona_name);
+    }
+
+    return '';
+  }
+
+  /**
+   * 依 persona_name 猜外貌(natural mode 用 · fallback)
+   * 註:這是「沒填 appearance 欄位」時的備援,優先請用人設書 appearance 欄位
    * 未來接通 KOL 照片 vision API 後可移除
    */
   function guessAppearance(personaName) {
@@ -88,6 +118,7 @@
   // ─── 導出 + 自動向總導演註冊 ─────────────────────────
   window.KolPersona = {
     contribute,
+    resolveAppearance,
     guessAppearance,
     isComplete,
     completeness,
