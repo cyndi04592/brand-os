@@ -901,6 +901,42 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           <div class="movement-grid" id="movement-grid"></div>
         </div>
 
+        <!-- 🆕 v5.13: 服飾品牌風格(品牌接通 · 服裝師讀 outfitBrand) -->
+        <div class="form-group" id="outfit-brand-group" style="display:none">
+          <label class="form-label">👗 服飾品牌風格(選填 · 決定穿搭調性,系統不寫品牌名給 AI)</label>
+          <select class="form-select" id="outfit-brand-picker" onchange="onOutfitBrandChange()">
+            <option value="auto">— auto(系統依場景自由搭配)—</option>
+            <optgroup label="日系">
+              <option value="uniqlo">UNIQLO 日系極簡</option>
+              <option value="gu">GU 平價潮流</option>
+              <option value="niko_and">niko and... 雜貨文青</option>
+              <option value="tnewties">20s tnewties 日系復古</option>
+              <option value="human_made">HUMAN MADE 復古街頭</option>
+              <option value="aape">AAPE 都會街頭</option>
+            </optgroup>
+            <optgroup label="韓系">
+              <option value="mardi">Mardi Mercredi 法式休閒</option>
+            </optgroup>
+            <optgroup label="台灣女裝">
+              <option value="mallothi">Mallothi 法式復古</option>
+              <option value="pazzo">PAZZO 好感日韓</option>
+              <option value="caco">CACO 日常休閒</option>
+            </optgroup>
+            <optgroup label="精品">
+              <option value="lv">Louis Vuitton 精品優雅</option>
+              <option value="chanel">CHANEL 高訂經典</option>
+              <option value="hermes">HERMÈS 低調奢華</option>
+            </optgroup>
+            <optgroup label="輕奢潮牌">
+              <option value="gucci">GUCCI 折衷華麗</option>
+              <option value="diesel">DIESEL 丹寧街頭</option>
+            </optgroup>
+            <optgroup label="機能運動">
+              <option value="on">On 瑞士機能</option>
+            </optgroup>
+          </select>
+        </div>
+
         <!-- 🆕 v5.4: 故事弧三欄(淺版 · 加進 prompt 引導 AI) -->
         <div class="story-arc-block" id="story-arc-block" style="display:none">
           <div class="story-arc-head" onclick="toggleStoryArc()">
@@ -1690,6 +1726,7 @@ const S = {
   selectedSceneId: '',            // 🆕 v5.1: 當前場景 id
   selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
   selectedMovementId: 'static',   // 🆕 v5.3: 當前運鏡 id,預設靜態
+  selectedOutfitBrand: 'auto',    // 🆕 v5.13: 當前服飾品牌風格,預設 auto(系統自由搭配)
   storyArc: { theme: '', tone: '', productHint: '' },  // 🆕 v5.4: 故事弧
   seedanceParams: {
     resolution: '720p',
@@ -1906,6 +1943,11 @@ async function onBrandChange() {
   S.selectedSceneId = '';
   S.selectedLocationId = 'none';
   S.selectedMovementId = 'static';  // 🆕 v5.3: 重置運鏡為預設靜態
+  S.selectedOutfitBrand = 'auto';   // 🆕 v5.13: 重置服飾品牌為 auto
+  const obGroup0 = document.getElementById('outfit-brand-group');
+  if (obGroup0) obGroup0.style.display = 'none';
+  const obPicker0 = document.getElementById('outfit-brand-picker');
+  if (obPicker0) obPicker0.value = 'auto';
   S.storyArc = { theme: '', tone: '', productHint: '' };  // 🆕 v5.4: 重置故事弧
   document.getElementById('scene-summary').style.display = 'none';
   document.getElementById('seedance-prompt').value = '';
@@ -2886,6 +2928,9 @@ function handleSceneCardClick(e) {
   renderLocationPicker();
   // 🎥 v5.3: 運鏡選擇器出現
   renderMovementPicker();
+  // 👗 v5.13: 服飾品牌下拉也跟場景一起出現
+  const obGroup = document.getElementById('outfit-brand-group');
+  if (obGroup) obGroup.style.display = '';
   // 📖 v5.4: 故事弧區塊也跟場景一起出現
   document.getElementById('story-arc-block').style.display = '';
 
@@ -2963,6 +3008,14 @@ function toggleStoryArc() {
   body.style.display = isOpen ? '' : 'none';
 }
 
+// 🆕 v5.13: 服飾品牌選擇 → 存進 S,重組 prompt
+function onOutfitBrandChange() {
+  const picker = document.getElementById('outfit-brand-picker');
+  S.selectedOutfitBrand = picker ? picker.value : 'auto';
+  if (typeof syncScenePrompt === 'function') syncScenePrompt();
+  if (typeof updateSeedanceSubmitButton === 'function') updateSeedanceSubmitButton();
+}
+
 function onStoryArcChange() {
   S.storyArc = {
     theme: document.getElementById('story-arc-theme').value,
@@ -3026,7 +3079,7 @@ function syncScenePrompt() {
 
   // 組 prompt(debug mode 顯示用)
   const duration = S.seedanceParams?.duration || '5';
-  const prompt = composeSeedancePrompt(brandId, sceneId, locationId, movementId, duration);
+  const prompt = composeSeedancePrompt(brandId, sceneId, locationId, movementId, duration, { outfitBrand: S.selectedOutfitBrand });
   document.getElementById('seedance-prompt').value = prompt;
   document.getElementById('seedance-prompt-count').textContent = prompt.length + ' 字';
 
@@ -3081,7 +3134,7 @@ function copySeedancePrompt() {
   // 🆕 v5.1: 從 composer 組,不依賴 textarea(非 debug 時 textarea 可能沒值)
   let t = '';
   if (S.selectedSceneId) {
-    t = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId);
+    t = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId, S.seedanceParams.duration, { outfitBrand: S.selectedOutfitBrand });
   } else {
     t = document.getElementById('seedance-prompt').value;
   }
@@ -3097,7 +3150,7 @@ async function createSeedanceVideo() {
   }
 
   // 🆕 v5.1+5.3: 從場景 + 地標 + 運鏡組 prompt(後端邏輯,使用者看不到)
-  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId);
+  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId, S.seedanceParams.duration, { outfitBrand: S.selectedOutfitBrand });
   if (!prompt) { toast('組 prompt 失敗,場景資料異常', 'error'); return; }
 
   // KOL 臉一致性:自動加指令
@@ -3967,6 +4020,8 @@ async function generateEpisode() {
   const prevArc = { ...S.storyArc };
   S.storyArc = { ...S.storyArc, tone: tone };
 
+  // 🆕 v5.13: 主面板若選了服飾品牌(非auto)就帶入,否則由 crew-director 走人設書 fallback
+  if (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') opts.outfitBrand = S.selectedOutfitBrand;
   const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, '10', opts);
   S.storyArc = prevArc;
 
@@ -4852,6 +4907,8 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
       situation,
     },
   };
+  // 🆕 v5.13: 主面板若選了服飾品牌(非auto)就帶入,否則由 crew-director 走人設書 fallback
+  if (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') opts.outfitBrand = S.selectedOutfitBrand;
   const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, '10', opts);
   S.storyArc = prevArc;
 
