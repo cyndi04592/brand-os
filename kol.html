@@ -3484,6 +3484,7 @@ function renderSystemKolSwitcher() {
       renderSystemKolSwitcher();
       renderSystemPersonaCard();
       renderEpisodeCard();
+      renderSystemQueue();   // 🆕 v5.13: 選 KOL 即時刷新劇情記憶(不用等生成影片)
     });
   });
 }
@@ -3771,6 +3772,11 @@ function renderEpisodeCard() {
     `<option value="${escapeHtml(id)}" ${draft.movementId === id ? 'selected' : ''}>${escapeHtml(m.label)} (${m.duration_suggest}s)</option>`
   ).join('');
 
+  // 🆕 v5.13: 地標下拉 — 直接用 STEP2 的 LOCATIONS 庫(同一份資料,飛東京/香港/巴黎...)
+  const locationOptions = Object.entries(LOCATIONS).map(([id, loc]) =>
+    `<option value="${escapeHtml(id)}" ${draft.locationId === id ? 'selected' : ''}>${escapeHtml(loc.label)}</option>`
+  ).join('');
+
   const toneOptions = [
     ['', '— 不指定 —'],
     ['warm and gentle', '🤍 溫暖療癒'],
@@ -3799,6 +3805,10 @@ function renderEpisodeCard() {
           <label>🎥 運鏡</label>
           <select id="ep-movement">${movementOptions}</select>
         </div>
+      </div>
+      <div class="ep-field">
+        <label>🌏 地標(選填,飛東京/香港/巴黎…只在戶外場景生效)</label>
+        <select id="ep-location">${locationOptions}</select>
       </div>
       <div class="ep-field">
         <label>💭 情緒基調</label>
@@ -3909,7 +3919,7 @@ function renderEpisodeCard() {
   `;
 
   // input 變動即更新 localStorage
-  ['ep-situation', 'ep-scene', 'ep-movement', 'ep-tone', 'ep-outfit-brand'].forEach(id => {
+  ['ep-situation', 'ep-scene', 'ep-movement', 'ep-tone', 'ep-outfit-brand', 'ep-location'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', () => saveEpisodeDraft(true));
   });
@@ -4082,6 +4092,7 @@ function saveEpisodeDraft(silent) {
     movementId: document.getElementById('ep-movement')?.value || '',
     tone: document.getElementById('ep-tone')?.value || '',
     outfitBrand: document.getElementById('ep-outfit-brand')?.value || 'auto',
+    locationId: document.getElementById('ep-location')?.value || 'none',
     savedAt: new Date().toISOString(),
   };
   localStorage.setItem(lsKey, JSON.stringify(draft));
@@ -4149,7 +4160,7 @@ async function generateEpisode() {
   const chosenOutfitBrand = (epBrand && epBrand !== 'auto') ? epBrand
     : (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') ? S.selectedOutfitBrand : '';
   if (chosenOutfitBrand) opts.outfitBrand = chosenOutfitBrand;
-  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, S.episodeParams.duration, opts);
+  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, (document.getElementById('ep-location')?.value || 'none'), movementId, S.episodeParams.duration, opts);
   S.storyArc = prevArc;
 
   if (!prompt) { toast('組 prompt 失敗', 'error'); return; }
@@ -5039,7 +5050,7 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
   const chosenOutfitBrand = (epBrand && epBrand !== 'auto') ? epBrand
     : (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') ? S.selectedOutfitBrand : '';
   if (chosenOutfitBrand) opts.outfitBrand = chosenOutfitBrand;
-  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, S.episodeParams.duration, opts);
+  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, (document.getElementById('ep-location')?.value || 'none'), movementId, S.episodeParams.duration, opts);
   S.storyArc = prevArc;
 
   if (!prompt) { toast('組 prompt 失敗', 'error'); return; }
