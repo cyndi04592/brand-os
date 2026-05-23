@@ -1303,10 +1303,38 @@ const VIDEO_PRICE = {
 
 // 🆕 v5.0: 品牌 → 商品照 Drive folderId 對照表
 const BRAND_PRODUCT_FOLDERS = {
-  'la': '1floyhhNxkCl72GxkWWGv_Kcl03AvCEfz',  // LACEZ 商品照
+  'la': '1floyhhNxkCl72GxkWWGv_Kcl03AvCEfz',  // LACEZ 商品照(舊寫死,保留當 fallback)
   // 'moz': 'XXXX',  // 後續補
   // 'ka': 'XXXX',   // 後續補
 };
+
+// 🆕 v5.14: 動態填充商品照資料夾 — 跟 GAS 要「🛍️ 商品照」資料夾 ID,寫進上面那張表
+//   設計:讓既有 6 處 BRAND_PRODUCT_FOLDERS[brandId] 讀取點「完全不用改」,
+//        只是這張表的內容從寫死 → 選品牌時自動長出來(所有品牌通用,含未來新入駐)
+//   安全:GAS 拿不到就 fallback 用表裡原本的(LACEZ 仍可用舊 ID),不會比現在更糟
+const _productFolderFetching = {};  // 防同品牌重複呼叫
+async function ensureBrandProductFolder(brandId) {
+  if (!brandId) return BRAND_PRODUCT_FOLDERS[brandId] || null;
+  // 已經在表裡(GAS 填過或寫死)→ 直接用,不重複要
+  if (BRAND_PRODUCT_FOLDERS[brandId] && _productFolderFetching[brandId] === 'done') {
+    return BRAND_PRODUCT_FOLDERS[brandId];
+  }
+  if (_productFolderFetching[brandId] === 'pending') return BRAND_PRODUCT_FOLDERS[brandId] || null;
+  _productFolderFetching[brandId] = 'pending';
+  try {
+    const res = await gasPost('ensureProductFolder', { brandId });
+    if (res && res.ok && res.product_folder_id) {
+      BRAND_PRODUCT_FOLDERS[brandId] = res.product_folder_id;  // 寫進表 → 6 處讀取點自動讀到
+      _productFolderFetching[brandId] = 'done';
+      return res.product_folder_id;
+    }
+  } catch (e) {
+    console.warn('ensureBrandProductFolder 失敗,沿用 fallback:', e.message);
+  }
+  _productFolderFetching[brandId] = 'done';  // 失敗也標記,避免一直重試
+  return BRAND_PRODUCT_FOLDERS[brandId] || null;  // fallback:用寫死的(LACEZ 仍可用)
+}
+
 
 // 🆕 v5.0: Prompt 範本庫
 // ══════════════════════════════════════════════════════════════
@@ -1931,6 +1959,17 @@ async function loadBrands() {
 async function onBrandChange() {
   const brandId = document.getElementById('brand-switcher').value;
   S.currentBrandId = brandId;
+
+  // 🆕 v5.14: 選品牌時跟 GAS 要「🛍️ 商品照」資料夾(沒有自動建),填進 BRAND_PRODUCT_FOLDERS
+  //   非阻塞:背景跑,拿到 folderId 後若正在看 Drive 分頁就刷新縮圖。
+  //   失敗則 fallback 用寫死表,不影響其他功能
+  ensureBrandProductFolder(brandId).then(fid => {
+    if (fid && S.currentBrandId === brandId
+        && typeof loadDriveProducts === 'function'
+        && document.querySelector('.ref-tab[data-ref-tab="drive"].active')) {
+      loadDriveProducts();
+    }
+  });
 
   // 重置狀態
   S.personas = [];
