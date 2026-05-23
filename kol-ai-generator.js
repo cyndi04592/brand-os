@@ -20,11 +20,13 @@
 'use strict';
 
 // ── 設定 ───────────────────────────────────────────────────
-const FAL_ENDPOINT = 'https://fal.run/fal-ai/flux-pro/v1.1-ultra';
-const FAL_KEY = '973c03f3-0fd8-43d7-9e97-aba95cf55b6e:bb2a910fdda1e078bb07460ded1165b4';
+// v3.16: FAL_ENDPOINT / FAL_KEY 已移除 — 改走 Cloudflare proxy(見下方 WORKER_URL)
+// 金鑰現在安全存在 Worker env.FAL_KEY,前端不再持有
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
+// v3.16: 改走 Cloudflare proxy 保護 FAL_KEY,不再前端寫死金鑰
+const WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 
 const COST_PER_IMAGE_USD = 0.06;
 
@@ -1071,21 +1073,22 @@ async function generate() {
 
   const t0 = performance.now();
   try {
-    const res = await fetch(FAL_ENDPOINT, {
+    // v3.16: 改走 Cloudflare proxy(action=fal_image_submit),金鑰留後端
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': 'Key ' + FAL_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password: PASSWORD,
+        action: 'fal_image_submit',
+        ...payload,
+      }),
     });
 
     const latency = ((performance.now() - t0) / 1000).toFixed(1);
     const data = await res.json();
 
-    if (!res.ok) {
-      const errMsg = data.detail?.[0]?.msg || data.detail || data.message || data.error || ('HTTP ' + res.status);
-      throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+    if (!data.ok) {
+      throw new Error(data.error || ('HTTP ' + res.status));
     }
 
     if (!data.images || data.images.length === 0) {
