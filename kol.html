@@ -1727,6 +1727,8 @@ const S = {
   selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
   selectedMovementId: 'static',   // 🆕 v5.3: 當前運鏡 id,預設靜態
   selectedOutfitBrand: 'auto',    // 🆕 v5.13: 當前服飾品牌風格,預設 auto(系統自由搭配)
+  // 🆕 v5.13: STEP3 單集企劃專用畫質參數(與 STEP2 主面板獨立,各自設定不連動)
+  episodeParams: { resolution: '720p', duration: '10', aspectRatio: '9:16', tier: 'fast', generateAudio: true },
   storyArc: { theme: '', tone: '', productHint: '' },  // 🆕 v5.4: 故事弧
   seedanceParams: {
     resolution: '720p',
@@ -3094,6 +3096,25 @@ function toggleSeedanceAudio() {
   tog.classList.toggle('on', S.seedanceParams.generateAudio);
 }
 
+// 🆕 v5.13: STEP3 單集企劃音效開關(獨立於主面板)
+function toggleEpisodeAudio() {
+  S.episodeParams.generateAudio = !S.episodeParams.generateAudio;
+  const tog = document.getElementById('ep-audio-toggle');
+  if (tog) tog.classList.toggle('on', S.episodeParams.generateAudio);
+  updateEpisodeSpecLabel();
+}
+
+// 🆕 v5.13: STEP3 規格標籤動態更新(顯示與實際生成一致)
+function updateEpisodeSpecLabel() {
+  const el = document.getElementById('ep-spec-label');
+  if (!el) return;
+  const p = S.episodeParams;
+  const tierLabel = p.tier === 'standard' ? 'Standard' : 'Fast';
+  const audio = p.generateAudio ? '' : ' · 無音效';
+  const multi = p.duration === '15' ? ' 🎬' : '';
+  el.textContent = `Seedance · ${p.duration}s · ${p.resolution} · ${tierLabel}${audio}${multi}`;
+}
+
 function toggleAdvanced() {
   document.getElementById('seedance-advanced').classList.toggle('open');
 }
@@ -3784,6 +3805,40 @@ function renderEpisodeCard() {
         <select id="ep-tone">${toneOptions}</select>
       </div>
       <div class="ep-field">
+        <label>👗 服飾品牌風格 <small style="color:var(--text-dim);font-weight:normal">(選填 · 系統不寫品牌名給 AI)</small></label>
+        <select id="ep-outfit-brand">
+          <option value="auto">— auto(系統依場景自由搭配)—</option>
+          <optgroup label="日系">
+            <option value="uniqlo">UNIQLO 日系極簡</option>
+            <option value="gu">GU 平價潮流</option>
+            <option value="niko_and">niko and... 雜貨文青</option>
+            <option value="tnewties">20s tnewties 日系復古</option>
+            <option value="human_made">HUMAN MADE 復古街頭</option>
+            <option value="aape">AAPE 都會街頭</option>
+          </optgroup>
+          <optgroup label="韓系">
+            <option value="mardi">Mardi Mercredi 法式休閒</option>
+          </optgroup>
+          <optgroup label="台灣女裝">
+            <option value="mallothi">Mallothi 法式復古</option>
+            <option value="pazzo">PAZZO 好感日韓</option>
+            <option value="caco">CACO 日常休閒</option>
+          </optgroup>
+          <optgroup label="精品">
+            <option value="lv">Louis Vuitton 精品優雅</option>
+            <option value="chanel">CHANEL 高訂經典</option>
+            <option value="hermes">HERMÈS 低調奢華</option>
+          </optgroup>
+          <optgroup label="輕奢潮牌">
+            <option value="gucci">GUCCI 折衷華麗</option>
+            <option value="diesel">DIESEL 丹寧街頭</option>
+          </optgroup>
+          <optgroup label="機能運動">
+            <option value="on">On 瑞士機能</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="ep-field">
         <label>💎 商品照 REFERENCE <small style="color:var(--text-dim);font-weight:normal">(讓 Seedance 生出真實商品而非腦補)</small></label>
         ${productPhotoBlock}
       </div>
@@ -3791,6 +3846,49 @@ function renderEpisodeCard() {
         💎 <strong>本週主推產品:</strong>${product ? escapeHtml(product.name) : '無(請先設產品輪替)'}
         ${product?.tag ? '<br>🏷️ 定位:' + escapeHtml(product.tag) : ''}
         <br>✨ 生成時會自動套用:${escapeHtml(persona.persona_name)} 人設 + ${escapeHtml(S.brands.find(b=>b.id===S.currentBrandId)?.name || '')} 靈魂 + 產品不經意植入
+      </div>
+
+      <!-- 🆕 v5.13: STEP3 畫質控制(與主面板獨立) -->
+      <div class="divider"></div>
+      <div class="seedance-grid-2">
+        <div class="form-group" style="margin-top:0">
+          <label class="form-label">解析度</label>
+          <div class="seedance-grid-3" data-ep-group="resolution">
+            <div class="seedance-radio active" data-value="720p">720p</div>
+            <div class="seedance-radio" data-value="1080p">1080p</div>
+            <div class="seedance-radio" data-value="480p">480p</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:0">
+          <label class="form-label">時長(秒) <span class="duration-hint">15s = 多鏡頭模式 🎬</span></label>
+          <div class="seedance-grid-4" data-ep-group="duration">
+            <div class="seedance-radio" data-value="5">5s</div>
+            <div class="seedance-radio active" data-value="10">10s</div>
+            <div class="seedance-radio multi-shot" data-value="15">15s ✨</div>
+            <div class="seedance-radio" data-value="auto">auto</div>
+          </div>
+        </div>
+      </div>
+      <div class="seedance-grid-2" style="margin-top:10px">
+        <div class="form-group" style="margin-top:0">
+          <label class="form-label">畫幅比例</label>
+          <div class="seedance-grid-3" data-ep-group="aspectRatio">
+            <div class="seedance-radio active" data-value="9:16">9:16</div>
+            <div class="seedance-radio" data-value="16:9">16:9</div>
+            <div class="seedance-radio" data-value="1:1">1:1</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:0">
+          <label class="form-label">品質 / 音效</label>
+          <div class="seedance-grid-2" style="gap:6px" data-ep-group="tier">
+            <div class="seedance-radio active" data-value="fast">快速</div>
+            <div class="seedance-radio" data-value="standard">精緻</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px;color:var(--text-dim);cursor:pointer" onclick="toggleEpisodeAudio()">
+            <div id="ep-audio-toggle" class="toggle-switch on" style="width:32px;height:18px"></div>
+            <span>生成音效</span>
+          </div>
+        </div>
       </div>
 <div class="ep-actions" style="padding-top:6px;flex-direction:column;align-items:stretch;gap:8px">
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -3801,7 +3899,7 @@ function renderEpisodeCard() {
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:10.5px;color:var(--text-dim)">
           <button class="btn btn-ghost btn-sm" onclick="saveEpisodeDraft()">💾 存草稿</button>
-          <span style="margin-left:auto">Seedance · 10s · 720p · Fast</span>
+          <span style="margin-left:auto" id="ep-spec-label">Seedance · 10s · 720p · Fast</span>
         </div>
       </div>
       </div>
@@ -3811,12 +3909,37 @@ function renderEpisodeCard() {
   `;
 
   // input 變動即更新 localStorage
-  ['ep-situation', 'ep-scene', 'ep-movement', 'ep-tone'].forEach(id => {
+  ['ep-situation', 'ep-scene', 'ep-movement', 'ep-tone', 'ep-outfit-brand'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', () => saveEpisodeDraft(true));
   });
   const sit = document.getElementById('ep-situation');
   if (sit) sit.addEventListener('input', () => saveEpisodeDraft(true));
+  // 🆕 v5.13: 還原草稿存的服飾品牌選擇
+  const obEp = document.getElementById('ep-outfit-brand');
+  if (obEp && draft.outfitBrand) obEp.value = draft.outfitBrand;
+
+  // 🆕 v5.13: STEP3 畫質 radio 點選(寫進 S.episodeParams,與主面板獨立)
+  document.querySelectorAll('[data-ep-group] .seedance-radio').forEach(r => {
+    r.addEventListener('click', () => {
+      const group = r.closest('[data-ep-group]').dataset.epGroup;
+      r.closest('[data-ep-group]').querySelectorAll('.seedance-radio')
+        .forEach(x => x.classList.remove('active'));
+      r.classList.add('active');
+      S.episodeParams[group] = r.dataset.value;
+      updateEpisodeSpecLabel();
+    });
+  });
+  // 還原 episodeParams 到 UI active 狀態(切走再回來不掉)
+  document.querySelectorAll('[data-ep-group]').forEach(box => {
+    const group = box.dataset.epGroup;
+    const cur = S.episodeParams[group];
+    box.querySelectorAll('.seedance-radio').forEach(x =>
+      x.classList.toggle('active', x.dataset.value === cur));
+  });
+  const epAudioTog = document.getElementById('ep-audio-toggle');
+  if (epAudioTog) epAudioTog.classList.toggle('on', S.episodeParams.generateAudio);
+  updateEpisodeSpecLabel();
 
   // 🎯 v5.9: 自動載入 Drive 商品照
   loadEpisodeProducts();
@@ -3958,6 +4081,7 @@ function saveEpisodeDraft(silent) {
     sceneId: document.getElementById('ep-scene')?.value || '',
     movementId: document.getElementById('ep-movement')?.value || '',
     tone: document.getElementById('ep-tone')?.value || '',
+    outfitBrand: document.getElementById('ep-outfit-brand')?.value || 'auto',
     savedAt: new Date().toISOString(),
   };
   localStorage.setItem(lsKey, JSON.stringify(draft));
@@ -4020,9 +4144,12 @@ async function generateEpisode() {
   const prevArc = { ...S.storyArc };
   S.storyArc = { ...S.storyArc, tone: tone };
 
-  // 🆕 v5.13: 主面板若選了服飾品牌(非auto)就帶入,否則由 crew-director 走人設書 fallback
-  if (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') opts.outfitBrand = S.selectedOutfitBrand;
-  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, '10', opts);
+  // 🆕 v5.13: 服飾品牌帶入 — 優先企劃自己的下拉(ep-outfit-brand),其次主面板,皆無則 crew-director 走人設書 fallback
+  const epBrand = document.getElementById('ep-outfit-brand')?.value || '';
+  const chosenOutfitBrand = (epBrand && epBrand !== 'auto') ? epBrand
+    : (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') ? S.selectedOutfitBrand : '';
+  if (chosenOutfitBrand) opts.outfitBrand = chosenOutfitBrand;
+  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, S.episodeParams.duration, opts);
   S.storyArc = prevArc;
 
   if (!prompt) { toast('組 prompt 失敗', 'error'); return; }
@@ -4034,11 +4161,11 @@ async function generateEpisode() {
     kolImageUrl,
     productImageUrls,  // 🎯 v5.9: 送真實商品照
     prompt,
-    resolution: '720p',
-    duration: '10',
-    aspectRatio: '9:16',
-    generateAudio: true,
-    tier: 'fast',
+    resolution: S.episodeParams.resolution,
+    duration: S.episodeParams.duration,
+    aspectRatio: S.episodeParams.aspectRatio,
+    generateAudio: S.episodeParams.generateAudio,
+    tier: S.episodeParams.tier,
     brandId: S.currentBrandId,
     kolName: persona.persona_name,
   };
@@ -4838,10 +4965,10 @@ async function generateEpisodeV510(mode) {
     camera_movement: movementId,
     scenario: situation,
     reference_images: productImageUrls,
-    duration: 10,
-    aspect: '9:16',
-    quality: 'fast',
-    resolution: '720p',
+    duration: parseInt(S.episodeParams.duration) || 10,
+    aspect: S.episodeParams.aspectRatio,
+    quality: S.episodeParams.tier,
+    resolution: S.episodeParams.resolution,
     video_status: mode === 'posts' ? 'skipped' : 'planned',
     posts_status: mode === 'video' ? 'skipped' : 'pending',
   };
@@ -4907,9 +5034,12 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
       situation,
     },
   };
-  // 🆕 v5.13: 主面板若選了服飾品牌(非auto)就帶入,否則由 crew-director 走人設書 fallback
-  if (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') opts.outfitBrand = S.selectedOutfitBrand;
-  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, '10', opts);
+  // 🆕 v5.13: 服飾品牌帶入 — 優先企劃自己的下拉(ep-outfit-brand),其次主面板,皆無則 crew-director 走人設書 fallback
+  const epBrand = document.getElementById('ep-outfit-brand')?.value || '';
+  const chosenOutfitBrand = (epBrand && epBrand !== 'auto') ? epBrand
+    : (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') ? S.selectedOutfitBrand : '';
+  if (chosenOutfitBrand) opts.outfitBrand = chosenOutfitBrand;
+  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, 'none', movementId, S.episodeParams.duration, opts);
   S.storyArc = prevArc;
 
   if (!prompt) { toast('組 prompt 失敗', 'error'); return; }
@@ -4924,11 +5054,11 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
     kolImageUrl,
     productImageUrls,
     prompt,
-    resolution: '720p',
-    duration: '10',
-    aspectRatio: '9:16',
-    generateAudio: true,
-    tier: 'fast',
+    resolution: S.episodeParams.resolution,
+    duration: S.episodeParams.duration,
+    aspectRatio: S.episodeParams.aspectRatio,
+    generateAudio: S.episodeParams.generateAudio,
+    tier: S.episodeParams.tier,
     brandId: S.currentBrandId,
     kolName: persona.persona_name,
   };
