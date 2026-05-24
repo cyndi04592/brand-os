@@ -26,7 +26,12 @@
   var toastFn = pick('toast') || function (m) { console.log('[toast]', m); };
   if (!ST || !composeFn) { console.warn('[Stitch/STEP2] 抓不到 S / composeSeedancePrompt'); return; }
 
-  var SEG_SEC = 10; // 接片每段固定 10 秒（POC 驗證過的長度）
+  // 每段秒數 = 沿用上面「時長(秒)」選的 5/10/15。選 auto 或抓不到 → 預設 10。
+  function segSec() {
+    var d = ST.seedanceParams && ST.seedanceParams.duration;
+    var n = parseInt(d, 10);
+    return (n && n > 0) ? n : 10;
+  }
 
   function mount() {
     var baseBtn = document.getElementById('create-seedance-btn');
@@ -46,9 +51,9 @@
       + '  <div style="display:flex;gap:8px;align-items:center;">'
       + '    <label style="font-size:12px;color:#9a9ab0;white-space:nowrap;">目標長度</label>'
       + '    <select id="ks-target" style="flex:1;background:#0e0e16;border:1px solid #2a2a3a;border-radius:8px;color:#e8e8f0;padding:8px;font-size:12px;">'
-      + '      <option value="2">約 20 秒（2 段）</option>'
-      + '      <option value="3" selected>約 30 秒（3 段）</option>'
-      + '      <option value="4">約 40 秒（4 段）</option>'
+      + '      <option value="2">2 段</option>'
+      + '      <option value="3" selected>3 段</option>'
+      + '      <option value="4">4 段</option>'
       + '    </select>'
       + '  </div>'
       + '  <div id="ks-cost" style="font-size:11px;color:#9a9ab0;"></div>'
@@ -68,7 +73,7 @@
         refreshHero(); updateCost();
         // 展開期間每 0.6 秒刷新一次「主角」，選了 KOL 立刻反映（修：選了還顯示尚未選定）
         if (heroTimer) clearInterval(heroTimer);
-        heroTimer = setInterval(refreshHero, 600);
+        heroTimer = setInterval(function () { refreshHero(); updateCost(); }, 600);
       } else if (heroTimer) {
         clearInterval(heroTimer); heroTimer = null;
       }
@@ -92,11 +97,16 @@
 
   function updateCost() {
     var n = parseInt((document.getElementById('ks-target') || {}).value, 10) || 3;
+    var seg = segSec();
+    var total = n * seg;
     var tier = (ST.seedanceParams && ST.seedanceParams.tier) || 'standard';
     var rate = tier === 'standard' ? 0.30 : 0.24;
     var el = document.getElementById('ks-cost');
-    if (el) el.textContent = '約 ' + (n * SEG_SEC) + ' 秒成品 · 畫質 ' + (tier === 'standard' ? '標準' : '快速')
-      + ' · 預估 $' + (n * SEG_SEC * rate).toFixed(1) + ' USD';
+    if (!el) return;
+    var autoNote = (ST.seedanceParams && String(ST.seedanceParams.duration) === 'auto')
+      ? '（上面選 auto，接片每段預設 10 秒）' : '';
+    el.textContent = n + ' 段 × ' + seg + ' 秒 ≈ 總長 ' + total + ' 秒 · 畫質 '
+      + (tier === 'standard' ? '標準' : '快速') + ' · 預估 $' + (total * rate).toFixed(1) + ' USD ' + autoNote;
   }
 
   async function runStitch() {
@@ -137,7 +147,7 @@
         aspectRatio: (ST.seedanceParams && ST.seedanceParams.aspectRatio) || '9:16',
         generateAudio: !!(ST.seedanceParams && ST.seedanceParams.generateAudio),
         tier: (ST.seedanceParams && ST.seedanceParams.tier) || 'standard',
-        durationSec: SEG_SEC,
+        durationSec: segSec(),
         onProgress: function (m) { statusEl.textContent = '▶ ' + m; },
         onSegmentDone: function (idx) { statusEl.textContent = '✅ 第 ' + (idx + 1) + ' / ' + nSeg + ' 段完成'; },
       });
