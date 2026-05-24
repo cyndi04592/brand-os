@@ -15,9 +15,11 @@
   if (!window.KolStitch) { console.warn('[Stitch/STEP2] 需先載入 kol-stitch.js'); return; }
 
   // 綁定 host 頁面全域（classic script 共用頂層作用域）
+  // 先抓頁面內的 const/function（app 真正在 mutate 的那個 S），window 只當備援
   function pick(name) {
+    try { var v = eval(name); if (typeof v !== 'undefined' && v !== null) return v; } catch (e) {}
     try { if (typeof window[name] !== 'undefined') return window[name]; } catch (e) {}
-    try { return eval(name); } catch (e) { return undefined; }
+    return undefined;
   }
   var ST = pick('S');
   var composeFn = pick('composeSeedancePrompt');
@@ -56,12 +58,20 @@
       + '</div>';
     baseBtn.parentNode.insertBefore(wrap, baseBtn.nextSibling);
 
+    var heroTimer = null;
     document.getElementById('ks-toggle').onclick = function () {
       var box = document.getElementById('ks-box');
       var open = box.style.display === 'none';
       box.style.display = open ? 'flex' : 'none';
       this.textContent = open ? '－ 收起長影片接片' : '＋ 需要 15 秒以上？開啟長影片接片';
-      if (open) { refreshHero(); updateCost(); }
+      if (open) {
+        refreshHero(); updateCost();
+        // 展開期間每 0.6 秒刷新一次「主角」，選了 KOL 立刻反映（修：選了還顯示尚未選定）
+        if (heroTimer) clearInterval(heroTimer);
+        heroTimer = setInterval(refreshHero, 600);
+      } else if (heroTimer) {
+        clearInterval(heroTimer); heroTimer = null;
+      }
     };
     document.getElementById('ks-target').onchange = updateCost;
     document.getElementById('ks-go').onclick = runStitch;
