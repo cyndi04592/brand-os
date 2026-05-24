@@ -646,7 +646,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a class="topbar-logo" href="index.html">Brand <span>OS</span></a>
   <div class="topbar-sep"></div>
   <span class="topbar-title">KOL 數字人工作室</span>
-  <div class="topbar-badge">v5.15 · 商品照</div>
+  <div class="topbar-badge">v5.16 · 劇情</div>
 </header>
 
 <main class="main">
@@ -878,6 +878,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
       <div class="panel">
         <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>電影鏡頭設定</div>
+
+        <!-- 🆕 v5.16: 劇情/情境輸入(STEP2 終於可控 · 選填) -->
+        <div class="form-group" style="margin-top:0">
+          <label class="form-label">🎬 劇情 / 情境(選填 · 留空則 AI 依場景自由發揮)</label>
+          <div class="script-wrap">
+            <textarea id="cine-situation" placeholder="例:在登山步道休息時,拿出防熊噴霧示範怎麼快速取用、按壓的動作,神情警覺專注" style="min-height:70px"></textarea>
+          </div>
+          <div class="motion-hint">💡 寫了 AI 會照你的情境演,不寫就靠場景自由發揮。這裡只描述「畫面在做什麼」,不是台詞。</div>
+        </div>
 
         <!-- 🆕 v5.1: 場景網格(點一下直接套用) -->
         <div class="form-group" style="margin-top:0">
@@ -1997,6 +2006,9 @@ async function onBrandChange() {
   S.selectedLocationId = 'none';
   S.selectedMovementId = 'static';  // 🆕 v5.3: 重置運鏡為預設靜態
   S.selectedOutfitBrand = 'auto';   // 🆕 v5.13: 重置服飾品牌為 auto
+  // 🆕 v5.16: 清空劇情輸入框(避免上個品牌殘留)
+  const cineSit0 = document.getElementById('cine-situation');
+  if (cineSit0) cineSit0.value = '';
   const obGroup0 = document.getElementById('outfit-brand-group');
   if (obGroup0) obGroup0.style.display = 'none';
   const obPicker0 = document.getElementById('outfit-brand-picker');
@@ -3224,13 +3236,23 @@ async function createSeedanceVideo() {
     if (!confirm('你沒加任何商品照,影片裡的 [Image2] 指涉會無對應圖(fal.ai 可能拒絕或效果不佳)。\n\n純展示 KOL 情境(無帶貨)可以繼續,要繼續嗎?')) return;
   }
 
+  // 🆕 v5.16: 讀劇情/情境輸入框(STEP2 終於可控)
+  const cineSituation = document.getElementById('cine-situation')?.value?.trim() || '';
+
+  // 🆕 v5.16: 組 opts — 帶劇情(situation)讓 AI 照演;outfitBrand 維持原樣
+  const cineOpts = { outfitBrand: S.selectedOutfitBrand };
+  if (cineSituation) {
+    cineOpts.episode = { situation: cineSituation };
+  }
+
   // 🆕 v5.1+5.3: 從場景 + 地標 + 運鏡組 prompt(後端邏輯,使用者看不到)
-  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId, S.seedanceParams.duration, { outfitBrand: S.selectedOutfitBrand });
+  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId, S.seedanceParams.duration, cineOpts);
   if (!prompt) { toast('組 prompt 失敗,場景資料異常', 'error'); return; }
 
-  // KOL 臉一致性:自動加指令
-  if (S.seedanceFaceConsistency && !/consistent facial features/i.test(prompt)) {
-    prompt = prompt + ', consistent facial features, identity preserved';
+  // 🆕 v5.16: STEP2 預設鎖臉(電影鏡頭有 KOL 肖像 reference,本就該保持一致)
+  //   原本只在開關開啟時才鎖,現在預設就鎖,避免臉跑掉
+  if (!/consistent facial features/i.test(prompt)) {
+    prompt = prompt + ', consistent facial features and identity preserved from reference image, same person throughout';
   }
 
   // 取得 KOL 圖片 URL — 用 HeyGen Look 的 image_url(已是公開 CDN)
