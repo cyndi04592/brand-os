@@ -1,13 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════
  *  Brand OS · KOL AI 人像生成器(Tab 3 Phase 1)
- *  v1.0 · 2026-04-22
+ *  v3.17 · 2026-05-25  (= 昨天 v3.16 代理版 + 今天品牌同步修補)
  *
  *  功能:
  *   • 選品牌 + 選/新增 Persona + 人設參數(中文下拉)
  *   • 反 AI 美學 prompt 自動合成(真人感配方)
- *   • fal.ai Flux 1.1 Pro Ultra 串接(已驗證 schema)
+ *   • fal.ai Flux 1.1 Pro Ultra 串接(走 Cloudflare proxy,金鑰留後端)
  *   • 3 張結果挑臉 + Seed 鎖定
  *   • 一鍵存 Drive(走新 GAS action saveAiKolPhotoToDrive)
+ *
+ *  v3.17 新增:品牌自我校正(ensureBrandSynced)
+ *   — 不管先選品牌還先載入面板,都會自己追上「當前品牌」,不再卡「請先選品牌」
  *
  *  使用方式:
  *   在 kol.html 的 </body> 前面加一行:
@@ -20,11 +23,13 @@
 'use strict';
 
 // ── 設定 ───────────────────────────────────────────────────
-const FAL_ENDPOINT = 'https://fal.run/fal-ai/flux-pro/v1.1-ultra';
-const FAL_KEY = '973c03f3-0fd8-43d7-9e97-aba95cf55b6e:bb2a910fdda1e078bb07460ded1165b4';
+// v3.16: FAL_ENDPOINT / FAL_KEY 已移除 — 改走 Cloudflare proxy(見下方 WORKER_URL)
+// 金鑰現在安全存在 Worker env.FAL_KEY,前端不再持有
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
+// v3.16: 改走 Cloudflare proxy 保護 FAL_KEY,不再前端寫死金鑰
+const WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 
 const COST_PER_IMAGE_USD = 0.06;
 
@@ -45,7 +50,7 @@ const S = {
 
 // 骨幹模板(所有情境共用的「真人感」基底)
 const PROMPT_BACKBONE =
-  'Casual unretouched iPhone 15 Pro portrait photo of {AGE} {NATIONALITY} woman, ' +
+  'Casual unretouched iPhone 15 Pro portrait photo of {AGE} {NATIONALITY} {GENDER}, ' +
   '{PERSONA}, ' +
   'visible skin pores and natural skin texture, peach fuzz on cheeks, ' +
   'subtle tiny skin imperfections, no beauty filter, slight asymmetry in face, ' +
@@ -55,6 +60,11 @@ const PROMPT_BACKBONE =
   'authentic {NATIONALITY} aesthetic';
 
 // 變數對應表
+const GENDER_MAP = {
+  female: 'woman',
+  male:   'man',
+};
+
 const AGE_MAP = {
   young:    'a 22-year-old',
   standard: 'a 26-year-old',
@@ -76,6 +86,11 @@ const PERSONA_MAP = {
   warm_mama:      'warm maternal aura, cozy homebody vibe, caring expression',
   sweet_college:  'sweet college student vibe, fresh and cheerful, natural youthful energy',
   edgy_fashion:   'edgy fashion-forward aura, mysterious allure, editorial posing',
+  // ── v5.13 男性類型 ──
+  outdoor_man:    'rugged outdoor adventurer vibe, weathered tan skin, light stubble, athletic build, confident mountain-guide presence, The North Face technical aesthetic',
+  sporty_man:     'energetic sporty guy, fit athletic build, friendly approachable grin, casual active lifestyle vibe',
+  pro_man:        'confident professional man, clean composed look, trustworthy expression, smart-casual presence',
+  uncle_warm:     'warm friendly middle-aged man, approachable everyman charm, genuine relatable smile',
 };
 
 const LIGHTING_MAP = {
@@ -93,6 +108,11 @@ const OUTFIT_MAP = {
   oversized_shirt: 'an oversized pastel button-down shirt',
   turtleneck:    'a fitted black turtleneck',
   summer_dress:  'a light cotton summer dress in muted tone',
+  // ── v5.13 男裝 ──
+  tech_jacket:   'a functional outdoor technical shell jacket, The North Face style',
+  flannel_shirt: 'a rugged plaid flannel shirt, sleeves rolled up',
+  mens_tshirt:   'a plain heather-grey crew-neck t-shirt',
+  polo_shirt:    'a clean navy polo shirt, smart-casual',
 };
 
 const SCENE_MAP = {
@@ -101,10 +121,17 @@ const SCENE_MAP = {
   studio:     'against a neutral Japandi-style studio backdrop, muted oatmeal tones',
   outdoor_city: 'urban Taipei street background with soft focus, natural afternoon light',
   bedroom:    'relaxed in a soft-lit bedroom with linen sheets, morning light',
+  // ── v5.13 戶外場景 ──
+  mountain:   'standing on a mountain trail with forest and misty peaks in the background, natural outdoor light',
+  campsite:   'at an outdoor campsite with trees and gear around, golden hour natural light',
 };
 
 // 中文顯示對應
 const LABEL = {
+  gender: {
+    female: '女性',
+    male:   '男性',
+  },
   age: {
     young:    '22 歲青春',
     standard: '26 歲單身專業',
@@ -124,6 +151,10 @@ const LABEL = {
     warm_mama:      '溫暖媽媽家居',
     sweet_college:  '甜美大學生',
     edgy_fashion:   '前衛時尚',
+    outdoor_man:    '🏔 戶外型男(TNF感)',
+    sporty_man:     '運動陽光男',
+    pro_man:        '專業職場男',
+    uncle_warm:     '親和大叔',
   },
   lighting: {
     window_day:  '室內日光',
@@ -139,6 +170,10 @@ const LABEL = {
     oversized_shirt: '寬版襯衫',
     turtleneck:      '黑色高領',
     summer_dress:    '夏日洋裝',
+    tech_jacket:     '🧥 機能外套(TNF)',
+    flannel_shirt:   '格紋法蘭絨',
+    mens_tshirt:     '男士素T',
+    polo_shirt:      'POLO 衫',
   },
   scene: {
     apartment:    '簡約公寓',
@@ -146,6 +181,8 @@ const LABEL = {
     studio:       'Japandi 棚',
     outdoor_city: '城市街頭',
     bedroom:      '臥室晨光',
+    mountain:     '🏔 山林步道',
+    campsite:     '🏕 戶外營地',
   },
 };
 
@@ -183,7 +220,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v1.0] 已載入');
+  console.log('[kol-ai-generator v3.17] 已載入');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -507,6 +544,7 @@ function findLeftPanelAnchor() {
 }
 
 function buildPanelHTML() {
+  const genOpts = renderOptions(LABEL.gender, 'female');
   const ageOpts = renderOptions(LABEL.age, 'standard');
   const natOpts = renderOptions(LABEL.nationality, 'tw');
   const perOpts = renderOptions(LABEL.persona, 'girl_next_door');
@@ -539,35 +577,43 @@ function buildPanelHTML() {
 
       <div class="kai-row">
         <div class="kai-field">
+          <label class="kai-label">性別</label>
+          <select class="kai-select kai-param" data-k="gender">${genOpts}</select>
+        </div>
+        <div class="kai-field">
           <label class="kai-label">年齡</label>
           <select class="kai-select kai-param" data-k="age">${ageOpts}</select>
         </div>
+      </div>
+
+      <div class="kai-row">
         <div class="kai-field">
           <label class="kai-label">國籍氣質</label>
           <select class="kai-select kai-param" data-k="nationality">${natOpts}</select>
         </div>
-      </div>
-
-      <div class="kai-row">
         <div class="kai-field">
           <label class="kai-label">人設風格</label>
           <select class="kai-select kai-param" data-k="persona">${perOpts}</select>
         </div>
+      </div>
+
+      <div class="kai-row">
         <div class="kai-field">
           <label class="kai-label">光源場景</label>
           <select class="kai-select kai-param" data-k="lighting">${ligOpts}</select>
+        </div>
+        <div class="kai-field">
+          <label class="kai-label">服裝</label>
+          <select class="kai-select kai-param" data-k="outfit">${outOpts}</select>
         </div>
       </div>
 
       <div class="kai-row">
         <div class="kai-field">
-          <label class="kai-label">服裝</label>
-          <select class="kai-select kai-param" data-k="outfit">${outOpts}</select>
-        </div>
-        <div class="kai-field">
           <label class="kai-label">場景背景</label>
           <select class="kai-select kai-param" data-k="scene">${scnOpts}</select>
         </div>
+        <div class="kai-field"></div>
       </div>
 
       <div class="kai-field">
@@ -735,14 +781,14 @@ function hookBrandSwitcher() {
     renderPromptPreview();
   });
 
-  // 立即同步一次,並每 0.8 秒自我校正
+  // v3.17: 立即同步一次,並每 0.8 秒自我校正
   // 修:若使用者「先選品牌、AI 生人像才載入」,會漏接那次切換 → 永遠卡「先選品牌」。
   // 改成自動跟上面的品牌對一下,不一致就自己補上。
   ensureBrandSynced();
   setInterval(ensureBrandSynced, 800);
 }
 
-// 自我校正:把 AI 生人像的品牌追上上面的「當前品牌」選擇器
+// v3.17: 自我校正 — 把 AI 生人像的品牌追上上面的「當前品牌」選擇器
 function ensureBrandSynced() {
   const bs = document.getElementById('brand-switcher');
   if (!bs || !bs.value) return;
@@ -929,6 +975,7 @@ function buildPrompt() {
   let prompt = PROMPT_BACKBONE
     .replace('{AGE}', AGE_MAP[params.age] || AGE_MAP.standard)
     .replace(/\{NATIONALITY\}/g, NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw)
+    .replace('{GENDER}', GENDER_MAP[params.gender] || GENDER_MAP.female)
     .replace('{PERSONA}', PERSONA_MAP[params.persona] || PERSONA_MAP.girl_next_door)
     .replace('{LIGHTING}', LIGHTING_MAP[params.lighting] || LIGHTING_MAP.window_day)
     .replace('{OUTFIT}', OUTFIT_MAP[params.outfit] || OUTFIT_MAP.beige_knit)
@@ -1043,21 +1090,22 @@ async function generate() {
 
   const t0 = performance.now();
   try {
-    const res = await fetch(FAL_ENDPOINT, {
+    // v3.16: 改走 Cloudflare proxy(action=fal_image_submit),金鑰留後端
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': 'Key ' + FAL_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password: PASSWORD,
+        action: 'fal_image_submit',
+        ...payload,
+      }),
     });
 
     const latency = ((performance.now() - t0) / 1000).toFixed(1);
     const data = await res.json();
 
-    if (!res.ok) {
-      const errMsg = data.detail?.[0]?.msg || data.detail || data.message || data.error || ('HTTP ' + res.status);
-      throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+    if (!data.ok) {
+      throw new Error(data.error || ('HTTP ' + res.status));
     }
 
     if (!data.images || data.images.length === 0) {
