@@ -646,7 +646,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a class="topbar-logo" href="index.html">Brand <span>OS</span></a>
   <div class="topbar-sep"></div>
   <span class="topbar-title">KOL 數字人工作室</span>
-  <div class="topbar-badge">v5.12</div>
+  <div class="topbar-badge">v5.10 · Beta</div>
 </header>
 
 <main class="main">
@@ -1315,6 +1315,16 @@ const BRAND_PRODUCT_FOLDERS = {
 const _productFolderFetching = {};  // 防同品牌重複呼叫
 async function ensureBrandProductFolder(brandId) {
   if (!brandId) return BRAND_PRODUCT_FOLDERS[brandId] || null;
+
+  // 🆕 v5.15: 最優先 — 讀 GAS folders 表的 productFolderId 欄位(正規來源)
+  //   品牌進駐(onboard)時填好的商品照資料夾,所有品牌通用,讀到就直接用
+  const folderRow = (S.folders || []).find(f => f.brandId === brandId);
+  if (folderRow && folderRow.productFolderId) {
+    BRAND_PRODUCT_FOLDERS[brandId] = folderRow.productFolderId;  // 塞進表 → 6 處讀取點自動讀到
+    _productFolderFetching[brandId] = 'done';
+    return folderRow.productFolderId;
+  }
+
   // 已經在表裡(GAS 填過或寫死)→ 直接用,不重複要
   if (BRAND_PRODUCT_FOLDERS[brandId] && _productFolderFetching[brandId] === 'done') {
     return BRAND_PRODUCT_FOLDERS[brandId];
@@ -1735,6 +1745,7 @@ const S = {
   currentBrandId: '',
   brands: [],
   products: [],              // 🚀 v5.7: 產品資料(Tab 3 用)
+  folders: [],               // 🆕 v5.15: folders 表(商品照 productFolderId 來源)
   personas: [],
   drivePhotos: null,
   selectedDrivePhotos: {},
@@ -1941,6 +1952,7 @@ async function loadBrands() {
 
     S.brands = res.data?.brands || [];
     S.products = res.data?.products || [];  // 🚀 v5.7: 一次載入產品
+    S.folders = res.data?.folders || [];    // 🆕 v5.15: 載入 folders 表(商品照 productFolderId 用)
     const sel = document.getElementById('brand-switcher');
     sel.innerHTML = '<option value="">— 請先選擇品牌 —</option>' +
       S.brands.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.icon || '🏷️')} ${escapeHtml(b.name)}</option>`).join('');
@@ -2046,12 +2058,15 @@ async function onBrandChange() {
   renderSceneGrid();
 
   // 🆕 v5.1: 更新 Drive tab 鎖頭狀態
+  // 🆕 v5.15: 改讀 folders 表(同步可得,立即正確;不用等 ensureBrandProductFolder 背景跑完)
+  const _hasProductFolder = !!(S.folders || []).find(f => f.brandId === brandId)?.productFolderId
+                            || !!BRAND_PRODUCT_FOLDERS[brandId];
   const lockIcon = document.getElementById('ref-tab-drive-lock');
   if (lockIcon) {
-    lockIcon.style.display = BRAND_PRODUCT_FOLDERS[brandId] ? 'none' : '';
+    lockIcon.style.display = _hasProductFolder ? 'none' : '';
   }
   // 如果當前在 drive tab,切回 url(避免空白)
-  if (document.querySelector('.ref-tab[data-ref-tab="drive"].active') && !BRAND_PRODUCT_FOLDERS[brandId]) {
+  if (document.querySelector('.ref-tab[data-ref-tab="drive"].active') && !_hasProductFolder) {
     switchRefTab('url');
   }
 
