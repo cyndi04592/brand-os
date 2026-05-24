@@ -99,20 +99,45 @@ window.KolStitch = (function () {
   }
 
   // 生一段：一張起始幀 → 一段影片
+  // 有給商品照(productImageUrls / productDriveFileIds) → 走 reference-to-video，商品才會對
+  // 沒給商品 → 走 image2video，尾幀接首幀臉100%、但塞不進商品
   async function generateSegment(opts, onTick) {
     if (!opts.startFrameUrl) throw new Error('generateSegment 缺少 startFrameUrl');
     if (!opts.prompt) throw new Error('generateSegment 缺少 prompt');
-    const sub = await api('seedance_image2video_submit', {
-      imageUrl: opts.startFrameUrl,        // ← 這段的第一幀（鎖臉關鍵）
-      prompt: opts.prompt,
-      duration: String(opts.durationSec || 10),
-      aspectRatio: opts.aspectRatio || '9:16',
-      resolution: opts.resolution || '720p',
-      generateAudio: opts.generateAudio === true,  // 預設關，避免 AI 亂掰台詞
-      tier: opts.tier,
-      seed: opts.seed,
-      endImageUrl: opts.endImageUrl,        // 選配：指定這段的結束畫面
-    });
+
+    var hasProduct = (opts.productImageUrls && opts.productImageUrls.length) ||
+                     (opts.productDriveFileIds && opts.productDriveFileIds.length);
+    var sub;
+    if (hasProduct) {
+      // reference-to-video：起始幀(人) + 商品照 一起當參考（沿用你現成的 seedance_submit）
+      sub = await api('seedance_submit', {
+        kolImageUrl: opts.startFrameUrl,
+        productImageUrls: opts.productImageUrls,
+        productDriveFileIds: opts.productDriveFileIds,
+        brandId: opts.brandId,
+        kolName: opts.kolName,
+        prompt: opts.prompt,
+        duration: String(opts.durationSec || 10),
+        aspectRatio: opts.aspectRatio || '9:16',
+        resolution: opts.resolution || '720p',
+        generateAudio: opts.generateAudio === true,
+        tier: opts.tier || 'standard',   // 商品線預設標準版，畫質較好
+        seed: opts.seed,
+      });
+    } else {
+      // image2video：單圖，尾幀接首幀臉100%
+      sub = await api('seedance_image2video_submit', {
+        imageUrl: opts.startFrameUrl,        // ← 這段的第一幀（鎖臉關鍵）
+        prompt: opts.prompt,
+        duration: String(opts.durationSec || 10),
+        aspectRatio: opts.aspectRatio || '9:16',
+        resolution: opts.resolution || '720p',
+        generateAudio: opts.generateAudio === true,  // 預設關，避免 AI 亂掰台詞
+        tier: opts.tier,
+        seed: opts.seed,
+        endImageUrl: opts.endImageUrl,        // 選配：指定這段的結束畫面
+      });
+    }
     const done = await poll(sub, onTick);
     const url = pickUrl(done);
     if (!url) throw new Error('生成段落沒拿到影片 URL');
@@ -165,6 +190,10 @@ window.KolStitch = (function () {
         generateAudio: opts.generateAudio,
         tier: opts.tier,
         seed: step.seed,
+        productImageUrls: opts.productImageUrls,       // ← 商品照(直接URL)
+        productDriveFileIds: opts.productDriveFileIds,  // ← 商品照(Drive fileId)
+        brandId: opts.brandId,
+        kolName: opts.kolName,
       }, function (n, st) { log(`第 ${i + 1} 段生成中…（${st}）`, i); });
 
       segmentUrls.push(segUrl);
