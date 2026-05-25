@@ -61,7 +61,7 @@ const BACKBONES = {
     'amateur candid unposed snapshot feel, raw unedited photo, ' +
     'authentic {NATIONALITY} aesthetic',
 
-// 攝影級 editorial:美但真、單側方向光、真皮膚(內衣/Misaki)
+  // 攝影級 editorial:美但真、單側方向光、真皮膚(內衣/Misaki)
   editorial:
     'Professional editorial studio portrait photograph of {AGE} {NATIONALITY} {GENDER}, ' +
     '{PERSONA}, ' +
@@ -72,6 +72,7 @@ const BACKBONES = {
     'wearing {OUTFIT}, against a clean seamless studio backdrop in soft neutral tones, ' +
     'high-end editorial photography, true-to-life photorealistic detail with real untouched skin, ' +
     'authentic {NATIONALITY} aesthetic',
+};
 
 // 變數對應表
 const GENDER_MAP = {
