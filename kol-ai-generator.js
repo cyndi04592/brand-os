@@ -53,7 +53,7 @@ const BACKBONES = {
   candid:
     'Casual unretouched iPhone 15 Pro portrait photo of {AGE} {NATIONALITY} {GENDER}, ' +
     '{PERSONA}, ' +
-    'mostly matte skin with only a little natural T-zone shine, real visible pores and uneven skin texture, ' +
+    'mostly matte skin with only a little natural T-zone shine, raw unretouched skin clearly showing every pore and fine line, strong visible real skin texture, no beauty filter no skin smoothing no airbrushing, uneven natural skin tone, ' +
     'natural sub-surface scattering, fine vellus peach fuzz, subtle skin imperfections and faint freckles, ' +
     'slight asymmetry in face, natural minimal makeup, ' +
     'realistic hair with a few loose flyaway strands and slight natural frizz, individual unstyled hair strands, ' +
@@ -233,7 +233,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.23] 已載入');
+  console.log('[kol-ai-generator v3.24] 已載入');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
