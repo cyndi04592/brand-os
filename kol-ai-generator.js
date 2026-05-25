@@ -51,7 +51,7 @@ const S = {
 const BACKBONES = {
   // 素人 candid:生活感、有瑕疵、親切(食品/生活類/又晴)
   candid:
-    'Close-up candid portrait photograph of {AGE} {NATIONALITY} {GENDER} shot on 50mm film, the face large and prominent filling much of the frame, ' +
+    'Candid head-and-shoulders portrait photograph of {AGE} {NATIONALITY} {GENDER} shot on 50mm film, natural framing with the face clearly visible, ' +
     '{PERSONA}, ' +
     'a real ordinary everyday person, natural and relatable, not a polished influencer, ' +
     'beautiful but completely real raw unretouched skin with clearly visible skin pores and fine pore texture all over the cheeks nose and forehead, every fine line and skin detail visible, strong skin texture and grain, no beauty filter no skin smoothing no airbrushing, natural sub-surface scattering, ' +
@@ -234,7 +234,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.27] 已載入');
+  console.log('[kol-ai-generator v3.28] 已載入');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
