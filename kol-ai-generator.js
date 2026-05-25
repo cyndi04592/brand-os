@@ -65,12 +65,12 @@ const BACKBONES = {
   editorial:
     'Professional editorial studio portrait photograph of {AGE} {NATIONALITY} {GENDER}, ' +
     '{PERSONA}, ' +
-    'beautiful but completely real skin with natural sub-surface scattering and fine pores visible up close, ' +
-    'healthy natural skin sheen that looks real and not plastic or waxy, realistic catchlights in the eyes, ' +
-    'subtle natural skin tone variation and slight natural asymmetry, naturally styled glossy hair with real individual strands, ' +
-    'soft professional softbox studio lighting with gentle natural shadows, shallow depth of field, shot on medium format with an 85mm f/1.4 lens, ' +
+    'beautiful but completely real skin with fine pores and visible micro-texture across the whole face, natural sub-surface scattering, ' +
+    'bare matte complexion with an even soft finish and only very faint natural shine, slightly uneven real skin tone, light natural makeup, realistic catchlights in the eyes, ' +
+    'slight natural asymmetry, natural hair with loose flyaway strands, individual real hairs and slight frizz, ' +
+    'soft flat evenly-diffused light spread gently across the whole face, no hot shiny highlights on the nose or cheekbones, shallow depth of field, shot on medium format with an 85mm f/1.4 lens, ' +
     'wearing {OUTFIT}, against a clean seamless studio backdrop in soft neutral tones, ' +
-    'high-end editorial fashion photography, polished magazine quality, true-to-life photorealistic detail, ' +
+    'high-end editorial photography, true-to-life photorealistic detail with real untouched skin, ' +
     'authentic {NATIONALITY} aesthetic',
 };
 
