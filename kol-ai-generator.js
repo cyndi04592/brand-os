@@ -233,7 +233,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.20] 已載入');
+  console.log('[kol-ai-generator v3.21] 已載入');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1011,7 +1011,11 @@ function buildPrompt() {
 
   const freeText = document.getElementById('kai-free-text')?.value.trim() || '';
 
- const mode = (BRAND_DEFAULTS[S.currentBrandId] && BRAND_DEFAULTS[S.currentBrandId].realism) || 'candid';
+ // 攝影級品牌:用品牌「名字」判斷(避免代號對不上)。LACEZ 等精緻品牌走 editorial,其餘走素人 candid
+  const _brand = S.brands.find(b => b.id === S.currentBrandId);
+  const _brandName = ((_brand && _brand.name) || '').toUpperCase();
+  const EDITORIAL_BRANDS = ['LACEZ', 'MOZ'];
+  const mode = EDITORIAL_BRANDS.some(n => _brandName.includes(n)) ? 'editorial' : 'candid';
   let prompt = (BACKBONES[mode] || BACKBONES.candid)
     .replace('{AGE}', AGE_MAP[params.age] || AGE_MAP.standard)
     .replace(/\{NATIONALITY\}/g, NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw)
