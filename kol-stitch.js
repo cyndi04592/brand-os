@@ -1,6 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v1.1
+// kol-stitch.js — 自動接片引擎 v1.2
 // --------------------------------------------------------------------------
+// v1.2 (商品放大)：段1 prompt 自動加「商品特寫放大」框構；接續 prompt 也叫商品保持放大。
+//   段1 把商品放大 → 尾幀商品就大 → 段2 起 image2video 跟著大。
 // v1.1 (修臉漂移)：引擎選擇改用「第幾段」決定,不再用「有沒有商品」。
 //   段1     → reference-to-video（塞商品照,建立人+商品）
 //   段2 起  → image2video（尾幀當第一幀 → 臉鎖死）
@@ -95,6 +97,12 @@ window.KolStitch = (function () {
 
   // ---- 五個積木 -----------------------------------------------------------
 
+  // 🆕 v1.2：段1 商品放大框構。段1 把商品做大 → 尾幀商品就大 → 後面段都大。
+  const PRODUCT_EMPHASIS =
+    'The product is held up close to the camera and large in the frame, ' +
+    'its packaging clearly facing the lens and fully readable, ' +
+    'while her face stays visible — a medium close-up featuring both her face and the product prominently.';
+
   // 抽尾幀：影片 URL → 最後一幀圖片 URL（伺服器端抽,繞過 CORS）
   async function extractLastFrame(videoUrl, onTick) {
     const sub = await api('extract_frame', { videoUrl, frameType: 'last' });
@@ -111,7 +119,7 @@ window.KolStitch = (function () {
     return [
       'Continue seamlessly from the given starting frame.',
       'Exact same woman — identical face, hairstyle, skin texture and outfit as in the frame.',
-      'Same room, same lighting, same product held in her hand. Do not change the scene or add new objects.',
+      'Same room, same lighting; the same product stays held up prominently and large near the camera, packaging facing the lens. Do not change the scene or add new objects.',
       'Natural subtle movement and gestures, handheld iPhone vlog feel, photorealistic.',
       'Absolutely no morphing or re-drawing of the face; keep identity 100% consistent.',
     ].join(' ');
@@ -206,7 +214,16 @@ window.KolStitch = (function () {
       const isFirst = (i === 0);
 
       // 🔑 v1.1：段1 → reference-to-video（塞商品照）；段2起 → image2video（尾幀鎖臉）
-      const segPrompt = isFirst ? step.prompt : buildContinuationPrompt(step.prompt);
+      // 🆕 v1.2：段1 有商品 → 自動加「商品放大特寫」框構
+      let segPrompt;
+      if (isFirst) {
+        segPrompt = step.prompt;
+        const hasProd = (opts.productImageUrls && opts.productImageUrls.length) ||
+                        (opts.productDriveFileIds && opts.productDriveFileIds.length);
+        if (hasProd) segPrompt += '. ' + (opts.productEmphasis || PRODUCT_EMPHASIS);
+      } else {
+        segPrompt = buildContinuationPrompt(step.prompt);
+      }
 
       log(`第 ${i + 1}/${plan.length} 段：${isFirst ? '建立人物+商品' : '尾幀接首幀·鎖臉'} 生成中…`, i);
       const segUrl = await generateSegment({
