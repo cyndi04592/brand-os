@@ -47,18 +47,32 @@ const S = {
 };
 
 // ── 反 AI 美學 Prompt 配方庫 ─────────────────────────────
-
 // 骨幹模板(所有情境共用的「真人感」基底)
-const PROMPT_BACKBONE =
-  'Casual unretouched iPhone 15 Pro portrait photo of {AGE} {NATIONALITY} {GENDER}, ' +
-  '{PERSONA}, ' +
-  'mostly matte skin with only a little natural T-zone shine, real visible pores and uneven skin texture, ' +
-  'natural sub-surface scattering, fine vellus peach fuzz, subtle skin imperfections and faint freckles, ' +
-  'slight asymmetry in face, natural minimal makeup, ' +
-  'realistic hair with a few loose flyaway strands and slight natural frizz, individual unstyled hair strands, ' +
-  '{LIGHTING}, wearing {OUTFIT}, {SCENE}, ' +
-  'amateur candid unposed snapshot feel, raw unedited photo, ' +
-  'authentic {NATIONALITY} aesthetic';
+const BACKBONES = {
+  // 素人 candid:生活感、有瑕疵、親切(食品/生活類/又晴)
+  candid:
+    'Casual unretouched iPhone 15 Pro portrait photo of {AGE} {NATIONALITY} {GENDER}, ' +
+    '{PERSONA}, ' +
+    'mostly matte skin with only a little natural T-zone shine, real visible pores and uneven skin texture, ' +
+    'natural sub-surface scattering, fine vellus peach fuzz, subtle skin imperfections and faint freckles, ' +
+    'slight asymmetry in face, natural minimal makeup, ' +
+    'realistic hair with a few loose flyaway strands and slight natural frizz, individual unstyled hair strands, ' +
+    '{LIGHTING}, wearing {OUTFIT}, {SCENE}, ' +
+    'amateur candid unposed snapshot feel, raw unedited photo, ' +
+    'authentic {NATIONALITY} aesthetic',
+
+  // 攝影級 editorial:美但真、棚拍、真實皮膚物理(內衣/美妝/Misaki)
+  editorial:
+    'Professional editorial studio portrait photograph of {AGE} {NATIONALITY} {GENDER}, ' +
+    '{PERSONA}, ' +
+    'beautiful but completely real skin with natural sub-surface scattering and fine pores visible up close, ' +
+    'healthy natural skin sheen that looks real and not plastic or waxy, realistic catchlights in the eyes, ' +
+    'subtle natural skin tone variation and slight natural asymmetry, naturally styled glossy hair with real individual strands, ' +
+    'soft professional softbox studio lighting with gentle natural shadows, shallow depth of field, shot on medium format with an 85mm f/1.4 lens, ' +
+    'wearing {OUTFIT}, against a clean seamless studio backdrop in soft neutral tones, ' +
+    'high-end editorial fashion photography, polished magazine quality, true-to-life photorealistic detail, ' +
+    'authentic {NATIONALITY} aesthetic',
+};
 
 // 變數對應表
 const GENDER_MAP = {
@@ -193,21 +207,15 @@ const LABEL = {
 
 // 品牌預設配方(之後可擴充)
 const BRAND_DEFAULTS = {
-  ly: { // LACEZ
-    age: 'standard',
-    nationality: 'tw',
-    persona: 'girl_next_door',
-    lighting: 'window_day',
-    outfit: 'beige_knit',
-    scene: 'apartment',
+  ly: { // LACEZ(內衣)→ 攝影級
+    age: 'standard', nationality: 'tw', persona: 'girl_next_door',
+    lighting: 'window_day', outfit: 'beige_knit', scene: 'apartment',
+    realism: 'editorial',
   },
-  moz: {
-    age: 'standard',
-    nationality: 'tw',
-    persona: 'nordic_cool',
-    lighting: 'studio_flat',
-    outfit: 'turtleneck',
-    scene: 'studio',
+  moz: { // → 攝影級
+    age: 'standard', nationality: 'tw', persona: 'nordic_cool',
+    lighting: 'studio_flat', outfit: 'turtleneck', scene: 'studio',
+    realism: 'editorial',
   },
 };
 
@@ -225,7 +233,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.18] 已載入');
+  console.log('[kol-ai-generator v3.20] 已載入');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1003,7 +1011,8 @@ function buildPrompt() {
 
   const freeText = document.getElementById('kai-free-text')?.value.trim() || '';
 
-  let prompt = PROMPT_BACKBONE
+ const mode = (BRAND_DEFAULTS[S.currentBrandId] && BRAND_DEFAULTS[S.currentBrandId].realism) || 'candid';
+  let prompt = (BACKBONES[mode] || BACKBONES.candid)
     .replace('{AGE}', AGE_MAP[params.age] || AGE_MAP.standard)
     .replace(/\{NATIONALITY\}/g, NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw)
     .replace('{GENDER}', GENDER_MAP[params.gender] || GENDER_MAP.female)
@@ -1016,11 +1025,13 @@ function buildPrompt() {
   //  flux 對「Korean」的訓練資料壓倒性是 K-beauty 玻璃肌/偶像,會把臉拉向塑膠網美。
   //  只針對 kr 做平衡:加普通人錨點 + 拔掉 "authentic Korean aesthetic" 尾巴。
   //  不動 PROMPT_BACKBONE,不影響台/日 KOL。
-  if (params.nationality === 'kr') {
-    prompt = prompt
-      .replace(', authentic Korean aesthetic', '')
-      .replace('Korean woman', 'Korean woman with a plain ordinary everyday face, not a model')
-      .replace('Korean man', 'Korean man with a plain ordinary everyday face, not a model');
+if (params.nationality === 'kr') {
+    prompt = prompt.replace(', authentic Korean aesthetic', '');
+    if (mode === 'candid') {
+      prompt = prompt
+        .replace('Korean woman', 'Korean woman with a plain ordinary everyday face, not a model')
+        .replace('Korean man', 'Korean man with a plain ordinary everyday face, not a model');
+    }
   }
 
   if (freeText) {
