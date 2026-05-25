@@ -66,9 +66,9 @@ const BACKBONES = {
     'Professional editorial studio portrait photograph of {AGE} {NATIONALITY} {GENDER}, ' +
     '{PERSONA}, ' +
     'beautiful but completely real skin with fine pores and visible micro-texture across the whole face, natural sub-surface scattering, ' +
-    'bare matte complexion with an even soft finish and only very faint natural shine, slightly uneven real skin tone, light natural makeup, realistic catchlights in the eyes, ' +
+    'bare matte complexion with soft non-shiny cheeks and nose, only very faint natural shine in the T-zone, fine visible skin texture over the cheekbones, slightly uneven real skin tone, light natural makeup, realistic catchlights in the eyes, ' +
     'slight natural asymmetry, natural hair with loose flyaway strands, individual real hairs and slight frizz, ' +
-    'soft directional natural light coming from one side, gentle realistic shadow falloff across the face with a soft natural shadow on the opposite side, real light modeling the facial structure with depth, shallow depth of field, shot on medium format with an 85mm f/1.4 lens, ' +
+    'soft directional natural light coming from one side, gentle realistic shadow falloff across the face with a soft natural shadow on the opposite side, real light modeling the facial structure with depth, shallow depth of field, shot on medium format film with an 85mm f/1.4 lens, fine natural film grain and subtle Kodak Portra 400 tonality, ' +
     'wearing {OUTFIT}, against a clean seamless studio backdrop in soft neutral tones, ' +
     'high-end editorial photography, true-to-life photorealistic detail with real untouched skin, ' +
     'authentic {NATIONALITY} aesthetic',
@@ -233,7 +233,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.21] 已載入');
+  console.log('[kol-ai-generator v3.22] 已載入');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
