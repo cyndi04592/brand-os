@@ -61,18 +61,17 @@ const BACKBONES = {
     'amateur candid unposed snapshot feel, raw unedited photo, ' +
     'authentic {NATIONALITY} aesthetic',
 
-  // 攝影級 editorial:美但真、棚拍、真實皮膚物理(內衣/美妝/Misaki)
+// 攝影級 editorial:美但真、單側方向光、真皮膚(內衣/Misaki)
   editorial:
     'Professional editorial studio portrait photograph of {AGE} {NATIONALITY} {GENDER}, ' +
     '{PERSONA}, ' +
     'beautiful but completely real skin with fine pores and visible micro-texture across the whole face, natural sub-surface scattering, ' +
     'bare matte complexion with an even soft finish and only very faint natural shine, slightly uneven real skin tone, light natural makeup, realistic catchlights in the eyes, ' +
     'slight natural asymmetry, natural hair with loose flyaway strands, individual real hairs and slight frizz, ' +
-    'soft flat evenly-diffused light spread gently across the whole face, no hot shiny highlights on the nose or cheekbones, shallow depth of field, shot on medium format with an 85mm f/1.4 lens, ' +
+    'soft directional natural light coming from one side, gentle realistic shadow falloff across the face with a soft natural shadow on the opposite side, real light modeling the facial structure with depth, shallow depth of field, shot on medium format with an 85mm f/1.4 lens, ' +
     'wearing {OUTFIT}, against a clean seamless studio backdrop in soft neutral tones, ' +
     'high-end editorial photography, true-to-life photorealistic detail with real untouched skin, ' +
     'authentic {NATIONALITY} aesthetic',
-};
 
 // 變數對應表
 const GENDER_MAP = {
