@@ -52,11 +52,12 @@ const S = {
 const PROMPT_BACKBONE =
   'Casual unretouched iPhone 15 Pro portrait photo of {AGE} {NATIONALITY} {GENDER}, ' +
   '{PERSONA}, ' +
-  'visible skin pores and natural skin texture, peach fuzz on cheeks, ' +
-  'subtle tiny skin imperfections, no beauty filter, slight asymmetry in face, ' +
-  'minimal no-makeup-look, ' +
+  'mostly matte skin with only a little natural T-zone shine, real visible pores and uneven skin texture, ' +
+  'natural sub-surface scattering, fine vellus peach fuzz, subtle skin imperfections and faint freckles, ' +
+  'slight asymmetry in face, natural minimal makeup, ' +
+  'realistic hair with a few loose flyaway strands and slight natural frizz, individual unstyled hair strands, ' +
   '{LIGHTING}, wearing {OUTFIT}, {SCENE}, ' +
-  'amateur candid snapshot feel, raw unedited photo, no retouching, ' +
+  'amateur candid unposed snapshot feel, raw unedited photo, ' +
   'authentic {NATIONALITY} aesthetic';
 
 // 變數對應表
@@ -437,6 +438,15 @@ function injectStyle() {
     max-width: 95%; max-height: 95%; object-fit: contain;
     border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
   }
+  .kai-lightbox-close {
+    position: fixed; top: 18px; right: 24px;
+    width: 46px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.14); color: #fff;
+    border-radius: 50%; font-size: 22px; cursor: pointer;
+    backdrop-filter: blur(6px); transition: background .2s; z-index: 3001;
+  }
+  .kai-lightbox-close:hover { background: rgba(255,255,255,0.3); }
   .kai-img-btn {
     flex: 1; padding: 10px 8px;
     background: rgba(10,10,15,0.92); color: #f0f0f8;
@@ -1190,7 +1200,7 @@ function renderGallery() {
         <div class="kai-img-actions">
           <button class="kai-img-btn${img.saved ? ' saved' : ''}" data-act="save" data-idx="${i}"
             ${img.saved ? 'disabled' : ''}>
-            ${img.saved ? '✅ 已存' : '📁 存 Drive'}
+            ${img.saved ? '✅ 已選用' : '✓ 選這張'}
           </button>
         </div>
       </div>
@@ -1225,8 +1235,13 @@ function openLightbox(url) {
     box = document.createElement('div');
     box.id = 'kai-lightbox';
     box.className = 'kai-lightbox';
-    box.innerHTML = '<img alt="原圖預覽" />';
-    box.addEventListener('click', () => box.classList.remove('open'));
+    box.innerHTML = '<span class="kai-lightbox-close" title="關閉 (Esc)">✕</span><img alt="原圖預覽" />';
+    box.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'IMG') box.classList.remove('open');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') box.classList.remove('open');
+    });
     document.body.appendChild(box);
   }
   box.querySelector('img').src = url;
