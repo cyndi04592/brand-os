@@ -80,23 +80,23 @@ const NATIONALITY_MAP = {
 };
 
 const PERSONA_MAP = {
-  girl_next_door: 'girl-next-door type with intellectual warmth, soft gentle smile',
-  professional:   'confident intellectual professional woman, composed and elegant',
-  nordic_cool:    'Nordic-inspired cool minimalist model aesthetic, sharp jawline, distant gaze',
-  warm_mama:      'warm maternal aura, cozy homebody vibe, caring expression',
-  sweet_college:  'sweet college student vibe, fresh and cheerful, natural youthful energy',
-  edgy_fashion:   'edgy fashion-forward aura, mysterious allure, editorial posing',
-  // ── v5.13 男性類型 ──
+  girl_next_door: 'girl-next-door type with intellectual warmth, soft gentle smile, natural skin with light freckles and visible texture',
+  professional:   'confident intellectual professional woman, composed and poised, natural skin with subtle fine lines and real texture',
+  nordic_cool:    'Nordic-inspired cool minimalist vibe, defined features, calm distant gaze, natural skin with visible pores and real texture',
+  warm_mama:      'warm maternal aura, cozy homebody vibe, caring expression, slightly tired warm eyes, natural skin with visible pores and faint under-eye shadows',
+  sweet_college:  'sweet college student vibe, cheerful and natural, youthful energy, real young skin with a few light blemishes and visible texture',
+  edgy_fashion:   'edgy alternative individual style, striking candid unposed look, natural skin with visible pores and real texture',
+  // ── v5.13 男性類型(outdoor_man 是真實度黃金樣板,不要動)──
   outdoor_man:    'rugged outdoor adventurer vibe, weathered tan skin, light stubble, athletic build, confident mountain-guide presence, The North Face technical aesthetic',
-  sporty_man:     'energetic sporty guy, fit athletic build, friendly approachable grin, casual active lifestyle vibe',
-  pro_man:        'confident professional man, clean composed look, trustworthy expression, smart-casual presence',
-  uncle_warm:     'warm friendly middle-aged man, approachable everyman charm, genuine relatable smile',
+  sporty_man:     'energetic sporty guy, fit athletic build, friendly approachable grin, light sweat sheen, sun-tanned skin with natural texture',
+  pro_man:        'confident professional man, composed trustworthy expression, smart-casual presence, natural skin with visible texture and faint stubble shadow',
+  uncle_warm:     'warm friendly middle-aged man, approachable everyman charm, genuine relatable smile, natural aging skin with laugh lines and visible texture',
 };
 
 const LIGHTING_MAP = {
   window_day:  'natural daylight from a window, overcast soft diffused lighting',
   cafe_side:   'golden hour side light from cafe window, warm amber tones',
-  studio_flat: 'flat diffused studio light, even shadows, editorial clean',
+  studio_flat: 'soft studio light with gentle directional shadows that reveal skin texture',
   outdoor_day: 'natural outdoor afternoon sunlight, slight lens flare',
   indoor_warm: 'warm indoor tungsten lighting, cozy ambient mood',
 };
@@ -220,7 +220,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.17] 已載入');
+  console.log('[kol-ai-generator v3.18] 已載入');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -980,6 +980,17 @@ function buildPrompt() {
     .replace('{LIGHTING}', LIGHTING_MAP[params.lighting] || LIGHTING_MAP.window_day)
     .replace('{OUTFIT}', OUTFIT_MAP[params.outfit] || OUTFIT_MAP.beige_knit)
     .replace('{SCENE}', SCENE_MAP[params.scene] || SCENE_MAP.apartment);
+
+// v3.18: Korean 反 K-beauty 防護 ──
+  //  flux 對「Korean」的訓練資料壓倒性是 K-beauty 玻璃肌/偶像,會把臉拉向塑膠網美。
+  //  只針對 kr 做平衡:加普通人錨點 + 拔掉 "authentic Korean aesthetic" 尾巴。
+  //  不動 PROMPT_BACKBONE,不影響台/日 KOL。
+  if (params.nationality === 'kr') {
+    prompt = prompt
+      .replace(', authentic Korean aesthetic', '')
+      .replace('Korean woman', 'Korean woman with a plain ordinary everyday face, not a model')
+      .replace('Korean man', 'Korean man with a plain ordinary everyday face, not a model');
+  }
 
   if (freeText) {
     prompt += ', ' + freeText;
