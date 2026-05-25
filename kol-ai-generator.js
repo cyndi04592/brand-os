@@ -116,14 +116,16 @@ const OUTFIT_MAP = {
 };
 
 const SCENE_MAP = {
-  apartment:  'sitting casually in a minimalist modern Taiwanese apartment, beige wall background',
-  cafe:       'sitting at a cafe window seat, ceramic coffee cup on wooden table, soft bokeh background',
-  studio:     'against a neutral Japandi-style studio backdrop, muted oatmeal tones',
-  outdoor_city: 'urban Taipei street background with soft focus, natural afternoon light',
-  bedroom:    'relaxed in a soft-lit bedroom with linen sheets, morning light',
+  apartment:  'sitting casually in a lived-in minimalist apartment, a houseplant and soft furniture slightly out of focus behind, shot from a natural candid angle, 35mm documentary feel, real depth of field',
+  cafe:       'at a cafe window seat with a coffee cup and a few everyday things on the wooden table, blurred street greenery through the window, candid unposed moment, 35mm documentary feel',
+  studio:     'in a calm Japandi-style room with soft natural window light, simple wooden furniture softly out of focus behind, relaxed candid feel',
+  outdoor_city: 'on a quiet city street with blurred shopfronts and passers-by behind, natural afternoon light, candid street-photography feel, 35mm',
+  bedroom:    'relaxed on a bed with slightly rumpled linen sheets, soft morning light through the curtains, intimate candid snapshot of a real lived-in room',
+  kitchen:    'in a cozy home kitchen, everyday utensils and ingredients softly out of focus on the counter behind, warm natural light, candid lifestyle moment',
+  living_room: 'relaxed on a sofa in a lived-in living room with cushions and a throw blanket, soft warm lamp light, candid at-home moment',
   // ── v5.13 戶外場景 ──
-  mountain:   'standing on a mountain trail with forest and misty peaks in the background, natural outdoor light',
-  campsite:   'at an outdoor campsite with trees and gear around, golden hour natural light',
+  mountain:   'on a mountain trail with misty forest peaks behind, a little wind in the hair, candid hiking snapshot, natural outdoor light',
+  campsite:   'at an outdoor campsite with tents and gear scattered around, warm golden hour light, candid relaxed moment',
 };
 
 // 中文顯示對應
@@ -181,6 +183,8 @@ const LABEL = {
     studio:       'Japandi 棚',
     outdoor_city: '城市街頭',
     bedroom:      '臥室晨光',
+    kitchen:      '🍳 居家廚房',
+    living_room:  '🛋 客廳沙發',
     mountain:     '🏔 山林步道',
     campsite:     '🏕 戶外營地',
   },
