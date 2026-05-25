@@ -392,17 +392,24 @@ function injectStyle() {
     .kai-gallery { grid-template-columns: 1fr; }
   }
   .kai-img-card {
-    aspect-ratio: 3/4; border-radius: 8px; overflow: hidden;
+    border-radius: 8px;
     background: rgba(0,0,0,0.4); position: relative;
     border: 2px solid transparent; transition: all .2s;
     animation: kaiFadeIn .5s ease both;
+    display: flex; flex-direction: column;
   }
+  .kai-img-thumb {
+    position: relative; aspect-ratio: 3/4; overflow: hidden;
+    border-radius: 8px 8px 0 0; cursor: zoom-in;
+  }
+  .kai-img-thumb:hover img { transform: scale(1.04); }
   @keyframes kaiFadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .kai-img-card img {
+  .kai-img-thumb img {
     width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform .25s;
   }
   .kai-img-idx {
     position: absolute; top: 6px; left: 6px;
@@ -413,8 +420,18 @@ function injectStyle() {
     backdrop-filter: blur(6px);
   }
   .kai-img-actions {
-    position: absolute; bottom: 8px; left: 8px; right: 8px;
-    display: flex; gap: 6px;
+    display: flex; gap: 6px; padding: 8px;
+  }
+  .kai-lightbox {
+    position: fixed; inset: 0; z-index: 3000;
+    background: rgba(0,0,0,0.92); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center;
+    cursor: zoom-out; padding: 24px;
+  }
+  .kai-lightbox.open { display: flex; }
+  .kai-lightbox img {
+    max-width: 95%; max-height: 95%; object-fit: contain;
+    border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
   }
   .kai-img-btn {
     flex: 1; padding: 10px 8px;
@@ -1161,23 +1178,24 @@ function renderGallery() {
     const nsfw = img.nsfw ? '<div style="position:absolute;top:6px;right:6px;background:rgba(250,109,155,0.85);color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;">NSFW</div>' : '';
     return `
       <div class="kai-img-card${img.saved ? ' picked' : ''}" data-idx="${i}">
-        <span class="kai-img-idx">#${i + 1}</span>
-        ${nsfw}
-        <img src="${escapeHtml(img.url)}" alt="AI KOL ${i + 1}" loading="lazy" />
+        <div class="kai-img-thumb" data-act="zoom" data-idx="${i}" title="點擊放大看原圖">
+          <span class="kai-img-idx">#${i + 1}</span>
+          ${nsfw}
+          <img src="${escapeHtml(img.url)}" alt="AI KOL ${i + 1}" loading="lazy" />
+        </div>
         <div class="kai-img-actions">
           <button class="kai-img-btn${img.saved ? ' saved' : ''}" data-act="save" data-idx="${i}"
             ${img.saved ? 'disabled' : ''}>
             ${img.saved ? '✅ 已存' : '📁 存 Drive'}
           </button>
-          <button class="kai-img-btn view-btn" data-act="view" data-idx="${i}" title="開新分頁查看原圖">🔍</button>
         </div>
       </div>
     `;
   }).join('');
 
-  // 綁定按鈕
-  gallery.querySelectorAll('.kai-img-btn').forEach(btn => {
-    btn.addEventListener('click', handleImgAction);
+  // 綁定:點圖放大 + 存 Drive
+  gallery.querySelectorAll('[data-act]').forEach(el => {
+    el.addEventListener('click', handleImgAction);
   });
 }
 
@@ -1187,8 +1205,8 @@ async function handleImgAction(e) {
   const img = S.lastImages[idx];
   if (!img) return;
 
-  if (act === 'view') {
-    window.open(img.url, '_blank');
+  if (act === 'zoom') {
+    openLightbox(img.url);
     return;
   }
 
@@ -1197,6 +1215,19 @@ async function handleImgAction(e) {
   }
 }
 
+function openLightbox(url) {
+  let box = document.getElementById('kai-lightbox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'kai-lightbox';
+    box.className = 'kai-lightbox';
+    box.innerHTML = '<img alt="原圖預覽" />';
+    box.addEventListener('click', () => box.classList.remove('open'));
+    document.body.appendChild(box);
+  }
+  box.querySelector('img').src = url;
+  box.classList.add('open');
+}
 async function saveImageToDrive(idx) {
   const img = S.lastImages[idx];
   if (!img) return;
