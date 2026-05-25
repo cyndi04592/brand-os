@@ -51,14 +51,14 @@ const S = {
 const BACKBONES = {
   // 素人 candid:生活感、有瑕疵、親切(食品/生活類/又晴)
   candid:
-    'Casual unretouched iPhone 15 Pro portrait photo of {AGE} {NATIONALITY} {GENDER}, ' +
+    'Casual candid portrait photo of {AGE} {NATIONALITY} {GENDER} shot on 35mm film with a point-and-shoot camera, ' +
     '{PERSONA}, ' +
     'mostly matte skin with only a little natural T-zone shine, raw unretouched skin clearly showing every pore and fine line, strong visible real skin texture, no beauty filter no skin smoothing no airbrushing, uneven natural skin tone, ' +
     'natural sub-surface scattering, fine vellus peach fuzz, subtle skin imperfections and faint freckles, ' +
     'slight asymmetry in face, natural minimal makeup, ' +
     'realistic hair with a few loose flyaway strands and slight natural frizz, individual unstyled hair strands, ' +
     '{LIGHTING}, wearing {OUTFIT}, {SCENE}, ' +
-    'amateur candid unposed snapshot feel, raw unedited photo, ' +
+    'amateur candid unposed snapshot feel, fine natural film grain and real film color tonality, raw unedited photo, ' +
     'authentic {NATIONALITY} aesthetic',
 
   // 攝影級 editorial:美但真、單側方向光、真皮膚(內衣/Misaki)
@@ -233,7 +233,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.24] 已載入');
+  console.log('[kol-ai-generator v3.25] 已載入');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
