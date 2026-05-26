@@ -132,17 +132,16 @@
     }
 
     // 🆕 B版 劇情注入:動作 + 台詞雙軌。
-    // 劇情框有引號台詞 → 注入講話指令(Seedance 2.0 會對嘴唸出來)。
-    // 引號外的字 → 當主動作。沒填 → 退回罐頭 actionLine。
+    // ⚠️ 修正:劇情動作只「補充」不「取代」actionLine —— actionLine 裝著商品放大 + [Image2]引用,
+    //    被丟掉的話,一填劇情商品就不見了(跟「商品要大」的核心需求打架)。
     const { action: sitAction, speechLine } = parseSituation(opts.episode?.situation);
-    let openingAction = actionLine;
-    if (sitAction) {
-      openingAction = 'The woman performs this specific action as the main on-screen action: '
-        + sitAction + ' — show her actually doing it, natural and candid.';
-    }
 
-    // 單鏡頭:按角色順序組裝
-    const parts = [openingAction];
+    // 單鏡頭:actionLine(商品放大)永遠擺第一,劇情動作/台詞接在後面補充。
+    const parts = [actionLine];
+    if (sitAction) {
+      parts.push('Her specific on-screen action: ' + sitAction
+        + ' — show her actually doing this, natural and candid, while the product from [Image2] stays large, clearly visible and prominent in frame');
+    }
     if (speechLine) parts.push(speechLine);
 
     pushIfNonEmpty(parts, CrewMembers.environment?.contribute(ctx));
