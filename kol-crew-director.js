@@ -61,7 +61,7 @@
     moz: 'A person [Image1] {VERB} the accessory [Image2] naturally in hand, speaks directly to camera with relaxed tone',
     ka: 'A person [Image1] {VERB} the appliance [Image2] with subtle demonstration gestures, speaks directly to camera',
     // 🆕 通用模板:沒有專屬模板的品牌(ly/cf/ww/ra/flm/ever_7011/protex+未來新建)一律走這個,引用[Image2]且商品做大
-    default: 'A person [Image1] {VERB}, the product shown in [Image2] held or placed prominently in clear view, front-facing toward the camera, large, sharp and clearly visible as the visual centerpiece of the shot, speaks directly to camera with natural warmth',
+    default: 'A person [Image1] {VERB}, the product shown in [Image2] held naturally in hand and clearly visible in frame at a realistic true-to-life size, neither tiny nor exaggerated, integrated naturally into the action, speaks directly to camera with natural warmth',
   };
 
   /**
