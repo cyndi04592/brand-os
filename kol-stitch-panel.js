@@ -1,11 +1,17 @@
 // ==========================================================================
-// kol-stitch-panel.js — STEP 2 長影片接片 v3.0
+// kol-stitch-panel.js — STEP 2 長影片接片 v3.1
 // --------------------------------------------------------------------------
 // 設計：Seedance 單次最長約 15 秒。要更長 → 接片（多段串接）。
 //   STEP 2「生成電影鏡頭」下方放一顆「需要 15 秒以上？」按鈕，
 //   點了才展開接片區塊。區塊內：顯示目前主角(防呆) + 目標長度 + 生成。
 //   讀 S.selectedKol / S.seedanceProductUrls / composeSeedancePrompt
 //   → 完全跟著你選的品牌/KOL/商品/場景走，不再亂抓。
+//
+//   🆕 v3.1 改動（只動 runStitch）：
+//     1. 補傳 duration + opts → 劇情(cine-situation)終於進得去（原本漏傳）
+//     2. 預設鎖臉（比照 STEP2 主按鈕，不再只靠開關）
+//     3. 第一段加「商品 hero 開場特寫」，後段照劇情走
+//     （商品變大已由 kol.html 的 BRAND_ACTIONS.default 統一處理，所有品牌一視同仁）
 //
 // 依賴：window.KolStitch（kol-stitch.js，在它之後載入）
 // ==========================================================================
@@ -120,15 +126,37 @@
     var lookImage = (look && look.image_url) || ST.selectedKol.image_url;
     if (!lookImage) { toastFn('KOL 肖像 URL 取不到', 'error'); return; }
 
-    var basePrompt = composeFn(ST.currentBrandId, ST.selectedSceneId, ST.selectedLocationId, ST.selectedMovementId);
+    // 🆕 讀 STEP2 劇情框(跟「生成電影鏡頭」主按鈕共用同一個 cine-situation)
+    var cineSituation = (document.getElementById('cine-situation') || {}).value || '';
+    cineSituation = String(cineSituation).trim();
+
+    // 🆕 組 opts — 比照主按鈕:帶 outfitBrand + 劇情。原本漏傳 opts → 劇情整段沒進 prompt。
+    //    ⚠️ 絕不傳 portraitMode='natural'，否則會破壞已鎖好的臉
+    var opts = { outfitBrand: ST.selectedOutfitBrand || 'auto' };
+    if (cineSituation) opts.episode = { situation: cineSituation };
+
+    // 🆕 補上 duration(第5參) + opts(第6參) → 劇情/場景吃得進去。
+    //    商品變大已由 kol.html 的 BRAND_ACTIONS.default 統一處理(所有品牌一視同仁)。
+    var segDur = String(segSec());
+    var basePrompt = composeFn(ST.currentBrandId, ST.selectedSceneId, ST.selectedLocationId, ST.selectedMovementId, segDur, opts);
     if (!basePrompt) { toastFn('組 prompt 失敗', 'error'); return; }
-    if (ST.seedanceFaceConsistency && !/consistent facial features/i.test(basePrompt)) {
-      basePrompt += ', consistent facial features, identity preserved';
+
+    // 🆕 預設鎖臉(比照主按鈕,不再只靠開關)
+    if (!/consistent facial features/i.test(basePrompt)) {
+      basePrompt += ', consistent facial features and identity preserved from reference image, same person throughout';
     }
+
+    // 🆕 第一段先給商品一個清楚的開場特寫(hero),後段照劇情走
+    var heroOpening = (products.length > 0)
+      ? 'The shot opens with a brief clear close-up of the product package, large and front-facing toward the camera, then continues naturally: '
+      : '';
 
     var nSeg = parseInt(document.getElementById('ks-target').value, 10) || 3;
     var plan = [];
-    for (var i = 0; i < nSeg; i++) plan.push({ prompt: basePrompt });
+    for (var i = 0; i < nSeg; i++) {
+      var segPrompt = (i === 0 && heroOpening) ? (heroOpening + basePrompt) : basePrompt;
+      plan.push({ prompt: segPrompt });
+    }
 
     var btn = document.getElementById('ks-go');
     var statusEl = document.getElementById('ks-status');
