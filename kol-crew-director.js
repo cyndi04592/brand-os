@@ -140,7 +140,7 @@
     const parts = [actionLine];
     if (sitAction) {
       parts.push('Her specific on-screen action: ' + sitAction
-        + ' — show her actually doing this, natural and candid, while the product from [Image2] stays large, clearly visible and prominent in frame');
+        + ' — show her actually doing this, natural and candid, while keeping the product from [Image2] clearly visible in frame at a natural realistic size, not exaggerated');
     }
     if (speechLine) parts.push(speechLine);
 
