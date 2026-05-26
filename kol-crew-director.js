@@ -39,8 +39,6 @@
       return;
     }
     CrewMembers[role] = module;
-    // 每次有模組註冊就檢查一次,湊齊立刻接管(不靠 setTimeout 猜時序)
-    if (typeof maybeTakeover === 'function') maybeTakeover();
   }
 
   function isReady() {
@@ -94,9 +92,6 @@
       persona,
       storyArc,
       episode: opts.episode || null,
-      // 🆕 v5.13 品牌接通:UI 選的服飾品牌 → 服裝師 resolveBrandKey 讀這欄
-      //   優先 opts.outfitBrand(UI傳的),其次 persona.outfit_brand(人設書預設)
-      outfitBrand: opts.outfitBrand || persona?.outfit_brand || '',
     };
 
     // 15 秒多鏡頭
@@ -104,8 +99,19 @@
       return composeMultiShotPrompt(ctx, actionLine);
     }
 
+    // 🆕 劇情注入:使用者劇情框(episode.situation)是「畫面在做什麼」的最高指令。
+    // 有填 → 用它當開頭動作句(蓋過品牌罐頭動作),並關掉「對鏡頭講話」的預設,
+    // 讓 AI 演動作而不是站著瞎掰台詞。沒填 → 退回原本的罐頭 actionLine。
+    const situation = (opts.episode?.situation || '').trim();
+    let openingAction = actionLine;
+    if (situation) {
+      openingAction = 'The woman performs this specific action: ' + situation
+        + ' — show her actually doing it as the main on-screen action, '
+        + 'natural and unscripted, not speaking to the camera.';
+    }
+
     // 單鏡頭:按角色順序組裝
-    const parts = [actionLine];
+    const parts = [openingAction];
 
     pushIfNonEmpty(parts, CrewMembers.environment?.contribute(ctx));
     pushIfNonEmpty(parts, CrewMembers.wardrobe?.contribute(ctx));
@@ -161,20 +167,25 @@
     const shotSequence = pickThreeShotsForScene(movements, ctx.movementId);
 
     const envText = CrewMembers.environment?.contribute(ctx) || '';
-    // 🆕 v5.13 品牌接通:多鏡頭也走服裝師(讀 ctx.outfitBrand),
-    //   服裝師內部已相容 scene.outfit;若服裝師沒註冊/回空才退回寫死邏輯
-    const outfitText = CrewMembers.wardrobe?.contribute(ctx)
-      || (scene.outfit ? 'wearing ' + scene.outfit : '');
-    // 🆕 v5.13: 多鏡頭妝容 — 只在 Shot 1 定妝一次,後兩段靠臉一致性延續(調味不擠劇情)
-    const makeupText = CrewMembers.makeup?.contribute(ctx) || '';
+    const outfitText = scene.outfit ? 'wearing ' + scene.outfit : '';
     const lightText = scene.light || '';
 
     const subjectDesc = `A woman [Image1] ${outfitText}, consistent facial features and identity across all shots`;
 
-    const shot1Subject = makeupText ? `${subjectDesc}, ${makeupText}` : subjectDesc;
-    const shot1 = `Shot 1 (0-5s): ${shot1Subject}, ${shotSequence[0].text}, ${envText}, ${lightText}`;
-    const shot2 = `Shot 2 (5-10s): Natural cut transition. ${actionLine}, ${shotSequence[1].text}, same scene continues, ${lightText}`;
-    const shot3 = `Shot 3 (10-15s): Smooth cut. ${shotSequence[2].text}, emotional closing beat, ${lightText}`;
+    // 🆕 劇情注入(15秒多鏡頭):有填劇情 → 用它當三鏡頭的主軸動作,
+    // 蓋過罐頭 actionLine,讓她照劇情演(撕→吃→滿足的節奏由 AI 依 situation 分配)。
+    const situation = (ctx.episode?.situation || '').trim();
+    let shot1, shot2, shot3;
+    if (situation) {
+      const act = 'She performs this action naturally as the main on-screen action (not speaking to camera): ' + situation;
+      shot1 = `Shot 1 (0-5s): ${subjectDesc}. ${act} — beginning of the action. ${shotSequence[0].text}, ${envText}, ${lightText}`;
+      shot2 = `Shot 2 (5-10s): Natural cut transition, same woman same scene. Continue the same action: ${situation}. ${shotSequence[1].text}, ${lightText}`;
+      shot3 = `Shot 3 (10-15s): Smooth cut. The satisfying closing moment of the action, ${shotSequence[2].text}, emotional closing beat, ${lightText}`;
+    } else {
+      shot1 = `Shot 1 (0-5s): ${subjectDesc}, ${shotSequence[0].text}, ${envText}, ${lightText}`;
+      shot2 = `Shot 2 (5-10s): Natural cut transition. ${actionLine}, ${shotSequence[1].text}, same scene continues, ${lightText}`;
+      shot3 = `Shot 3 (10-15s): Smooth cut. ${shotSequence[2].text}, emotional closing beat, ${lightText}`;
+    }
 
     const arc = ctx.storyArc || {};
     const arcParts = [];
@@ -241,48 +252,8 @@
     BRAND_ACTIONS,
   };
 
-  // 🔥 關鍵:安全接管 kol.html 的 composeSeedancePrompt
-  // ── v5.12 安全開關 ──
-  // 策略:① 備份原版 ② 每次模組 register 就檢查 ③ 7 個湊齊立刻接管,
-  //       湊不齊則保留原版 fallback,確保任何情況都生得出 prompt。
+  // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
+  window.composeSeedancePrompt = composePrompt;
 
-  const _originalCompose =
-    (typeof window.composeSeedancePrompt === 'function')
-      ? window.composeSeedancePrompt
-      : null;
-
-  let _takenOver = false;
-
-  function maybeTakeover() {
-    if (_takenOver) return;
-    if (isReady()) {
-      window.composeSeedancePrompt = composePrompt;
-      _takenOver = true;
-      console.log('[CrewDirector] ✅ 7 模組全就緒 · 已安全接管 composeSeedancePrompt');
-    }
-  }
-
-  // 安全網:萬一某模組始終沒註冊,延遲後做最終決定(保留原版)
-  function finalDecision() {
-    if (_takenOver) return;
-    if (_originalCompose) {
-      window.composeSeedancePrompt = _originalCompose;
-      console.warn('[CrewDirector] ⚠️ 模組未完整,保留原版 composeSeedancePrompt。待實作:', status().pending);
-    } else {
-      window.composeSeedancePrompt = composePrompt;
-      console.warn('[CrewDirector] ⚠️ 模組未完整且無原版,暫用 crew 版(可能部分殘缺)');
-    }
-  }
-
-  // 先嘗試一次(萬一模組比 director 早載入)
-  maybeTakeover();
-  // 安全網延遲檢查
-  if (typeof window.setTimeout === 'function') {
-    window.setTimeout(finalDecision, 50);
-  }
-
-  // 手動重試入口
-  window.CrewDirector.retryTakeover = maybeTakeover;
-
-  console.log('[CrewDirector] 🎬 v5.12 Full 版載入 · 接管將於 7 模組就緒後自動生效');
+  console.log('[CrewDirector] 🎬 v5.12 Full 版就緒 · 組 prompt 責任已接管');
 })();
