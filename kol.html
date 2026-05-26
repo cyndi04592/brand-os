@@ -1378,6 +1378,9 @@ const BRAND_ACTIONS = {
   la: 'A woman [Image1] {VERB}, {PRODUCT_CONTEXT}, speaks directly to camera with natural warmth',
   moz: 'A person [Image1] {VERB} the accessory [Image2] naturally in hand, speaks directly to camera with relaxed tone',
   ka: 'A person [Image1] {VERB} the appliance [Image2] with subtle demonstration gestures, speaks directly to camera',
+  // 🆕 通用模板:所有沒有專屬模板的品牌(ly/cf/ww/ra/flm/ever_7011/protex + 未來新建)一律走這個。
+  //    一定引用商品照 [Image2] 且把商品做大,不再借用內衣模板。
+  default: 'A person [Image1] {VERB}, the product shown in [Image2] held or placed prominently in clear view, front-facing toward the camera, large, sharp and clearly visible as the visual centerpiece of the shot, speaks directly to camera with natural warmth',
 };
 
 // v5.11.2: 舊 SCENE_LIBRARY 已刪除,改由 kol-universal-scenes.js 提供
@@ -1565,7 +1568,7 @@ function composeSeedancePrompt(brandId, sceneId, locationId, movementId, duratio
   // 支援兩種場景格式:
   //   新:scene.product_context_template(UNIVERSAL_POOL)+ brand.brand_type
   //   舊:scene.product_context(BRAND_SCENES.la)
-  let action = (BRAND_ACTIONS[brandId] || BRAND_ACTIONS.la).replace('{VERB}', scene.verb || 'naturally engages with the scene');
+  let action = (BRAND_ACTIONS[brandId] || BRAND_ACTIONS.default).replace('{VERB}', scene.verb || 'naturally engages with the scene');
 
   if (action.includes('{PRODUCT_CONTEXT}')) {
     let productCtx = '';
