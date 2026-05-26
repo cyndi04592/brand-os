@@ -65,6 +65,36 @@
   /**
    * 組合 prompt · 核心(取代 kol.html composeSeedancePrompt)
    */
+  // 🆕 B版 劇情注入解析:把劇情框拆成「動作」+「台詞」雙軌。
+  // Seedance 2.0 原生會講話:引號內的句子會被當台詞對嘴唸出來。
+  //   - 抓出所有中/英引號內的句子 → 當台詞(speaks in Mandarin: "...")
+  //   - 引號外的字 → 當動作描述
+  //   回傳 { action, speechLine }。沒台詞 → speechLine 為 ''。
+  function parseSituation(raw) {
+    const situation = (raw || '').trim();
+    if (!situation) return { action: '', speechLine: '' };
+
+    // 同時支援中文引號「」『』 與英文 " " 和 ' '
+    const quoteRe = /[「『"']([^「『"'』」]{1,40})[」』"']/g;
+    const lines = [];
+    let m;
+    while ((m = quoteRe.exec(situation)) !== null) {
+      const t = (m[1] || '').trim();
+      if (t) lines.push(t);
+    }
+
+    // 動作 = 把引號連同內容拿掉後剩下的字
+    const action = situation.replace(quoteRe, ' ').replace(/\s+/g, ' ').trim();
+
+    let speechLine = '';
+    if (lines.length) {
+      // FAL 規矩:短句最佳(5-10字),標語言。多句用逗號接成一段。
+      const quoted = lines.map(s => `"${s}"`).join(', ');
+      speechLine = `She speaks in natural Taiwanese Mandarin, clear lip-sync, saying: ${quoted}. No background music.`;
+    }
+    return { action, speechLine };
+  }
+
   function composePrompt(brandId, sceneId, locationId, movementId, duration, opts) {
     opts = opts || {};
 
@@ -99,19 +129,19 @@
       return composeMultiShotPrompt(ctx, actionLine);
     }
 
-    // 🆕 劇情注入:使用者劇情框(episode.situation)是「畫面在做什麼」的最高指令。
-    // 有填 → 用它當開頭動作句(蓋過品牌罐頭動作),並關掉「對鏡頭講話」的預設,
-    // 讓 AI 演動作而不是站著瞎掰台詞。沒填 → 退回原本的罐頭 actionLine。
-    const situation = (opts.episode?.situation || '').trim();
+    // 🆕 B版 劇情注入:動作 + 台詞雙軌。
+    // 劇情框有引號台詞 → 注入講話指令(Seedance 2.0 會對嘴唸出來)。
+    // 引號外的字 → 當主動作。沒填 → 退回罐頭 actionLine。
+    const { action: sitAction, speechLine } = parseSituation(opts.episode?.situation);
     let openingAction = actionLine;
-    if (situation) {
-      openingAction = 'The woman performs this specific action: ' + situation
-        + ' — show her actually doing it as the main on-screen action, '
-        + 'natural and unscripted, not speaking to the camera.';
+    if (sitAction) {
+      openingAction = 'The woman performs this specific action as the main on-screen action: '
+        + sitAction + ' — show her actually doing it, natural and candid.';
     }
 
     // 單鏡頭:按角色順序組裝
     const parts = [openingAction];
+    if (speechLine) parts.push(speechLine);
 
     pushIfNonEmpty(parts, CrewMembers.environment?.contribute(ctx));
     pushIfNonEmpty(parts, CrewMembers.wardrobe?.contribute(ctx));
@@ -172,14 +202,14 @@
 
     const subjectDesc = `A woman [Image1] ${outfitText}, consistent facial features and identity across all shots`;
 
-    // 🆕 劇情注入(15秒多鏡頭):有填劇情 → 用它當三鏡頭的主軸動作,
-    // 蓋過罐頭 actionLine,讓她照劇情演(撕→吃→滿足的節奏由 AI 依 situation 分配)。
-    const situation = (ctx.episode?.situation || '').trim();
+    // 🆕 B版 劇情注入(15秒多鏡頭):動作鋪進三鏡頭,台詞放在中段鏡頭講出來。
+    const { action: sitAction, speechLine } = parseSituation(ctx.episode?.situation);
     let shot1, shot2, shot3;
-    if (situation) {
-      const act = 'She performs this action naturally as the main on-screen action (not speaking to camera): ' + situation;
+    if (sitAction) {
+      const act = 'She performs this action naturally as the main on-screen action: ' + sitAction;
+      const speak = speechLine ? ' ' + speechLine : '';
       shot1 = `Shot 1 (0-5s): ${subjectDesc}. ${act} — beginning of the action. ${shotSequence[0].text}, ${envText}, ${lightText}`;
-      shot2 = `Shot 2 (5-10s): Natural cut transition, same woman same scene. Continue the same action: ${situation}. ${shotSequence[1].text}, ${lightText}`;
+      shot2 = `Shot 2 (5-10s): Natural cut transition, same woman same scene. Continue: ${sitAction}.${speak} ${shotSequence[1].text}, ${lightText}`;
       shot3 = `Shot 3 (10-15s): Smooth cut. The satisfying closing moment of the action, ${shotSequence[2].text}, emotional closing beat, ${lightText}`;
     } else {
       shot1 = `Shot 1 (0-5s): ${subjectDesc}, ${shotSequence[0].text}, ${envText}, ${lightText}`;
