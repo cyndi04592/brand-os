@@ -1,5 +1,5 @@
 // ==========================================================================
-// kol-stitch-panel.js — STEP 2 長影片接片 v3.1
+// kol-stitch-panel.js — STEP 2 長影片接片 v3.2
 // --------------------------------------------------------------------------
 // 設計：Seedance 單次最長約 15 秒。要更長 → 接片（多段串接）。
 //   STEP 2「生成電影鏡頭」下方放一顆「需要 15 秒以上？」按鈕，
@@ -12,6 +12,10 @@
 //     2. 預設鎖臉（比照 STEP2 主按鈕，不再只靠開關）
 //     3. 第一段加「商品 hero 開場特寫」，後段照劇情走
 //     （商品變大已由 kol.html 的 BRAND_ACTIONS.default 統一處理，所有品牌一視同仁）
+//
+//   🆕 v3.2 改動（配合 kol-stitch.js v2.0 reference-to-video）：
+//     1. 文案更新：不再是「尾幀接首幀」，改為「回錨原始照片＋接住前一段影片」
+//     2. 第 2 段起 prompt 自動帶 [Video1] 延續句 → 情緒/表情接住、不重生
 //
 // 依賴：window.KolStitch（kol-stitch.js，在它之後載入）
 // ==========================================================================
@@ -52,7 +56,7 @@
       + 'border-radius:10px;padding:10px;font-size:13px;cursor:pointer;">＋ 需要 15 秒以上？開啟長影片接片</button>'
       + '<div id="ks-box" style="display:none;margin-top:10px;padding:14px;border:1px solid rgba(167,139,250,.30);'
       + 'border-radius:12px;background:#15151f;flex-direction:column;gap:10px;">'
-      + '  <div style="font-size:11px;color:#9a9ab0;line-height:1.55;">Seedance 單次最長約 15 秒。接片會自動生多段、用「尾幀接首幀」鎖臉串成長片。<b style="color:#c8c8d8;">商品照、場景、畫質都沿用你上面選的。</b></div>'
+      + '  <div style="font-size:11px;color:#9a9ab0;line-height:1.55;">Seedance 單次最長約 15 秒。接片會自動生多段、每段<b style="color:#c8c8d8;">回錨原始照片＋接住前一段影片</b>（reference-to-video），臉、商品、情緒都不斷。<b style="color:#c8c8d8;">商品照、場景、畫質都沿用你上面選的。</b></div>'
       + '  <div id="ks-hero" style="font-size:12px;background:#0e0e16;border:1px solid #2a2a3a;border-radius:9px;padding:8px 10px;"></div>'
       + '  <div style="display:flex;gap:8px;align-items:center;">'
       + '    <label style="font-size:12px;color:#9a9ab0;white-space:nowrap;">目標長度</label>'
@@ -86,7 +90,7 @@
     };
     document.getElementById('ks-target').onchange = updateCost;
     document.getElementById('ks-go').onclick = runStitch;
-    console.log('[Stitch/STEP2] 接片已長進 STEP 2');
+    console.log('[Stitch/STEP2] 接片已長進 STEP 2 · v3.2 reference-to-video');
     return true;
   }
 
@@ -152,9 +156,19 @@
       : '';
 
     var nSeg = parseInt(document.getElementById('ks-target').value, 10) || 3;
+
+    // 🆕 v3.2：第 2 段起加「延續前一段影片 [Video1]」→ 情緒/表情接住、不重生
+    //    (引擎 kol-stitch.js v2.0 會把前一段整支影片當 video_urls 餵進來，這裡是叫模型「用」它)
+    var continueLead = 'This shot continues directly from the previous video [Video1]: the same person with the exact same face, the same expression and emotion flowing on naturally without any reset or restart. ';
+
     var plan = [];
     for (var i = 0; i < nSeg; i++) {
-      var segPrompt = (i === 0 && heroOpening) ? (heroOpening + basePrompt) : basePrompt;
+      var segPrompt;
+      if (i === 0) {
+        segPrompt = heroOpening ? (heroOpening + basePrompt) : basePrompt;   // 第一段：商品開場 + 劇情
+      } else {
+        segPrompt = continueLead + basePrompt;                                // 後段：延續 [Video1]
+      }
       plan.push({ prompt: segPrompt });
     }
 
