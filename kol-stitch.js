@@ -1,22 +1,16 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v1.2
+// kol-stitch.js — 自動接片引擎 v2.0
+// v2.0：砍掉「尾幀接首幀」，改成 reference-to-video（每段回錨原始 KOL 照 + 商品照，
+//       前一段「整支影片」當 @Video1 延續）→ 內心戲/表情會接住、畫質不再逐段衰退。
 // --------------------------------------------------------------------------
-// v1.2 (商品放大)：段1 prompt 自動加「商品特寫放大」框構；接續 prompt 也叫商品保持放大。
-//   段1 把商品放大 → 尾幀商品就大 → 段2 起 image2video 跟著大。
-// v1.1 (修臉漂移)：引擎選擇改用「第幾段」決定,不再用「有沒有商品」。
-//   段1     → reference-to-video（塞商品照,建立人+商品）
-//   段2 起  → image2video（尾幀當第一幀 → 臉鎖死）
-//   代價：段2 起不再餵商品照,商品靠段1尾幀延續,後段可能微漂（單引擎天花板）。
-//
-// 設計原則：底層一次做對,半自動(mode:'semi') / 全自動(mode:'auto') 共用同一套。
+// 設計原則：底層一次做對，半自動(mode:'semi') / 全自動(mode:'auto') 共用同一套。
 // UI 只是薄薄一層蓋上去；換 UI 不用動這支。
 //
 // 依賴的 Worker action（都回傳 seedance_submit 同款格式 → 共用 fal_poll）：
-//   seedance_submit              生段1（reference-to-video，可塞商品照）
-//   seedance_image2video_submit  生段2起（尾幀當第一幀,鎖臉）
+//   seedance_image2video_submit  生一段（尾幀當第一幀，鎖臉）
 //   extract_frame                抽幀（frame_type:'last' 抽尾幀）
 //   video_compose                多段硬切接成一條
-//   fal_poll                     輪詢（你現成的,沿用）
+//   fal_poll                     輪詢（你現成的，沿用）
 //
 // 用法：
 //   KolStitch.init({ workerUrl:'https://kol-proxy.calm-sunset-6b66.workers.dev' });
@@ -28,10 +22,10 @@ window.KolStitch = (function () {
   // ---- 設定 ---------------------------------------------------------------
   const cfg = {
     workerUrl: 'https://kol-proxy.calm-sunset-6b66.workers.dev',
-    password: 'raby2026', // Worker 每個 POST 都驗密碼,少了會被擋「密碼錯誤」
+    password: 'raby2026', // Worker 每個 POST 都驗密碼，少了會被擋「密碼錯誤」
     pollIntervalMs: 5000,
     pollMaxTries: 180,    // 5s × 180 = 15 分鐘上限
-    pollTask: null,       // 想用 kol.html 現成的輪詢,就 init({ pollTask: 你的函式 }) 換掉
+    pollTask: null,       // 想用 kol.html 現成的輪詢，就 init({ pollTask: 你的函式 }) 換掉
   };
   function init(options) { Object.assign(cfg, options || {}); return cfg; }
 
@@ -76,7 +70,7 @@ window.KolStitch = (function () {
     return null;
   }
 
-  // 內建輪詢：拿 submit 回來的資料去打 fal_poll,直到出 URL
+  // 內建輪詢：拿 submit 回來的資料去打 fal_poll，直到出 URL
   async function defaultPoll(submitResult, onTick) {
     const { requestId, endpoint, statusUrl, responseUrl } = submitResult;
     for (let i = 0; i < cfg.pollMaxTries; i++) {
@@ -97,13 +91,7 @@ window.KolStitch = (function () {
 
   // ---- 五個積木 -----------------------------------------------------------
 
-  // 🆕 v1.2：段1 商品放大框構。段1 把商品做大 → 尾幀商品就大 → 後面段都大。
-  const PRODUCT_EMPHASIS =
-    'The product is held up close to the camera and large in the frame, ' +
-    'its packaging clearly facing the lens and fully readable, ' +
-    'while her face stays visible — a medium close-up featuring both her face and the product prominently.';
-
-  // 抽尾幀：影片 URL → 最後一幀圖片 URL（伺服器端抽,繞過 CORS）
+  // 抽尾幀：影片 URL → 最後一幀圖片 URL（伺服器端抽，繞過 CORS）
   async function extractLastFrame(videoUrl, onTick) {
     const sub = await api('extract_frame', { videoUrl, frameType: 'last' });
     const done = await poll(sub, onTick);
@@ -112,63 +100,27 @@ window.KolStitch = (function () {
     return url;
   }
 
-  // 🆕 v1.1：段2 起的 prompt。image2video 沒有 [Image1] 參考,
-  // 不要再餵段1那套整段場景描述（會跟 image2video 打架）。
-  // 重點全壓在「同一個人、同臉、同場景、同商品、自然接續」→ 把臉鎖死。
-  function buildContinuationPrompt(originalPrompt) {
-    return [
-      'Continue seamlessly from the given starting frame.',
-      'Exact same woman — identical face, hairstyle, skin texture and outfit as in the frame.',
-      'Same room, same lighting; the same product stays held up prominently and large near the camera, packaging facing the lens. Do not change the scene or add new objects.',
-      'Natural subtle movement and gestures, handheld iPhone vlog feel, photorealistic.',
-      'Absolutely no morphing or re-drawing of the face; keep identity 100% consistent.',
-    ].join(' ');
-  }
-
-  // 生一段：一張起始幀 → 一段影片
-  // 🔑 v1.1：用 opts.useReference 決定引擎,不再用「有沒有商品」。
-  //   useReference=true  → reference-to-video（可塞商品照,段1用）
-  //   useReference=false → image2video（尾幀當第一幀,鎖臉,段2起用）
-  //   未指定時退回舊行為（看有沒有商品）→ 向後相容,不影響其他呼叫者。
+  // 生一段：永遠用「原始 KOL 照 + 商品照」當錨點，前一段「整支影片」當延續參考
+  //（reference-to-video）。不再抽尾幀 → 內心戲/表情會接住，畫質也不會一段比一段爛。
   async function generateSegment(opts, onTick) {
-    if (!opts.startFrameUrl) throw new Error('generateSegment 缺少 startFrameUrl');
+    if (!opts.kolImageUrl) throw new Error('generateSegment 缺少 kolImageUrl（原始 KOL 照）');
     if (!opts.prompt) throw new Error('generateSegment 缺少 prompt');
 
-    var hasProduct = (opts.productImageUrls && opts.productImageUrls.length) ||
-                     (opts.productDriveFileIds && opts.productDriveFileIds.length);
-    var useReference = (opts.useReference != null) ? !!opts.useReference : !!hasProduct;
-
-    var sub;
-    if (useReference) {
-      // reference-to-video：起始幀(人) + 商品照 一起當參考（沿用你現成的 seedance_submit）
-      sub = await api('seedance_submit', {
-        kolImageUrl: opts.startFrameUrl,
-        productImageUrls: opts.productImageUrls,
-        productDriveFileIds: opts.productDriveFileIds,
-        brandId: opts.brandId,
-        kolName: opts.kolName,
-        prompt: opts.prompt,
-        duration: String(opts.durationSec || 10),
-        aspectRatio: opts.aspectRatio || '9:16',
-        resolution: opts.resolution || '720p',
-        generateAudio: opts.generateAudio === true,
-        tier: opts.tier || 'standard',   // 商品線預設標準版,畫質較好
-        seed: opts.seed,
-      });
-    } else {
-      // image2video：單圖,尾幀接首幀臉100%（鎖臉關鍵）
-      sub = await api('seedance_image2video_submit', {
-        imageUrl: opts.startFrameUrl,        // ← 這段的第一幀（鎖臉關鍵）
-        prompt: opts.prompt,
-        duration: String(opts.durationSec || 10),
-        aspectRatio: opts.aspectRatio || '9:16',
-        resolution: opts.resolution || '720p',
-        generateAudio: opts.generateAudio === true,  // 預設關,避免 AI 亂掰台詞
-        tier: opts.tier,
-        seed: opts.seed,
-        endImageUrl: opts.endImageUrl,        // 選配：指定這段的結束畫面
-      });
-    }
+    const sub = await api('seedance_submit', {
+      kolImageUrl: opts.kolImageUrl,                  // ← 永遠原始照，不是尾幀（@Image1）
+      productImageUrls: opts.productImageUrls,        // 商品照（@Image2…）
+      productDriveFileIds: opts.productDriveFileIds,
+      videoUrls: opts.videoUrls,                      // ← 前一段整支影片（@Video1）；第一段為空
+      brandId: opts.brandId,
+      kolName: opts.kolName,
+      prompt: opts.prompt,
+      duration: String(opts.durationSec || 5),
+      aspectRatio: opts.aspectRatio || '9:16',
+      resolution: opts.resolution || '720p',
+      generateAudio: opts.generateAudio === true,     // 預設關，避免 AI 亂掰台詞
+      tier: opts.tier || 'fast',
+      seed: opts.seed,
+    });
     const done = await poll(sub, onTick);
     const url = pickUrl(done);
     if (!url) throw new Error('生成段落沒拿到影片 URL');
@@ -193,82 +145,63 @@ window.KolStitch = (function () {
   //   startImageUrl,                 // 第一段的開場畫面（通常是 KOL 人像 URL）
   //   mode: 'semi' | 'auto',         // 半自動會在每段後停下等確認
   //   aspectRatio, resolution, generateAudio, tier, durationSec,
-  //   productImageUrls / productDriveFileIds,  // 只有段1會用到
   //   onProgress(msg, segIndex),     // 進度回報
   //   onSegmentDone(segIndex, url),  // 每段完成
-  //   waitForUserConfirm(i, url),    // 半自動：回一個 Promise,使用者按「下一步」才 resolve
+  //   waitForUserConfirm(i, url),    // 半自動：回一個 Promise，使用者按「下一步」才 resolve
   // }
   async function runStitchFlow(plan, opts) {
     opts = opts || {};
     const log = opts.onProgress || function () {};
-    if (!opts.startImageUrl) throw new Error('缺少 startImageUrl（第一段開場畫面,通常是 KOL 人像）');
+    const kolImg = opts.kolImageUrl || opts.startImageUrl;   // 相容舊面板傳的 startImageUrl
+    if (!kolImg) throw new Error('缺少 kolImageUrl（原始 KOL 照，每段都當錨點）');
     if (!Array.isArray(plan) || plan.length < 1) throw new Error('plan 至少要 1 段');
 
-    const segmentUrls = [];
     const segments = [];
-    let prevFrame = opts.startImageUrl;   // 第一段從這張開始
+    let prevVideoUrl = null;   // 前一段「整支影片」，當 @Video1 延續（取代尾幀）
 
     for (let i = 0; i < plan.length; i++) {
       const step = plan[i];
-      const durSec = step.durationSec || opts.durationSec || 10;
-      const isFirst = (i === 0);
+      const durSec = step.durationSec || opts.durationSec || 5;
 
-      // 🔑 v1.1：段1 → reference-to-video（塞商品照）；段2起 → image2video（尾幀鎖臉）
-      // 🆕 v1.2：段1 有商品 → 自動加「商品放大特寫」框構
-      let segPrompt;
-      if (isFirst) {
-        segPrompt = step.prompt;
-        const hasProd = (opts.productImageUrls && opts.productImageUrls.length) ||
-                        (opts.productDriveFileIds && opts.productDriveFileIds.length);
-        if (hasProd) segPrompt += '. ' + (opts.productEmphasis || PRODUCT_EMPHASIS);
-      } else {
-        segPrompt = buildContinuationPrompt(step.prompt);
-      }
-
-      log(`第 ${i + 1}/${plan.length} 段：${isFirst ? '建立人物+商品' : '尾幀接首幀·鎖臉'} 生成中…`, i);
+      log(`第 ${i + 1}/${plan.length} 段：生成中…`, i);
       const segUrl = await generateSegment({
-        startFrameUrl: prevFrame,
-        prompt: segPrompt,
+        kolImageUrl: kolImg,                                   // ← 永遠原始照，不再用尾幀
+        productImageUrls: opts.productImageUrls,
+        productDriveFileIds: opts.productDriveFileIds,
+        videoUrls: prevVideoUrl ? [prevVideoUrl] : undefined,  // ← 接前一段整支影片
+        prompt: step.prompt,
         durationSec: durSec,
         aspectRatio: opts.aspectRatio,
         resolution: opts.resolution,
         generateAudio: opts.generateAudio,
         tier: opts.tier,
         seed: step.seed,
-        useReference: isFirst,                                    // ← 關鍵：只有段1用 reference
-        productImageUrls: isFirst ? opts.productImageUrls : null, // 商品照只在段1餵
-        productDriveFileIds: isFirst ? opts.productDriveFileIds : null,
         brandId: opts.brandId,
         kolName: opts.kolName,
       }, function (n, st) { log(`第 ${i + 1} 段生成中…（${st}）`, i); });
 
-      segmentUrls.push(segUrl);
       segments.push({ url: segUrl, durationSec: durSec });
+      prevVideoUrl = segUrl;                                   // ← 不再抽尾幀，整支影片往下接
       if (opts.onSegmentDone) opts.onSegmentDone(i, segUrl);
 
-      // 不是最後一段 → 抽尾幀餵下一段
-      if (i < plan.length - 1) {
-        log(`第 ${i + 1} 段：抽尾幀…`, i);
-        prevFrame = await extractLastFrame(segUrl);
-
-        // 半自動：停下來等使用者確認再生下一段
-        if (opts.mode === 'semi' && opts.waitForUserConfirm) {
-          log(`第 ${i + 1} 段完成,等你確認…`, i);
-          await opts.waitForUserConfirm(i, segUrl);
-        }
+      // 半自動：停下來等使用者確認再生下一段
+      if (opts.mode === 'semi' && opts.waitForUserConfirm && i < plan.length - 1) {
+        log(`第 ${i + 1} 段完成，等你確認…`, i);
+        await opts.waitForUserConfirm(i, segUrl);
       }
     }
 
-    // 全部串起來
     if (segments.length === 1) {
-      log('只有一段,免接片。完成！');
-      return { finalUrl: segmentUrls[0], segmentUrls };
+      log('只有一段，免接片。完成！');
+      return { finalUrl: segments[0].url, segmentUrls: segments.map(s => s.url) };
     }
     log('接片中…');
     const finalUrl = await composeSegments(segments, function (n, st) { log(`接片中…（${st}）`); });
     log('完成！');
-    return { finalUrl, segmentUrls };
+    return { finalUrl, segmentUrls: segments.map(s => s.url) };
   }
+
+  console.log('[KolStitch] 🎬 v2.0 就緒 · reference-to-video（原始照錨點 + 前段影片延續）');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
@@ -277,7 +210,6 @@ window.KolStitch = (function () {
     generateSegment,
     composeSegments,
     runStitchFlow,
-    buildContinuationPrompt,
     pickUrl,
     _api: api,   // debug 用
   };
