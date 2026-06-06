@@ -229,8 +229,8 @@
     const multi = state.beats.length > 1;
     box.innerHTML = state.beats.map(cardHtml).join('') + `
 <div class="sbp-genrow">
-  <span class="sbp-note">${multi ? '⚠️ 多段需接片管線(demo 後上線),目前先打通 15 秒單段' : '✅ 15 秒單段,可直接生成'}</span>
-  <button class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.generate()">確認 → 生成</button>
+  <span class="sbp-note">${multi ? '⚠️ 多段需接片管線(demo 後上線),目前先打通 15 秒單段' : '✅ 用下面的運鏡/解析度設定,時長自動 15 秒'}</span>
+  <button class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.generate()">✅ 確認分鏡 → 直接生成</button>
 </div>`;
   }
 
