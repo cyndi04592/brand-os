@@ -234,7 +234,7 @@
     }
     const multi = state.beats.length > 1;
     const note = state.confirmed
-      ? '🔒 已鎖定 · 下面設定已凍結,挑好就按「🎬 生成電影鏡頭」'
+      ? '✅ 分鏡已確認 · 時長鎖 15 秒,其餘可調,挑好就按「🎬 生成電影鏡頭」'
       : (multi ? '⚠️ 多段需接片管線(demo 後上線),先確認第 1 段' : '確認後會鎖定下面設定、時長對齊 15 秒');
     box.innerHTML = state.beats.map(cardHtml).join('') + `
 <div class="sbp-genrow">
