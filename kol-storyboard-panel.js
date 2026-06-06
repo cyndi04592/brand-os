@@ -66,8 +66,12 @@
     render();
   }
 
-  function open(newCtx) {
+ function open(newCtx) {
     ctx = newCtx || {};
+    if (ctx.containerId) {
+      rootEl = document.getElementById(ctx.containerId);
+      ensureStyles();
+    }
     state.beats = [];
     state.outline = '';
     state.busy = false;
