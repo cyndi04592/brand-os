@@ -878,7 +878,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
       <div class="panel">
         <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>電影鏡頭設定</div>
-
+<!-- 🆕 v5.17: 分鏡產生器入口 -->
+        <div style="margin:0 0 4px">
+          <button class="btn btn-ghost btn-sm" type="button" onclick="openStoryboardForCine()">✨ 用分鏡產生器(大綱 → AI 編修)</button>
+        </div>
+        <div id="sbp-cine-mount" style="display:none;margin-bottom:10px"></div>
         <!-- 🆕 v5.16: 劇情/情境輸入(STEP2 終於可控 · 選填) -->
         <div class="form-group" style="margin-top:0">
           <label class="form-label">🎬 劇情 / 情境(選填 · 留空則 AI 依場景自由發揮)</label>
@@ -3244,7 +3248,26 @@ async function createSeedanceVideo() {
   if (S.seedanceProductUrls.length === 0) {
     if (!confirm('你沒加任何商品照,影片裡的 [Image2] 指涉會無對應圖(fal.ai 可能拒絕或效果不佳)。\n\n純展示 KOL 情境(無帶貨)可以繼續,要繼續嗎?')) return;
   }
-
+// 🆕 v5.17: STEP2 分鏡產生器入口
+function openStoryboardForCine() {
+  if (!S.selectedKol) { toast('請先選 KOL', 'warn'); return; }
+  document.getElementById('sbp-cine-mount').style.display = '';
+  KolStoryboardPanel.open({
+    containerId: 'sbp-cine-mount',
+    persona: S.selectedKol.persona || {},
+    product: { name: '', tag: '' },   // STEP2 商品靠大綱描述,不強制
+    sceneLabel: '',
+    onGenerate: (beats) => {
+      if (beats.length > 1) toast('多段需接片管線(demo 後上線),先生成第 1 段', 'warn');
+      const b = beats[0];
+      const sit = b.shotDesc + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
+      const el = document.getElementById('cine-situation');
+      if (el) el.value = sit;
+      toast('已把分鏡填入劇情,開始生成 🎬', 'success');
+      createSeedanceVideo();
+    },
+  });
+}
   // 🆕 v5.16: 讀劇情/情境輸入框(STEP2 終於可控)
   const cineSituation = document.getElementById('cine-situation')?.value?.trim() || '';
 
