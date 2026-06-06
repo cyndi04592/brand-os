@@ -1,16 +1,17 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-storywriter.js · v5.13
+//  kol-storywriter.js · v5.14
 //
-//  📖 編劇 — 故事弧、情緒基調、分鏡 beat 產生器
+//  📖 編劇 — 故事弧、情緒基調、分鏡 beat 產生器 + AI 編修前端
 //
 //  職責:
 //   • 管理故事弧(storyArc = theme / tone / productHint)
 //   • 單集故事情境(situation)
-//   • 🆕 v5.13:分鏡 beat 產生器(秒數 → beat 結構)
-//   • 🆕 v5.13:台詞秒數守門(一句話塞不塞得進一個 15 秒 beat)
+//   • 分鏡 beat 產生器(秒數 → beat 結構)
+//   • 台詞秒數守門
+//   • 🆕 v5.14:AI 編修前端(打包請求 buildExpandRequest / 合併結果 mergeExpandResult)
 //
-//  ⚠️ 本檔只負責「結構與骨架」。大綱 → 填好 beat 的 AI 編修走 Worker(下一塊);
-//     最終 prompt 組裝仍由 kol-crew-director 負責,本檔只提供 contribute() 內容。
+//  ⚠️ 本檔只負責「結構、骨架、打包、合併」,全是純函式、不碰網路。
+//     網路(api('storyboard_expand'))發生在 kol.html;最終 prompt 組裝由 crew-director 負責。
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
@@ -40,13 +41,9 @@
 
   /**
    * 依秒數產生 beat 骨架(純函式、無網路)
-   * @param {number} durationSec - 15 / 30 / 45 / 60 / 90
-   * @returns {Array} beat 骨架陣列
    */
   function planBeats(durationSec) {
     let roles = DURATION_TEMPLATES[durationSec];
-
-    // fallback:非預設秒數 → 用最接近的整數段數推
     if (!roles) {
       const n = Math.max(1, Math.round(durationSec / SECONDS_PER_BEAT));
       const base = ['hook', 'build', 'turn', 'turn2', 'payoff', 'cta'];
@@ -54,33 +51,85 @@
         ? base.slice(0, n)
         : [...base, ...Array(n - base.length).fill('build')];
     }
-
     return roles.map((role, i) => ({
       index: i + 1,
       role,
       zhLabel: BEAT_ROLES[role]?.zh || role,
       hint: BEAT_ROLES[role]?.hint || '',
       seconds: SECONDS_PER_BEAT,
-      shotDesc: '',          // ← AI 編修 / 使用者填:這格的鏡頭描述
-      dialogue: '',          // ← 這格的台詞
-      dialogueLocked: false, // ← true = 使用者釘死,AI 不准改
+      shotDesc: '',
+      dialogue: '',
+      dialogueLocked: false,
     }));
   }
 
   /**
-   * 台詞秒數守門:這句話塞不塞得進一個 15 秒 beat?
-   * @returns {{ chars:number, estSec:number, fits:boolean }}
+   * 台詞秒數守門:這句話塞不塞得進一個 beat?
    */
   function checkDialogueFit(text, beatSeconds = SECONDS_PER_BEAT) {
     const chars = (text || '').replace(/\s/g, '').length;
     const estSec = +(chars / SPEAK_RATE).toFixed(1);
-    return { chars, estSec, fits: estSec <= beatSeconds * 0.9 }; // 留 10% 餘裕
+    return { chars, estSec, fits: estSec <= beatSeconds * 0.9 };
+  }
+
+  /**
+   * 🆕 打包 AI 編修請求 → 給 api('storyboard_expand') 用的 payload(純函式)
+   * @param {object} inputs - { duration, outline, lockedLines, persona, product, sceneLabel }
+   */
+  function buildExpandRequest({
+    duration, outline, lockedLines,
+    persona = {}, product = {}, sceneLabel = '',
+  }) {
+    const joinList = (v) => Array.isArray(v) ? v.join('、') : (v || '');
+    return {
+      durationSec: duration,
+      beats: planBeats(duration),
+      outline: outline || '',
+      lockedLines: Array.isArray(lockedLines) ? lockedLines : [],
+      kolName: persona.persona_name || persona.name || '',
+      kolBackground: persona.background || '',
+      kolPersonality: persona.personality || '',
+      kolSpeakingStyle: persona.speaking_style || '',
+      kolCatchphrases: joinList(persona.catchphrases),
+      kolTabooWords: joinList(persona.taboo_words),
+      productName: product.name || '',
+      productTag: product.tag || '',
+      sceneLabel: sceneLabel || '',
+    };
+  }
+
+  /**
+   * 🆕 合併 AI 回來的 beats 進骨架(純函式)
+   *   - 把 shotDesc / dialogue 填進原骨架(保留 zhLabel / seconds / role 給 UI)
+   *   - 鎖定台詞逐字蓋回(雙保險)
+   *   - 每格跑一次 checkDialogueFit,標出爆秒的(overflow)
+   */
+  function mergeExpandResult(skeleton, llmBeats, lockedLines = []) {
+    const lockMap = {};
+    (lockedLines || []).forEach(l => {
+      if (l && l.index != null && l.text) lockMap[l.index] = String(l.text);
+    });
+    const llmMap = {};
+    (llmBeats || []).forEach(b => { if (b && b.index != null) llmMap[b.index] = b; });
+
+    return skeleton.map(s => {
+      const got = llmMap[s.index] || {};
+      const locked = lockMap[s.index];
+      const dialogue = locked || got.dialogue || '';
+      const fit = checkDialogueFit(dialogue, s.seconds);
+      return {
+        ...s,
+        shotDesc: got.shotDesc || s.shotDesc || '',
+        dialogue,
+        dialogueLocked: !!locked,
+        fit,
+        overflow: !fit.fits,
+      };
+    });
   }
 
   /**
    * 把一個填好的 beat 轉成現有 pipeline 吃的 episode 設定
-   *   shotDesc → episode.situation(走既有 contribute / crew 組 prompt)
-   *   dialogue 另外傳給 Seedance 當口白腳本(不進視覺 prompt)
    */
   function beatToEpisode(beat, baseEpisode = {}) {
     return {
@@ -96,7 +145,6 @@
    */
   function contribute(ctx) {
     const parts = [];
-
     const arc = ctx.storyArc || {};
     const arcParts = [];
     if (arc.tone) arcParts.push('emotional tone: ' + arc.tone);
@@ -105,21 +153,17 @@
     if (arcParts.length > 0) {
       parts.push(arcParts.join(', ') + ', no explicit brand name mentioned, natural lifestyle integration');
     }
-
     if (ctx.episode?.situation) {
       parts.push('scene context: ' + ctx.episode.situation);
     }
-
     if (ctx.episode?.portraitMode === 'natural') {
       parts.push('IMPORTANT: generate this scene purely from text description, do not anchor to any reference face, let the imagination flow freely for maximum naturalism, authentic imperfect human presence, slight asymmetry in facial features is welcomed');
     }
-
     return parts.join('. ');
   }
 
   /**
-   * 多鏡頭故事拆分 — v5.13 起改委派 planBeats
-   * (保留舊名,內部已升級為 beat 模型;原本回 null、無人呼叫)
+   * 多鏡頭故事拆分 — v5.13 起委派 planBeats(原本回 null、無人呼叫)
    */
   function splitForMultiShot(situation, duration) {
     const beats = planBeats(duration);
@@ -133,6 +177,8 @@
     splitForMultiShot,
     planBeats,
     checkDialogueFit,
+    buildExpandRequest,
+    mergeExpandResult,
     beatToEpisode,
     BEAT_ROLES,
     DURATION_TEMPLATES,
@@ -142,5 +188,5 @@
     window.CrewDirector.register('storywriter', window.KolStorywriter);
   }
 
-  console.log('[KolStorywriter] 📖 v5.13 就緒(分鏡 beat 產生器)');
+  console.log('[KolStorywriter] 📖 v5.14 就緒(分鏡 + AI 編修前端)');
 })();
