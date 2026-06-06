@@ -241,5 +241,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] 🎬 v1.0 就緒');
+  console.log('[KolStoryboardPanel] 🎬 v1.1 就緒');
 })();
