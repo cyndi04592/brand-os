@@ -639,7 +639,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .cal-cell.clickable:hover{border-color:var(--accent);background:rgba(124,109,250,.08);transform:scale(1.04);z-index:2;}
 .queue-item.queue-failed{opacity:.7;}
 .queue-status.queue-failed{background:rgba(250,109,155,.15);color:var(--accent2);}
-#cine-lock-zone.cine-locked{opacity:.4;pointer-events:none;filter:grayscale(.35);transition:opacity .2s;}
+.cine-dur-locked{opacity:.55;pointer-events:none;filter:grayscale(.3);transition:opacity .2s;}
 @keyframes sbpGlow{0%,100%{box-shadow:0 0 0 0 rgba(124,109,250,0);}50%{box-shadow:0 0 0 3px rgba(124,109,250,.22);}}
 .sbp-recommend{animation:sbpGlow 2.4s ease-in-out infinite;border-color:rgba(124,109,250,.5)!important;}
 </style>
@@ -3273,7 +3273,7 @@ function openStoryboardForCine() {
       if (!S.selectedSceneId) {
         toast('分鏡已填入,時長對齊 15 秒。⚠️ 還沒選場景,挑一個再按生成', 'warn');
       } else {
-        toast('分鏡已填入、時長鎖 15 秒、設定已凍結,按生成即可 🎬', 'success');
+        toast('分鏡已填入、時長鎖 15 秒,其餘設定可自由調整,按生成即可 🎬', 'success');
       }
     },
     // ✏️ 按「重新編輯」:解鎖下面設定
@@ -3284,10 +3284,10 @@ function openStoryboardForCine() {
   });
 }
 
-// 🔒 凍結 / 解凍電影鏡頭下方設定條(運鏡→預估耗時;生成鈕在 zone 外不受影響)
+// 🔒 只鎖「時長」那一格(分鏡每段=15s,防止被改回去切台詞);運鏡/服飾/故事弧/畫質/進階全部仍可選
 function lockCineZone(lock) {
-  const zone = document.getElementById('cine-lock-zone');
-  if (zone) zone.classList.toggle('cine-locked', !!lock);
+  const dur = document.querySelector('[data-group="duration"]');
+  if (dur) dur.classList.toggle('cine-dur-locked', !!lock);
 }
 async function createSeedanceVideo() {
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
