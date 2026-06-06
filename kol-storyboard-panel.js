@@ -1,14 +1,9 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-storyboard-panel.js · v1.0
-//
-//  🎬 分鏡產生器面板 — 大綱 → AI 編修 → 可編輯分鏡卡片 → 確認生成
-//
-//  職責:純 UI 面板。不碰 kol.html 內部狀態。
-//   • open(ctx) 由 kol.html 餵進 { persona, product, brandId, sceneLabel, onGenerate }
-//   • AI 編修走 KolStorywriter.buildExpandRequest + api('storyboard_expand') + mergeExpandResult
-//   • 確認生成時呼叫 ctx.onGenerate(beats, duration)(生成怎麼做由 kol.html 決定)
-//
-//  依賴:window.KolStorywriter、window.api(都在 kol.html 先載入)
+//  kol-storyboard-panel.js · v1.2
+//  🎬 分鏡產生器面板 — 大綱 → AI 編修 → 分鏡卡片 → 確認分鏡(鎖定)/ 重新編輯(解鎖)
+//   • open(ctx): { containerId, persona, product, sceneLabel, onConfirm, onEdit }
+//   • 確認分鏡 → ctx.onConfirm(beats, duration)(填劇情+鎖設定,不生成)
+//   • 重新編輯 → ctx.onEdit()(解鎖)
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
@@ -18,13 +13,12 @@
 
   let rootEl = null;
   let ctx = null;
-  const state = { duration: 15, outline: '', beats: [], busy: false };
+  const state = { duration: 15, outline: '', beats: [], busy: false, confirmed: false };
 
   const esc = (s) => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-  // ─── 樣式(注入一次,scoped 在 .sbp-)──────────────
   function ensureStyles() {
     if (document.getElementById('sbp-styles')) return;
     const css = `
@@ -58,7 +52,6 @@
     document.head.appendChild(el);
   }
 
-  // ─── 對外 API ──────────────────────────────────
   function mount(containerId) {
     rootEl = document.getElementById(containerId);
     if (!rootEl) { console.warn('[sbp] 找不到容器', containerId); return; }
@@ -66,7 +59,7 @@
     render();
   }
 
- function open(newCtx) {
+  function open(newCtx) {
     ctx = newCtx || {};
     if (ctx.containerId) {
       rootEl = document.getElementById(ctx.containerId);
@@ -75,11 +68,11 @@
     state.beats = [];
     state.outline = '';
     state.busy = false;
+    state.confirmed = false;
     render();
     rootEl?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   }
 
-  // ─── 內部:把目前 DOM 的編輯抓回 state ──────────
   function syncDom() {
     state.beats.forEach(b => {
       const sd = document.getElementById('sbp-shot-' + b.index);
@@ -99,12 +92,19 @@
       .map(b => ({ index: b.index, text: b.dialogue }));
   }
 
-  // ─── AI 編修 ──────────────────────────────────
+  function unlockIfConfirmed() {
+    if (state.confirmed) {
+      state.confirmed = false;
+      if (typeof ctx?.onEdit === 'function') ctx.onEdit();
+    }
+  }
+
   async function expand() {
     if (state.busy) return;
     if (!window.KolStorywriter) { alert('KolStorywriter 未載入'); return; }
     if (typeof api !== 'function') { alert('api() 未載入'); return; }
-    if (state.beats.length) syncDom(); // 重編修時保留已鎖台詞
+    unlockIfConfirmed();
+    if (state.beats.length) syncDom();
 
     const lockedLines = collectLocked();
     const payload = window.KolStorywriter.buildExpandRequest({
@@ -137,7 +137,6 @@
     renderCards();
   }
 
-  // ─── 編輯事件 ──────────────────────────────────
   function outlineInput(v) { state.outline = v; }
   function shotInput(idx, v) { const b = state.beats.find(x => x.index === idx); if (b) b.shotDesc = v; }
   function dialogueInput(idx, v) {
@@ -160,18 +159,25 @@
   }
   function durationChange(v) {
     state.duration = parseInt(v);
-    state.beats = []; // 段數變了,要重編修
+    state.beats = [];
+    unlockIfConfirmed();
     renderCards();
   }
 
-  function generate() {
+  function confirmToggle() {
     if (!state.beats.length) { alert('請先按「AI 編修」產生分鏡'); return; }
-    syncDom();
-    if (typeof ctx?.onGenerate === 'function') ctx.onGenerate(state.beats, state.duration);
-    else alert('尚未接上生成流程(onGenerate)');
+    if (!state.confirmed) {
+      syncDom();
+      state.confirmed = true;
+      if (typeof ctx?.onConfirm === 'function') ctx.onConfirm(state.beats, state.duration);
+      else alert('尚未接上確認流程(onConfirm)');
+    } else {
+      state.confirmed = false;
+      if (typeof ctx?.onEdit === 'function') ctx.onEdit();
+    }
+    renderCards();
   }
 
-  // ─── 渲染 ──────────────────────────────────────
   function render() {
     if (!rootEl) return;
     rootEl.innerHTML = `
@@ -185,7 +191,7 @@
   </div>
   <label class="sbp-label">大綱(可留空,AI 自己想)</label>
   <textarea id="sbp-outline" class="sbp-textarea" rows="3"
-    placeholder="例:健一今天到富士山爬山,隨身帶著防熊噴霧,最近新聞一直報熊出沒攻擊遊客..."
+    placeholder="例:健一在日本富士山的登山步道休息,隨身帶著防熊噴霧,最近日本熊出沒新聞變多..."
     oninput="KolStoryboardPanel.outlineInput(this.value)">${esc(state.outline)}</textarea>
   <div class="sbp-actions">
     <button id="sbp-expand-btn" class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.expand()">✨ AI 編修成分鏡</button>
@@ -227,19 +233,21 @@
       return;
     }
     const multi = state.beats.length > 1;
+    const note = state.confirmed
+      ? '🔒 已鎖定 · 下面設定已凍結,挑好就按「🎬 生成電影鏡頭」'
+      : (multi ? '⚠️ 多段需接片管線(demo 後上線),先確認第 1 段' : '確認後會鎖定下面設定、時長對齊 15 秒');
     box.innerHTML = state.beats.map(cardHtml).join('') + `
 <div class="sbp-genrow">
-  <span class="sbp-note">${multi ? '⚠️ 多段需接片管線(demo 後上線),目前先打通 15 秒單段' : '✅ 用下面的運鏡/解析度設定,時長自動 15 秒'}</span>
-  <button class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.generate()">✅ 確認分鏡 → 直接生成</button>
+  <span class="sbp-note">${note}</span>
+  <button class="btn ${state.confirmed ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="KolStoryboardPanel.confirmToggle()">${state.confirmed ? '✏️ 重新編輯(解鎖)' : '✅ 確認分鏡'}</button>
 </div>`;
   }
 
-  // ─── 導出 ──────────────────────────────────────
   window.KolStoryboardPanel = {
-    mount, open, expand, lock, generate,
+    mount, open, expand, lock, confirmToggle,
     durationChange, outlineInput, shotInput, dialogueInput,
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] 🎬 v1.1 就緒');
+  console.log('[KolStoryboardPanel] 🎬 v1.2 就緒(確認鎖定 / 重新編輯解鎖)');
 })();
