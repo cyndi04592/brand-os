@@ -3256,7 +3256,14 @@ function openStoryboardForCine() {
       const sit = b.shotDesc + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
       const el = document.getElementById('cine-situation');
       if (el) el.value = sit;
-      toast('已把分鏡填入劇情,開始生成 🎬', 'success');
+      // 🛡️ 防呆:分鏡每段 = 15s,自動把下面時長對齊,免得台詞被切
+      const dv = '15';
+      document.querySelectorAll('[data-group="duration"] .seedance-radio').forEach(r => {
+        r.classList.toggle('active', r.dataset.value === dv);
+      });
+      if (S.seedanceParams) S.seedanceParams.duration = dv;
+      if (typeof updateSeedanceCostEstimate === 'function') updateSeedanceCostEstimate();
+      toast('已把分鏡填入劇情、時長自動對齊 15 秒,開始生成 🎬', 'success');
       createSeedanceVideo();
     },
   });
