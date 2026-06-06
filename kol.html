@@ -3073,9 +3073,10 @@ function handleMovementClick(e) {
   document.querySelectorAll('.movement-card').forEach(c => c.classList.remove('selected'));
   card.classList.add('selected');
 
-  // 🎯 自動調整時長(建議秒數)
+  // 🎯 自動調整時長(建議秒數)— 時長已被分鏡鎖定時就不覆蓋
+  const durLocked = document.querySelector('[data-group="duration"]')?.classList.contains('cine-dur-locked');
   const suggestSec = CAMERA_MOVEMENTS[movementId]?.duration_suggest;
-  if (suggestSec) {
+  if (suggestSec && !durLocked) {
     const targetVal = String(suggestSec);
     document.querySelectorAll('[data-group="duration"] .seedance-radio').forEach(r => {
       r.classList.toggle('active', r.dataset.value === targetVal);
@@ -3257,23 +3258,28 @@ function openStoryboardForCine() {
     product: { name: '', tag: '' },   // STEP2 商品靠大綱描述,不強制
     sceneLabel: '',
     // ✅ 按「確認分鏡」:填劇情 + 鎖時長 15s + 凍結下面設定
-    onConfirm: (beats) => {
+   onConfirm: (beats) => {
       const b = beats[0] || {};
       const sit = (b.shotDesc || '') + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
       const el = document.getElementById('cine-situation');
       if (el) el.value = sit;
-      // 🛡️ 分鏡每段 = 15s,自動對齊時長,免得台詞被切
-      const dv = '15';
+      // 🛡️ 智能挑時長 + 鎖定:依台詞估計秒數決定檔位
+      const est = b.fit?.estSec || b.seconds || 15;
+      let dv;
+      if (est > 14)      dv = 'auto';
+      else if (est > 9)  dv = '15';
+      else               dv = '10';
       document.querySelectorAll('[data-group="duration"] .seedance-radio').forEach(r => {
         r.classList.toggle('active', r.dataset.value === dv);
       });
       if (S.seedanceParams) S.seedanceParams.duration = dv;
       if (typeof updateSeedanceCostEstimate === 'function') updateSeedanceCostEstimate();
       lockCineZone(true);
+      const dvLabel = dv === 'auto' ? 'AUTO(台詞較長)' : dv + ' 秒';
       if (!S.selectedSceneId) {
-        toast('分鏡已填入,時長對齊 15 秒。⚠️ 還沒選場景,挑一個再按生成', 'warn');
+        toast(`分鏡已填入,時長自動鎖 ${dvLabel}。⚠️ 還沒選場景,挑一個再按生成`, 'warn');
       } else {
-        toast('分鏡已填入、時長鎖 15 秒,其餘設定可自由調整,按生成即可 🎬', 'success');
+        toast(`分鏡已填入、時長依台詞自動鎖 ${dvLabel},其餘可調,按生成即可 🎬`, 'success');
       }
     },
     // ✏️ 按「重新編輯」:解鎖下面設定
