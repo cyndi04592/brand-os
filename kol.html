@@ -640,6 +640,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .queue-item.queue-failed{opacity:.7;}
 .queue-status.queue-failed{background:rgba(250,109,155,.15);color:var(--accent2);}
 #cine-lock-zone.cine-locked{opacity:.4;pointer-events:none;filter:grayscale(.35);transition:opacity .2s;}
+@keyframes sbpGlow{0%,100%{box-shadow:0 0 0 0 rgba(124,109,250,0);}50%{box-shadow:0 0 0 3px rgba(124,109,250,.22);}}
+.sbp-recommend{animation:sbpGlow 2.4s ease-in-out infinite;border-color:rgba(124,109,250,.5)!important;}
 </style>
 </head>
 <body>
@@ -881,7 +883,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>電影鏡頭設定</div>
 <!-- 🆕 v5.17: 分鏡產生器入口 -->
         <div style="margin:0 0 4px">
-          <button class="btn btn-ghost btn-sm" type="button" onclick="openStoryboardForCine()">✨ 用分鏡產生器(大綱 → AI 編修)</button>
+          <button class="btn btn-ghost btn-sm sbp-recommend" type="button" onclick="openStoryboardForCine()">✨ 用分鏡產生器(大綱 → AI 編修)</button>
+          <div class="motion-hint" style="margin-top:4px">💡 推薦:先用這個把大綱變成有台詞、時間對得上的 15 秒腳本,確認後會自動鎖好時長,台詞不會被切。</div>
         </div>
         <div id="sbp-cine-mount" style="display:none;margin-bottom:10px"></div>
         <!-- 🆕 v5.16: 劇情/情境輸入(STEP2 終於可控 · 選填) -->
