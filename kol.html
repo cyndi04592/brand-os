@@ -639,6 +639,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .cal-cell.clickable:hover{border-color:var(--accent);background:rgba(124,109,250,.08);transform:scale(1.04);z-index:2;}
 .queue-item.queue-failed{opacity:.7;}
 .queue-status.queue-failed{background:rgba(250,109,155,.15);color:var(--accent2);}
+#cine-lock-zone.cine-locked{opacity:.4;pointer-events:none;filter:grayscale(.35);transition:opacity .2s;}
 </style>
 </head>
 <body>
@@ -908,6 +909,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </select>
         </div>
 
+      <div id="cine-lock-zone">
         <!-- 🆕 v5.3: 運鏡選擇器(所有場景共用) -->
         <div class="form-group" id="movement-picker-group" style="display:none">
           <label class="form-label">🎥 運鏡(選了會自動調整時長)</label>
@@ -1094,10 +1096,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
 
-        <div class="credit-est">
+    <div class="credit-est">
           <span>預估耗時:</span>
           <span class="usd" id="seedance-cost-est">~ 2 分鐘</span>
         </div>
+        </div><!-- /cine-lock-zone -->
 
         <div class="btn-row">
           <button class="btn btn-primary" id="create-seedance-btn" onclick="createSeedanceVideo()" disabled>🎬 生成電影鏡頭</button>
@@ -3241,7 +3244,7 @@ function copySeedancePrompt() {
   if (!t) { toast('請先選場景', 'error'); return; }
   navigator.clipboard.writeText(t).then(() => toast('已複製 ✓', 'success'));
 }
-// 🆕 v5.17: STEP2 分鏡產生器入口
+// 🆕 v5.17: STEP2 分鏡產生器入口(確認鎖定 / 重新編輯解鎖)
 function openStoryboardForCine() {
   if (!S.selectedKol) { toast('請先選 KOL', 'warn'); return; }
   document.getElementById('sbp-cine-mount').style.display = '';
@@ -3250,23 +3253,38 @@ function openStoryboardForCine() {
     persona: S.selectedKol.persona || {},
     product: { name: '', tag: '' },   // STEP2 商品靠大綱描述,不強制
     sceneLabel: '',
-    onGenerate: (beats) => {
-      if (beats.length > 1) toast('多段需接片管線(demo 後上線),先生成第 1 段', 'warn');
-      const b = beats[0];
-      const sit = b.shotDesc + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
+    // ✅ 按「確認分鏡」:填劇情 + 鎖時長 15s + 凍結下面設定
+    onConfirm: (beats) => {
+      const b = beats[0] || {};
+      const sit = (b.shotDesc || '') + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
       const el = document.getElementById('cine-situation');
       if (el) el.value = sit;
-      // 🛡️ 防呆:分鏡每段 = 15s,自動把下面時長對齊,免得台詞被切
+      // 🛡️ 分鏡每段 = 15s,自動對齊時長,免得台詞被切
       const dv = '15';
       document.querySelectorAll('[data-group="duration"] .seedance-radio').forEach(r => {
         r.classList.toggle('active', r.dataset.value === dv);
       });
       if (S.seedanceParams) S.seedanceParams.duration = dv;
       if (typeof updateSeedanceCostEstimate === 'function') updateSeedanceCostEstimate();
-      toast('已把分鏡填入劇情、時長自動對齊 15 秒,開始生成 🎬', 'success');
-      createSeedanceVideo();
+      lockCineZone(true);
+      if (!S.selectedSceneId) {
+        toast('分鏡已填入,時長對齊 15 秒。⚠️ 還沒選場景,挑一個再按生成', 'warn');
+      } else {
+        toast('分鏡已填入、時長鎖 15 秒、設定已凍結,按生成即可 🎬', 'success');
+      }
+    },
+    // ✏️ 按「重新編輯」:解鎖下面設定
+    onEdit: () => {
+      lockCineZone(false);
+      toast('已解鎖,可重新調整設定', 'success');
     },
   });
+}
+
+// 🔒 凍結 / 解凍電影鏡頭下方設定條(運鏡→預估耗時;生成鈕在 zone 外不受影響)
+function lockCineZone(lock) {
+  const zone = document.getElementById('cine-lock-zone');
+  if (zone) zone.classList.toggle('cine-locked', !!lock);
 }
 async function createSeedanceVideo() {
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
