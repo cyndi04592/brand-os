@@ -3241,13 +3241,6 @@ function copySeedancePrompt() {
   if (!t) { toast('請先選場景', 'error'); return; }
   navigator.clipboard.writeText(t).then(() => toast('已複製 ✓', 'success'));
 }
-
-async function createSeedanceVideo() {
-  if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
-  if (!S.selectedSceneId) { toast('請選擇一個場景', 'error'); return; }
-  if (S.seedanceProductUrls.length === 0) {
-    if (!confirm('你沒加任何商品照,影片裡的 [Image2] 指涉會無對應圖(fal.ai 可能拒絕或效果不佳)。\n\n純展示 KOL 情境(無帶貨)可以繼續,要繼續嗎?')) return;
-  }
 // 🆕 v5.17: STEP2 分鏡產生器入口
 function openStoryboardForCine() {
   if (!S.selectedKol) { toast('請先選 KOL', 'warn'); return; }
@@ -3268,6 +3261,13 @@ function openStoryboardForCine() {
     },
   });
 }
+async function createSeedanceVideo() {
+  if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
+  if (!S.selectedSceneId) { toast('請選擇一個場景', 'error'); return; }
+  if (S.seedanceProductUrls.length === 0) {
+    if (!confirm('你沒加任何商品照,影片裡的 [Image2] 指涉會無對應圖(fal.ai 可能拒絕或效果不佳)。\n\n純展示 KOL 情境(無帶貨)可以繼續,要繼續嗎?')) return;
+  }
+
   // 🆕 v5.16: 讀劇情/情境輸入框(STEP2 終於可控)
   const cineSituation = document.getElementById('cine-situation')?.value?.trim() || '';
 
