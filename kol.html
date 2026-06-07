@@ -2871,49 +2871,52 @@ async function handleDriveProductClick(e) {
   const item = e.currentTarget;
   const fileId = item.dataset.id;
   if (!fileId) return;
-  if (!S.driveFileR2) S.driveFileR2 = {};
+  if (item.dataset.busy === '1') return;   // 🆕 處理中就忽略(防連點重複加入)
+  item.dataset.busy = '1';
 
-  // 已選 → 移除
-  if (S.driveFileR2[fileId]) {
-    const r2 = S.driveFileR2[fileId];
-    const idx = S.seedanceProductUrls.indexOf(r2);
-    if (idx >= 0) S.seedanceProductUrls.splice(idx, 1);
-    delete S.driveFileR2[fileId];
-    item.classList.remove('selected');
+  try {
+    if (!S.driveFileR2) S.driveFileR2 = {};
+
+    // 已選 → 移除
+    if (S.driveFileR2[fileId]) {
+      const r2 = S.driveFileR2[fileId];
+      const idx = S.seedanceProductUrls.indexOf(r2);
+      if (idx >= 0) S.seedanceProductUrls.splice(idx, 1);
+      delete S.driveFileR2[fileId];
+      item.classList.remove('selected');
+      return;
+    }
+
+    // 未選 → 加入(先把 Drive 原檔搬進 R2,存 fal 抓得到的乾淨網址)
+    if (S.seedanceProductUrls.length >= 9) {
+      toast('最多 9 張(含 KOL 肖像)', 'warn');
+      return;
+    }
+    item.style.opacity = '0.5';
+    try {
+      const res = await api('drive_to_r2', {
+        driveFileId: fileId,
+        brandId: S.currentBrandId,
+        role: 'product',
+        nameHint: item.dataset.name || 'product',
+      });
+      if (!res || res.ok === false || !res.url) {
+        throw new Error((res && res.error) || '沒拿到 R2 網址');
+      }
+      S.driveFileR2[fileId] = res.url;
+      S.seedanceProductUrls.push(res.url);
+      item.classList.add('selected');
+    } catch (err) {
+      toast('商品照搬移失敗:' + err.message, 'error');
+    } finally {
+      item.style.opacity = '';
+    }
+  } finally {
+    item.dataset.busy = '';
     renderRefList();
     updateSeedanceSubmitButton();
     updateSeedanceCostEstimate();
-    return;
   }
-
-  // 未選 → 加入(先把 Drive 原檔搬進 R2,存 fal 抓得到的乾淨網址)
-  if (S.seedanceProductUrls.length >= 9) {
-    toast('最多 9 張(含 KOL 肖像)', 'warn');
-    return;
-  }
-  item.style.opacity = '0.5';
-  try {
-    const res = await api('drive_to_r2', {
-      driveFileId: fileId,
-      brandId: S.currentBrandId,
-      role: 'product',
-      nameHint: item.dataset.name || 'product',
-    });
-    if (!res || res.ok === false || !res.url) {
-      throw new Error((res && res.error) || '沒拿到 R2 網址');
-    }
-    S.driveFileR2[fileId] = res.url;
-    S.seedanceProductUrls.push(res.url);
-    item.classList.add('selected');
-  } catch (err) {
-    toast('商品照搬移失敗:' + err.message, 'error');
-  } finally {
-    item.style.opacity = '';
-  }
-
-  renderRefList();
-  updateSeedanceSubmitButton();
-  updateSeedanceCostEstimate();
 }
 function addProductUrl() {
   const input = document.getElementById('ref-url-input');
