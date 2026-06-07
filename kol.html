@@ -2821,7 +2821,7 @@ function renderDriveProducts(files) {
       <div class="ref-drive-locked">
         <span class="emoji">📁</span>
         <strong>資料夾裡沒照片</strong><br>
-        <small>上傳幾張 LACEZ 商品照到 Drive 再回來按重試</small>
+        <small>上傳幾張商品照到 Drive 再回來按重試</small>
         <div class="drive-product-refresh">
           <button class="btn btn-ghost btn-sm" onclick="reloadDriveProducts()">🔄 重試</button>
         </div>
@@ -2830,19 +2830,20 @@ function renderDriveProducts(files) {
     return;
   }
 
-  // 升級縮圖解析度:Google thumbnailLink 後面有 =s400,改成 =s1200 得到更清晰的圖
   const upgradedFiles = files.map(f => ({
     ...f,
     hiResUrl: (f.thumbnailLink || '').replace(/=s\d+/, '=s1200'),
   }));
 
+  if (!S.driveFileR2) S.driveFileR2 = {};   // 🆕 fileId → R2 乾淨網址
+
   const html = `
     <div class="drive-product-gallery">
       ${upgradedFiles.map(f => {
-        // 檢查是否已加入(用 hiResUrl 比對)
-        const isSelected = S.seedanceProductUrls.includes(f.hiResUrl);
+        const isSelected = !!S.driveFileR2[f.id];   // 🆕 改用檔案 ID 判斷選中
         return `
           <div class="drive-product-item ${isSelected ? 'selected' : ''}"
+               data-id="${escapeHtml(f.id)}"
                data-hi-res="${escapeHtml(f.hiResUrl)}"
                data-thumb="${escapeHtml(f.thumbnailLink || '')}"
                data-name="${escapeHtml(f.name || '')}"
@@ -2861,37 +2862,59 @@ function renderDriveProducts(files) {
 
   wrap.innerHTML = html;
 
-  // Event delegation
   wrap.querySelectorAll('.drive-product-item').forEach(item => {
     item.addEventListener('click', handleDriveProductClick);
   });
 }
-
-function handleDriveProductClick(e) {
+  
+async function handleDriveProductClick(e) {
   const item = e.currentTarget;
-  const hiResUrl = item.dataset.hiRes;
-  if (!hiResUrl) return;
+  const fileId = item.dataset.id;
+  if (!fileId) return;
+  if (!S.driveFileR2) S.driveFileR2 = {};
 
-  const idx = S.seedanceProductUrls.indexOf(hiResUrl);
-  if (idx >= 0) {
-    // 已選 → 移除
-    S.seedanceProductUrls.splice(idx, 1);
+  // 已選 → 移除
+  if (S.driveFileR2[fileId]) {
+    const r2 = S.driveFileR2[fileId];
+    const idx = S.seedanceProductUrls.indexOf(r2);
+    if (idx >= 0) S.seedanceProductUrls.splice(idx, 1);
+    delete S.driveFileR2[fileId];
     item.classList.remove('selected');
-  } else {
-    // 未選 → 加入
-    if (S.seedanceProductUrls.length >= 9) {
-      toast('最多 9 張(含 KOL 肖像)', 'warn');
-      return;
+    renderRefList();
+    updateSeedanceSubmitButton();
+    updateSeedanceCostEstimate();
+    return;
+  }
+
+  // 未選 → 加入(先把 Drive 原檔搬進 R2,存 fal 抓得到的乾淨網址)
+  if (S.seedanceProductUrls.length >= 9) {
+    toast('最多 9 張(含 KOL 肖像)', 'warn');
+    return;
+  }
+  item.style.opacity = '0.5';
+  try {
+    const res = await api('drive_to_r2', {
+      driveFileId: fileId,
+      brandId: S.currentBrandId,
+      role: 'product',
+      nameHint: item.dataset.name || 'product',
+    });
+    if (!res || res.ok === false || !res.url) {
+      throw new Error((res && res.error) || '沒拿到 R2 網址');
     }
-    S.seedanceProductUrls.push(hiResUrl);
+    S.driveFileR2[fileId] = res.url;
+    S.seedanceProductUrls.push(res.url);
     item.classList.add('selected');
+  } catch (err) {
+    toast('商品照搬移失敗:' + err.message, 'error');
+  } finally {
+    item.style.opacity = '';
   }
 
   renderRefList();
   updateSeedanceSubmitButton();
   updateSeedanceCostEstimate();
 }
-
 function addProductUrl() {
   const input = document.getElementById('ref-url-input');
   const url = input.value.trim();
@@ -2910,15 +2933,20 @@ function addProductUrl() {
 function removeProductUrl(index) {
   const removedUrl = S.seedanceProductUrls[index];
   S.seedanceProductUrls.splice(index, 1);
+
+  // 🆕 同步清掉 driveFileR2 對應 + 取消 Drive Gallery 該張選中
+  if (removedUrl && S.driveFileR2) {
+    const fid = Object.keys(S.driveFileR2).find(k => S.driveFileR2[k] === removedUrl);
+    if (fid) {
+      delete S.driveFileR2[fid];
+      document.querySelectorAll(`.drive-product-item[data-id="${CSS.escape(fid)}"]`)
+        .forEach(el => el.classList.remove('selected'));
+    }
+  }
+
   renderRefList();
   updateSeedanceSubmitButton();
   updateSeedanceCostEstimate();
-
-  // 🆕 v5.1: 同步 Drive Gallery 的選中狀態
-  if (removedUrl) {
-    document.querySelectorAll(`.drive-product-item[data-hi-res="${CSS.escape(removedUrl)}"]`)
-      .forEach(el => el.classList.remove('selected'));
-  }
 }
 
 function renderRefList() {
