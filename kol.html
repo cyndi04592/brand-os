@@ -4250,13 +4250,13 @@ function renderEpisodeProducts(files) {
     hiResUrl: (f.thumbnailLink || '').replace(/=s\d+/, '=s1200'),
   }));
 
-  if (!S.driveFileR2) S.driveFileR2 = {};   // 🆕 fileId → R2 乾淨網址(與 STEP2 共用的快取)
+  if (!S.driveFileR2) S.driveFileR2 = {};   // fileId → R2 乾淨網址(與 STEP2 共用)
 
   const html = `
     <div class="ep-product-gallery">
       ${upgradedFiles.map(f => {
         const r2 = S.driveFileR2[f.id];
-        const isSelected = !!(r2 && S.episodeProductUrls.includes(r2));   // 🆕 用檔案 ID 對應的 R2 網址判斷選中
+        const isSelected = !!(r2 && S.episodeProductUrls.includes(r2));
         return `
           <div class="ep-product-item ${isSelected ? 'selected' : ''}"
                data-id="${escapeHtml(f.id)}"
@@ -4281,14 +4281,13 @@ async function handleEpisodeProductClick(e) {
   const item = e.currentTarget;
   const fileId = item.dataset.id;
   if (!fileId) return;
-  if (item.dataset.busy === '1') return;   // 🆕 處理中就忽略(防連點重複加入)
+  if (item.dataset.busy === '1') return;
   item.dataset.busy = '1';
 
   try {
     if (!S.driveFileR2) S.driveFileR2 = {};
     const cachedR2 = S.driveFileR2[fileId];
 
-    // 已選(這張的 R2 網址已在 STEP3 清單裡)→ 移除
     if (cachedR2 && S.episodeProductUrls.includes(cachedR2)) {
       const idx = S.episodeProductUrls.indexOf(cachedR2);
       if (idx >= 0) S.episodeProductUrls.splice(idx, 1);
@@ -4296,7 +4295,6 @@ async function handleEpisodeProductClick(e) {
       return;
     }
 
-    // 未選 → 加入
     if (S.episodeProductUrls.length >= 4) {
       toast('Tab 3 最多 4 張商品照', 'warn');
       return;
@@ -4306,7 +4304,6 @@ async function handleEpisodeProductClick(e) {
     try {
       let r2 = cachedR2;
       if (!r2) {
-        // 先把 Drive 原檔搬進 R2,存 fal 抓得到的乾淨網址(這是修 403 的關鍵)
         const res = await api('drive_to_r2', {
           driveFileId: fileId,
           brandId: S.currentBrandId,
@@ -4331,28 +4328,6 @@ async function handleEpisodeProductClick(e) {
     const countEl = document.getElementById('ep-product-count');
     if (countEl) countEl.textContent = S.episodeProductUrls.length;
   }
-}
-
-function handleEpisodeProductClick(e) {
-  const item = e.currentTarget;
-  const hiResUrl = item.dataset.hiRes;
-  if (!hiResUrl) return;
-
-  const idx = S.episodeProductUrls.indexOf(hiResUrl);
-  if (idx >= 0) {
-    S.episodeProductUrls.splice(idx, 1);
-    item.classList.remove('selected');
-  } else {
-    if (S.episodeProductUrls.length >= 4) {
-      toast('Tab 3 最多 4 張商品照', 'warn');
-      return;
-    }
-    S.episodeProductUrls.push(hiResUrl);
-    item.classList.add('selected');
-  }
-
-  const countEl = document.getElementById('ep-product-count');
-  if (countEl) countEl.textContent = S.episodeProductUrls.length;
 }
 
 function saveEpisodeDraft(silent) {
