@@ -4210,12 +4210,16 @@ function renderEpisodeProducts(files) {
     hiResUrl: (f.thumbnailLink || '').replace(/=s\d+/, '=s1200'),
   }));
 
+  if (!S.driveFileR2) S.driveFileR2 = {};   // 🆕 fileId → R2 乾淨網址(與 STEP2 共用的快取)
+
   const html = `
     <div class="ep-product-gallery">
       ${upgradedFiles.map(f => {
-        const isSelected = S.episodeProductUrls.includes(f.hiResUrl);
+        const r2 = S.driveFileR2[f.id];
+        const isSelected = !!(r2 && S.episodeProductUrls.includes(r2));   // 🆕 用檔案 ID 對應的 R2 網址判斷選中
         return `
           <div class="ep-product-item ${isSelected ? 'selected' : ''}"
+               data-id="${escapeHtml(f.id)}"
                data-hi-res="${escapeHtml(f.hiResUrl)}"
                data-name="${escapeHtml(f.name || '')}"
                title="${escapeHtml(f.name || '')}">
@@ -4231,6 +4235,62 @@ function renderEpisodeProducts(files) {
   wrap.querySelectorAll('.ep-product-item').forEach(item => {
     item.addEventListener('click', handleEpisodeProductClick);
   });
+}
+
+async function handleEpisodeProductClick(e) {
+  const item = e.currentTarget;
+  const fileId = item.dataset.id;
+  if (!fileId) return;
+  if (item.dataset.busy === '1') return;   // 🆕 處理中就忽略(防連點重複加入)
+  item.dataset.busy = '1';
+
+  try {
+    if (!S.driveFileR2) S.driveFileR2 = {};
+    const cachedR2 = S.driveFileR2[fileId];
+
+    // 已選(這張的 R2 網址已在 STEP3 清單裡)→ 移除
+    if (cachedR2 && S.episodeProductUrls.includes(cachedR2)) {
+      const idx = S.episodeProductUrls.indexOf(cachedR2);
+      if (idx >= 0) S.episodeProductUrls.splice(idx, 1);
+      item.classList.remove('selected');
+      return;
+    }
+
+    // 未選 → 加入
+    if (S.episodeProductUrls.length >= 4) {
+      toast('Tab 3 最多 4 張商品照', 'warn');
+      return;
+    }
+
+    item.style.opacity = '0.5';
+    try {
+      let r2 = cachedR2;
+      if (!r2) {
+        // 先把 Drive 原檔搬進 R2,存 fal 抓得到的乾淨網址(這是修 403 的關鍵)
+        const res = await api('drive_to_r2', {
+          driveFileId: fileId,
+          brandId: S.currentBrandId,
+          role: 'product',
+          nameHint: item.dataset.name || 'product',
+        });
+        if (!res || res.ok === false || !res.url) {
+          throw new Error((res && res.error) || '沒拿到 R2 網址');
+        }
+        r2 = res.url;
+        S.driveFileR2[fileId] = r2;
+      }
+      S.episodeProductUrls.push(r2);
+      item.classList.add('selected');
+    } catch (err) {
+      toast('商品照搬移失敗:' + err.message, 'error');
+    } finally {
+      item.style.opacity = '';
+    }
+  } finally {
+    item.dataset.busy = '';
+    const countEl = document.getElementById('ep-product-count');
+    if (countEl) countEl.textContent = S.episodeProductUrls.length;
+  }
 }
 
 function handleEpisodeProductClick(e) {
