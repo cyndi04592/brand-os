@@ -3320,7 +3320,41 @@ function openStoryboardForCine() {
     },
   });
 }
+// 🆕 B-1: STEP3 單集企劃 · 分鏡產生器入口(共用 STEP2 的 KolStoryboardPanel)
+function openStoryboardForEpisode() {
+  const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
+  if (!persona) { toast('請先選 KOL', 'warn'); return; }
+  const mount = document.getElementById('sbp-episode-mount');
+  if (mount) mount.style.display = '';
+  const product = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
 
+  KolStoryboardPanel.open({
+    containerId: 'sbp-episode-mount',
+    persona: persona.persona || persona,
+    product: { name: product?.name || '', tag: '' },
+    sceneLabel: document.getElementById('ep-scene')?.selectedOptions?.[0]?.text || '',
+    // ✅ 確認分鏡:把台詞填進故事情境 + 依台詞鎖時長(存進 S.episodeDuration,B-2 會讀)
+    onConfirm: (beats, duration) => {
+      const b = beats[0] || {};
+      const who = persona.persona_name || '主角';
+      const sit = (b.shotDesc || '') + (b.dialogue ? `。${who}直視鏡頭自然地說:「${b.dialogue}」` : '');
+      const el = document.getElementById('ep-situation');
+      if (el) el.value = sit;
+
+      const est = b.fit?.estSec || b.seconds || duration || 15;
+      let dv;
+      if (est > 14)      dv = 'auto';
+      else if (est > 9)  dv = '15';
+      else               dv = '10';
+      S.episodeDuration = dv;
+
+      if (typeof saveEpisodeDraft === 'function') saveEpisodeDraft(true);
+      const dvLabel = dv === 'auto' ? 'AUTO(台詞較長)' : dv + ' 秒';
+      toast(`分鏡已填入故事情境,時長自動鎖 ${dvLabel} 🎬`, 'success');
+    },
+    onEdit: () => { toast('已解鎖,可重新調整', 'success'); },
+  });
+}
 // 🔒 只鎖「時長」那一格(分鏡每段=15s,防止被改回去切台詞);運鏡/服飾/故事弧/畫質/進階全部仍可選
 function lockCineZone(lock) {
   const dur = document.querySelector('[data-group="duration"]');
@@ -3965,6 +3999,12 @@ function renderEpisodeCard() {
 
   wrap.innerHTML = `
     <div class="episode-edit">
+      <!-- 🆕 B-1: STEP3 分鏡產生器入口(共用 STEP2 的 KolStoryboardPanel) -->
+      <div class="ep-field">
+        <button class="btn btn-ghost btn-sm sbp-recommend" type="button" onclick="openStoryboardForEpisode()">✨ 用分鏡產生器(大綱 → AI 編修)</button>
+        <div class="motion-hint" style="margin-top:4px">💡 推薦:先把大綱變成有台詞、時間對得上的腳本,確認後會自動填入下面情境、鎖好時長,台詞不會被切。</div>
+        <div id="sbp-episode-mount" style="display:none;margin-top:10px"></div>
+      </div>
       <div class="ep-field">
         <label>🎬 故事情境(必填)</label>
         <textarea id="ep-situation" placeholder="例:加班到 7 點後走進巷弄咖啡廳,和自己對話一下...">${escapeHtml(draft.situation || '')}</textarea>
