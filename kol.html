@@ -3994,7 +3994,7 @@ function renderEpisodeCard() {
   ).join('');
 
   const movementOptions = Object.entries(CAMERA_MOVEMENTS).map(([id, m]) =>
-    `<option value="${escapeHtml(id)}" ${draft.movementId === id ? 'selected' : ''}>${escapeHtml(m.label)} (${m.duration_suggest}s)</option>`
+    `<option value="${escapeHtml(id)}" ${draft.movementId === id ? 'selected' : ''}>${escapeHtml(m.label)}</option>`
   ).join('');
 
   // 🆕 v5.13: 地標下拉 — 直接用 STEP2 的 LOCATIONS 庫(同一份資料,飛東京/香港/巴黎...)
