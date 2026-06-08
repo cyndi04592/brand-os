@@ -4024,7 +4024,10 @@ function renderEpisodeCard() {
         <div id="sbp-episode-mount" style="display:none;margin-top:10px"></div>
       </div>
       <div class="ep-field">
-        <label>🎬 故事情境(必填)</label>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <label>🎬 故事情境(必填)</label>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="clearEpisodeSituation()" style="padding:3px 10px;font-size:11px">🗑️ 清空</button>
+        </div>
         <textarea id="ep-situation" placeholder="例:加班到 7 點後走進巷弄咖啡廳,和自己對話一下...">${escapeHtml(draft.situation || '')}</textarea>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -4347,7 +4350,20 @@ async function handleEpisodeProductClick(e) {
     if (countEl) countEl.textContent = S.episodeProductUrls.length;
   }
 }
-
+// 🆕 清空故事情境(順便解鎖時長 + 清掉草稿,避免重整又跑回來)
+function clearEpisodeSituation() {
+  const el = document.getElementById('ep-situation');
+  if (el) {
+    el.readOnly = false;                  // 若被分鏡鎖住,先解鎖才能清
+    el.classList.remove('ep-sit-locked');
+    el.value = '';
+    el.focus();
+  }
+  const durBox = document.querySelector('[data-ep-group="duration"]');
+  if (durBox) durBox.classList.remove('ep-locked');   // 故事清了,時長鎖也放開
+  if (typeof saveEpisodeDraft === 'function') saveEpisodeDraft(true);  // 存成空白,重整不還原
+  toast('故事情境已清空', 'success');
+}
 function saveEpisodeDraft(silent) {
   const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
   if (!persona || !S.currentBrandId) return;
