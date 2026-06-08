@@ -598,7 +598,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .seedance-radio{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text-mid);font-weight:500;}
 .seedance-radio:hover{border-color:rgba(124,109,250,.4);}
 .seedance-radio.active{background:rgba(124,109,250,.15);border-color:var(--accent);color:var(--accent);font-weight:700;}
-
+.ep-locked{pointer-events:none;opacity:.45;}
+#ep-situation.ep-sit-locked{opacity:.7;}
+  
 /* 進階設定摺疊區 */
 .advanced-block{border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:14px;overflow:hidden;}
 .advanced-head{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--surface2);transition:background .2s;user-select:none;}
@@ -3333,7 +3335,6 @@ function openStoryboardForEpisode() {
     persona: persona.persona || persona,
     product: { name: product?.name || '', tag: '' },
     sceneLabel: document.getElementById('ep-scene')?.selectedOptions?.[0]?.text || '',
-    // ✅ 確認分鏡:把台詞填進故事情境 + 依台詞鎖時長(存進 S.episodeDuration,B-2 會讀)
     onConfirm: (beats, duration) => {
       const b = beats[0] || {};
       const who = persona.persona_name || '主角';
@@ -3346,13 +3347,30 @@ function openStoryboardForEpisode() {
       if (est > 14)      dv = 'auto';
       else if (est > 9)  dv = '15';
       else               dv = '10';
-      if (S.episodeParams) S.episodeParams.duration = dv;   // 🔧 寫進生成真正會讀的參數
+      S.episodeParams.duration = dv;
+
+      // 🔒 同步時長按鈕(畫面跟實際一致,不再顯示舊的 10)
+      document.querySelectorAll('[data-ep-group="duration"] .seedance-radio').forEach(x =>
+        x.classList.toggle('active', x.dataset.value === dv));
+      // 🔒 反灰鎖住時長(防呆)
+      const durBox = document.querySelector('[data-ep-group="duration"]');
+      if (durBox) durBox.classList.add('ep-locked');
+      // 🔒 故事情境唯讀(由分鏡驅動)
+      if (el) { el.readOnly = true; el.classList.add('ep-sit-locked'); }
+      // 刷新底部狀態列
+      if (typeof updateEpisodeSpecLabel === 'function') updateEpisodeSpecLabel();
 
       if (typeof saveEpisodeDraft === 'function') saveEpisodeDraft(true);
       const dvLabel = dv === 'auto' ? 'AUTO(台詞較長)' : dv + ' 秒';
-      toast(`分鏡已填入故事情境,時長自動鎖 ${dvLabel} 🎬`, 'success');
+      toast(`分鏡已填入、時長鎖 ${dvLabel}(已防呆)🎬`, 'success');
     },
-    onEdit: () => { toast('已解鎖,可重新調整', 'success'); },
+    onEdit: () => {
+      const durBox = document.querySelector('[data-ep-group="duration"]');
+      if (durBox) durBox.classList.remove('ep-locked');
+      const el = document.getElementById('ep-situation');
+      if (el) { el.readOnly = false; el.classList.remove('ep-sit-locked'); }
+      toast('已解鎖,可重新調整', 'success');
+    },
   });
 }
 // 🔒 只鎖「時長」那一格(分鏡每段=15s,防止被改回去切台詞);運鏡/服飾/故事弧/畫質/進階全部仍可選
