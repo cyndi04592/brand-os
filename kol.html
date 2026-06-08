@@ -55,6 +55,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .vision-col.active{background:rgba(124,109,250,.08);}
 .vision-col.now.active{box-shadow:inset 0 0 0 1.5px rgba(109,250,194,.5);}
 .vision-col.next.active{box-shadow:inset 0 0 0 1.5px rgba(124,109,250,.6);}
+.vision-col.future.active{box-shadow:inset 0 0 0 1.5px rgba(250,109,155,.6);}
 .vision-col.disabled{opacity:.4;cursor:not-allowed;}
 .vision-col.disabled:hover{transform:none;background:transparent;}
 .vision-stage{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
@@ -662,17 +663,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="vision-col now active" data-mode="talking">
         <div class="vision-stage">STEP 1 <span class="vision-badge live">口播</span></div>
         <div class="vision-title">單張照片口播</div>
-        <div class="vision-desc">一張 KOL 照片 + 品牌靈魂書 + 人設 → AI 生成真人口播短影音,穩定可直接交客戶上場。</div>
+        <div class="vision-desc">建立品牌專屬 KOL → AI 生成真人口播短影音,穩定可直接交客戶上場。</div>
       </div>
       <div class="vision-col next" data-mode="cinematic">
         <div class="vision-stage">STEP 2 <span class="vision-badge live">電影鏡頭</span></div>
         <div class="vision-title">Avatar 電影鏡頭</div>
-        <div class="vision-desc">多張 KOL 照片 + 商品照 reference → AI 產出電影感短影音,含環境走動與自然運鏡。</div>
+        <div class="vision-desc"> KOL 照片 + 商品照 → AI 產出一支電影感廣告短片,含環境走動與自然運鏡,適合單支主打。</div>
       </div>
       <div class="vision-col future" data-mode="system">
         <div class="vision-stage">STEP 3 <span class="vision-badge live">經營系統</span></div>
         <div class="vision-title">KOL 自動經營系統</div>
-        <div class="vision-desc">Brand OS 當你的數字人 KOL 經紀人,自動規劃每週/每月內容主題,像真人一樣分享生活、排程發文。</div>
+        <div class="vision-desc">Brand OS 當你的 KOL 經紀人,每天自動產出短影音、排程發各大社群,持續把人流導回你的網站。</div>
       </div>
     </div>
   </div>
@@ -4140,6 +4141,7 @@ function renderEpisodeCard() {
           <button class="btn btn-primary" onclick="generateEpisodeV510('video')">🎬 只影片</button>
           <button class="btn btn-ghost" onclick="generateEpisodeV510('posts')">✍️ 只貼文</button>
         </div>
+        <div style="font-size:10.5px;color:var(--text-dim);padding-left:2px">🚀 全套生成 = 影片 + Instagram / Threads / Facebook 三平台貼文</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:10.5px;color:var(--text-dim)">
           <button class="btn btn-ghost btn-sm" onclick="saveEpisodeDraft()">💾 存草稿</button>
@@ -4574,7 +4576,7 @@ async function generateSocialPosts(ctx) {
 
   wrap.innerHTML = `
     <div class="social-posts-loading">
-      <span class="spin">⏳</span> AI 正在幫你寫 IG/脆/FB 三平台貼文…
+      <span class="spin">⏳</span> AI 正在幫你寫 Instagram / Threads / Facebook 三平台貼文…
     </div>
   `;
 
@@ -4640,9 +4642,9 @@ function renderSocialPosts(posts) {
         <span class="social-posts-chip">✨ 依 ${escapeHtml(S.personas.find(p => p.persona_id === systemSelectedPersonaId)?.persona_name || '')} 人設</span>
       </div>
       <div class="social-tabs">
-        <button class="social-tab-btn active" data-tab="ig">📱 IG</button>
-        <button class="social-tab-btn" data-tab="threads">🧵 脆</button>
-        <button class="social-tab-btn" data-tab="fb">📘 FB 粉專</button>
+        <button class="social-tab-btn active" data-tab="ig">📱 Instagram</button>
+        <button class="social-tab-btn" data-tab="threads">🧵 Threads</button>
+        <button class="social-tab-btn" data-tab="fb">📘 Facebook 粉絲專頁</button>
       </div>
 
       <!-- IG -->
