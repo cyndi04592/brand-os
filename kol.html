@@ -3346,7 +3346,7 @@ function openStoryboardForEpisode() {
       if (est > 14)      dv = 'auto';
       else if (est > 9)  dv = '15';
       else               dv = '10';
-      S.episodeDuration = dv;
+      if (S.episodeParams) S.episodeParams.duration = dv;   // 🔧 寫進生成真正會讀的參數
 
       if (typeof saveEpisodeDraft === 'function') saveEpisodeDraft(true);
       const dvLabel = dv === 'auto' ? 'AUTO(台詞較長)' : dv + ' 秒';
@@ -4433,11 +4433,15 @@ async function generateEpisode() {
   const chosenOutfitBrand = (epBrand && epBrand !== 'auto') ? epBrand
     : (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') ? S.selectedOutfitBrand : '';
   if (chosenOutfitBrand) opts.outfitBrand = chosenOutfitBrand;
-  const prompt = composeSeedancePrompt(S.currentBrandId, sceneId, (document.getElementById('ep-location')?.value || 'none'), movementId, S.episodeParams.duration, opts);
+  let prompt = composeSeedancePrompt(S.currentBrandId, sceneId, (document.getElementById('ep-location')?.value || 'none'), movementId, S.episodeParams.duration, opts);
   S.storyArc = prevArc;
 
   if (!prompt) { toast('組 prompt 失敗', 'error'); return; }
 
+  // 🆕 B-2: STEP3 預設鎖臉(對齊 STEP2;有 KOL 肖像 reference 就該保持同一人)
+  if (!/consistent facial features/i.test(prompt)) {
+    prompt = prompt + ', consistent facial features and identity preserved from reference image, same person throughout';
+  }
   const taskBox = document.getElementById('system-episode-task');
   if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>⏳ 送出影片中…</strong></div></div>`;
 
