@@ -149,6 +149,20 @@ window.KolStitch = (function () {
   //   onSegmentDone(segIndex, url),  // 每段完成
   //   waitForUserConfirm(i, url),    // 半自動：回一個 Promise，使用者按「下一步」才 resolve
   // }
+  // 🆕 成品搬 R2:永久留存,不靠會過期的 fal 網址;失敗就退回原網址、不擋流程
+  async function toR2(videoUrl, brandId, nameHint) {
+    try {
+      const r = await api('video_to_r2', {
+        videoUrl,
+        brandId: brandId || 'stitch',
+        nameHint: nameHint || 'final',
+      });
+      return (r && r.url) ? r.url : videoUrl;
+    } catch (e) {
+      console.warn('[KolStitch] R2 存檔失敗,改用原網址', e);
+      return videoUrl;
+    }
+  }
   async function runStitchFlow(plan, opts) {
     opts = opts || {};
     const log = opts.onProgress || function () {};
@@ -195,13 +209,15 @@ window.KolStitch = (function () {
       log('只有一段，免接片。完成！');
       return { finalUrl: segments[0].url, segmentUrls: segments.map(s => s.url) };
     }
-    log('接片中…');
-    const finalUrl = await composeSegments(segments, function (n, st) { log(`接片中…（${st}）`); });
-    log('完成！');
+  log('接片中…');
+    let finalUrl = await composeSegments(segments, function (n, st) { log(`接片中…(${st})`); });
+    log('成品存檔到 R2…');
+    finalUrl = await toR2(finalUrl, opts.brandId, (opts.kolName || 'stitch') + '-' + segments.length + 'seg');
+    log('完成!');
     return { finalUrl, segmentUrls: segments.map(s => s.url) };
   }
 
-  console.log('[KolStitch] 🎬 v2.0 就緒 · reference-to-video（原始照錨點 + 前段影片延續）');
+  console.log('[KolStitch] 🎬 v2.1 就緒 · reference-to-video（原始照錨點 + 前段影片延續）');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
