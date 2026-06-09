@@ -3294,6 +3294,7 @@ function openStoryboardForCine() {
     // ✅ 按「確認分鏡」:填劇情 + 鎖時長 15s + 凍結下面設定
    onConfirm: (beats) => {
       const b = beats[0] || {};
+      S.cineStoryboard = beats;   // 🆕 存整包分鏡
       const sit = (b.shotDesc || '') + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
       const el = document.getElementById('cine-situation');
       if (el) el.value = sit;
@@ -3318,6 +3319,7 @@ function openStoryboardForCine() {
     },
     // ✏️ 按「重新編輯」:解鎖下面設定
     onEdit: () => {
+      S.cineStoryboard = null;    // 🆕 解鎖時清掉
       lockCineZone(false);
       toast('已解鎖,可重新調整設定', 'success');
     },
@@ -3379,7 +3381,85 @@ function lockCineZone(lock) {
   const dur = document.querySelector('[data-group="duration"]');
   if (dur) dur.classList.toggle('cine-dur-locked', !!lock);
 }
+// 🆕 v5.18: 多段分鏡 → 接片長片(beat 數=段數,每段照分鏡自己的秒數)
+async function createStitchedVideo(beats) {
+  if (typeof KolStitch === 'undefined' || !KolStitch.runStitchFlow) {
+    toast('接片引擎(KolStitch)未載入', 'error'); return;
+  }
+  if (!S.selectedKol)     { toast('請先選定 KOL 形象', 'error'); return; }
+  if (!S.selectedSceneId) { toast('請選擇一個場景', 'error'); return; }
+  if (S.seedanceProductUrls.length === 0) {
+    if (!confirm('你沒加商品照,影片裡的商品可能不準。要繼續嗎?')) return;
+  }
+
+  const lookImage = S.availableLooks.find(l => l.id === S.selectedLookId)?.image_url
+                    || S.selectedKol.image_url;
+  if (!lookImage) { toast('KOL 肖像 URL 取不到,請重新載入', 'error'); return; }
+
+  // 把分鏡秒數夾到 Seedance 合法單段長度(系統現用 5/10/15)
+  const snapDur = (s) => {
+    const n = Number(s) || 15;
+    return [5, 10, 15].reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
+  };
+
+  // 每段用自己那張分鏡卡的鏡頭+台詞;第 2 段起加「延續前一段」
+  const continueLead = '這一鏡直接延續前一段影片:同一個人、同一張臉,表情情緒自然接下去,不要重來。';
+  const plan = beats.map((b, i) => {
+    const sit = (b.shotDesc || '')
+      + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
+    const opts = { outfitBrand: S.selectedOutfitBrand };
+    opts.episode = { situation: (i > 0 ? continueLead : '') + sit };
+    let p = composeSeedancePrompt(
+      S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId,
+      String(snapDur(b.seconds)), opts
+    );
+    if (!p) p = sit;
+    if (!/consistent facial features/i.test(p)) {
+      p += ', consistent facial features and identity preserved from reference image, same person throughout';
+    }
+    return { prompt: p, durationSec: snapDur(b.seconds) };
+  });
+
+  const btn = document.getElementById('create-seedance-btn');
+  const box = document.getElementById('seedance-preview-section');
+  const totalSec = plan.reduce((a, s) => a + s.durationSec, 0);
+  if (btn) { btn.disabled = true; btn.textContent = '接片生成中…請勿離開'; }
+  if (box) box.innerHTML = '<div style="padding:12px;color:#8fd9b8;font-size:13px;">🎬 接片開始…共 '
+    + plan.length + ' 段 ≈ ' + totalSec + ' 秒,請耐心等(分段生成較久)</div>';
+
+  try {
+    const result = await KolStitch.runStitchFlow(plan, {
+      startImageUrl: lookImage,
+      productImageUrls: S.seedanceProductUrls,
+      brandId: S.currentBrandId,
+      kolName: S.selectedKol.name,
+      mode: 'auto',
+      resolution: S.seedanceParams.resolution,
+      aspectRatio: S.seedanceParams.aspectRatio,
+      generateAudio: S.seedanceParams.generateAudio,
+      tier: S.seedanceParams.tier,
+      onProgress: (m) => { const d = box && box.firstElementChild; if (d) d.textContent = '▶ ' + m; },
+      onSegmentDone: (idx) => { const d = box && box.firstElementChild; if (d)
+        d.textContent = '✅ 第 ' + (idx + 1) + ' / ' + plan.length + ' 段完成,繼續…'; },
+    });
+    if (box) box.innerHTML =
+      '<video src="' + result.finalUrl + '" controls autoplay loop '
+      + 'style="width:100%;border-radius:10px;background:#000;"></video>'
+      + '<div style="margin-top:6px;"><a href="' + result.finalUrl
+      + '" target="_blank" style="color:#a78bfa;font-size:12px;word-break:break-all;">↗ 開新分頁 / 下載</a></div>';
+    toast('🎬 接片完成!共 ' + plan.length + ' 段', 'success');
+  } catch (e) {
+    if (box) box.innerHTML = '<div style="padding:12px;color:#ff6b6b;font-size:13px;">❌ ' + e.message + '</div>';
+    toast('接片失敗:' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🎬 生成電影鏡頭'; }
+  }
+}
 async function createSeedanceVideo() {
+  // 🆕 多段分鏡 → 走接片;單段維持原樣,demo 零風險
+  if (S.cineStoryboard && S.cineStoryboard.length > 1) {
+    return createStitchedVideo(S.cineStoryboard);
+  }
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
   if (!S.selectedSceneId) { toast('請選擇一個場景', 'error'); return; }
   if (S.seedanceProductUrls.length === 0) {
