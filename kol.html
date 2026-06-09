@@ -3408,7 +3408,7 @@ async function createStitchedVideo(beats) {
     const sit = (b.shotDesc || '')
       + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
     const opts = { outfitBrand: S.selectedOutfitBrand };
-    opts.episode = { situation: (i > 0 ? continueLead : '') + sit };
+    opts.episode = { situation: sit };
     let p = composeSeedancePrompt(
       S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId,
       String(snapDur(b.seconds)), opts
