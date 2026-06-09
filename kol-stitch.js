@@ -163,26 +163,26 @@ window.KolStitch = (function () {
       return videoUrl;
     }
   }
-  async function runStitchFlow(plan, opts) {
+ async function runStitchFlow(plan, opts) {
     opts = opts || {};
     const log = opts.onProgress || function () {};
-    const kolImg = opts.kolImageUrl || opts.startImageUrl;   // 相容舊面板傳的 startImageUrl
-    if (!kolImg) throw new Error('缺少 kolImageUrl（原始 KOL 照，每段都當錨點）');
+    const kolImg = opts.kolImageUrl || opts.startImageUrl;
+    if (!kolImg) throw new Error('缺少 kolImageUrl(原始 KOL 照,每段都當錨點)');
     if (!Array.isArray(plan) || plan.length < 1) throw new Error('plan 至少要 1 段');
 
-    const segments = [];
-    let prevVideoUrl = null;   // 前一段「整支影片」，當 @Video1 延續（取代尾幀）
+    // v3.0 平行:每段只錨「原始照 + 商品照」、彼此不依賴 → 全部同時送、同時跑。
+    //   總時間 ≈ 一段,不再相加。臉靠原始照守,不靠前一段影片。
+    const total = plan.length;
+    let doneCount = 0;
+    log(`${total} 段同時生成中…(平行)`);
 
-    for (let i = 0; i < plan.length; i++) {
-      const step = plan[i];
+    const tasks = plan.map(function (step, i) {
       const durSec = step.durationSec || opts.durationSec || 5;
-
-      log(`第 ${i + 1}/${plan.length} 段：生成中…`, i);
-      const segUrl = await generateSegment({
-        kolImageUrl: kolImg,                                   // ← 永遠原始照，不再用尾幀
+      return generateSegment({
+        kolImageUrl: kolImg,                 // 永遠原始照(臉一致)
         productImageUrls: opts.productImageUrls,
         productDriveFileIds: opts.productDriveFileIds,
-        videoUrls: prevVideoUrl ? [prevVideoUrl] : undefined,  // ← 接前一段整支影片
+        // ⚠️ 不傳 videoUrls → 不依賴前一段 → 才能平行
         prompt: step.prompt,
         durationSec: durSec,
         aspectRatio: opts.aspectRatio,
@@ -192,32 +192,31 @@ window.KolStitch = (function () {
         seed: step.seed,
         brandId: opts.brandId,
         kolName: opts.kolName,
-      }, function (n, st) { log(`第 ${i + 1} 段生成中…（${st}）`, i); });
+      }, function () {}).then(function (segUrl) {
+        doneCount++;
+        log(`${doneCount}/${total} 段完成…`);
+        if (opts.onSegmentDone) opts.onSegmentDone(i, segUrl);
+        return { url: segUrl, durationSec: durSec };
+      });
+    });
 
-      segments.push({ url: segUrl, durationSec: durSec });
-      prevVideoUrl = segUrl;                                   // ← 不再抽尾幀，整支影片往下接
-      if (opts.onSegmentDone) opts.onSegmentDone(i, segUrl);
-
-      // 半自動：停下來等使用者確認再生下一段
-      if (opts.mode === 'semi' && opts.waitForUserConfirm && i < plan.length - 1) {
-        log(`第 ${i + 1} 段完成，等你確認…`, i);
-        await opts.waitForUserConfirm(i, segUrl);
-      }
-    }
+    const segments = await Promise.all(tasks);   // 順序照 plan 保留
 
     if (segments.length === 1) {
-      log('只有一段，免接片。完成！');
-      return { finalUrl: segments[0].url, segmentUrls: segments.map(s => s.url) };
+      log('只有一段,免接片。存檔…');
+      const only = await toR2(segments[0].url, opts.brandId, (opts.kolName || 'stitch') + '-1seg');
+      log('完成!');
+      return { finalUrl: only, segmentUrls: [segments[0].url] };
     }
-  log('接片中…');
+
+    log('全部完成,接片中…');
     let finalUrl = await composeSegments(segments, function (n, st) { log(`接片中…(${st})`); });
     log('成品存檔到 R2…');
     finalUrl = await toR2(finalUrl, opts.brandId, (opts.kolName || 'stitch') + '-' + segments.length + 'seg');
     log('完成!');
-    return { finalUrl, segmentUrls: segments.map(s => s.url) };
+    return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
-
-  console.log('[KolStitch] 🎬 v2.1 就緒 · reference-to-video（原始照錨點 + 前段影片延續）');
+  console.log('[KolStitch] 🎬 v3.0 · 平行(每段錨原始照,同時跑)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
