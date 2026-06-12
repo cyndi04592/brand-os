@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-environment.js · v5.17
+//  kol-environment.js · v5.18
 //  
 //  🌆 環境組 — 場景 × 地標 × 環境音
 //  
@@ -203,9 +203,10 @@
     },
   };
 
-  // ─── 防貼上去感(輕量版,不打臉)──────────────────────
-  //  v5.17:只保留「自然融入場景、不是貼上去」,拔掉打臉/反射皮膚那段
-  const SCENE_HUMAN_INTEGRATION = 'the subject is naturally part of the scene, lit consistently with the surroundings, not a cutout pasted on top';
+  // ─── 防貼上去感 + 接地陰影(不打臉)──────────────────
+  //  v5.18:加回「腳/手/商品 與 地板/桌面 的接觸陰影」——避免商品或人浮空、貼上去感。
+  //         但刻意只「接地」、不碰臉(臉部打光才是烤肉網來源,維持拔除)。
+  const SCENE_HUMAN_INTEGRATION = 'the subject is naturally part of the scene, lit consistently with the surroundings, with soft natural contact shadows where her feet, hands, and any product or object touch the ground or surfaces, so nothing looks like it is floating or pasted on top';
 
   /**
    * 產出環境段落
@@ -294,5 +295,5 @@
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.17 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不再打臉');
+  console.log('[KolEnvironment] 🌆 v5.18 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 接地陰影');
 })();
