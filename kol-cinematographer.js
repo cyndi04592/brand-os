@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-cinematographer.js · v5.18
+//  kol-cinematographer.js · v5.19
 //  
 //  📷 攝影師 — 鏡頭、自然光、運鏡
 //  
@@ -17,6 +17,13 @@
 //     - 「不漂亮」→ 全用負向句擋(no beauty filter / no smoothing / no retouch /
 //       not a model / not commercial),負向句不會長網格。
 //   禁用:perfect / flawless / studio / professional model / commercial
+//
+//  v5.19 變更(室內烤肉紋根因):
+//   • 拔掉「正向瑕疵詞」realistic uneven skin tone / slight blemishes /
+//     skin imperfections —— 這是叫模型「自己畫皮膚不平」,室內硬光會放大成
+//     一條一條(戶外柔光蓋得住,所以 farm 乾淨、office 中)。舊版沒這些字=舊版乾淨。
+//   • 改成「keep her skin exactly like the reference photo」+ 負向(不准磨皮/漂亮):
+//     真實膚質交給參考照本身,不靠文字畫 → 不過曝成烤肉紋、也不會變太 AI。
 //
 //  v5.18 變更:
 //   • 把 Taiwanese Mandarin accent 放回(v5.17 誤拔造成又晴變中國腔)。
@@ -38,7 +45,7 @@
   // 🎯 攝影風格基底 — 精簡版(靈魂留、干擾拔)
   //   留:鏡頭/35mm/vlog、不修圖、不均勻膚色、瑕疵、照參考照、不准漂亮
   //   拔:光學/光場/邊緣/接觸陰影/no-cutout/motion blur(烤肉網來源)
-  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, natural unretouched skin with realistic uneven skin tone and slight blemishes, preserve original face features and skin imperfections from reference, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
+  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
 
   // 🎥 運鏡元資料
   const CAMERA_MOVEMENTS = {
@@ -137,5 +144,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.18 就緒 · REALISM_BASE 乾淨 + 台灣腔修回');
+  console.log('[KolCinematographer] 📷 v5.19 就緒 · 膚質改吃參考照(拔正向瑕疵詞)+ 台灣腔');
 })();
