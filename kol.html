@@ -3086,8 +3086,7 @@ function renderMovementPicker() {
     return `
       <div class="movement-card ${isSelected ? 'selected' : ''}" data-movement-id="${escapeHtml(id)}" title="${escapeHtml(m.hint)}">
         <div class="movement-label">${escapeHtml(m.label)}</div>
-        <div class="movement-hint">${escapeHtml(m.hint)}</div>
-        <div class="movement-dur">${m.duration_suggest}s</div>
+       <div class="movement-hint">${escapeHtml(m.hint)}</div>
       </div>
     `;
   }).join('');
