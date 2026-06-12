@@ -2434,7 +2434,7 @@ function renderPersonaSection(p) {
     ? `<div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
         ${p.photos.map(ph => `
           <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}">
-            <img src="${escapeHtml(ph.thumbnail_url)}" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder>🖼️</div>'" referrerpolicy="no-referrer">
+            <img src="${escapeHtml(ph.thumbnail_url)}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder>🖼️</div>'" referrerpolicy="no-referrer">
           </div>
         `).join('')}
       </div>`
@@ -2855,7 +2855,7 @@ function renderDriveProducts(files) {
                data-thumb="${escapeHtml(f.thumbnailLink || '')}"
                data-name="${escapeHtml(f.name || '')}"
                title="${escapeHtml(f.name || '')}">
-            <img src="${escapeHtml(f.thumbnailLink)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f>🖼️</div>'">
+            <img src="${escapeHtml(f.thumbnailLink)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f>🖼️</div>'">
             <div class="drive-name">${escapeHtml(f.name || '')}</div>
           </div>
         `;
@@ -4394,7 +4394,7 @@ function renderEpisodeProducts(files) {
                data-hi-res="${escapeHtml(f.hiResUrl)}"
                data-name="${escapeHtml(f.name || '')}"
                title="${escapeHtml(f.name || '')}">
-            <img src="${escapeHtml(f.thumbnailLink)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f>🖼️</div>'">
+            <img src="${escapeHtml(f.thumbnailLink)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f>🖼️</div>'">
           </div>
         `;
       }).join('')}
