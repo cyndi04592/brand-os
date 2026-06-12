@@ -3457,7 +3457,7 @@ async function createStitchedVideo(beats) {
   const plan = beats.map((b, i) => {
     const sit = (b.shotDesc || '')
       + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
-    const opts = { outfitBrand: S.selectedOutfitBrand };
+    const opts = { outfitBrand: S.selectedOutfitBrand, forceSingleShot: true };
     opts.episode = { situation: sit };
     let p = composeSeedancePrompt(
       S.currentBrandId, S.selectedSceneId, S.selectedLocationId, null, // 分鏡模式:運鏡交給分鏡卡,不再疊加
