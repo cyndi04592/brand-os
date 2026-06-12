@@ -1,29 +1,38 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-cinematographer.js · v5.12
+//  kol-cinematographer.js · v5.17
 //  
-//  📷 攝影師 — 鏡頭、光圈、ISO、燈光、運鏡
+//  📷 攝影師 — 鏡頭、自然光、運鏡
 //  
 //  職責:
 //   • 管理攝影風格基底(REALISM_BASE)
 //   • 管理運鏡庫(CAMERA_MOVEMENTS)
-//   • 產出攝影段落(光影 / 鏡頭 / 運鏡 / 底片顆粒等)
+//   • 產出攝影段落(運鏡 + 風格基底)
 //  
-//  設計哲學(RA 2026-04-23):
-//   「連 AI 都騙得過的真實感」— 不是完美畫面,是真實瑕疵
-//   - 禁用:perfect / flawless / studio / professional model / commercial
-//   - 必加:底片顆粒、手持抖動、毛孔質感、35mm、自然光、真實背景
-//  
-//  v5.12 狀態:骨架版
-//   • REALISM_BASE 和 CAMERA_MOVEMENTS 已搬進來(雙向同步 window)
-//   • kol.html 裡的原版常數仍保留,避免衝突
-//   • 下一版(v5.13)把 kol.html 原版刪掉,全改用這裡
+//  設計哲學(RA · 2026-06 修訂):
+//   「連 AI 都騙得過的真實感」— 真實感分兩層:
+//     - 微觀(毛孔、膚質細節)→ 交給「參考照本身」,
+//       prompt 不要正面叫模型畫(pores / peach fuzz / film grain / 細髮絲),
+//       fast 模型畫太密會糊成烤肉網(規則網格)。
+//     - 宏觀(不對稱、素顏感、亂髮、不修圖)→ 用人話描述,安全。
+//     - 「不漂亮」→ 全用負向句擋(no beauty filter / no smoothing / no retouch /
+//       not a model / not commercial),負向句不會長網格。
+//   禁用:perfect / flawless / studio / professional model / commercial
+//
+//  v5.17 變更:
+//   • REALISM_BASE 拔掉整包「光學/光場/邊緣融合」干擾
+//     (optical depth / light field / spilling onto edges / contact shadows /
+//      organic soft edges / no cutout / motion blur)—— 烤肉網主兇。
+//   • 順手拔掉 Taiwanese Mandarin accent(對非台灣 KOL 是錯的,日後做成每隻各自)。
+//   • 微觀紋理詞全清,真實感改靠「照參考照 + 不修圖 + 宏觀瑕疵」。
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
   'use strict';
 
-  // 🎯 攝影風格基底 — 臉部細節保留 + 真實肢體細節
-  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, captured on a real camera with a true optical lens, genuine optical depth of field with natural lens bokeh, subject and background unified in a single continuous light field, ambient environment light and color subtly spilling onto the edges of the subject,soft contact shadows where the subject meets the environment, subtle atmospheric depth between foreground and background, organic soft edges that blend naturally into the scene, absolutely no cutout, composited or layered look, no over-sharpened subject outline, subtle motion blur on movement, natural unretouched skin with realistic uneven skin tone, slight blemishes, preserve original face features and skin imperfections from reference, absolutely no beauty filter smoothing, no skin retouching, visible hand details with knuckles and fingernails, authentic documentary realism, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
+  // 🎯 攝影風格基底 — 精簡版(靈魂留、干擾拔)
+  //   留:鏡頭/35mm/vlog、不修圖、不均勻膚色、瑕疵、照參考照、不准漂亮
+  //   拔:光學/光場/邊緣/接觸陰影/no-cutout/motion blur(烤肉網來源)
+  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, natural unretouched skin with realistic uneven skin tone and slight blemishes, preserve original face features and skin imperfections from reference, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, natural lip sync, candid unscripted moments';
 
   // 🎥 運鏡元資料
   const CAMERA_MOVEMENTS = {
@@ -109,9 +118,8 @@
     suggestDuration,
   };
 
-  // v5.12:同時掛在 window 讓 kol.html 的舊程式碼能用(雙向相容)
-  // ⚠️ kol.html 如果還定義 REALISM_BASE / CAMERA_MOVEMENTS,會以 kol.html 為準
-  // 下一版(v5.13)把 kol.html 原版刪掉
+  // 同時掛在 window 讓 kol.html 的舊程式碼能用(雙向相容)
+  // ⚠️ 真正餵進 prompt 的是這份(crew module);kol.html 的舊 REALISM_BASE 被 crew-director 蓋掉
   if (typeof window.REALISM_BASE === 'undefined') {
     window.REALISM_BASE = REALISM_BASE;
   }
@@ -123,5 +131,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.12 就緒');
+  console.log('[KolCinematographer] 📷 v5.17 就緒 · REALISM_BASE 清乾淨(拔光學干擾)');
 })();
