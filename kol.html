@@ -3408,6 +3408,29 @@ function lockCineZone(lock) {
     }
   }
 }
+// 🆕 #3: 接片完成後,把成品也存進該品牌 Google Drive(跟照片一致)
+async function saveStitchedToDrive(videoUrl) {
+  if (!videoUrl) return;
+  const folderRow = (S.folders || []).find(f => f.brandId === S.currentBrandId);
+  const videoFolderId = folderRow?.videoFolderId || '';
+  if (!videoFolderId) {
+    toast('影片已存 R2;此品牌沒設 Drive 影片資料夾,略過存 Drive', 'warn');
+    return;
+  }
+  toast('正在把影片存進 Google Drive…');
+  try {
+    const res = await api('video_to_drive', {
+      videoUrl,
+      brandId: S.currentBrandId,
+      videoFolderId,
+      nameHint: (S.selectedKol?.name || 'KOL') + '_接片',
+    });
+    if (res.ok) toast('✅ 影片也存進品牌 Google Drive 了', 'success');
+    else toast('存 Drive 失敗:' + res.error, 'warn');
+  } catch (e) {
+    toast('存 Drive 失敗:' + e.message, 'warn');
+  }
+}
 // 🆕 v5.18: 多段分鏡 → 接片長片(beat 數=段數,每段照分鏡自己的秒數)
 async function createStitchedVideo(beats) {
   if (typeof KolStitch === 'undefined' || !KolStitch.runStitchFlow) {
@@ -3475,6 +3498,7 @@ async function createStitchedVideo(beats) {
       + '<div style="margin-top:6px;"><a href="' + result.finalUrl
       + '" target="_blank" style="color:#a78bfa;font-size:12px;word-break:break-all;">↗ 開新分頁 / 下載</a></div>';
     toast('🎬 接片完成!共 ' + plan.length + ' 段', 'success');
+    saveStitchedToDrive(result.finalUrl);   // 🆕 #3: 影片同步存進品牌 Google Drive
   } catch (e) {
     if (box) box.innerHTML = '<div style="padding:12px;color:#ff6b6b;font-size:13px;">❌ ' + e.message + '</div>';
     toast('接片失敗:' + e.message, 'error');
