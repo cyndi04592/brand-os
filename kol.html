@@ -3067,7 +3067,7 @@ function onLocationChange() {
   syncScenePrompt();
 }
 
-// 🎥 v5.3: 渲染運鏡選擇器
+// 🎥 渲染運鏡選擇器(已移除舊的 5S/10S 秒數 badge)
 function renderMovementPicker() {
   const grid = document.getElementById('movement-grid');
   const group = document.getElementById('movement-picker-group');
@@ -3079,6 +3079,12 @@ function renderMovementPicker() {
     return;
   }
 
+  // 分鏡模式(已確認分鏡)→ 運鏡交給分鏡卡,整個運鏡器不顯示
+  if (S.cineStoryboard) {
+    group.style.display = 'none';
+    return;
+  }
+
   group.style.display = '';
 
   grid.innerHTML = Object.entries(CAMERA_MOVEMENTS).map(([id, m]) => {
@@ -3086,7 +3092,7 @@ function renderMovementPicker() {
     return `
       <div class="movement-card ${isSelected ? 'selected' : ''}" data-movement-id="${escapeHtml(id)}" title="${escapeHtml(m.hint)}">
         <div class="movement-label">${escapeHtml(m.label)}</div>
-       <div class="movement-hint">${escapeHtml(m.hint)}</div>
+        <div class="movement-hint">${escapeHtml(m.hint)}</div>
       </div>
     `;
   }).join('');
@@ -3376,10 +3382,15 @@ function openStoryboardForEpisode() {
     },
   });
 }
-// 🔒 只鎖「時長」那一格(分鏡每段=15s,防止被改回去切台詞);運鏡/服飾/故事弧/畫質/進階全部仍可選
+// 🔒 分鏡模式鎖定:時長鎖死(防止被改回去切台詞)+ 整個運鏡器隱藏(運鏡由分鏡卡控制)
 function lockCineZone(lock) {
   const dur = document.querySelector('[data-group="duration"]');
   if (dur) dur.classList.toggle('cine-dur-locked', !!lock);
+
+  const mpGroup = document.getElementById('movement-picker-group');
+  if (mpGroup) {
+    mpGroup.style.display = lock ? 'none' : (S.selectedSceneId ? '' : 'none');
+  }
 }
 // 🆕 v5.18: 多段分鏡 → 接片長片(beat 數=段數,每段照分鏡自己的秒數)
 async function createStitchedVideo(beats) {
@@ -3410,7 +3421,7 @@ async function createStitchedVideo(beats) {
     const opts = { outfitBrand: S.selectedOutfitBrand };
     opts.episode = { situation: sit };
     let p = composeSeedancePrompt(
-      S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId,
+      S.currentBrandId, S.selectedSceneId, S.selectedLocationId, null, // 分鏡模式:運鏡交給分鏡卡,不再疊加
       String(snapDur(b.seconds)), opts
     );
     if (!p) p = sit;
@@ -3476,7 +3487,8 @@ async function createSeedanceVideo() {
   }
 
   // 🆕 v5.1+5.3: 從場景 + 地標 + 運鏡組 prompt(後端邏輯,使用者看不到)
-  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, S.selectedMovementId, S.seedanceParams.duration, cineOpts);
+  const movementForPrompt = S.cineStoryboard ? null : S.selectedMovementId;
+  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, movementForPrompt, S.seedanceParams.duration, cineOpts);
   if (!prompt) { toast('組 prompt 失敗,場景資料異常', 'error'); return; }
 
   // 🆕 v5.16: STEP2 預設鎖臉(電影鏡頭有 KOL 肖像 reference,本就該保持一致)
