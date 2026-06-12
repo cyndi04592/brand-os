@@ -1667,9 +1667,10 @@ function composeMultiShotPrompt(brandId, scene, action, settingText, baseMovemen
 
   const subjectDesc = `A woman [Image1] ${scene.outfit ? 'wearing ' + scene.outfit : ''}, consistent facial features and identity across all shots`;
 
-  const shot1 = `Shot 1 (0-5s): ${subjectDesc}, ${shotSequence[0].text}, in ${settingText}, ${scene.light}`;
-  const shot2 = `Shot 2 (5-10s): Natural cut transition. ${action}, ${shotSequence[1].text}, same scene continues, ${scene.light}`;
-  const shot3 = `Shot 3 (10-15s): Smooth cut. ${shotSequence[2].text}, emotional closing beat, ${scene.light}`;
+  const lightBase = scene.light ? scene.light + ', ' : '';
+  const shot1 = `Shot 1 (0-5s): ${subjectDesc}, ${shotSequence[0].text}, in ${settingText}, ${lightBase}lit naturally by whatever is immediately around her at this moment`;
+  const shot2 = `Shot 2 (5-10s): Natural cut transition. ${action}, ${shotSequence[1].text}, as she moves her lighting continuously updates to match her new position; any window-blind or patterned light from the opening stays on her face only while that source is beside her and falls off as she walks away`;
+  const shot3 = `Shot 3 (10-15s): Smooth cut. ${shotSequence[2].text}, emotional closing beat, lit by the ambient light of wherever she is now standing, no leftover light pattern stuck on the face`;
 
   const storyArc = S.storyArc || {};
   const arcParts = [];
