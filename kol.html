@@ -1997,6 +1997,7 @@ async function loadBrands() {
 async function onBrandChange() {
   const brandId = document.getElementById('brand-switcher').value;
   S.currentBrandId = brandId;
+  clearBrandPanelsLoading();   // 🆕 #2: 馬上清空 + 顯示載入中,別卡在舊品牌
 
   // 🆕 v5.14: 選品牌時跟 GAS 要「🛍️ 商品照」資料夾(沒有自動建),填進 BRAND_PRODUCT_FOLDERS
   //   非阻塞:背景跑,拿到 folderId 後若正在看 Drive 分頁就刷新縮圖。
@@ -2163,6 +2164,7 @@ async function loadKolList(brandId) {
       }
     })
   );
+  if (S.currentBrandId !== brandId) return;  // 🆕 #2: 使用者已切走 → 放棄,別蓋掉新品牌
 
   window._kolCache = {};
   groupsData.forEach(g => {
@@ -2386,6 +2388,7 @@ async function loadDrivePhotos(brandId) {
 
   try {
     const res = await gasGet('listKolPhotos', { brandId });
+    if (S.currentBrandId !== brandId) return;  // 🆕 #2: 已切走就別覆蓋
     if (!res.ok) {
       wrap.innerHTML = `<div class="kol-empty">❌ ${escapeHtml(res.error || '讀取失敗')}</div>`;
       return;
@@ -4918,6 +4921,19 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// 🆕 #2: 切品牌時馬上清掉上一個品牌的內容,顯示「載入中」,避免卡在舊品牌
+function clearBrandPanelsLoading() {
+  const loading = '<div class="kol-empty">載入中…</div>';
+  ['kol-list', 'kol-list-cine', 'drive-gallery-wrap', 'drive-product-gallery-wrap'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = loading;
+  });
+  ['kol-count', 'kol-count-cine'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+  
 function toast(msg, type = '') {
   const el = Object.assign(document.createElement('div'), { className: `toast ${type}`, textContent: msg });
   document.getElementById('toast-wrap').appendChild(el);
