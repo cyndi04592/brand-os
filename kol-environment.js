@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-environment.js · v5.18
+//  kol-environment.js · v5.19
 //  
 //  🌆 環境組 — 場景 × 地標 × 環境音
 //  
@@ -208,6 +208,27 @@
   //         但刻意只「接地」、不碰臉(臉部打光才是烤肉網來源,維持拔除)。
   const SCENE_HUMAN_INTEGRATION = 'the subject is naturally part of the scene, lit consistently with the surroundings, with soft natural contact shadows where her feet, hands, and any product or object touch the ground or surfaces, so nothing looks like it is floating or pasted on top';
 
+  // ─── 🔧 濾除「會在臉上畫紋理/網格/紅斑」的詞 ──────────
+  //  場景庫(kol-universal-scenes.js)很多 env_prompt 內建了
+  //  film grain / ISO / visible skin pores / peach fuzz / skin texture / skin details,
+  //  fast 模型會把這些畫成烤肉網或臉部紅斑。在組裝時統一清掉,
+  //  不必逐一改 19 個場景,且新場景也自動受保護。
+  function stripSkinTextureNoise(text) {
+    if (!text) return text;
+    return text
+      .replace(/\s*,?\s*(?:35mm\s+)?film grain/gi, '')
+      .replace(/\s*,?\s*ISO\s?\d+(?:-\d+)?/gi, '')
+      .replace(/\s*,?\s*(?:visible\s+|natural\s+)?skin\s+pores(?:\s+and\s+peach\s+fuzz)?(?:\s+visible)?/gi, '')
+      .replace(/\s*,?\s*(?:visible\s+|natural\s+)?skin\s+(?:texture|details?)/gi, '')
+      .replace(/\s*,?\s*peach\s+fuzz/gi, '')
+      // 收尾:清掉殘留的雙逗號 / 頭尾逗號 / 多空格
+      .replace(/\s*,(\s*,)+/g, ',')
+      .replace(/^\s*,\s*/, '')
+      .replace(/\s*,\s*$/, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
   /**
    * 產出環境段落
    */
@@ -218,18 +239,21 @@
 
     // 1. 基礎場景設定
     let settingText = scene.setting || scene.env_prompt || '';
-    // 🔧 拔掉 film grain / ISO(fast 模型會把顆粒畫成烤肉網)
-    settingText = settingText
-      .replace(/\s*,?\s*(?:35mm\s+)?film grain/gi, '')
-      .replace(/\s*,?\s*ISO\s?\d+(?:-\d+)?/gi, '');
 
     // 2. 戶外場景可用地標 override
     if (sceneType === 'outdoor' && ctx.locationId && ctx.locationId !== 'none') {
-      const loc = LOCATIONS[ctx.locationId];
-      if (loc?.keywords && loc.compatible?.includes('outdoor')) {
-        settingText = loc.keywords;
+      const ovLoc = LOCATIONS[ctx.locationId];
+      if (ovLoc?.keywords && ovLoc.compatible?.includes('outdoor')) {
+        settingText = ovLoc.keywords;
       }
     }
+
+    // 🔧 v5.19:統一濾掉場景內建的「膚質/顆粒詞」
+    //    (烤肉網 + 臉部紅斑兇手 —— 19 個場景的 env_prompt 都藏著
+    //     visible skin pores / peach fuzz / skin texture / film grain / ISO)
+    //    在這裡一次擋住,所有場景(連以後新加的)都自動乾淨,不用改場景庫。
+    settingText = stripSkinTextureNoise(settingText);
+
     if (settingText) parts.push('in ' + settingText);
 
     // 3. 場景光線特徵(scene.light 現有)
@@ -295,5 +319,5 @@
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.18 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 接地陰影');
+  console.log('[KolEnvironment] 🌆 v5.19 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 接地陰影 + 濾膚質詞');
 })();
