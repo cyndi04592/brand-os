@@ -209,6 +209,10 @@
 
     // 1. 基礎場景設定
     let settingText = scene.setting || scene.env_prompt || '';
+    // 🔧 拔掉 film grain / ISO(fast 模型會把顆粒畫成烤肉網)
+    settingText = settingText
+      .replace(/\s*,?\s*(?:35mm\s+)?film grain/gi, '')
+      .replace(/\s*,?\s*ISO\s?\d+(?:-\d+)?/gi, '');
 
     // 2. 戶外場景可用地標 override
     if (sceneType === 'outdoor' && ctx.locationId && ctx.locationId !== 'none') {
