@@ -3067,20 +3067,14 @@ function onLocationChange() {
   syncScenePrompt();
 }
 
-// 🎥 渲染運鏡選擇器(已移除舊的 5S/10S 秒數 badge)
+// 🎥 渲染運鏡選擇器(分鏡模式不隱藏,改成「鎖住+說明」,跟時長鎖一致)
 function renderMovementPicker() {
   const grid = document.getElementById('movement-grid');
   const group = document.getElementById('movement-picker-group');
   if (!grid || !group) return;
 
-  // 沒選場景就隱藏運鏡選擇
+  // 沒選場景才隱藏
   if (!S.selectedSceneId) {
-    group.style.display = 'none';
-    return;
-  }
-
-  // 分鏡模式(已確認分鏡)→ 運鏡交給分鏡卡,整個運鏡器不顯示
-  if (S.cineStoryboard) {
     group.style.display = 'none';
     return;
   }
@@ -3099,6 +3093,9 @@ function renderMovementPicker() {
 
   grid.removeEventListener('click', handleMovementClick);
   grid.addEventListener('click', handleMovementClick);
+
+  // 分鏡模式 → 維持鎖定(灰掉 + 說明),不是消失
+  if (S.cineStoryboard) lockCineZone(true);
 }
 
 function handleMovementClick(e) {
@@ -3382,14 +3379,30 @@ function openStoryboardForEpisode() {
     },
   });
 }
-// 🔒 分鏡模式鎖定:時長鎖死(防止被改回去切台詞)+ 整個運鏡器隱藏(運鏡由分鏡卡控制)
+// 🔒 分鏡模式鎖定:時長鎖死 + 運鏡灰掉(可見但不能點)並說明為什麼,跟時長同一套
 function lockCineZone(lock) {
   const dur = document.querySelector('[data-group="duration"]');
   if (dur) dur.classList.toggle('cine-dur-locked', !!lock);
 
-  const mpGroup = document.getElementById('movement-picker-group');
-  if (mpGroup) {
-    mpGroup.style.display = lock ? 'none' : (S.selectedSceneId ? '' : 'none');
+  const grid = document.getElementById('movement-grid');
+  const group = document.getElementById('movement-picker-group');
+  if (grid) grid.classList.toggle('cine-dur-locked', !!lock); // 灰掉、不能點
+
+  if (group) {
+    let note = document.getElementById('movement-lock-note');
+    if (lock) {
+      if (!note) {
+        note = document.createElement('div');
+        note.id = 'movement-lock-note';
+        note.className = 'motion-hint';
+        note.style.cssText = 'margin-top:6px;color:#ffa94d';
+        group.appendChild(note);
+      }
+      note.textContent = '🔒 你用了分鏡:鏡頭改由每張分鏡卡決定,所以運鏡先鎖住,避免兩邊指令打架。想自己挑運鏡的話,按「重新編輯」就會解鎖。';
+      note.style.display = '';
+    } else if (note) {
+      note.style.display = 'none';
+    }
   }
 }
 // 🆕 v5.18: 多段分鏡 → 接片長片(beat 數=段數,每段照分鏡自己的秒數)
