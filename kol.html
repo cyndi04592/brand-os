@@ -3419,9 +3419,8 @@ async function saveStitchedToDrive(videoUrl) {
   }
   toast('正在把影片存進 Google Drive…');
   try {
-    const res = await api('video_to_drive', {
+   const res = await gasPost('saveVideoToDrive', {
       videoUrl,
-      brandId: S.currentBrandId,
       videoFolderId,
       nameHint: (S.selectedKol?.name || 'KOL') + '_接片',
     });
