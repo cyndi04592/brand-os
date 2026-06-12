@@ -126,8 +126,8 @@
       episode: opts.episode || null,
     };
 
-    // 15 秒多鏡頭
-    if (String(duration) === '15') {
+    // 15 秒多鏡頭(接片模式強制單鏡頭,不要每段又切三刀)
+    if (String(duration) === '15' && !opts.forceSingleShot) {
       return composeMultiShotPrompt(ctx, actionLine);
     }
 
@@ -162,6 +162,7 @@
         '), integrate naturally without mentioning brand name');
     }
 
+    parts.push('no subtitles, no captions, no on-screen text, no burned-in text or watermark of any kind');
     return parts.filter(Boolean).join('. ');
   }
 
@@ -235,6 +236,7 @@
       cineText,
       arcLine,
       personaLine ? 'CHARACTER: ' + personaLine : '',
+      'no subtitles, no captions, no on-screen text, no burned-in text or watermark of any kind',
       'IMPORTANT: keep subject face and outfit consistent across all three shots, use natural cuts not hard jumps, single-take vlog feeling.',
     ].filter(Boolean).join(' ');
 
