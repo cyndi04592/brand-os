@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-cinematographer.js · v5.17
+//  kol-cinematographer.js · v5.18
 //  
 //  📷 攝影師 — 鏡頭、自然光、運鏡
 //  
@@ -18,6 +18,12 @@
 //       not a model / not commercial),負向句不會長網格。
 //   禁用:perfect / flawless / studio / professional model / commercial
 //
+//  v5.18 變更:
+//   • 把 Taiwanese Mandarin accent 放回(v5.17 誤拔造成又晴變中國腔)。
+//     ⚠️ 這是暫時解 —— 正解是「每隻 KOL 各自的腔調」(健一=日本腔,
+//     台灣品牌=台灣腔)。但健一語音走 HeyGen 口播、不靠 Seedance 音效,
+//     現階段 Seedance 出聲的就是台灣 KOL,所以全域放台灣腔是對的。
+//
 //  v5.17 變更:
 //   • REALISM_BASE 拔掉整包「光學/光場/邊緣融合」干擾
 //     (optical depth / light field / spilling onto edges / contact shadows /
@@ -32,7 +38,7 @@
   // 🎯 攝影風格基底 — 精簡版(靈魂留、干擾拔)
   //   留:鏡頭/35mm/vlog、不修圖、不均勻膚色、瑕疵、照參考照、不准漂亮
   //   拔:光學/光場/邊緣/接觸陰影/no-cutout/motion blur(烤肉網來源)
-  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, natural unretouched skin with realistic uneven skin tone and slight blemishes, preserve original face features and skin imperfections from reference, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, natural lip sync, candid unscripted moments';
+  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, natural unretouched skin with realistic uneven skin tone and slight blemishes, preserve original face features and skin imperfections from reference, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
 
   // 🎥 運鏡元資料
   const CAMERA_MOVEMENTS = {
@@ -131,5 +137,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.17 就緒 · REALISM_BASE 清乾淨(拔光學干擾)');
+  console.log('[KolCinematographer] 📷 v5.18 就緒 · REALISM_BASE 乾淨 + 台灣腔修回');
 })();
