@@ -1,28 +1,34 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-environment.js · v5.12
+//  kol-environment.js · v5.17
 //  
-//  🌆 環境組 — 場景 × 地標 × 環境光融合 × 環境音
+//  🌆 環境組 — 場景 × 地標 × 環境音
 //  
 //  (取代 v5.11 的 kol-locations.js,概念升級)
 //  
 //  職責:
 //   • 地標庫(22 個真實地標 · 未來可從 GAS 動態載入)
-//   • 🔥 環境光融合規則(光落在臉上、陰影、色溫反射到皮膚)
-//   • 🔥 環境音描述(不強制,但生成時自動加入)
-//   • 🔥 人景互動強制規則(避免人像 Photoshop 貼上去感)
+//   • 環境音描述(讓 KOL 有反應對象)
+//   • 輕量「防貼上去感」規則
 //  
-//  設計哲學(RA 2026-04-25):
-//   「環境光與人的互動不要分離」— 人在這個環境裡,不是貼上去的
-//   - 光要從場景投到臉上、肩膀
-//   - 陰影要落在牆上、地板
-//   - 色溫要反射到皮膚
-//   - 環境音要讓 KOL 自然反應
+//  設計哲學(RA · 2026-06 修訂):
+//   環境只負責「她在哪 + 環境音 + 不要像貼上去」,
+//   ⚠️ 不再把環境光「打到臉上 / 反射到皮膚」——
+//      那是烤肉網(臉部規則網格)的幫兇之一。
+//   臉部打光、膚質交給「參考照本身」,環境只給背景與氛圍。
+//
+//  v5.17 變更:
+//   • SCENE_HUMAN_INTEGRATION 縮短:只保留「自然融入場景、不是貼上去」,
+//     拔掉「light must fall on her skin / hair catches reflections」(打臉)。
+//   • contribute 移除「環境光打到臉上」那段(地標 light_character 不再餵入)。
+//   • 22 個地標資料原封不動;light_character / light_interaction 變休眠欄位
+//     (留著供 UI 或未來用,但不進 prompt)。
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
   'use strict';
 
   // ─── 地標庫 ────────────────────────────────────────────
+  //  註:light_character 目前為休眠欄位(v5.17 起不餵進 prompt,避免打臉烤肉網)
   const LOCATIONS = {
     none: { label: '— 不指定地標 —', keywords: null, ambient: null },
 
@@ -184,7 +190,8 @@
     },
   };
 
-  // ─── 場景預設環境光特徵(當沒選地標時用)────────────
+  // ─── 場景預設環境音(沒選地標時用)────────────────────
+  //  註:light_interaction 為休眠欄位(v5.17 起不餵進 prompt)
   const DEFAULT_AMBIENT_BY_SCENE_TYPE = {
     indoor: {
       light_interaction: 'window light spilling onto her face from one side, soft shadow cast behind her on the wall, skin tone naturally shifting with indoor color temperature',
@@ -196,11 +203,12 @@
     },
   };
 
-  // ─── 🔥 核心:人景融合規則(必加進每個 prompt)──────
-  const SCENE_HUMAN_INTEGRATION = 'critically important: the subject must feel physically present in the environment, not composited — environment light must fall on her skin with matching color temperature, shadows from her body must land realistically on nearby surfaces, her hair catches ambient light reflections, no visible Photoshop-layer separation between subject and background';
+  // ─── 防貼上去感(輕量版,不打臉)──────────────────────
+  //  v5.17:只保留「自然融入場景、不是貼上去」,拔掉打臉/反射皮膚那段
+  const SCENE_HUMAN_INTEGRATION = 'the subject is naturally part of the scene, lit consistently with the surroundings, not a cutout pasted on top';
 
   /**
-   * 產出環境段落(最核心的融合邏輯)
+   * 產出環境段落
    */
   function contribute(ctx) {
     const parts = [];
@@ -226,18 +234,18 @@
     // 3. 場景光線特徵(scene.light 現有)
     if (scene.light) parts.push(scene.light);
 
-    // 4. 🔥 環境光與人的互動(地標級 > 場景級 > 預設)
+    // 4. ⚠️ v5.17 移除「環境光打到臉上」
+    //    地標 light_character / 預設 light_interaction 全是 "on her face/skin",
+    //    是烤肉網幫兇 → 不再餵入。setting + scene.light 已足夠建立光線,臉交給參考照。
+    //    (loc 仍保留,給下面第 5 段環境音用)
     const loc = ctx.locationId && ctx.locationId !== 'none' ? LOCATIONS[ctx.locationId] : null;
-    const lightInteraction = loc?.light_character
-      || DEFAULT_AMBIENT_BY_SCENE_TYPE[sceneType]?.light_interaction;
-    if (lightInteraction) parts.push(lightInteraction);
 
-    // 5. 🔥 環境音(自然加入讓 KOL 有反應對象)
+    // 5. 環境音(讓 KOL 有反應對象)
     const ambientSound = loc?.ambient
       || DEFAULT_AMBIENT_BY_SCENE_TYPE[sceneType]?.ambient_sound;
     if (ambientSound) parts.push('ambient audio includes ' + ambientSound);
 
-    // 6. 🔥 人景融合強制規則(這是關鍵)
+    // 6. 防貼上去感(輕量,不打臉)
     parts.push(SCENE_HUMAN_INTEGRATION);
 
     // 7. 場景 extra(e.g. 特殊 props)
@@ -286,5 +294,5 @@
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.12 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 + 人景融合');
+  console.log('[KolEnvironment] 🌆 v5.17 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不再打臉');
 })();
