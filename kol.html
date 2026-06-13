@@ -3507,9 +3507,18 @@ async function createStitchedVideo(beats) {
 }
 // 🆕 臉用乾淨原圖:自動從該 KOL 的 Drive 資料夾抓原圖 → 轉乾淨 R2(走商品照同管線)
 //    任何一步失敗都自動退回原本的 HeyGen 圖,不會讓生成壞掉。全自動、零人工。
+//    🆕 加 localStorage 持久快取:同一個 KOL 算過一次 → 之後免 GAS、免 Worker、刷新也秒回。
 window._kolCleanCache = window._kolCleanCache || {};
 async function resolveKolImageUrl(personaName, fallbackUrl) {
+  const lsKey = 'kolClean:' + (S.currentBrandId || '') + ':' + (personaName || '');
   try {
+    // 0) 持久快取:這個 KOL 之前算過乾淨網址 → 直接回(免 GAS、免 Worker、刷新也在)
+    if (window._kolCleanCache[lsKey]) return window._kolCleanCache[lsKey];
+    try {
+      const hit = localStorage.getItem(lsKey);
+      if (hit) { window._kolCleanCache[lsKey] = hit; return hit; }
+    } catch (e) {}
+
     let p = (S.drivePhotos?.personas || []).find(x => x.persona_name === personaName);
     // 沒載過、或舊快取沒有 processed_photos 欄 → 重抓一次最新的
     if (!p || p.processed_photos === undefined) {
@@ -3525,6 +3534,8 @@ async function resolveKolImageUrl(personaName, fallbackUrl) {
     const cleanUrl = res?.url || res?.publicUrl || res?.r2Url || res?.r2 || (res?.result && res.result.url) || '';
     if (!cleanUrl) { console.warn('[臉乾淨圖] drive_to_r2 沒回網址 → 用HeyGen。回傳=', res); return fallbackUrl; }
     window._kolCleanCache[fileId] = cleanUrl;
+    window._kolCleanCache[lsKey] = cleanUrl;
+    try { localStorage.setItem(lsKey, cleanUrl); } catch (e) {}   // 🆕 存進瀏覽器,下次刷新也秒回
     console.log('[臉乾淨圖] ✅ 改用乾淨原圖:', cleanUrl);
     return cleanUrl;
   } catch (e) {
