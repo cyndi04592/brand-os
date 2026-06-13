@@ -3505,6 +3505,30 @@ async function createStitchedVideo(beats) {
     if (btn) { btn.disabled = false; btn.textContent = '🎬 生成電影鏡頭'; }
   }
 }
+// 🆕 臉用乾淨原圖:自動從該 KOL 的 Drive 資料夾抓原圖 → 轉乾淨 R2(走商品照同管線)
+//    任何一步失敗都自動退回原本的 HeyGen 圖,不會讓生成壞掉。全自動、零人工。
+window._kolCleanCache = window._kolCleanCache || {};
+async function resolveKolImageUrl(personaName, fallbackUrl) {
+  try {
+    if (!S.drivePhotos || !S.drivePhotos.personas) {
+      const r = await gasGet('listKolPhotos', { brandId: S.currentBrandId });
+      if (r && r.ok) S.drivePhotos = r;
+    }
+    const p = (S.drivePhotos?.personas || []).find(x => x.persona_name === personaName);
+    const fileId = p?.photos?.[0]?.file_id;
+    if (!fileId) { console.warn('[臉乾淨圖] 找不到', personaName, '的原圖 → 用HeyGen'); return fallbackUrl; }
+    if (window._kolCleanCache[fileId]) return window._kolCleanCache[fileId];
+    const res = await api('drive_to_r2', { driveFileId: fileId, brandId: S.currentBrandId, role: 'kol', nameHint: (personaName || 'kol') + '.jpg' });
+    const cleanUrl = res?.url || res?.publicUrl || res?.r2Url || res?.r2 || (res?.result && res.result.url) || '';
+    if (!cleanUrl) { console.warn('[臉乾淨圖] drive_to_r2 沒回網址 → 用HeyGen。回傳=', res); return fallbackUrl; }
+    window._kolCleanCache[fileId] = cleanUrl;
+    console.log('[臉乾淨圖] ✅ 改用乾淨原圖:', cleanUrl);
+    return cleanUrl;
+  } catch (e) {
+    console.warn('[臉乾淨圖] 出錯 → 用HeyGen', e);
+    return fallbackUrl;
+  }
+}
 async function createSeedanceVideo() {
   // 🆕 多段分鏡 → 走接片;單段維持原樣,demo 零風險
   if (S.cineStoryboard && S.cineStoryboard.length > 1) {
@@ -3545,7 +3569,7 @@ async function createSeedanceVideo() {
   }
 
   const payload = {
-    kolImageUrl: lookImage,
+    kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
     productImageUrls: S.seedanceProductUrls,
     prompt,
     resolution: S.seedanceParams.resolution,
