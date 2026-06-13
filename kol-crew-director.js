@@ -143,7 +143,7 @@
         + ' — show her actually doing this, natural and candid, while keeping the product from [Image2] clearly visible in frame at a natural realistic size, not exaggerated');
     }
     if (speechLine) parts.push(speechLine);
-
+    pushIfNonEmpty(parts, window.KolProduct?.contribute(ctx));
     pushIfNonEmpty(parts, CrewMembers.environment?.contribute(ctx));
     pushIfNonEmpty(parts, CrewMembers.wardrobe?.contribute(ctx));
     pushIfNonEmpty(parts, CrewMembers.makeup?.contribute(ctx));
