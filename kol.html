@@ -1802,11 +1802,11 @@ const S = {
     tier: 'fast',
     generateAudio: true,
   },
-  seedanceSeedLocked: false,
+ seedanceSeedLocked: false,
   seedanceFaceConsistency: false,
   seedanceTasks: [],
 };
-
+window.S = S;   // 🆕 掛上 window,讓 crew-director 等模組撈得到 ctx.brand(品牌靈魂/道具師都靠這個)
 // ─── API helpers ──────────────────────────────────────────────
 async function api(action, extra = {}) {
   const r = await fetch(WORKER, {
