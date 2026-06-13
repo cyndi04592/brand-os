@@ -161,7 +161,9 @@
         ' (' + (opts.episode.product.tag || 'casual wear') +
         '), integrate naturally without mentioning brand name');
     }
-
+// v5.13:品牌靈魂調性放末尾(詞序黃金法則·克制·不搶主體)
+    pushIfNonEmpty(parts, CrewMembers.brandSoul?.contribute(ctx));
+    
     parts.push('no subtitles, no captions, no on-screen text, no burned-in text or watermark of any kind');
     return parts.filter(Boolean).join('. ');
   }
@@ -231,12 +233,13 @@
     const cineText = CrewMembers.cinematographer?.REALISM_BASE || '';
     const personaLine = ctx.persona ? CrewMembers.persona?.contribute(ctx) : '';
 
+   const soulTone = CrewMembers.brandSoul?.contribute(ctx) || '';
     const footer = [
       scene.extra,
       cineText,
       arcLine,
       personaLine ? 'CHARACTER: ' + personaLine : '',
-      'no subtitles, no captions, no on-screen text, no burned-in text or watermark of any kind',
+      soulTone,
       'IMPORTANT: keep subject face and outfit consistent across all three shots, use natural cuts not hard jumps, single-take vlog feeling.',
     ].filter(Boolean).join(' ');
 
