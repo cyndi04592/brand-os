@@ -2535,10 +2535,13 @@ async function confirmDrivePhotos() {
   }
 }
 
-// ─── 全部重新整理 ──────────────────────────────────────────
+// ── 全部重新整理 ──
 async function refreshAll() {
   if (!S.currentBrandId) { toast('請先選品牌', 'warn'); return; }
   toast('重新載入中…');
+  // 🆕 清掉「乾淨臉」快取:換綁新照片後按這顆,就會重抓最新原圖(不會卡在舊的)
+  window._kolCleanCache = {};
+  try { Object.keys(localStorage).filter(k => k.startsWith('kolClean:')).forEach(k => localStorage.removeItem(k)); } catch (e) {}
   await loadPersonas(S.currentBrandId);
   await Promise.all([loadKolList(S.currentBrandId), loadDrivePhotos(S.currentBrandId)]);
   toast('重新載入完成 ✓', 'success');
