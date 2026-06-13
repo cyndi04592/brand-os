@@ -37,9 +37,16 @@
    * 產出品牌調性段落
    */
   function contribute(ctx) {
-    // v5.12:品牌靈魂注入先留給 scene.product_context / storyArc.productHint 處理
-    // 這裡只提供輔助查詢,不重複塞入 prompt
-    return '';
+    // v5.13:品牌靈魂注入 — 放 prompt 末尾當「全局調性」(詞序:抽象風格在後)
+    //   克制、不搶主體 KOL、不改商品形狀(主菜+鹽+油的「油」)
+    const brand = ctx?.brand;
+    if (!brand) return '';
+    const bits = [];
+    if (brand.adStyle && brand.adStyle.trim()) bits.push(brand.adStyle.trim());
+    const tagline = extractTagline(brand.soul);
+    if (tagline) bits.push(tagline);
+    if (bits.length === 0) return '';
+    return 'overall brand mood as a subtle global tone only (do not change the subject, face, or product shape): ' + bits.join('; ');
   }
 
   /**
@@ -79,5 +86,5 @@
     window.CrewDirector.register('brandSoul', window.KolBrandSoul);
   }
 
-  console.log('[KolBrandSoul] 📚 v5.12 就緒(骨架)');
+  console.log('[KolBrandSoul] 📚 v5.13 就緒 · 品牌調性注入(末尾·克制)');
 })();
