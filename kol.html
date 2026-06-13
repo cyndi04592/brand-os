@@ -4570,6 +4570,7 @@ async function generateEpisode() {
   try {
     const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
     kolImageUrl = res?.avatars?.[0]?.image_url || '';
+    kolImageUrl = await resolveKolImageUrl(persona.persona_name, kolImageUrl);
   } catch (_) {}
   if (!kolImageUrl) { toast('無法取得 KOL 肖像 URL,請至形象庫檢查', 'error'); return; }
 
@@ -4889,6 +4890,7 @@ async function aiGeneratePersona() {
     try {
       const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
       kolImageUrl = res?.avatars?.[0]?.image_url || '';
+      kolImageUrl = await resolveKolImageUrl(persona.persona_name, kolImageUrl);
     } catch (_) {}
   }
 
@@ -5478,6 +5480,7 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
   try {
     const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
     kolImageUrl = res?.avatars?.[0]?.image_url || '';
+    kolImageUrl = await resolveKolImageUrl(persona.persona_name, kolImageUrl);
   } catch (_) {}
   if (!kolImageUrl) {
     toast('無法取得 KOL 肖像 URL', 'error');
