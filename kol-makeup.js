@@ -92,7 +92,7 @@
 
     // 3) 加自然不完美的收尾(呼應「不要 100%」),但輕微
     //    注意:不重複 REALISM_BASE 的毛孔/汗毛,只加「妝會自然的小細節」
-    return 'makeup: ' + makeupText + ', makeup looks naturally worn not freshly applied, slight authentic imperfection';
+    return 'makeup: ' + makeupText + ', makeup looks naturally worn not freshly applied';
   }
 
   function getPreset(name) {
