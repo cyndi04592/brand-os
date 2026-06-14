@@ -72,7 +72,7 @@
   //   - 抓出所有中/英引號內的句子 → 當台詞(speaks in Mandarin: "...")
   //   - 引號外的字 → 當動作描述
   //   回傳 { action, speechLine }。沒台詞 → speechLine 為 ''。
-  function parseSituation(raw) {
+  function parseSituation(raw, persona) {
     const situation = (raw || '').trim();
     if (!situation) return { action: '', speechLine: '' };
 
@@ -92,7 +92,8 @@
     if (lines.length) {
       // FAL 規矩:短句最佳(5-10字),標語言。多句用逗號接成一段。
       const quoted = lines.map(s => `"${s}"`).join(', ');
-      speechLine = `She speaks in natural Taiwanese Mandarin, clear lip-sync, saying: ${quoted}. No background music.`;
+      const pronoun = persona?.gender === 'male' ? 'He' : 'She';
+      speechLine = `${pronoun} speaks in natural Mandarin Chinese, clear lip-sync, saying: ${quoted}. No background music.`;
     }
     return { action, speechLine };
   }
@@ -141,7 +142,7 @@
     // 🆕 B版 劇情注入:動作 + 台詞雙軌。
     // ⚠️ 修正:劇情動作只「補充」不「取代」actionLine —— actionLine 裝著商品放大 + [Image2]引用,
     //    被丟掉的話,一填劇情商品就不見了(跟「商品要大」的核心需求打架)。
-    const { action: sitAction, speechLine } = parseSituation(opts.episode?.situation);
+    const { action: sitAction, speechLine } = parseSituation(opts.episode?.situation, persona);
 
     // 單鏡頭:actionLine(商品放大)永遠擺第一,劇情動作/台詞接在後面補充。
     const parts = [actionLine];
@@ -215,7 +216,7 @@
     const subjectDesc = `A woman [Image1] ${outfitText}, consistent facial features and identity across all shots`;
 
     // 🆕 B版 劇情注入(15秒多鏡頭):動作鋪進三鏡頭,台詞放在中段鏡頭講出來。
-    const { action: sitAction, speechLine } = parseSituation(ctx.episode?.situation);
+    const { action: sitAction, speechLine } = parseSituation(ctx.episode?.situation, ctx.persona);
     let shot1, shot2, shot3;
     if (sitAction) {
       const act = 'She performs this action naturally as the main on-screen action: ' + sitAction;
