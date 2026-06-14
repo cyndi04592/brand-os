@@ -1104,7 +1104,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
     <div class="credit-est">
           <span>預估耗時:</span>
-          <span class="usd" id="seedance-cost-est">~ 2 分鐘</span>
+          <span class="usd" id="seedance-cost-est">~ 4 分鐘</span>
         </div>
         </div><!-- /cine-lock-zone -->
 
@@ -3297,7 +3297,7 @@ function updateSeedanceCostEstimate() {
   if (!el) return;
   const p = S.seedanceParams;
   const seconds = (p.duration === 'auto') ? 10 : parseInt(p.duration);
-  const minutes = p.tier === 'standard' ? 3 : 2;
+  const minutes = p.tier === 'standard' ? 5 : 4;   // 實況:fal 算得快,但 app 偵測有 ~3 分鐘輪詢延遲(待 webhook 根治)
   el.textContent = `~ ${minutes} 分鐘(${p.resolution} × ${seconds}s)`;
 }
 
@@ -3647,7 +3647,7 @@ async function createSeedanceVideo() {
     };
     S.seedanceTasks.unshift(task);
     renderSeedanceTasks();
-    toast(`Seedance 任務已送出 🎬(預估 1-2 分鐘)`, 'success');
+    toast(`Seedance 任務已送出 🎬(預估約 4 分鐘)`, 'success');
     pollSeedance(task);
   } catch (e) {
     toast('提交失敗:' + e.message, 'error');
