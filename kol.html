@@ -4076,7 +4076,8 @@ function getCurrentRotationProduct() {
   let idx = parseInt(localStorage.getItem(lsKey) || '0') || 0;
   if (idx >= uniqueProducts.length) idx = 0;
   return {
-    name: uniqueProducts[idx].prodName,
+    ...uniqueProducts[idx],                 // 🎒 帶上全部欄位(包裝/形狀/內容物/尺寸)→ 道具師吃得到
+    name: uniqueProducts[idx].prodName,     // 保留舊別名,下游讀 .name / .tag 的都不會壞
     tag: uniqueProducts[idx].prodTag,
   };
 }
