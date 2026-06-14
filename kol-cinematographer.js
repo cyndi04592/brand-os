@@ -95,7 +95,11 @@
     }
 
     // 攝影風格基底(一定加)
-    parts.push(REALISM_BASE);
+    // 口音吃 nationality(預設 Taiwanese,守鐵律:tw/空一律台灣腔)
+    const _accent = (typeof window !== 'undefined' && window.natToAccent)
+      ? window.natToAccent(ctx.persona?.nationality)
+      : 'Taiwanese Mandarin';
+    parts.push(REALISM_BASE.replace('Taiwanese Mandarin accent', _accent));
 
     return parts.join(', ');
   }
