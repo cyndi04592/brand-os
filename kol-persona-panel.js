@@ -466,6 +466,15 @@ function buildFormHTML() {
     </div>
 
     <div class="kpp-form-field">
+      <label>性別 *</label>
+      <select id="kpp-f-gender" style="width:100%;padding:9px 12px;background:#111118;color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:13px;">
+        <option value="female">女性</option>
+        <option value="male">男性</option>
+      </select>
+      <div class="kpp-hint-inline">⚠️ 決定語音庫（男聲/女聲）；存檔後語音選擇器會依此鎖定，杜絕男臉配女聲</div>
+    </div>
+
+    <div class="kpp-form-field">
       <label>身份類型 *</label>
       <div class="kpp-type-radio">
         <div class="kpp-type-opt on" data-type="independent">
@@ -667,6 +676,7 @@ function clearForm() {
   document.getElementById('kpp-f-persona_id').value = '';
   document.getElementById('kpp-f-persona_name').value = '';
   document.getElementById('kpp-f-persona_type').value = 'independent';
+  document.getElementById('kpp-f-gender').value = 'female';
   document.getElementById('kpp-f-background').value = '';
   document.getElementById('kpp-f-personality').value = '';
   document.getElementById('kpp-f-speaking_style').value = '';
@@ -685,6 +695,7 @@ function fillForm(persona) {
   document.getElementById('kpp-f-persona_id').value = persona.persona_id || '';
   document.getElementById('kpp-f-persona_name').value = persona.persona_name || '';
   document.getElementById('kpp-f-persona_type').value = persona.persona_type || 'independent';
+  document.getElementById('kpp-f-gender').value = persona.gender || 'female';
   document.getElementById('kpp-f-background').value = persona.background || '';
   document.getElementById('kpp-f-personality').value = persona.personality || '';
   document.getElementById('kpp-f-speaking_style').value = persona.speaking_style || '';
@@ -714,6 +725,7 @@ async function savePersona() {
     brand_id: State.currentBrandId,
     talking_photo_id: '',
     voice_id: '',
+    gender: document.getElementById('kpp-f-gender').value || 'female',
     background: document.getElementById('kpp-f-background').value.trim(),
     personality: document.getElementById('kpp-f-personality').value.trim(),
     speaking_style: document.getElementById('kpp-f-speaking_style').value.trim(),
