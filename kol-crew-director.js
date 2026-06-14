@@ -189,7 +189,7 @@
       } else {
         productCtx = 'the product is present in the scene naturally';
       }
-      action = action.replace('{PRODUCT_CONTEXT}', productCtx);
+      action = action.replace(/,?\s*\{PRODUCT_CONTEXT\}/, '');   // 🍖 瘦身:商品退出動作句(詞序),交給 PROP
     }
 
     return action;
