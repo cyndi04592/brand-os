@@ -751,7 +751,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div class="panel-title"><div class="dot" style="background:var(--accent2)"></div>口播影片設定</div>
 
         <div class="form-label" style="margin-bottom:2px">口播語音</div>
-        <div class="voice-trigger" id="voice-trigger" onclick="VoiceModal.open()">
+        <div class="voice-trigger" id="voice-trigger" onclick="openVoicePicker()">
           <div class="voice-trigger-icon">🎤</div>
           <div class="voice-trigger-info">
             <div class="voice-trigger-name" id="vt-name">尚未選擇語音</div>
@@ -1842,9 +1842,14 @@ async function gasPost(action, extra = {}) {
       S.selectedVoice = v;
       updateVoiceTrigger();
       updateCreditEstimate();
-      toast(`已選定語音:${v.name}`, 'success');
+     toast(`已選定語音:${v.name}`, 'success');
     },
   });
+
+  // 🔒 開語音選擇器時，把當前 KOL 的性別帶進去鎖定（杜絕男臉配女聲）
+  window.openVoicePicker = function () {
+    VoiceModal.open((S.selectedKol || S.selectedPersona)?.persona?.gender);
+  };
 
   const saved = VoiceModal.getSelected();
   if (saved) {
