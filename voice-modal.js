@@ -102,9 +102,10 @@ const VoiceModal = {
     document.addEventListener('keydown', handleKey);
   },
 
-  open() {
+  open(gender) {
     if (!State.rootEl) return;
     State.tentative = State.confirmed;
+    applyGenderLock(gender);
     State.rootEl.classList.add('open');
     switchTab(State.currentTab);
   },
@@ -288,6 +289,7 @@ function bindEvents() {
     renderList();
   }, 200));
   root.querySelector('#vm-gender').addEventListener('change', e => {
+    if (State.lockedGender) { e.target.value = State.lockedGender; return; }
     State.filterGender = e.target.value; State.pageCount = 1; renderList();
   });
 
@@ -466,7 +468,6 @@ function getFavoriteVoices() {
   });
   return favList;
 }
-}
 
 // 🔒 性別防呆：依 KOL 性別鎖定語音庫，杜絕男臉配女聲
 function applyGenderLock(gender) {
@@ -495,8 +496,6 @@ function applyGenderLock(gender) {
   State.pageCount = 1;
 }
 
-// ─── 渲染列表 ────────────────────────────────────────────────
-function renderList() {
 // ─── 渲染列表 ────────────────────────────────────────────────
 function renderList() {
   const tab = State.currentTab;
