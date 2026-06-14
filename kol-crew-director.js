@@ -93,7 +93,8 @@
       // FAL 規矩:短句最佳(5-10字),標語言。多句用逗號接成一段。
       const quoted = lines.map(s => `"${s}"`).join(', ');
       const pronoun = persona?.gender === 'male' ? 'He' : 'She';
-      speechLine = `${pronoun} speaks in natural Mandarin Chinese, clear lip-sync, saying: ${quoted}. No background music.`;
+      const accent = persona?.accent || 'Taiwanese Mandarin';
+      speechLine = `${pronoun} speaks in natural ${accent}, clear lip-sync, saying: ${quoted}. No background music.`;
     }
     return { action, speechLine };
   }
