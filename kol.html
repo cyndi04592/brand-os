@@ -3162,9 +3162,12 @@ function populateStoryArcProducts() {
 function onStoryArcChange() {
   const prodName = document.getElementById('story-arc-product').value;
   // 💎 下拉選的是真商品 → 找回整筆(含包裝/尺寸)給道具師
-  const selectedProduct = prodName
-    ? ((S.products || []).find(p => p.brandId === S.currentBrandId && p.prodName === prodName) || null)
-    : null;
+  // 找回整筆 + 補 name/tag 別名(跟 getCurrentRotationProduct 同形狀,下游讀 .name/.tag 才不會 undefined)
+  let selectedProduct = null;
+  if (prodName) {
+    const _row = (S.products || []).find(p => p.brandId === S.currentBrandId && p.prodName === prodName);
+    if (_row) selectedProduct = { ..._row, name: _row.prodName, tag: _row.prodTag };
+  }
 
   S.storyArc = {
     theme: document.getElementById('story-arc-theme').value,
