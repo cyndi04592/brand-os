@@ -466,7 +466,37 @@ function getFavoriteVoices() {
   });
   return favList;
 }
+}
 
+// 🔒 性別防呆：依 KOL 性別鎖定語音庫，杜絕男臉配女聲
+function applyGenderLock(gender) {
+  const g = (gender === 'male' || gender === 'female') ? gender : null;
+  State.lockedGender = g;
+  const sel = document.getElementById('vm-gender');
+  if (g) {
+    State.filterGender = g;
+    if (sel) {
+      sel.value = g;
+      sel.disabled = true;
+      sel.title = '已依 KOL 性別鎖定，不可更改';
+      sel.style.opacity = '0.55';
+      sel.style.cursor = 'not-allowed';
+    }
+  } else {
+    State.filterGender = 'all';
+    if (sel) {
+      sel.value = 'all';
+      sel.disabled = false;
+      sel.title = '';
+      sel.style.opacity = '';
+      sel.style.cursor = '';
+    }
+  }
+  State.pageCount = 1;
+}
+
+// ─── 渲染列表 ────────────────────────────────────────────────
+function renderList() {
 // ─── 渲染列表 ────────────────────────────────────────────────
 function renderList() {
   const tab = State.currentTab;
