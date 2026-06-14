@@ -72,6 +72,19 @@
   //   - 抓出所有中/英引號內的句子 → 當台詞(speaks in Mandarin: "...")
   //   - 引號外的字 → 當動作描述
   //   回傳 { action, speechLine }。沒台詞 → speechLine 為 ''。
+  // 國籍 → 口音(預設台灣腔,守鐵律:tw/空/未知一律台灣腔)
+  function natToAccent(nat) {
+    switch (nat) {
+      case 'jp':    return 'Mandarin Chinese with a soft Japanese accent';
+      case 'kr':    return 'Mandarin Chinese with a Korean accent';
+      case 'hk':    return 'Mandarin Chinese with a Hong Kong Cantonese accent';
+      case 'my':    return 'Mandarin Chinese with a Malaysian accent';
+      case 'jpmix': return 'Taiwanese Mandarin with a subtle Japanese inflection';
+      default:      return 'Taiwanese Mandarin';
+    }
+  }
+  if (typeof window !== 'undefined') window.natToAccent = natToAccent;
+
   function parseSituation(raw, persona) {
     const situation = (raw || '').trim();
     if (!situation) return { action: '', speechLine: '' };
@@ -93,7 +106,7 @@
       // FAL 規矩:短句最佳(5-10字),標語言。多句用逗號接成一段。
       const quoted = lines.map(s => `"${s}"`).join(', ');
       const pronoun = persona?.gender === 'male' ? 'He' : 'She';
-      const accent = persona?.accent || 'Taiwanese Mandarin';
+      const accent = natToAccent(persona?.nationality);
       speechLine = `${pronoun} speaks in natural ${accent}, clear lip-sync, saying: ${quoted}. No background music.`;
     }
     return { action, speechLine };
