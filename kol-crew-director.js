@@ -113,6 +113,12 @@
     const persona = opts.episode?.persona || null;
     const storyArc = opts.storyArc || window.S?.storyArc || {};
 
+    // 🆕 服飾品牌風格:從下拉撈當前選的值,餵給服裝師(ctx.outfitBrand)
+    const outfitBrand = opts.outfitBrand
+      || document.getElementById('outfit-brand-picker')?.value
+      || window.S?.outfitBrand
+      || '';
+
     const actionLine = buildActionLine(brandId, scene, brand);
 
     const ctx = {
@@ -123,6 +129,7 @@
       duration: String(duration || '10'),
       persona,
       storyArc,
+      outfitBrand,
       episode: opts.episode || null,
     };
 
