@@ -149,7 +149,7 @@
     const arcParts = [];
     if (arc.tone) arcParts.push('emotional tone: ' + arc.tone);
     if (arc.theme) arcParts.push('content theme: ' + arc.theme);
-    if (arc.productHint) arcParts.push('subtle product emphasis: ' + arc.productHint);
+    if (false && arc.productHint) arcParts.push('subtle product emphasis: ' + arc.productHint);
     if (arcParts.length > 0) {
       parts.push(arcParts.join(', ') + ', no explicit brand name mentioned, natural lifestyle integration');
     }
