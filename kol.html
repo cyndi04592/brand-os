@@ -2059,7 +2059,7 @@ async function onBrandChange() {
   }
 
   localStorage.setItem('kol_last_brand', brandId);
-
+  populateStoryArcProducts();   // 💎 用該品牌真商品填主推下拉(取代寫死內衣)
   document.getElementById('no-brand-panel').style.display = 'none';
   // 依當前 mode 顯示對應版面
   switchMode(S.currentMode);
@@ -3146,17 +3146,36 @@ function onOutfitBrandChange() {
   if (typeof syncScenePrompt === 'function') syncScenePrompt();
   if (typeof updateSeedanceSubmitButton === 'function') updateSeedanceSubmitButton();
 }
-
+// 💎 用「當前品牌的真實商品」填滿主推產品下拉(取代寫死的內衣選項)
+function populateStoryArcProducts() {
+  const sel = document.getElementById('story-arc-product');
+  if (!sel) return;
+  const prev = sel.value;
+  const seen = new Set();
+  const prods = (S.products || [])
+    .filter(p => p.brandId === S.currentBrandId && p.prodName)
+    .filter(p => { if (seen.has(p.prodName)) return false; seen.add(p.prodName); return true; });
+  sel.innerHTML = '<option value="">— 不強調(用本週主推)—</option>' +
+    prods.map(p => `<option value="${escapeHtml(p.prodName)}">${escapeHtml(p.prodName)}${p.prodTag ? '（' + escapeHtml(p.prodTag) + '）' : ''}</option>`).join('');
+  if (prev && prods.some(p => p.prodName === prev)) sel.value = prev;
+}
 function onStoryArcChange() {
+  const prodName = document.getElementById('story-arc-product').value;
+  // 💎 下拉選的是真商品 → 找回整筆(含包裝/尺寸)給道具師
+  const selectedProduct = prodName
+    ? ((S.products || []).find(p => p.brandId === S.currentBrandId && p.prodName === prodName) || null)
+    : null;
+
   S.storyArc = {
     theme: document.getElementById('story-arc-theme').value,
     tone: document.getElementById('story-arc-tone').value,
-    productHint: document.getElementById('story-arc-product').value,
+    productHint: prodName,        // 真商品名(乾淨),取代以前的內衣英文字串
+    selectedProduct,              // 💎 整筆真商品 → generateEpisode 餵給道具師
   };
 
-  // 更新 chip 顯示
+  // 更新 chip 顯示(只算 theme/tone/productHint 三格)
   const chip = document.getElementById('story-arc-chip');
-  const setCount = Object.values(S.storyArc).filter(Boolean).length;
+  const setCount = [S.storyArc.theme, S.storyArc.tone, S.storyArc.productHint].filter(Boolean).length;
   if (setCount > 0) {
     chip.textContent = `已設 ${setCount}/3`;
     chip.classList.add('set');
@@ -3167,7 +3186,6 @@ function onStoryArcChange() {
 
   syncScenePrompt();
 }
-
 // 組 prompt 並更新各處顯示
 function syncScenePrompt() {
   const brandId = S.currentBrandId;
@@ -4604,7 +4622,7 @@ async function generateEpisode() {
         taboo_words: persona.taboo_words,
         forbidden_topics: persona.forbidden_topics,
       },
-      product: product,
+      product: (S.storyArc?.selectedProduct || product),
       situation: situation,
     },
   };
