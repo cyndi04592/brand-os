@@ -156,7 +156,7 @@
 
     pushIfNonEmpty(parts, CrewMembers.storywriter?.contribute(ctx));
 
-    if (opts.episode?.product) {
+    if (false && opts.episode?.product) {
       parts.push('the product subtly featured is: ' + opts.episode.product.name +
         ' (' + (opts.episode.product.tag || 'casual wear') +
         '), integrate naturally without mentioning brand name');
