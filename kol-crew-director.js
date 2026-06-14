@@ -147,7 +147,8 @@
     pushIfNonEmpty(parts, CrewMembers.environment?.contribute(ctx));
     pushIfNonEmpty(parts, CrewMembers.wardrobe?.contribute(ctx));
     pushIfNonEmpty(parts, CrewMembers.makeup?.contribute(ctx));
-    pushIfNonEmpty(parts, CrewMembers.cinematographer?.contribute(ctx));
+    // 🔦 全域臉光保險:不管場景多硬,臉光一律柔,擋烤肉紋(2026-06 確認硬光是兇手)
+    parts.push('keep the light on her face soft and even regardless of the scene, no harsh overhead glare or hot specular highlights on the skin');
 
     if (persona) {
       const personaLine = CrewMembers.persona?.contribute(ctx);
