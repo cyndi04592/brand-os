@@ -4669,8 +4669,6 @@ async function generateEpisode() {
     tier: S.episodeParams.tier,
     brandId: S.currentBrandId,
     kolName: persona.persona_name,
-    gender: persona.gender,
-    nationality: persona.nationality,
   };
 
   // 🎯 v5.9: 影片和貼文並行觸發
@@ -5540,6 +5538,8 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
     episode: {
       persona: {
         persona_name: persona.persona_name,
+        gender: persona.gender,
+        nationality: persona.nationality,
         background: persona.background,
         personality: persona.personality,
         speaking_style: persona.speaking_style,
