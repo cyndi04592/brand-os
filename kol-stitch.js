@@ -1,5 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v4.0
+// kol-stitch.js — 自動接片引擎 v4.1
+// v4.1：口音鐵律鎖 —— 在 generateSegment(所有分段的唯一出海口)送 fal 前,
+//       若開了語音且 prompt 還沒鎖口音,自動補上。台灣 KOL→台灣國語(擋大陸腔),
+//       健一→日腔、阿福→粵腔(讀 window.natToAccent)。不管 prompt 哪個檔組的都守得到。
 // v4.0：改用 webhook 背景生成 —— 不再輪詢 fal(那是 ~197 秒偵測延遲 + 逾時的元兇)。
 //       改成問 Worker 的 episode_result(fal 做完主動 webhook → fal_hook 寫進 R2 → 瞬間反映)。
 //       → 5 秒影片不再空等 ~190 秒;90 秒接片不再撞瀏覽器輪詢上限。
@@ -126,6 +129,18 @@ window.KolStitch = (function () {
     if (!opts.kolImageUrl) throw new Error('generateSegment 缺少 kolImageUrl（原始 KOL 照）');
     if (!opts.prompt) throw new Error('generateSegment 缺少 prompt');
 
+    // 🔒 口音鐵律(接片總關卡):每段送 fal 前,若開了語音且 prompt 還沒鎖口音 → 補上。
+    //   台灣 KOL → Taiwanese Mandarin(擋大陸腔);健一→日腔、阿福→粵腔(讀 window.natToAccent)。
+    //   這是所有分段的唯一出海口,鎖在這就不管 prompt 是哪個檔組的,一律守得到。
+    let finalPrompt = opts.prompt;
+    if (opts.generateAudio === true && !/Mandarin/i.test(finalPrompt)) {
+      const _nat = opts.nationality
+        || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
+        || 'tw';
+      const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
+      finalPrompt += `. She speaks in natural ${_accent}, clear lip-sync.`;
+    }
+
     const sub = await api('seedance_submit', {
       kolImageUrl: opts.kolImageUrl,                  // ← 永遠原始照,不是尾幀(@Image1)
       productImageUrls: opts.productImageUrls,        // 商品照(@Image2…)
@@ -133,7 +148,7 @@ window.KolStitch = (function () {
       videoUrls: opts.videoUrls,                      // ← 前一段整支影片(@Video1);平行時為空
       brandId: opts.brandId,
       kolName: opts.kolName,
-      prompt: opts.prompt,
+      prompt: finalPrompt,
       duration: String(opts.durationSec || 5),
       aspectRatio: opts.aspectRatio || '9:16',
       resolution: opts.resolution || '720p',
@@ -212,6 +227,7 @@ window.KolStitch = (function () {
         seed: step.seed,
         brandId: opts.brandId,
         kolName: opts.kolName,
+        nationality: opts.nationality,       // 🆕 口音用:傳得到就用,傳不到 generateSegment 會自己讀 window.S
       }, function () {}).then(function (segUrl) {
         doneCount++;
         log(`${doneCount}/${total} 段完成…`);
@@ -237,7 +253,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v4.0 · webhook 背景生成(問 episode_result,不輪詢 fal)');
+  console.log('[KolStitch] 🎬 v4.1 · webhook 背景生成 + 口音鐵律鎖(接片總關卡)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
