@@ -1,11 +1,17 @@
 // ════════════════════════════════════════════════════════════════════
-//  Brand OS · KOL Studio v5.11.1 — Universal Scenes
+//  Brand OS · KOL Studio v5.11.2 — Universal Scenes（場景固定化版）
 //  通用場景庫(全品牌共用)+ 品牌專屬場景(cf/ka/flm/la/moz)
 //
+//  🔧 v5.11.2 固定化:每個通用場景的 env_prompt 改寫為「具體、小、固定」——
+//     ▸ 拿掉會把空間吹大的詞(城市落地窗 / 背景同事 / 開放式)
+//     ▸ 換成固定家具/定點當錨(因為接片沒有背景參考照,只能靠文字夠具體)
+//     ▸ 每段補「same … kept consistent in every shot」→ 6 段同一個空間
+//     ▸ 保留 LACEZ 反 AI DNA 尾巴(handheld vlog / 35mm / film grain / ISO / 毛孔)
+//
 //  結構:
-//   ▸ UNIVERSAL_POOL   : 5 個通用場景(所有品牌都能用)
+//   ▸ UNIVERSAL_POOL   : 通用場景(所有品牌都能用)
 //   ▸ BRAND_SCENES     : 品牌專屬場景(la/cf/ka/flm/moz)
-//   ▸ BRAND_TYPE_ACTIONS : 15 類品牌動作模板
+//   ▸ BRAND_TYPE_ACTIONS : 品牌動作模板
 //
 //  LACEZ DNA 設計原則:
 //   1. 反 AI 完美:毛孔、底片顆粒、ISO 400-1600、35mm、手持 vlog
@@ -15,13 +21,13 @@
 //  載入要求:kol.html 主 script 之前必須載入此檔
 // ════════════════════════════════════════════════════════════════════
 
-// 🌐 通用場景 pool(5 個 · 所有品牌共用)
+// 🌐 通用場景 pool(所有品牌共用 · 已固定化)
 const UNIVERSAL_POOL = {
   kitchen_morning: {
     label: '🥞 廚房晨光',
     hint: '晨光感 · 早起儀式',
     indoor: true, type: 'indoor',
-    env_prompt: 'cozy home kitchen in early morning, soft natural sunlight through the window, wooden countertop with subtle lived-in clutter, 35mm film grain, handheld vlog feel, ISO 800, visible skin pores and peach fuzz',
+    env_prompt: 'a small cozy home kitchen in early morning, one wooden countertop along the wall with a few everyday items and subtle lived-in clutter, a single window above the counter with soft natural sunlight, warm wood and cream tones, a compact homey galley space — the same kitchen, counter and layout kept consistent in every shot, 35mm film grain, handheld vlog feel, ISO 800, visible skin pores and peach fuzz',
     product_context_template: '{BRAND_ACTION} naturally placed on the kitchen counter while preparing the morning',
     mood_default: 'warm and unhurried', duration_default: 10,
   },
@@ -29,7 +35,7 @@ const UNIVERSAL_POOL = {
     label: '☕ 咖啡廳午後',
     hint: '文青氛圍 · me time',
     indoor: true, type: 'indoor',
-    env_prompt: 'quiet independent cafe in afternoon, warm amber ambient lighting, wooden table with coffee cup and small notebook, soft background blur, handheld vlog feel, 35mm film grain, visible skin texture',
+    env_prompt: 'a quiet small independent cafe in the afternoon, seated at one wooden table beside a window with a coffee cup and a small notebook, warm amber ambient lighting, a counter and a few empty tables softly blurred behind, an intimate corner — the same cafe corner and seat kept consistent in every shot, handheld vlog feel, 35mm film grain, visible skin texture',
     product_context_template: '{BRAND_ACTION} casually on the cafe table while enjoying coffee alone',
     mood_default: 'relaxed and thoughtful', duration_default: 10,
   },
@@ -37,7 +43,7 @@ const UNIVERSAL_POOL = {
     label: '🌿 戶外綠意',
     hint: '公園 / 花園 · 陽光感',
     indoor: false, type: 'outdoor',
-    env_prompt: 'lush urban park or garden in golden hour, dappled sunlight through leaves, green foliage background, handheld vlog style, 35mm film grain',
+    env_prompt: 'standing at one leafy corner of an urban park in golden hour, beside a particular tree and a low hedge on a garden path, dappled warm sunlight through the leaves, green foliage close around — the same spot in the park kept consistent in every shot, handheld vlog style, 35mm film grain',
     product_context_template: '{BRAND_ACTION} while taking a peaceful walk outdoors',
     mood_default: 'peaceful and refreshing', duration_default: 10,
   },
@@ -45,7 +51,7 @@ const UNIVERSAL_POOL = {
     label: '🌃 夜間街頭',
     hint: '霓虹城市 · 下班氛圍',
     indoor: false, type: 'outdoor',
-    env_prompt: 'urban street at night, soft neon and shop lights reflecting on wet pavement, hint of passing cars bokeh, moody cinematic lighting, handheld vlog feel, 35mm, ISO 1600',
+    env_prompt: 'standing at the same quiet urban street corner at night, soft neon and small shop signs reflecting on the wet pavement nearby, a hint of passing-car bokeh far in the distance, moody cinematic lighting — the same street spot kept consistent in every shot, handheld vlog feel, 35mm, ISO 1600',
     product_context_template: 'carrying {BRAND_ACTION} after finishing work, neon reflecting on the bag',
     mood_default: 'cinematic and contemplative', duration_default: 10,
   },
@@ -53,7 +59,7 @@ const UNIVERSAL_POOL = {
     label: '📦 居家開箱',
     hint: '🌟 黃金樣本 · 走進→開箱→展示',
     indoor: true, type: 'indoor',
-    env_prompt: 'modern minimal home living room with soft white curtains and natural window light, wooden desk or white sofa, package delivered on the surface, candid at-home vibe, handheld vlog feel, 35mm film grain, ISO 800, skin pores visible',
+    env_prompt: 'a small modern minimal home living room, soft white curtains over one window with natural light, one wooden desk with a delivered package on its surface, a low shelf with plants behind, a compact cozy room — the same room, furniture and layout kept consistent in every shot, candid at-home vibe, handheld vlog feel, 35mm film grain, ISO 800, skin pores visible',
     product_context_template: 'walking in, sitting down, gently unboxing the package and revealing {BRAND_ACTION} with genuine excitement',
     mood_default: 'genuine and unhurried', duration_default: 15,
   },
@@ -61,7 +67,7 @@ const UNIVERSAL_POOL = {
     label: '⛰️ 登山步道',
     hint: '深山 / 熊出沒 · 戶外安全',
     indoor: false, type: 'outdoor',
-    env_prompt: 'remote mountain hiking trail deep in dense forest wilderness, tall coniferous trees, misty rugged terrain, distant mountain peaks, isolated backcountry atmosphere where wildlife roams, overcast natural daylight, handheld documentary vlog style, 35mm film grain, ISO 400',
+    env_prompt: 'on the same stretch of a remote mountain hiking trail deep in dense forest wilderness, tall coniferous trees close on both sides, misty rugged terrain underfoot, distant mountain peaks beyond, isolated backcountry atmosphere where wildlife roams, overcast natural daylight — the same patch of trail kept consistent in every shot, handheld documentary vlog style, 35mm film grain, ISO 400',
     product_context_template: 'pausing on the trail to {BRAND_ACTION}, alert and prepared in the wilderness',
     mood_default: 'alert and adventurous', duration_default: 10,
   },
@@ -69,7 +75,7 @@ const UNIVERSAL_POOL = {
     label: '🛍️ 精品百貨',
     hint: '明亮櫥窗 · 大理石高級感',
     indoor: true, type: 'indoor',
-    env_prompt: 'upscale department store interior, polished marble floors, bright elegant display windows, soft luxury lighting, escalators and glossy counters in soft background bokeh, no visible brand logos or signage, handheld vlog feel, 35mm film grain, ISO 400',
+    env_prompt: 'standing at the same spot inside an upscale department store, polished marble floor underfoot, one elegant display window and a glossy counter close by, soft luxury lighting, a few shoppers far in the background bokeh, no visible brand logos or signage — the same location kept consistent in every shot, handheld vlog feel, 35mm film grain, ISO 400',
     product_context_template: 'browsing through the store and {BRAND_ACTION} with a refined relaxed mood',
     mood_default: 'elegant and leisurely', duration_default: 10,
   },
@@ -77,7 +83,7 @@ const UNIVERSAL_POOL = {
     label: '✈️ 機場',
     hint: '航廈 · 登機 · 旅行感',
     indoor: true, type: 'indoor',
-    env_prompt: 'modern airport terminal interior, wide windows with planes on tarmac outside, sleek check-in area and seating, travelers with luggage in soft background bokeh, bright daylight, no visible brand logos, handheld travel vlog feel, 35mm film grain, ISO 400',
+    env_prompt: 'at the same spot in a modern airport terminal, one large window beside with planes on the tarmac outside, a row of seating and a sleek counter nearby, a few travelers with luggage in soft background bokeh, bright daylight, no visible brand logos — the same terminal spot kept consistent in every shot, handheld travel vlog feel, 35mm film grain, ISO 400',
     product_context_template: 'waiting at the terminal and {BRAND_ACTION} before a trip',
     mood_default: 'excited and travel-ready', duration_default: 10,
   },
@@ -85,7 +91,7 @@ const UNIVERSAL_POOL = {
     label: '🛏️ 臥室',
     hint: '柔光 · 居家私密感',
     indoor: true, type: 'indoor',
-    env_prompt: 'cozy bedroom with soft natural window light, neatly made bed with linen sheets, warm intimate atmosphere, plants and soft textures, candid at-home vibe, handheld vlog feel, 35mm film grain, ISO 800, skin pores visible',
+    env_prompt: 'a small cozy bedroom, one neatly made bed with linen sheets against the wall, a single window with soft natural light beside it, plants and warm soft textures around, an intimate compact room — the same bedroom, bed and layout kept consistent in every shot, candid at-home vibe, handheld vlog feel, 35mm film grain, ISO 800, skin pores visible',
     product_context_template: 'relaxing in the bedroom and {BRAND_ACTION} in a private cozy moment',
     mood_default: 'intimate and relaxed', duration_default: 10,
   },
@@ -93,7 +99,7 @@ const UNIVERSAL_POOL = {
     label: '🏖️ 海邊',
     hint: '沙灘 · 海浪 · 陽光',
     indoor: false, type: 'outdoor',
-    env_prompt: 'sunny sandy beach with gentle ocean waves, clear blue sky, soft sunlight and sea breeze, distant horizon, relaxed coastal atmosphere, handheld vlog feel, 35mm film grain, ISO 200',
+    env_prompt: 'on the same stretch of a sunny sandy beach, gentle ocean waves breaking just behind, clear blue sky, soft sunlight and sea breeze, the same horizon line and spot on the sand kept consistent in every shot, relaxed coastal atmosphere, handheld vlog feel, 35mm film grain, ISO 200',
     product_context_template: 'enjoying the seaside and {BRAND_ACTION} with a carefree vibe',
     mood_default: 'carefree and sunny', duration_default: 10,
   },
@@ -101,7 +107,7 @@ const UNIVERSAL_POOL = {
     label: '🏃 運動場',
     hint: '跑道 · 球場 · 戶外運動',
     indoor: false, type: 'outdoor',
-    env_prompt: 'outdoor sports field with running track and green turf, bright daylight, open athletic atmosphere, distant stands in soft bokeh, energetic vibe, handheld vlog feel, 35mm film grain, ISO 400',
+    env_prompt: 'at the same spot on an outdoor sports field, a running track lane and green turf underfoot, bright daylight, distant empty stands in soft bokeh, the same patch of field kept consistent in every shot, energetic open-air vibe, handheld vlog feel, 35mm film grain, ISO 400',
     product_context_template: 'taking a break during exercise to {BRAND_ACTION}, energetic and sweaty',
     mood_default: 'energetic and active', duration_default: 10,
   },
@@ -109,7 +115,7 @@ const UNIVERSAL_POOL = {
     label: '🛋️ 客廳',
     hint: '沙發 · 居家放鬆',
     indoor: true, type: 'indoor',
-    env_prompt: 'comfortable modern living room with a sofa, soft warm lighting, TV and plants in soft background, relaxed homey atmosphere, candid at-home vibe, handheld vlog feel, 35mm film grain, ISO 800, skin pores visible',
+    env_prompt: 'a small comfortable modern living room, one fabric sofa against the wall, a low coffee table in front, soft warm lamp light, a plant and a shelf in the background, a compact homey room — the same living room, sofa and layout kept consistent in every shot, candid at-home vibe, handheld vlog feel, 35mm film grain, ISO 800, skin pores visible',
     product_context_template: 'relaxing on the sofa and {BRAND_ACTION} in a casual home moment',
     mood_default: 'relaxed and homey', duration_default: 10,
   },
@@ -117,7 +123,7 @@ const UNIVERSAL_POOL = {
     label: '🏢 辦公室',
     hint: '辦公桌 · 職場情境',
     indoor: true, type: 'indoor',
-    env_prompt: 'modern office workspace with desk, laptop and documents, large windows with city view, clean professional lighting, colleagues in soft background bokeh, no visible brand logos, handheld vlog feel, 35mm film grain, ISO 400',
+    env_prompt: 'a small cozy private office room, one wooden desk against the wall with a laptop and a few papers, an ergonomic chair, a low shelf with plants and folders on the wall directly behind, a single window on the left with soft natural daylight, warm neutral walls close around, an enclosed intimate workspace — not an open-plan floor, no distant city skyline, no other people in view — the exact same room, furniture and layout kept consistent in every shot, no visible brand logos, handheld vlog feel, 35mm film grain, ISO 400',
     product_context_template: 'at the desk taking a short break to {BRAND_ACTION}, professional and composed',
     mood_default: 'focused and professional', duration_default: 10,
   },
@@ -125,7 +131,7 @@ const UNIVERSAL_POOL = {
     label: '🍽️ 餐廳用餐',
     hint: '餐桌 · 美食 · 用餐情境',
     indoor: true, type: 'indoor',
-    env_prompt: 'warm cozy restaurant interior, set dining table with plates and soft candle-like lighting, blurred diners and decor in background bokeh, inviting culinary atmosphere, no visible brand logos, handheld vlog feel, 35mm film grain, ISO 800',
+    env_prompt: 'seated at the same one table in a warm cozy restaurant, plates and soft candle-like lighting on the table, a few blurred diners and warm decor in background bokeh, inviting culinary atmosphere, no visible brand logos — the same table and seat kept consistent in every shot, handheld vlog feel, 35mm film grain, ISO 800',
     product_context_template: 'seated at the table and {BRAND_ACTION} while enjoying the meal',
     mood_default: 'warm and appetizing', duration_default: 10,
   },
@@ -133,7 +139,7 @@ const UNIVERSAL_POOL = {
     label: '🏥 診間 / 專業',
     hint: '診療室 · 醫療專業白色調',
     indoor: true, type: 'indoor',
-    env_prompt: 'clean modern clinic or consultation room, white and light tones, professional medical setting with subtle equipment in background, bright even lighting, trustworthy calm atmosphere, no visible brand logos, handheld vlog feel, 35mm film grain, ISO 400',
+    env_prompt: 'in the same clean modern consultation room, white and light tones, one desk and subtle medical equipment on a shelf behind, bright even lighting, a small enclosed professional space, trustworthy calm atmosphere, no visible brand logos — the same room and layout kept consistent in every shot, handheld vlog feel, 35mm film grain, ISO 400',
     product_context_template: 'in the consultation room calmly explaining while {BRAND_ACTION}, professional and reassuring',
     mood_default: 'trustworthy and calm', duration_default: 10,
   },
@@ -141,7 +147,7 @@ const UNIVERSAL_POOL = {
     label: '🏕️ 露營營地',
     hint: '帳篷 · 營火 · 戶外生活',
     indoor: false, type: 'outdoor',
-    env_prompt: 'outdoor campsite with tents and a campfire, surrounded by trees and nature, warm golden hour light or cozy evening glow, relaxed outdoor living atmosphere, handheld vlog feel, 35mm film grain, ISO 400',
+    env_prompt: 'at the same campsite spot beside one tent and a small campfire, surrounded by trees and nature close around, warm golden-hour light or cozy evening glow, relaxed outdoor living atmosphere — the same campsite layout kept consistent in every shot, handheld vlog feel, 35mm film grain, ISO 400',
     product_context_template: 'at the campsite by the tent and {BRAND_ACTION} enjoying outdoor life',
     mood_default: 'cozy and adventurous', duration_default: 10,
   },
@@ -149,7 +155,7 @@ const UNIVERSAL_POOL = {
     label: '💪 健身房',
     hint: '器材 · 落地鏡 · 訓練',
     indoor: true, type: 'indoor',
-    env_prompt: 'modern indoor gym with exercise equipment, large floor-to-ceiling mirrors, moody industrial lighting, racks and machines in background bokeh, energetic fitness atmosphere, no visible brand logos, handheld vlog feel, 35mm film grain, ISO 800',
+    env_prompt: 'at the same corner of a modern indoor gym, one piece of exercise equipment and a large floor-to-ceiling mirror beside, moody industrial lighting, a few racks and machines in background bokeh, energetic fitness atmosphere, no visible brand logos — the same gym corner kept consistent in every shot, handheld vlog feel, 35mm film grain, ISO 800',
     product_context_template: 'taking a break between sets to {BRAND_ACTION}, energetic and focused',
     mood_default: 'energetic and determined', duration_default: 10,
   },
@@ -157,7 +163,7 @@ const UNIVERSAL_POOL = {
     label: '🛒 量販賣場',
     hint: '貨架 · 寬走道 · 選購',
     indoor: true, type: 'indoor',
-    env_prompt: 'large warehouse-style retail store, tall stocked shelves and wide aisles, bright even overhead lighting, shopping carts and products in background bokeh, no visible brand logos or signage, candid handheld vlog feel, 35mm film grain, ISO 400',
+    env_prompt: 'standing in the same one aisle of a large warehouse-style retail store, tall stocked shelves on both sides, bright even overhead lighting, a shopping cart nearby and products in background bokeh, no visible brand logos or signage — the same aisle kept consistent in every shot, candid handheld vlog feel, 35mm film grain, ISO 400',
     product_context_template: 'pushing a cart through the aisles and {BRAND_ACTION} while shopping',
     mood_default: 'casual and practical', duration_default: 10,
   },
@@ -165,7 +171,7 @@ const UNIVERSAL_POOL = {
     label: '🌾 農場 / 田園',
     hint: '作物 · 食材溯源',
     indoor: false, type: 'outdoor',
-    env_prompt: 'rural farm field with crops and greenery, rustic countryside atmosphere, warm natural sunlight, distant barn or rolling hills, fresh wholesome vibe, handheld vlog feel, 35mm film grain, ISO 200',
+    env_prompt: 'standing at the same spot in a rural farm field with crops and greenery close around, rustic countryside atmosphere, warm natural sunlight, a distant barn or rolling hills beyond — the same field spot kept consistent in every shot, fresh wholesome vibe, handheld vlog feel, 35mm film grain, ISO 200',
     product_context_template: 'walking through the farm and {BRAND_ACTION}, showcasing freshness at the source',
     mood_default: 'wholesome and fresh', duration_default: 10,
   },
