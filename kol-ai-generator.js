@@ -1354,12 +1354,17 @@ async function saveImageToDrive(idx) {
   const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const filename = S.currentPersonaName + '_ai_' + img.seed + '_' + timestamp + '_' + (idx + 1) + '.jpg';
 
+  // 👗 把創角選的服裝一起存進 persona(以後免手填 outfit)
+  const _outfitSel = document.querySelector('.kai-param[data-k="outfit"]');
+  const _outfitText = _outfitSel ? (OUTFIT_MAP[_outfitSel.value] || '') : '';
+
   try {
     const res = await gasPost('saveAiKolPhotoToDrive', {
       brandId: S.currentBrandId,
       personaName: S.currentPersonaName,
       imageUrl: img.url,
       filename,
+      outfit: _outfitText,
       metadata: {
         seed: img.seed,
         source: 'flux_1.1_pro_ultra',
