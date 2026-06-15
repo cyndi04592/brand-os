@@ -1,80 +1,64 @@
 // ════════════════════════════════════════════════════════════════════
 //  kol-wardrobe.js · v5.14
 //
-//  👗 服裝師 — 穿搭、品牌調性鎖、服裝 DNA
+//  👗 服裝師 — 穿搭、品牌調性鎖、服裝 DNA(服裝師 v2 · 一支一鎖)
 //
-//  職責:
-//   • 依品牌類型 + 場景時段,決定 KOL 當集的「外出服/日常穿搭」
-//   • 支援「指定服飾品牌風格」(打品牌名 → 對應風格特徵)
-//   • 用「風格特徵」描述,不寫品牌名(避 Seedance 商標審核 + 效果穩)
-//   • 🛑 內衣類品牌:服裝師只管外出服,內衣呈現交給品牌靈魂(不裸露)
-//
-//  v5.14(服裝師 v2 · 一支一鎖):
-//   ★ contribute 改成「單一真相來源」,服裝優先序:
-//       1) 品牌風格(outfitBrand 選的)→ 換造型,最優先
+//  v5.14 重點:
+//   ★ contribute = 單一真相來源,服裝優先序:
+//       1) 品牌風格(outfitBrand)→ 換造型,最優先
 //       2) persona.outfit(KOL 招牌穿搭)→ 沒選品牌就穿這套
 //       3) 場景自帶 outfit(向下相容)
-//       4) 場景泛用穿搭(fallback)
-//     永遠只吐「一套」wearing,接片端不再自己補第二套 → 解決雙套打架。
-//   ★ 順手修一個舊洞:以前場景自帶 outfit 會 early-return、跳過內衣安全鎖;
-//     現在所有來源都會經過內衣鎖。
+//       4) 場景泛用(fallback)
+//     永遠只吐「一套」wearing,接片端不再補第二套 → 解決雙套打架。
+//   ★ persona 後備:實測 composeSeedancePrompt 的 ctx 沒帶 persona(ctx.persona=null),
+//     所以直接從 window.S.selectedKol.persona 補抓(跟口音鎖同套路,全站共用同一顆)。
+//   ★ 順手修舊洞:以前場景自帶 outfit 會 early-return 跳過內衣安全鎖;現在都會經過。
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
   'use strict';
 
-  // ─── 服飾品牌風格庫(寫風格特徵,不寫品牌名給 AI)────────────
   const BRAND_STYLE_LIBRARY = {
-    // ── 日系基本 ──
     uniqlo:    { base: 'Japanese minimalist basics, solid muted colors, clean tailored fit, lifewear simplicity',
                  casual: 'soft cotton tee and relaxed pants', refined: 'fine knit and tailored trousers' },
     gu:        { base: 'young Japanese fast-fashion, trendy affordable styling, casual playful pieces',
                  casual: 'oversized tee and wide pants', refined: 'trendy layered casual look' },
     niko_and:  { base: 'Japanese zakka literary style, natural earthy tones, relaxed artsy layering, lifestyle ease',
                  casual: 'loose linen layers and comfy silhouette', refined: 'curated artsy ensemble with texture' },
-    // ── 日系復古 ──
     tnewties:  { base: 'Japanese vintage girl style, 1920s-meets-2020s retro fashion, pintuck blouses, houndstooth and embroidery details',
                  casual: 'retro blouse and pleated skirt', refined: 'vintage-inspired dress with delicate details' },
-    // ── 日系街頭 ──
     human_made: { base: 'Japanese retro streetwear, vintage casual, cartoon-style graphic prints, relaxed loose fit',
                  casual: 'graphic sweatshirt and relaxed denim', refined: 'retro varsity layering' },
     aape:      { base: 'urban streetwear, camo patterns, sporty street style, youthful edgy fit',
                  casual: 'camo hoodie and joggers', refined: 'street-luxe layered look' },
-    // ── 韓系 ──
     mardi:     { base: 'Korean French-leisure style, daisy floral print sweatshirt, sweet-cool casual vibe',
                  casual: 'floral sweatshirt and relaxed bottoms', refined: 'minimal logo knit with clean lines' },
-    // ── 台灣女裝 ──
     mallothi:  { base: 'French romantic vintage, pleated and gingham dresses, literary slow-living elegance, soft pastel tones',
                  casual: 'soft pastel cotton dress', refined: 'pleated romantic midi dress' },
     pazzo:     { base: 'Taiwanese good-life casual, Japanese-Korean versatile styling, flattering slim fit, comfortable quality fabric',
                  casual: 'comfy versatile tee and slimming pants', refined: 'elegant flattering dress' },
     caco:      { base: 'Taiwanese casual everyday, cute graphic print tops, slimming relaxed urban fit',
                  casual: 'cute graphic-print tee and casual bottoms', refined: 'clean casual layered look' },
-    // ── 精品 ──
     lv:        { base: 'luxury fashion-house elegance, refined tailoring, premium leather accents, timeless sophisticated silhouette',
                  casual: 'understated luxe knit and tailored pants', refined: 'elegant designer ensemble' },
     chanel:    { base: 'French haute-couture elegance, tweed jacket, pearl details, classic refined silhouette',
                  casual: 'refined tweed-trimmed casual', refined: 'elegant tweed ensemble with pearls' },
     hermes:    { base: 'understated ultra-luxury, impeccable craftsmanship, refined neutral palette, quiet elegance',
                  casual: 'quiet-luxury knit and tailored trousers', refined: 'impeccably tailored elegant look' },
-    // ── 輕奢潮 ──
     gucci:     { base: 'eclectic luxury, bold prints, vintage-glam maximalist styling, statement pieces',
                  casual: 'bold-print relaxed luxe', refined: 'glamorous statement ensemble' },
     diesel:    { base: 'Italian denim streetwear, distressed washed denim, Y2K rebellious edge',
                  casual: 'washed denim and graphic tee', refined: 'edgy denim-layered look' },
-    // ── 機能運動 ──
     on:        { base: 'Swiss performance sportswear, clean technical minimal design, athletic streamlined fit',
                  casual: 'sleek athleisure set', refined: 'minimal sporty-chic layering' },
   };
 
-  // ─── 場景時段 → 偏 casual 還是 refined ──────────────────
   function sceneTone(sceneId) {
     const id = String(sceneId || '').toLowerCase();
     if (id.includes('night') || id.includes('urban') || id.includes('evening')) return 'refined';
     return 'casual';
   }
 
-  // ─── 無品牌時的泛用穿搭庫(fallback / auto)──────────────
   const OUTFIT_LIBRARY = {
     cozy_home:    'cozy oversized knit sweater, soft loungewear, relaxed at-home comfort',
     morning_casual: 'light comfortable cotton dress or soft pajama top, just-woke-up casual ease',
@@ -86,7 +70,6 @@
 
   const LINGERIE_BRAND_TYPES = ['fashion_lingerie', 'lingerie', 'underwear'];
 
-  // ─── 品牌名容錯對應 ──────────────
   const BRAND_ALIASES = {
     uniqlo: 'uniqlo', gu: 'gu',
     niko_and: 'niko_and', niko: 'niko_and', 'niko_and___': 'niko_and',
@@ -123,12 +106,8 @@
   }
 
   /**
-   * 產出服裝段落 — v5.14 單一真相來源
-   *   服裝優先序(只選一套,絕不疊兩套):
-   *     1) 品牌風格(outfitBrand 選的)→ 換造型,最優先
-   *     2) persona.outfit(KOL 招牌穿搭)→ 沒選品牌就穿這套
-   *     3) 場景自帶 outfit(向下相容)
-   *     4) 場景泛用穿搭(fallback)
+   * 產出服裝段落 — v5.14 單一真相來源(永遠只一套)
+   *   優先序:品牌 > persona.outfit > 場景自帶 > 場景泛用
    */
   function contribute(ctx) {
     if (!ctx) return '';
@@ -137,18 +116,23 @@
     const brandType  = ctx.brand?.brand_type || '';
     const isLingerie = LINGERIE_BRAND_TYPES.includes(brandType);
 
+    // 🔑 persona 後備:ctx 沒帶 persona(實測 null)→ 從全域 window.S 補抓(全站共用同一顆)
+    const persona = ctx.persona
+      || (window.S && window.S.selectedKol && window.S.selectedKol.persona)
+      || null;
+
     let outfitText = '';
 
     // 1) 品牌風格(outfitBrand 或 persona 綁定的品牌)× 場景時段變體
-    const chosenBrand = resolveBrandKey(ctx.outfitBrand || ctx.persona?.outfit_brand || '');
+    const chosenBrand = resolveBrandKey(ctx.outfitBrand || persona?.outfit_brand || '');
     if (chosenBrand && chosenBrand !== 'auto' && BRAND_STYLE_LIBRARY[chosenBrand]) {
       const b = BRAND_STYLE_LIBRARY[chosenBrand];
       const tone = sceneTone(sceneId);
       outfitText = b.base + ', ' + (tone === 'refined' ? b.refined : b.casual);
     }
     // 2) 沒選品牌 → KOL 招牌穿搭(人設預設)
-    else if (ctx.persona?.outfit) {
-      outfitText = ctx.persona.outfit;
+    else if (persona?.outfit) {
+      outfitText = persona.outfit;
     }
     // 3) 場景自帶 outfit(向下相容)
     else if (ctx.scene?.outfit) {
@@ -174,7 +158,6 @@
     return OUTFIT_LIBRARY[key] || null;
   }
 
-  // ─── 導出 + 自動向總導演註冊 ─────────────────────────
   window.KolWardrobe = {
     BRAND_STYLE_LIBRARY,
     OUTFIT_LIBRARY,
@@ -187,5 +170,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.14 就緒 · 單一真相來源(品牌 > 人設預設 > 場景泛用)+ 內衣安全鎖');
+  console.log('[KolWardrobe] 👗 v5.14 就緒 · 單一真相來源(品牌 > 人設預設 > 場景泛用)+ persona 後備 + 內衣安全鎖');
 })();
