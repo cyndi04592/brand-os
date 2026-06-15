@@ -187,7 +187,7 @@ const LABEL = {
   age: {
     young:    '22 歲',
     standard: '26 歲',
-    mature:   '31 歲,
+    mature:   '31 歲',
     elder:    '37 歲',
   },
   nationality: {
