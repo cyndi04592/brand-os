@@ -3485,8 +3485,7 @@ async function createStitchedVideo(beats) {
   // 💎 把主推產品接給道具師(原本接片沒帶 product → 道具師沒作用)
   const stitchProduct = (S.storyArc && S.storyArc.selectedProduct)
     || (typeof getCurrentRotationProduct === 'function' ? getCurrentRotationProduct() : null);
-  // 👗 鎖 KOL 招牌穿搭(從 persona 讀,全 KOL 通用)
-  const lockedOutfit = (S.selectedKol && S.selectedKol.persona && S.selectedKol.persona.outfit) || '';
+  // 👗 衣服改由服裝師(kol-wardrobe.js)單一決定;接片端不再讀 persona.outfit,只負責「整支不換裝」鎖
   const plan = beats.map((b, i) => {
     const sit = (b.shotDesc || '')
       + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
@@ -3500,8 +3499,9 @@ async function createStitchedVideo(beats) {
     if (!/consistent facial features/i.test(p)) {
       p += ', consistent facial features and identity preserved from reference image, same person throughout';
     }
-    if (lockedOutfit) {
-      p += `, wearing ${lockedOutfit}, the exact same outfit in every shot, no costume change`;
+    // 服裝師已在 composeSeedancePrompt 放好「唯一一句 wearing X」;這裡只補一致性鎖,不再 naming 衣服
+    if (!/no costume change/i.test(p)) {
+      p += ', the exact same outfit in every shot, no costume change';
     }
     return { prompt: p, durationSec: snapDur(b.seconds) };
   });
