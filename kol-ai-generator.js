@@ -86,6 +86,7 @@ const AGE_MAP = {
   standard: 'a 26-year-old',
   mature:   'a 31-year-old',
   elder:    'a 37-year-old',
+  kid:      'a 7-year-old',
 };
 
 const NATIONALITY_MAP = {
@@ -121,6 +122,7 @@ const PERSONA_MAP = {
   snacker:        'casual relatable snack lover with a happy easygoing munching vibe, natural skin with visible pores and real texture',
   salesperson:    'friendly energetic retail salesperson, approachable enthusiastic helpful smile, natural skin with real texture',
   couple_warm:    'warm affectionate partner-next-door vibe, gentle loving gaze and soft tender smile, natural skin with real texture',
+  kid_cute:       'an innocent cheerful young child with a bright natural smile, soft round features, natural healthy child skin',
 };
 
 const LIGHTING_MAP = {
@@ -185,6 +187,7 @@ const LABEL = {
     male:   '男性',
   },
   age: {
+    kid:      '7 歲兒童',
     young:    '22 歲',
     standard: '26 歲',
     mature:   '31 歲',
@@ -221,6 +224,7 @@ const LABEL = {
     snacker:        '零食嘴饞',
     salesperson:    '銷售員',
     couple_warm:    '情侶感',
+    kid_cute:       '小朋友',
   },
   lighting: {
     window_day:  '室內日光',
@@ -1088,7 +1092,7 @@ function buildPrompt() {
   let prompt = (BACKBONES[mode] || BACKBONES.candid)
     .replace('{AGE}', AGE_MAP[params.age] || AGE_MAP.standard)
     .replace(/\{NATIONALITY\}/g, NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw)
-    .replace('{GENDER}', GENDER_MAP[params.gender] || GENDER_MAP.female)
+    .replace('{GENDER}', params.age === 'kid' ? (params.gender === 'male' ? 'boy' : 'girl') : (GENDER_MAP[params.gender] || GENDER_MAP.female))
     .replace('{PERSONA}', PERSONA_MAP[params.persona] || PERSONA_MAP.girl_next_door)
     .replace('{LIGHTING}', LIGHTING_MAP[params.lighting] || LIGHTING_MAP.window_day)
     .replace('{OUTFIT}', OUTFIT_MAP[params.outfit] || OUTFIT_MAP.beige_knit)
