@@ -3507,7 +3507,7 @@ async function createStitchedVideo(beats) {
 
   try {
     const result = await KolStitch.runStitchFlow(plan, {
-      startImageUrl: lookImage,
+      kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
       productImageUrls: S.seedanceProductUrls,
       brandId: S.currentBrandId,
       kolName: S.selectedKol.name,
