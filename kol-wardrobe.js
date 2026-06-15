@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-wardrobe.js · v5.13
+//  kol-wardrobe.js · v5.14
 //
 //  👗 服裝師 — 穿搭、品牌調性鎖、服裝 DNA
 //
@@ -7,25 +7,23 @@
 //   • 依品牌類型 + 場景時段,決定 KOL 當集的「外出服/日常穿搭」
 //   • 支援「指定服飾品牌風格」(打品牌名 → 對應風格特徵)
 //   • 用「風格特徵」描述,不寫品牌名(避 Seedance 商標審核 + 效果穩)
-//      ※ 查證:Seedance 2.0 會擋商標/品牌名(prompt 文字掃描),
-//        寫品牌名可能被拒絕/影片變異。官方建議:描述視覺特徵不指名。
 //   • 🛑 內衣類品牌:服裝師只管外出服,內衣呈現交給品牌靈魂(不裸露)
 //
-//  設計哲學(RA 2026-05-23 定調):
-//   「寫風格特徵不寫品牌名」(同攝影師寫 35mm 不寫 Sony)
-//   「選品牌後仍依場景時段微調」(早上穿該品牌的休閒版)
-//
-//  v5.13 狀態:啟用 contribute — 品牌風格庫 + 場景時段微調
+//  v5.14(服裝師 v2 · 一支一鎖):
+//   ★ contribute 改成「單一真相來源」,服裝優先序:
+//       1) 品牌風格(outfitBrand 選的)→ 換造型,最優先
+//       2) persona.outfit(KOL 招牌穿搭)→ 沒選品牌就穿這套
+//       3) 場景自帶 outfit(向下相容)
+//       4) 場景泛用穿搭(fallback)
+//     永遠只吐「一套」wearing,接片端不再自己補第二套 → 解決雙套打架。
+//   ★ 順手修一個舊洞:以前場景自帶 outfit 會 early-return、跳過內衣安全鎖;
+//     現在所有來源都會經過內衣鎖。
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
   'use strict';
 
   // ─── 服飾品牌風格庫(寫風格特徵,不寫品牌名給 AI)────────────
-  //  key = 品牌代號(顧客選的),value = { style: 風格特徵, casual/refined: 場景變體 }
-  //  RA 對照表(自己看的,系統送 AI 的是 style 文字):
-  //    uniqlo / gu / niko_and / tnewties / human_made / aape /
-  //    mardi / mallothi / pazzo / caco / lv / chanel / hermes / gucci / diesel / on
   const BRAND_STYLE_LIBRARY = {
     // ── 日系基本 ──
     uniqlo:    { base: 'Japanese minimalist basics, solid muted colors, clean tailored fit, lifewear simplicity',
@@ -72,7 +70,6 @@
   // ─── 場景時段 → 偏 casual 還是 refined ──────────────────
   function sceneTone(sceneId) {
     const id = String(sceneId || '').toLowerCase();
-    // 夜間/精緻場景 → refined;其餘日常 → casual
     if (id.includes('night') || id.includes('urban') || id.includes('evening')) return 'refined';
     return 'casual';
   }
@@ -89,8 +86,7 @@
 
   const LINGERIE_BRAND_TYPES = ['fashion_lingerie', 'lingerie', 'underwear'];
 
-  // ─── 品牌名容錯對應(處理多字/別名/大小寫)──────────────
-  //  顧客可能打 "Mardi Mercredi" / "mardi" / "MARDI",都要對到 key 'mardi'
+  // ─── 品牌名容錯對應 ──────────────
   const BRAND_ALIASES = {
     uniqlo: 'uniqlo', gu: 'gu',
     niko_and: 'niko_and', niko: 'niko_and', 'niko_and___': 'niko_and',
@@ -105,17 +101,15 @@
   };
   function resolveBrandKey(raw) {
     if (!raw) return '';
-    // 正規化:小寫、空白/點/橫線→底線、去頭尾底線
     const norm = String(raw).toLowerCase().trim()
       .replace(/[\s.\-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
     if (norm === 'auto') return 'auto';
-    if (BRAND_STYLE_LIBRARY[norm]) return norm;       // 直接命中
-    if (BRAND_ALIASES[norm]) return BRAND_ALIASES[norm]; // 別名命中
-    // 寬鬆:取第一個字試(Mardi Mercredi → mardi)
+    if (BRAND_STYLE_LIBRARY[norm]) return norm;
+    if (BRAND_ALIASES[norm]) return BRAND_ALIASES[norm];
     const first = norm.split('_')[0];
     if (BRAND_STYLE_LIBRARY[first]) return first;
     if (BRAND_ALIASES[first]) return BRAND_ALIASES[first];
-    return '';  // 對不到 → 走泛用
+    return '';
   }
 
   function pickOutfitByScene(sceneId) {
@@ -129,46 +123,47 @@
   }
 
   /**
-   * 產出服裝段落
-   * v5.13:
-   *   1. 場景自帶 outfit → 尊重(向下相容)
-   *   2. 有指定服飾品牌(ctx.outfitBrand / persona.outfit_brand)→ 品牌風格 × 場景變體
-   *   3. 否則(含 auto)→ 依場景時段選泛用穿搭
-   *   4. 內衣類品牌 → 加安全鎖(正常外出服、不裸露)
+   * 產出服裝段落 — v5.14 單一真相來源
+   *   服裝優先序(只選一套,絕不疊兩套):
+   *     1) 品牌風格(outfitBrand 選的)→ 換造型,最優先
+   *     2) persona.outfit(KOL 招牌穿搭)→ 沒選品牌就穿這套
+   *     3) 場景自帶 outfit(向下相容)
+   *     4) 場景泛用穿搭(fallback)
    */
   function contribute(ctx) {
     if (!ctx) return '';
 
-    // 1) 場景自帶 outfit,尊重它
-    if (ctx.scene?.outfit) {
-      return 'wearing ' + ctx.scene.outfit;
-    }
-
-    const sceneId = ctx.sceneId || ctx.scene?.id || '';
-    const brandType = ctx.brand?.brand_type || '';
+    const sceneId    = ctx.sceneId || ctx.scene?.id || '';
+    const brandType  = ctx.brand?.brand_type || '';
     const isLingerie = LINGERIE_BRAND_TYPES.includes(brandType);
 
-    // 2) 有指定服飾品牌風格?(顧客選的,非 auto)
-    const chosenBrand = resolveBrandKey(ctx.outfitBrand || ctx.persona?.outfit_brand || '');
-    let outfitText;
+    let outfitText = '';
 
+    // 1) 品牌風格(outfitBrand 或 persona 綁定的品牌)× 場景時段變體
+    const chosenBrand = resolveBrandKey(ctx.outfitBrand || ctx.persona?.outfit_brand || '');
     if (chosenBrand && chosenBrand !== 'auto' && BRAND_STYLE_LIBRARY[chosenBrand]) {
-      // 品牌風格 × 場景時段變體(早上穿該品牌休閒版,夜間穿精緻版)
       const b = BRAND_STYLE_LIBRARY[chosenBrand];
       const tone = sceneTone(sceneId);
-      const variant = tone === 'refined' ? b.refined : b.casual;
-      outfitText = b.base + ', ' + variant;
-    } else {
-      // 3) 無品牌 / auto → 依場景時段選泛用穿搭
-      const outfitKey = pickOutfitByScene(sceneId);
-      outfitText = OUTFIT_LIBRARY[outfitKey];
+      outfitText = b.base + ', ' + (tone === 'refined' ? b.refined : b.casual);
+    }
+    // 2) 沒選品牌 → KOL 招牌穿搭(人設預設)
+    else if (ctx.persona?.outfit) {
+      outfitText = ctx.persona.outfit;
+    }
+    // 3) 場景自帶 outfit(向下相容)
+    else if (ctx.scene?.outfit) {
+      outfitText = ctx.scene.outfit;
+    }
+    // 4) 都沒有 → 依場景時段選泛用穿搭
+    else {
+      outfitText = OUTFIT_LIBRARY[pickOutfitByScene(sceneId)] || '';
     }
 
     if (!outfitText) return '';
 
-    // 4) 內衣品牌安全鎖
+    // 內衣品牌安全鎖(不論哪個來源都會套上)
     if (isLingerie) {
-      outfitText = outfitText + ', fully dressed in everyday outerwear, modest and tasteful, no exposed undergarments, no revealing clothing';
+      outfitText += ', fully dressed in everyday outerwear, modest and tasteful, no exposed undergarments, no revealing clothing';
     }
 
     return 'wearing ' + outfitText;
@@ -192,5 +187,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.13 就緒 · 14 品牌風格庫(風格特徵·非品牌名)+ 內衣安全鎖');
+  console.log('[KolWardrobe] 👗 v5.14 就緒 · 單一真相來源(品牌 > 人設預設 > 場景泛用)+ 內衣安全鎖');
 })();
