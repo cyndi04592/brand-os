@@ -225,6 +225,13 @@ const LABEL = {
     flannel_shirt:   '格紋法蘭絨',
     mens_tshirt:     '男士素T',
     polo_shirt:      'POLO 衫',
+    chef_jacket:     '👨‍🍳 廚師服',
+    white_coat:      '🩺 白袍',
+    dark_suit:       '🤵 深色西裝',
+    jersey:          '⚽ 運動球衣',
+    blazer:          '🧥 西裝外套',
+    hoodie:          '連帽休閒',
+    trendy_casual:   '時髦休閒',
   },
   scene: {
     apartment:    '簡約公寓',
