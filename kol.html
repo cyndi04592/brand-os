@@ -3259,6 +3259,20 @@ function toggleEpisodeAudio() {
   updateEpisodeSpecLabel();
 }
 
+// 🆕 STEP3:鎖定畫面一致性(seed)—— 純切 class,生成時讀 DOM
+function toggleEpisodeSeedLock() {
+  const t = document.getElementById('ep-seed-toggle');
+  const row = document.getElementById('ep-seed-input-row');
+  if (t) t.classList.toggle('on');
+  if (row) row.classList.toggle('show', !!(t && t.classList.contains('on')));
+}
+
+// 🆕 STEP3:臉一致性優先
+function toggleEpisodeFaceLock() {
+  const t = document.getElementById('ep-face-toggle');
+  if (t) t.classList.toggle('on');
+}
+
 // 🆕 v5.13: STEP3 規格標籤動態更新(顯示與實際生成一致)
 function updateEpisodeSpecLabel() {
   const el = document.getElementById('ep-spec-label');
@@ -3612,12 +3626,18 @@ async function createSeedanceVideo() {
   let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, movementForPrompt, S.seedanceParams.duration, cineOpts);
   if (!prompt) { toast('組 prompt 失敗,場景資料異常', 'error'); return; }
 
-  // 🆕 v5.16: STEP2 預設鎖臉(電影鏡頭有 KOL 肖像 reference,本就該保持一致)
-  //   原本只在開關開啟時才鎖,現在預設就鎖,避免臉跑掉
-  if (!/consistent facial features/i.test(prompt)) {
+  // 🆕 STEP3 鎖臉 —— 由「🎭 臉一致性優先」開關控制(預設開;抓不到元素也預設鎖)
+  const epFaceOn = document.getElementById('ep-face-toggle')?.classList.contains('on') !== false;
+  if (epFaceOn && !/consistent facial features/i.test(prompt)) {
     prompt = prompt + ', consistent facial features and identity preserved from reference image, same person throughout';
   }
 
+  // 🔒 STEP3 seed —— 由「🔒 鎖定畫面一致性」開關控制(預設開)。有填=重現舊片;沒填=自動生一顆
+  const epSeed = (document.getElementById('ep-seed-toggle')?.classList.contains('on'))
+    ? ( /^\d+$/.test((document.getElementById('ep-seed-value')?.value || '').trim())
+          ? parseInt(document.getElementById('ep-seed-value').value.trim(), 10)
+          : Math.floor(Math.random() * 2147483647) )
+    : undefined;
   // 取得 KOL 圖片 URL — 用 HeyGen Look 的 image_url(已是公開 CDN)
   const lookImage = S.availableLooks.find(l => l.id === S.selectedLookId)?.image_url
                     || S.selectedKol.image_url;
@@ -4347,6 +4367,17 @@ function renderEpisodeCard() {
             <div id="ep-audio-toggle" class="toggle-switch on" style="width:32px;height:18px"></div>
             <span>生成音效</span>
           </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px;color:var(--text-dim);cursor:pointer" onclick="toggleEpisodeSeedLock()">
+            <div id="ep-seed-toggle" class="toggle-switch on" style="width:32px;height:18px"></div>
+            <span>🔒 鎖定畫面一致性</span>
+          </div>
+          <div class="seed-input-row show" id="ep-seed-input-row" style="margin-top:6px">
+            <input type="text" id="ep-seed-value" placeholder="留空即可 — 系統自動鎖定;想重現舊影片才填號碼" inputmode="numeric">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px;color:var(--text-dim);cursor:pointer" onclick="toggleEpisodeFaceLock()">
+            <div id="ep-face-toggle" class="toggle-switch on" style="width:32px;height:18px"></div>
+            <span>🎭 KOL 臉一致性優先</span>
+          </div>
         </div>
       </div>
 <div class="ep-actions" style="padding-top:6px;flex-direction:column;align-items:stretch;gap:8px">
@@ -4682,6 +4713,7 @@ async function generateEpisode() {
     aspectRatio: S.episodeParams.aspectRatio,
     generateAudio: S.episodeParams.generateAudio,
     tier: S.episodeParams.tier,
+    seed: epSeed,
     brandId: S.currentBrandId,
     kolName: persona.persona_name,
   };
