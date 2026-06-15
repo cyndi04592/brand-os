@@ -263,7 +263,7 @@ const LABEL = {
     mountain:     '山林步道',
     campsite:     '戶外營地',
     restaurant:   '餐廳餐桌',
-    clinic:       ' 診間',
+    clinic:       '診間',
     health_studio:'健康工作室',
     law_office:   '律所書牆',
     campus:       '校園',
