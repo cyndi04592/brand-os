@@ -5713,6 +5713,27 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
 <script src="kol-storyboard-panel.js"></script>
 <script src="kol-stitch.js"></script>
 <!-- <script src="kol-stitch-panel.js"></script> --><!-- demo 暫藏接片,demo 後把這行的註解拿掉即可 -->
-  
+<!-- 🆕 進階設定:預設展開 + 一致性 toggle 預設開 -->
+<script>
+window.addEventListener('load', function () {
+  setTimeout(function () {
+    var adv = document.getElementById('seedance-advanced');
+    if (!adv) return;
+
+    // 1) 進階設定面板:預設展開(預設是收合 ▶,點一下變展開)
+    var arrow = adv.querySelector('.advanced-arrow');
+    if (arrow && arrow.textContent.trim() === '▶') {
+      var head = adv.querySelector('.advanced-head');
+      if (head) head.click();
+    }
+
+    // 2) 兩個 toggle:預設 ON(預設是關,各點一下變開)
+    adv.querySelectorAll('.advanced-body .toggle-switch').forEach(function (t) {
+      // 只在「看起來還沒開」時才點,避免重複切換
+      if (!/\bon\b|\bactive\b|\bchecked\b/.test(t.className)) t.click();
+    });
+  }, 120);
+});
+</script>  
 </body>
 </html>
