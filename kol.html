@@ -3482,11 +3482,14 @@ async function createStitchedVideo(beats) {
 
   // 每段用自己那張分鏡卡的鏡頭+台詞;第 2 段起加「延續前一段」
   const continueLead = '這一鏡直接延續前一段影片:同一個人、同一張臉,表情情緒自然接下去,不要重來。';
+  // 💎 把主推產品接給道具師(原本接片沒帶 product → 道具師沒作用)
+  const stitchProduct = (S.storyArc && S.storyArc.selectedProduct)
+    || (typeof getCurrentRotationProduct === 'function' ? getCurrentRotationProduct() : null);
   const plan = beats.map((b, i) => {
     const sit = (b.shotDesc || '')
       + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
     const opts = { outfitBrand: S.selectedOutfitBrand, forceSingleShot: true };
-    opts.episode = { situation: sit };
+    opts.episode = { situation: sit, product: stitchProduct };
     let p = composeSeedancePrompt(
       S.currentBrandId, S.selectedSceneId, S.selectedLocationId, null, // 分鏡模式:運鏡交給分鏡卡,不再疊加
       String(snapDur(b.seconds)), opts
