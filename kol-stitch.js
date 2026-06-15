@@ -1,20 +1,18 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v2.0
-// v2.0：砍掉「尾幀接首幀」，改成 reference-to-video（每段回錨原始 KOL 照 + 商品照，
-//       前一段「整支影片」當 @Video1 延續）→ 內心戲/表情會接住、畫質不再逐段衰退。
+// kol-stitch.js — 自動接片引擎 v4.0
+// v4.0：改用 webhook 背景生成 —— 不再輪詢 fal(那是 ~197 秒偵測延遲 + 逾時的元兇)。
+//       改成問 Worker 的 episode_result(fal 做完主動 webhook → fal_hook 寫進 R2 → 瞬間反映)。
+//       → 5 秒影片不再空等 ~190 秒;90 秒接片不再撞瀏覽器輪詢上限。
+//       前提(Worker 端,已部署/本次一起部署):
+//         · seedance_submit 已帶 fal_webhook,fal_hook 寫 episodes/{requestId}.json
+//         · video_compose 也帶 fal_webhook(本次 Patch 2)
+//         · extractVideoUrl 已能吃 merge-videos 的扁平 video_url(本次 Patch 1)
+//         · episode_result：前端用 requestId 查結果(沒好回 pending、好了回 done+videoUrl)
+// v3.0：平行 —— 每段只錨原始 KOL 照 + 商品照,彼此不依賴 → 全部同時送、同時跑。
+// v2.0：reference-to-video(砍掉尾幀接首幀)→ 內心戲/表情接得住、畫質不逐段衰退。
 // --------------------------------------------------------------------------
-// 設計原則：底層一次做對，半自動(mode:'semi') / 全自動(mode:'auto') 共用同一套。
-// UI 只是薄薄一層蓋上去；換 UI 不用動這支。
-//
-// 依賴的 Worker action（都回傳 seedance_submit 同款格式 → 共用 fal_poll）：
-//   seedance_image2video_submit  生一段（尾幀當第一幀，鎖臉）
-//   extract_frame                抽幀（frame_type:'last' 抽尾幀）
-//   video_compose                多段硬切接成一條
-//   fal_poll                     輪詢（你現成的，沿用）
-//
-// 用法：
-//   KolStitch.init({ workerUrl:'https://kol-proxy.calm-sunset-6b66.workers.dev' });
-//   const { finalUrl } = await KolStitch.runStitchFlow(plan, opts);
+// 設計原則：底層一次做對,半自動(mode:'semi') / 全自動(mode:'auto') 共用同一套。
+// UI 只是薄薄一層蓋上去;換 UI 不用動這支。
 // ==========================================================================
 window.KolStitch = (function () {
   'use strict';
@@ -22,16 +20,16 @@ window.KolStitch = (function () {
   // ---- 設定 ---------------------------------------------------------------
   const cfg = {
     workerUrl: 'https://kol-proxy.calm-sunset-6b66.workers.dev',
-    password: 'raby2026', // Worker 每個 POST 都驗密碼，少了會被擋「密碼錯誤」
+    password: 'raby2026', // Worker 每個 POST 都驗密碼,少了會被擋「密碼錯誤」
     pollIntervalMs: 5000,
-    pollMaxTries: 180,    // 5s × 180 = 15 分鐘上限
-    pollTask: null,       // 想用 kol.html 現成的輪詢，就 init({ pollTask: 你的函式 }) 換掉
+    pollMaxTries: 240,    // 5s × 240 = 20 分鐘上限。webhook 後輪詢只是輕量讀 R2,給足餘裕、不怕 fal 排隊久
+    pollTask: null,       // 想用 kol.html 現成的輪詢,就 init({ pollTask: 你的函式 }) 換掉(只影響舊 fal_poll 路徑)
   };
   function init(options) { Object.assign(cfg, options || {}); return cfg; }
 
   // ---- 底層工具 -----------------------------------------------------------
 
-  // 打 Worker（所有 action 共用同一條）
+  // 打 Worker(所有 action 共用同一條)
   async function api(action, params) {
     const payload = Object.assign({ action }, params || {});
     payload.password = cfg.password;   // 每個請求都要帶密碼
@@ -70,7 +68,29 @@ window.KolStitch = (function () {
     return null;
   }
 
-  // 內建輪詢：拿 submit 回來的資料去打 fal_poll，直到出 URL
+  // 🆕 v4.0：webhook 輪詢 —— 問 episode_result(R2 由 fal_hook 即時寫入),不再打 fal_poll。
+  //   reqId = seedance_submit / video_compose 回來的 requestId。
+  //   fal 做完 → webhook → fal_hook 寫 episodes/{reqId}.json → 這裡就讀到 done,無 197 秒延遲。
+  async function pollEpisode(reqId, brandId, onTick) {
+    if (!reqId) throw new Error('pollEpisode 缺少 reqId');
+    const brand = brandId || 'unknown';
+    for (let i = 0; i < cfg.pollMaxTries; i++) {
+      try {
+        const r = await api('episode_result', { brandId: brand, reqId });
+        const st = String(r.status || 'pending').toLowerCase();
+        if (st === 'done' && r.videoUrl) return r.videoUrl;
+        if (st === 'failed') throw new Error('生成失敗：' + (r.error || '未知'));
+        if (onTick) onTick(i, st);
+      } catch (e) {
+        // 'failed' 要往上拋;網路抖動 / R2 暫時讀不到 → 當還沒好,繼續等
+        if (String((e && e.message) || '').indexOf('生成失敗') !== -1) throw e;
+      }
+      await new Promise(res => setTimeout(res, cfg.pollIntervalMs));
+    }
+    throw new Error('等待逾時(超過 ' + (cfg.pollMaxTries * cfg.pollIntervalMs / 60000) + ' 分鐘還沒回來)');
+  }
+
+  // 舊輪詢保留：extractLastFrame 還在用(平行主路徑用不到,留著不破壞既有呼叫)
   async function defaultPoll(submitResult, onTick) {
     const { requestId, endpoint, statusUrl, responseUrl } = submitResult;
     for (let i = 0; i < cfg.pollMaxTries; i++) {
@@ -91,7 +111,7 @@ window.KolStitch = (function () {
 
   // ---- 五個積木 -----------------------------------------------------------
 
-  // 抽尾幀：影片 URL → 最後一幀圖片 URL（伺服器端抽，繞過 CORS）
+  // 抽尾幀：影片 URL → 最後一幀圖片 URL（伺服器端抽,繞過 CORS）— 舊路徑用,保留
   async function extractLastFrame(videoUrl, onTick) {
     const sub = await api('extract_frame', { videoUrl, frameType: 'last' });
     const done = await poll(sub, onTick);
@@ -100,41 +120,41 @@ window.KolStitch = (function () {
     return url;
   }
 
-  // 生一段：永遠用「原始 KOL 照 + 商品照」當錨點，前一段「整支影片」當延續參考
-  //（reference-to-video）。不再抽尾幀 → 內心戲/表情會接住，畫質也不會一段比一段爛。
+  // 生一段：永遠用「原始 KOL 照 + 商品照」當錨點(@Image1/@Image2…)。
+  //   🆕 v4.0：submit 後改問 episode_result(webhook 已把成品寫進 R2),不再輪詢 fal。
   async function generateSegment(opts, onTick) {
     if (!opts.kolImageUrl) throw new Error('generateSegment 缺少 kolImageUrl（原始 KOL 照）');
     if (!opts.prompt) throw new Error('generateSegment 缺少 prompt');
 
     const sub = await api('seedance_submit', {
-      kolImageUrl: opts.kolImageUrl,                  // ← 永遠原始照，不是尾幀（@Image1）
-      productImageUrls: opts.productImageUrls,        // 商品照（@Image2…）
+      kolImageUrl: opts.kolImageUrl,                  // ← 永遠原始照,不是尾幀(@Image1)
+      productImageUrls: opts.productImageUrls,        // 商品照(@Image2…)
       productDriveFileIds: opts.productDriveFileIds,
-      videoUrls: opts.videoUrls,                      // ← 前一段整支影片（@Video1）；第一段為空
+      videoUrls: opts.videoUrls,                      // ← 前一段整支影片(@Video1);平行時為空
       brandId: opts.brandId,
       kolName: opts.kolName,
       prompt: opts.prompt,
       duration: String(opts.durationSec || 5),
       aspectRatio: opts.aspectRatio || '9:16',
       resolution: opts.resolution || '720p',
-      generateAudio: opts.generateAudio === true,     // 預設關，避免 AI 亂掰台詞
+      generateAudio: opts.generateAudio === true,     // 預設關,避免 AI 亂掰台詞
       tier: opts.tier || 'fast',
       seed: opts.seed,
     });
-    const done = await poll(sub, onTick);
-    const url = pickUrl(done);
-    if (!url) throw new Error('生成段落沒拿到影片 URL');
-    return url;
+    // 🆕 webhook 把成品寫進 episodes/{requestId}.json → 問 episode_result 即可(瞬間、免 fal 輪詢延遲)
+    const videoUrl = await pollEpisode(sub.requestId, opts.brandId, onTick);
+    return videoUrl;
   }
 
-  // 接片：多段 → 一條（硬切；尾幀接首幀本來就接近無縫）
-  async function composeSegments(segments, onTick) {
-    // segments: [{ url, durationSec }]
+  // 接片：多段 → 一條。🆕 v4.0：video_compose 也帶 webhook,改問 episode_result。
+  async function composeSegments(segments, brandId, onTick) {
+    // 容錯:相容舊呼叫 composeSegments(segments, onTick)
+    if (typeof brandId === 'function') { onTick = brandId; brandId = undefined; }
     if (!Array.isArray(segments) || segments.length < 2)
       throw new Error('composeSegments 至少要 2 段');
-    const sub = await api('video_compose', { segments });
-    const done = await poll(sub, onTick);
-    const url = pickUrl(done);
+    const sub = await api('video_compose', { segments, brandId: brandId });
+    // 合成成品同樣由 webhook 寫進 R2 → 問 episode_result(reqId = 合成的 requestId)
+    const url = await pollEpisode(sub.requestId, brandId, onTick);
     if (!url) throw new Error('接片沒拿到影片 URL');
     return url;
   }
@@ -142,14 +162,13 @@ window.KolStitch = (function () {
   // ---- 流程控制（狀態機）：半自動 / 全自動共用 ----------------------------
   // plan: [{ prompt, durationSec?, seed? }, ...]   每段要做什麼
   // opts: {
-  //   startImageUrl,                 // 第一段的開場畫面（通常是 KOL 人像 URL）
-  //   mode: 'semi' | 'auto',         // 半自動會在每段後停下等確認
+  //   kolImageUrl / startImageUrl,   // 每段都當錨點的原始 KOL 照
+  //   brandId, kolName,
   //   aspectRatio, resolution, generateAudio, tier, durationSec,
-  //   onProgress(msg, segIndex),     // 進度回報
-  //   onSegmentDone(segIndex, url),  // 每段完成
-  //   waitForUserConfirm(i, url),    // 半自動：回一個 Promise，使用者按「下一步」才 resolve
+  //   productImageUrls / productDriveFileIds,
+  //   onProgress(msg), onSegmentDone(segIndex, url),
   // }
-  // 🆕 成品搬 R2:永久留存,不靠會過期的 fal 網址;失敗就退回原網址、不擋流程
+  // 🆕 成品搬 R2:webhook 其實已存進 R2,這層是保險/命名;已是 R2 網址會直接短路回傳。
   async function toR2(videoUrl, brandId, nameHint) {
     try {
       const r = await api('video_to_r2', {
@@ -163,7 +182,8 @@ window.KolStitch = (function () {
       return videoUrl;
     }
   }
- async function runStitchFlow(plan, opts) {
+
+  async function runStitchFlow(plan, opts) {
     opts = opts || {};
     const log = opts.onProgress || function () {};
     const kolImg = opts.kolImageUrl || opts.startImageUrl;
@@ -174,7 +194,7 @@ window.KolStitch = (function () {
     //   總時間 ≈ 一段,不再相加。臉靠原始照守,不靠前一段影片。
     const total = plan.length;
     let doneCount = 0;
-    log(`${total} 段同時生成中…(平行)`);
+    log(`${total} 段同時生成中…(平行,背景 webhook 回報)`);
 
     const tasks = plan.map(function (step, i) {
       const durSec = step.durationSec || opts.durationSec || 5;
@@ -210,13 +230,14 @@ window.KolStitch = (function () {
     }
 
     log('全部完成,接片中…');
-    let finalUrl = await composeSegments(segments, function (n, st) { log(`接片中…(${st})`); });
+    let finalUrl = await composeSegments(segments, opts.brandId, function (n, st) { log(`接片中…(${st})`); });
     log('成品存檔到 R2…');
     finalUrl = await toR2(finalUrl, opts.brandId, (opts.kolName || 'stitch') + '-' + segments.length + 'seg');
     log('完成!');
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
-  console.log('[KolStitch] 🎬 v3.0 · 平行(每段錨原始照,同時跑)');
+
+  console.log('[KolStitch] 🎬 v4.0 · webhook 背景生成(問 episode_result,不輪詢 fal)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
@@ -226,6 +247,7 @@ window.KolStitch = (function () {
     composeSegments,
     runStitchFlow,
     pickUrl,
-    _api: api,   // debug 用
+    pollEpisode,   // 🆕 對外,方便 kol.html 單段背景生成也共用
+    _api: api,     // debug 用
   };
 })();
