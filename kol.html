@@ -3366,11 +3366,12 @@ async function createStitchedVideo(beats) {
   const stitchProduct = (S.storyArc && S.storyArc.selectedProduct)
     || (typeof getCurrentRotationProduct === 'function' ? getCurrentRotationProduct() : null);
   // 🔒 seed:鎖開了 → 整支共用一顆(有填=重現舊片;沒填=這次跑自動生一顆=整支背景/比例一致);沒鎖 → 不送,fal 隨機
-  const runSeed = S.seedanceSeedLocked
-    ? ( /^\d+$/.test((document.getElementById('seed-value')?.value || '').trim())
-          ? parseInt(document.getElementById('seed-value').value.trim(), 10)
-          : Math.floor(Math.random() * 2147483647) )
-    : undefined;
+  // 🔒 接片一定整支共用一顆 seed(跨段衣服/場景/比例一致的關鍵)
+  const _seedField = (document.getElementById('seed-value')?.value || '').trim();
+  const runSeed = (S.seedanceSeedLocked && /^\d+$/.test(_seedField))
+    ? parseInt(_seedField, 10)
+    : Math.floor(Math.random() * 2147483647);
+  console.log('[接片] 本支共用 seed:', runSeed);
 
   // 👗 衣服改由服裝師(kol-wardrobe.js)單一決定;接片端不再讀 persona.outfit,只負責「整支不換裝」鎖
   const plan = beats.map((b, i) => {
@@ -3387,8 +3388,9 @@ async function createStitchedVideo(beats) {
       p += ', consistent facial features and identity preserved from reference image, same person throughout';
     }
     // 服裝師已在 composeSeedancePrompt 放好「唯一一句 wearing X」;這裡只補一致性鎖,不再 naming 衣服
-    if (!/no costume change/i.test(p)) {
-      p += ', the exact same outfit in every shot, no costume change';
+    // 🆕 商品比例鎖:跨段同一物理尺寸,別忽大忽小
+    if (!/same real-world size/i.test(p)) {
+      p += ', the product keeps the exact same real-world size and proportions across all shots, do not shrink or enlarge it';
     }
     return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed };
   });
