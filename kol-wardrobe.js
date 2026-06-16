@@ -211,14 +211,13 @@
     if (!outfitText) { console.warn('[KolWardrobe] 沒有衣服文字,跳過服裝參考圖'); return null; }
 
     const prompt =
-      'Professional e-commerce fashion catalog packshot of a single complete outfit. ' +
-      'Outfit shown worn on a plain white featureless faceless mannequin (no facial features, no identity), ' +
-      'full-length front view from shoulders to feet, the garment clearly visible. ' +
+      'Clean cut-out e-commerce product listing photo. ' +
+      'A single outfit worn on a plain white featureless faceless mannequin (no face, no identity). ' +
       'The outfit is: ' + outfitText + '. ' +
-      'Completely empty seamless pure white studio background with absolutely nothing else in frame — ' +
-      'no furniture, no plants, no vase, no basket, no props, no decorations, no background objects of any kind. ' +
-      'Soft even diffused lighting, sharp realistic fabric texture and true accurate colors, ' +
-      'one single outfit only, no extra garments, no text, no logo, no watermark.';
+      'Full-length front view, the mannequin centered and completely isolated on a flat solid pure white background. ' +
+      'The mannequin wearing the outfit is the only object in the entire frame, surrounded on all sides by empty plain white space, ' +
+      'like an isolated product cut-out with no environment whatsoever. ' +
+      'Soft even studio lighting, sharp realistic fabric texture, true accurate colors, minimal clean studio photography.';
 
     try {
       const r = await wdCallWorker('fal_image_submit', {
@@ -251,5 +250,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.16 就緒 · 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖(generateOutfitRefImage·背景清空)');
+  console.log('[KolWardrobe] 👗 v5.1 就緒 · 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖(generateOutfitRefImage·背景清空)');
 })();
