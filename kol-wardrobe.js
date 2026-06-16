@@ -1,7 +1,10 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-wardrobe.js · v5.15
+//  kol-wardrobe.js · v5.16
 //
 //  👗 服裝師 — 穿搭、品牌調性鎖、服裝 DNA(服裝師 v2 · 一支一鎖)
+//
+//  v5.16:服裝參考圖 prompt 收乾淨 — 背景完全清空(無花瓶/植物/籃子/道具),
+//         避免參考圖背景小物之後漏進 Seedance 影片。模特用「無臉素白模特」。
 //
 //  v5.15 重點(Riiv 優化①·服裝參考圖):
 //   ★ 新增 generateOutfitRefImage(ctx) — 拿「同一套衣服文字」用 flux 自動生
@@ -12,6 +15,17 @@
 //     (去掉 'wearing ' 前綴),確保「參考圖」與「prompt 文字」描述同一件。
 //   ★ Worker 呼叫比照 kol-stitch.js 自包(不依賴 kol.html 全域 api)。
 //   ★ 失敗容錯:生不出圖回 null,呼叫端照舊用純文字,不會卡住生成。
+//
+//  v5.14 重點:
+//   ★ contribute = 單一真相來源,服裝優先序:
+//       1) 品牌風格(outfitBrand)→ 換造型,最優先
+//       2) persona.outfit(KOL 招牌穿搭)→ 沒選品牌就穿這套
+//       3) 場景自帶 outfit(向下相容)
+//       4) 場景泛用(fallback)
+//     永遠只吐「一套」wearing,接片端不再補第二套 → 解決雙套打架。
+//   ★ persona 後備:實測 composeSeedancePrompt 的 ctx 沒帶 persona(ctx.persona=null),
+//     所以直接從 window.S.selectedKol.persona 補抓(跟口音鎖同套路,全站共用同一顆)。
+//   ★ 順手修舊洞:以前場景自帶 outfit 會 early-return 跳過內衣安全鎖;現在都會經過。
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
@@ -197,13 +211,14 @@
     if (!outfitText) { console.warn('[KolWardrobe] 沒有衣服文字,跳過服裝參考圖'); return null; }
 
     const prompt =
-      'Professional e-commerce fashion catalog packshot. ' +
-      'A complete outfit displayed on an invisible ghost mannequin, headless, no face, no human head, no person, ' +
-      'full-length front view showing the entire outfit from shoulders down to shoes. ' +
+      'Professional e-commerce fashion catalog packshot of a single complete outfit. ' +
+      'Outfit shown worn on a plain white featureless faceless mannequin (no facial features, no identity), ' +
+      'full-length front view from shoulders to feet, the garment clearly visible. ' +
       'The outfit is: ' + outfitText + '. ' +
-      'Plain seamless pure white studio background, soft even diffused lighting, sharp realistic fabric texture and stitching, ' +
-      'true accurate fabric colors, one single outfit only, no extra garments, no accessories clutter, ' +
-      'no text, no logo, no watermark, clean product photography.';
+      'Completely empty seamless pure white studio background with absolutely nothing else in frame — ' +
+      'no furniture, no plants, no vase, no basket, no props, no decorations, no background objects of any kind. ' +
+      'Soft even diffused lighting, sharp realistic fabric texture and true accurate colors, ' +
+      'one single outfit only, no extra garments, no text, no logo, no watermark.';
 
     try {
       const r = await wdCallWorker('fal_image_submit', {
@@ -236,5 +251,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.15 就緒 · 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖(generateOutfitRefImage)');
+  console.log('[KolWardrobe] 👗 v5.16 就緒 · 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖(generateOutfitRefImage·背景清空)');
 })();
