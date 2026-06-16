@@ -166,7 +166,12 @@
     }
     if (speechLine) parts.push(speechLine);
     pushIfNonEmpty(parts, window.KolProduct?.contribute(ctx));
-    pushIfNonEmpty(parts, CrewMembers.environment?.contribute(ctx));
+    // 🆕 地標組合式:疊進環境句尾(室內外都吃 → 辦公室+東京=東京的辦公室)
+    let envText = CrewMembers.environment?.contribute(ctx) || '';
+    if (locationId && locationId !== 'none' && window.LOCATIONS?.[locationId]?.keywords) {
+      envText = envText ? (envText + ', ' + window.LOCATIONS[locationId].keywords) : window.LOCATIONS[locationId].keywords;
+    }
+    pushIfNonEmpty(parts, envText);
     pushIfNonEmpty(parts, CrewMembers.wardrobe?.contribute(ctx));
     pushIfNonEmpty(parts, CrewMembers.makeup?.contribute(ctx));
     // 🔦 全域臉光保險:不管場景多硬,臉光一律柔,擋烤肉紋(2026-06 確認硬光是兇手)
@@ -223,7 +228,11 @@
     const movements = scene.movements || {};
     const shotSequence = pickThreeShotsForScene(movements, ctx.movementId);
 
-    const envText = CrewMembers.environment?.contribute(ctx) || '';
+    let envText = CrewMembers.environment?.contribute(ctx) || '';
+    // 🆕 地標組合式:15秒多鏡頭也疊地標
+    if (ctx.locationId && ctx.locationId !== 'none' && window.LOCATIONS?.[ctx.locationId]?.keywords) {
+      envText = envText ? (envText + ', ' + window.LOCATIONS[ctx.locationId].keywords) : window.LOCATIONS[ctx.locationId].keywords;
+    }
     const outfitText = scene.outfit ? 'wearing ' + scene.outfit : '';
     const lightText = scene.light || '';
 
