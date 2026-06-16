@@ -1,18 +1,17 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-wardrobe.js · v5.14
+//  kol-wardrobe.js · v5.15
 //
 //  👗 服裝師 — 穿搭、品牌調性鎖、服裝 DNA(服裝師 v2 · 一支一鎖)
 //
-//  v5.14 重點:
-//   ★ contribute = 單一真相來源,服裝優先序:
-//       1) 品牌風格(outfitBrand)→ 換造型,最優先
-//       2) persona.outfit(KOL 招牌穿搭)→ 沒選品牌就穿這套
-//       3) 場景自帶 outfit(向下相容)
-//       4) 場景泛用(fallback)
-//     永遠只吐「一套」wearing,接片端不再補第二套 → 解決雙套打架。
-//   ★ persona 後備:實測 composeSeedancePrompt 的 ctx 沒帶 persona(ctx.persona=null),
-//     所以直接從 window.S.selectedKol.persona 補抓(跟口音鎖同套路,全站共用同一顆)。
-//   ★ 順手修舊洞:以前場景自帶 outfit 會 early-return 跳過內衣安全鎖;現在都會經過。
+//  v5.15 重點(Riiv 優化①·服裝參考圖):
+//   ★ 新增 generateOutfitRefImage(ctx) — 拿「同一套衣服文字」用 flux 自動生
+//     一張「無臉/無頭乾淨衣服展示圖」,之後當參考圖餵 Seedance,鎖死布料
+//     圖案/剪裁/顏色,解「衣服跨段變不同件」。臉不靠這張(交給 [Image1])→
+//     刻意無臉,避免第二張臉跟 KOL 打架。
+//   ★ 新增 resolveOutfitText(ctx) — 抽出 contribute() 用的同一套衣服文字
+//     (去掉 'wearing ' 前綴),確保「參考圖」與「prompt 文字」描述同一件。
+//   ★ Worker 呼叫比照 kol-stitch.js 自包(不依賴 kol.html 全域 api)。
+//   ★ 失敗容錯:生不出圖回 null,呼叫端照舊用純文字,不會卡住生成。
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
@@ -158,17 +157,84 @@
     return OUTFIT_LIBRARY[key] || null;
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  //  🆕 v5.15:服裝參考圖(Riiv 優化①)
+  // ══════════════════════════════════════════════════════════════════
+
+  // Worker 設定 — 比照 kol-stitch.js 自包(模組不依賴 kol.html 全域 api)
+  const WD_WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+  const WD_WORKER_PW  = 'raby2026';
+  async function wdCallWorker(action, params) {
+    const res = await fetch(WD_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ action, password: WD_WORKER_PW }, params || {})),
+    });
+    let data;
+    try { data = await res.json(); }
+    catch (e) { throw new Error(`[${action}] 回應不是 JSON(HTTP ${res.status})`); }
+    if (data && data.ok === false) throw new Error(`[${action}] ${data.error || '未知錯誤'}`);
+    return data;
+  }
+
+  // 抽「衣服文字」— 跟 contribute() 同一套真相,去掉 'wearing ' 前綴
+  //   → 確保「參考圖」跟「prompt 文字」描述的是同一件衣服
+  function resolveOutfitText(ctx) {
+    const full = contribute(ctx);                 // 'wearing X' 或 ''
+    return full ? full.replace(/^wearing\s+/i, '').trim() : '';
+  }
+
+  /**
+   * 👗 自動生「無臉衣服平拍圖」當參考(Phase 1:鎖布料,不搶臉)
+   *   - flux 是純文字出圖 → 生「無頭/無臉乾淨服裝展示圖」,臉交給 [Image1]
+   *   - 刻意無臉:避免第二張臉跟 KOL 打架
+   *   - 回傳 flux 圖 URL;生不出來回 null(呼叫端容錯,照舊純文字)
+   * @param {object} ctx  跟 contribute 同一個 ctx(outfitBrand / sceneId / persona…)
+   * @returns {Promise<string|null>}
+   */
+  async function generateOutfitRefImage(ctx) {
+    const outfitText = resolveOutfitText(ctx);
+    if (!outfitText) { console.warn('[KolWardrobe] 沒有衣服文字,跳過服裝參考圖'); return null; }
+
+    const prompt =
+      'Professional e-commerce fashion catalog packshot. ' +
+      'A complete outfit displayed on an invisible ghost mannequin, headless, no face, no human head, no person, ' +
+      'full-length front view showing the entire outfit from shoulders down to shoes. ' +
+      'The outfit is: ' + outfitText + '. ' +
+      'Plain seamless pure white studio background, soft even diffused lighting, sharp realistic fabric texture and stitching, ' +
+      'true accurate fabric colors, one single outfit only, no extra garments, no accessories clutter, ' +
+      'no text, no logo, no watermark, clean product photography.';
+
+    try {
+      const r = await wdCallWorker('fal_image_submit', {
+        prompt,
+        aspect_ratio: '3:4',     // 直幅:看得到完整上下身比例
+        num_images: 1,
+        output_format: 'jpeg',
+      });
+      const url = (r && r.images && r.images[0] && r.images[0].url) || null;
+      if (url) console.log('[KolWardrobe] 👗 服裝參考圖已生成 →', url);
+      else     console.warn('[KolWardrobe] fal 回應無圖:', JSON.stringify(r).slice(0, 200));
+      return url;
+    } catch (e) {
+      console.warn('[KolWardrobe] 服裝參考圖生成失敗(照舊純文字):', e.message);
+      return null;
+    }
+  }
+
   window.KolWardrobe = {
     BRAND_STYLE_LIBRARY,
     OUTFIT_LIBRARY,
     contribute,
     suggestOutfit,
     pickOutfitByScene,
+    resolveOutfitText,          // 🆕 v5.15
+    generateOutfitRefImage,     // 🆕 v5.15
   };
 
   if (window.CrewDirector?.register) {
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.14 就緒 · 單一真相來源(品牌 > 人設預設 > 場景泛用)+ persona 後備 + 內衣安全鎖');
+  console.log('[KolWardrobe] 👗 v5.15 就緒 · 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖(generateOutfitRefImage)');
 })();
