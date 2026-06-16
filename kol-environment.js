@@ -327,5 +327,5 @@ const LOCATIONS = {
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.20 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 接地陰影 + 濾膚質詞 + 場景參考圖(generateSceneRefImage·鎖跨段背景)');
+  console.log('[KolEnvironment] 🌆 v5.21 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地(去重·融入交給攝影師) + 濾膚質詞 + 場景參考圖(generateSceneRefImage·鎖跨段背景)');
 })();
