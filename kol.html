@@ -3256,6 +3256,7 @@ function openStoryboardForEpisode() {
     onConfirm: (beats, duration) => {
       const b = beats[0] || {};
       const who = persona.persona_name || '主角';
+      S.episodeStoryboard = (beats && beats.length > 1) ? beats : null;   // 🆕 多段→接片;單段→null走原單集
       const sit = (b.shotDesc || '') + (b.dialogue ? `。${who}直視鏡頭自然地說:「${b.dialogue}」` : '');
       const el = document.getElementById('ep-situation');
       if (el) el.value = sit;
@@ -3283,6 +3284,7 @@ function openStoryboardForEpisode() {
       toast(`分鏡已填入、時長鎖 ${dvLabel}(已防呆)🎬`, 'success');
     },
     onEdit: () => {
+      S.episodeStoryboard = null;   // 🆕 解鎖時清掉,回到單集
       const durBox = document.querySelector('[data-ep-group="duration"]');
       if (durBox) durBox.classList.remove('ep-locked');
       const el = document.getElementById('ep-situation');
@@ -5291,7 +5293,11 @@ async function generateEpisodeV510(mode) {
   // 2. 依 mode 決定要跑什麼
   const tasks = [];
   if (mode === 'video' || mode === 'all') {
-    tasks.push(runVideoGeneration(persona, product, sceneId, movementId, tone, situation, productImageUrls, episodeId));
+    if (S.episodeStoryboard && S.episodeStoryboard.length > 1) {
+      tasks.push(runEpisodeStitch(persona, S.episodeStoryboard, product, sceneId, movementId, tone, productImageUrls, episodeId));   // 🆕 多段分鏡→接片
+    } else {
+      tasks.push(runVideoGeneration(persona, product, sceneId, movementId, tone, situation, productImageUrls, episodeId));
+    }
   }
   if (mode === 'posts' || mode === 'all') {
     tasks.push(runPostsGeneration(persona, product, situation, sceneId, movementId, tone, episodeId));
@@ -5406,7 +5412,118 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
     if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: e.message });
   }
 }
+// 🆕 STEP3 多段分鏡 → 接片(讀 STEP3 狀態,跟 createStitchedVideo 同邏輯)
+async function runEpisodeStitch(persona, beats, product, sceneId, movementId, tone, productImageUrls, episodeId) {
+  if (typeof KolStitch === 'undefined' || !KolStitch.runStitchFlow) {
+    toast('接片引擎(KolStitch)未載入', 'error');
+    if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: '接片引擎未載入' });
+    return;
+  }
+  if (!persona.talking_photo_id) {
+    toast('KOL 尚未綁定 HeyGen 照片,無法生成影片', 'error');
+    if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: 'KOL 未綁定照片' });
+    return;
+  }
 
+  // 取乾淨 KOL 肖像(跟單集同管線)
+  let kolImageUrl = '';
+  try {
+    const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
+    kolImageUrl = res?.avatars?.[0]?.image_url || '';
+    kolImageUrl = await resolveKolImageUrl(persona.persona_name, kolImageUrl);
+  } catch (_) {}
+  if (!kolImageUrl) {
+    toast('無法取得 KOL 肖像 URL', 'error');
+    if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: 'KOL 肖像 URL 取不到' });
+    return;
+  }
+
+  const locationId = document.getElementById('ep-location')?.value || 'none';
+  const epBrand = document.getElementById('ep-outfit-brand')?.value || '';
+  const chosenOutfitBrand = (epBrand && epBrand !== 'auto') ? epBrand
+    : (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') ? S.selectedOutfitBrand : '';
+
+  const snapDur = (s) => {
+    const n = Number(s) || 15;
+    return [5, 10, 15].reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
+  };
+
+  // 🔒 整支共用一顆 seed(跨段衣服/場景/比例一致的關鍵)— 讀 STEP3 的 ep-seed 開關
+  const epSeedOn  = document.getElementById('ep-seed-toggle')?.classList.contains('on');
+  const epSeedRaw = (document.getElementById('ep-seed-value')?.value || '').trim();
+  const runSeed = (epSeedOn && /^\d+$/.test(epSeedRaw))
+    ? parseInt(epSeedRaw, 10)
+    : Math.floor(Math.random() * 2147483647);
+  console.log('[STEP3接片] 本支共用 seed:', runSeed, '· 段數:', beats.length);
+
+  const prevArc = { ...S.storyArc };
+  S.storyArc = { ...S.storyArc, tone };
+  const plan = beats.map((b) => {
+    const sit = (b.shotDesc || '')
+      + (b.dialogue ? `。${persona.persona_name || '主角'}直視鏡頭自然地說:「${b.dialogue}」` : '');
+    const opts = {
+      outfitBrand: chosenOutfitBrand || undefined,
+      forceSingleShot: true,
+      episode: {
+        persona: {
+          persona_name: persona.persona_name, gender: persona.gender, nationality: persona.nationality,
+          background: persona.background, personality: persona.personality, speaking_style: persona.speaking_style,
+          role_relationship: persona.role_relationship, signature_topics: persona.signature_topics,
+          taboo_words: persona.taboo_words, forbidden_topics: persona.forbidden_topics,
+        },
+        product,
+        situation: sit,
+      },
+    };
+    let p = composeSeedancePrompt(S.currentBrandId, sceneId, locationId, null, String(snapDur(b.seconds)), opts);
+    if (!p) p = sit;
+    if (!/consistent facial features/i.test(p)) {
+      p += ', consistent facial features and identity preserved from reference image, same person throughout';
+    }
+    if (!/same real-world size/i.test(p)) {
+      p += ', the product keeps the exact same real-world size and proportions across all shots, do not shrink or enlarge it';
+    }
+    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed };
+  });
+  S.storyArc = prevArc;
+
+  const totalSec = plan.reduce((a, s) => a + s.durationSec, 0);
+  const taskBox = document.getElementById('system-episode-task');
+  if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>🎬 接片開始…共 ${plan.length} 段 ≈ ${totalSec} 秒,請耐心等</strong></div></div>`;
+  if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'generating', notes: `接片 ${plan.length} 段` }).catch(() => {});
+
+  const startTime = Date.now();
+  try {
+    const result = await KolStitch.runStitchFlow(plan, {
+      kolImageUrl,
+      productImageUrls,
+      brandId: S.currentBrandId,
+      kolName: persona.persona_name,
+      mode: 'auto',
+      resolution: S.episodeParams.resolution,
+      aspectRatio: S.episodeParams.aspectRatio,
+      generateAudio: S.episodeParams.generateAudio,
+      tier: S.episodeParams.tier,
+      onProgress: (m) => { if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>▶ ${escapeHtml(m)}</strong></div></div>`; },
+      onSegmentDone: (idx) => { if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>✅ 第 ${idx + 1} / ${plan.length} 段完成,繼續…</strong></div></div>`; },
+    });
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    if (taskBox) taskBox.innerHTML =
+      `<div class="seedance-task"><video src="${result.finalUrl}" controls autoplay loop style="width:100%;border-radius:10px;background:#000;"></video>`
+      + `<div style="margin-top:6px;"><a href="${result.finalUrl}" target="_blank" style="color:#a78bfa;font-size:12px;word-break:break-all;">↗ 開新分頁 / 下載</a></div></div>`;
+    toast(`🎬 接片完成!共 ${plan.length} 段`, 'success');
+    if (episodeId) apiUpdateEpisodeStatus(episodeId, {
+      video_status: 'done', video_url: result.finalUrl,
+      video_cost_usd: +(1.21 * plan.length).toFixed(2), video_elapsed_sec: elapsed,
+    }).catch(() => {});
+    if (typeof saveStitchedToDrive === 'function') saveStitchedToDrive(result.finalUrl);
+    setTimeout(() => renderSystemQueue(), 500);
+  } catch (e) {
+    if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong style="color:var(--accent2)">❌ ${escapeHtml(e.message)}</strong></div></div>`;
+    toast('接片失敗:' + e.message, 'error');
+    if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: e.message });
+  }
+}
 async function pollEpisodeTaskV510(task) {
   let count = 0;
   const t = setInterval(async () => {
