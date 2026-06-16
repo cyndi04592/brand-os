@@ -226,6 +226,86 @@ const LOCATIONS = {
     return filtered;
   }
 
+  // ════════════════════════════════════════════════════════════════════
+  //  🆕 v5.20 · 場景參考圖(Riiv③)— 鎖跨段背景一致
+  //  跟 kol-wardrobe 的 generateOutfitRefImage 同一套做法:
+  //   • flux 純文字出圖 → 生「空場景(無人)」當背景錨點
+  //   • 整支接片共用同一張 → 背景/佈局不再跨段飄
+  //   • 回傳圖 URL;生不出來回 null(呼叫端容錯,照舊純文字)
+  // ════════════════════════════════════════════════════════════════════
+  const EV_WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+  const EV_WORKER_PW  = 'raby2026';
+  async function evCallWorker(action, params) {
+    const res = await fetch(EV_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ action, password: EV_WORKER_PW }, params || {})),
+    });
+    let data;
+    try { data = await res.json(); }
+    catch (e) { throw new Error(`[${action}] 回應不是 JSON(HTTP ${res.status})`); }
+    if (data && data.ok === false) throw new Error(`[${action}] ${data.error || '未知錯誤'}`);
+    return data;
+  }
+
+  // 抽「場景文字」— 跟 composeSeedancePrompt 同一套真相(setting/env_prompt + 地標 + 光線)
+  //   → 確保「場景參考圖」跟「prompt 文字」描述的是同一個場景
+  //   ctx 可給:{ scene:{...} } 直接帶物件,或 { brandId, sceneId } 由這裡自己解析
+  function resolveSceneText(ctx) {
+    ctx = ctx || {};
+    let scene = ctx.scene;
+    if (!scene && ctx.sceneId && typeof window.getScenesForBrand === 'function') {
+      const scenes = window.getScenesForBrand(ctx.brandId) || {};
+      scene = scenes[ctx.sceneId];
+    }
+    scene = scene || {};
+    let settingText = scene.setting || scene.env_prompt || '';
+    const locId = ctx.locationId;
+    if (locId && locId !== 'none') {
+      const loc = LOCATIONS[locId];
+      if (loc && loc.keywords) settingText = settingText ? (settingText + ', ' + loc.keywords) : loc.keywords;
+    }
+    settingText = stripSkinTextureNoise(settingText);
+    if (scene.light) settingText = settingText ? (settingText + ', ' + scene.light) : scene.light;
+    return (settingText || '').trim();
+  }
+
+  /**
+   * 🏠 自動生「空場景(無人)參考圖」當背景錨(Phase 1:鎖場景跨段一致)
+   *   - 刻意無人:只要環境/佈局,人交給 [Image1] KOL 照
+   *   - 室內外通吃(用「location / environment」不用「room」)
+   * @param {object} ctx  { brandId, sceneId, locationId } 或 { scene, locationId }
+   * @returns {Promise<string|null>}
+   */
+  async function generateSceneRefImage(ctx) {
+    const sceneText = resolveSceneText(ctx);
+    if (!sceneText) { console.warn('[KolEnvironment] 沒有場景文字,跳過場景參考圖'); return null; }
+
+    const prompt =
+      'Establishing background photograph of a location, clean realistic style. ' +
+      'The location is: ' + sceneText + '. ' +
+      'A wide full view of the whole environment showing its complete layout, structures and background. ' +
+      'The scene is empty with no people, no person and no human anywhere in the frame, just the environment itself. ' +
+      'Consistent soft natural lighting, realistic photographic detail, true accurate colors, ' +
+      'one single fixed wide establishing shot of the place only.';
+
+    try {
+      const r = await evCallWorker('fal_image_submit', {
+        prompt,
+        aspect_ratio: '9:16',    // 跟直幅影片同比例,背景對得上
+        num_images: 1,
+        output_format: 'jpeg',
+      });
+      const url = (r && r.images && r.images[0] && r.images[0].url) || null;
+      if (url) console.log('[KolEnvironment] 🏠 場景參考圖已生成 →', url);
+      else     console.warn('[KolEnvironment] fal 回應無圖:', JSON.stringify(r).slice(0, 200));
+      return url;
+    } catch (e) {
+      console.warn('[KolEnvironment] 場景參考圖生成失敗(照舊純文字):', e.message);
+      return null;
+    }
+  }
+
   // ─── 導出 + 自動向總導演註冊 ─────────────────────────
   window.KolEnvironment = {
     LOCATIONS,
@@ -234,6 +314,8 @@ const LOCATIONS = {
     get,
     list,
     filterCompatible,
+    resolveSceneText,        // 🆕 v5.20
+    generateSceneRefImage,   // 🆕 v5.20
   };
 
   // 向後相容:kol.html 仍會用到 window.LOCATIONS
@@ -244,5 +326,5 @@ const LOCATIONS = {
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.19 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 接地陰影 + 濾膚質詞');
+  console.log('[KolEnvironment] 🌆 v5.20 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 接地陰影 + 濾膚質詞 + 場景參考圖(generateSceneRefImage·鎖跨段背景)');
 })();
