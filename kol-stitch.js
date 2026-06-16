@@ -155,6 +155,7 @@ window.KolStitch = (function () {
       generateAudio: opts.generateAudio === true,     // 預設關,避免 AI 亂掰台詞
       tier: opts.tier || 'fast',
       seed: opts.seed,
+      outfitImageUrl: opts.outfitImageUrl,   // 🆕 服裝參考圖(Riiv①):排最後一格,Worker 接
     });
     // 🆕 webhook 把成品寫進 episodes/{requestId}.json → 問 episode_result 即可(瞬間、免 fal 輪詢延遲)
     const videoUrl = await pollEpisode(sub.requestId, opts.brandId, onTick);
@@ -218,6 +219,30 @@ window.KolStitch = (function () {
           : Math.floor(Math.random() * 2000000000));
     log('本支共用 seed:' + stitchSeed);
 
+    // 🆕 服裝參考圖(Riiv①):整支生一次(鎖布料跨段一致),每段共用同一張 → 衣服不再跨段變不同件
+    let outfitImageUrl = opts.outfitImageUrl || null;
+    try {
+      if (!outfitImageUrl && window.KolWardrobe && typeof window.KolWardrobe.generateOutfitRefImage === 'function') {
+        const outfitCtx = opts.outfitCtx || {
+          outfitBrand: (window.S && window.S.selectedOutfitBrand) || '',
+          sceneId: (window.S && window.S.selectedSceneId) || '',
+        };
+        log('生成服裝參考圖中…(鎖跨段衣服)');
+        outfitImageUrl = await window.KolWardrobe.generateOutfitRefImage(outfitCtx);
+      }
+    } catch (e) { outfitImageUrl = null; }
+    // 有衣服圖 → 每段 prompt 補 [OUTFIT_IMG] 點名(Worker 會換成真實 [ImageN];沒圖會自動清掉佔位符)
+    if (outfitImageUrl) {
+      plan = plan.map(function (s) {
+        if (s && s.prompt && !/\[OUTFIT_IMG\]/.test(s.prompt)) {
+          return Object.assign({}, s, {
+            prompt: s.prompt + ', she is wearing the exact same outfit shown in [OUTFIT_IMG], identical garment pattern color and cut in every shot, no clothing change',
+          });
+        }
+        return s;
+      });
+    }
+
     const tasks = plan.map(function (step, i) {
       const durSec = step.durationSec || opts.durationSec || 5;
       return generateSegment({
@@ -235,6 +260,7 @@ window.KolStitch = (function () {
         brandId: opts.brandId,
         kolName: opts.kolName,
         nationality: opts.nationality,       // 🆕 口音用:傳得到就用,傳不到 generateSegment 會自己讀 window.S
+        outfitImageUrl: outfitImageUrl,      // 🆕 服裝參考圖:整支共用同一張(鎖跨段)
       }, function () {}).then(function (segUrl) {
         doneCount++;
         log(`${doneCount}/${total} 段完成…`);
