@@ -1,9 +1,9 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-wardrobe.js · v5.16
+//  kol-wardrobe.js · v5.17
 //
 //  👗 服裝師 — 穿搭、品牌調性鎖、服裝 DNA(服裝師 v2 · 一支一鎖)
 //
-//  v5.16:服裝參考圖 prompt 收乾淨 — 背景完全清空(無花瓶/植物/籃子/道具),
+//  v5.17:服裝參考圖 prompt 收乾淨 — 背景完全清空(無花瓶/植物/籃子/道具),
 //         避免參考圖背景小物之後漏進 Seedance 影片。模特用「無臉素白模特」。
 //
 //  v5.15 重點(Riiv 優化①·服裝參考圖):
@@ -250,5 +250,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.17 就緒 · 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖(generateOutfitRefImage·背景清空)');
+  console.log('[KolWardrobe] 👗 v5.17 就緒 · 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖(generateOutfitRefImage·背景清空·孤立去背)');
 })();
