@@ -240,11 +240,11 @@
     // 1. 基礎場景設定
     let settingText = scene.setting || scene.env_prompt || '';
 
-    // 2. 戶外場景可用地標 override
-    if (sceneType === 'outdoor' && ctx.locationId && ctx.locationId !== 'none') {
+    // 2. 🆕 地標組合式:疊在場景 setting 後面(室內外都吃 → 辦公室+東京=東京的辦公室)
+    if (ctx.locationId && ctx.locationId !== 'none') {
       const ovLoc = LOCATIONS[ctx.locationId];
-      if (ovLoc?.keywords && ovLoc.compatible?.includes('outdoor')) {
-        settingText = ovLoc.keywords;
+      if (ovLoc?.keywords) {
+        settingText = settingText ? (settingText + ', ' + ovLoc.keywords) : ovLoc.keywords;
       }
     }
 
