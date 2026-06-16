@@ -5515,6 +5515,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       tier: S.episodeParams.tier,
       onProgress: (m) => { lastMsg = m; paint(); },
       onSegmentDone: (idx) => { doneSeg++; lastMsg = `第 ${idx + 1} 段好了`; paint(); },
+      outfitCtx: { outfitBrand: chosenOutfitBrand, sceneId: sceneId },   // 🆕 STEP3 服裝圖用企劃自己的 ep-outfit-brand
     });
     clearInterval(ticker);
     const elapsed = Math.round((Date.now() - startTime) / 1000);
