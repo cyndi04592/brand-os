@@ -3391,8 +3391,8 @@ async function createStitchedVideo(beats) {
     }
     // 服裝師已在 composeSeedancePrompt 放好「唯一一句 wearing X」;這裡只補一致性鎖,不再 naming 衣服
     // 🆕 商品比例鎖:跨段同一物理尺寸,別忽大忽小
-    if (!/same real-world size/i.test(p)) {
-      p += ', the product keeps the exact same real-world size and proportions across all shots, do not shrink or enlarge it';
+    if (!/relative to her face/i.test(p)) {
+      p += ', keep the product at a natural hand-held size and the same scale relative to her face in every shot, do not inflate it to fill the frame or change its size between shots';
     }
     return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed };
   });
@@ -5425,7 +5425,6 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     return;
   }
 
-  // 取乾淨 KOL 肖像(跟單集同管線)
   let kolImageUrl = '';
   try {
     const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
@@ -5448,7 +5447,6 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     return [5, 10, 15].reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
   };
 
-  // 🔒 整支共用一顆 seed(跨段衣服/場景/比例一致的關鍵)— 讀 STEP3 的 ep-seed 開關
   const epSeedOn  = document.getElementById('ep-seed-toggle')?.classList.contains('on');
   const epSeedRaw = (document.getElementById('ep-seed-value')?.value || '').trim();
   const runSeed = (epSeedOn && /^\d+$/.test(epSeedRaw))
@@ -5480,8 +5478,9 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     if (!/consistent facial features/i.test(p)) {
       p += ', consistent facial features and identity preserved from reference image, same person throughout';
     }
-    if (!/same real-world size/i.test(p)) {
-      p += ', the product keeps the exact same real-world size and proportions across all shots, do not shrink or enlarge it';
+    // 🆕 商品比例鎖:綁「臉」(穩定錨,有參考圖),不綁「手」(會變);禁止放大佔畫面
+    if (!/relative to her face/i.test(p)) {
+      p += ', keep the product at a natural hand-held size and the same scale relative to her face in every shot, do not inflate it to fill the frame or change its size between shots';
     }
     return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed };
   });
@@ -5489,10 +5488,20 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
 
   const totalSec = plan.reduce((a, s) => a + s.durationSec, 0);
   const taskBox = document.getElementById('system-episode-task');
-  if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>🎬 接片開始…共 ${plan.length} 段 ≈ ${totalSec} 秒,請耐心等</strong></div></div>`;
+  const startTime = Date.now();
+  // 🆕 每秒更新:看得到「已等 Xs · X/N 段」,不再像當機
+  let lastMsg = `送出 ${plan.length} 段中…`, doneSeg = 0;
+  const paint = () => {
+    if (!taskBox) return;
+    const sec = Math.round((Date.now() - startTime) / 1000);
+    taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info">`
+      + `<strong>🎬 接片中 · ${doneSeg}/${plan.length} 段完成</strong>`
+      + `<div style="font-size:12px;color:#8fd9b8;margin-top:4px">⏱ 已等 ${sec}s · ${escapeHtml(lastMsg)}</div></div></div>`;
+  };
+  paint();
+  const ticker = setInterval(paint, 1000);
   if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'generating', notes: `接片 ${plan.length} 段` }).catch(() => {});
 
-  const startTime = Date.now();
   try {
     const result = await KolStitch.runStitchFlow(plan, {
       kolImageUrl,
@@ -5504,14 +5513,15 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       aspectRatio: S.episodeParams.aspectRatio,
       generateAudio: S.episodeParams.generateAudio,
       tier: S.episodeParams.tier,
-      onProgress: (m) => { if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>▶ ${escapeHtml(m)}</strong></div></div>`; },
-      onSegmentDone: (idx) => { if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>✅ 第 ${idx + 1} / ${plan.length} 段完成,繼續…</strong></div></div>`; },
+      onProgress: (m) => { lastMsg = m; paint(); },
+      onSegmentDone: (idx) => { doneSeg++; lastMsg = `第 ${idx + 1} 段好了`; paint(); },
     });
+    clearInterval(ticker);
     const elapsed = Math.round((Date.now() - startTime) / 1000);
     if (taskBox) taskBox.innerHTML =
       `<div class="seedance-task"><video src="${result.finalUrl}" controls autoplay loop style="width:100%;border-radius:10px;background:#000;"></video>`
       + `<div style="margin-top:6px;"><a href="${result.finalUrl}" target="_blank" style="color:#a78bfa;font-size:12px;word-break:break-all;">↗ 開新分頁 / 下載</a></div></div>`;
-    toast(`🎬 接片完成!共 ${plan.length} 段`, 'success');
+    toast(`🎬 接片完成!共 ${plan.length} 段 · ${elapsed}s`, 'success');
     if (episodeId) apiUpdateEpisodeStatus(episodeId, {
       video_status: 'done', video_url: result.finalUrl,
       video_cost_usd: +(1.21 * plan.length).toFixed(2), video_elapsed_sec: elapsed,
@@ -5519,6 +5529,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     if (typeof saveStitchedToDrive === 'function') saveStitchedToDrive(result.finalUrl);
     setTimeout(() => renderSystemQueue(), 500);
   } catch (e) {
+    clearInterval(ticker);
     if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong style="color:var(--accent2)">❌ ${escapeHtml(e.message)}</strong></div></div>`;
     toast('接片失敗:' + e.message, 'error');
     if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: e.message });
