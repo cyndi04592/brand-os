@@ -466,9 +466,6 @@
     try {
       const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
       kolImageUrl = res?.avatars?.[0]?.image_url || '';
-      // 🆕 v5.13 乾淨臉管線:抓 Drive 原圖 → 乾淨 R2 → 餵 Seedance,杜絕烤肉紋。
-      //    任何一步失敗會自動退回上面這張 HeyGen 圖,不會讓生成壞掉。
-      kolImageUrl = await resolveKolImageUrl(persona.persona_name, kolImageUrl);
     } catch (_) {}
     if (!kolImageUrl) {
       toast('無法取得 KOL 肖像 URL', 'error');
@@ -504,14 +501,6 @@
     const taskBox = document.getElementById('system-episode-task');
     if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong>⏳ 送出影片中…</strong></div></div>`;
 
-    // 🆕 v5.13 seed:讀 STEP3 鎖定開關(ep-seed-toggle)。
-    //    開 → 帶 seed(填了數字用固定值,沒填用隨機);關 → 不帶 seed(完全交給引擎)。
-    const epSeedOn  = document.getElementById('ep-seed-toggle')?.classList.contains('on');
-    const epSeedRaw = (document.getElementById('ep-seed-value')?.value || '').trim();
-    const epSeed = epSeedOn
-      ? (/^\d+$/.test(epSeedRaw) ? parseInt(epSeedRaw, 10) : Math.floor(Math.random() * 2147483647))
-      : undefined;
-
     const payload = {
       kolImageUrl,
       productImageUrls,
@@ -524,7 +513,6 @@
       brandId: S.currentBrandId,
       kolName: persona.persona_name,
     };
-    if (epSeed !== undefined) payload.seed = epSeed;
 
     try {
       const res = await api('seedance_submit', payload);
