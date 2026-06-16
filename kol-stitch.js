@@ -210,6 +210,13 @@ window.KolStitch = (function () {
     const total = plan.length;
     let doneCount = 0;
     log(`${total} 段同時生成中…(平行,背景 webhook 回報)`);
+    // 🆕 整支接片共用同一 seed → 衣服/場景/光線跨段穩很多
+    const stitchSeed = (opts.seed != null && opts.seed !== '')
+      ? parseInt(opts.seed)
+      : ((plan[0] && plan[0].seed != null && plan[0].seed !== '')
+          ? parseInt(plan[0].seed)
+          : Math.floor(Math.random() * 2000000000));
+    log('本支共用 seed:' + stitchSeed);
 
     const tasks = plan.map(function (step, i) {
       const durSec = step.durationSec || opts.durationSec || 5;
@@ -224,7 +231,7 @@ window.KolStitch = (function () {
         resolution: opts.resolution,
         generateAudio: opts.generateAudio,
         tier: opts.tier,
-        seed: step.seed,
+        seed: stitchSeed,
         brandId: opts.brandId,
         kolName: opts.kolName,
         nationality: opts.nationality,       // 🆕 口音用:傳得到就用,傳不到 generateSegment 會自己讀 window.S
