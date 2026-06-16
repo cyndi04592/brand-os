@@ -1615,12 +1615,14 @@ function composeSeedancePrompt(brandId, sceneId, locationId, movementId, duratio
   let settingText = scene.setting || scene.env_prompt || '';
   const sceneType = scene.type || (scene.indoor ? 'indoor' : 'outdoor');
 
-  if (sceneType === 'outdoor' && locationId && locationId !== 'none') {
-    const loc = LOCATIONS[locationId];
-    if (loc && loc.keywords && loc.compatible?.includes('outdoor')) {
-      settingText = loc.keywords;
-    }
+  if (locationId && locationId !== 'none') {
+  const loc = LOCATIONS[locationId];
+  if (loc && loc.keywords) {
+    settingText = settingText
+      ? settingText + ', ' + loc.keywords   // ← 辦公室 + 東京 = 東京的辦公室
+      : loc.keywords;
   }
+}
 
   // 🔥 v5.6: 15 秒多鏡頭模式
   if (duration === '15' || duration === 15) {
