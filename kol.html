@@ -3646,18 +3646,26 @@ async function createSeedanceVideo() {
     return;
   }
 
+  // 🆕 seed:讀 STEP3 鎖定開關(ep-seed-toggle)。開→帶 seed(填數字用固定值,沒填用隨機);關→不帶
+  const epSeedOn  = document.getElementById('ep-seed-toggle')?.classList.contains('on');
+  const epSeedRaw = (document.getElementById('ep-seed-value')?.value || '').trim();
+  const epSeed = epSeedOn
+    ? (/^\d+$/.test(epSeedRaw) ? parseInt(epSeedRaw, 10) : Math.floor(Math.random() * 2147483647))
+    : undefined;
+
   const payload = {
-    kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
-    productImageUrls: S.seedanceProductUrls,
+    kolImageUrl,
+    productImageUrls,
     prompt,
-    resolution: S.seedanceParams.resolution,
-    duration: S.seedanceParams.duration,
-    aspectRatio: S.seedanceParams.aspectRatio,
-    generateAudio: S.seedanceParams.generateAudio,
-    tier: S.seedanceParams.tier,
+    resolution: S.episodeParams.resolution,
+    duration: S.episodeParams.duration,
+    aspectRatio: S.episodeParams.aspectRatio,
+    generateAudio: S.episodeParams.generateAudio,
+    tier: S.episodeParams.tier,
     brandId: S.currentBrandId,
-    kolName: S.selectedKol.name,
+    kolName: persona.persona_name,
   };
+  if (epSeed !== undefined) payload.seed = epSeed;
   if (S.seedanceSeedLocked) {
     const seedVal = document.getElementById('seed-value').value.trim();
     if (seedVal) payload.seed = parseInt(seedVal);
