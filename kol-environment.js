@@ -128,11 +128,12 @@ const LOCATIONS = {
     },
   };
 
-  // ─── 防貼上去感 + 接地陰影(不打臉)──────────────────
-  //  v5.18:加回「腳/手/商品 與 地板/桌面 的接觸陰影」——避免商品或人浮空、貼上去感。
+  // ─── 物理接地(接觸陰影 · 不打臉)──────────────────
+  //  v5.18:加回「腳/手/商品 與 地板/桌面 的接觸陰影」——避免商品或人浮空。
   //         但刻意只「接地」、不碰臉(臉部打光才是烤肉網來源,維持拔除)。
-  const SCENE_HUMAN_INTEGRATION = 'the subject is naturally part of the scene, lit consistently with the surroundings, with soft natural contact shadows where her feet, hands, and any product or object touch the ground or surfaces, so nothing looks like it is floating or pasted on top';
-
+  //  v5.21:只留物理接地。「自然融入場景 / 統一光線 / 不貼上去」交給攝影師
+  //         SCENE_REALISM(統一色調整合),這裡不再重複講,去掉語意疊字。
+  const SCENE_HUMAN_INTEGRATION = 'soft natural contact shadows where her feet, hands and any product or object touch the ground or surfaces, so she and the product stay physically grounded and never appear to float';
   // ─── 🔧 濾除「會在臉上畫紋理/網格/紅斑」的詞 ──────────
   //  場景庫(kol-universal-scenes.js)很多 env_prompt 內建了
   //  film grain / ISO / visible skin pores / peach fuzz / skin texture / skin details,
