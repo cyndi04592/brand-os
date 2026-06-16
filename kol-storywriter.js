@@ -37,7 +37,7 @@
   };
 
   const SECONDS_PER_BEAT = 15;
-  const SPEAK_RATE = 4.5; // 中文每秒約 4-5 字
+  const SPEAK_RATE = 3.5; // 中文自然口播約 3-4 字/秒(留停頓呼吸,避免快轉)
 
   /**
    * 依秒數產生 beat 骨架(純函式、無網路)
@@ -188,5 +188,5 @@
     window.CrewDirector.register('storywriter', window.KolStorywriter);
   }
 
-  console.log('[KolStorywriter] 📖 v5.14 就緒(分鏡 + AI 編修前端)');
+  console.log('[KolStorywriter] 📖 v5.15 就緒(語速3.5 · 分鏡 + AI 編修前端)');
 })();
