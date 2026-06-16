@@ -172,6 +172,12 @@
     // 🔦 全域臉光保險:不管場景多硬,臉光一律柔,擋烤肉紋(2026-06 確認硬光是兇手)
     parts.push('keep the light on her face soft and even regardless of the scene, no harsh overhead glare or hot specular highlights on the skin');
 
+    // 🎬 ⑤ 攝影師接回單鏡頭路徑:運鏡(單支才有 movementId)+ REALISM_BASE + SCENE_REALISM
+    //   ⚠️ 根因:這條原本只在 15 秒多鏡頭加,單鏡頭(接片強制走這條)整包漏掉
+    //      → 接片 prompt 一直沒有電影寫實基底 =「背景假假的」根因之一。補回。
+    //      接片 movementId=null → 只加寫實基底,不疊運鏡(運鏡交給分鏡卡)。
+    pushIfNonEmpty(parts, CrewMembers.cinematographer?.contribute(ctx));
+
     if (persona) {
       const personaLine = CrewMembers.persona?.contribute(ctx);
       if (personaLine) parts.push('CHARACTER: ' + personaLine);
