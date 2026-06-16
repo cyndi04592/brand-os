@@ -234,8 +234,12 @@
     }
     const multi = state.beats.length > 1;
     const note = state.confirmed
-      ? '✅ 分鏡已確認 · 時長鎖 15 秒,其餘可調,挑好就按「🎬 生成電影鏡頭」'
-      : (multi ? '⚠️ 多段需接片管線(demo 後上線),先確認第 1 段' : '確認後會鎖定下面設定、時長對齊 15 秒');
+      ? (multi
+          ? `✅ 已確認 · ${state.beats.length} 段會自動接成 ≈ ${state.duration} 秒長片,挑好設定按生成`
+          : '✅ 分鏡已確認 · 單段,挑好設定按生成')
+      : (multi
+          ? `🎬 ${state.beats.length} 段分鏡 → 按「確認分鏡」後會自動接成 ≈ ${state.duration} 秒長片`
+          : '確認後會鎖定下面設定');
     box.innerHTML = state.beats.map(cardHtml).join('') + `
 <div class="sbp-genrow">
   <span class="sbp-note">${note}</span>
