@@ -156,6 +156,7 @@ window.KolStitch = (function () {
       tier: opts.tier || 'fast',
       seed: opts.seed,
       outfitImageUrl: opts.outfitImageUrl,   // 🆕 服裝參考圖(Riiv①):排最後一格,Worker 接
+      sceneImageUrl: opts.sceneImageUrl,     // 🆕 場景參考圖(Riiv③):再排一格,Worker 接
     });
     // 🆕 webhook 把成品寫進 episodes/{requestId}.json → 問 episode_result 即可(瞬間、免 fal 輪詢延遲)
     const videoUrl = await pollEpisode(sub.requestId, opts.brandId, onTick);
@@ -243,6 +244,34 @@ window.KolStitch = (function () {
       });
     }
 
+    // 🆕 場景參考圖(Riiv③):整支生一次(鎖場景跨段一致),每段共用同一張 → 背景不再跨段飄
+    let sceneImageUrl = opts.sceneImageUrl || null;
+    try {
+      if (!sceneImageUrl && window.KolEnvironment && typeof window.KolEnvironment.generateSceneRefImage === 'function') {
+        const sceneCtx = opts.sceneCtx || {
+          brandId: opts.brandId || (window.S && window.S.currentBrandId) || '',
+          sceneId: (window.S && window.S.selectedSceneId) || '',
+          locationId: (window.S && window.S.selectedLocationId) || 'none',
+        };
+        log('生成場景參考圖中…(鎖跨段背景)');
+        sceneImageUrl = await window.KolEnvironment.generateSceneRefImage(sceneCtx);
+      }
+    } catch (e) { sceneImageUrl = null; }
+    // 有場景圖 → 每段 prompt 補 [SCENE_IMG] 點名(Worker 會換成真實 [ImageN];沒圖會自動清掉佔位符)
+    if (sceneImageUrl) {
+      plan = plan.map(function (s) {
+        if (s && s.prompt && !/\[SCENE_IMG\]/.test(s.prompt)) {
+          return Object.assign({}, s, {
+            prompt: s.prompt + ', the background environment and location exactly matches [SCENE_IMG], same setting layout and background in every shot, no scene change',
+          });
+        }
+        return s;
+      });
+    }
+
+    // 🆕 衣服圖+場景圖都生完了 → 把訊息翻成「段生成中」,別卡在「生成…參考圖中」看起來像當機
+    log(`參考圖鎖定完成 ✓ · ${total} 段影片生成中…(背景平行跑,約幾分鐘)`);
+
     const tasks = plan.map(function (step, i) {
       const durSec = step.durationSec || opts.durationSec || 5;
       return generateSegment({
@@ -261,6 +290,7 @@ window.KolStitch = (function () {
         kolName: opts.kolName,
         nationality: opts.nationality,       // 🆕 口音用:傳得到就用,傳不到 generateSegment 會自己讀 window.S
         outfitImageUrl: outfitImageUrl,      // 🆕 服裝參考圖:整支共用同一張(鎖跨段)
+        sceneImageUrl: sceneImageUrl,        // 🆕 場景參考圖:整支共用同一張(鎖跨段)
       }, function () {}).then(function (segUrl) {
         doneCount++;
         log(`${doneCount}/${total} 段完成…`);
@@ -286,7 +316,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v4.1 · webhook 背景生成 + 口音鐵律鎖(接片總關卡)');
+  console.log('[KolStitch] 🎬 v4.2 · webhook 背景生成 + 口音鐵律鎖 + 服裝/場景參考圖鎖跨段(接片總關卡)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
