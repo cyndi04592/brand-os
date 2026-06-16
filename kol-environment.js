@@ -27,168 +27,93 @@
 (function () {
   'use strict';
 
-  // ─── 地標庫 ────────────────────────────────────────────
-  //  註:light_character 目前為休眠欄位(v5.17 起不餵進 prompt,避免打臉烤肉網)
-  const LOCATIONS = {
-    none: { label: '— 不指定地標 —', keywords: null, ambient: null },
+ // 🏛️ 地標庫(組合式 · 疊在場景 setting 後面,室內外都吃)
+const LOCATIONS = {
+  none: { label: '— 不指定地標 —', keywords: null },
 
-    // 🇯🇵 日本東京
-    jp_shibuya_scramble: {
-      label: '🇯🇵 東京涉谷 · Scramble 十字路口',
-      keywords: 'the famous Shibuya Scramble Crossing in Tokyo, massive LED billboards on tall buildings, crowds of pedestrians, TSUTAYA building visible, iconic neon signs above',
-      ambient: 'ambient crowd chatter, distant traffic, occasional car horns, crosswalk signal beeps',
-      light_character: 'mixed LED billboard light casting colorful reflections onto her face, shifting color temperature',
-      compatible: ['outdoor'],
-    },
-    jp_shibuya_109: {
-      label: '🇯🇵 東京涉谷 · 109 百貨前',
-      keywords: 'in front of Shibuya 109 department store Tokyo, distinctive cylindrical building with the 109 logo, busy street-level view',
-      ambient: 'soft K-pop music from storefronts, chatter of young shoppers, distant announcements',
-      light_character: 'cool white facade light with pink neon accents on skin',
-      compatible: ['outdoor'],
-    },
-    jp_harajuku_takeshita: {
-      label: '🇯🇵 東京原宿 · 竹下通',
-      keywords: 'on Takeshita Street in Harajuku Tokyo, narrow pedestrian shopping street, colorful crêpe shops and youth fashion stores, kawaii pastel signage',
-      ambient: 'upbeat J-pop from shops, laughter of teenagers, street food sizzling',
-      light_character: 'bright pastel reflections from storefronts, warm afternoon sun filtering between buildings',
-      compatible: ['outdoor'],
-    },
-    jp_omotesando: {
-      label: '🇯🇵 東京表參道',
-      keywords: 'the tree-lined Omotesando boulevard in Tokyo, zelkova trees overhead, upscale fashion storefronts, European-style promenade',
-      ambient: 'quiet upscale atmosphere, distant fashion boutique music, soft footsteps on wide sidewalk',
-      light_character: 'dappled sunlight through zelkova leaves creating natural spots on her face and shoulders',
-      compatible: ['outdoor'],
-    },
-    jp_ginza: {
-      label: '🇯🇵 東京銀座 · 中央通',
-      keywords: 'Ginza Chuo-dori in Tokyo, luxury flagship stores lining the street, Wako clock tower in background, elegant urban atmosphere',
-      ambient: 'refined quiet atmosphere, occasional taxi passing, muffled luxury store interiors',
-      light_character: 'luxury storefront warm light reflecting on her face, creating soft golden highlights',
-      compatible: ['outdoor'],
-    },
-    jp_daikanyama: {
-      label: '🇯🇵 東京代官山 · T-Site',
-      keywords: 'Daikanyama T-Site in Tokyo, iconic Tsutaya bookstore complex, tree-lined quiet street, literary and stylish cafés nearby',
-      ambient: 'quiet bookish atmosphere, distant café chatter, birds chirping in trees',
-      light_character: 'soft natural daylight filtered through trees, gentle shadows playing on her face',
-      compatible: ['outdoor'],
-    },
-    jp_asakusa_kaminarimon: {
-      label: '🇯🇵 東京淺草 · 雷門',
-      keywords: 'Kaminarimon Gate in Asakusa Tokyo, giant red paper lantern with Japanese characters, traditional Japanese architecture, Nakamise shopping street behind',
-      ambient: 'temple bells in distance, tourist chatter in multiple languages, traditional festival ambience',
-      light_character: 'warm red lantern glow casting amber tint on her cheek, traditional architectural shadows',
-      compatible: ['outdoor'],
-    },
-    jp_shinjuku_kabukicho: {
-      label: '🇯🇵 東京新宿 · 歌舞伎町',
-      keywords: 'Kabukicho in Shinjuku Tokyo at night, dense neon signs stacked vertically, red Kabukicho gate in view, cyberpunk-like atmosphere',
-      ambient: 'neon buzz, distant karaoke music, drunk laughter, urban night energy',
-      light_character: 'intense neon sign reflections — pink, red, blue — shifting across her face, cyberpunk color bath',
-      compatible: ['outdoor'],
-    },
+  // ── 🇯🇵 日本・東京 ──
+  jp_shibuya:    { label: '🇯🇵 東京・涉谷',     keywords: 'in Shibuya, Tokyo, Japan, busy neon-lit urban district' },
+  jp_ueno:       { label: '🇯🇵 東京・上野',     keywords: 'in Ueno, Tokyo, Japan, traditional downtown shitamachi feel' },
+  jp_harajuku:   { label: '🇯🇵 東京・原宿',     keywords: 'in Harajuku, Tokyo, Japan, colorful youthful street-fashion vibe' },
+  jp_omotesando: { label: '🇯🇵 東京・表參道',   keywords: 'on Omotesando, Tokyo, Japan, tree-lined upscale boulevard' },
+  jp_ginza:      { label: '🇯🇵 東京・銀座',     keywords: 'in Ginza, Tokyo, Japan, elegant high-end shopping streets' },
+  jp_asakusa:    { label: '🇯🇵 東京・淺草',     keywords: 'in Asakusa, Tokyo, Japan, old-town temple-district atmosphere' },
+  jp_shinjuku:   { label: '🇯🇵 東京・新宿',     keywords: 'in Shinjuku, Tokyo, Japan, dense neon nightlife backdrop' },
+  jp_kawagoe:    { label: '🇯🇵 東京近郊・川越', keywords: 'in Kawagoe near Tokyo, Japan, retro little-Edo warehouse streets' },
+  jp_asagaya:    { label: '🇯🇵 東京・阿佐谷',   keywords: 'in Asagaya, Tokyo, Japan, cozy local shopping-arcade neighborhood' },
+  jp_yamanote:   { label: '🇯🇵 東京・山手線沿線', keywords: 'along the Yamanote line, Tokyo, Japan, everyday train-window cityscape' },
+  jp_hakonegasaki: { label: '🇯🇵 東京・箱根崎', keywords: 'in Hakonegasaki, Mizuho, western Tokyo, Japan, quiet suburban local town' },
 
-    // 🇹🇼 台灣
-    tw_taipei_101: {
-      label: '🇹🇼 台北 · 101 大樓前',
-      keywords: 'in front of Taipei 101 in Xinyi District, iconic bamboo-shaped skyscraper towering in background, modern plaza with granite flooring',
-      ambient: 'city breeze through plaza, distant MRT announcements, occasional plaza events',
-      light_character: 'glass facade reflections creating bright highlights on her face from 101 tower',
-      compatible: ['outdoor'],
-    },
-    tw_taipei_yongkang: {
-      label: '🇹🇼 台北 · 永康街',
-      keywords: 'Yongkang Street in Taipei, quaint lane with independent cafés and teahouses, brick-paved sidewalk, vintage Taiwan charm',
-      ambient: 'quiet café murmur, tea brewing sounds, scooter passing occasionally, Taiwanese chatter',
-      light_character: 'warm afternoon light bouncing off vintage brick, soft amber reflection on skin',
-      compatible: ['outdoor'],
-    },
-    tw_taichung_shenji: {
-      label: '🇹🇼 台中 · 審計新村',
-      keywords: 'Shenji New Village in Taichung, refurbished former government dormitories now a creative market, pastel-painted walls, small craft shops',
-      ambient: 'indie music from craft shops, casual chatter, crafters working on pottery',
-      light_character: 'soft pastel wall reflections tinting her skin with gentle pink and mint hues',
-      compatible: ['outdoor'],
-    },
-    tw_tainan_shennong: {
-      label: '🇹🇼 台南 · 神農街',
-      keywords: 'Shennong Street in Tainan, narrow historic street with traditional red-brick Qing-era buildings, wooden shutters, ancient capital atmosphere',
-      ambient: 'quiet historical ambience, distant temple prayer, traditional market sounds',
-      light_character: 'golden hour light streaming between old buildings, red brick reflecting warm tones onto face',
-      compatible: ['outdoor'],
-    },
+  // ── 🇯🇵 日本・大阪 ──
+  jp_dotonbori:    { label: '🇯🇵 大阪・道頓堀',   keywords: 'in Dotonbori, Osaka, Japan, vivid canal-side neon signboards' },
+  jp_shinsaibashi: { label: '🇯🇵 大阪・心齋橋',   keywords: 'in Shinsaibashi, Osaka, Japan, lively covered shopping arcade' },
+  jp_osaka_castle: { label: '🇯🇵 大阪・大阪城',   keywords: 'near Osaka Castle, Japan, historic castle-park backdrop' },
 
-    // 🇭🇰 香港
-    hk_central_ifc: {
-      label: '🇭🇰 香港中環 · IFC',
-      keywords: 'IFC Mall area in Central Hong Kong, modern glass skyscraper facade, Star Ferry pier nearby, Victoria Harbour in distance',
-      ambient: 'harbor breeze, distant ferry horn, financial district foot traffic, Cantonese conversation',
-      light_character: 'glass tower reflections cast cool blue highlights on her skin, harbor light bouncing',
-      compatible: ['outdoor'],
-    },
-    hk_tsimshatsui: {
-      label: '🇭🇰 尖沙咀 · 星光大道',
-      keywords: 'Tsim Sha Tsui Avenue of Stars in Hong Kong, Victoria Harbour view with Hong Kong Island skyline across the water, waterfront promenade',
-      ambient: 'harbor water lapping, distant ferry sounds, mixed tourist languages, soft wind',
-      light_character: 'harbor water reflecting shimmering light patterns onto her face, backlit skyline glow',
-      compatible: ['outdoor'],
-    },
-    hk_hollywood_road: {
-      label: '🇭🇰 中環 · 荷李活道',
-      keywords: 'Hollywood Road in Central Hong Kong, steep sloped street with antique shops, colonial-era buildings, blend of old and new',
-      ambient: 'quiet antique shops, distant tram bell, vintage Cantopop drifting from shops',
-      light_character: 'warm antique shop window light, aged wood reflections on her face',
-      compatible: ['outdoor'],
-    },
+  // ── 🇯🇵 日本・京都 ──
+  jp_kiyomizu:   { label: '🇯🇵 京都・清水寺',   keywords: 'near Kiyomizu-dera, Kyoto, Japan, traditional wooden temple streets' },
+  jp_arashiyama: { label: '🇯🇵 京都・嵐山',     keywords: 'in Arashiyama, Kyoto, Japan, bamboo-grove and riverside scenery' },
+  jp_gion:       { label: '🇯🇵 京都・祇園',     keywords: 'in Gion, Kyoto, Japan, old machiya geisha-district lanes' },
 
-    // 🇫🇷 歐洲
-    fr_paris_eiffel: {
-      label: '🇫🇷 巴黎 · 艾菲爾鐵塔',
-      keywords: 'in front of the Eiffel Tower in Paris, iron lattice tower towering in background, Champ de Mars lawn, Parisian atmosphere',
-      ambient: 'park breeze, distant accordion music, mixed European languages, occasional pigeons',
-      light_character: 'soft Parisian daylight with iron tower casting intricate shadow patterns onto her',
-      compatible: ['outdoor'],
-    },
-    fr_paris_marais: {
-      label: '🇫🇷 巴黎 · 瑪黑區',
-      keywords: 'Le Marais district in Paris, medieval cobblestone streets, wrought-iron balconies, boutique storefronts, 17th century architecture',
-      ambient: 'French café chatter, distant church bells, footsteps on cobblestone, boutique bells',
-      light_character: 'warm stone wall reflections and narrow street light creating dramatic half-shadow on her face',
-      compatible: ['outdoor'],
-    },
-    it_milano_duomo: {
-      label: '🇮🇹 米蘭 · Duomo 大教堂',
-      keywords: 'Piazza del Duomo in Milan, gothic marble cathedral facade with intricate spires, open plaza with pigeons, European elegance',
-      ambient: 'cathedral bells, pigeons flapping, Italian chatter, grand plaza ambience',
-      light_character: 'bright Italian sun bouncing off white marble, creating soft fill light on her face',
-      compatible: ['outdoor'],
-    },
+  // ── 🇯🇵 日本・沖繩 ──
+  jp_kokusai:    { label: '🇯🇵 沖繩・國際通',   keywords: 'on Kokusai Street, Okinawa, Japan, breezy tropical island main street' },
+  jp_okinawa_beach: { label: '🇯🇵 沖繩・海濱',  keywords: 'on an Okinawa beach, Japan, turquoise sea and white sand' },
 
-    // 🇺🇸 美國
-    us_ny_brooklyn_bridge: {
-      label: '🇺🇸 紐約 · 布魯克林大橋',
-      keywords: 'Brooklyn Bridge in New York, stone arches and steel cables, Manhattan skyline visible in background, pedestrian walkway',
-      ambient: 'wind over East River, distant traffic, cyclist bells, NYC urban hum',
-      light_character: 'golden hour backlight through cable structure, warm halo around her hair',
-      compatible: ['outdoor'],
-    },
-    us_ny_soho: {
-      label: '🇺🇸 紐約 · SoHo',
-      keywords: 'SoHo district Manhattan New York, cast-iron architecture facades, cobblestone streets, fashion boutiques, industrial chic',
-      ambient: 'NYC street ambience, yellow cab passing, distant construction, chic boutique door chimes',
-      light_character: 'reflective cast-iron facades bouncing directional light, creating editorial fashion lighting on her',
-      compatible: ['outdoor'],
-    },
-    us_sf_golden_gate: {
-      label: '🇺🇸 舊金山 · 金門大橋',
-      keywords: 'Golden Gate Bridge in San Francisco, iconic international orange suspension bridge in background, bay waters, Marin headlands',
-      ambient: 'bay wind, distant fog horn, seagulls, Pacific ocean sounds',
-      light_character: 'bridge orange color reflecting warm glow on her skin, sea mist softening light',
-      compatible: ['outdoor'],
-    },
-  };
+  // ── 🇯🇵 日本・福岡 ──
+  jp_tenjin:     { label: '🇯🇵 福岡・天神',     keywords: 'in Tenjin, Fukuoka, Japan, relaxed southern-city shopping district' },
+  jp_nakasu:     { label: '🇯🇵 福岡・中洲',     keywords: 'in Nakasu, Fukuoka, Japan, riverside yatai food-stall night scene' },
+
+  // ── 🇯🇵 日本・北海道 ──
+  jp_sapporo:    { label: '🇯🇵 北海道・札幌',   keywords: 'in Sapporo, Hokkaido, Japan, clean northern-city streets' },
+  jp_otaru:      { label: '🇯🇵 北海道・小樽',   keywords: 'by the Otaru canal, Hokkaido, Japan, nostalgic gaslit warehouse waterfront' },
+  jp_furano:     { label: '🇯🇵 北海道・富良野', keywords: 'in Furano, Hokkaido, Japan, rolling flower-field countryside' },
+
+  // ── 🇹🇼 台灣 ──
+  tw_taipei_101:     { label: '🇹🇼 台北・信義 101', keywords: 'in Xinyi, Taipei, Taiwan, modern district by Taipei 101 tower' },
+  tw_yongkang:       { label: '🇹🇼 台北・永康街',   keywords: 'on Yongkang Street, Taipei, Taiwan, leafy café-and-teahouse lane' },
+  tw_jiufen:         { label: '🇹🇼 九份',           keywords: 'in Jiufen, Taiwan, lantern-lit hillside old-street with sea view' },
+  tw_shenji:         { label: '🇹🇼 台中・審計新村', keywords: 'in Shenji Village, Taichung, Taiwan, pastel creative-market dormitories' },
+  tw_shennong:       { label: '🇹🇼 台南・神農街',   keywords: 'on Shennong Street, Tainan, Taiwan, historic old-capital lane' },
+  tw_pier2:          { label: '🇹🇼 高雄・駁二',     keywords: 'at Pier-2 Art Center, Kaohsiung, Taiwan, harborside warehouse art district' },
+  tw_hualien:        { label: '🇹🇼 花蓮',           keywords: 'in Hualien, Taiwan, mountain-and-ocean east-coast scenery' },
+
+  // ── 🇭🇰 香港 ──
+  hk_central:  { label: '🇭🇰 香港・中環',   keywords: 'in Central, Hong Kong, dense glass-skyscraper financial district' },
+  hk_tst:      { label: '🇭🇰 尖沙咀',       keywords: 'in Tsim Sha Tsui, Hong Kong, Victoria Harbour waterfront skyline' },
+  hk_mongkok:  { label: '🇭🇰 旺角',         keywords: 'in Mong Kok, Hong Kong, crowded neon street-market energy' },
+
+  // ── 🇨🇳 中國 ──
+  cn_bund:     { label: '🇨🇳 上海・外灘',   keywords: 'on the Bund, Shanghai, China, riverfront colonial-and-skyline view' },
+  cn_beijing:  { label: '🇨🇳 北京',         keywords: 'in Beijing, China, blend of historic hutong and modern city' },
+  cn_chengdu:  { label: '🇨🇳 成都',         keywords: 'in Chengdu, China, laid-back teahouse-and-alley culture' },
+
+  // ── 🇸🇬 新加坡 ──
+  sg_marina:   { label: '🇸🇬 新加坡・濱海灣', keywords: 'at Marina Bay, Singapore, iconic waterfront and modern skyline' },
+  sg_chinatown:{ label: '🇸🇬 新加坡・牛車水', keywords: 'in Chinatown, Singapore, colorful shophouse streets' },
+  sg_orchard:  { label: '🇸🇬 新加坡・烏節路', keywords: 'on Orchard Road, Singapore, upscale tropical shopping boulevard' },
+
+  // ── 🇲🇾 馬來西亞 ──
+  my_kl:       { label: '🇲🇾 吉隆坡',       keywords: 'in Kuala Lumpur, Malaysia, by the Petronas Twin Towers skyline' },
+  my_penang:   { label: '🇲🇾 檳城',         keywords: 'in George Town, Penang, Malaysia, heritage shophouse-and-street-art town' },
+  my_malacca:  { label: '🇲🇾 麻六甲',       keywords: 'in Malacca, Malaysia, historic riverside old-town' },
+
+  // ── 🇺🇸 美國 ──
+  us_ny:       { label: '🇺🇸 紐約',         keywords: 'in New York City, USA, iconic Manhattan street energy' },
+  us_sf:       { label: '🇺🇸 舊金山',       keywords: 'in San Francisco, USA, hilly streets and bay-area light' },
+  us_la:       { label: '🇺🇸 洛杉磯',       keywords: 'in Los Angeles, USA, sunny palm-lined California vibe' },
+  us_vegas:    { label: '🇺🇸 拉斯維加斯',   keywords: 'in Las Vegas, USA, dazzling casino-strip nightscape' },
+
+  // ── 🇪🇺 歐洲 ──
+  eu_paris:    { label: '🇫🇷 巴黎',         keywords: 'in Paris, France, elegant Haussmann boulevards and café culture' },
+  eu_london:   { label: '🇬🇧 倫敦',         keywords: 'in London, UK, classic red-brick streets and grey-sky charm' },
+  eu_amsterdam:{ label: '🇳🇱 阿姆斯特丹',   keywords: 'in Amsterdam, Netherlands, canal-side gabled houses and bikes' },
+  eu_prague:   { label: '🇨🇿 布拉格',       keywords: 'in Prague, Czechia, fairytale old-town cobblestone squares' },
+
+  // ── 🇮🇹 義大利 ──
+  it_rome:     { label: '🇮🇹 羅馬',         keywords: 'in Rome, Italy, ancient ruins and timeless piazzas' },
+  it_milan:    { label: '🇮🇹 米蘭',         keywords: 'in Milan, Italy, chic fashion-capital streets' },
+  it_venice:   { label: '🇮🇹 威尼斯',       keywords: 'in Venice, Italy, romantic canals and gondolas' },
+  it_florence: { label: '🇮🇹 佛羅倫斯',     keywords: 'in Florence, Italy, Renaissance terracotta-roof old town' },
+};
 
   // ─── 場景預設環境音(沒選地標時用)────────────────────
   //  註:light_interaction 為休眠欄位(v5.17 起不餵進 prompt)
