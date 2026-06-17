@@ -2304,7 +2304,7 @@ function renderDriveGallery() {
 }
 
 function renderPersonaSection(p) {
-  const personaData = S.personas.find(x => _normName(x.persona_name) === _pn);
+  const personaData = S.personas.find(x => x.persona_name === p.persona_name);
   const isBound = personaData && personaData.talking_photo_id && String(personaData.talking_photo_id).trim();
 
   const statusChip = isBound
@@ -2367,7 +2367,7 @@ function updateDriveActionBar() {
   if (count === 0) { bar.style.display = 'none'; S.selectedPersonaForDrive = ''; return; }
 
   bar.style.display = 'flex';
-  const personaData = S.personas.find(x => _normName(x.persona_name) === _pn;
+  const personaData = S.personas.find(x => x.persona_name === persona);
   const isBound = personaData && personaData.talking_photo_id && String(personaData.talking_photo_id).trim();
   countEl.textContent = `已選 ${count} 張(${persona})`;
   btn.textContent = isBound ? `➕ 加入 ${count} 張 Look 到「${persona}」` : `🎬 建立「${persona}」Avatar Group(${count} 張)`;
@@ -2386,7 +2386,7 @@ async function confirmDrivePhotos() {
   const fileIds = S.selectedDrivePhotos[persona] || [];
   if (!persona || fileIds.length === 0) return;
 
-  const personaData = S.personas.find(x => _normName(x.persona_name) === _pn);
+  const personaData = S.personas.find(x => x.persona_name === persona);
   if (!personaData) { toast('找不到 persona 資料', 'error'); return; }
 
   const btn = document.getElementById('drive-confirm-btn');
