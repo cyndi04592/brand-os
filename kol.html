@@ -4374,7 +4374,55 @@ function renderEpisodeCard() {
   // 🎯 v5.9: 自動載入 Drive 商品照
   loadEpisodeProducts();
 }
-
+// ═══ 🆕 STEP3 單集企劃 商品照智慧槽(平行 STEP2,指到 episodeProductUrls)═══
+function defaultEpisodeRole() {
+  const slots = productSlots();
+  const roles = slots.map(s => s.role);
+  if (S.activeEpisodeSlot && roles.includes(S.activeEpisodeSlot)) return S.activeEpisodeSlot;
+  const used = new Set((S.episodeProductUrls || []).map(u => S.productRefRole[u]).filter(Boolean));
+  return roles.find(r => !used.has(r)) || roles[0] || 'main';
+}
+function setActiveEpisodeSlot(role) { S.activeEpisodeSlot = role; renderEpisodeSlots(); }
+function orderedEpisodeUrls() {
+  return [...(S.episodeProductUrls || [])].sort((a, b) =>
+    (PRODUCT_ROLE_ORDER[S.productRefRole[a]] ?? 0) - (PRODUCT_ROLE_ORDER[S.productRefRole[b]] ?? 0));
+}
+function removeEpisodeProduct(url) {
+  const i = (S.episodeProductUrls || []).indexOf(url);
+  if (i >= 0) S.episodeProductUrls.splice(i, 1);
+  const c = document.getElementById('ep-product-count');
+  if (c) c.textContent = S.episodeProductUrls.length;
+  if (typeof loadEpisodeProducts === 'function') loadEpisodeProducts(); else renderEpisodeSlots();
+}
+function renderEpisodeSlots() {
+  const listEl = document.getElementById('ep-ref-list');
+  if (!listEl) return;
+  const slots = productSlots();
+  const slotRoles = slots.map(s => s.role);
+  if (!S.activeEpisodeSlot || !slotRoles.includes(S.activeEpisodeSlot)) {
+    S.activeEpisodeSlot = slots[0] ? slots[0].role : null;
+  }
+  const arr = S.episodeProductUrls || [];
+  listEl.innerHTML = slots.map(slot => {
+    const urls = arr.filter(u => {
+      const r = S.productRefRole[u];
+      if (r === slot.role) return true;
+      return (!r || !slotRoles.includes(r)) && slot.role === slots[0].role;
+    });
+    const isActive = S.activeEpisodeSlot === slot.role;
+    const imgTag = slot.role === 'contents' ? 'Image3' : 'Image2';
+    const thumbs = urls.length
+      ? urls.map(u => `<div style="position:relative;width:54px;height:54px;border-radius:8px;overflow:hidden;background:#111">`
+          + `<img src="${escapeHtml(u)}" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML='🖼️';" referrerpolicy="no-referrer">`
+          + `<button onclick="event.stopPropagation();removeEpisodeProduct('${u.replace(/'/g, "\\'")}')" title="移除" style="position:absolute;top:1px;right:1px;width:16px;height:16px;line-height:14px;padding:0;border:none;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-size:10px">✕</button>`
+          + `</div>`).join('')
+      : `<div style="font-size:11px;opacity:.45;padding:6px 2px">尚未選圖 · 點此設為目標槽</div>`;
+    return `<div onclick="setActiveEpisodeSlot('${slot.role}')" style="cursor:pointer;border:1.5px solid ${isActive ? '#7c5cff' : '#333'};border-radius:10px;padding:8px 10px;margin-bottom:8px;background:${isActive ? 'rgba(124,92,255,.08)' : '#161616'}">`
+      + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;font-weight:600"><span>${slot.label}</span><span style="font-size:10px;opacity:.6;font-weight:400">${imgTag}${isActive ? ' · 目標槽 ✓' : ''}</span></div>`
+      + `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${thumbs}</div>`
+      + `</div>`;
+  }).join('');
+}
 // 🎯 v5.9: Tab 3 商品照選擇器(簡化版 · 僅 Drive + 單一 grid)
 function renderEpisodeProductPickerHTML() {
   const brandId = S.currentBrandId;
@@ -4391,6 +4439,11 @@ function renderEpisodeProductPickerHTML() {
       <div class="ep-product-footer">
         <span style="font-size:10.5px;color:var(--text-dim)">已選 <span id="ep-product-count">${selected.length}</span> 張(建議 1-3 張最清晰的)</span>
         <button class="btn btn-ghost btn-sm" onclick="reloadEpisodeProducts()">🔄 重新整理</button>
+      </div>
+      <!-- 🆕 STEP3 商品照分槽 -->
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #2a2a2a">
+        <div style="font-size:11px;opacity:.55;margin-bottom:8px">📍 商品照分槽 · 挑好的圖自動落進對應槽</div>
+        <div id="ep-ref-list"></div>
       </div>
     </div>
   `;
@@ -4482,6 +4535,7 @@ function renderEpisodeProducts(files) {
   wrap.querySelectorAll('.ep-product-item').forEach(item => {
     item.addEventListener('click', handleEpisodeProductClick);
   });
+  renderEpisodeSlots();
 }
 
 async function handleEpisodeProductClick(e) {
@@ -4524,6 +4578,8 @@ async function handleEpisodeProductClick(e) {
         S.driveFileR2[fileId] = r2;
       }
       S.episodeProductUrls.push(r2);
+      S.productRefRole[r2] = defaultEpisodeRole();
+      renderEpisodeSlots();
       item.classList.add('selected');
     } catch (err) {
       toast('商品照搬移失敗:' + err.message, 'error');
@@ -5319,7 +5375,7 @@ async function generateEpisodeV510(mode) {
   saveEpisodeDraft(true);
 
   const product = getCurrentRotationProduct();
-  const productImageUrls = [...(S.episodeProductUrls || [])];
+  const productImageUrls = orderedEpisodeUrls();
 
   if (mode !== 'posts' && productImageUrls.length === 0) {
     const ok = confirm('⚠️ 你沒選商品照,Seedance 會腦補商品(跟真實差很多)。\n\n建議先選 1-3 張官方商品照。\n\n還是要繼續?');
