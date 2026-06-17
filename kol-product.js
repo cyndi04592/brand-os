@@ -1,11 +1,16 @@
-// kol-product.js · v2.0 · 道具師(Prop / Product Director)
+// kol-product.js · v2.1 · 道具師(Prop / Product Director)
 // 依 productType 驅動「鎖定句」,克制不搶主體 KOL。
 //   packaged 包裝商品(海苔/香腸)→ [Image2]外包裝 + [Image3]內容物(showContents)
 //   dish     餐點料理(福臨門)   → [Image2]成品菜+盤,狀態鎖:已上桌·絕不下鍋
 //   object   獨立物件(電扇/3C)  → [Image2]主體,形狀鎖
 // 讀 products 表:productType/hasPackaging/packShape/productLook/showContents/contentsLook/realSize
+// 🆕 v2.1:物理錨 GROUNDED — 給商品重量+真實接觸+重力 → 殺「魔術漂浮」,且不卡拋/放/遞動作
 (function () {
   'use strict';
+  // 🆕 v2.1 物理錨:有重量、與手/桌面真實接觸、遵守重力 → 殺「魔術漂浮」。
+  //   刻意不寫「握緊/不准動」,所以拋球、放下、遞出等動作不會被卡死
+  //   (飛出去也是「有重量的拋物線」,不是飄)。
+  var GROUNDED = 'the product has real weight and makes genuine physical contact with her hand or the surface it rests on, obeying gravity so it never floats, drifts or looks weightlessly pasted onto the scene';
   function isYes(v) { return /^(是|有|y|yes|true|1)/i.test(String(v || '').trim()); }
   function findProduct(ctx) {
     if (ctx && ctx.episode && ctx.episode.product) return ctx.episode.product;
@@ -40,7 +45,7 @@
   function contribute(ctx) {
     const prod = findProduct(ctx);
     if (!prod) {
-      return 'PROP (a supporting object she is holding — keep it subtle, do NOT overpower the subject): keep the product in [Image2] consistent in shape, proportions and color, never mirrored or flipped, at a believable real-world scale, do not distort or morph it; held steadily with its front facing the camera, minimal rotation';
+      return 'PROP (a supporting object she is holding — keep it subtle, do NOT overpower the subject): keep the product in [Image2] consistent in shape, proportions and color, never mirrored or flipped, at a believable real-world scale, do not distort or morph it; ' + GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it';
     }
     const type = resolveType(prod);
     const scale = sizeToScale(prod.realSize);
@@ -64,7 +69,7 @@
         bits.push('its contents shown in [Image3] look like ' + prod.contentsLook.trim() + ', keep this shape, count and texture natural and stable, do not morph (loose pieces may vary naturally)');
       }
       if (scale) bits.push('the product is ' + scale + ', shown at that true size against her body');
-      bits.push('the package held steadily with its printed front facing the camera, minimal rotation so it stays clearly recognizable');
+      bits.push(GROUNDED + ', its printed front and label kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it');
       return 'PROP (a supporting product she is holding — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
     }
 
@@ -72,10 +77,10 @@
     const look = (prod.productLook || '').trim();
     bits.push('keep the product in [Image2] consistent in shape, proportions and color' + (look ? ' (' + look + ')' : '') + ', never mirrored or flipped, do not distort or morph it');
     if (scale) bits.push('the product is ' + scale + ', shown at that true size');
-    bits.push('shown clearly with its front facing the camera, minimal rotation so it stays recognizable');
+    bits.push(GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it');
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v2.0' };
-  console.log('[KolProduct] 🎒 v2.0 就緒 · 道具師(productType 驅動:包裝/餐點/獨立 + 餐點狀態鎖殺下鍋BUG)');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v2.1' };
+  console.log('[KolProduct] 🎒 v2.1 就緒 · 道具師(productType 驅動 + 物理錨抗漂浮·拋/放/遞不卡)');
 })();
