@@ -2849,27 +2849,41 @@ function removeProductUrl(index) {
 function renderRefList() {
   const listEl = document.getElementById('ref-list');
   const countEl = document.getElementById('ref-count');
+  if (!listEl) return;
 
-  listEl.innerHTML = S.seedanceProductUrls.map((url, i) => `
-    <div class="ref-item">
-      <div class="ref-item-thumb">
-        <img src="${escapeHtml(url)}" onerror="this.outerHTML='🖼️';" referrerpolicy="no-referrer">
-      </div>
-      <div class="ref-item-info" title="${escapeHtml(url)}">
-        <select onchange="window.S.productRefRole[window.S.seedanceProductUrls[${i}]]=this.value;renderRefList()" style="width:100%;padding:3px 6px;border-radius:6px;background:#1e1e1e;color:#eee;border:1px solid #444;font-size:12px;margin-bottom:3px">
-          <option value="packaging" ${S.productRefRole[url]==='packaging'?'selected':''}>📦 外包裝</option>
-          <option value="contents" ${S.productRefRole[url]==='contents'?'selected':''}>🍜 內容物</option>
-          <option value="main" ${S.productRefRole[url]==='main'?'selected':''}>🎯 主體</option>
-          <option value="dish" ${S.productRefRole[url]==='dish'?'selected':''}>🍽 成品</option>
-        </select>
-        <div style="font-size:10px;opacity:.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(url.length > 40 ? url.slice(0, 37) + '...' : url)}</div>
-      </div>
-      <button class="ref-item-del" onclick="removeProductUrl(${i})" title="移除">✕</button>
-    </div>
-  `).join('');
+  const slots = productSlots();
+  const slotRoles = slots.map(s => s.role);
+  if (!S.activeProductSlot || !slotRoles.includes(S.activeProductSlot)) {
+    S.activeProductSlot = slots[0] ? slots[0].role : null;
+  }
 
-  countEl.textContent = S.seedanceProductUrls.length;
-  countEl.classList.toggle('warn', S.seedanceProductUrls.length >= 8);
+  listEl.innerHTML = slots.map(slot => {
+    const urls = S.seedanceProductUrls.filter(u => {
+      const r = S.productRefRole[u];
+      if (r === slot.role) return true;
+      return (!r || !slotRoles.includes(r)) && slot.role === slots[0].role;
+    });
+    const isActive = S.activeProductSlot === slot.role;
+    const imgTag = slot.role === 'contents' ? 'Image3' : 'Image2';
+    const thumbs = urls.length
+      ? urls.map(u => {
+          const gi = S.seedanceProductUrls.indexOf(u);
+          return `<div style="position:relative;width:54px;height:54px;border-radius:8px;overflow:hidden;background:#111">`
+            + `<img src="${escapeHtml(u)}" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML='🖼️';" referrerpolicy="no-referrer">`
+            + `<button onclick="event.stopPropagation();removeProductUrl(${gi})" title="移除" style="position:absolute;top:1px;right:1px;width:16px;height:16px;line-height:14px;padding:0;border:none;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-size:10px">✕</button>`
+            + `</div>`;
+        }).join('')
+      : `<div style="font-size:11px;opacity:.45;padding:6px 2px">尚未選圖 · 點此設為目標槽</div>`;
+    return `<div onclick="setActiveProductSlot('${slot.role}')" style="cursor:pointer;border:1.5px solid ${isActive ? '#7c5cff' : '#333'};border-radius:10px;padding:8px 10px;margin-bottom:8px;background:${isActive ? 'rgba(124,92,255,.08)' : '#161616'}">`
+      + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;font-weight:600"><span>${slot.label}</span><span style="font-size:10px;opacity:.6;font-weight:400">${imgTag}${isActive ? ' · 目標槽 ✓' : ''}</span></div>`
+      + `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${thumbs}</div>`
+      + `</div>`;
+  }).join('');
+
+  if (countEl) {
+    countEl.textContent = S.seedanceProductUrls.length;
+    countEl.classList.toggle('warn', S.seedanceProductUrls.length >= 8);
+  }
 }
 
 // 🆕 v5.1: 場景系統 - 渲染場景網格
@@ -4035,11 +4049,23 @@ function productTypeOf(prod) {
 }
 const PRODUCT_ROLE_LABEL = { packaging: '📦 外包裝', contents: '🍜 內容物', main: '🎯 主體', dish: '🍽 成品' };
 const PRODUCT_ROLE_ORDER = { packaging: 0, dish: 0, main: 0, contents: 1 };
+function productSlots() {
+  const prod = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
+  const type = productTypeOf(prod);
+  if (type === 'dish')   return [{ role: 'dish', label: '🍽 成品照' }];
+  if (type === 'object') return [{ role: 'main', label: '🎯 主體' }];
+  const showC = /^(是|有|y|yes|true|1)/i.test(String((prod && prod.showContents) || '').trim());
+  const slots = [{ role: 'packaging', label: '📦 外包裝' }];
+  if (showC) slots.push({ role: 'contents', label: '🍜 內容物' });
+  return slots;
+}
+function setActiveProductSlot(role) { S.activeProductSlot = role; renderRefList(); }
 function defaultProductRole() {
-  const type = productTypeOf((typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null);
-  if (type === 'dish')   return 'dish';
-  if (type === 'object') return 'main';
-  return Object.values(S.productRefRole || {}).includes('packaging') ? 'contents' : 'packaging';
+  const slots = productSlots();
+  const roles = slots.map(s => s.role);
+  if (S.activeProductSlot && roles.includes(S.activeProductSlot)) return S.activeProductSlot;
+  const used = new Set(S.seedanceProductUrls.map(u => S.productRefRole[u]).filter(Boolean));
+  return roles.find(r => !used.has(r)) || roles[0] || 'main';
 }
 function setProductRefRole(url, role) { S.productRefRole[url] = role; renderRefList(); }
 function orderedProductUrls() {
