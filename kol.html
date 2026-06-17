@@ -3532,7 +3532,7 @@ async function createSeedanceVideo() {
 
   const payload = {
     kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
-    productImageUrls: S.seedanceProductUrls,
+    productImageUrls: orderedProductUrls(),
     prompt,
     resolution: S.seedanceParams.resolution,
     duration: S.seedanceParams.duration,
