@@ -306,7 +306,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.28] 已載入');
+  console.log('[kol-ai-generator v3.29] 已載入(+window.KAI 人物表共用)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1458,5 +1458,17 @@ function debounce(fn, ms) {
     t = setTimeout(() => fn.apply(this, args), ms);
   };
 }
+
+// 🆕 v3.29:對外暴露配方 + 連線 + 狀態,給 kol-character-sheet.js(多角度人物表)共用,單一真相來源
+window.KAI = {
+  GENDER_MAP, AGE_MAP, NATIONALITY_MAP, PERSONA_MAP, OUTFIT_MAP,
+  WORKER_URL, PASSWORD, S,
+  getParams: function () {
+    var p = {};
+    document.querySelectorAll('.kai-param').forEach(function (el) { p[el.dataset.k] = el.value; });
+    p.freeText = (document.getElementById('kai-free-text') ? document.getElementById('kai-free-text').value : '').trim();
+    return p;
+  },
+};
 
 })();
