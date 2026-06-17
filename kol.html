@@ -2797,6 +2797,7 @@ async function handleDriveProductClick(e) {
       }
       S.driveFileR2[fileId] = res.url;
       S.seedanceProductUrls.push(res.url);
+      S.productRefRole[res.url] = defaultProductRole();
       item.classList.add('selected');
     } catch (err) {
       toast('商品照搬移失敗:' + err.message, 'error');
@@ -2819,6 +2820,7 @@ function addProductUrl() {
   if (S.seedanceProductUrls.includes(url)) { toast('已加入過這張', 'warn'); return; }
 
   S.seedanceProductUrls.push(url);
+  S.productRefRole[url] = defaultProductRole();
   input.value = '';
   renderRefList();
   updateSeedanceSubmitButton();
@@ -2853,7 +2855,15 @@ function renderRefList() {
       <div class="ref-item-thumb">
         <img src="${escapeHtml(url)}" onerror="this.outerHTML='🖼️';" referrerpolicy="no-referrer">
       </div>
-      <div class="ref-item-info" title="${escapeHtml(url)}">${escapeHtml(url.length > 48 ? url.slice(0, 45) + '...' : url)}</div>
+      <div class="ref-item-info" title="${escapeHtml(url)}">
+        <select onchange="window.S.productRefRole[window.S.seedanceProductUrls[${i}]]=this.value;renderRefList()" style="width:100%;padding:3px 6px;border-radius:6px;background:#1e1e1e;color:#eee;border:1px solid #444;font-size:12px;margin-bottom:3px">
+          <option value="packaging" ${S.productRefRole[url]==='packaging'?'selected':''}>📦 外包裝</option>
+          <option value="contents" ${S.productRefRole[url]==='contents'?'selected':''}>🍜 內容物</option>
+          <option value="main" ${S.productRefRole[url]==='main'?'selected':''}>🎯 主體</option>
+          <option value="dish" ${S.productRefRole[url]==='dish'?'selected':''}>🍽 成品</option>
+        </select>
+        <div style="font-size:10px;opacity:.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(url.length > 40 ? url.slice(0, 37) + '...' : url)}</div>
+      </div>
       <button class="ref-item-del" onclick="removeProductUrl(${i})" title="移除">✕</button>
     </div>
   `).join('');
@@ -3408,7 +3418,7 @@ async function createStitchedVideo(beats) {
   try {
     const result = await KolStitch.runStitchFlow(plan, {
       kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
-      productImageUrls: S.seedanceProductUrls,
+      productImageUrls: orderedProductUrls(),
       brandId: S.currentBrandId,
       kolName: S.selectedKol.name,
       mode: 'auto',
