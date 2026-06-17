@@ -1663,6 +1663,7 @@ const S = {
 
   // 🆕 v5.0: 電影鏡頭模式狀態
   seedanceProductUrls: [],        // 陣列存 URL 字串
+  productRefRole: {},   // 🆕 url → packaging/contents/main/dish(決定 [Image2]/[Image3] 順序)
   episodeProductUrls: [],         // 🎯 v5.9: Tab 3 獨立商品照狀態
   selectedSceneId: '',            // 🆕 v5.1: 當前場景 id
   selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
@@ -4015,7 +4016,26 @@ function getCurrentRotationProduct() {
     tag: uniqueProducts[idx].prodTag,
   };
 }
-
+// ═══ 🆕 商品照角色:決定 [Image2]=包裝/主體/成品、[Image3]=內容物 ═══
+function productTypeOf(prod) {
+  if (!prod) return 'object';
+  const t = String(prod.productType || '').trim().toLowerCase();
+  if (t === 'packaged' || t === 'dish' || t === 'object') return t;
+  return /^(是|有|y|yes|true|1)/i.test(String(prod.hasPackaging || '').trim()) ? 'packaged' : 'object';
+}
+const PRODUCT_ROLE_LABEL = { packaging: '📦 外包裝', contents: '🍜 內容物', main: '🎯 主體', dish: '🍽 成品' };
+const PRODUCT_ROLE_ORDER = { packaging: 0, dish: 0, main: 0, contents: 1 };
+function defaultProductRole() {
+  const type = productTypeOf((typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null);
+  if (type === 'dish')   return 'dish';
+  if (type === 'object') return 'main';
+  return Object.values(S.productRefRole || {}).includes('packaging') ? 'contents' : 'packaging';
+}
+function setProductRefRole(url, role) { S.productRefRole[url] = role; renderRefList(); }
+function orderedProductUrls() {
+  return [...S.seedanceProductUrls].sort((a, b) =>
+    (PRODUCT_ROLE_ORDER[S.productRefRole[a]] ?? 0) - (PRODUCT_ROLE_ORDER[S.productRefRole[b]] ?? 0));
+}
 // ─── 人設書編輯 Modal ────────────────────────────
 function openPersonaEditor() {
   const p = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
