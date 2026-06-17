@@ -1,0 +1,200 @@
+/* ═══════════════════════════════════════════════════════════════
+ *  Brand OS · KOL 多角度人物表(Character Reference Sheet)· v0.1
+ *  Phase 1 (POC):創角時「冷生」一張多角度人物表(正臉/3-4/側臉,同一次生成)
+ *    → 餵 Seedance 鎖人,跨角度同一張臉、不漂(對標 Riiv 六宮格)
+ *    → 是「第一次生成」,避開「拿現成的臉重生成 → 磨皮」那道牆
+ *
+ *  本檔為 overlay,掛在 kol-ai-generator.js 之後,共用 window.KAI(配方/連線/狀態)。
+ *  使用:在 kol.html 的 kol-ai-generator.js 那行「之後」加:
+ *     <script src="kol-character-sheet.js"></script>
+ *  回滾:刪掉那一行 script tag 即可。
+ * ═══════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  var SEL = { sheetUrl: null, seed: null };   // Phase 1 暫存選中的人物表(Phase 2 接 Seedance / persona)
+  var busy = false;
+
+  // 真人感基底:沿用 kol-ai-generator「candid」配方精華,維持同一套抗 AI 真實度
+  var REALISM =
+    'beautiful but completely real raw unretouched skin with clearly visible pores and fine skin texture, ' +
+    'no beauty filter no skin smoothing no airbrushing, natural sub-surface scattering, ' +
+    'mostly matte complexion with only faint natural T-zone shine, slightly uneven real skin tone, slight natural asymmetry, ' +
+    'natural hair with loose flyaway strands and individual real hairs, minimal natural makeup, ' +
+    'an ordinary everyday real person, not a polished influencer, ' +
+    'shot on 50mm film with natural film grain, true-to-life photorealistic detail';
+
+  function K() { return window.KAI || null; }
+
+  function buildSheetPrompt() {
+    var k = K(); if (!k) return '';
+    var p = k.getParams();
+    var G = k.GENDER_MAP[p.gender] || k.GENDER_MAP.female;
+    var A = k.AGE_MAP[p.age] || k.AGE_MAP.standard;
+    var N = k.NATIONALITY_MAP[p.nationality] || k.NATIONALITY_MAP.tw;
+    var P = k.PERSONA_MAP[p.persona] || '';
+    var O = k.OUTFIT_MAP[p.outfit] || '';
+    if (p.age === 'kid') G = (p.gender === 'male') ? 'boy' : 'girl';
+
+    var prompt =
+      'Professional character reference sheet of ONE single ' + A + ' ' + N + ' ' + G +
+      (P ? ' (' + P + ')' : '') + ', ' +
+      'the exact same identical individual shown from three angles side by side in one single image: ' +
+      'a clear front view, a three-quarter view, and a side profile view, ' +
+      'the SAME person in every panel — identical facial features, identical face shape, identical hair, identical skin, identical body proportions, fully consistent identity across all three views, ' +
+      (O ? 'wearing ' + O + ', ' : '') +
+      'calm neutral expression, evenly and softly lit from the front on a plain seamless light-grey studio backdrop, no harsh shadows, each view clearly showing the whole face, ' +
+      REALISM + ', ' +
+      'clean photographic reference sheet, no text, no labels, no captions, no watermark, no drawn grid lines';
+
+    if (p.freeText) prompt += ', ' + p.freeText;
+    return prompt;
+  }
+
+  async function generateSheet() {
+    var k = K();
+    if (!k) { alert('人物表:找不到 window.KAI(請確認 kol-ai-generator.js 已是新版且在本檔之前載入)'); return; }
+    if (busy) return;
+    if (!k.S.currentBrandId)     { alert('請先選品牌'); return; }
+    if (!k.S.currentPersonaName) { alert('請先選或新增 persona'); return; }
+
+    var prompt = buildSheetPrompt();
+    if (!prompt) { alert('人物表 prompt 組不出來'); return; }
+
+    busy = true;
+    var btn = document.getElementById('cs-btn-gen');
+    var gallery = document.getElementById('cs-gallery');
+    var meta = document.getElementById('cs-meta');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="cs-spin"></span> 生成人物表中...'; }
+    if (gallery) gallery.innerHTML = '<div class="cs-empty">⏳ 生成多角度人物表中,約 15-30 秒...</div>';
+    if (meta) meta.textContent = '';
+
+    // 沿用面板上現有的 safety / raw 設定,跟人像一致
+    var safety = (document.getElementById('kai-safety') && document.getElementById('kai-safety').value) || '2';
+    var raw = (document.getElementById('kai-raw') && document.getElementById('kai-raw').value === 'true') || false;
+
+    var t0 = performance.now();
+    try {
+      var res = await fetch(k.WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: k.PASSWORD,
+          action: 'fal_image_submit',
+          prompt: prompt,
+          aspect_ratio: '16:9',     // 寬幅,三個角度同框
+          num_images: 3,            // 生 3 張挑最一致的(約 US$0.18)
+          safety_tolerance: safety,
+          output_format: 'jpeg',
+          raw: raw,
+          enable_safety_checker: true,
+        }),
+      });
+      var data = await res.json();
+      var latency = ((performance.now() - t0) / 1000).toFixed(1);
+      if (!data.ok) throw new Error(data.error || ('HTTP ' + res.status));
+      if (!data.images || !data.images.length) throw new Error('回應無 images');
+
+      renderSheets(data.images, data.seed);
+      if (meta) meta.textContent = data.images.length + ' 張 · seed=' + data.seed + ' · ' + latency + 's · 挑「三個角度同一張臉」最一致的那張';
+    } catch (e) {
+      console.error('[character-sheet] 失敗:', e);
+      if (gallery) gallery.innerHTML = '<div class="cs-empty cs-err">❌ ' + (e.message || '生成失敗') + '</div>';
+    } finally {
+      busy = false;
+      if (btn) { btn.disabled = false; btn.innerHTML = '🎬 生成多角度人物表'; }
+    }
+  }
+
+  function renderSheets(images, seed) {
+    var gallery = document.getElementById('cs-gallery');
+    if (!gallery) return;
+    gallery.innerHTML = '';
+    images.forEach(function (img, i) {
+      var card = document.createElement('div');
+      card.className = 'cs-card';
+      card.innerHTML =
+        '<img src="' + img.url + '" alt="sheet ' + (i + 1) + '" />' +
+        '<div class="cs-card-bar">' +
+          '<button class="cs-pick" data-url="' + img.url + '" data-seed="' + seed + '">✓ 選這張</button>' +
+          '<a class="cs-open" href="' + img.url + '" target="_blank" rel="noopener">放大</a>' +
+        '</div>';
+      gallery.appendChild(card);
+    });
+    gallery.querySelectorAll('.cs-pick').forEach(function (b) {
+      b.addEventListener('click', function () {
+        SEL.sheetUrl = b.dataset.url;
+        SEL.seed = b.dataset.seed;
+        gallery.querySelectorAll('.cs-card').forEach(function (c) { c.classList.remove('chosen'); });
+        var card = b.closest('.cs-card'); if (card) card.classList.add('chosen');
+        var meta = document.getElementById('cs-meta');
+        var persona = (K() && K().S.currentPersonaName) || '';
+        if (meta) meta.textContent = '✅ 已選為人物表(seed=' + SEL.seed + ')。Phase 2 會把它接成 Seedance 的「人」參考。';
+        window.KOL_CHARACTER_SHEET = { url: SEL.sheetUrl, seed: SEL.seed, persona: persona };
+        console.log('[character-sheet] 選定人物表:', window.KOL_CHARACTER_SHEET);
+      });
+    });
+  }
+
+  function injectStyle() {
+    if (document.getElementById('cs-style')) return;
+    var css = document.createElement('style');
+    css.id = 'cs-style';
+    css.textContent =
+      '.cs-wrap{margin-top:14px;padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.03);}' +
+      '.cs-head{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;margin-bottom:4px;color:#e8e8ee;}' +
+      '.cs-sub{font-size:11px;color:#9aa3b2;opacity:.85;margin-bottom:10px;line-height:1.6;}' +
+      '.cs-btn{width:100%;padding:10px;border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:13px;color:#fff;background:linear-gradient(135deg,#7c5cff,#5b8cff);}' +
+      '.cs-btn:disabled{opacity:.6;cursor:not-allowed;}' +
+      '.cs-spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:cs-rot .7s linear infinite;vertical-align:middle;}' +
+      '@keyframes cs-rot{to{transform:rotate(360deg);}}' +
+      '.cs-meta{font-size:11px;color:#9aa3b2;margin:8px 2px;line-height:1.5;}' +
+      '.cs-gallery{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px;}' +
+      '.cs-card{border:2px solid transparent;border-radius:10px;overflow:hidden;background:#000;}' +
+      '.cs-card.chosen{border-color:#5b8cff;box-shadow:0 0 0 2px rgba(91,140,255,.45);}' +
+      '.cs-card img{width:100%;display:block;}' +
+      '.cs-card-bar{display:flex;gap:8px;padding:8px;align-items:center;}' +
+      '.cs-pick{flex:1;padding:7px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:#fff;background:#3a3a52;}' +
+      '.cs-pick:hover{background:#4a4a6a;}' +
+      '.cs-open{font-size:12px;color:#8ab4ff;text-decoration:none;padding:7px 10px;white-space:nowrap;}' +
+      '.cs-empty{padding:24px;text-align:center;color:#9aa3b2;font-size:13px;}' +
+      '.cs-err{color:#ff7a7a;}';
+    document.head.appendChild(css);
+  }
+
+  function injectPanel() {
+    if (document.getElementById('cs-wrap')) return true;
+    var panel = document.querySelector('.kai-panel');
+    if (!panel) return false;
+    var wrap = document.createElement('div');
+    wrap.className = 'cs-wrap';
+    wrap.id = 'cs-wrap';
+    wrap.innerHTML =
+      '<div class="cs-head">🎬 多角度人物表 <span style="font-size:10px;opacity:.6;font-weight:400;">Phase 1 · POC</span></div>' +
+      '<div class="cs-sub">用上面選好的人設參數,冷生一張「正臉 / 3-4 / 側臉」同框的人物表(同一次生成 = 跨角度同一張臉)。挑最一致的那張,之後餵 Seedance 鎖人。建議用在<b>新角色</b>。</div>' +
+      '<button class="cs-btn" id="cs-btn-gen">🎬 生成多角度人物表</button>' +
+      '<div class="cs-meta" id="cs-meta"></div>' +
+      '<div class="cs-gallery" id="cs-gallery"></div>';
+    panel.appendChild(wrap);
+    var btn = document.getElementById('cs-btn-gen');
+    if (btn) btn.addEventListener('click', generateSheet);
+    console.log('[character-sheet] 🎬 v0.1 就緒 · 多角度人物表(Phase 1·POC)');
+    return true;
+  }
+
+  function boot() {
+    injectStyle();
+    if (injectPanel()) return;
+    var tries = 0;
+    var timer = setInterval(function () {
+      tries++;
+      if (injectPanel() || tries > 40) clearInterval(timer);
+    }, 500);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
