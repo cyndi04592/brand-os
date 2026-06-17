@@ -853,14 +853,19 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <input type="text" id="ref-url-input" placeholder="貼 imgbb / R2 / 公開圖片 URL" onkeydown="if(event.key==='Enter')addProductUrl()">
             <button class="btn btn-primary btn-sm" onclick="addProductUrl()">+ 加入</button>
           </div>
-          <div class="ref-list" id="ref-list"></div>
-          <div class="ref-counter">已加 <span class="num" id="ref-count">0</span>/9 張</div>
-        </div>
+          </div>
 
         <div class="ref-tab-panel" id="ref-panel-drive">
           <div id="drive-product-gallery-wrap">
             <div class="kol-empty" style="padding:28px 16px;font-size:12px">選品牌後載入 Drive 照片…</div>
           </div>
+        </div>
+
+        <!-- 🆕 商品照分槽:移到 tab 外,挑圖時也看得到 -->
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a">
+          <div style="font-size:11px;opacity:.55;margin-bottom:8px">📍 商品照分槽 · 挑好的圖自動落進對應槽</div>
+          <div class="ref-list" id="ref-list"></div>
+          <div class="ref-counter">已加 <span class="num" id="ref-count">0</span>/9 張</div>
         </div>
       </div>
     </div>
@@ -1914,6 +1919,11 @@ async function onBrandChange() {
   const obPicker0 = document.getElementById('outfit-brand-picker');
   if (obPicker0) obPicker0.value = 'auto';
   S.storyArc = { theme: '', tone: '', productHint: '' };  // 🆕 v5.4: 重置故事弧
+  // 🆕 換品牌:清空商品照 + 重畫智慧槽(依新品牌商品類型長出對應槽)
+  S.seedanceProductUrls = [];
+  S.productRefRole = {};
+  S.activeProductSlot = null;
+  if (typeof renderRefList === 'function') renderRefList();
   document.getElementById('scene-summary').style.display = 'none';
   document.getElementById('seedance-prompt').value = '';
   const mpGroup = document.getElementById('movement-picker-group');
