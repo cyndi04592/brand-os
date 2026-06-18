@@ -306,7 +306,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.29] 已載入(+window.KAI 人物表共用)');
+  console.log('[kol-ai-generator v3.30] 已載入(+window.KAI 人物表共用 +gasPost)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1463,6 +1463,7 @@ function debounce(fn, ms) {
 window.KAI = {
   GENDER_MAP, AGE_MAP, NATIONALITY_MAP, PERSONA_MAP, OUTFIT_MAP,
   WORKER_URL, PASSWORD, S,
+  gasPost, GAS_URL,
   getParams: function () {
     var p = {};
     document.querySelectorAll('.kai-param').forEach(function (el) { p[el.dataset.k] = el.value; });
