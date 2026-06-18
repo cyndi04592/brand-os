@@ -3494,7 +3494,12 @@ async function resolveKolImageUrl(personaName, fallbackUrl) {
       p = (S.drivePhotos?.personas || []).find(x => _normName(x.persona_name) === _pn);
     }
     // 優先用「已處理」裡的乾淨原圖,沒有才退回未處理的
-    const fileId = p?.processed_photos?.[0]?.file_id || p?.photos?.[0]?.file_id;
+    // 🆕 明確挑「正臉」當 Seedance 預設參考(不盲抓 [0],避免多角度表存進已處理後 [0] 變側臉/3-4 → 人歪)
+    const _procs = p?.processed_photos || [];
+    const _front = _procs.find(x => /sheet_front/i.test(x.name || ''))
+                || _procs.find(x => /(^|_)front|正臉/i.test(x.name || ''))
+                || _procs[0];
+    const fileId = _front?.file_id || p?.photos?.[0]?.file_id;
     if (!fileId) { console.warn('[臉乾淨圖] 找不到', personaName, '的原圖 → 用HeyGen'); return fallbackUrl; }
     if (window._kolCleanCache[fileId]) return window._kolCleanCache[fileId];
     const res = await api('drive_to_r2', { driveFileId: fileId, brandId: S.currentBrandId, role: 'kol', nameHint: (personaName || 'kol') + '.jpg' });
