@@ -4878,6 +4878,15 @@ async function aiGeneratePersona() {
 
   const brand = S.brands.find(b => b.id === S.currentBrandId) || {};
 
+  // 🆕 防雙胞胎:把同品牌其他 KOL 摘要傳進去,要求新人設是不同的人
+  const existingPersonas = (S.personas || [])
+    .filter(p => p.persona_id !== persona.persona_id && (p.background || p.speaking_style))
+    .map(p => ({
+      name: p.persona_name || '',
+      background: (p.background || '').slice(0, 80),
+      speaking_style: (p.speaking_style || '').slice(0, 50),
+    }));
+
   toast('✨ AI 正在生成人設書…', 'info');
 
   try {
@@ -4888,6 +4897,7 @@ async function aiGeneratePersona() {
       brandName: brand.name || '',
       brandSoul: brand.soul || '',
       brandAdStyle: Array.isArray(brand.adStyle) ? brand.adStyle.join(', ') : (brand.adStyle || ''),
+      existingPersonas: existingPersonas,
     });
 
     if (!res.ok) throw new Error(res.error || 'AI 生成失敗');
