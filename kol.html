@@ -3440,7 +3440,7 @@ async function createStitchedVideo(beats) {
     // 服裝師已在 composeSeedancePrompt 放好「唯一一句 wearing X」;這裡只補一致性鎖,不再 naming 衣服
     // 🆕 商品比例鎖:跨段同一物理尺寸,別忽大忽小
     if (!/relative to her face/i.test(p)) {
-      p += ', keep the product at a natural hand-held size and the same scale relative to her face in every shot, do not inflate it to fill the frame or change its size between shots';
+      p += ', the product package is a small real-world snack item no taller than the length of her hand; keep it at this small size and the same scale relative to her face in every shot; it rests on the desk or is held loosely in one hand, never lifted toward the camera, never enlarged to fill the frame, never occupying more than a small part of the frame, and its size never changes between shots';
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
     return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw' };
@@ -5663,7 +5663,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     }
     // 🆕 商品比例鎖:綁「臉」(穩定錨,有參考圖),不綁「手」(會變);禁止放大佔畫面
     if (!/relative to her face/i.test(p)) {
-      p += ', keep the product at a natural hand-held size and the same scale relative to her face in every shot, do not inflate it to fill the frame or change its size between shots';
+      p += ', the product package is a small real-world snack item no taller than the length of her hand; keep it at this small size and the same scale relative to her face in every shot; it rests on the desk or is held loosely in one hand, never lifted toward the camera, never enlarged to fill the frame, never occupying more than a small part of the frame, and its size never changes between shots';
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
     return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw' };
