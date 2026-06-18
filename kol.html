@@ -3412,6 +3412,18 @@ async function createStitchedVideo(beats) {
   console.log('[接片] 本支共用 seed:', runSeed);
 
   // 👗 衣服改由服裝師(kol-wardrobe.js)單一決定;接片端不再讀 persona.outfit,只負責「整支不換裝」鎖
+  // 🆕 預先取三角度乾淨圖(各一次),每段照分鏡角度挑
+  const _angleUrls = {
+    front:   await resolveKolImageUrl(S.selectedKol.name, lookImage, 'front'),
+    q34:     await resolveKolImageUrl(S.selectedKol.name, lookImage, 'q34'),
+    profile: await resolveKolImageUrl(S.selectedKol.name, lookImage, 'profile'),
+  };
+  const _detectAngle = (t) => {
+    t = t || '';
+    if (/側臉|側面|側拍|profile/i.test(t)) return 'profile';
+    if (/3\/4|3-4|斜側|斜角|three.?quarter/i.test(t)) return 'q34';
+    return 'front';
+  };
   const plan = beats.map((b, i) => {
     const sit = (b.shotDesc || '')
       + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
@@ -3430,7 +3442,8 @@ async function createStitchedVideo(beats) {
     if (!/relative to her face/i.test(p)) {
       p += ', keep the product at a natural hand-held size and the same scale relative to her face in every shot, do not inflate it to fill the frame or change its size between shots';
     }
-    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed };
+    const _ang = b.angle || _detectAngle(b.shotDesc);
+    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang };
   });
 
   const btn = document.getElementById('create-seedance-btn');
@@ -3473,11 +3486,12 @@ async function createStitchedVideo(beats) {
 //    任何一步失敗都自動退回原本的 HeyGen 圖,不會讓生成壞掉。全自動、零人工。
 //    🆕 加 localStorage 持久快取:同一個 KOL 算過一次 → 之後免 GAS、免 Worker、刷新也秒回。
 window._kolCleanCache = window._kolCleanCache || {};
-async function resolveKolImageUrl(personaName, fallbackUrl) {
+async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
+  const _ang = (angle === 'profile' || angle === 'q34') ? angle : 'front';   // 🆕 角度
   // 🆕 名字正規化:去掉 emoji 前綴(例「🎭 又晴」)+前後空白,避免精準比對失敗退 HeyGen
   const _normName = s => (s || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim();
   const _pn = _normName(personaName);
-  const lsKey = 'kolClean:' + (S.currentBrandId || '') + ':' + (personaName || '');
+  const lsKey = 'kolClean:' + (S.currentBrandId || '') + ':' + (personaName || '') + ':' + _ang;
   try {
     // 0) 持久快取:這個 KOL 之前算過乾淨網址 → 直接回(免 GAS、免 Worker、刷新也在)
     if (window._kolCleanCache[lsKey]) return window._kolCleanCache[lsKey];
@@ -3496,7 +3510,7 @@ async function resolveKolImageUrl(personaName, fallbackUrl) {
     // 優先用「已處理」裡的乾淨原圖,沒有才退回未處理的
     // 🆕 明確挑「正臉」當 Seedance 預設參考(不盲抓 [0],避免多角度表存進已處理後 [0] 變側臉/3-4 → 人歪)
     const _procs = p?.processed_photos || [];
-    const _front = _procs.find(x => /sheet_front/i.test(x.name || ''))
+    const _front = _procs.find(x => (_ang === 'profile' ? /sheet_profile/i : _ang === 'q34' ? /sheet_q34/i : /sheet_front/i).test(x.name || ''))
                 || _procs.find(x => /(^|_)front|正臉/i.test(x.name || ''))
                 || _procs[0];
     const fileId = _front?.file_id || p?.photos?.[0]?.file_id;
