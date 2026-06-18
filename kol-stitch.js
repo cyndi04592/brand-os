@@ -275,7 +275,7 @@ window.KolStitch = (function () {
     const tasks = plan.map(function (step, i) {
       const durSec = step.durationSec || opts.durationSec || 5;
       return generateSegment({
-        kolImageUrl: kolImg,                 // 永遠原始照(臉一致)
+        kolImageUrl: step.kolImageUrl || kolImg,   // 🆕 每段可帶自己的角度圖,沒帶才退全域
         productImageUrls: opts.productImageUrls,
         productDriveFileIds: opts.productDriveFileIds,
         // ⚠️ 不傳 videoUrls → 不依賴前一段 → 才能平行
