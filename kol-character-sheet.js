@@ -7,7 +7,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v0.4-kontext';
+  var VER = 'v0.5-kontext';
 
   function K() { return window.KAI || null; }
 
@@ -187,6 +187,7 @@
           imageUrl: a.url,
           filename: persona + '_sheet_' + a.angle + '_' + ts + '.jpg',
           outfit: '',
+          toProcessed: true,
           metadata: { source: 'flux_kontext', angle: a.angle, generated_at: new Date().toISOString() }
         }).then(function (res) {
           if (res && res.ok) saved.push({ angle: a.angle, file_id: res.file_id, filename: res.filename });
