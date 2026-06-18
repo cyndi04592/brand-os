@@ -865,6 +865,8 @@ function bindEvents() {
 
   // Seed 鎖定
   document.getElementById('kai-seed-lock')?.addEventListener('click', toggleSeedLock);
+  // 🆕 手打/清空 seed 時即時刷新標籤(別再卡在「未鎖」騙人)
+  document.getElementById('kai-seed')?.addEventListener('input', refreshSeedLockLabel);
 
   // 主按鈕
   document.getElementById('kai-btn-gen')?.addEventListener('click', generate);
@@ -1134,6 +1136,15 @@ function updateCostEstimate() {
 }
 
 // ── Seed 鎖定 ──────────────────────────────────────────────
+// 🆕 依輸入框內容刷新標籤:有 seed 值=會沿用、空=未鎖(手動鎖了不動)
+function refreshSeedLockLabel() {
+  const input = document.getElementById('kai-seed');
+  const lock  = document.getElementById('kai-seed-lock');
+  if (!input || !lock) return;
+  if (lock.classList.contains('locked')) return; // 手動鎖了維持「✓ 已鎖」
+  const v = input.value.trim();
+  lock.textContent = (v && /^\d+$/.test(v)) ? '🔒 會沿用' : '未鎖';
+}
 function toggleSeedLock() {
   const input = document.getElementById('kai-seed');
   const lock = document.getElementById('kai-seed-lock');
@@ -1141,8 +1152,8 @@ function toggleSeedLock() {
 
   if (lock.classList.contains('locked')) {
     lock.classList.remove('locked');
-    lock.textContent = '未鎖';
     S.lockedSeed = null;
+    refreshSeedLockLabel();   // 🆕 解鎖後依輸入框內容顯示(空=未鎖、有值=會沿用)
   } else {
     if (!v) {
       alert('Seed 輸入框是空的,先輸入 seed 數字再鎖');
@@ -1256,6 +1267,7 @@ async function generate() {
     const seedInp = document.getElementById('kai-seed');
     if (data.seed != null) {
       seedInp.value = data.seed;
+      refreshSeedLockLabel();   // 🆕 自動填 seed 後標籤改「🔒 會沿用」,不再卡「未鎖」
     }
 
     meta.textContent = data.images.length + ' 張 · seed=' + data.seed + ' · ' + latency + 's';
