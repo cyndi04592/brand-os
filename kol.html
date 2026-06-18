@@ -5700,6 +5700,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       onProgress: (m) => { lastMsg = m; paint(); },
       onSegmentDone: (idx) => { doneSeg++; lastMsg = `第 ${idx + 1} 段好了`; paint(); },
       outfitCtx: { outfitBrand: chosenOutfitBrand, sceneId: sceneId },   // 🆕 STEP3 服裝圖用企劃自己的 ep-outfit-brand
+      sceneCtx:  { brandId: S.currentBrandId, sceneId: sceneId, locationId: locationId },   // 🔧 修:STEP3 場景參考圖要吃企劃自己的場景+地標,不然背景鎖被跳過、6段背景各飄
     });
     clearInterval(ticker);
     const elapsed = Math.round((Date.now() - startTime) / 1000);
