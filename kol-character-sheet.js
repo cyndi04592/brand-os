@@ -18,7 +18,7 @@
     { key: 'q34', label: '3/4',
       prompt: 'Turn this exact same woman to a three-quarter view, her head rotated about 35 degrees to the side, keeping her identical face, identical facial features, identical hair and identical skin texture — only change the head angle, do NOT beautify or smooth the skin, keep it photographic and real' },
     { key: 'profile', label: '側臉',
-      prompt: 'Turn this exact same woman to a near side profile view, her head rotated about 75 degrees so we see her face mostly from the side, keeping her identical face, identical facial features, identical hair and identical skin texture — only change the head angle, do NOT beautify or smooth the skin, keep it photographic and real' }
+      prompt: 'Rotate this exact same woman to a TRUE 90-degree side profile, her face turned fully to the side so we see only one side of her face, the bridge and tip of her nose forming a clear silhouette against the background, only the near eye and cheek visible, NOT a three-quarter view — keep her identical face, identical facial features, identical hair and identical skin texture, do NOT beautify or smooth the skin, keep it photographic and real' }
   ];
 
   function kontext(imageUrl, prompt) {
