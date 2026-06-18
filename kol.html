@@ -3443,7 +3443,7 @@ async function createStitchedVideo(beats) {
       p += ', keep the product at a natural hand-held size and the same scale relative to her face in every shot, do not inflate it to fill the frame or change its size between shots';
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
-    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang };
+    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw' };
   });
 
   const btn = document.getElementById('create-seedance-btn');
@@ -5666,7 +5666,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       p += ', keep the product at a natural hand-held size and the same scale relative to her face in every shot, do not inflate it to fill the frame or change its size between shots';
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
-    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang };
+    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw' };
   });
   S.storyArc = prevArc;
 
@@ -5699,7 +5699,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       tier: S.episodeParams.tier,
       onProgress: (m) => { lastMsg = m; paint(); },
       onSegmentDone: (idx) => { doneSeg++; lastMsg = `第 ${idx + 1} 段好了`; paint(); },
-      outfitCtx: { outfitBrand: chosenOutfitBrand, sceneId: sceneId },   // 🆕 STEP3 服裝圖用企劃自己的 ep-outfit-brand
+      outfitCtx: { outfitBrand: chosenOutfitBrand, sceneId: sceneId, persona: persona },   // 🆕 +persona:服裝師抓得到人設
       sceneCtx:  { brandId: S.currentBrandId, sceneId: sceneId, locationId: locationId },   // 🔧 修:STEP3 場景參考圖要吃企劃自己的場景+地標,不然背景鎖被跳過、6段背景各飄
     });
     clearInterval(ticker);
