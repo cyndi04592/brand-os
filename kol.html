@@ -5599,6 +5599,19 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     : Math.floor(Math.random() * 2147483647);
   console.log('[STEP3接片] 本支共用 seed:', runSeed, '· 段數:', beats.length);
 
+  // 🆕 STEP3 多角度:預先取三角度乾淨圖,每段照分鏡 angle 挑(對齊 STEP2 createStitchedVideo)
+  const _angleUrls = {
+    front:   await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'front'),
+    q34:     await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'q34'),
+    profile: await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'profile'),
+  };
+  const _detectAngle = (t) => {
+    t = t || '';
+    if (/側臉|側面|側拍|profile/i.test(t)) return 'profile';
+    if (/3\/4|3-4|斜側|斜角|three.?quarter/i.test(t)) return 'q34';
+    return 'front';
+  };
+
   const prevArc = { ...S.storyArc };
   S.storyArc = { ...S.storyArc, tone };
   const plan = beats.map((b) => {
@@ -5627,7 +5640,8 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     if (!/relative to her face/i.test(p)) {
       p += ', keep the product at a natural hand-held size and the same scale relative to her face in every shot, do not inflate it to fill the frame or change its size between shots';
     }
-    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed };
+    const _ang = b.angle || _detectAngle(b.shotDesc);
+    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang };
   });
   S.storyArc = prevArc;
 
