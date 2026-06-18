@@ -4866,6 +4866,14 @@ async function aiGeneratePersona() {
 
   if (!confirm(`AI 即將依 ${persona.persona_name} 的照片 + ${S.brands.find(b=>b.id===S.currentBrandId)?.name || ''} 品牌靈魂生成 8 欄人設書初稿。\n\n已填的欄位會被覆蓋,確定要繼續?`)) return;
 
+  // 🆕 防呆:生成中鎖住按鈕 + 顯示進度,避免客戶以為沒反應而狂點(重複打 API、白花錢)
+  if (window._aiGenPersonaBusy) return;
+  window._aiGenPersonaBusy = true;
+  document.querySelectorAll('button[onclick="aiGeneratePersona()"]').forEach(b => {
+    b.dataset._txt = b.innerHTML;
+    b.disabled = true;
+    b.innerHTML = '⏳ AI 生成中…(約 10–20 秒)';
+  });
   // 取得 KOL 肖像 URL
   let kolImageUrl = '';
   if (persona.talking_photo_id) {
@@ -4934,6 +4942,13 @@ async function aiGeneratePersona() {
     }
   } catch (e) {
     toast('AI 生成失敗:' + e.message, 'error');
+  } finally {
+    // 🆕 不管成功或失敗,解鎖按鈕 + 還原文字
+    window._aiGenPersonaBusy = false;
+    document.querySelectorAll('button[onclick="aiGeneratePersona()"]').forEach(b => {
+      b.disabled = false;
+      if (b.dataset._txt != null) { b.innerHTML = b.dataset._txt; delete b.dataset._txt; }
+    });
   }
 }
 
