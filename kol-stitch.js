@@ -1,18 +1,17 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v5.0
-// v5.0：compose → image-to-video 路徑(RIIV ⑥ 落地)——
-//       每段不再「丟 4 張參考圖給 reference-to-video 自己拼」,改成:
-//         ① nanobanana 把[臉+商品+服裝+場景+這段動作]合成「這一刻」的一張 keyframe
-//            → 鎖人/商品/服裝/場景(全烤進同一張)
-//         ② image-to-video 讓那張 keyframe 動起來 → 家具不飄(因為全在起始幀裡)
-//       4 個錨整支共用 + 共用同一 seed → 6 張 keyframe 彼此一致(只有動作在變)。
-//       臉真實感:compose 用「複製原圖真皮、不製造瑕疵」錨;口音鐵律保留。
-//       ✅ v5.1:image-to-video 也帶 webhook(Worker seedance_image2video_submit v3.35)→
-//          走 episode_result,跟 seedance_submit 一樣免輪詢 fal。compose 是同步,不需輪詢。
+// kol-stitch.js — 自動接片引擎 v6.1
+// v6.1：每段 = 15 秒「多鏡頭」reference-to-video(已驗證五鎖)。每段餵「原始 KOL 照」當 [Image1] 餵進
+//       Seedance 2.0 reference-to-video,臉由模型層鎖死 → 跨段同一個又晴本人(不重畫、不換臉)。
+//         · [Image1] = 又晴原圖   → 鎖臉(這是她舊片臉永遠對的原因)
+//         · [SCENE_IMG]→[ImageN]  → 鎖家具/背景(空場景參考圖)
+//         · [OUTFIT_IMG]→[ImageN] → 鎖服裝(無臉假人圖)
+//         · 商品照            → 一起餵,鎖商品
+//       走 seedance_submit(Worker 既有 reference-to-video action)+ webhook(episode_result)。
+//       ⛔ 棄用:v5.x 的 nanobanana compose / image-to-video / 定裝照 anchor / pixverse 換臉 ——
+//          那條會「每段重畫臉」→ 變不同人/第三個人(本場實測全失敗)。臉永遠交給原圖,不重畫。
 // --------------------------------------------------------------------------
 // v4.1：口音鐵律鎖 —— 在所有分段的唯一出海口送 fal 前,自動補口音(擋大陸腔)。
-// v4.0：webhook 背景生成(seedance_submit 路徑用;v5.0 的 i2v 路徑改回 fal_poll)。
-// v3.0：平行 —— 每段彼此不依賴 → 全部同時送、同時跑。
+// v4.0：webhook 背景生成。v3.0：平行 —— 每段彼此不依賴 → 全部同時送、同時跑。
 // --------------------------------------------------------------------------
 // 設計原則:底層一次做對,半自動 / 全自動共用同一套。UI 只是薄薄一層。
 // ==========================================================================
@@ -118,80 +117,77 @@ window.KolStitch = (function () {
     return url;
   }
 
-  // 🆕 v5.0 compose 用的真實感錨(複製原圖真皮、不製造瑕疵 —— 本場實測驗過的版本)
-  function buildComposePrompt(action) {
-    return 'Compose a single realistic, unretouched iPhone photo of one woman. '
-      + 'IDENTITY — her face, bone structure and skin come ONLY from the FIRST reference image. '
-      + 'Copy that face exactly; do NOT beautify, smooth or alter it; keep its real texture and any existing marks. '
-      + 'Any face, body or person appearing in the OTHER reference images must be IGNORED for identity — '
-      + 'do not blend, average or borrow any facial features from them; the face stays 100% the first image. '
-      + 'OUTFIT — dress her in the clothing from the outfit reference image, taking ONLY the garment (cut, colour, fabric), never its face or body. '
-      + 'PRODUCT — she holds or uses the product from the product reference image at a realistic small size (about the height of her face), clearly visible, not enlarged. '
-      + 'ENVIRONMENT — if a scene reference image is provided, take only its background/location, ignoring any person in it. '
-      + 'This moment shows: ' + action + ' — render it as a natural candid still photo. '
-      + 'Matte natural skin, not glowing or dewy, soft natural daylight, subtle camera grain, true-to-life, not stylized.';
+  // v6.1 多鏡頭 prompt:一次生成 15 秒、內含 1-3 個 Shot(角度切換),家具/臉跨鏡頭鎖。
+  //   [Image1]=KOL原圖(臉錨)· [SCENE_IMG]=同一間房 · [OUTFIT_IMG]=同一件衣服(Worker 換成真 [ImageN])。
+  //   驗證過:一次連貫生成 → 同一張臉、同一間房、同一家具跨整段不飄。
+  function buildMultiShotPrompt(shots, durationSec) {
+    const dur = durationSec || 15;
+    const n = Math.max(1, shots.length);
+    const per = Math.max(1, Math.round(dur / n));
+    const pad = function (x) { return String(x).padStart(2, '0'); };
+    let body = 'candid realistic vertical UGC video, natural daylight, true-to-life skin.\n'
+      + "Use [Image1] for the woman's face and identity. She is in the exact location of [SCENE_IMG], "
+      + 'wearing the exact outfit of [OUTFIT_IMG], naturally holding and showing the product.\n\n';
+    let t = 0;
+    for (let i = 0; i < n; i++) {
+      const t0 = t;
+      const t1 = (i === n - 1) ? dur : Math.min(dur, t + per);
+      const marker = (i === 0) ? ('Shot ' + (i + 1)) : ('Hard cut to Shot ' + (i + 1));
+      body += '[00:' + pad(t0) + '-00:' + pad(t1) + '] ' + marker
+        + ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME furniture, wearing [OUTFIT_IMG]. '
+        + shots[i] + '\n';
+      t = t1;
+    }
+    body += '\nGlobal: it is the same woman, the same room and the same furniture across all shots; '
+      + 'soft natural daylight; camera mostly steady; realistic unretouched skin with real texture; '
+      + 'keep her face exactly [Image1]; do not change her face, the room, the furniture or the outfit between cuts. '
+      + 'No scene change to a different room, no different person, no smoothing or beautifying, no crowd.';
+    return body;
   }
 
-  // 🆕 v5.0 image-to-video 用的動態錨(動作 + 鎖一致 + 抗磨皮)
-  function buildAnimPrompt(motion) {
-    return 'Animate the starting frame with subtle natural motion only. ' + motion
-      + '. Keep her face, skin texture, the product, outfit, furniture and background EXACTLY consistent with the starting frame; '
-      + 'do not smooth, beautify or retouch the skin; single continuous shot, one fixed location, camera mostly still, no scene change, no cut; '
-      + 'realistic unretouched skin, subtle film grain, true-to-life, not glossy.';
-  }
-
-  // 生一段（v5.0：compose keyframe → image-to-video）
-  //   opts.prompt = 這段的動作(來自分鏡);臉/商品/服裝/場景由參考圖鎖。
+  // 生一段(v6.1:15 秒「多鏡頭」reference-to-video —— RA 的方法,已驗證五鎖)。
+  //   每段餵「原始 KOL 照」當 [Image1](模型層鎖臉)+ 場景圖 + 服裝圖 + 商品;
+  //   一次生成內切 1-3 個 Shot → 家具/臉跨鏡頭鎖。不重畫、不換臉。
+  //   opts.shots = 這個 chunk 的動作陣列(1-3 個);相容 opts.prompt(單一動作)。
   async function generateSegment(opts, onTick) {
     if (!opts.kolImageUrl) throw new Error('generateSegment 缺少 kolImageUrl（原始 KOL 照）');
-    if (!opts.prompt) throw new Error('generateSegment 缺少 prompt（這段動作）');
+    const shots = (Array.isArray(opts.shots) && opts.shots.length) ? opts.shots
+                : (opts.prompt ? [opts.prompt] : null);
+    if (!shots) throw new Error('generateSegment 缺少 shots/prompt（這個 chunk 的動作）');
 
-    const action = opts.prompt;
+    let prompt = buildMultiShotPrompt(shots, opts.durationSec || 15);
 
-    // ① 合成 keyframe：[臉(first) + 商品 + 服裝 + 場景] + 這段動作 → 一張
-    const refs = [opts.kolImageUrl]
-      .concat(Array.isArray(opts.productImageUrls) ? opts.productImageUrls : [])
-      .concat(opts.outfitImageUrl ? [opts.outfitImageUrl] : [])
-      .concat(opts.sceneImageUrl ? [opts.sceneImageUrl] : [])
-      .filter(Boolean);
-
-    if (onTick) onTick(0, 'compose');
-    const composed = await api('nanobanana_compose', {
-      prompt: buildComposePrompt(action),
-      image_urls: refs,
-      resolution: '2K',
-    });
-    const keyframeUrl = (composed && composed.images && composed.images[0] && composed.images[0].url) || null;
-    if (!keyframeUrl) throw new Error('compose 沒拿到 keyframe');
-
-    // 🔒 口音鐵律(保留):開了語音且 prompt 還沒鎖口音 → 補(台灣 KOL→台灣國語,擋大陸腔)
-    let motion = action;
-    if (opts.generateAudio === true && !/Mandarin/i.test(motion)) {
+    // 🔒 口音鐵律(保留):開語音且還沒鎖口音 → 補(台灣 KOL→台灣國語,擋大陸腔)
+    if (opts.generateAudio === true && !/Mandarin/i.test(prompt)) {
       const _nat = opts.nationality
         || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
         || 'tw';
       const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
-      motion += `. She speaks in natural ${_accent}, clear lip-sync.`;
+      prompt += '\nShe speaks in natural ' + _accent + ', clear lip-sync.';
     }
 
-    // ② image-to-video：起始幀 = keyframe → 動(家具不飄)
-    if (onTick) onTick(0, 'i2v');
-    const sub = await api('seedance_image2video_submit', {
-      imageUrl: keyframeUrl,
-      prompt: buildAnimPrompt(motion),
-      duration: String(opts.durationSec || 5),
+    // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
+    //   Worker 自動把 [OUTFIT_IMG]/[SCENE_IMG] 換成真實 [ImageN]。
+    if (onTick) onTick(0, 'reference-to-video(多鏡頭)');
+    const sub = await api('seedance_submit', {
+      kolImageUrl: opts.kolImageUrl,                                       // → [Image1] 臉錨
+      productImageUrls: Array.isArray(opts.productImageUrls) ? opts.productImageUrls : [],
+      outfitImageUrl: opts.outfitImageUrl || undefined,                    // → [OUTFIT_IMG]→[ImageN]
+      sceneImageUrl: opts.sceneImageUrl || undefined,                      // → [SCENE_IMG]→[ImageN]
+      prompt: prompt,
+      brandId: opts.brandId,
+      kolName: opts.kolName,
+      duration: String(opts.durationSec || 15),                           // v6.1:每個 chunk 預設 15 秒
       aspectRatio: opts.aspectRatio || '9:16',
       resolution: opts.resolution || '720p',
       generateAudio: opts.generateAudio === true,
       tier: opts.tier || 'fast',
       seed: opts.seed,
-      brandId: opts.brandId,          // 🆕 webhook 用:fal_hook 以 brand + reqId 寫 R2
-      // 不傳 episodeId → 每段 keyed by 自己的 reqId,平行不撞 key
+      // 不傳 episodeId → 每段 keyed by 自己 reqId,平行不撞 key
     });
 
-    // 🆕 v5.1:i2v 帶 webhook → 問 episode_result(跟 seedance_submit 一樣,免輪詢 fal)
     const videoUrl = await pollEpisode(sub.requestId, opts.brandId, onTick);
-    if (!videoUrl) throw new Error('i2v 沒拿到影片 URL');
+    if (!videoUrl) throw new Error('reference-to-video 沒拿到影片 URL');
     return videoUrl;
   }
 
@@ -230,15 +226,29 @@ window.KolStitch = (function () {
     if (!kolImg) throw new Error('缺少 kolImageUrl(原始 KOL 照,每段都當錨點)');
     if (!Array.isArray(plan) || plan.length < 1) throw new Error('plan 至少要 1 段');
 
-    const total = plan.length;
+    // v6.1:把分鏡整理成 chunks —— 每個 chunk = 一次 15 秒多鏡頭(含 1-3 個 Shot)。
+    //   傳 [{shots:[...]}] 直接用;傳一串 [{prompt}] / 字串 → 每 shotsPerChunk 個併成一個 15 秒 chunk。
+    const SHOTS_PER_CHUNK = opts.shotsPerChunk || 3;
+    let chunks;
+    if (plan[0] && Array.isArray(plan[0].shots)) {
+      chunks = plan.map(function (c) { return { shots: c.shots, kolImageUrl: c.kolImageUrl, seed: c.seed, durationSec: c.durationSec }; });
+    } else {
+      const beats = plan.map(function (p) { return (typeof p === 'string') ? p : p.prompt; }).filter(Boolean);
+      chunks = [];
+      for (let i = 0; i < beats.length; i += SHOTS_PER_CHUNK) {
+        chunks.push({ shots: beats.slice(i, i + SHOTS_PER_CHUNK) });
+      }
+    }
+
+    const total = chunks.length;
     let doneCount = 0;
-    log(`${total} 段同時生成中…(平行,compose → image-to-video)`);
+    log(`${total} 段 × 15 秒多鏡頭同時生成中…(平行,reference-to-video · 臉=[Image1] 原圖鎖 · 場景圖鎖家具)`);
 
     // 整支共用同一 seed → 6 張 keyframe 彼此更一致
     const stitchSeed = (opts.seed != null && opts.seed !== '')
       ? parseInt(opts.seed)
-      : ((plan[0] && plan[0].seed != null && plan[0].seed !== '')
-          ? parseInt(plan[0].seed)
+      : ((chunks[0] && chunks[0].seed != null && chunks[0].seed !== '')
+          ? parseInt(chunks[0].seed)
           : Math.floor(Math.random() * 2000000000));
     log('本支共用 seed:' + stitchSeed);
 
@@ -269,41 +279,14 @@ window.KolStitch = (function () {
       }
     } catch (e) { sceneImageUrl = null; }
 
-    // ⚠️ v5.0:不再往 prompt 補 [OUTFIT_IMG]/[SCENE_IMG] 文字 pin ——
-    //    服裝/場景改成「真的圖」餵進 compose,keyframe 已含,不需文字佔位符。
+    log(`參考圖鎖定完成 ✓ · ${total} 段 × 15 秒多鏡頭生成中…(臉=[Image1]原圖 · 家具=同一張場景圖跨段鎖)`);
 
-    // 🆕 v5.3:先鎖一張「KOL 定裝照」(臉+服裝+場景,中性)→ 之後每段都從這張長 → 跨段同一張臉。
-    //   解的是:每段各自獨立 compose 會把同一張又晴畫成不同人;改成全段共用這張 anchor 當「臉的來源」。
-    let identityAnchorUrl = kolImg;
-    try {
-      const anchorRefs = [kolImg]
-        .concat(outfitImageUrl ? [outfitImageUrl] : [])
-        .concat(sceneImageUrl ? [sceneImageUrl] : [])
-        .filter(Boolean);
-      log('鎖定 KOL 臉中…(生一張定裝照,之後每段共用同一張臉)');
-      const anchorPrompt =
-        'A neutral, natural candid front-facing portrait photo of one woman, waist-up, relaxed expression looking at the camera. '
-        + 'IDENTITY — her face, bone structure and skin come ONLY from the FIRST reference image; copy it exactly, do NOT beautify or alter it, keep real texture and any existing marks. '
-        + 'Any face or person in the OTHER reference images must be IGNORED for identity. '
-        + 'OUTFIT — dress her in the clothing from the outfit reference image (take the garment only, never its face or body). '
-        + 'ENVIRONMENT — place her in the setting from the scene reference image (background/location only, ignore any person in it). '
-        + 'Matte natural skin, not glowing or dewy, soft natural daylight, subtle grain, true-to-life, not stylized.';
-      const anchor = await api('nanobanana_compose', { prompt: anchorPrompt, image_urls: anchorRefs, resolution: '2K' });
-      if (anchor && anchor.images && anchor.images[0] && anchor.images[0].url) {
-        identityAnchorUrl = anchor.images[0].url;
-        log('KOL 臉鎖定 ✓');
-        console.log('[KolStitch] 🔒 identityAnchor(先看這張是不是又晴;之後每段都用這張臉):', identityAnchorUrl);
-      }
-    } catch (e) { identityAnchorUrl = kolImg; /* anchor 失敗 → 退原圖,至少不擋流程 */ }
-
-    log(`參考圖鎖定完成 ✓ · ${total} 段生成中…(每段 compose→動,約幾分鐘)`);
-
-    const tasks = plan.map(function (step, i) {
-      const durSec = step.durationSec || opts.durationSec || 5;
+    const tasks = chunks.map(function (chunk, i) {
+      const durSec = chunk.durationSec || opts.durationSec || 15;   // v6.1:每個 chunk 預設 15 秒
       return generateSegment({
-        kolImageUrl: step.kolImageUrl || identityAnchorUrl,   // 🆕 v5.3:每段用同一張鎖定的臉,不再各自重畫又晴
+        kolImageUrl: chunk.kolImageUrl || kolImg,  // v6.1:每段餵「原始 KOL 照」當 [Image1](RA 的方法,reference-to-video 鎖臉)
         productImageUrls: opts.productImageUrls,
-        prompt: step.prompt,                       // 這段的動作(來自分鏡)
+        shots: chunk.shots,                        // 這個 chunk 的 1-3 個 Shot 動作(多鏡頭)
         durationSec: durSec,
         aspectRatio: opts.aspectRatio,
         resolution: opts.resolution,
@@ -313,8 +296,8 @@ window.KolStitch = (function () {
         brandId: opts.brandId,
         kolName: opts.kolName,
         nationality: opts.nationality,
-        outfitImageUrl: outfitImageUrl,            // → compose 輸入(整支共用)
-        sceneImageUrl: sceneImageUrl,              // → compose 輸入(整支共用)
+        outfitImageUrl: outfitImageUrl,            // → [OUTFIT_IMG](整支共用,鎖同一件衣服)
+        sceneImageUrl: sceneImageUrl,              // → [SCENE_IMG](整支共用,鎖同一間房 → 跨段家具一致)
       }, function () {}).then(function (segUrl) {
         doneCount++;
         log(`${doneCount}/${total} 段完成…`);
@@ -340,7 +323,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v5.3 · compose→i2v(webhook) · 先鎖定裝照→每段共用同臉(跨段臉一致) · 4錨+共用seed鎖跨段 · 口音鐵律保留');
+  console.log('[KolStitch] 🎬 v6.1 · 15秒多鏡頭 reference-to-video(已驗證五鎖) · 每段原始KOL照=[Image1]臉鎖 · 場景圖鎖家具跨段 · 每chunk 1-3 Shot · 共用seed · 口音鐵律保留');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
