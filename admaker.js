@@ -882,18 +882,10 @@ async function submitFluxAndCheckBlob(scenePrompt, paddedBase64) {
   }
 }
 
-async function applyPhotoroomBg() {
-  const btn = document.getElementById('prApplyBtn');
-
-  if (PR_MODE === 'gpt_poster') {
-    btn.disabled = true; btn.textContent = '⏳ AI 廣告圖生成中...';
-    await generateGptPoster();
-    return;
-  }
-
+const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
+  if (!photo) { setPrStatus('⚠️ 請先選擇照片!', 'var(--red)'); return; }
   const imgSrc = photo.hiRes || photo.src || photo.thumb;  // 🆕 優先用 s1600 高解析(生圖品質更好)
-
-  btn.disabled = true; btn.textContent = '⏳ AI 處理中...';
+  if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
 
   if (PR_MODE === 'kling_tryon') {
     const interval = startProgress(60000);
@@ -1528,9 +1520,10 @@ async function firstTruthy(promises) {
 }
 
 async function generateGptPoster() {
+  const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
+  if (!photo) { setPrStatus('⚠️ 請先選擇商品照片!', 'var(--red)'); return; }
   const imgSrc = photo.hiRes || photo.src || photo.thumb;  // 🆕 優先用 s1600 高解析(生圖品質更好)
-
-  const headline = document.getElementById('gptHeadline')?.value?.trim();
+  if (!imgSrc) { setPrStatus('⚠️ 商品照尚未載入', 'var(--red)'); return; }
   if (!headline) {
     setPrStatus('⚠️ 請至少填主標(大字)', 'var(--red)');
     document.getElementById('prApplyBtn').disabled = false;
