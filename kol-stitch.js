@@ -1,6 +1,6 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.1
-// v6.1：每段 = 15 秒「多鏡頭」reference-to-video(已驗證五鎖)。每段餵「原始 KOL 照」當 [Image1] 餵進
+// kol-stitch.js — 自動接片引擎 v6.2
+// v6.2：照分鏡秒數切 15 秒 chunk + 每個 chunk 用自己的角度圖 + beat 當 Shot(對齊 STEP2/STEP3 的 plan)。每段 = 多鏡頭 reference-to-video,原始 KOL 照當 [Image1] 鎖臉
 //       Seedance 2.0 reference-to-video,臉由模型層鎖死 → 跨段同一個又晴本人(不重畫、不換臉)。
 //         · [Image1] = 又晴原圖   → 鎖臉(這是她舊片臉永遠對的原因)
 //         · [SCENE_IMG]→[ImageN]  → 鎖家具/背景(空場景參考圖)
@@ -117,25 +117,26 @@ window.KolStitch = (function () {
     return url;
   }
 
-  // v6.1 多鏡頭 prompt:一次生成 15 秒、內含 1-3 個 Shot(角度切換),家具/臉跨鏡頭鎖。
-  //   [Image1]=KOL原圖(臉錨)· [SCENE_IMG]=同一間房 · [OUTFIT_IMG]=同一件衣服(Worker 換成真 [ImageN])。
-  //   驗證過:一次連貫生成 → 同一張臉、同一間房、同一家具跨整段不飄。
-  function buildMultiShotPrompt(shots, durationSec) {
-    const dur = durationSec || 15;
-    const n = Math.max(1, shots.length);
-    const per = Math.max(1, Math.round(dur / n));
-    const pad = function (x) { return String(x).padStart(2, '0'); };
+  // v6.2 多鏡頭 prompt:一次生成、內含多個 Shot(角度切換),家具/臉跨鏡頭鎖。
+  //   beats = [{prompt, durationSec}] 或字串陣列;timecode 照每個 beat 的真實秒數排(尊重分鏡)。
+  //   [Image1]=KOL角度圖(臉錨)· [SCENE_IMG]=同一間房 · [OUTFIT_IMG]=同一件衣服(Worker 換成真 [ImageN])。
+  function buildMultiShotPrompt(beats, totalSec) {
+    const list = beats.map(function (b) { return (typeof b === 'string') ? { prompt: b } : b; });
+    const n = Math.max(1, list.length);
+    const dur = totalSec || 15;
+    const pad = function (x) { return String(Math.round(x)).padStart(2, '0'); };
     let body = 'candid realistic vertical UGC video, natural daylight, true-to-life skin.\n'
       + "Use [Image1] for the woman's face and identity. She is in the exact location of [SCENE_IMG], "
       + 'wearing the exact outfit of [OUTFIT_IMG], naturally holding and showing the product.\n\n';
     let t = 0;
     for (let i = 0; i < n; i++) {
+      const bSec = list[i].durationSec || Math.max(1, Math.round(dur / n));
       const t0 = t;
-      const t1 = (i === n - 1) ? dur : Math.min(dur, t + per);
-      const marker = (i === 0) ? ('Shot ' + (i + 1)) : ('Hard cut to Shot ' + (i + 1));
+      const t1 = (i === n - 1) ? dur : Math.min(dur, t + bSec);
+      const marker = (i === 0) ? 'Shot 1' : ('Hard cut to Shot ' + (i + 1));
       body += '[00:' + pad(t0) + '-00:' + pad(t1) + '] ' + marker
         + ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME furniture, wearing [OUTFIT_IMG]. '
-        + shots[i] + '\n';
+        + (list[i].prompt || '') + '\n';
       t = t1;
     }
     body += '\nGlobal: it is the same woman, the same room and the same furniture across all shots; '
@@ -145,17 +146,24 @@ window.KolStitch = (function () {
     return body;
   }
 
-  // 生一段(v6.1:15 秒「多鏡頭」reference-to-video —— RA 的方法,已驗證五鎖)。
-  //   每段餵「原始 KOL 照」當 [Image1](模型層鎖臉)+ 場景圖 + 服裝圖 + 商品;
-  //   一次生成內切 1-3 個 Shot → 家具/臉跨鏡頭鎖。不重畫、不換臉。
-  //   opts.shots = 這個 chunk 的動作陣列(1-3 個);相容 opts.prompt(單一動作)。
+  // 生一段(v6.2:一次生成多鏡頭 reference-to-video。chunk 內含多個 beat(Shot),
+  //   每個 beat 帶自己的動作+秒數;chunk 總長 = 各 beat 秒數加總(封頂 15)。
+  //   臉=[Image1](該 chunk 的 KOL 角度圖,模型層鎖)+ 場景圖 + 服裝圖 + 商品。不重畫、不換臉。
+  //   相容:opts.beats(物件陣列,STEP2/STEP3 用)> opts.shots(字串陣列)> opts.prompt(單一)。
   async function generateSegment(opts, onTick) {
-    if (!opts.kolImageUrl) throw new Error('generateSegment 缺少 kolImageUrl（原始 KOL 照）');
-    const shots = (Array.isArray(opts.shots) && opts.shots.length) ? opts.shots
-                : (opts.prompt ? [opts.prompt] : null);
-    if (!shots) throw new Error('generateSegment 缺少 shots/prompt（這個 chunk 的動作）');
+    if (!opts.kolImageUrl) throw new Error('generateSegment 缺少 kolImageUrl（KOL 角度圖）');
+    let beats = (Array.isArray(opts.beats) && opts.beats.length) ? opts.beats
+              : (Array.isArray(opts.shots) && opts.shots.length) ? opts.shots.map(function (s) { return { prompt: s }; })
+              : (opts.prompt ? [{ prompt: opts.prompt }] : null);
+    if (!beats) throw new Error('generateSegment 缺少 beats/shots/prompt（這個 chunk 的動作）');
 
-    let prompt = buildMultiShotPrompt(shots, opts.durationSec || 15);
+    // chunk 總長 = 各 beat 秒數加總,封頂 15(Seedance 單次上限);沒給秒數 → 預設每 beat 5 秒。
+    let totalSec = beats.reduce(function (a, b) {
+      return a + ((typeof b === 'object' && b.durationSec) ? b.durationSec : 5);
+    }, 0);
+    totalSec = Math.max(3, Math.min(15, totalSec || 15));
+
+    let prompt = buildMultiShotPrompt(beats, totalSec);
 
     // 🔒 口音鐵律(保留):開語音且還沒鎖口音 → 補(台灣 KOL→台灣國語,擋大陸腔)
     if (opts.generateAudio === true && !/Mandarin/i.test(prompt)) {
@@ -170,14 +178,14 @@ window.KolStitch = (function () {
     //   Worker 自動把 [OUTFIT_IMG]/[SCENE_IMG] 換成真實 [ImageN]。
     if (onTick) onTick(0, 'reference-to-video(多鏡頭)');
     const sub = await api('seedance_submit', {
-      kolImageUrl: opts.kolImageUrl,                                       // → [Image1] 臉錨
+      kolImageUrl: opts.kolImageUrl,                                       // → [Image1] 臉錨(該 chunk 的角度圖)
       productImageUrls: Array.isArray(opts.productImageUrls) ? opts.productImageUrls : [],
       outfitImageUrl: opts.outfitImageUrl || undefined,                    // → [OUTFIT_IMG]→[ImageN]
       sceneImageUrl: opts.sceneImageUrl || undefined,                      // → [SCENE_IMG]→[ImageN]
       prompt: prompt,
       brandId: opts.brandId,
       kolName: opts.kolName,
-      duration: String(opts.durationSec || 15),                           // v6.1:每個 chunk 預設 15 秒
+      duration: String(totalSec),                                          // v6.2:照分鏡秒數加總(封頂 15)
       aspectRatio: opts.aspectRatio || '9:16',
       resolution: opts.resolution || '720p',
       generateAudio: opts.generateAudio === true,
@@ -226,18 +234,28 @@ window.KolStitch = (function () {
     if (!kolImg) throw new Error('缺少 kolImageUrl(原始 KOL 照,每段都當錨點)');
     if (!Array.isArray(plan) || plan.length < 1) throw new Error('plan 至少要 1 段');
 
-    // v6.1:把分鏡整理成 chunks —— 每個 chunk = 一次 15 秒多鏡頭(含 1-3 個 Shot)。
-    //   傳 [{shots:[...]}] 直接用;傳一串 [{prompt}] / 字串 → 每 shotsPerChunk 個併成一個 15 秒 chunk。
-    const SHOTS_PER_CHUNK = opts.shotsPerChunk || 3;
+    // v6.2:把分鏡整理成 chunks —— 照「累積秒數 ≤15s 且 Shot 數 ≤maxShots」切,每個 chunk = 一次多鏡頭生成。
+    //   傳 [{shots:[...]}] 直接用;傳一串 beat 物件(STEP2/STEP3:{prompt,durationSec,kolImageUrl,...})→ 照秒數併。
+    const MAX_CHUNK_SEC = opts.maxChunkSec || 15;   // 一個 chunk 上限 15 秒(Seedance 單次上限)
+    const MAX_SHOTS = opts.shotsPerChunk || 4;      // 一個 chunk 最多幾個 Shot(避免太碎)
     let chunks;
     if (plan[0] && Array.isArray(plan[0].shots)) {
-      chunks = plan.map(function (c) { return { shots: c.shots, kolImageUrl: c.kolImageUrl, seed: c.seed, durationSec: c.durationSec }; });
+      chunks = plan.map(function (c) {
+        return { beats: c.shots.map(function (s) { return (typeof s === 'string') ? { prompt: s } : s; }), kolImageUrl: c.kolImageUrl, seed: c.seed };
+      });
     } else {
-      const beats = plan.map(function (p) { return (typeof p === 'string') ? p : p.prompt; }).filter(Boolean);
+      const beatObjs = plan.map(function (p) { return (typeof p === 'string') ? { prompt: p } : p; })
+                           .filter(function (b) { return b && b.prompt; });
       chunks = [];
-      for (let i = 0; i < beats.length; i += SHOTS_PER_CHUNK) {
-        chunks.push({ shots: beats.slice(i, i + SHOTS_PER_CHUNK) });
-      }
+      let cur = [], curSec = 0;
+      beatObjs.forEach(function (b) {
+        const bSec = b.durationSec || 5;
+        if (cur.length && (curSec + bSec > MAX_CHUNK_SEC || cur.length >= MAX_SHOTS)) {
+          chunks.push({ beats: cur }); cur = []; curSec = 0;
+        }
+        cur.push(b); curSec += bSec;
+      });
+      if (cur.length) chunks.push({ beats: cur });
     }
 
     const total = chunks.length;
@@ -282,12 +300,14 @@ window.KolStitch = (function () {
     log(`參考圖鎖定完成 ✓ · ${total} 段 × 15 秒多鏡頭生成中…(臉=[Image1]原圖 · 家具=同一張場景圖跨段鎖)`);
 
     const tasks = chunks.map(function (chunk, i) {
-      const durSec = chunk.durationSec || opts.durationSec || 15;   // v6.1:每個 chunk 預設 15 秒
+      const beats = chunk.beats || [];
+      const chunkSec = Math.min(15, Math.max(3, beats.reduce(function (a, b) { return a + (b.durationSec || 5); }, 0) || 15));
+      // 該 chunk 的 KOL 圖:用第一個 beat 的角度圖(STEP2/STEP3 已挑好)→ 沒有才退 chunk/全域
+      const chunkKol = (beats[0] && beats[0].kolImageUrl) || chunk.kolImageUrl || kolImg;
       return generateSegment({
-        kolImageUrl: chunk.kolImageUrl || kolImg,  // v6.1:每段餵「原始 KOL 照」當 [Image1](RA 的方法,reference-to-video 鎖臉)
+        kolImageUrl: chunkKol,                     // v6.2:用該 chunk 的角度圖當 [Image1](臉錨)
         productImageUrls: opts.productImageUrls,
-        shots: chunk.shots,                        // 這個 chunk 的 1-3 個 Shot 動作(多鏡頭)
-        durationSec: durSec,
+        beats: beats,                              // v6.2:整個 chunk 的 beat 物件(含動作+秒數)→ 多 Shot
         aspectRatio: opts.aspectRatio,
         resolution: opts.resolution,
         generateAudio: opts.generateAudio,
@@ -295,14 +315,14 @@ window.KolStitch = (function () {
         seed: stitchSeed,
         brandId: opts.brandId,
         kolName: opts.kolName,
-        nationality: opts.nationality,
+        nationality: opts.nationality || (beats[0] && beats[0].nationality),
         outfitImageUrl: outfitImageUrl,            // → [OUTFIT_IMG](整支共用,鎖同一件衣服)
         sceneImageUrl: sceneImageUrl,              // → [SCENE_IMG](整支共用,鎖同一間房 → 跨段家具一致)
       }, function () {}).then(function (segUrl) {
         doneCount++;
         log(`${doneCount}/${total} 段完成…`);
         if (opts.onSegmentDone) opts.onSegmentDone(i, segUrl);
-        return { url: segUrl, durationSec: durSec };
+        return { url: segUrl, durationSec: chunkSec };
       });
     });
 
@@ -323,7 +343,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.1 · 15秒多鏡頭 reference-to-video(已驗證五鎖) · 每段原始KOL照=[Image1]臉鎖 · 場景圖鎖家具跨段 · 每chunk 1-3 Shot · 共用seed · 口音鐵律保留');
+  console.log('[KolStitch] 🎬 v6.2 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk用自己角度圖 + beat當Shot · 場景圖跨段鎖家具 · 共用seed · 口音鐵律');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
