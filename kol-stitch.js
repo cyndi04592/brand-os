@@ -1,5 +1,5 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.2
+// kol-stitch.js — 自動接片引擎 v6.3
 // v6.2：照分鏡秒數切 15 秒 chunk + 每個 chunk 用自己的角度圖 + beat 當 Shot(對齊 STEP2/STEP3 的 plan)。每段 = 多鏡頭 reference-to-video,原始 KOL 照當 [Image1] 鎖臉
 //       Seedance 2.0 reference-to-video,臉由模型層鎖死 → 跨段同一個又晴本人(不重畫、不換臉)。
 //         · [Image1] = 又晴原圖   → 鎖臉(這是她舊片臉永遠對的原因)
@@ -135,14 +135,15 @@ window.KolStitch = (function () {
       const t1 = (i === n - 1) ? dur : Math.min(dur, t + bSec);
       const marker = (i === 0) ? 'Shot 1' : ('Hard cut to Shot ' + (i + 1));
       body += '[00:' + pad(t0) + '-00:' + pad(t1) + '] ' + marker
-        + ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME furniture, wearing [OUTFIT_IMG]. '
+        + ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME background, wearing [OUTFIT_IMG]. '
         + (list[i].prompt || '') + '\n';
       t = t1;
     }
-    body += '\nGlobal: it is the same woman, the same room and the same furniture across all shots; '
-      + 'soft natural daylight; camera mostly steady; realistic unretouched skin with real texture; '
-      + 'keep her face exactly [Image1]; do not change her face, the room, the furniture or the outfit between cuts. '
-      + 'No scene change to a different room, no different person, no smoothing or beautifying, no crowd.';
+    body += '\nGlobal: it is the same woman, the same location and the same background across all shots; '
+      + 'keep the exact same lighting in every shot — the same light direction, intensity and colour temperature, matching the setting (indoor or outdoor) — and do not change the lighting between cuts; '
+      + 'camera mostly steady; realistic unretouched skin with real texture; '
+      + 'keep her face exactly [Image1]; do not change her face, the location, the background or the outfit between cuts. '
+      + 'No change of setting, no different person, no smoothing or beautifying, no crowd.';
     return body;
   }
 
@@ -343,7 +344,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.2 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk用自己角度圖 + beat當Shot · 場景圖跨段鎖家具 · 共用seed · 口音鐵律');
+  console.log('[KolStitch] 🎬 v6.3 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用·室內外) · 共用seed · 口音鐵律');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
