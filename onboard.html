@@ -968,7 +968,7 @@ async function grabColors(){
     document.querySelectorAll('.color-preset').forEach(el=>el.classList.remove('on'));
   }catch(e){
     // 柔性提示:不講「抓取失敗」這種讓客人覺得壞掉的話
-    alert('🔍 診斷模式\n\n錯誤訊息:'+e.message+'\n\n(把這個畫面截給 Claude)');
+    alert('這個網站抓不到顏色 🎨\n\n可能原因:網站使用動態載入(SPA)、需要登入、或顏色寫在外部 CSS 檔。\n\n請從下方 12 個預設色系挑一個你喜歡的吧!');
   }
   btn.disabled=false;btn.innerHTML='🎨 抓取色系';
 }
