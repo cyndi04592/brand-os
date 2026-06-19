@@ -120,12 +120,14 @@ window.KolStitch = (function () {
 
   // 🆕 v5.0 compose 用的真實感錨(複製原圖真皮、不製造瑕疵 —— 本場實測驗過的版本)
   function buildComposePrompt(action) {
-    return 'This is a real, unretouched iPhone photo of the exact woman in the first reference image. '
-      + 'The other reference images show the product, her outfit, and the environment. '
-      + 'Reproduce her face and skin EXACTLY as in the first image — identical skin, texture and any existing marks; '
-      + 'do NOT beautify, smooth, airbrush, or add/remove/alter any skin detail, nothing invented. '
-      + 'She wears the exact outfit and is in the exact environment shown in the reference images, '
-      + 'holding or using the product at a realistic small size (about the height of her face), clearly visible but not enlarged. '
+    return 'Compose a single realistic, unretouched iPhone photo of one woman. '
+      + 'IDENTITY — her face, bone structure and skin come ONLY from the FIRST reference image. '
+      + 'Copy that face exactly; do NOT beautify, smooth or alter it; keep its real texture and any existing marks. '
+      + 'Any face, body or person appearing in the OTHER reference images must be IGNORED for identity — '
+      + 'do not blend, average or borrow any facial features from them; the face stays 100% the first image. '
+      + 'OUTFIT — dress her in the clothing from the outfit reference image, taking ONLY the garment (cut, colour, fabric), never its face or body. '
+      + 'PRODUCT — she holds or uses the product from the product reference image at a realistic small size (about the height of her face), clearly visible, not enlarged. '
+      + 'ENVIRONMENT — if a scene reference image is provided, take only its background/location, ignoring any person in it. '
       + 'This moment shows: ' + action + ' — render it as a natural candid still photo. '
       + 'Matte natural skin, not glowing or dewy, soft natural daylight, subtle camera grain, true-to-life, not stylized.';
   }
@@ -314,7 +316,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v5.1 · compose(nanobanana)→image-to-video(webhook) · 4錨+共用seed鎖跨段 · 口音鐵律保留');
+  console.log('[KolStitch] 🎬 v5.2 · compose(nanobanana)→image-to-video(webhook) · 身份只錨第一張(不混服裝臉) · 4錨+共用seed鎖跨段 · 口音鐵律保留');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
