@@ -114,19 +114,15 @@ async function fetchFromWorker(folderId, type) {
     const data = await resp.json();
     if (!data.ok) { console.warn('Worker Drive error:', data.error); return; }
 
-    (data.files || []).forEach(f => {
-      const arr = type === 'photo' ? window.S.photos : window.S.videos;
-      if (!arr.find(x => x.driveId === f.id)) {
-        arr.push({
+    arr.push({
           driveId: f.id,
           name: f.name,
           thumb: f.thumbnailLink || '',
+          hiRes: (f.thumbnailLink || '').replace(/=s\d+/, '=s1600'),  // 🆕 生圖用高解析(s1600)
           driveUrl: f.viewUrl,
-          src: f.thumbnailLink || '', // 用縮圖當預覽
+          src: (f.thumbnailLink || '').replace(/=s\d+/, '=s400'),     // 🆕 列表強制縮成 s400(載入快)
           type
         });
-      }
-    });
   } catch (e) { console.warn('fetchFromWorker error:', e); }
 }
 
@@ -262,12 +258,8 @@ function renderAssets() {
 }
 
 // ══ 素材項目 HTML ══
-function assetItemHtml(f, i, type, sel) {
-  const fallback = type === 'photo' ? '圖' : '影';
-  const errHandler = 'this.parentNode.innerHTML=\'' + fallback + '\'';
-  let thumb;
-  if (f.src)        thumb = '<img src="' + f.src   + '" onerror="' + errHandler + '">';
-  else if (f.thumb) thumb = '<img src="' + f.thumb + '" onerror="' + errHandler + '">';
+if (f.src)        thumb = '<img loading="lazy" src="' + f.src   + '" onerror="' + errHandler + '">';
+  else if (f.thumb) thumb = '<img loading="lazy" src="' + f.thumb + '" onerror="' + errHandler + '">';
   else              thumb = fallback;
   return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})">
     <div class="ai-thumb">${thumb}</div>
