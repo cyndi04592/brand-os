@@ -272,12 +272,36 @@ window.KolStitch = (function () {
     // ⚠️ v5.0:不再往 prompt 補 [OUTFIT_IMG]/[SCENE_IMG] 文字 pin ——
     //    服裝/場景改成「真的圖」餵進 compose,keyframe 已含,不需文字佔位符。
 
+    // 🆕 v5.3:先鎖一張「KOL 定裝照」(臉+服裝+場景,中性)→ 之後每段都從這張長 → 跨段同一張臉。
+    //   解的是:每段各自獨立 compose 會把同一張又晴畫成不同人;改成全段共用這張 anchor 當「臉的來源」。
+    let identityAnchorUrl = kolImg;
+    try {
+      const anchorRefs = [kolImg]
+        .concat(outfitImageUrl ? [outfitImageUrl] : [])
+        .concat(sceneImageUrl ? [sceneImageUrl] : [])
+        .filter(Boolean);
+      log('鎖定 KOL 臉中…(生一張定裝照,之後每段共用同一張臉)');
+      const anchorPrompt =
+        'A neutral, natural candid front-facing portrait photo of one woman, waist-up, relaxed expression looking at the camera. '
+        + 'IDENTITY — her face, bone structure and skin come ONLY from the FIRST reference image; copy it exactly, do NOT beautify or alter it, keep real texture and any existing marks. '
+        + 'Any face or person in the OTHER reference images must be IGNORED for identity. '
+        + 'OUTFIT — dress her in the clothing from the outfit reference image (take the garment only, never its face or body). '
+        + 'ENVIRONMENT — place her in the setting from the scene reference image (background/location only, ignore any person in it). '
+        + 'Matte natural skin, not glowing or dewy, soft natural daylight, subtle grain, true-to-life, not stylized.';
+      const anchor = await api('nanobanana_compose', { prompt: anchorPrompt, image_urls: anchorRefs, resolution: '2K' });
+      if (anchor && anchor.images && anchor.images[0] && anchor.images[0].url) {
+        identityAnchorUrl = anchor.images[0].url;
+        log('KOL 臉鎖定 ✓');
+        console.log('[KolStitch] 🔒 identityAnchor(先看這張是不是又晴;之後每段都用這張臉):', identityAnchorUrl);
+      }
+    } catch (e) { identityAnchorUrl = kolImg; /* anchor 失敗 → 退原圖,至少不擋流程 */ }
+
     log(`參考圖鎖定完成 ✓ · ${total} 段生成中…(每段 compose→動,約幾分鐘)`);
 
     const tasks = plan.map(function (step, i) {
       const durSec = step.durationSec || opts.durationSec || 5;
       return generateSegment({
-        kolImageUrl: step.kolImageUrl || kolImg,   // 每段可帶自己的角度圖,沒帶才退全域
+        kolImageUrl: step.kolImageUrl || identityAnchorUrl,   // 🆕 v5.3:每段用同一張鎖定的臉,不再各自重畫又晴
         productImageUrls: opts.productImageUrls,
         prompt: step.prompt,                       // 這段的動作(來自分鏡)
         durationSec: durSec,
@@ -316,7 +340,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v5.2 · compose(nanobanana)→image-to-video(webhook) · 身份只錨第一張(不混服裝臉) · 4錨+共用seed鎖跨段 · 口音鐵律保留');
+  console.log('[KolStitch] 🎬 v5.3 · compose→i2v(webhook) · 先鎖定裝照→每段共用同臉(跨段臉一致) · 4錨+共用seed鎖跨段 · 口音鐵律保留');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
