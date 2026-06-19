@@ -114,7 +114,10 @@ async function fetchFromWorker(folderId, type) {
     const data = await resp.json();
     if (!data.ok) { console.warn('Worker Drive error:', data.error); return; }
 
-    arr.push({
+    (data.files || []).forEach(f => {
+      const arr = type === 'photo' ? window.S.photos : window.S.videos;
+      if (!arr.find(x => x.driveId === f.id)) {
+        arr.push({
           driveId: f.id,
           name: f.name,
           thumb: f.thumbnailLink || '',
@@ -123,6 +126,8 @@ async function fetchFromWorker(folderId, type) {
           src: (f.thumbnailLink || '').replace(/=s\d+/, '=s400'),     // 🆕 列表強制縮成 s400(載入快)
           type
         });
+      }
+    });
   } catch (e) { console.warn('fetchFromWorker error:', e); }
 }
 
@@ -258,7 +263,11 @@ function renderAssets() {
 }
 
 // ══ 素材項目 HTML ══
-if (f.src)        thumb = '<img loading="lazy" src="' + f.src   + '" onerror="' + errHandler + '">';
+function assetItemHtml(f, i, type, sel) {
+  const fallback = type === 'photo' ? '圖' : '影';
+  const errHandler = 'this.parentNode.innerHTML=\'' + fallback + '\'';
+  let thumb;
+  if (f.src)        thumb = '<img loading="lazy" src="' + f.src   + '" onerror="' + errHandler + '">';
   else if (f.thumb) thumb = '<img loading="lazy" src="' + f.thumb + '" onerror="' + errHandler + '">';
   else              thumb = fallback;
   return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})">
