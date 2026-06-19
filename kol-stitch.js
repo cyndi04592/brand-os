@@ -7,8 +7,8 @@
 //         ② image-to-video 讓那張 keyframe 動起來 → 家具不飄(因為全在起始幀裡)
 //       4 個錨整支共用 + 共用同一 seed → 6 張 keyframe 彼此一致(只有動作在變)。
 //       臉真實感:compose 用「複製原圖真皮、不製造瑕疵」錨;口音鐵律保留。
-//       ⚠️ image-to-video 無 webhook → 新路徑走 fal_poll(defaultPoll)。先求能動,
-//          webhook 優化(把 i2v 也接進 fal_hook)之後再補。
+//       ✅ v5.1:image-to-video 也帶 webhook(Worker seedance_image2video_submit v3.35)→
+//          走 episode_result,跟 seedance_submit 一樣免輪詢 fal。compose 是同步,不需輪詢。
 // --------------------------------------------------------------------------
 // v4.1：口音鐵律鎖 —— 在所有分段的唯一出海口送 fal 前,自動補口音(擋大陸腔)。
 // v4.0：webhook 背景生成(seedance_submit 路徑用;v5.0 的 i2v 路徑改回 fal_poll)。
@@ -88,7 +88,7 @@ window.KolStitch = (function () {
     throw new Error('等待逾時(超過 ' + (cfg.pollMaxTries * cfg.pollIntervalMs / 60000) + ' 分鐘還沒回來)');
   }
 
-  // fal_poll 輪詢 —— v5.0 的 image-to-video 走這條(i2v 無 webhook)。
+  // fal_poll 輪詢 —— 舊路徑/extractLastFrame 用(v5.1 的 i2v 已改 webhook,這條保留不刪)。
   async function defaultPoll(submitResult, onTick) {
     const { requestId, endpoint, statusUrl, responseUrl } = submitResult;
     for (let i = 0; i < cfg.pollMaxTries; i++) {
@@ -183,11 +183,12 @@ window.KolStitch = (function () {
       generateAudio: opts.generateAudio === true,
       tier: opts.tier || 'fast',
       seed: opts.seed,
+      brandId: opts.brandId,          // 🆕 webhook 用:fal_hook 以 brand + reqId 寫 R2
+      // 不傳 episodeId → 每段 keyed by 自己的 reqId,平行不撞 key
     });
 
-    // i2v 無 webhook → 走 fal_poll
-    const done = await defaultPoll(sub, onTick);
-    const videoUrl = done._url || pickUrl(done);
+    // 🆕 v5.1:i2v 帶 webhook → 問 episode_result(跟 seedance_submit 一樣,免輪詢 fal)
+    const videoUrl = await pollEpisode(sub.requestId, opts.brandId, onTick);
     if (!videoUrl) throw new Error('i2v 沒拿到影片 URL');
     return videoUrl;
   }
@@ -313,7 +314,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v5.0 · compose(nanobanana)→image-to-video · 4錨+共用seed鎖跨段 · 口音鐵律保留');
+  console.log('[KolStitch] 🎬 v5.1 · compose(nanobanana)→image-to-video(webhook) · 4錨+共用seed鎖跨段 · 口音鐵律保留');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
