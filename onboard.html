@@ -948,22 +948,30 @@ async function grabColors(){
   if(!url||!url.startsWith('http')){alert('請輸入有效的網址(需包含 https://)');return;}
   const btn=document.getElementById('btnGrabColor');btn.disabled=true;btn.innerHTML='<span class="spin" style="border-top-color:#fff"></span> 抓取中...';
   try{
+    // ★ v11.3:打新 action,Worker 會真的爬網頁、用 regex 撈 hex、Claude 篩 6 個品牌色
     const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'claude_generate',password:'raby2026',prompt:`請分析以下網站的品牌主色系,提取 6 個主要色碼。網站:${url}\n請只回傳 JSON 格式:{"colors":["#XXXXXX",...],"siteName":"網站名稱"}`})});
-    const data=await res.json();const text=data.text||'';
-    const m=text.match(/\{[\s\S]*\}/);if(!m)throw new Error('無法解析色碼');
-    const result=JSON.parse(m[0]);const colors=result.colors||[];if(!colors.length)throw new Error('沒有抓到色碼');
+      body:JSON.stringify({action:'extract_brand_colors',password:'raby2026',url})});
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error||'抓取失敗');
+    const colors=data.colors||[];
+    if(!colors.length)throw new Error('這個網站抓不到色碼');
+
     document.getElementById('colorSwatches').innerHTML=colors.map(hex=>
-      `<div class="swatch-item color-swatch-wrap" onclick="selectSwatch('${hex}','${result.siteName||'自訂'}色')">
+      `<div class="swatch-item color-swatch-wrap" onclick="selectSwatch('${hex}','${(data.siteName||'自訂').replace(/'/g,"\\'")}色')">
         <div class="color-swatch" style="background:${hex};"></div><span class="color-swatch-hex">${hex}</span>
       </div>`).join('');
-    extraColors=[];document.getElementById('colorResultTitle').textContent=`${result.siteName||url} 的色系:`;
+    extraColors=[];
+    // 信心度提示:high = 真的從網頁抓到的;low = SPA 空殼,Claude 用品牌知識猜的
+    const confLabel=data.confidence==='low'?' (網站為動態載入,以下為 AI 推測色系)':'';
+    document.getElementById('colorResultTitle').textContent=`${data.siteName||url} 的色系${confLabel}:`;
     document.getElementById('colorResult').style.display='block';
     document.querySelectorAll('.color-preset').forEach(el=>el.classList.remove('on'));
-  }catch(e){alert('抓取失敗:'+e.message+'\n\n請選擇預設色系');}
+  }catch(e){
+    // 柔性提示:不講「抓取失敗」這種讓客人覺得壞掉的話
+    alert('這個網站抓不到顏色 🎨\n\n可能原因:網站使用動態載入(SPA)、需要登入、或顏色寫在外部 CSS 檔。\n\n請從下方 12 個預設色系挑一個你喜歡的吧!');
+  }
   btn.disabled=false;btn.innerHTML='🎨 抓取色系';
 }
-
 function selectRadio(btn,group){
   btn.closest('.radio-group').querySelectorAll('.radio-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
   const id={cat:'f_category',style:'f_style'}[group];if(id)document.getElementById(id).value=btn.textContent.trim();
