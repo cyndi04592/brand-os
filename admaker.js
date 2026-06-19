@@ -244,14 +244,8 @@ Reference aesthetic: Apple product posters, Blue Bottle Coffee posters, Muji sto
 // ═══════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════
 // ★ v10.3 核心:品牌風格包 (BRAND_STYLE_PACKS)
-//   - 預設值寫在這裡,作為 GAS 抓不到時的 fallback
-//   - 啟動時會 fetch worker 的 gas_brand_packs_fetch,把結果合併進來
-//   - 合併規則:GAS 有的覆蓋 / GAS 沒有的保留 / GAS 全新的加入
-//   - 沒匹配到任何品牌包時,系統走 default_clean
 // ═══════════════════════════════════════════════════════════════════════
 let BRAND_STYLE_PACKS = {
-  // 巧福 CHIAO FU — 健康家電(捕蚊燈/復古電風)
-  // ★ v10.2 fix:捕蚊燈是「氣流吸入式」,不是電擊式滅蚊燈 — 文案/視覺都要強調安靜、無電擊
   chiaofu: {
     matchKeywords: ['chiaofu', 'chiao fu', '巧福', 'chiao'],
     label: '巧福 CHIAO FU',
@@ -272,7 +266,6 @@ let BRAND_STYLE_PACKS = {
 `
   },
 
-  // 空瑪那 KA — 瑜珈課程品牌
   ka_yoga: {
     matchKeywords: ['ka', '空瑪那', 'kamana', 'yoga', '瑜珈', '瑜伽'],
     label: '空瑪那 KA 瑜珈',
@@ -289,7 +282,6 @@ let BRAND_STYLE_PACKS = {
 `
   },
 
-  // RABY 咖啡店日系風 (從之前對話的咖啡客戶)
   raby_coffee: {
     matchKeywords: ['raby', '咖啡', 'coffee', 'cafe', 'daylight'],
     label: 'RABY 咖啡日系',
@@ -306,7 +298,6 @@ let BRAND_STYLE_PACKS = {
 `
   },
 
-  // LACEZ 內衣 — 法式精品溫柔
   lacez: {
     matchKeywords: ['lacez', '內衣', 'lingerie', 'underwear'],
     label: 'LACEZ 法式精品',
@@ -323,7 +314,6 @@ let BRAND_STYLE_PACKS = {
 `
   },
 
-  // RADESIGN 鞋子 — 街頭潮流
   radesign: {
     matchKeywords: ['radesign', 'ra design', '鞋', 'shoe', 'sneaker', 'outlet'],
     label: 'RADESIGN 街頭潮',
@@ -340,7 +330,6 @@ let BRAND_STYLE_PACKS = {
 `
   },
 
-  // 預設(沒匹配到任何品牌時的乾淨基底)
   default_clean: {
     matchKeywords: [],
     label: '通用乾淨',
@@ -355,10 +344,9 @@ let BRAND_STYLE_PACKS = {
 `
   }
 };
+
 // ═══════════════════════════════════════════════════════════════════════
 // ★ v10.2 風土調味 (REGIONAL_FLAVORS)
-//   套在「版式 × 品牌包」之上的最後一層調色
-//   讓同樣的版式可以渲染出日系/韓系/歐美/復古不同感覺
 // ═══════════════════════════════════════════════════════════════════════
 const REGIONAL_FLAVORS = {
   none: {
@@ -401,8 +389,7 @@ const REGIONAL_FLAVORS = {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-// ★ v10.2 情境主題 (CONTEXT_THEMES) — 沿用 v10.1 的 8 鍵但重命名為「情境」
-//   現在這層只負責「用什麼節慶/季節/狀態切入」,不再描述美學
+// ★ v10.2 情境主題 (CONTEXT_THEMES)
 // ═══════════════════════════════════════════════════════════════════════
 const CONTEXT_THEMES = {
   none: {
@@ -455,24 +442,16 @@ let TEXT_FONT  = 'bold';
 let CANVAS_TAINTED = false;
 let LAST_BLOB_SIZE = 0;
 
-// v10.2 新狀態:版式 × 品牌包(自動) × 風土 × 情境
-let SELECTED_LAYOUT  = 'minimal_poster';   // 預設:極簡海報型
+let SELECTED_LAYOUT  = 'minimal_poster';
 let SELECTED_FLAVOR  = 'none';
 let SELECTED_CONTEXT = 'none';
-// v10.1 舊狀態 — 保留作備援
 let SELECTED_INSPIRATION = null;
 let LAST_POSTER_URL = null;
 
 const BLACK_IMAGE_THRESHOLD = 30000;
 
 
-// ★ v10.5:從 worker 拿 GAS brand_packs,合併進 BRAND_STYLE_PACKS
-//   合併規則:
-//   1. 把 GAS 的每筆 pack 組成 prompt-ready 的 dna 字串
-//   2. 以 pack_key 為鍵覆蓋本地預設(GAS 是真相來源)
-//   3. GAS 沒提供的本地預設保留(避免 GAS 沒填到時系統壞掉)
-//   4. ★ v10.5:同時呼叫 registerBrandPackColors() 把 primary_color 注入 CMAP
-//   5. 任何錯誤直接吞掉,fallback 到本地預設
+// ★ v10.5:從 worker 拿 GAS brand_packs
 let _BRAND_PACKS_GAS_LOADED = false;
 let _BRAND_PACKS_GAS_LOADING = false;
 async function fetchAndMergeBrandPacksFromGAS() {
@@ -494,15 +473,12 @@ async function fetchAndMergeBrandPacksFromGAS() {
       return;
     }
 
-    // ★ v10.5:把 brand_packs 的 primary_color 動態註冊進 CMAP
-    //    (config.js 提供 registerBrandPackColors 函式,這裡只負責呼叫)
     if (typeof registerBrandPackColors === 'function') {
       registerBrandPackColors(data.packs);
     } else {
       console.warn('[v10.5] registerBrandPackColors 函式不存在,CMAP 不會被更新。請確認 config.js 已升級到 v10.5');
     }
 
-    // 組裝 dna 字串(把 sheet 的 12 個欄位拼成 prompt 一段)
     const merged = { ...BRAND_STYLE_PACKS };
     for (const p of data.packs) {
       if (!p.pack_key) continue;
@@ -523,7 +499,7 @@ async function fetchAndMergeBrandPacksFromGAS() {
         matchKeywords: Array.isArray(p.matchKeywords) ? p.matchKeywords : [],
         label: p.label || p.pack_key,
         dna: dnaLines.join('\n') + '\n',
-        _source: 'gas',  // 內部標記,debug 用
+        _source: 'gas',
       };
     }
     BRAND_STYLE_PACKS = merged;
@@ -534,7 +510,6 @@ async function fetchAndMergeBrandPacksFromGAS() {
     console.log(`[v10.5] ✅ 已從 GAS 載入 ${gasCount} 個品牌包,當前總計 ${totalCount} 個 (含 default_clean)`);
     if (data.cached) console.log(`[v10.5] (worker cache hit, age=${data.cache_age_sec}s)`);
 
-    // 載入完成後刷新 badge(如果 modal 已開著)
     try { updateBrandPackBadge(); } catch(_) {}
   } catch (e) {
     console.warn('[v10.5] GAS brand packs 載入錯誤:', e.message, '— 維持使用內建預設');
@@ -550,8 +525,6 @@ function detectBrandPack() {
   const haystack = `${brand.id || ''} ${brand.name || ''} ${brand.label || ''}`.toLowerCase().trim();
   if (!haystack) return BRAND_STYLE_PACKS.default_clean;
 
-  // 把所有非 default 的 (pack, keyword) 配對展平,並依關鍵字長度由長到短排序
-  // 這樣「chiaofu」(7字)會比「chiao」(5字)先嘗試,避免短字搶先
   const matchPairs = [];
   for (const [key, pack] of Object.entries(BRAND_STYLE_PACKS)) {
     if (key === 'default_clean') continue;
@@ -561,17 +534,13 @@ function detectBrandPack() {
   }
   matchPairs.sort((a, b) => b.keyword.length - a.keyword.length);
 
-  // 中文字元判斷
   const isChinese = (s) => /[\u4e00-\u9fff]/.test(s);
 
   for (const { pack, keyword } of matchPairs) {
     let hit = false;
     if (isChinese(keyword)) {
-      // 中文關鍵字直接 includes
       hit = haystack.includes(keyword);
     } else {
-      // 英文關鍵字用全字邊界正則 (避免 ka 命中 sakamoto / daikamano)
-      // 對於 2-3 字短關鍵字一律用全字邊界;4 字以上仍用全字邊界,但本來誤判機率就低
       const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`\\b${escaped}\\b`, 'i');
       hit = regex.test(haystack);
@@ -587,14 +556,13 @@ function detectBrandPack() {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-//  v9.x 原樣保留 (open/close/render/handlers/...)
+//  v9.x 原樣保留
 // ═══════════════════════════════════════════════════════════════════════
 function openAdMaker(idx) {
   PR_BG_IMG = null; PR_MODE = 'product_shot';
   CANVAS_TAINTED = false;
   setPrStatus('', '');
 
-  // v10.5: 第一次開 AdMaker 時非阻塞載入 GAS 品牌包(失敗自動 fallback)
   fetchAndMergeBrandPacksFromGAS();
 
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
@@ -603,7 +571,6 @@ function openAdMaker(idx) {
     const el = document.getElementById(id);
     if (el) el.style.display = id === 'prSceneSection' ? 'block' : 'none';
   });
-  // v10.2: gpt_poster section 預設藏起來
   const gpt = document.getElementById('prGptPosterSection');
   if (gpt) gpt.style.display = 'none';
 
@@ -619,7 +586,6 @@ function openAdMaker(idx) {
   document.getElementById('amTitle').value = initialTitle;
   document.getElementById('prCustomPrompt').value = '';
   renderAmPhotoRow();
-  // v10.2: 顯示當前命中的品牌包
   updateBrandPackBadge();
   document.getElementById('adMakerModal').style.display = 'block';
   renderAdCanvas();
@@ -684,7 +650,6 @@ function onMdPhotoSelected(input) {
   reader.readAsDataURL(file);
 }
 
-// v10.2: 修 bug — 切到 gpt_poster 模式時清掉舊靈感鍵狀態 + 顯示版式選擇器
 function setPrMode(btn, mode) {
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on'); PR_MODE = mode;
@@ -693,7 +658,6 @@ function setPrMode(btn, mode) {
   const gpt = document.getElementById('prGptPosterSection');
   if (gpt) gpt.style.display = mode === 'gpt_poster' ? 'block' : 'none';
 
-  // ★ v10.2 bug fix:切換模式時清掉殘留選中狀態
   if (mode !== 'gpt_poster') {
     SELECTED_INSPIRATION = null;
     document.querySelectorAll('.insp-btn').forEach(b => b.classList.remove('on'));
@@ -702,9 +666,7 @@ function setPrMode(btn, mode) {
     document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('on'));
   }
   if (mode === 'gpt_poster') {
-    // 切到懶人廣告圖時顯示當前品牌包
     updateBrandPackBadge();
-    // 預設選中極簡海報 + 不調味 + 無情境
     document.querySelector(`.layout-btn[data-layout="${SELECTED_LAYOUT}"]`)?.classList.add('on');
     document.querySelector(`.flavor-btn[data-flavor="${SELECTED_FLAVOR}"]`)?.classList.add('on');
     document.querySelector(`.context-btn[data-context="${SELECTED_CONTEXT}"]`)?.classList.add('on');
@@ -882,10 +844,21 @@ async function submitFluxAndCheckBlob(scenePrompt, paddedBase64) {
   }
 }
 
-const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
+async function applyPhotoroomBg() {
+  const btn = document.getElementById('prApplyBtn');
+
+  if (PR_MODE === 'gpt_poster') {
+    btn.disabled = true; btn.textContent = '⏳ AI 廣告圖生成中...';
+    await generateGptPoster();
+    return;
+  }
+
+  const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇照片!', 'var(--red)'); return; }
   const imgSrc = photo.hiRes || photo.src || photo.thumb;  // 🆕 優先用 s1600 高解析(生圖品質更好)
   if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
+
+  btn.disabled = true; btn.textContent = '⏳ AI 處理中...';
 
   if (PR_MODE === 'kling_tryon') {
     const interval = startProgress(60000);
@@ -1313,7 +1286,6 @@ function blobToBase64(blob) {
 // ★ v10.1 / v10.2:懶人 AI 廣告圖模組 (GPT Image 2 edit 模式)
 // ═══════════════════════════════════════════════════════════════════════
 
-// v10.1 舊靈感鍵 — 保留作備援(沒選版式時用)
 const INSPIRATION_KEYS = {
   summer_beach: { label: '🌊 夏日海邊', style: 'vibrant tropical summer scene...' },
   japan_minimal: { label: '✨ 日系極簡', style: 'Japanese minimalist editorial...' },
@@ -1335,7 +1307,6 @@ function setInspiration(btn, key) {
   }
 }
 
-// v10.2: 設版式
 function setLayout(btn, layoutKey) {
   document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
@@ -1343,7 +1314,6 @@ function setLayout(btn, layoutKey) {
   console.log('[v10.2] 版式選擇:', layoutKey, LAYOUT_TEMPLATES[layoutKey]?.label);
 }
 
-// v10.2: 設風土調味
 function setFlavor(btn, flavorKey) {
   document.querySelectorAll('.flavor-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
@@ -1351,7 +1321,6 @@ function setFlavor(btn, flavorKey) {
   console.log('[v10.2] 風土調味:', flavorKey, REGIONAL_FLAVORS[flavorKey]?.label);
 }
 
-// v10.2: 設情境
 function setContext(btn, contextKey) {
   document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
@@ -1359,7 +1328,6 @@ function setContext(btn, contextKey) {
   console.log('[v10.2] 情境主題:', contextKey, CONTEXT_THEMES[contextKey]?.label);
 }
 
-// v10.2: 更新「目前自動套用的品牌包」標籤
 function updateBrandPackBadge() {
   const badge = document.getElementById('brandPackBadge');
   if (!badge) return;
@@ -1378,18 +1346,11 @@ function getBrandContext() {
     product:   prod?.name || '',
     adStyle:   brand?.adStyle || '',
     hashtags:  brand?.hashtags || '',
-    // ★ v10.6:商品本質(從 admin v11.2 加的 spec / feature 欄帶進來)
-    //    解決「同品牌不同調性商品」問題
-    //    例:巧福慈禧電風扇 vs 復古電風扇 — 品牌靈魂同,但商品本質完全相反
     spec:      prod?.spec || '',
     feature:   prod?.feature || ''
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// ★ v10.2 核心:組合 prompt
-//   結構:[商品保留鐵律] + [品牌包DNA] + [版式骨架] + [風土調味] + [情境主題] + [文案] + [輸出規格]
-// ═══════════════════════════════════════════════════════════════════════
 function buildPosterPrompt() {
   const ctx = getBrandContext();
   const brandPack = detectBrandPack();
@@ -1403,24 +1364,18 @@ function buildPosterPrompt() {
 
   let prompt = '';
 
-  // [1] 商品保留鐵律(最高優先)
   prompt += `=== CRITICAL PRODUCT PRESERVATION (HIGHEST PRIORITY) ===\n`;
   prompt += `- The product in the source image MUST be reproduced PIXEL-PERFECT identical\n`;
   prompt += `- Preserve exact product shape, proportions, colors, label design, logo, and all packaging typography\n`;
   prompt += `- Do NOT redesign the product, do NOT invent new packaging, do NOT alter brand marks\n`;
   prompt += `- The product is the hero — build the advertising scene AROUND it\n\n`;
 
-  // [2] 品牌風格 DNA(從 BRAND_STYLE_PACKS 自動帶入)
   prompt += `=== BRAND STYLE PACK (AMBIENCE ONLY — does NOT define product look) ===\n`;
   prompt += brandPack.dna + '\n';
   if (ctx.brand) prompt += `Brand name to display (small signature): "${ctx.brand}"${ctx.subBrand ? ' · ' + ctx.subBrand : ''}\n`;
   if (ctx.adStyle) prompt += `Additional brand direction note: ${ctx.adStyle}\n`;
   prompt += '\n';
 
-  // ★ v10.6:[2.5] 商品本質(關鍵新增 — 解決「同品牌不同調性商品」問題)
-  //    例:巧福品牌靈魂是「溫暖居家」,但慈禧電風扇是科技風,復古電風扇是復古風
-  //    這兩支商品外觀完全相反,必須用 spec/feature 告訴 AI 它們的「本質特徵」
-  //    本質特徵的優先級 HIGH:商品造型 / 顏色 / 材質必須符合,不可被品牌氛圍蓋過
   if (ctx.product || ctx.spec || ctx.feature) {
     prompt += `=== PRODUCT ESSENCE (HIGH PRIORITY — must be respected) ===\n`;
     prompt += `This specific product variant has its OWN character that MUST be preserved regardless of brand mood or regional flavor:\n`;
@@ -1430,31 +1385,26 @@ function buildPosterPrompt() {
     prompt += `IMPORTANT: The product's intrinsic visual character (e.g. "retro brass" stays retro brass, "white minimalist tech" stays white tech) MUST override any conflicting hints from the brand pack ambience or regional flavor. The brand pack only defines AMBIENCE; the product specs define what the product LOOKS LIKE.\n\n`;
   }
 
-  // [3] 版式骨架(畫面長什麼樣)
   prompt += `=== LAYOUT FRAMEWORK ===\n`;
   prompt += `Layout type: ${layout.label}\n`;
   prompt += layout.composition + '\n\n';
 
-  // [4] 風土調味(可選)
   if (flavor.flavor) {
     prompt += `=== REGIONAL FLAVOR (OVERRIDES brand pack scene hints) ===\n`;
     prompt += flavor.flavor + '\n';
     prompt += `CRITICAL OVERRIDE RULE: This regional flavor takes precedence over any scene description, era, or decor hinted by the brand pack. If brand pack says "warm domestic Taiwan" and flavor says "Korean clean pastel" → output MUST be Korean clean pastel (not Taiwan retro). Brand pack only contributes overall mood; flavor decides the actual visual scene.\n\n`;
   }
 
-  // [5] 情境主題(可選)
   if (contextTheme.context) {
     prompt += `=== CONTEXTUAL THEME ===\n`;
     prompt += contextTheme.context + '\n\n';
   }
 
-  // [6] 自由風格描述(使用者手動補充,可選)
   if (styleDesc) {
     prompt += `=== ADDITIONAL STYLE NOTES ===\n`;
     prompt += styleDesc + '\n\n';
   }
 
-  // [7] 文案
   if (headline || subHeadline) {
     prompt += `=== TEXT TO RENDER ===\n`;
     prompt += `Render the following Traditional Chinese text with pixel-perfect typography (correct glyphs, proper spacing, professional editorial layout). Match the typography hierarchy specified in the brand DNA above.\n`;
@@ -1464,7 +1414,6 @@ function buildPosterPrompt() {
     prompt += `Typography must be crisp, readable, and integrated naturally into the layout.\n\n`;
   }
 
-  // [8] 輸出規格
   prompt += `=== OUTPUT SPECIFICATION ===\n`;
   prompt += `- Vertical portrait orientation, 4:3 advertising poster (suitable for IG feed, e-commerce banner, print magazine)\n`;
   prompt += `- High resolution, sharp typography, professional commercial photography quality\n`;
@@ -1476,10 +1425,7 @@ function buildPosterPrompt() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// ★ 雙保險備案路 helper:輪詢 Worker 的 query_ai_image
-//   每 5 秒問一次「Drive 那張圖(brandId+reqid)好了沒」
-//   找到回 { found:true, imageBase64|download_url };一直沒 → maxMs 後回 { found:false }
-//   ⚠️ Worker 已把 Drive 圖轉 base64,避開前端 CORS / tainted canvas
+// ★ 雙保險備案路 helper
 // ═══════════════════════════════════════════════════════════════════════
 async function pollDriveByReqid(brandId, reqid, maxMs = 240000) {
   const start = Date.now();
@@ -1497,8 +1443,6 @@ async function pollDriveByReqid(brandId, reqid, maxMs = 240000) {
   return { found: false };
 }
 
-// ★ 小工具:回傳「第一個 resolve 成非 null 值」的 promise
-//   全部都 null(或 reject)才回 null。比 Promise.race 好:race 會被先 resolve 的 null 搶走
 async function firstTruthy(promises) {
   return new Promise((resolve) => {
     let remaining = promises.length;
@@ -1524,6 +1468,8 @@ async function generateGptPoster() {
   if (!photo) { setPrStatus('⚠️ 請先選擇商品照片!', 'var(--red)'); return; }
   const imgSrc = photo.hiRes || photo.src || photo.thumb;  // 🆕 優先用 s1600 高解析(生圖品質更好)
   if (!imgSrc) { setPrStatus('⚠️ 商品照尚未載入', 'var(--red)'); return; }
+
+  const headline = document.getElementById('gptHeadline')?.value?.trim();
   if (!headline) {
     setPrStatus('⚠️ 請至少填主標(大字)', 'var(--red)');
     document.getElementById('prApplyBtn').disabled = false;
@@ -1531,14 +1477,11 @@ async function generateGptPoster() {
     return;
   }
 
-  // ★ 雙保險核心:reqid 在 submit「之前」就產生(13 位毫秒時間戳,對齊 saveAiImage 命名)
-  //   三邊天然對齊:前端產 → submit 帶給 FAL webhook → webhook 用它命名 → 前端用它查
   const brandId = window.S?.brandId || '';
   const reqid = String(Date.now());
 
   const interval = startProgress(90000);
   try {
-    // v10.2.1 hotfix:強制刷新 badge,避免 UI 顯示與實際 prompt 用的品牌包不一致
     updateBrandPackBadge();
 
     setPrStatus('📤 上傳商品照處理中...', 'var(--t3)');
@@ -1558,19 +1501,15 @@ async function generateGptPoster() {
       image_size: 'portrait_4_3',
       quality: 'high',
       num_images: 1,
-      brandId,   // ★ 帶給 FAL webhook
-      reqid      // ★ 帶給 FAL webhook
+      brandId,
+      reqid
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
     setPrStatus('⏳ 出圖中(熱點不穩也沒關係,雲端會自動補)...', 'var(--t3)');
 
-    // ★ 雙保險:兩條路同時跑,哪條先成功用哪條,4 分鐘都沒 → 停損
-    //   路 A(快):FAL poll —— 網路穩時最快
-    //   路 B(備案):輪詢 Drive(query_ai_image)—— 熱點斷線時靠 webhook 已存好的圖
-    const FAILSAFE_MS = 240000; // 4 分鐘停損(RA 定的)
+    const FAILSAFE_MS = 240000;
     const racePromises = [
-      // 路 A:FAL poll
       (async () => {
         const r = await pollUntilDone(
           submitData.requestId, submitData.endpoint,
@@ -1582,9 +1521,8 @@ async function generateGptPoster() {
         if (r.status === 'FAILED') {
           console.warn('[雙保險] FAL poll FAILED,改等 Drive:', r.error);
         }
-        return null; // TIMEOUT 或 FAILED → 交給 Drive 路
+        return null;
       })(),
-      // 路 B:輪詢 Drive
       (async () => {
         const d = await pollDriveByReqid(brandId, reqid, FAILSAFE_MS);
         if (d.found) {
@@ -1594,15 +1532,12 @@ async function generateGptPoster() {
       })(),
     ];
 
-    // 等「第一個有結果(非 null)」的路;兩條都 null 才算全敗
     let winner = await firstTruthy(racePromises);
 
     if (!winner) {
-      // ★ 停損:4 分鐘兩條都沒 → 報錯 + 顯示 reqid(RA 防呆,方便事後 Drive 對檔)
       throw new Error(`生成逾時(4分鐘)。圖可能仍在雲端處理,稍後可在「AI生成完成區」找代碼 ${reqid} 的圖`);
     }
 
-    // 拿到圖:FAL 路給 imageUrl,Drive 路給 imageBase64(已避 CORS)或 download_url
     const finalImg = winner.imageUrl || winner.imageBase64 || winner.download_url;
     if (!finalImg) throw new Error('未取得廣告圖片');
 
@@ -1610,7 +1545,6 @@ async function generateGptPoster() {
     LAST_POSTER_URL = winner.imageUrl || winner.download_url || finalImg;
     CANVAS_TAINTED = false;
 
-    // ★ 存檔:只有「FAL 路先贏」時才需要前端補存(Drive 路代表 webhook 已存好,不用再存)
     if (winner.from === 'fal') {
       saveImageToDriveSilently(winner.imageUrl, 'poster', reqid);
     }
@@ -1755,9 +1689,7 @@ function showVideoInCanvas(videoUrl) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// ★ 背景靜默存檔:把生成的海報落地到品牌 Drive「AI生成完成區」
-//   FAL 圖 url 會過期 → 存一份永久檔到 Drive
-//   背景跑、不擋畫面、失敗只記 log 不吵使用者
+// ★ 背景靜默存檔
 // ═══════════════════════════════════════════════════════════════════════
 async function saveImageToDriveSilently(imageUrl, kind, reqId) {
   try {
@@ -1768,7 +1700,7 @@ async function saveImageToDriveSilently(imageUrl, kind, reqId) {
       return;
     }
 
-    const reqId = arguments[2] || ((kind || 'poster') + '_' + Date.now());
+    const finalReqId = reqId || ((kind || 'poster') + '_' + Date.now());
     const brand = window.BRANDS?.find(b => b.id === brandId);
     const prod  = window.S?.prod;
 
@@ -1776,7 +1708,7 @@ async function saveImageToDriveSilently(imageUrl, kind, reqId) {
       action: 'save_ai_image_to_drive',
       brandId,
       imageUrl,
-      requestId: reqId,
+      requestId: finalReqId,
       metadata: {
         source: 'admaker_' + (kind || 'poster'),
         brand: brand?.name || '',
