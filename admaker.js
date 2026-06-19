@@ -891,10 +891,7 @@ async function applyPhotoroomBg() {
     return;
   }
 
-  const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
-  if (!photo) { setPrStatus('⚠️ 請先選擇照片!', 'var(--red)'); return; }
-  const imgSrc = photo.src || photo.thumb;
-  if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
+  const imgSrc = photo.hiRes || photo.src || photo.thumb;  // 🆕 優先用 s1600 高解析(生圖品質更好)
 
   btn.disabled = true; btn.textContent = '⏳ AI 處理中...';
 
@@ -1531,10 +1528,7 @@ async function firstTruthy(promises) {
 }
 
 async function generateGptPoster() {
-  const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
-  if (!photo) { setPrStatus('⚠️ 請先選擇商品照片!', 'var(--red)'); return; }
-  const imgSrc = photo.src || photo.thumb;
-  if (!imgSrc) { setPrStatus('⚠️ 商品照尚未載入', 'var(--red)'); return; }
+  const imgSrc = photo.hiRes || photo.src || photo.thumb;  // 🆕 優先用 s1600 高解析(生圖品質更好)
 
   const headline = document.getElementById('gptHeadline')?.value?.trim();
   if (!headline) {
