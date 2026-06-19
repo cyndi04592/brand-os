@@ -3391,6 +3391,9 @@ async function createStitchedVideo(beats) {
   const lookImage = S.availableLooks.find(l => l.id === S.selectedLookId)?.image_url
                     || S.selectedKol.image_url;
   if (!lookImage) { toast('KOL 肖像 URL 取不到,請重新載入', 'error'); return; }
+   // 🔧 修:createStitchedVideo 沒有 persona 變數(STEP3 才有)→ 補上,來源=選定的 KOL
+  const persona = (S.selectedKol && (S.selectedKol.persona || S.selectedKol)) || {};
+  
 
   // 把分鏡秒數夾到 Seedance 合法單段長度(系統現用 5/10/15)
   const snapDur = (s) => {
