@@ -302,9 +302,14 @@ function selectAsset(type, i) {
   if (type === 'photo') window.S.selPhoto = window.S.selPhoto === i ? null : i;
   else                  window.S.selVideo = window.S.selVideo === i ? null : i;
   renderAssets();
-  // 🆕 選到照片就背景偷抓原圖(暖機),生圖時直接拿、不用等
+  // 🆕 選到照片就背景偷抓原圖(暖機);原圖一到自動重畫預覽 → 從縮圖變清晰
   if (type === 'photo' && window.S.selPhoto !== null) {
-    ensureFullRes(window.S.photos[window.S.selPhoto]);
+    const sel = window.S.selPhoto;
+    // 防 LAG:記憶體永遠只留正在用的這一張原圖,其餘還原成縮圖
+    window.S.photos.forEach((p, idx) => { if (idx !== sel) p.full = ''; });
+    ensureFullRes(window.S.photos[sel]).then(() => {
+      if (typeof renderAdCanvas === 'function') renderAdCanvas();
+    });
   }
   if (window.S.scripts.length > 0) {
     const brand = window.BRANDS.find(b => b.id === window.S.brandId);
