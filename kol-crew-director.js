@@ -317,6 +317,42 @@
     BRAND_ACTIONS,
   };
 
+// ───────── 接片/參考圖路徑專用:精簡敘事組裝(真實度擺最前留滿)─────────
+// 共用區塊只組一次;回 {front: 真實度核心(擺最前), tail: 商品/安全/品牌(擺最後)}
+function composeStitchShared(ctx) {
+  const C = CrewMembers;
+  const front = [];
+  // ① 真實度核心 — 直接呼叫攝影師(自帶正確口音 + REALISM_BASE + SCENE_REALISM),命脈全留、擺最前
+  pushIfNonEmpty(front, C.cinematographer?.contribute(ctx));
+  // ② 化妝只取「不蓋掉真皮 / 自然殘留」這層真實度(prettiness 由臉圖顧 → 剃)
+  front.push('any makeup is a thin surface finish only that must not smooth or replace the real skin underneath, it looks naturally worn not freshly applied');
+  // ③ 打光(doc 說對品質影響最大)
+  if (ctx.scene?.light) front.push(ctx.scene.light);
+  front.push('keep the light on her face soft and even, no harsh overhead glare or hot specular highlights on the skin');
+  // ④ 接地真實(不浮空)
+  front.push('soft natural contact shadows where her hands and the product touch surfaces, physically grounded never floating');
+
+  const tail = [];
+  // ⑤ 商品(命脈:大小 + 形狀鎖 + 正面朝鏡頭)— 道具師原句
+  pushIfNonEmpty(tail, window.KolProduct?.contribute(ctx));
+  // ⑥ 內衣安全鎖(只在內衣品牌)— 服裝師原句
+  if (['fashion_lingerie', 'lingerie', 'underwear'].includes(ctx.brand?.brand_type || '')) {
+    tail.push('she is fully dressed in everyday outerwear, modest and tasteful, no exposed undergarments, no revealing clothing');
+  }
+  // ⑦ 品牌調性(短,全域 tone)+ 無字幕
+  pushIfNonEmpty(tail, C.brandSoul?.contribute(ctx));
+  tail.push('no subtitles, no captions, no on-screen text, no watermark');
+
+  return { front: front.filter(Boolean).join('. '), tail: tail.filter(Boolean).join('. ') };
+}
+
+// 每段只放「這一格獨一無二」的靈魂:動作+payoff(原封不動,絕不砍)+ 台詞
+function composeStitchBeat(situation, persona) {
+  const { action, speechLine } = parseSituation(situation, persona);
+  return [action, speechLine].filter(Boolean).join('. ');
+}
+window.composeStitchShared = composeStitchShared;
+window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
