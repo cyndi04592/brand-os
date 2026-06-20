@@ -3433,23 +3433,34 @@ async function createStitchedVideo(beats) {
     if (/3\/4|3-4|斜側|斜角|three.?quarter/i.test(t)) return 'q34';
     return 'front';
   };
+  // 🆕 B 版精簡敘事:LEAN_STITCH=true 時,組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
+  const _shared = (window.LEAN_STITCH && typeof composeStitchShared === 'function')
+    ? composeStitchShared(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, '15',
+        { outfitBrand: S.selectedOutfitBrand, episode: { persona, product: stitchProduct } })
+    : null;
   const plan = beats.map((b, i) => {
     const sit = (b.shotDesc || '')
       + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
-    const opts = { outfitBrand: S.selectedOutfitBrand, forceSingleShot: true };
-    opts.episode = { situation: sit, product: stitchProduct };
-    let p = composeSeedancePrompt(
-      S.currentBrandId, S.selectedSceneId, S.selectedLocationId, null, // 分鏡模式:運鏡交給分鏡卡,不再疊加
-      String(snapDur(b.seconds)), opts
-    );
-    if (!p) p = sit;
-    if (!/consistent facial features/i.test(p)) {
-      p += ', consistent facial features and identity preserved from reference image, same person throughout';
-    }
-    // 服裝師已在 composeSeedancePrompt 放好「唯一一句 wearing X」;這裡只補一致性鎖,不再 naming 衣服
-    // 🆕 商品比例鎖:跨段同一物理尺寸,別忽大忽小
-    if (!/relative to her face/i.test(p)) {
-      p += ', the product package is a small real-world snack item roughly the height of her face or smaller; keep it at this small size and the same scale relative to her face in every shot; it rests on the desk or is held loosely in one hand, never lifted toward the camera, never enlarged to fill the frame, never occupying more than a small part of the frame, and its size never changes between shots';
+    let p;
+    if (_shared) {
+      // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞,不重複、不堆疊
+      p = composeStitchBeat(sit, persona);
+      if (!p) p = sit;
+    } else {
+      // A 版(現狀):每段完整 composeSeedancePrompt + 一致性/商品比例鎖
+      const opts = { outfitBrand: S.selectedOutfitBrand, forceSingleShot: true };
+      opts.episode = { situation: sit, product: stitchProduct };
+      p = composeSeedancePrompt(
+        S.currentBrandId, S.selectedSceneId, S.selectedLocationId, null, // 分鏡模式:運鏡交給分鏡卡,不再疊加
+        String(snapDur(b.seconds)), opts
+      );
+      if (!p) p = sit;
+      if (!/consistent facial features/i.test(p)) {
+        p += ', consistent facial features and identity preserved from reference image, same person throughout';
+      }
+      if (!/relative to her face/i.test(p)) {
+        p += ', the product package is a small real-world snack item roughly the height of her face or smaller; keep it at this small size and the same scale relative to her face in every shot; it rests on the desk or is held loosely in one hand, never lifted toward the camera, never enlarged to fill the frame, never occupying more than a small part of the frame, and its size never changes between shots';
+      }
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
     return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw' };
@@ -3464,6 +3475,7 @@ async function createStitchedVideo(beats) {
 
   try {
     const result = await KolStitch.runStitchFlow(plan, {
+      shared: _shared || undefined,   // 🆕 B 版才傳(真實度 front/tail);沒有就走 A 版
       confirmed: true,   // 🛡️ 進入點已確認過,kol-stitch 內的窗不重跳
       kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
       productImageUrls: orderedProductUrls(),
@@ -5686,31 +5698,43 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
 
   const prevArc = { ...S.storyArc };
   S.storyArc = { ...S.storyArc, tone };
+  // 🆕 B 版精簡敘事:組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
+  const _shared = (window.LEAN_STITCH && typeof composeStitchShared === 'function')
+    ? composeStitchShared(S.currentBrandId, sceneId, locationId, '15',
+        { outfitBrand: chosenOutfitBrand || undefined, episode: { persona, product } })
+    : null;
   const plan = beats.map((b) => {
     const sit = (b.shotDesc || '')
       + (b.dialogue ? `。${persona.persona_name || '主角'}直視鏡頭自然地說:「${b.dialogue}」` : '');
-    const opts = {
-      outfitBrand: chosenOutfitBrand || undefined,
-      forceSingleShot: true,
-      episode: {
-        persona: {
-          persona_name: persona.persona_name, gender: persona.gender, nationality: persona.nationality,
-          background: persona.background, personality: persona.personality, speaking_style: persona.speaking_style,
-          role_relationship: persona.role_relationship, signature_topics: persona.signature_topics,
-          taboo_words: persona.taboo_words, forbidden_topics: persona.forbidden_topics,
+    let p;
+    if (_shared) {
+      // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞
+      p = composeStitchBeat(sit, persona);
+      if (!p) p = sit;
+    } else {
+      // A 版(現狀)
+      const opts = {
+        outfitBrand: chosenOutfitBrand || undefined,
+        forceSingleShot: true,
+        episode: {
+          persona: {
+            persona_name: persona.persona_name, gender: persona.gender, nationality: persona.nationality,
+            background: persona.background, personality: persona.personality, speaking_style: persona.speaking_style,
+            role_relationship: persona.role_relationship, signature_topics: persona.signature_topics,
+            taboo_words: persona.taboo_words, forbidden_topics: persona.forbidden_topics,
+          },
+          product,
+          situation: sit,
         },
-        product,
-        situation: sit,
-      },
-    };
-    let p = composeSeedancePrompt(S.currentBrandId, sceneId, locationId, null, String(snapDur(b.seconds)), opts);
-    if (!p) p = sit;
-    if (!/consistent facial features/i.test(p)) {
-      p += ', consistent facial features and identity preserved from reference image, same person throughout';
-    }
-    // 🆕 商品比例鎖:綁「臉」(穩定錨,有參考圖),不綁「手」(會變);禁止放大佔畫面
-    if (!/relative to her face/i.test(p)) {
-      p += ', the product package is a small real-world snack item no taller than the length of her hand; keep it at this small size and the same scale relative to her face in every shot; it rests on the desk or is held loosely in one hand, never lifted toward the camera, never enlarged to fill the frame, never occupying more than a small part of the frame, and its size never changes between shots';
+      };
+      p = composeSeedancePrompt(S.currentBrandId, sceneId, locationId, null, String(snapDur(b.seconds)), opts);
+      if (!p) p = sit;
+      if (!/consistent facial features/i.test(p)) {
+        p += ', consistent facial features and identity preserved from reference image, same person throughout';
+      }
+      if (!/relative to her face/i.test(p)) {
+        p += ', the product package is a small real-world snack item no taller than the length of her hand; keep it at this small size and the same scale relative to her face in every shot; it rests on the desk or is held loosely in one hand, never lifted toward the camera, never enlarged to fill the frame, never occupying more than a small part of the frame, and its size never changes between shots';
+      }
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
     return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw' };
@@ -5735,6 +5759,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
 
   try {
     const result = await KolStitch.runStitchFlow(plan, {
+      shared: _shared || undefined,   // 🆕 B 版才傳;沒有就走 A 版
       confirmed: true,   // 🛡️ 進入點已確認過,kol-stitch 內的窗不重跳
       kolImageUrl,
       productImageUrls,
