@@ -33,7 +33,7 @@
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
-  const SCENE_REALISM = 'shot as one continuous photographic frame, a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, premium cinematic realism with high filmic production value, the subject and the background share one unified cinematic color grade and the same ambient color temperature so she genuinely belongs inside the scene and never looks pasted on, consistent filmic grading across the entire frame, no crowd, no extra background people, no stylized or exaggerated artificial elements';
+  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, premium cinematic realism with high filmic production value, the subject and the background share one unified cinematic color grade and the same ambient color temperature so she genuinely belongs inside the scene and never looks pasted on, consistent filmic grading across the entire frame, no crowd, no extra background people, no stylized or exaggerated artificial elements';
 
   // 🎥 運鏡元資料
   const CAMERA_MOVEMENTS = {
@@ -128,5 +128,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.20 就緒 · REALISM_BASE(人) + SCENE_REALISM(場景落地·打背景假假的) + 台灣腔');
+  console.log('[KolCinematographer] 📷 v5.21 就緒 · 拔掉 one-continuous-photographic-frame(凍背景兇手)→ 背景恢復活的 · REALISM_BASE(人) + SCENE_REALISM(場景落地) + 台灣腔');
 })();
