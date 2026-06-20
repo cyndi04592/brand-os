@@ -383,7 +383,7 @@ window.KolStitch = (function () {
 
     const tasks = chunks.map(function (chunk, i) {
       const beats = chunk.beats || [];
-      const continuityFrom = (i > 0) ? lastActionText(chunks[i - 1]) : null;   // 🔗 第1段沒有上一段
+      const continuityFrom = null;   // 🔗 v7.1 接棒關閉:文字接棒「she has just …上一段動作」會被模型當成「要演的動作」→ 連續重演(連開好幾次箱)。連貫改靠「分鏡本身是連續故事 + 視覺鎖定(同人/同景/同服裝/同seed)」。lastActionText 保留待日後改成「狀態接棒」再開。
       const chunkSec = Math.min(15, Math.max(3, beats.reduce(function (a, b) { return a + (b.durationSec || 5); }, 0) || 15));
       // 該 chunk 的 KOL 圖:用第一個 beat 的角度圖(STEP2/STEP3 已挑好)→ 沒有才退 chunk/全域
       const chunkKol = (beats[0] && beats[0].kolImageUrl) || chunk.kolImageUrl || kolImg;
@@ -428,7 +428,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v7.0 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🔗接棒(跨段連貫·來自分鏡文字·不破壞平行·不加成本) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v7.1 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
