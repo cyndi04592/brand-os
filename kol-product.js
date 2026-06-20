@@ -42,10 +42,48 @@
     return isYes(prod.hasPackaging) ? 'packaged' : 'object';
   }
 
+  // 🆕 v3.0 模式驅動:商品「主模式」決定擺法。只有「明設 productMode」才走新模式;
+  //   沒設 → resolveMode 回 null → 落到下面 v2.2 原本的 packaged/dish/object 分支(海苔等舊商品輸出一字不變)。
+  function resolveMode(prod) {
+    const m = String(prod.productMode || '').trim().toLowerCase();
+    if (m === 'held' || m === 'worn' || m === 'hero' || m === 'demo' || m === 'digital') return m;
+    if (/手持|小物|held/.test(m)) return 'held';
+    if (/穿戴|wear|worn/.test(m)) return 'worn';
+    if (/主角|大物|家具|家電|hero|furniture|appliance/.test(m)) return 'hero';
+    if (/示範|使用|操作|噴|擦|塗|demo|spray|apply/.test(m)) return 'demo';
+    if (/數位|服務|軟體|課程|體驗|digital|service|software/.test(m)) return 'digital';
+    return null;
+  }
+  function contributeNewMode(prod, mode, scale) {
+    const sz = scale ? '; it is ' + scale + ', at that true size' : '';
+    if (mode === 'held') {
+      return 'PROP (a small product she is holding — keep it subtle and natural, do NOT overpower the subject): keep the product in [Image2] consistent in shape, proportions, color and any printed text, never mirrored or flipped, do not distort or morph it' + sz + '; ' + GROUNDED + ', its front kept toward the camera and recognizable while held; it may also rest naturally on a clean surface, never scattered messily';
+    }
+    if (mode === 'worn') {
+      return 'PROP (a wearable product — feature it being worn or carried): keep the product in [Image2] consistent in shape, proportions, color, material and any logo, never mirrored or flipped, do not distort or morph it; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
+    }
+    if (mode === 'hero') {
+      return 'HERO PRODUCT (the product is the star of the shot — feature it prominently): keep the product in [Image2] consistent in shape, proportions, color, material and finish, never mirrored or flipped, do not distort or morph it; show it large, complete and prominent from flattering angles, and she interacts with it naturally (sits on, opens, operates, touches or stands beside it as fits)' + sz + '; it has real weight and sits solidly in the scene, obeying gravity, never floating or pasted on';
+    }
+    if (mode === 'demo') {
+      return 'PRODUCT IN USE (the product is shown doing its job — the act of using it is the point): keep the product in [Image2] consistent in shape, proportions, color and label, never mirrored or flipped, do not distort or morph it; she actively uses it as intended (applies, sprays, operates, installs or demonstrates) and the visible effect of using it is shown' + sz + '; ' + GROUNDED + ', kept recognizable and front-to-camera during use';
+    }
+    if (mode === 'digital') {
+      return 'NO PHYSICAL PRODUCT — this is a digital product or service: she does NOT hold any physical item and no fake package is invented. She presents it through a device she is using (laptop, phone or tablet) or through the visible real-world outcome and experience it delivers, talking naturally to camera about its value; if a logo or screen is given in [Image2] it appears on the device screen, kept clean, correct and undistorted';
+    }
+    return null;
+  }
+
   function contribute(ctx) {
     const prod = findProduct(ctx);
     if (!prod) {
       return 'PROP (a supporting object she is holding — keep it subtle, do NOT overpower the subject): keep the product in [Image2] consistent in shape, proportions and color, never mirrored or flipped, at a believable real-world scale, do not distort or morph it; ' + GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it';
+    }
+    // 🆕 v3.0:有明設 productMode → 走新模式;沒設(海苔等舊商品)→ 往下走 v2.2 原本邏輯,一字不變
+    const mode = resolveMode(prod);
+    if (mode) {
+      const mc = contributeNewMode(prod, mode, sizeToScale(prod.realSize));
+      if (mc) return mc;
     }
     const type = resolveType(prod);
     const scale = sizeToScale(prod.realSize);
@@ -81,6 +119,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v2.2' };
-  console.log('[KolProduct] 🎒 v2.2 就緒 · 道具師(productType驅動 + 物理錨抗漂浮 + 📏尺度全錨臉/身體不錨手·修小東西變超小)');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.0', resolveMode };
+  console.log('[KolProduct] 🎒 v3.0 就緒 · 道具師·模式驅動(7模式:手持/包裝/盛盤/穿戴/主角大物/操作示範/數位服務 · 只有設productMode才走新模式·海苔等舊商品原樣不變) + 物理錨 + 尺度錨臉身體');
 })();
