@@ -32,6 +32,16 @@
     if (cm <= 40) return 'roughly the height of her head and neck together';
     return 'roughly as wide as her torso';
   }
+  // 🆕 v3.0 大物尺度:落地家具/家電用「站在她旁邊的相對高度」,不套手持錨
+  function sizeToScaleLarge(realSize) {
+    const nums = (String(realSize || '').match(/\d+(?:\.\d+)?/g) || []).map(Number).filter(n => n > 0);
+    if (!nums.length) return '';
+    const cm = Math.max(...nums);
+    if (cm <= 65)  return 'a small piece, about knee height beside her';
+    if (cm <= 135) return 'about waist-to-chest height beside her, low enough for her to sit on or rest a hand on';
+    if (cm <= 190) return 'roughly her own standing height';
+    return 'a large piece taller than her that she stands beside';
+  }
   // 決定類型:優先 productType,沒填則 hasPackaging 推(dish 推不出,必須明填)
   function resolveType(prod) {
     const t = String(prod.productType || '').trim().toLowerCase();
@@ -63,7 +73,9 @@
       return 'PROP (a wearable product — feature it being worn or carried): keep the product in [Image2] consistent in shape, proportions, color, material and any logo, never mirrored or flipped, do not distort or morph it; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
     }
     if (mode === 'hero') {
-      return 'HERO PRODUCT (the product is the star of the shot — feature it prominently): keep the product in [Image2] consistent in shape, proportions, color, material and finish, never mirrored or flipped, do not distort or morph it; show it large, complete and prominent from flattering angles, and she interacts with it naturally (sits on, opens, operates, touches or stands beside it as fits)' + sz + '; it has real weight and sits solidly in the scene, obeying gravity, never floating or pasted on';
+      const big = sizeToScaleLarge(prod.realSize);
+      const bigSz = big ? '; it is ' + big : '';
+      return 'HERO PRODUCT (the product is the star of the shot — feature it prominently): keep the product in [Image2] consistent in shape, proportions, color, material and finish, never mirrored or flipped, do not distort or morph it; show it large, complete and prominent from flattering angles, and she interacts with it naturally (sits on, opens, operates, touches or stands beside it as fits)' + bigSz + '; it has real weight and sits solidly on the floor in the scene, obeying gravity, never floating or pasted on';
     }
     if (mode === 'demo') {
       return 'PRODUCT IN USE (the product is shown doing its job — the act of using it is the point): keep the product in [Image2] consistent in shape, proportions, color and label, never mirrored or flipped, do not distort or morph it; she actively uses it as intended (applies, sprays, operates, installs or demonstrates) and the visible effect of using it is shown' + sz + '; ' + GROUNDED + ', kept recognizable and front-to-camera during use';
