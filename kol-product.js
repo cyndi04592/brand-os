@@ -105,6 +105,7 @@
       const look = (prod.productLook || prod.prodName || '').trim();
       bits.push('the product in [Image2] is a FINISHED, fully plated dish served on its plate' + (look ? ' (' + look + ')' : '') + ', shown as a completed appetizing dish matching [Image2]');
       bits.push('it appears ONLY as a finished plated dish — the chef presents, serves, plates or lightly garnishes it; the plated dish is NEVER placed into a pan, wok or pot, never fried, boiled, cooked or shown raw, the plate stays intact and never goes on a stove');
+      bits.push('the plate and the food on it are the FINAL SERVED RESULT and are never an ingredient; if any cooking action appears it uses only loose raw ingredients in the cookware, while THIS plated dish and its plate are never tossed, dropped, poured or placed into any pan, wok, pot or onto any stove or flame, and the plate is never treated as food to be cooked');
       if (scale) bits.push('the plated dish is ' + scale + ', at that true size');
       bits.push('presented appetizing and intact, the plate facing the camera, minimal movement so it stays recognizable');
       return 'PROP (the plated dish she is presenting — keep it natural, do NOT overpower the subject): ' + bits.join('; ');
@@ -131,6 +132,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.0', resolveMode };
-  console.log('[KolProduct] 🎒 v3.0 就緒 · 道具師·模式驅動(7模式:手持/包裝/盛盤/穿戴/主角大物/操作示範/數位服務 · 只有設productMode才走新模式·海苔等舊商品原樣不變) + 物理錨 + 尺度錨臉身體');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.1', resolveMode };
+  console.log('[KolProduct] 🎒 v3.1 就緒 · 道具師·模式驅動(7模式:手持/包裝/盛盤/穿戴/主角大物/操作示範/數位服務 · 只有設productMode才走新模式·海苔等舊商品原樣不變) + 物理錨 + 尺度錨臉身體 + 🍽盤子絕不下鍋鎖強化');
 })();
