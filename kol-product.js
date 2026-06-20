@@ -27,9 +27,9 @@
     const nums = (String(realSize || '').match(/\d+(?:\.\d+)?/g) || []).map(Number).filter(n => n > 0);
     if (!nums.length) return '';
     const cm = Math.max(...nums);
-    if (cm <= 8)  return 'roughly the size of her palm or smaller';
+    if (cm <= 8)  return 'small, roughly half the height of her face';
     if (cm <= 20) return 'roughly as tall as her face';
-    if (cm <= 40) return 'roughly the length of her forearm';
+    if (cm <= 40) return 'roughly the height of her head and neck together';
     return 'roughly as wide as her torso';
   }
   // 決定類型:優先 productType,沒填則 hasPackaging 推(dish 推不出,必須明填)
@@ -81,6 +81,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v2.1' };
-  console.log('[KolProduct] 🎒 v2.1 就緒 · 道具師(productType 驅動 + 物理錨抗漂浮·拋/放/遞不卡)');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v2.2' };
+  console.log('[KolProduct] 🎒 v2.2 就緒 · 道具師(productType驅動 + 物理錨抗漂浮 + 📏尺度全錨臉/身體不錨手·修小東西變超小)');
 })();
