@@ -1879,6 +1879,9 @@ async function loadBrands() {
     if (lastBrand && S.brands.find(b => b.id === lastBrand)) {
       sel.value = lastBrand;
       await onBrandChange();
+    } else if (S.brands.length > 0) {
+      sel.value = S.brands[0].id;   // 🆕 沒有上次紀錄(新客戶/新瀏覽器)→ 自動選第一個品牌,客戶一進來就有 KOL,不會看到空白
+      await onBrandChange();
     }
   } catch (e) {
     toast('載入品牌失敗:' + e.message, 'error');
