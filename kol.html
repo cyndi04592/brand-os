@@ -3237,6 +3237,7 @@ function copySeedancePrompt() {
 function openStoryboardForCine() {
   if (!S.selectedKol) { toast('請先選 KOL', 'warn'); return; }
   document.getElementById('sbp-cine-mount').style.display = '';
+  S.cineStoryboardPending = true;   // 🛡️ 用了產生器但還沒按確認分鏡 → 生成前紅字提醒
   KolStoryboardPanel.open({
     containerId: 'sbp-cine-mount',
     persona: S.selectedKol.persona || {},
@@ -3246,6 +3247,7 @@ function openStoryboardForCine() {
    onConfirm: (beats) => {
       const b = beats[0] || {};
       S.cineStoryboard = beats;   // 🆕 存整包分鏡
+      S.cineStoryboardPending = false;   // 🛡️ 已確認分鏡
       const sit = (b.shotDesc || '') + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
       const el = document.getElementById('cine-situation');
       if (el) el.value = sit;
@@ -3271,6 +3273,7 @@ function openStoryboardForCine() {
     // ✏️ 按「重新編輯」:解鎖下面設定
     onEdit: () => {
       S.cineStoryboard = null;    // 🆕 解鎖時清掉
+      S.cineStoryboardPending = true;   // 🛡️ 重新編輯 = 又變未確認
       lockCineZone(false);
       toast('已解鎖,可重新調整設定', 'success');
     },
@@ -3284,6 +3287,7 @@ function openStoryboardForEpisode() {
   if (mount) mount.style.display = '';
   const product = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
 
+  S.episodeStoryboardPending = true;   // 🛡️ 用了產生器但還沒按確認分鏡 → 生成前紅字提醒
   KolStoryboardPanel.open({
     containerId: 'sbp-episode-mount',
     persona: persona.persona || persona,
@@ -3293,6 +3297,7 @@ function openStoryboardForEpisode() {
       const b = beats[0] || {};
       const who = persona.persona_name || '主角';
       S.episodeStoryboard = (beats && beats.length > 1) ? beats : null;   // 🆕 多段→接片;單段→null走原單集
+      S.episodeStoryboardPending = false;   // 🛡️ 已確認分鏡
       const sit = (b.shotDesc || '') + (b.dialogue ? `。${who}直視鏡頭自然地說:「${b.dialogue}」` : '');
       const el = document.getElementById('ep-situation');
       if (el) el.value = sit;
@@ -3321,6 +3326,7 @@ function openStoryboardForEpisode() {
     },
     onEdit: () => {
       S.episodeStoryboard = null;   // 🆕 解鎖時清掉,回到單集
+      S.episodeStoryboardPending = true;   // 🛡️ 重新編輯 = 又變未確認
       const durBox = document.querySelector('[data-ep-group="duration"]');
       if (durBox) durBox.classList.remove('ep-locked');
       const el = document.getElementById('ep-situation');
@@ -3458,6 +3464,7 @@ async function createStitchedVideo(beats) {
 
   try {
     const result = await KolStitch.runStitchFlow(plan, {
+      confirmed: true,   // 🛡️ 進入點已確認過,kol-stitch 內的窗不重跳
       kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
       productImageUrls: orderedProductUrls(),
       brandId: S.currentBrandId,
@@ -3532,7 +3539,41 @@ async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
     return fallbackUrl;
   }
 }
+// 🛡️ 生成前確認視窗(自製 → 可放紅字)。pending=true:用了分鏡產生器卻還沒按「確認分鏡」。
+// 回傳 Promise<boolean>:true=繼續生成,false=取消。STEP2/STEP3、單支/接片共用這一個。
+function preGenConfirm(opts) {
+  opts = opts || {};
+  return new Promise(function (resolve) {
+    var wrap = document.createElement('div');
+    wrap.className = 'persona-modal';
+    wrap.style.zIndex = '2000';
+    var warnHtml = opts.pending
+      ? '<div style="margin-top:6px;padding:10px 12px;border:1px solid rgba(250,80,80,.55);background:rgba(250,80,80,.10);border-radius:10px;color:#ff5a5a;font-size:13px;line-height:1.6;font-weight:700;">⚠️ 尚未按「確認分鏡」!<br><span style="font-weight:400;color:#ff8a8a;">你用了分鏡產生器但還沒確認,直接生成有機率失敗 / 不照你的分鏡。建議先點上方「✅ 確認分鏡」按鈕,再按生成。</span></div>'
+      : '';
+    wrap.innerHTML =
+      '<div class="persona-modal-backdrop"></div>' +
+      '<div class="persona-modal-content" style="max-width:440px;">' +
+        '<div class="persona-modal-head"><span class="persona-modal-title">🎬 生成前確認</span></div>' +
+        '<div class="persona-modal-body">' +
+          '<div style="font-size:13px;color:var(--text);line-height:1.6;">即將開始生成影片,會消耗 fal 額度。</div>' +
+          warnHtml +
+        '</div>' +
+        '<div class="persona-modal-foot">' +
+          '<button class="pgc-cancel" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;">取消</button>' +
+          '<button class="pgc-go" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#0a0a0f;font-weight:700;cursor:pointer;">' + (opts.pending ? '仍要生成' : '開始生成') + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+    var done = function (v) { wrap.remove(); resolve(v); };
+    wrap.querySelector('.persona-modal-backdrop').onclick = function () { done(false); };
+    wrap.querySelector('.pgc-cancel').onclick = function () { done(false); };
+    wrap.querySelector('.pgc-go').onclick = function () { done(true); };
+  });
+}
+
 async function createSeedanceVideo() {
+  // 🛡️ 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳
+  if (!(await preGenConfirm({ step: 2, pending: S.cineStoryboardPending }))) return;
   // 🆕 多段分鏡 → 走接片;單段維持原樣,demo 零風險
   if (S.cineStoryboard && S.cineStoryboard.length > 1) {
     return createStitchedVideo(S.cineStoryboard);
@@ -5420,6 +5461,9 @@ async function generateEpisodeV510(mode) {
     if (!confirm('你沒填「故事情境」,AI 會只依 KOL 人設生成泛用 vlog。要繼續嗎?')) return;
   }
 
+  // 🛡️ 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳;社群貼文(posts)不需要
+  if (mode !== 'posts' && !(await preGenConfirm({ step: 3, pending: S.episodeStoryboardPending }))) return;
+
   saveEpisodeDraft(true);
 
   const product = getCurrentRotationProduct();
@@ -5691,6 +5735,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
 
   try {
     const result = await KolStitch.runStitchFlow(plan, {
+      confirmed: true,   // 🛡️ 進入點已確認過,kol-stitch 內的窗不重跳
       kolImageUrl,
       productImageUrls,
       brandId: S.currentBrandId,
