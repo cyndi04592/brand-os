@@ -862,6 +862,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
 
+        <!-- 🆕 v3.1 商品呈現方式(mode 選擇器 · STEP2) -->
+        <div id="product-mode-s2" style="margin-top:14px"></div>
         <!-- 🆕 商品照分槽:移到 tab 外,挑圖時也看得到 -->
         <div style="margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a">
           <div style="font-size:11px;opacity:.55;margin-bottom:8px">📍 商品照分槽 · 挑好的圖自動落進對應槽</div>
@@ -1671,6 +1673,7 @@ const S = {
   // 🆕 v5.0: 電影鏡頭模式狀態
   seedanceProductUrls: [],        // 陣列存 URL 字串
   productRefRole: {},   // 🆕 url → packaging/contents/main/dish(決定 [Image2]/[Image3] 順序)
+  productModeOverride: {},  // 🆕 v3.1 prodName → 呈現方式 mode(客戶在 UI 選的;空=自動依商品表)
   episodeProductUrls: [],         // 🎯 v5.9: Tab 3 獨立商品照狀態
   selectedSceneId: '',            // 🆕 v5.1: 當前場景 id
   selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
@@ -2896,6 +2899,7 @@ function renderRefList() {
     countEl.textContent = S.seedanceProductUrls.length;
     countEl.classList.toggle('warn', S.seedanceProductUrls.length >= 8);
   }
+  renderProductModePicker('product-mode-s2');   // 🆕 v3.1 槽刷新時同步畫呈現方式選擇器
 }
 
 // 🆕 v5.1: 場景系統 - 渲染場景網格
@@ -4121,11 +4125,12 @@ function getCurrentRotationProduct() {
   const lsKey = LS_ROTATION_KEY + S.currentBrandId;
   let idx = parseInt(localStorage.getItem(lsKey) || '0') || 0;
   if (idx >= uniqueProducts.length) idx = 0;
-  return {
+  const _base = {
     ...uniqueProducts[idx],                 // 🎒 帶上全部欄位(包裝/形狀/內容物/尺寸)→ 道具師吃得到
     name: uniqueProducts[idx].prodName,     // 保留舊別名,下游讀 .name / .tag 的都不會壞
     tag: uniqueProducts[idx].prodTag,
   };
+  return applyProductModeOverride(_base);   // 🆕 v3.1 併入客戶選的呈現 mode(STEP2/STEP3 共用此唯一源頭)
 }
 // ═══ 🆕 商品照角色:決定 [Image2]=包裝/主體/成品、[Image3]=內容物 ═══
 function productTypeOf(prod) {
@@ -4158,6 +4163,54 @@ function setProductRefRole(url, role) { S.productRefRole[url] = role; renderRefL
 function orderedProductUrls() {
   return [...S.seedanceProductUrls].sort((a, b) =>
     (PRODUCT_ROLE_ORDER[S.productRefRole[a]] ?? 0) - (PRODUCT_ROLE_ORDER[S.productRefRole[b]] ?? 0));
+}
+
+// ═══ 🆕 v3.1 商品呈現方式(mode 選擇器)· STEP2 / STEP3 共用同一資料源 ═══
+const PRODUCT_MODE_NEW = ['held', 'worn', 'hero', 'demo', 'digital'];
+function applyProductModeOverride(prod) {
+  if (!prod) return prod;
+  const ov = (S.productModeOverride || {})[prod.prodName || prod.name];
+  if (!ov) return prod;                                    // 自動:不覆蓋,照商品表(海苔走這條,輸出不變)
+  if (PRODUCT_MODE_NEW.includes(ov)) return { ...prod, productMode: ov };
+  return { ...prod, productType: ov, productMode: '' };     // packaged / dish → 走舊 productType 路
+}
+const PRODUCT_MODE_OPTS = [
+  { v: '', label: '自動 · 依商品判斷' },
+  { grp: '實體商品', opts: [
+    { v: 'held',     label: '手持小物(口紅 / 保健品 / 小瓶罐)' },
+    { v: 'packaged', label: '包裝商品(海苔 / 零食 / 盒裝)' },
+    { v: 'dish',     label: '盛盤食物(料理 / 飲品)' },
+    { v: 'worn',     label: '穿戴(鞋 / 包 / 衣 / 錶 / 飾品)' },
+    { v: 'hero',     label: '主角大物(家具 / 家電 / 大型品)' },
+    { v: 'demo',     label: '操作示範(噴霧 / 上妝 / 烹調 / 安裝)' },
+  ] },
+  { grp: '體驗・服務', opts: [
+    { v: 'digital',  label: '數位 / 服務(軟體 / 課程 / 體驗)' },
+  ] },
+];
+function renderProductModePicker(mountId) {
+  const el = document.getElementById(mountId);
+  if (!el) return;                                          // 該步沒掛 → 跳過,不報錯
+  const prod = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
+  if (!prod) { el.innerHTML = ''; return; }
+  const cur = (S.productModeOverride || {})[prod.prodName || prod.name] || prod.productMode || '';
+  const optHtml = PRODUCT_MODE_OPTS.map(o => o.grp
+    ? `<optgroup label="${o.grp}">` + o.opts.map(x => `<option value="${x.v}" ${x.v === cur ? 'selected' : ''}>${x.label}</option>`).join('') + `</optgroup>`
+    : `<option value="${o.v}" ${o.v === cur ? 'selected' : ''}>${o.label}</option>`).join('');
+  el.innerHTML =
+    `<div style="font-size:12px;font-weight:600;margin-bottom:5px;opacity:.85">🎬 商品呈現方式 <span style="font-weight:400;opacity:.55">· 你賣的是「東西」還是「體驗」?</span></div>`
+    + `<select onchange="setProductModeOverride(this.value)" style="width:100%;box-sizing:border-box;padding:7px 9px;border-radius:8px;background:#161616;color:#eee;border:1.5px solid #333;font-size:13px">${optHtml}</select>`;
+}
+function setProductModeOverride(val) {
+  const prod = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
+  const key = prod && (prod.prodName || prod.name);
+  if (!key) return;
+  if (!S.productModeOverride) S.productModeOverride = {};
+  if (val) S.productModeOverride[key] = val; else delete S.productModeOverride[key];
+  renderProductModePicker('product-mode-s2');              // 兩步選擇器同步(存在才畫)
+  renderProductModePicker('product-mode-s3');
+  if (typeof renderRefList === 'function' && document.getElementById('ref-list')) renderRefList();
+  if (typeof renderEpisodeSlots === 'function' && document.getElementById('ep-ref-list')) renderEpisodeSlots();
 }
 // ─── 人設書編輯 Modal ────────────────────────────
 function openPersonaEditor() {
@@ -4499,6 +4552,7 @@ function renderEpisodeSlots() {
       + `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${thumbs}</div>`
       + `</div>`;
   }).join('');
+  renderProductModePicker('product-mode-s3');   // 🆕 v3.1 槽刷新時同步畫呈現方式選擇器
 }
 // 🎯 v5.9: Tab 3 商品照選擇器(簡化版 · 僅 Drive + 單一 grid)
 function renderEpisodeProductPickerHTML() {
@@ -4517,6 +4571,8 @@ function renderEpisodeProductPickerHTML() {
         <span style="font-size:10.5px;color:var(--text-dim)">已選 <span id="ep-product-count">${selected.length}</span> 張(建議 1-3 張最清晰的)</span>
         <button class="btn btn-ghost btn-sm" onclick="reloadEpisodeProducts()">🔄 重新整理</button>
       </div>
+      <!-- 🆕 v3.1 商品呈現方式(mode 選擇器 · STEP3) -->
+      <div id="product-mode-s3" style="margin-top:12px"></div>
       <!-- 🆕 STEP3 商品照分槽 -->
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid #2a2a2a">
         <div style="font-size:11px;opacity:.55;margin-bottom:8px">📍 商品照分槽 · 挑好的圖自動落進對應槽</div>
