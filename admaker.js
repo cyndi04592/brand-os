@@ -1009,7 +1009,9 @@ async function applyPhotoroomBg() {
 
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇照片!', 'var(--red)'); return; }
-  const imgSrc = photo.hiRes || photo.src || photo.thumb;  // 🆕 優先用 s1600 高解析(生圖品質更好)
+  setPrStatus('⏳ 載入原圖...', 'var(--t3)');
+  await ensureFullRes(photo);   // 🆕 生圖前才抓那張原圖(列表只載縮圖)
+  const imgSrc = photo.full || photo.hiRes || photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
 
   btn.disabled = true; btn.textContent = '⏳ AI 處理中...';
@@ -1625,7 +1627,9 @@ async function firstTruthy(promises) {
 async function generateGptPoster() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇商品照片!', 'var(--red)'); return; }
-  const imgSrc = photo.hiRes || photo.src || photo.thumb;  // 🆕 優先用 s1600 高解析(生圖品質更好)
+  setPrStatus('⏳ 載入原圖...', 'var(--t3)');
+  await ensureFullRes(photo);   // 🆕 生圖前才抓那張原圖(列表只載縮圖)
+  const imgSrc = photo.full || photo.hiRes || photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 商品照尚未載入', 'var(--red)'); return; }
 
   const headline = document.getElementById('gptHeadline')?.value?.trim();
