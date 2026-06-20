@@ -15,6 +15,12 @@
   let ctx = null;
   const state = { duration: 15, outline: '', beats: [], busy: false, confirmed: false };
 
+  // 🛡️ v1.3 修:本面板同時掛在 STEP2(sbp-cine-mount)+ STEP3(sbp-episode-mount)兩個容器,
+  //   固定 ID 在頁面上會「重複」→ document.getElementById 永遠抓到第一個(STEP2)→ STEP3 按 AI 編修
+  //   請求有送、200 有回,但卡片被畫進 STEP2 的隱藏容器,STEP3 看起來「沒反應」。
+  //   解法:面板內部一律「只在當前掛載的 rootEl 裡找元素」,兩個容器各自獨立。
+  function $el(id) { return (rootEl && rootEl.querySelector) ? rootEl.querySelector('#' + id) : document.getElementById(id); }
+
   const esc = (s) => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
@@ -75,9 +81,9 @@
 
   function syncDom() {
     state.beats.forEach(b => {
-      const sd = document.getElementById('sbp-shot-' + b.index);
+      const sd = $el('sbp-shot-' + b.index);
       if (sd) b.shotDesc = sd.value;
-      const dl = document.getElementById('sbp-dlg-' + b.index);
+      const dl = $el('sbp-dlg-' + b.index);
       if (dl) {
         b.dialogue = dl.value;
         b.fit = window.KolStorywriter.checkDialogueFit(b.dialogue, b.seconds);
@@ -117,7 +123,7 @@
     });
 
     state.busy = true;
-    const btn = document.getElementById('sbp-expand-btn');
+    const btn = $el('sbp-expand-btn');
     if (btn) { btn.disabled = true; btn.textContent = '編修中…'; }
 
     try {
@@ -145,7 +151,7 @@
     b.dialogue = v;
     b.fit = window.KolStorywriter.checkDialogueFit(v, b.seconds);
     b.overflow = !b.fit.fits;
-    const fitEl = document.getElementById('sbp-fit-' + idx);
+    const fitEl = $el('sbp-fit-' + idx);
     if (fitEl) {
       fitEl.textContent = `${b.fit.chars} 字 · 約 ${b.fit.estSec} 秒` + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '');
       fitEl.className = 'sbp-fit' + (b.overflow ? ' over' : '');
@@ -226,7 +232,7 @@
   }
 
   function renderCards() {
-    const box = document.getElementById('sbp-cards');
+    const box = $el('sbp-cards');
     if (!box) return;
     if (!state.beats.length) {
       box.innerHTML = `<div class="sbp-empty">填好大綱、按「AI 編修」,這裡會出現 ${window.KolStorywriter.planBeats(state.duration).length} 張分鏡卡片</div>`;
@@ -253,5 +259,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] 🎬 v1.2 就緒(確認鎖定 / 重新編輯解鎖)');
+  console.log('[KolStoryboardPanel] 🎬 v1.3 就緒(確認鎖定 / 重新編輯解鎖 · 🛡️雙容器各自獨立·STEP3修)');
 })();
