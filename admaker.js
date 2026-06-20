@@ -38,6 +38,17 @@ const CAM_DEFAULT = 'Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.';
 const CAM_PORTRAIT = 'Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.';
 const CAM_MACRO = 'Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.';
 
+// ★ v11 設計師工法層 (DESIGNER_POLISH) — 全域注入,只管「工法/意圖」,不碰選定風格
+const DESIGNER_POLISH =
+'This enforces CRAFT and INTENT only and must NOT override the chosen design style above. ' +
+'1) ONE clear central idea drives the poster — a deliberate concept and focal hierarchy, not a pretty background with text floating on top. ' +
+'2) Typography is intentional and resolved: confident hierarchy appropriate to the chosen style, one type family in a few deliberate weights, careful tracking and alignment — never default or timid. ' +
+'3) Every element is justified: each color, prop and graphic is a deliberate choice serving the idea — no generic filler. Deliberate whether the style is minimal or maximal, NOT necessarily fewer elements. ' +
+'4) BAN meaningless decoration: no random foreign words, no filler decorative text, no generic sparkles, bokeh or lens-flare added for no reason. All text must be real and meaningful. ' +
+'5) Supporting info (features, specs, badges) is laid out with deliberate typographic care and a consistent system; if icons appear they form ONE cohesive set with identical weight and detail, never mixed clip-art. ' +
+'6) Logical integrity: shadows, structures, perspective and spatial relationships must make real-world sense; nothing malformed or nonsensical. ' +
+'7) Composition deliberately resolved on an underlying grid with a clear focal point and intentional negative space — symmetry or asymmetry by choice, never by default.';
+
 // ═══════════════════════════════════════════════════════════════════════
 //  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
 // ═══════════════════════════════════════════════════════════════════════
@@ -1557,6 +1568,11 @@ function buildPosterPrompt() {
     if (ctx.brand) prompt += `- Brand signature (small, at corner or footer): "${ctx.brand}"\n`;
     prompt += `Typography must be crisp, readable, and integrated naturally into the layout.\n\n`;
   }
+
+  prompt += `=== ART DIRECTOR CRAFT (INTENT — must NOT override the chosen style above) ===
+${DESIGNER_POLISH}
+
+`;
 
   prompt += `=== OUTPUT SPECIFICATION ===\n`;
   prompt += `- Vertical portrait orientation, 4:3 advertising poster (suitable for IG feed, e-commerce banner, print magazine)\n`;
