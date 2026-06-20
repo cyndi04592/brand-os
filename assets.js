@@ -223,23 +223,40 @@ async function fetchFromDriveAPI(folderId, type, token) {
       d.files.forEach(f => {
         const arr = type === 'photo' ? window.S.photos : window.S.videos;
         if (!arr.find(x => x.driveId === f.id)) {
-          const item = {
-            driveId: f.id, name: f.name, thumb: f.thumbnailLink || '',
+          // 🆕 列表只用縮圖(s400):切品牌秒開,不再每張載原圖 base64
+          //    原圖等「生圖時」才靠 driveId 抓那一張(見 ensureFullRes)
+          const thumb400 = (f.thumbnailLink || '').replace(/=s\d+/, '=s400');
+          arr.push({
+            driveId: f.id, name: f.name, thumb: thumb400,
             driveUrl: f.webViewLink || `https://drive.google.com/file/d/${f.id}/view`,
-            src: '', type
-          };
-          arr.push(item);
-          fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, {
-            headers: { Authorization: 'Bearer ' + token }
-          }).then(r => r.blob()).then(blob => {
-            const reader = new FileReader();
-            reader.onload = () => { item.src = reader.result; renderAssets(); };
-            reader.readAsDataURL(blob);
-          }).catch(() => {});
+            src: '', full: '', type
+          });
         }
       });
+      renderAssets();
     }
   } catch (e) { console.warn('Drive API error', e); }
+}
+
+// ══ 🆕 生圖前才抓「那一張」原圖 base64(避開列表全載的 324MB)══
+//    列表只有縮圖,真正生圖/合成才用 driveId 重新抓原檔 → 畫質一樣、不踩 CORS/tainted 坑
+async function ensureFullRes(photo) {
+  if (!photo || photo.full) return;              // 已抓過就直接用快取
+  if (!photo.driveId || !window._driveToken) return;
+  try {
+    const r = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${photo.driveId}?alt=media`,
+      { headers: { Authorization: 'Bearer ' + window._driveToken } }
+    );
+    if (!r.ok) return;
+    const blob = await r.blob();
+    photo.full = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.onerror = rej;
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) { console.warn('ensureFullRes error', e); }
 }
 
 // ══ 渲染素材列表 ══
@@ -285,6 +302,10 @@ function selectAsset(type, i) {
   if (type === 'photo') window.S.selPhoto = window.S.selPhoto === i ? null : i;
   else                  window.S.selVideo = window.S.selVideo === i ? null : i;
   renderAssets();
+  // 🆕 選到照片就背景偷抓原圖(暖機),生圖時直接拿、不用等
+  if (type === 'photo' && window.S.selPhoto !== null) {
+    ensureFullRes(window.S.photos[window.S.selPhoto]);
+  }
   if (window.S.scripts.length > 0) {
     const brand = window.BRANDS.find(b => b.id === window.S.brandId);
     const sub   = brand?.subs.find(s => s.id === window.S.subId);
