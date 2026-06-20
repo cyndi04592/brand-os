@@ -120,11 +120,31 @@ window.KolStitch = (function () {
   // v6.2 多鏡頭 prompt:一次生成、內含多個 Shot(角度切換),家具/臉跨鏡頭鎖。
   //   beats = [{prompt, durationSec}] 或字串陣列;timecode 照每個 beat 的真實秒數排(尊重分鏡)。
   //   [Image1]=KOL角度圖(臉錨)· [SCENE_IMG]=同一間房 · [OUTFIT_IMG]=同一件衣服(Worker 換成真 [ImageN])。
-  function buildMultiShotPrompt(beats, totalSec) {
+  function buildMultiShotPrompt(beats, totalSec, shared) {
     const list = beats.map(function (b) { return (typeof b === 'string') ? { prompt: b } : b; });
     const n = Math.max(1, list.length);
     const dur = totalSec || 15;
     const pad = function (x) { return String(Math.round(x)).padStart(2, '0'); };
+
+    // 🆕 B 版(精簡敘事·去重複):有 shared.front 才走這條;真實度核心擺最前、講一次,每段只放靈魂(動作+台詞)。
+    //   沒傳 shared → 直接落到下面 A 版(現狀),向後相容、不影響現在生成。
+    if (shared && shared.front) {
+      let bodyB = shared.front + '\n'
+        + 'Across all shots: the SAME woman [Image1], the same location [SCENE_IMG], the same outfit [OUTFIT_IMG], '
+        + 'one unified colour grade and the same lighting across every cut — no change of person, scene, outfit or lighting, '
+        + 'no smoothing or beautifying, no crowd.\n\n';
+      let tb = 0;
+      for (let i = 0; i < n; i++) {
+        const bSecB = list[i].durationSec || Math.max(1, Math.round(dur / n));
+        const tb0 = tb, tb1 = (i === n - 1) ? dur : Math.min(dur, tb + bSecB);
+        const markerB = (i === 0) ? 'Shot 1' : ('Hard cut to Shot ' + (i + 1));
+        bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': [Image1] ' + (list[i].prompt || '') + '\n';
+        tb = tb1;
+      }
+      if (shared.tail) bodyB += '\n' + shared.tail;
+      return bodyB;
+    }
+
     let body = 'candid realistic vertical UGC video, natural daylight, true-to-life skin.\n'
       + "Use [Image1] for the woman's face and identity. She is in the exact location of [SCENE_IMG], "
       + 'wearing the exact outfit of [OUTFIT_IMG], naturally holding and showing the product.\n\n';
@@ -164,7 +184,7 @@ window.KolStitch = (function () {
     }, 0);
     totalSec = Math.max(3, Math.min(15, totalSec || 15));
 
-    let prompt = buildMultiShotPrompt(beats, totalSec);
+    let prompt = buildMultiShotPrompt(beats, totalSec, opts.shared);
 
     // 🔒 口音 + 口型鐵律(v6.4):開語音時,只有「有台詞的鏡頭」才說話+對嘴;
     //   沒台詞的鏡頭(吃/咀嚼/拿商品/純反應)→ 不講話、嘴不動、只有環境音 → 解決「邊吃邊有人聲」desync。
@@ -331,6 +351,7 @@ window.KolStitch = (function () {
       // 該 chunk 的 KOL 圖:用第一個 beat 的角度圖(STEP2/STEP3 已挑好)→ 沒有才退 chunk/全域
       const chunkKol = (beats[0] && beats[0].kolImageUrl) || chunk.kolImageUrl || kolImg;
       return generateSegment({
+        shared: opts.shared,                       // 🆕 B 版共用區塊(front/tail);沒傳就走 A 版
         kolImageUrl: chunkKol,                     // v6.2:用該 chunk 的角度圖當 [Image1](臉錨)
         productImageUrls: opts.productImageUrls,
         beats: beats,                              // v6.2:整個 chunk 的 beat 物件(含動作+秒數)→ 多 Shot
@@ -369,7 +390,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.4 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆');
+  console.log('[KolStitch] 🎬 v6.7 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前·無shared則走A版)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
