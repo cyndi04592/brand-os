@@ -185,6 +185,18 @@ window.KolStitch = (function () {
   //   每個 beat 帶自己的動作+秒數;chunk 總長 = 各 beat 秒數加總(封頂 15)。
   //   臉=[Image1](該 chunk 的 KOL 角度圖,模型層鎖)+ 場景圖 + 服裝圖 + 商品。不重畫、不換臉。
   //   相容:opts.beats(物件陣列,STEP2/STEP3 用)> opts.shots(字串陣列)> opts.prompt(單一)。
+  // 🚦 v7.0 提交序列化(根治 10058):所有 seedance_submit「一段一段送」,不是同時送。
+  //   根因=Worker 把同一批參考圖搬 R2,用「內容固定檔名」去重;6 段同時送 → 同一瞬間都看到
+  //   「檔名還沒存」→ 6 個一起 PUT 同一個 R2 物件 → R2 回「同物件並發太高」(10058)。
+  //   序列化後:第 1 段把共用圖搬好,第 2~6 段去重直接 head 命中、跳過 PUT → 又快又不可能撞。
+  //   只序列化「送出」這一下;送出拿到 requestId 後的輪詢(pollEpisode)照樣全部平行 → 生成總時間幾乎不變。
+  let _submitChain = Promise.resolve();
+  function queuedSubmit(fn) {
+    const p = _submitChain.then(function () { return fn(); });
+    _submitChain = p.then(function () {}, function () {});   // 一段送出失敗也不卡住後面那幾段
+    return p;
+  }
+
   async function generateSegment(opts, onTick) {
     if (!opts.kolImageUrl) throw new Error('generateSegment 缺少 kolImageUrl（KOL 角度圖）');
     let beats = (Array.isArray(opts.beats) && opts.beats.length) ? opts.beats
@@ -214,7 +226,7 @@ window.KolStitch = (function () {
     // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
     //   Worker 自動把 [OUTFIT_IMG]/[SCENE_IMG] 換成真實 [ImageN]。
     if (onTick) onTick(0, 'reference-to-video(多鏡頭)');
-    const sub = await api('seedance_submit', {
+    const sub = await queuedSubmit(function () { return api('seedance_submit', {
       kolImageUrl: opts.kolImageUrl,                                       // → [Image1] 臉錨(該 chunk 的角度圖)
       productImageUrls: Array.isArray(opts.productImageUrls) ? opts.productImageUrls : [],
       outfitImageUrl: opts.outfitImageUrl || undefined,                    // → [OUTFIT_IMG]→[ImageN]
@@ -229,7 +241,7 @@ window.KolStitch = (function () {
       tier: opts.tier || 'fast',
       seed: opts.seed,
       // 不傳 episodeId → 每段 keyed by 自己 reqId,平行不撞 key
-    });
+    }); });
 
     const videoUrl = await pollEpisode(sub.requestId, opts.brandId, onTick);
     if (!videoUrl) throw new Error('reference-to-video 沒拿到影片 URL');
@@ -369,16 +381,13 @@ window.KolStitch = (function () {
       return t || null;
     }
 
-    // 🚦 v6.9 錯開提交:6 段別同一瞬間打 submit,避開 ByteDance「同物件並發過高(10058)」。
-    //   每段「送出」間隔 SUBMIT_STAGGER_MS;生成本身仍重疊平行 → 只錯開送出那一下,總時間幾乎不變。
-    const SUBMIT_STAGGER_MS = 2500;
     const tasks = chunks.map(function (chunk, i) {
       const beats = chunk.beats || [];
       const continuityFrom = (i > 0) ? lastActionText(chunks[i - 1]) : null;   // 🔗 第1段沒有上一段
       const chunkSec = Math.min(15, Math.max(3, beats.reduce(function (a, b) { return a + (b.durationSec || 5); }, 0) || 15));
       // 該 chunk 的 KOL 圖:用第一個 beat 的角度圖(STEP2/STEP3 已挑好)→ 沒有才退 chunk/全域
       const chunkKol = (beats[0] && beats[0].kolImageUrl) || chunk.kolImageUrl || kolImg;
-      return new Promise(function (r) { setTimeout(r, i * SUBMIT_STAGGER_MS); }).then(function () { return generateSegment({
+      return generateSegment({
         shared: opts.shared,                       // 🆕 B 版共用區塊(front/tail);沒傳就走 A 版
         continuityFrom: continuityFrom,            // 🔗 v6.8 接棒:上一段結尾動作 → 這段接著演(不從頭)
         kolImageUrl: chunkKol,                     // v6.2:用該 chunk 的角度圖當 [Image1](臉錨)
@@ -394,7 +403,7 @@ window.KolStitch = (function () {
         nationality: opts.nationality || (beats[0] && beats[0].nationality),
         outfitImageUrl: outfitImageUrl,            // → [OUTFIT_IMG](整支共用,鎖同一件衣服)
         sceneImageUrl: sceneImageUrl,              // → [SCENE_IMG](整支共用,鎖同一間房 → 跨段家具一致)
-      }, function () {}); }).then(function (segUrl) {
+      }, function () {}).then(function (segUrl) {
         doneCount++;
         log(`${doneCount}/${total} 段完成…`);
         if (opts.onSegmentDone) opts.onSegmentDone(i, segUrl);
@@ -419,7 +428,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.9 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🔗接棒(跨段連貫·來自分鏡文字·不破壞平行·不加成本) · 🚦錯開提交2.5s/段(避開ByteDance同物件並發10058)');
+  console.log('[KolStitch] 🎬 v7.0 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🔗接棒(跨段連貫·來自分鏡文字·不破壞平行·不加成本) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
