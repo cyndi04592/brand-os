@@ -1904,6 +1904,7 @@ async function onBrandChange() {
 
   // 重置狀態
   S.personas = [];
+  S._personasLoading = true;   // 🆕 C: 標記載入中 → 經營中的 KOL 面板顯示「載入中」而非空狀態(別嚇到以為角色不見)
   S.drivePhotos = null;
   S.selectedDrivePhotos = {};
   S.selectedPersonaForDrive = '';
@@ -2013,7 +2014,7 @@ async function onBrandChange() {
 // ─── 載入 personas ────────────────────────────────────────
 async function loadPersonas(brandId, force) {
   S._personaCache = S._personaCache || {};
-  if (!force && S._personaCache[brandId]) { S.personas = S._personaCache[brandId]; return; }  // 🆕 快取命中=秒開,不重抓
+  if (!force && S._personaCache[brandId]) { S.personas = S._personaCache[brandId]; S._personasLoading = false; return; }  // 🆕 快取命中=秒開,不重抓
   try {
     const res = await gasGet('getKolPersonas', { brandId });
     S.personas = res.personas || [];
@@ -2022,6 +2023,7 @@ async function loadPersonas(brandId, force) {
     console.error('載入 personas 失敗', e);
     S.personas = [];
   }
+  S._personasLoading = false;  // 🆕 C: 載入結束,空狀態才顯示「還沒有 KOL」
 }
 
 // ─── 載入 KOL 形象庫 ──────────────────────────────────────
@@ -3899,7 +3901,9 @@ function renderSystemKolSwitcher() {
   if (!wrap) return;
 
   if (S.personas.length === 0) {
-    wrap.innerHTML = '<div class="kol-empty" style="padding:16px">此品牌還沒有 KOL · <a href="#" onclick="switchMode(\'talking\');return false;" style="color:var(--accent)">去形象庫建立</a></div>';
+    wrap.innerHTML = S._personasLoading
+      ? '<div class="kol-empty" style="padding:16px">載入中…</div>'
+      : '<div class="kol-empty" style="padding:16px">此品牌還沒有 KOL · <a href="#" onclick="switchMode(\'talking\');return false;" style="color:var(--accent)">去形象庫建立</a></div>';
     return;
   }
 
@@ -3965,10 +3969,10 @@ function renderSystemPersonaCard() {
   }
 
   if (titleEl) titleEl.textContent = p.persona_name + ' · 人設書';
-  if (editBtn) editBtn.disabled = false;
 
   const isEmpty = !p.background && !p.personality && !p.speaking_style
     && !(p.catchphrases?.length) && !(p.taboo_words?.length);
+  if (editBtn) editBtn.disabled = isEmpty;   // 🆕 D: 人設書空白→「編輯」灰掉,引導用「✨ 讓 AI 幫我寫 / ✏️ 我自己填」
 
   if (isEmpty) {
     wrap.innerHTML = `
