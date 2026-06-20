@@ -2027,7 +2027,7 @@ async function loadPersonas(brandId, force) {
 }
 
 // ─── 載入 KOL 形象庫 ──────────────────────────────────────
-async function loadKolList(brandId) {
+async function loadKolList(brandId, force) {
   const listEl = document.getElementById('kol-list');
   const countEl = document.getElementById('kol-count');
   listEl.innerHTML = '<div class="kol-empty">載入中…</div>';
@@ -2050,26 +2050,31 @@ async function loadKolList(brandId) {
     return;
   }
 
-  const groupsData = await Promise.all(
-    boundPersonas.map(async p => {
-      try {
-        const res = await api('heygen_list_group_avatars', { group_id: p.talking_photo_id });
-        const avatars = res.avatars || [];
-        const firstLook = avatars[0];
-        return {
-          persona: p,
-          image_url: firstLook?.image_url || '',
-          look_count: avatars.length,
-          looks: avatars,
-        };
-      } catch (e) {
-        return { persona: p, image_url: '', look_count: 0, looks: [] };
-      }
-    })
-  );
-  if (S.currentBrandId !== brandId) return;  // 🆕 #2: 使用者已切走 → 放棄,別蓋掉新品牌
+  S._kolListCache = S._kolListCache || {};
+  let groupsData = (!force && S._kolListCache[brandId]) ? S._kolListCache[brandId] : null;
+  if (!groupsData) {
+    groupsData = await Promise.all(
+      boundPersonas.map(async p => {
+        try {
+          const res = await api('heygen_list_group_avatars', { group_id: p.talking_photo_id });
+          const avatars = res.avatars || [];
+          const firstLook = avatars[0];
+          return {
+            persona: p,
+            image_url: firstLook?.image_url || '',
+            look_count: avatars.length,
+            looks: avatars,
+          };
+        } catch (e) {
+          return { persona: p, image_url: '', look_count: 0, looks: [] };
+        }
+      })
+    );
+    if (S.currentBrandId !== brandId) return;  // 🆕 #2: 使用者已切走 → 放棄,別蓋掉新品牌
+    S._kolListCache[brandId] = groupsData;  // 🆕 A: 每品牌快取 → 切回不重打 HeyGen,秒出
+  }
 
-  window._kolCache = {};
+  window._kolCache = window._kolCache || {};  // 🆕 A: 不再無條件清空(改 merge,跨品牌不互相清掉)
   groupsData.forEach(g => {
     window._kolCache[g.persona.talking_photo_id] = {
       id: g.persona.talking_photo_id,
@@ -2120,7 +2125,7 @@ function renderKolCardV2(g) {
   const lookChip = g.look_count ? `${g.look_count} Looks` : '';
 
   const avatarInner = hasImage
-    ? `<img src="${escapeHtml(g.image_url)}" alt="" onerror="this.outerHTML='<span>${initial}</span>';this.parentElement.style.background='${bgColor}';">`
+    ? `<img src="${escapeHtml(g.image_url)}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<span>${initial}</span>';this.parentElement.style.background='${bgColor}';">`
     : `<span>${initial}</span>`;
 
   const avatarStyle = hasImage ? '' : `style="background:${bgColor}"`;
@@ -2437,7 +2442,7 @@ async function confirmDrivePhotos() {
 
     clearDriveSelection();
     await loadPersonas(S.currentBrandId);
-    await Promise.all([loadKolList(S.currentBrandId), loadDrivePhotos(S.currentBrandId)]);
+    await Promise.all([loadKolList(S.currentBrandId, true), loadDrivePhotos(S.currentBrandId, true)]);  // 🆕 A: 建/綁 KOL 後強制重抓(略過快取),新 KOL 才會出現
   } catch (e) {
     toast('失敗:' + e.message, 'error');
   } finally {
@@ -2454,7 +2459,7 @@ async function refreshAll() {
   window._kolCleanCache = {};
   try { Object.keys(localStorage).filter(k => k.startsWith('kolClean:')).forEach(k => localStorage.removeItem(k)); } catch (e) {}
   await loadPersonas(S.currentBrandId, true);  // 🆕 強制重抓(略過快取)
-  await Promise.all([loadKolList(S.currentBrandId), loadDrivePhotos(S.currentBrandId, true)]);
+  await Promise.all([loadKolList(S.currentBrandId, true), loadDrivePhotos(S.currentBrandId, true)]);
   toast('重新載入完成 ✓', 'success');
 }
 
