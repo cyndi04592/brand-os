@@ -942,12 +942,7 @@ async function pollUntilDone(requestId, endpoint, maxMs = 300000, responseUrl = 
       const pollData = await callWorker({ action:'fal_poll', requestId, endpoint, responseUrl, statusUrl });
       if (pollData.status === 'COMPLETED') return pollData;
       if (pollData.status === 'FAILED') return { status:'FAILED', error: pollData.error || '任務失敗' };
-      const elapsed = Date.now() - start;
-      const pct = Math.min(88, Math.round(15 + elapsed / maxMs * 73));
-      const prFill = document.getElementById('prProgFill');
-      const prPct  = document.getElementById('prPct');
-      if (prFill) prFill.style.width = pct + '%';
-      if (prPct) prPct.textContent = pct + '%';
+      // 🆕 進度條由 startProgress 單一驅動,這裡不再寫(避免兩套搶 → 跳來跳去)
     } catch(e) {
       console.warn('poll 單次失敗,繼續:', e.message);
     }
@@ -1643,7 +1638,8 @@ async function generateGptPoster() {
   const brandId = window.S?.brandId || '';
   const reqid = String(Date.now());
 
-  const interval = startProgress(90000);
+  const t0 = Date.now();   // 🆕 量真實出圖時間
+  const interval = startProgress(150000);   // 🆕 貼近真實出圖時間(約 2-2.5 分),進度條更順、不會早早卡 90%
   try {
     updateBrandPackBadge();
 
@@ -1720,7 +1716,9 @@ async function generateGptPoster() {
     const brandPack = detectBrandPack();
     const layoutLabel = LAYOUT_TEMPLATES[SELECTED_LAYOUT]?.label || '';
     const srcTag = winner.from === 'drive' ? ' · ☁️雲端補圖' : '';
-    setPrStatus(`✅ 完成![${brandPack.label} × ${layoutLabel}]${srcTag} 可點「🎬 變影片」`, 'var(--mint)');
+    const usedSec = Math.round((Date.now() - t0) / 1000);   // 🆕 真實用時
+    console.log('[計時] 懶人廣告圖真實出圖時間:', usedSec, '秒 · reqid:', reqid);
+    setPrStatus(`✅ 完成![${brandPack.label} × ${layoutLabel}]${srcTag} · ⏱${usedSec}秒 · 可點「🎬 變影片」`, 'var(--mint)');
 
     const videoBtn = document.getElementById('posterToVideoBtn');
     if (videoBtn) {
@@ -1736,32 +1734,37 @@ async function generateGptPoster() {
 async function renderGptPosterCanvas() {
   const canvas = document.getElementById('adCanvas');
   if (!canvas) return;
-  canvas.width = AM.w; canvas.height = AM.h;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.fillStyle = '#0A0A0B';
-  ctx.fillRect(0, 0, AM.w, AM.h);
 
+  // 🆕 先把結果圖載好(舊預覽先留著、不清),載好才一次清+畫 → 中間不留黑畫面
+  let img, tainted;
   try {
-    const { img, tainted } = await loadImageSmart(PR_BG_IMG);
-    if (tainted) CANVAS_TAINTED = true;
-    const scale = Math.min(AM.w / img.width, AM.h / img.height);
-    const w = img.width * scale;
-    const h = img.height * scale;
-    const x = Math.round((AM.w - w) / 2);
-    const y = Math.round((AM.h - h) / 2);
-    ctx.drawImage(img, x, y, w, h);
+    ({ img, tainted } = await loadImageSmart(PR_BG_IMG));
   } catch(e) {
     console.error('[v10.2] 廣告圖渲染失敗:', e.message);
-    drawBgFallback(ctx);
-    ctx.fillStyle = '#FFA060';
-    ctx.font = '900 36px "Noto Sans TC",sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('⚠️ 廣告圖載入失敗', AM.w/2, AM.h/2);
-    ctx.font = '400 20px "Noto Sans TC",sans-serif';
-    ctx.fillText(e.message.substring(0, 40), AM.w/2, AM.h/2 + 40);
+    canvas.width = AM.w; canvas.height = AM.h;
+    const ectx = canvas.getContext('2d', { willReadFrequently: true });
+    drawBgFallback(ectx);
+    ectx.fillStyle = '#FFA060';
+    ectx.font = '900 36px "Noto Sans TC",sans-serif';
+    ectx.textAlign = 'center';
+    ectx.fillText('⚠️ 廣告圖載入失敗', AM.w/2, AM.h/2);
+    ectx.font = '400 20px "Noto Sans TC",sans-serif';
+    ectx.fillText(e.message.substring(0, 40), AM.w/2, AM.h/2 + 40);
+    return;
   }
+
+  // 圖已在手 → 以下全同步,瀏覽器一次重繪,看不到中間的黑
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  canvas.width = AM.w; canvas.height = AM.h;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  if (tainted) CANVAS_TAINTED = true;
+  ctx.fillStyle = '#0A0A0B';
+  ctx.fillRect(0, 0, AM.w, AM.h);
+  const scale = Math.min(AM.w / img.width, AM.h / img.height);
+  const w = img.width * scale;
+  const h = img.height * scale;
+  ctx.drawImage(img, Math.round((AM.w - w) / 2), Math.round((AM.h - h) / 2), w, h);
 }
 
 async function posterToVideo() {
