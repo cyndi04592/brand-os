@@ -4199,7 +4199,8 @@ function renderProductModePicker(mountId) {
     : `<option value="${o.v}" ${o.v === cur ? 'selected' : ''}>${o.label}</option>`).join('');
   el.innerHTML =
     `<div style="font-size:12px;font-weight:600;margin-bottom:5px;opacity:.85">🎬 商品呈現方式 <span style="font-weight:400;opacity:.55">· 你賣的是「東西」還是「體驗」?</span></div>`
-    + `<select onchange="setProductModeOverride(this.value)" style="width:100%;box-sizing:border-box;padding:7px 9px;border-radius:8px;background:#161616;color:#eee;border:1.5px solid #333;font-size:13px">${optHtml}</select>`;
+    + `<select onchange="setProductModeOverride(this.value)" style="width:100%;box-sizing:border-box;padding:7px 9px;border-radius:8px;background:#161616;color:#eee;border:1.5px solid #333;font-size:13px">${optHtml}</select>`
+    + `<div style="font-size:11px;opacity:.5;margin-top:5px;line-height:1.55">💡 賣「真實的房子 / 案場 / 裝潢 / 水電 / 軟體 / 課程」→ 選 <b>數位・服務</b>(AI 畫不出你那一個,靠口播＋真實素材)。<br>看得到的實體 → 照它怎麼出現:拿著=手持、有包裝袋盒=包裝、一盤完成的菜=盛盤、穿身上=穿戴、落地大件(家具家電)=主角大物、<b>重點是操作/安裝/示範</b>=操作示範。</div>`;
 }
 function setProductModeOverride(val) {
   const prod = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
