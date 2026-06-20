@@ -1973,6 +1973,7 @@ async function onBrandChange() {
   document.getElementById('create-video-btn').disabled = true;
   document.getElementById('create-seedance-btn').disabled = true;
 
+  const _drivePhotosP = loadDrivePhotos(brandId);   // 🆕 #2: Drive 照片不需 personas → 提前並行發,別排隊等
   await loadPersonas(brandId);
 
   // 🚀 v5.7: 重置 system KOL 選擇(S.products 已在 loadBrands 載入)
@@ -2005,15 +2006,18 @@ async function onBrandChange() {
 
   await Promise.all([
     loadKolList(brandId),
-    loadDrivePhotos(brandId),
+    _drivePhotosP,
   ]);
 }
 
 // ─── 載入 personas ────────────────────────────────────────
-async function loadPersonas(brandId) {
+async function loadPersonas(brandId, force) {
+  S._personaCache = S._personaCache || {};
+  if (!force && S._personaCache[brandId]) { S.personas = S._personaCache[brandId]; return; }  // 🆕 快取命中=秒開,不重抓
   try {
     const res = await gasGet('getKolPersonas', { brandId });
     S.personas = res.personas || [];
+    S._personaCache[brandId] = S.personas;  // 🆕 抓過就記住(切回同品牌直接用·參照共享,編輯自動同步)
   } catch (e) {
     console.error('載入 personas 失敗', e);
     S.personas = [];
@@ -2279,8 +2283,14 @@ function handleLookClick(e) {
 }
 
 // ─── Drive 照片庫(口播模式用)────────────────────────────
-async function loadDrivePhotos(brandId) {
+async function loadDrivePhotos(brandId, force) {
   const wrap = document.getElementById('drive-gallery-wrap');
+  S._drivePhotoCache = S._drivePhotoCache || {};
+  if (!force && S._drivePhotoCache[brandId]) {  // 🆕 快取命中=秒開,不重抓 Drive
+    S.drivePhotos = S._drivePhotoCache[brandId];
+    renderDriveGallery();
+    return;
+  }
   wrap.innerHTML = '<div class="kol-empty">讀取 Drive 中…</div>';
 
   try {
@@ -2291,11 +2301,13 @@ async function loadDrivePhotos(brandId) {
       return;
     }
     S.drivePhotos = res;
+    S._drivePhotoCache[brandId] = res;  // 🆕 抓過就記住
     renderDriveGallery();
   } catch (e) {
     wrap.innerHTML = `<div class="kol-empty">❌ ${escapeHtml(e.message)}</div>`;
   }
 }
+console.log('[BrandOS] ⚡ 切品牌快取 v1 就緒(personas + Drive 照片每品牌快取·切回秒開;重新載入鈕強制重抓)');
 
 function renderDriveGallery() {
   const wrap = document.getElementById('drive-gallery-wrap');
@@ -2439,8 +2451,8 @@ async function refreshAll() {
   // 🆕 清掉「乾淨臉」快取:換綁新照片後按這顆,就會重抓最新原圖(不會卡在舊的)
   window._kolCleanCache = {};
   try { Object.keys(localStorage).filter(k => k.startsWith('kolClean:')).forEach(k => localStorage.removeItem(k)); } catch (e) {}
-  await loadPersonas(S.currentBrandId);
-  await Promise.all([loadKolList(S.currentBrandId), loadDrivePhotos(S.currentBrandId)]);
+  await loadPersonas(S.currentBrandId, true);  // 🆕 強制重抓(略過快取)
+  await Promise.all([loadKolList(S.currentBrandId), loadDrivePhotos(S.currentBrandId, true)]);
   toast('重新載入完成 ✓', 'success');
 }
 
