@@ -18,6 +18,11 @@
 window.KolStitch = (function () {
   'use strict';
 
+  // 🎯 v6.8:B(精簡敘事)定案為唯一預設路徑 —— 沒人手動關,接片就一律走 B。
+  //   kol.html 那兩處 _shared 讀的是 window.LEAN_STITCH;這裡載入時補上預設 = true,
+  //   所以 kol.html 一個字都不用改。(臨時要退回 A 版除錯才在 Console 設 window.LEAN_STITCH = false)
+  if (typeof window !== 'undefined' && window.LEAN_STITCH === undefined) window.LEAN_STITCH = true;
+
   // ---- 設定 ---------------------------------------------------------------
   const cfg = {
     workerUrl: 'https://kol-proxy.calm-sunset-6b66.workers.dev',
@@ -364,13 +369,16 @@ window.KolStitch = (function () {
       return t || null;
     }
 
+    // 🚦 v6.9 錯開提交:6 段別同一瞬間打 submit,避開 ByteDance「同物件並發過高(10058)」。
+    //   每段「送出」間隔 SUBMIT_STAGGER_MS;生成本身仍重疊平行 → 只錯開送出那一下,總時間幾乎不變。
+    const SUBMIT_STAGGER_MS = 2500;
     const tasks = chunks.map(function (chunk, i) {
       const beats = chunk.beats || [];
       const continuityFrom = (i > 0) ? lastActionText(chunks[i - 1]) : null;   // 🔗 第1段沒有上一段
       const chunkSec = Math.min(15, Math.max(3, beats.reduce(function (a, b) { return a + (b.durationSec || 5); }, 0) || 15));
       // 該 chunk 的 KOL 圖:用第一個 beat 的角度圖(STEP2/STEP3 已挑好)→ 沒有才退 chunk/全域
       const chunkKol = (beats[0] && beats[0].kolImageUrl) || chunk.kolImageUrl || kolImg;
-      return generateSegment({
+      return new Promise(function (r) { setTimeout(r, i * SUBMIT_STAGGER_MS); }).then(function () { return generateSegment({
         shared: opts.shared,                       // 🆕 B 版共用區塊(front/tail);沒傳就走 A 版
         continuityFrom: continuityFrom,            // 🔗 v6.8 接棒:上一段結尾動作 → 這段接著演(不從頭)
         kolImageUrl: chunkKol,                     // v6.2:用該 chunk 的角度圖當 [Image1](臉錨)
@@ -386,7 +394,7 @@ window.KolStitch = (function () {
         nationality: opts.nationality || (beats[0] && beats[0].nationality),
         outfitImageUrl: outfitImageUrl,            // → [OUTFIT_IMG](整支共用,鎖同一件衣服)
         sceneImageUrl: sceneImageUrl,              // → [SCENE_IMG](整支共用,鎖同一間房 → 跨段家具一致)
-      }, function () {}).then(function (segUrl) {
+      }, function () {}); }).then(function (segUrl) {
         doneCount++;
         log(`${doneCount}/${total} 段完成…`);
         if (opts.onSegmentDone) opts.onSegmentDone(i, segUrl);
@@ -411,7 +419,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.8 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前·無shared則走A版) · 🔗接棒(跨段連貫:上一段結尾動作餵下一段開頭·來自分鏡文字·不破壞平行生成·不加成本)');
+  console.log('[KolStitch] 🎬 v6.9 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🔗接棒(跨段連貫·來自分鏡文字·不破壞平行·不加成本) · 🚦錯開提交2.5s/段(避開ByteDance同物件並發10058)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
