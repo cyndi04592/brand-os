@@ -319,26 +319,51 @@
 
 // ───────── 接片/參考圖路徑專用:精簡敘事組裝(真實度擺最前留滿)─────────
 // 共用區塊只組一次;回 {front: 真實度核心(擺最前), tail: 商品/安全/品牌(擺最後)}
-function composeStitchShared(ctx) {
+// 接片/參考圖路徑:自己建 ctx(跟 composeSeedancePrompt 同款參數)→ 回 {front, tail}
+function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
+  opts = opts || {};
+  const scenes = (typeof window.getScenesForBrand === 'function')
+    ? window.getScenesForBrand(brandId)
+    : (window.SCENE_LIBRARY?.[brandId] || {});
+  const scene = scenes[sceneId];
+  if (!scene) return { front: '', tail: '' };
+  const brand = (window.S?.brands || []).find(b => b.id === brandId);
+  const persona = opts.episode?.persona || null;
+  const ctx = {
+    brandId, brand, sceneId, scene, locationId,
+    movementId: null,                                   // 接片不疊運鏡(交給角度圖/分鏡)
+    duration: String(duration || '15'),
+    persona,
+    storyArc: opts.storyArc || window.S?.storyArc || {},
+    outfitBrand: opts.outfitBrand || document.getElementById('outfit-brand-picker')?.value || window.S?.outfitBrand || '',
+    episode: opts.episode || null,
+  };
+
   const C = CrewMembers;
   const front = [];
-  // ① 真實度核心 — 直接呼叫攝影師(自帶正確口音 + REALISM_BASE + SCENE_REALISM),命脈全留、擺最前
+  // ① 真實度核心 — 攝影師 contribute(自帶正確口音)·命脈全留·擺最前
   pushIfNonEmpty(front, C.cinematographer?.contribute(ctx));
-  // ② 化妝只取「不蓋掉真皮 / 自然殘留」這層真實度(prettiness 由臉圖顧 → 剃)
+  // ② 化妝只取「不蓋掉真皮 / 自然殘留」這層真實度
   front.push('any makeup is a thin surface finish only that must not smooth or replace the real skin underneath, it looks naturally worn not freshly applied');
-  // ③ 打光(doc 說對品質影響最大)
+  // ③ 打光(doc 說影響最大)
   if (ctx.scene?.light) front.push(ctx.scene.light);
   front.push('keep the light on her face soft and even, no harsh overhead glare or hot specular highlights on the skin');
   // ④ 接地真實(不浮空)
   front.push('soft natural contact shadows where her hands and the product touch surfaces, physically grounded never floating');
 
   const tail = [];
-  // ⑤ 商品(命脈:大小 + 形狀鎖 + 正面朝鏡頭)— 道具師原句
+  // ⑤ 商品(大小+形狀鎖+正面朝鏡頭)
   pushIfNonEmpty(tail, window.KolProduct?.contribute(ctx));
-  // ⑥ 內衣安全鎖(只在內衣品牌)— 服裝師原句
+  // ⑥ 內衣安全鎖(只在內衣品牌)
   if (['fashion_lingerie', 'lingerie', 'underwear'].includes(ctx.brand?.brand_type || '')) {
     tail.push('she is fully dressed in everyday outerwear, modest and tasteful, no exposed undergarments, no revealing clothing');
   }
+  // ⑦ 品牌調性 + 無字幕
+  pushIfNonEmpty(tail, C.brandSoul?.contribute(ctx));
+  tail.push('no subtitles, no captions, no on-screen text, no watermark');
+
+  return { front: front.filter(Boolean).join('. '), tail: tail.filter(Boolean).join('. ') };
+}
   // ⑦ 品牌調性(短,全域 tone)+ 無字幕
   pushIfNonEmpty(tail, C.brandSoul?.contribute(ctx));
   tail.push('no subtitles, no captions, no on-screen text, no watermark');
