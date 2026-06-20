@@ -3433,8 +3433,8 @@ async function createStitchedVideo(beats) {
     if (/3\/4|3-4|斜側|斜角|three.?quarter/i.test(t)) return 'q34';
     return 'front';
   };
-  // 🆕 B 版精簡敘事:LEAN_STITCH=true 時,組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
-  const _shared = (window.LEAN_STITCH && typeof composeStitchShared === 'function')
+  // B 版精簡敘事(預設·唯一路徑):組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
+  const _shared = (typeof composeStitchShared === 'function')
     ? composeStitchShared(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, '15',
         { outfitBrand: S.selectedOutfitBrand, episode: { persona, product: stitchProduct } })
     : null;
@@ -5698,8 +5698,8 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
 
   const prevArc = { ...S.storyArc };
   S.storyArc = { ...S.storyArc, tone };
-  // 🆕 B 版精簡敘事:組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
-  const _shared = (window.LEAN_STITCH && typeof composeStitchShared === 'function')
+  // B 版精簡敘事(預設·唯一路徑):組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
+  const _shared = (typeof composeStitchShared === 'function')
     ? composeStitchShared(S.currentBrandId, sceneId, locationId, '15',
         { outfitBrand: chosenOutfitBrand || undefined, episode: { persona, product } })
     : null;
