@@ -1,5 +1,5 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.3
+// kol-stitch.js — 自動接片引擎 v6.4
 // v6.2：照分鏡秒數切 15 秒 chunk + 每個 chunk 用自己的角度圖 + beat 當 Shot(對齊 STEP2/STEP3 的 plan)。每段 = 多鏡頭 reference-to-video,原始 KOL 照當 [Image1] 鎖臉
 //       Seedance 2.0 reference-to-video,臉由模型層鎖死 → 跨段同一個又晴本人(不重畫、不換臉)。
 //         · [Image1] = 又晴原圖   → 鎖臉(這是她舊片臉永遠對的原因)
@@ -166,13 +166,15 @@ window.KolStitch = (function () {
 
     let prompt = buildMultiShotPrompt(beats, totalSec);
 
-    // 🔒 口音鐵律(保留):開語音且還沒鎖口音 → 補(台灣 KOL→台灣國語,擋大陸腔)
-    if (opts.generateAudio === true && !/Mandarin/i.test(prompt)) {
+    // 🔒 口音 + 口型鐵律(v6.4):開語音時,只有「有台詞的鏡頭」才說話+對嘴;
+    //   沒台詞的鏡頭(吃/咀嚼/拿商品/純反應)→ 不講話、嘴不動、只有環境音 → 解決「邊吃邊有人聲」desync。
+    if (opts.generateAudio === true && !/lip-sync/i.test(prompt)) {
       const _nat = opts.nationality
         || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
         || 'tw';
       const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
-      prompt += '\nShe speaks in natural ' + _accent + ', clear lip-sync.';
+      prompt += '\nAudio & lip-sync: she speaks ONLY the spoken dialogue explicitly written in a shot, in natural ' + _accent
+        + ' with clear lip-sync. In any shot with NO written dialogue (eating, chewing, tasting, holding or showing the product, or simply reacting) she does NOT speak — her mouth does not form words, there is no voice-over, only natural ambient sound.';
     }
 
     // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
@@ -257,6 +259,29 @@ window.KolStitch = (function () {
         cur.push(b); curSec += bSec;
       });
       if (cur.length) chunks.push({ beats: cur });
+    }
+
+    // 🛡️ v6.4 防呆:分鏡未確認前,先攤開「要生幾段·幾秒·每段開頭」給看,留一次喊停的機會(擋掉誤燒 90 秒=6 段 fal 額度)。
+    //    程式化呼叫(無 UI)可傳 opts.confirmed = true 略過此檢查。
+    if (!opts.confirmed && typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      const _segSec = chunks.map(function (c) {
+        return (c.beats || []).reduce(function (a, b) { return a + (b.durationSec || 5); }, 0) || 0;
+      });
+      const _totalSec = _segSec.reduce(function (a, b) { return a + b; }, 0);
+      const _lines = chunks.map(function (c, i) {
+        const _head = (((c.beats && c.beats[0] && c.beats[0].prompt) || '(空)') + '').slice(0, 30);
+        return '  第' + (i + 1) + '段(' + _segSec[i] + 's):' + _head + '…';
+      }).join('\n');
+      const _ok = window.confirm(
+        '⚠️ 確認分鏡再生成(會消耗 fal 額度)\n\n' +
+        '共 ' + chunks.length + ' 段、約 ' + _totalSec + ' 秒:\n' + _lines +
+        '\n\n確定用這個分鏡開始生成嗎?'
+      );
+      if (!_ok) {
+        log('🛑 已取消:分鏡未確認,沒有送出任何生成。');
+        throw new Error('STORYBOARD_NOT_CONFIRMED');  // 呼叫端 try/catch 接住 → 顯示「已取消」即可
+      }
+      log('✅ 分鏡已確認,開始生成。');
     }
 
     const total = chunks.length;
@@ -344,7 +369,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.3 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用·室內外) · 共用seed · 口音鐵律');
+  console.log('[KolStitch] 🎬 v6.4 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
