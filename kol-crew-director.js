@@ -364,12 +364,6 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
 
   return { front: front.filter(Boolean).join('. '), tail: tail.filter(Boolean).join('. ') };
 }
-  // ⑦ 品牌調性(短,全域 tone)+ 無字幕
-  pushIfNonEmpty(tail, C.brandSoul?.contribute(ctx));
-  tail.push('no subtitles, no captions, no on-screen text, no watermark');
-
-  return { front: front.filter(Boolean).join('. '), tail: tail.filter(Boolean).join('. ') };
-}
 
 // 每段只放「這一格獨一無二」的靈魂:動作+payoff(原封不動,絕不砍)+ 台詞
 function composeStitchBeat(situation, persona) {
