@@ -38,16 +38,15 @@ const CAM_DEFAULT = 'Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.';
 const CAM_PORTRAIT = 'Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.';
 const CAM_MACRO = 'Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.';
 
-// ★ v11 設計師工法層 (DESIGNER_POLISH) — 全域注入,只管「工法/意圖」,不碰選定風格
+// ★ v11.1 設計師工法層 (DESIGNER_POLISH) — 具體反 AI 指紋版(相機/佈光 + 品類 + 單一促銷 + 真材質),風格分流、不碰選定風格
 const DESIGNER_POLISH =
-'This enforces CRAFT and INTENT only and must NOT override the chosen design style above. ' +
-'1) ONE clear central idea drives the poster — a deliberate concept and focal hierarchy, not a pretty background with text floating on top. ' +
-'2) Typography is intentional and resolved: confident hierarchy appropriate to the chosen style, one type family in a few deliberate weights, careful tracking and alignment — never default or timid. ' +
-'3) Every element is justified: each color, prop and graphic is a deliberate choice serving the idea — no generic filler. Deliberate whether the style is minimal or maximal, NOT necessarily fewer elements. ' +
-'4) BAN meaningless decoration: no random foreign words, no filler decorative text, no generic sparkles, bokeh or lens-flare added for no reason. All text must be real and meaningful. ' +
-'5) Supporting info (features, specs, badges) is laid out with deliberate typographic care and a consistent system; if icons appear they form ONE cohesive set with identical weight and detail, never mixed clip-art. ' +
-'6) Logical integrity: shadows, structures, perspective and spatial relationships must make real-world sense; nothing malformed or nonsensical. ' +
-'7) Composition deliberately resolved on an underlying grid with a clear focal point and intentional negative space — symmetry or asymmetry by choice, never by default.';
+'Output must look like REAL human-made work, never an AI render. ' +
+'For PHOTOGRAPHIC styles: render as real professional photography — shot on a pro body (Nikon Z9 / Sony A1 / Canon R5) with a real lens (35mm or 50mm prime for scenes, 85mm for portraits, macro for food and product detail), professional lighting setup (softbox key plus natural fill), realistic depth of field, true-to-life materials and micro-texture; avoid the over-glossy, over-smooth, over-symmetrical AI-render sheen. ' +
+'For ILLUSTRATION, ink or graphic styles: execute in the authentic medium (real ink, paint, print, collage texture) with a human designer hand, not slick AI gradients. ' +
+'Decoration must fit the product category logically (seaweed uses ocean / wave / seaweed motifs, NOT wheat or coffee; tech uses clean studio; food uses real ingredients) — no off-category or meaningless symbols. ' +
+'Keep only ONE primary promotional message; never repeat the same discount or event across multiple badges. ' +
+'All text must be real, meaningful and correctly spelled; supporting icons form ONE cohesive set with identical weight and detail. ' +
+'ONE clear focal hierarchy on a deliberate grid, intentional and edited, never over-filled.';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
