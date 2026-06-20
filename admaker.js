@@ -1194,9 +1194,9 @@ async function renderAdCanvas() {
   const title = document.getElementById('amTitle')?.value || '';
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
 
-  if (photo && (photo.src || photo.thumb)) {
+  if (photo && (photo.full || photo.src || photo.thumb)) {
     try {
-      const { img, tainted } = await loadImageSmart(photo.src || photo.thumb);
+      const { img, tainted } = await loadImageSmart(photo.full || photo.src || photo.thumb);
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, AM.w, AM.h);
       const scale = Math.min(AM.w/img.width, AM.h/img.height);
