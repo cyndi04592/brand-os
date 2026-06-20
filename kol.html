@@ -2813,7 +2813,8 @@ async function handleDriveProductClick(e) {
       toast('最多 9 張(含 KOL 肖像)', 'warn');
       return;
     }
-    item.style.opacity = '0.5';
+    item.classList.add('selected');   // 🆕 B: 先打勾(樂觀 UI),不等 R2 → 勾勾即時
+    item.style.opacity = '0.6';        // 半透明 = 背景搬移中
     try {
       const res = await api('drive_to_r2', {
         driveFileId: fileId,
@@ -2827,8 +2828,8 @@ async function handleDriveProductClick(e) {
       S.driveFileR2[fileId] = res.url;
       S.seedanceProductUrls.push(res.url);
       S.productRefRole[res.url] = defaultProductRole();
-      item.classList.add('selected');
     } catch (err) {
+      item.classList.remove('selected');   // 🆕 B: 搬移失敗 → 撤銷勾勾
       toast('商品照搬移失敗:' + err.message, 'error');
     } finally {
       item.style.opacity = '';
@@ -4711,7 +4712,8 @@ async function handleEpisodeProductClick(e) {
       return;
     }
 
-    item.style.opacity = '0.5';
+    item.classList.add('selected');   // 🆕 B: 先打勾(樂觀 UI),不等 R2 → 勾勾即時
+    item.style.opacity = '0.6';        // 半透明 = 背景搬移中
     try {
       let r2 = cachedR2;
       if (!r2) {
@@ -4730,8 +4732,8 @@ async function handleEpisodeProductClick(e) {
       S.episodeProductUrls.push(r2);
       S.productRefRole[r2] = defaultEpisodeRole();
       renderEpisodeSlots();
-      item.classList.add('selected');
     } catch (err) {
+      item.classList.remove('selected');   // 🆕 B: 搬移失敗 → 撤銷勾勾
       toast('商品照搬移失敗:' + err.message, 'error');
     } finally {
       item.style.opacity = '';
