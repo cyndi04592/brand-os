@@ -1816,7 +1816,14 @@ async function gasPost(action, extra = {}) {
     document.getElementById('debug-prompt-wrap').style.display = '';
   }
 
+  // 🆕 開機先顯示「載入中」,別讓客戶看到嚇人的「請先選擇品牌」空白(品牌清單要跟後端要,會等幾秒)
+  const _noBrandPanel = document.getElementById('no-brand-panel');
+  const _noBrandHTML = _noBrandPanel.innerHTML;
+  _noBrandPanel.innerHTML = '<span class="emoji">⏳</span><h3>載入中…</h3><p>正在為您準備品牌與 KOL 形象庫</p>';
+
   await loadBrands();
+
+  _noBrandPanel.innerHTML = _noBrandHTML;  // 還原:有自動載到品牌→面板已隱藏(文字不影響);真的沒品牌→顯示正確空狀態
   updateCreditEstimate();
   updateSeedanceCostEstimate();
 })();
