@@ -1571,7 +1571,7 @@ ${DESIGNER_POLISH}
 `;
 
   prompt += `=== OUTPUT SPECIFICATION ===\n`;
-  prompt += `- Vertical portrait orientation, 4:3 advertising poster (suitable for IG feed, e-commerce banner, print magazine)\n`;
+  prompt += `- Square 1:1 orientation, advertising poster optimized for Instagram / Meta feed (1080x1080, works across all feed placements)\n`;
   prompt += `- High resolution, sharp typography, professional commercial photography quality\n`;
   prompt += `- Change: background, environment, lighting, decorative graphics, typography, layout composition\n`;
   prompt += `- Preserve: product identity, product details, brand marks, all text printed on the product itself\n`;
@@ -1657,7 +1657,7 @@ async function generateGptPoster() {
       action: 'gpt_poster_edit_submit',
       prompt,
       imageUrls: [imageUrl],
-      image_size: 'portrait_4_3',
+      image_size: 'square_hd',
       quality: 'high',
       num_images: 1,
       brandId,
@@ -1709,7 +1709,7 @@ async function generateGptPoster() {
     }
 
     AM.w = 1080;
-    AM.h = 1440;
+    AM.h = 1080;
     await renderGptPosterCanvas();
     finishProgress(interval);
 
@@ -1785,7 +1785,7 @@ async function posterToVideo() {
       action: 'kling_poster_video_submit',
       imageUrl: LAST_POSTER_URL,
       duration: 5,
-      aspect_ratio: '3:4'
+      aspect_ratio: '1:1'   // 🔧 跟 1:1 海報一致 → kling 不重裁,影片=海報動起來
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
@@ -1814,7 +1814,10 @@ async function posterToVideo() {
     }
 
     if (result.status === 'FAILED') throw new Error(result.error || '影片生成失敗');
-    if (!result.videoUrl) throw new Error('未取得影片 URL');
+    if (!result.videoUrl) {
+      console.error('[影片診斷] poll 回傳無 videoUrl,原始回應:', JSON.stringify(result).slice(0, 500));
+      throw new Error('未取得影片 URL');
+    }
 
     showVideoInCanvas(result.videoUrl);
     finishProgress(interval);
