@@ -1928,6 +1928,10 @@ async function onBrandChange() {
     }
   });
 
+  // 🆕 切品牌自動關「無臉模式」(主軸是 KOL,無臉只是偶爾需求)
+  const _facelessT = document.getElementById('faceless-toggle');
+  if (_facelessT) { _facelessT.classList.remove('on'); const _facelessR = document.getElementById('faceless-action-row'); if (_facelessR) _facelessR.style.display = 'none'; }
+
   // 重置狀態
   S.personas = [];
   S._personasLoading = true;   // 🆕 C: 標記載入中 → 經營中的 KOL 面板顯示「載入中」而非空狀態(別嚇到以為角色不見)
