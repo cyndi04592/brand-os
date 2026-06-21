@@ -1922,9 +1922,8 @@ async function onBrandChange() {
   //   失敗則 fallback 用寫死表,不影響其他功能
   ensureBrandProductFolder(brandId).then(fid => {
     if (fid && S.currentBrandId === brandId
-        && typeof loadDriveProducts === 'function'
-        && document.querySelector('.ref-tab[data-ref-tab="drive"].active')) {
-      loadDriveProducts();
+        && typeof loadDriveProducts === 'function') {
+      loadDriveProducts();   // 🆕 v5.16-②:找到資料夾就背景載入,由 _decideRefTab 依「有沒有照片」自動決定跳不跳
     }
   });
 
@@ -2023,18 +2022,17 @@ async function onBrandChange() {
   if (_folderRow && _folderRow.productFolderId) {
     BRAND_PRODUCT_FOLDERS[brandId] = _folderRow.productFolderId;
   }
-  const _hasProductFolder = !!BRAND_PRODUCT_FOLDERS[brandId];
+  // 🆕 v5.16-②:不再「有資料夾就跳」。切品牌先回「手動 URL」+ 上鎖;
+  //   若有商品照資料夾 → 背景載入,由 loadDriveProducts→_decideRefTab 依「有沒有照片」
+  //   決定要不要自動跳 Drive(有照片才跳;空資料夾乖乖留在手動,不跳到空白)
   const lockIcon = document.getElementById('ref-tab-drive-lock');
-  if (lockIcon) {
-    lockIcon.style.display = _hasProductFolder ? 'none' : '';
-  }
-  // 有 Drive 商品照 → 預設打開「從 Drive 選」;沒有 → 確保停在「手動 URL」(避免空白)
-  if (_hasProductFolder) {
-    switchRefTab('drive');
-  } else if (document.querySelector('.ref-tab[data-ref-tab="drive"].active')) {
+  if (lockIcon) lockIcon.style.display = '';
+  if (document.querySelector('.ref-tab[data-ref-tab="drive"].active')) {
     switchRefTab('url');
   }
-
+  if (BRAND_PRODUCT_FOLDERS[brandId]) {
+    loadDriveProducts();
+  }
   await Promise.all([
     loadKolList(brandId),
     _drivePhotosP,
@@ -2698,14 +2696,27 @@ function renderTasks() {
 //  🆕 v5.0: Seedance 電影鏡頭模式
 // ═══════════════════════════════════════════════════════════
 
-function switchRefTab(tab) {
+function switchRefTab(tab, _skipLoad) {
   document.querySelectorAll('.ref-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.ref-tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelector(`.ref-tab[data-ref-tab="${tab}"]`)?.classList.add('active');
   document.getElementById(`ref-panel-${tab}`)?.classList.add('active');
 
-  if (tab === 'drive') {
+  if (tab === 'drive' && !_skipLoad) {
     loadDriveProducts();
+  }
+}
+
+// 🆕 v5.16-②:依「資料夾裡有沒有照片」決定要不要自動跳到「從 Drive 選」
+//   有照片 → 解鎖 + 自動跳;沒照片 → 保持鎖、留在手動(不主動把使用者跳走)
+function _decideRefTab(count) {
+  const lock = document.getElementById('ref-tab-drive-lock');
+  if (count > 0) {
+    if (lock) lock.style.display = 'none';
+    const onDrive = !!document.querySelector('.ref-tab[data-ref-tab="drive"].active');
+    if (!onDrive) switchRefTab('drive', true);
+  } else {
+    if (lock) lock.style.display = '';
   }
 }
 
@@ -2772,6 +2783,7 @@ function reloadDriveProducts() {
 
 function renderDriveProducts(files) {
   const wrap = document.getElementById('drive-product-gallery-wrap');
+  _decideRefTab(files ? files.length : 0);   // 🆕 v5.16-②:有照片才跳 Drive,空則留手動
   if (!files || files.length === 0) {
     wrap.innerHTML = `
       <div class="ref-drive-locked">
