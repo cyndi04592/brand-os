@@ -372,8 +372,35 @@ function composeStitchBeat(situation, persona) {
 }
 window.composeStitchShared = composeStitchShared;
 window.composeStitchBeat   = composeStitchBeat;
+  // ════════════════════════════════════════════════════════════════
+  //  🆕 無臉模式 prompt 配方 · v5.13-faceless
+  //  商品 = 主角([Image1]),不寫臉/妝/衣服/人設。
+  //  動作:cooking(做菜手)/ shoes(試穿腳)/ hold(手持展示)
+  // ════════════════════════════════════════════════════════════════
+  const FACELESS_REALISM = "Extreme realism, premium cinematic commercial quality, no stylized CGI, no cartoon look, true-to-life skin, soft natural daylight, realistic textures, soft natural contact shadows where things touch surfaces, physically grounded never floating, handheld vlog feeling, shallow depth of field. 9:16 vertical.";
+  const FACELESS_NOTEXT  = "No subtitles, no captions, no on-screen text, no watermark.";
+
+  const FACELESS_ACTIONS = {
+    cooking: "Close-up first-person view of two hands and forearms only cooking at a stove — no face, no person, only the hands in frame. [Image1] shows the finished dish; recreate that exact dish: hands toss and stir-fry the same ingredients in a hot wok, food sizzling with light steam, ending as a dish identical to [Image1] in ingredients, color and glaze — keep the food look identical to [Image1], do not redesign.",
+    shoes:   "Close-up on a pair of feet and lower legs only — no face, no upper body, no person above the knees anywhere in frame. The feet wear the exact shoes shown in [Image1]: keep the shoe shape, color, material, sole thickness and logo identical to [Image1], do not redesign. Natural try-on motion: one foot slides into the shoe, a gentle step on a clean light wood floor near a bright window, a small ankle turn to reveal the side profile of the shoe.",
+    hold:    "Close-up on two hands and forearms only — no face, no person, only the hands in frame. The hands hold and present the exact product shown in [Image1] toward the camera, turning it slightly to show its details: keep the product shape, color, label and proportions identical to [Image1], do not redesign. Natural demo motion on a clean tabletop.",
+  };
+
+  function composeFacelessPrompt(action, opts) {
+    opts = opts || {};
+    const core = FACELESS_ACTIONS[action] || FACELESS_ACTIONS.hold;
+    const parts = [core];
+    const sit = (opts.situation || '').trim();
+    if (sit) parts.push('Specific on-screen action: ' + sit + ' — show this naturally while keeping the product from [Image1] clearly visible.');
+    parts.push(FACELESS_REALISM);
+    parts.push(FACELESS_NOTEXT);
+    return parts.filter(Boolean).join(' ');
+  }
+  window.composeFacelessPrompt = composeFacelessPrompt;
+  window.FACELESS_ACTIONS = FACELESS_ACTIONS;
+
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.12 Full 版就緒 · 組 prompt 責任已接管');
+  console.log('[CrewDirector] 🎬 v5.13-faceless 就緒 · 組 prompt 責任已接管 · 無臉模式 prompt 已載入');
 })();
