@@ -1089,6 +1089,22 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <span class="chip">細節調整</span>
           </div>
           <div class="advanced-body">
+            <!-- 🆕 無臉模式 v5.13-faceless -->
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">🙌 無臉模式(只拍商品/手/腳)</div>
+                <div class="toggle-desc">打開後不用選 KOL,直接用商品照當主角 — 做菜、試穿鞋、手持展示</div>
+              </div>
+              <div class="toggle-switch" id="faceless-toggle" onclick="toggleFaceless()"></div>
+            </div>
+            <div id="faceless-action-row" style="display:none;margin-top:6px">
+              <select id="faceless-action" style="width:100%;padding:8px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border)">
+                <option value="cooking">🍳 做菜(只有手)</option>
+                <option value="shoes">👟 試穿鞋(只有腳)</option>
+                <option value="hold">🤲 手持展示(只有手)</option>
+              </select>
+            </div>
+
             <div class="toggle-row">
               <div class="toggle-info">
                 <div class="toggle-label">🔒 鎖定每段畫面一致性</div>
@@ -3617,10 +3633,75 @@ function preGenConfirm(opts) {
     wrap.querySelector('.pgc-go').onclick = function () { done(true); };
   });
 }
+// 🆕 無臉模式 v5.13-faceless ─────────────────────────────
+function toggleFaceless() {
+  const t = document.getElementById('faceless-toggle');
+  if (!t) return;
+  t.classList.toggle('on');
+  const on = t.classList.contains('on');
+  const row = document.getElementById('faceless-action-row');
+  if (row) row.style.display = on ? 'block' : 'none';
+  // 無臉模式不需要 KOL → 讓生成鈕可按;關掉則恢復「要選 KOL 才可按」
+  const btn = document.getElementById('create-seedance-btn');
+  if (btn) btn.disabled = on ? false : !S.selectedKol;
+}
 
+async function createFacelessVideo() {
+  const heroUrl = orderedProductUrls()[0];
+  if (!heroUrl) { toast('無臉模式需要至少一張商品照(放進商品槽)', 'error'); return; }
+  const action = document.getElementById('faceless-action')?.value || 'cooking';
+  const situation = document.getElementById('cine-situation')?.value?.trim() || '';
+  const prompt = window.composeFacelessPrompt ? window.composeFacelessPrompt(action, { situation }) : '';
+  if (!prompt) { toast('組無臉 prompt 失敗,請確認 crew-director 已更新到 v5.13-faceless', 'error'); return; }
+
+  const payload = {
+    kolImageUrl: heroUrl,
+    productImageUrls: [],
+    prompt,
+    resolution: S.seedanceParams.resolution,
+    duration: S.seedanceParams.duration,
+    aspectRatio: S.seedanceParams.aspectRatio,
+    generateAudio: S.seedanceParams.generateAudio,
+    tier: S.seedanceParams.tier,
+    brandId: S.currentBrandId,
+    kolName: '無臉_' + action,
+  };
+  if (S.seedanceSeedLocked) {
+    const seedVal = (document.getElementById('seed-value')?.value || '').trim();
+    if (seedVal) payload.seed = parseInt(seedVal);
+  }
+
+  const btn = document.getElementById('create-seedance-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span> 送出中…'; }
+  try {
+    const res = await api('seedance_submit', payload);
+    if (!res.ok) throw new Error(res.error);
+    const labels = { cooking: '做菜', shoes: '試穿鞋', hold: '手持展示' };
+    const task = {
+      requestId: res.requestId, endpoint: res.endpoint,
+      responseUrl: res.responseUrl, statusUrl: res.statusUrl,
+      label: `無臉·${labels[action] || action} · ${S.seedanceParams.resolution} ${S.seedanceParams.duration}s`,
+      status: 'IN_QUEUE', created: new Date().toLocaleTimeString('zh-TW'),
+      startTime: Date.now(), url: null, seed: null, fileSize: null,
+      r2Refs: res.r2Refs || [], payload: res.payload || {},
+    };
+    S.seedanceTasks.unshift(task);
+    renderSeedanceTasks();
+    toast('無臉影片已送出 🙌(預估約 4 分鐘)', 'success');
+    pollSeedance(task);
+  } catch (e) {
+    toast('提交失敗:' + e.message, 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '🎬 生成電影鏡頭'; }
+}
+// ───────────────────────────────────────────────────────
+
+async function createSeedanceVideo() {
 async function createSeedanceVideo() {
   // 🛡️ 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳
   if (!(await preGenConfirm({ step: 2, pending: S.cineStoryboardPending }))) return;
+  // 🆕 無臉模式:跳過 KOL,商品當主角(v5.13-faceless)
+  if (document.getElementById('faceless-toggle')?.classList.contains('on')) return createFacelessVideo();
   // 🆕 多段分鏡 → 走接片;單段維持原樣,demo 零風險
   if (S.cineStoryboard && S.cineStoryboard.length > 1) {
     return createStitchedVideo(S.cineStoryboard);
