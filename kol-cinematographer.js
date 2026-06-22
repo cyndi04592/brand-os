@@ -29,7 +29,7 @@
   'use strict';
 
   // 🎯 攝影風格基底 — 管「人/膚質/不修圖」(靈魂留、干擾拔)
-  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
+  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, soft natural subject edges that blend into the scene, no hard cutout outline, no over-sharpened subject edge, not a pasted-on composited look, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
