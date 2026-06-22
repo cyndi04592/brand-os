@@ -119,7 +119,7 @@
       const fit = checkDialogueFit(dialogue, s.seconds);
       return {
         ...s,
-        shotDesc: got.shotDesc || s.shotDesc || '',
+        shotDesc: sanitizeShotDesc(got.shotDesc || s.shotDesc || ''),
         angle: got.angle || s.angle || 'front',   // 🆕 AI 導演選的鏡位,帶進 beat
         dialogue,
         dialogueLocked: !!locked,
