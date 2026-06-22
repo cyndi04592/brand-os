@@ -104,6 +104,25 @@
    *   - 鎖定台詞逐字蓋回(雙保險)
    *   - 每格跑一次 checkDialogueFit,標出爆秒的(overflow)
    */
+  // 🆕 地點防呆清洗器:把 shotDesc 偷渡的地點/家具字自動中性化(避免跟使用者選的場景打架)
+  //   只洗地點/家具,保留鏡頭詞(定場遠景/極特寫等)與動作、台詞。
+  const _BANNED_PLACES = ['廚房','客廳','臥室','臥房','浴室','廁所','洗手間','辦公室','書房','餐廳','中島','流理台','流理臺','料理台','料理檯','吧台','吧檯','餐桌','書桌','梳妝台','梳妝臺','沙發','茶几','陽台','陽臺','玄關','咖啡廳','咖啡店','店裡','店內','房間','櫥櫃','廚櫃','洗手台','洗手臺'];
+  function sanitizeShotDesc(t){
+    if(!t) return t;
+    let s = String(t);
+    const B = '(' + _BANNED_PLACES.join('|') + ')';
+    s = s.replace(new RegExp('站在\\s*'+B+'\\s*(的)?\\s*(旁邊|邊|旁|前方|前)?','g'),'站著');
+    s = s.replace(new RegExp('坐在\\s*'+B+'\\s*(的)?\\s*(旁邊|邊|旁|前方|前)?','g'),'坐著');
+    s = s.replace(new RegExp('(靠在|倚在|趴在)\\s*'+B+'\\s*(的)?\\s*(旁邊|邊|旁|前方|前|上)?','g'),'$1一旁');
+    s = s.replace(new RegExp('(走向|走進|走到|走去|走回)\\s*'+B,'g'),'轉身');
+    s = s.replace(new RegExp('在\\s*'+B+'\\s*(的)?\\s*(裡|內|中|上|旁|邊)?','g'),'');
+    s = s.replace(new RegExp(B,'g'),'');
+    s = s.replace(/，\s*，+/g,'，').replace(/,\s*,+/g,',')
+         .replace(/^[，,、。\s]+/,'')
+         .replace(/，(的)/g,'，')
+         .trim();
+    return s;
+  }
   function mergeExpandResult(skeleton, llmBeats, lockedLines = []) {
     const lockMap = {};
     (lockedLines || []).forEach(l => {
