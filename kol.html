@@ -868,7 +868,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div style="margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a">
           <div style="font-size:11px;opacity:.55;margin-bottom:8px">📍 商品照分槽 · 挑好的圖自動落進對應槽</div>
           <div class="ref-list" id="ref-list"></div>
-          <div class="ref-counter">已加 <span class="num" id="ref-count">0</span>/6 件 · 已預留場景+服裝</div>
+          <div class="ref-counter">已加 <span class="num" id="ref-count">0</span>/6 件 · 已預留場景+服裝<span id="ref-pace"></span></div>
         </div>
       </div>
     </div>
@@ -2983,6 +2983,7 @@ function renderRefList() {
     countEl.textContent = S.seedanceProductUrls.length;
     countEl.classList.toggle('warn', S.seedanceProductUrls.length >= MAX_PRODUCT_REFS);
   }
+  refreshPaceHints();
   renderProductModePicker('product-mode-s2');   // 🆕 v3.1 槽刷新時同步畫呈現方式選擇器
 }
 
@@ -3351,6 +3352,7 @@ function updateSeedanceSubmitButton() {
 // 場景/地標變動時更新按鈕(input event 已不適用,由 syncScenePrompt 手動觸發)
 
 function updateSeedanceCostEstimate() {
+  refreshPaceHints();
   const el = document.getElementById('seedance-cost-est');
   if (!el) return;
   const p = S.seedanceParams;
@@ -3691,6 +3693,29 @@ async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
 }
 // 🛡️ 生成前確認視窗(自製 → 可放紅字)。pending=true:用了分鏡產生器卻還沒按「確認分鏡」。
 // 回傳 Promise<boolean>:true=繼續生成,false=取消。STEP2/STEP3、單支/接片共用這一個。
+// 🆕 商品節奏防呆 v6.0-pace ─────────────────────────────
+function pacePerItem(itemCount, duration){
+  var n = Math.max(0, parseInt(itemCount) || 0);
+  var d = Math.max(1, parseInt(duration) || 0);
+  if (n <= 1) return { sec: d, level: 'ok' };
+  var sec = d / n;
+  var level = sec < 4 ? 'red' : (sec < 6 ? 'warn' : 'ok');
+  return { sec: sec, level: level };
+}
+function paceHintHtml(itemCount, duration){
+  var p = pacePerItem(itemCount, duration);
+  if (p.level === 'ok') return '';
+  var s = p.sec.toFixed(1).replace(/\.0$/, '');
+  var red = p.level === 'red';
+  return ' · <span style="color:' + (red ? '#ff5a5a' : '#ffa94d') + ';font-weight:700">每件 ~' + s + 's ' + (red ? '太趕' : '偏擠') + '</span>';
+}
+function refreshPaceHints(){
+  var rp = document.getElementById('ref-pace');
+  if (rp) rp.innerHTML = paceHintHtml((S.seedanceProductUrls || []).length, S.seedanceParams && S.seedanceParams.duration);
+  var ep = document.getElementById('ep-pace');
+  if (ep) ep.innerHTML = paceHintHtml((S.episodeProductUrls || []).length, S.episodeParams && S.episodeParams.duration);
+}
+// ───────────────────────────────────────────────────────
 function preGenConfirm(opts) {
   opts = opts || {};
   return new Promise(function (resolve) {
@@ -3700,13 +3725,20 @@ function preGenConfirm(opts) {
     var warnHtml = opts.pending
       ? '<div style="margin-top:6px;padding:10px 12px;border:1px solid rgba(250,80,80,.55);background:rgba(250,80,80,.10);border-radius:10px;color:#ff5a5a;font-size:13px;line-height:1.6;font-weight:700;">⚠️ 尚未按「確認分鏡」!<br><span style="font-weight:400;color:#ff8a8a;">你用了分鏡產生器但還沒確認,直接生成有機率失敗 / 不照你的分鏡。建議先點上方「✅ 確認分鏡」按鈕,再按生成。</span></div>'
       : '';
+    var _p = pacePerItem(opts.itemCount, opts.duration);
+    var paceHtml = '';
+    if (_p.level !== 'ok') {
+      var _s = _p.sec.toFixed(1).replace(/\.0$/, '');
+      var _red = _p.level === 'red';
+      paceHtml = '<div style="margin-top:6px;padding:10px 12px;border:1px solid ' + (_red ? 'rgba(250,80,80,.55)' : 'rgba(255,169,77,.55)') + ';background:' + (_red ? 'rgba(250,80,80,.10)' : 'rgba(255,169,77,.10)') + ';border-radius:10px;color:' + (_red ? '#ff5a5a' : '#ffa94d') + ';font-size:13px;line-height:1.6;font-weight:700;">' + (_red ? '🔴 商品偏多,節奏會很趕' : '🟡 商品稍多,節奏偏擠') + '<br><span style="font-weight:400;color:' + (_red ? '#ff8a8a' : '#ffd9a0') + ';">' + opts.itemCount + ' 件 ÷ ' + (parseInt(opts.duration) || 0) + ' 秒 ≈ 每件約 ' + _s + ' 秒。' + (_red ? '口播會被砍短或講太快、商品也容易一閃而過,建議拉長秒數或減少件數。' : '可以接受,但拉長秒數口播會更從容。') + '</span></div>';
+    }
     wrap.innerHTML =
       '<div class="persona-modal-backdrop"></div>' +
       '<div class="persona-modal-content" style="max-width:440px;">' +
         '<div class="persona-modal-head"><span class="persona-modal-title">🎬 生成前確認</span></div>' +
         '<div class="persona-modal-body">' +
           '<div style="font-size:13px;color:var(--text);line-height:1.6;">即將開始生成影片,會消耗生成額度。</div>' +
-          warnHtml +
+          warnHtml + paceHtml +
         '</div>' +
         '<div class="persona-modal-foot">' +
           '<button class="pgc-cancel" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;">取消</button>' +
@@ -3785,7 +3817,7 @@ async function createFacelessVideo() {
 
 async function createSeedanceVideo() {
   // 🛡️ 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳
-  if (!(await preGenConfirm({ step: 2, pending: S.cineStoryboardPending }))) return;
+  if (!(await preGenConfirm({ step: 2, pending: S.cineStoryboardPending, itemCount: (S.seedanceProductUrls||[]).length, duration: S.seedanceParams.duration }))) return;
   // 🆕 無臉模式:跳過 KOL,商品當主角(v5.13-faceless)
   if (document.getElementById('faceless-toggle')?.classList.contains('on')) return createFacelessVideo();
   // 🆕 多段分鏡 → 走接片;單段維持原樣,demo 零風險
@@ -4781,7 +4813,7 @@ function renderEpisodeProductPickerHTML() {
         <div class="kol-empty" style="padding:18px 14px;font-size:11.5px"><span class="spin">⏳</span> 讀取 Drive 商品照中…</div>
       </div>
       <div class="ep-product-footer">
-        <span style="font-size:10.5px;color:var(--text-dim)">已選 <span id="ep-product-count">${selected.length}</span>/6 件 · 已預留場景+服裝</span>
+        <span style="font-size:10.5px;color:var(--text-dim)">已選 <span id="ep-product-count">${selected.length}</span>/6 件 · 已預留場景+服裝<span id="ep-pace">${paceHintHtml(selected.length, S.episodeParams && S.episodeParams.duration)}</span></span>
         <button class="btn btn-ghost btn-sm" onclick="reloadEpisodeProducts()">🔄 重新整理</button>
       </div>
       <!-- 🆕 v3.1 商品呈現方式(mode 選擇器 · STEP3) -->
@@ -4937,6 +4969,7 @@ async function handleEpisodeProductClick(e) {
     item.dataset.busy = '';
     const countEl = document.getElementById('ep-product-count');
     if (countEl) countEl.textContent = S.episodeProductUrls.length;
+    refreshPaceHints();
   }
 }
 // 🆕 清空故事情境(順便解鎖時長 + 清掉草稿,避免重整又跑回來)
@@ -5745,7 +5778,7 @@ async function generateEpisodeV510(mode) {
   }
 
   // 🛡️ 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳;社群貼文(posts)不需要
-  if (mode !== 'posts' && !(await preGenConfirm({ step: 3, pending: S.episodeStoryboardPending }))) return;
+  if (mode !== 'posts' && !(await preGenConfirm({ step: 3, pending: S.episodeStoryboardPending, itemCount: (S.episodeProductUrls||[]).length, duration: S.episodeParams.duration }))) return;
 
   saveEpisodeDraft(true);
 
