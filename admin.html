@@ -473,6 +473,29 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   color: #5BC8E8;
   border: 1px solid rgba(91,200,232,0.4);
 }
+.badge-reviewer {
+  background: rgba(109,250,194,0.12);
+  color: #4fd6a8;
+  border: 1px solid rgba(109,250,194,0.4);
+}
+.staff-brand-picker {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  max-height: 140px; overflow-y: auto;
+  padding: 10px;
+  border: 1px solid rgba(124,109,250,0.25);
+  border-radius: 10px;
+  background: rgba(10,10,15,0.4);
+}
+.brand-chk {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--t2);
+  padding: 5px 10px; border-radius: 8px;
+  background: rgba(124,109,250,0.08);
+  border: 1px solid transparent;
+  cursor: pointer; white-space: nowrap;
+}
+.brand-chk:hover { border-color: rgba(124,109,250,0.4); }
+.brand-chk input { accent-color: #7C6DFA; cursor: pointer; }
 
 .add-staff-form {
   background: linear-gradient(135deg, rgba(17,17,24,0.8), rgba(26,26,36,0.6));
@@ -1701,6 +1724,19 @@ tr:hover td { background: rgba(124,109,250,0.04); }
         </div>
         <button class="btn-add-staff" onclick="addStaff()">＋ 加入</button>
       </div>
+      <div style="margin-top:16px;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="min-width:200px;">
+          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;letter-spacing:0.5px;">角色</label>
+          <select class="field-input" id="newStaffRole" onchange="onRoleChange()">
+            <option value="customer">客戶(只看指定品牌)</option>
+            <option value="reviewer" data-owner-only-opt>審核員(可審核 · 看全部)</option>
+          </select>
+        </div>
+        <div id="newStaffBrandsWrap" style="flex:1;min-width:280px;">
+          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;letter-spacing:0.5px;">可看品牌(客戶必選)</label>
+          <div id="newStaffBrands" class="staff-brand-picker"><span style="font-size:12px;color:var(--t3)">載入中…</span></div>
+        </div>
+      </div>
     </div>
     <div class="staff-grid" id="staffGrid">
       <div class="empty-state"><p>載入中...</p></div>
@@ -1757,6 +1793,7 @@ function adminLogin() {
 function applyRoleUI() {
   const isOwner = ADMIN_USER_ROLE === 'owner';
   document.querySelectorAll('[data-owner-only]').forEach(el => { el.style.display = isOwner ? '' : 'none'; });
+  if (!isOwner) document.querySelectorAll('[data-owner-only-opt]').forEach(el => el.remove());
 }
 
 // ══ B1+: 免二次登入 — 用主站發的 SSO 票自動驗證 ══
@@ -2775,7 +2812,7 @@ async function loadStaff() {
   try {
     const r = await fetch(`${GAS_URL}?action=getWhitelist&password=${PASSWORD}`);
     const j = await r.json();
-    if (j.ok) { STAFF = j.whitelist; renderStaff(); }
+    if (j.ok) { STAFF = j.whitelist; renderStaff(); renderBrandPicker(); onRoleChange(); }
     else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 載入失敗', 'err'); }
   hideLoading();
@@ -2785,39 +2822,73 @@ function renderStaff() {
   const grid = document.getElementById('staffGrid');
   if (!STAFF.length) { grid.innerHTML='<div class="empty-state"><p>尚無員工</p></div>'; return; }
   grid.innerHTML = STAFF.map(s => {
-    const isAdmin = s.email === ADMIN_EMAIL;
+    const role = String(s.role || (s.email===ADMIN_EMAIL ? 'owner' : 'customer')).toLowerCase();
+    const isOwnerRow = role === 'owner';
     const initials = (s.name||s.email||'?')[0].toUpperCase();
     const date = s.addedAt ? new Date(s.addedAt).toLocaleDateString('zh-TW') : '-';
+    const badge = role==='owner' ? '<span class="staff-badge badge-admin">👑 管理員</span>'
+                : role==='reviewer' ? '<span class="staff-badge badge-reviewer">🛡️ 審核員</span>'
+                : '<span class="staff-badge badge-staff">👤 客戶</span>';
+    const brandsLine = (role==='owner'||role==='reviewer')
+                ? '<div class="staff-email" style="color:var(--t3)">可看:全部品牌</div>'
+                : `<div class="staff-email" style="color:var(--t3)">可看:${brandsToNames(s.brands)}</div>`;
     return `<div class="staff-card">
       <div class="staff-avatar">${initials}</div>
       <div class="staff-info">
         <div class="staff-name">${esc(s.name||'未設定姓名')}</div>
         <div class="staff-email">${esc(s.email)}</div>
+        ${brandsLine}
       </div>
-      <span class="staff-badge ${isAdmin?'badge-admin':'badge-staff'}">${isAdmin?'👑 管理員':'👤 員工'}</span>
+      ${badge}
       <span style="font-size:11px;color:var(--t4);margin-left:8px;font-family:var(--font-mono)">${date}</span>
-      ${isAdmin?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" style="margin-left:8px;font-size:18px;" title="移除">✕</button>`}
+      ${isOwnerRow?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" style="margin-left:8px;font-size:18px;" title="移除">✕</button>`}
     </div>`;
   }).join('');
+}
+
+function renderBrandPicker() {
+  const box = document.getElementById('newStaffBrands');
+  if (!box) return;
+  const brands = (DB.brands || []);
+  if (!brands.length) { box.innerHTML = '<span style="font-size:12px;color:var(--t3)">尚無品牌</span>'; return; }
+  box.innerHTML = brands.map(b => `<label class="brand-chk"><input type="checkbox" value="${esc(b.id)}"> ${esc((b.icon? b.icon+' ':'')+b.name)}</label>`).join('');
+}
+function onRoleChange() {
+  const role = document.getElementById('newStaffRole') ? document.getElementById('newStaffRole').value : 'customer';
+  const wrap = document.getElementById('newStaffBrandsWrap');
+  if (wrap) wrap.style.display = (role === 'customer') ? '' : 'none';
+}
+function brandsToNames(csv) {
+  if (!csv) return '<span style="color:var(--t4)">未綁品牌</span>';
+  const ids = String(csv).split(',').map(x => x.trim()).filter(Boolean);
+  return ids.map(id => { const b = (DB.brands||[]).find(x => x.id === id); return esc(b ? b.name : id); }).join('、');
 }
 
 async function addStaff() {
   const email = document.getElementById('newStaffEmail').value.trim();
   const name  = document.getElementById('newStaffName').value.trim();
+  const role  = (document.getElementById('newStaffRole') ? document.getElementById('newStaffRole').value : 'customer').toLowerCase();
   if (!email) { setStatus('❌ 請輸入 Email','err'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setStatus('❌ Email 格式不正確','err'); return; }
+  let brands = '';
+  if (role === 'customer') {
+    const picked = [...document.querySelectorAll('#newStaffBrands input:checked')].map(c => c.value);
+    if (!picked.length) { setStatus('❌ 客戶請至少勾選一個品牌','err'); return; }
+    brands = picked.join(',');
+  }
   showLoading('新增中...');
   try {
     const r = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action:'addWhitelist', password:PASSWORD, email:ADMIN_USER_EMAIL, targetEmail:email, name })
+      body: JSON.stringify({ action:'addWhitelist', password:PASSWORD, email:ADMIN_USER_EMAIL, targetEmail:email, name, role, brands })
     });
     const j = await r.json();
     if (j.ok) {
       setStatus('✅ 已加入白名單','ok');
       document.getElementById('newStaffEmail').value = '';
       document.getElementById('newStaffName').value = '';
+      document.querySelectorAll('#newStaffBrands input:checked').forEach(c => c.checked = false);
       await loadStaff();
     } else setStatus('❌ '+j.error,'err');
   } catch(e) { setStatus('❌ 新增失敗','err'); }
