@@ -868,7 +868,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div style="margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a">
           <div style="font-size:11px;opacity:.55;margin-bottom:8px">📍 商品照分槽 · 挑好的圖自動落進對應槽</div>
           <div class="ref-list" id="ref-list"></div>
-          <div class="ref-counter">已加 <span class="num" id="ref-count">0</span>/9 張</div>
+          <div class="ref-counter">已加 <span class="num" id="ref-count">0</span>/6 件 · 已預留場景+服裝</div>
         </div>
       </div>
     </div>
@@ -2863,8 +2863,8 @@ async function handleDriveProductClick(e) {
     }
 
     // 未選 → 加入(先把 Drive 原檔搬進 R2,存 fal 抓得到的乾淨網址)
-    if (S.seedanceProductUrls.length >= 9) {
-      toast('最多 9 張(含 KOL 肖像)', 'warn');
+    if (S.seedanceProductUrls.length >= MAX_PRODUCT_REFS) {
+      toast('商品最多 ' + MAX_PRODUCT_REFS + ' 件 · 已預留臉/場景/服裝 3 格(要更多請接片)', 'warn');
       return;
     }
     item.classList.add('selected');   // 🆕 B: 先打勾(樂觀 UI),不等 R2 → 勾勾即時
@@ -2900,7 +2900,7 @@ function addProductUrl() {
   const url = input.value.trim();
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) { toast('請輸入有效的 http(s) URL', 'error'); return; }
-  if (S.seedanceProductUrls.length >= 9) { toast('最多 9 張(含 KOL 肖像)', 'warn'); return; }
+  if (S.seedanceProductUrls.length >= MAX_PRODUCT_REFS) { toast('商品最多 ' + MAX_PRODUCT_REFS + ' 件 · 已預留臉/場景/服裝 3 格(要更多請接片)', 'warn'); return; }
   if (S.seedanceProductUrls.includes(url)) { toast('已加入過這張', 'warn'); return; }
 
   S.seedanceProductUrls.push(url);
@@ -2966,7 +2966,7 @@ function renderRefList() {
 
   if (countEl) {
     countEl.textContent = S.seedanceProductUrls.length;
-    countEl.classList.toggle('warn', S.seedanceProductUrls.length >= 8);
+    countEl.classList.toggle('warn', S.seedanceProductUrls.length >= MAX_PRODUCT_REFS);
   }
   renderProductModePicker('product-mode-s2');   // 🆕 v3.1 槽刷新時同步畫呈現方式選擇器
 }
@@ -4276,6 +4276,8 @@ function productTypeOf(prod) {
 }
 const PRODUCT_ROLE_LABEL = { packaging: '📦 外包裝', contents: '🍜 內容物', main: '🎯 主體', dish: '🍽 成品' };
 const PRODUCT_ROLE_ORDER = { packaging: 0, dish: 0, main: 0, contents: 1 };
+// 🆕 商品照上限:Seedance 一次最多 9 張參考圖,預留 1 臉 + 1 場景 + 1 服裝 → 商品最多 6 件(不要用滿,要預留)
+const MAX_PRODUCT_REFS = 6;
 function productSlots() {
   const prod = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
   const type = productTypeOf(prod);
