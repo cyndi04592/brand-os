@@ -3809,6 +3809,7 @@ async function createSeedanceVideo() {
   const payload = {
     kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
     productImageUrls: orderedProductUrls(),
+    sceneImageUrl: S.customSceneUrl || undefined,   // 🆕 單支也吃上傳實景,跳過 AI 生背景
     prompt,
     resolution: S.seedanceParams.resolution,
     duration: S.seedanceParams.duration,
@@ -5839,6 +5840,7 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
   const payload = {
     kolImageUrl,
     productImageUrls,
+    sceneImageUrl: S.customSceneUrl || undefined,   // 🆕 STEP3 也吃上傳實景(沿用 STEP2 上傳的那張)
     prompt,
     resolution: S.episodeParams.resolution,
     duration: S.episodeParams.duration,
