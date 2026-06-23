@@ -1704,6 +1704,7 @@ const S = {
   episodeProductUrls: [],         // 🎯 v5.9: Tab 3 獨立商品照狀態
   selectedSceneId: '',            // 🆕 v5.1: 當前場景 id
   customSceneUrl: '',             // 🆕 上傳的自家實景背景(有值就跳過 AI 生背景)
+  episodeCustomSceneUrl: '',      // 🆕 STEP3 自己的實景背景(跟 STEP2 獨立)
   selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
   selectedMovementId: 'static',   // 🆕 v5.3: 當前運鏡 id,預設靜態
   selectedOutfitBrand: 'auto',    // 🆕 v5.13: 當前服飾品牌風格,預設 auto(系統自由搭配)
@@ -1963,6 +1964,7 @@ async function onBrandChange() {
   // 🆕 v5.1: 重置場景/地標
   S.selectedSceneId = '';
   S.customSceneUrl = '';
+  S.episodeCustomSceneUrl = '';
   S.selectedLocationId = 'none';
   S.selectedMovementId = 'static';  // 🆕 v5.3: 重置運鏡為預設靜態
   S.selectedOutfitBrand = 'auto';   // 🆕 v5.13: 重置服飾品牌為 auto
@@ -3004,6 +3006,30 @@ function renderCustomScene() {
   box.innerHTML = `<div style="position:relative;display:inline-block;margin-top:8px">`
     + `<img src="${escapeHtml(S.customSceneUrl)}" style="width:120px;height:68px;object-fit:cover;border-radius:8px;border:1.5px solid #7c5cff" referrerpolicy="no-referrer" onerror="this.outerHTML='⚠️ 圖片載入失敗,確認網址是公開的';">`
     + `<button onclick="removeCustomScene()" title="移除" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;line-height:16px;padding:0;border:none;border-radius:50%;background:#000;color:#fff;cursor:pointer;font-size:11px">✕</button>`
+    + `<div style="font-size:10px;color:#8fd9b8;margin-top:3px">✓ 實景背景已鎖 · 生成時直接用這張</div>`
+    + `</div>`;
+}
+
+// 🆕 STEP3 自己的實景背景上傳(獨立 ID + state,避開雙容器固定 ID 撞車)
+function addEpisodeCustomScene() {
+  const input = document.getElementById('ep-custom-scene-input');
+  if (!input) return;
+  const url = input.value.trim();
+  if (!url) return;
+  if (!/^https?:\/\//i.test(url)) { toast('請貼有效的 http(s) 圖片網址', 'error'); return; }
+  S.episodeCustomSceneUrl = url;
+  input.value = '';
+  renderEpisodeCustomScene();
+  toast('已鎖實景背景 · 生成時直接用這張(跳過 AI 生背景)', 'ok');
+}
+function removeEpisodeCustomScene() { S.episodeCustomSceneUrl = ''; renderEpisodeCustomScene(); }
+function renderEpisodeCustomScene() {
+  const box = document.getElementById('ep-custom-scene-thumb');
+  if (!box) return;
+  if (!S.episodeCustomSceneUrl) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div style="position:relative;display:inline-block;margin-top:8px">`
+    + `<img src="${escapeHtml(S.episodeCustomSceneUrl)}" style="width:120px;height:68px;object-fit:cover;border-radius:8px;border:1.5px solid #7c5cff" referrerpolicy="no-referrer" onerror="this.outerHTML='⚠️ 圖片載入失敗,確認網址是公開的';">`
+    + `<button onclick="removeEpisodeCustomScene()" title="移除" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;line-height:16px;padding:0;border:none;border-radius:50%;background:#000;color:#fff;cursor:pointer;font-size:11px">✕</button>`
     + `<div style="font-size:10px;color:#8fd9b8;margin-top:3px">✓ 實景背景已鎖 · 生成時直接用這張</div>`
     + `</div>`;
 }
@@ -4521,6 +4547,15 @@ function renderEpisodeCard() {
           <select id="ep-movement">${movementOptions}</select>
         </div>
       </div>
+      <div class="ep-field" style="margin-top:4px">
+        <label>📍 或上傳自家實景背景(賣場 / 快閃店 · 選填)</label>
+        <div class="ref-url-input-row">
+          <input type="text" id="ep-custom-scene-input" placeholder="貼實景照公開 URL(imgbb / R2 / 公開圖片)" onkeydown="if(event.key==='Enter')addEpisodeCustomScene()">
+          <button onclick="addEpisodeCustomScene()" style="background:#7c5cff;border:none;border-radius:6px;color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap">加入</button>
+        </div>
+        <div id="ep-custom-scene-thumb"></div>
+        <div class="motion-hint">💡 給了實景照就跳過 AI 生背景、直接用你的真照。上面場景下拉仍要挑一張接近的(賣場挑「👟 運動賣場特賣」)。</div>
+      </div>
       <div class="ep-field">
         <label>🌏 地標(選填,飛東京/香港/巴黎…只在戶外場景生效)</label>
         <select id="ep-location">${locationOptions}</select>
@@ -5840,7 +5875,7 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
   const payload = {
     kolImageUrl,
     productImageUrls,
-    sceneImageUrl: S.customSceneUrl || undefined,   // 🆕 STEP3 也吃上傳實景(沿用 STEP2 上傳的那張)
+    sceneImageUrl: S.episodeCustomSceneUrl || undefined,   // 🆕 STEP3 用自己的實景照(獨立於 STEP2)
     prompt,
     resolution: S.episodeParams.resolution,
     duration: S.episodeParams.duration,
@@ -5999,6 +6034,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       confirmed: true,   // 🛡️ 進入點已確認過,kol-stitch 內的窗不重跳
       kolImageUrl,
       productImageUrls,
+      sceneImageUrl: S.episodeCustomSceneUrl || undefined,   // 🆕 STEP3 接片用自己的實景照
       brandId: S.currentBrandId,
       kolName: persona.persona_name,
       mode: 'auto',
