@@ -4414,6 +4414,7 @@ function setProductModeOverride(val) {
   renderProductModePicker('product-mode-s3');
   if (typeof renderRefList === 'function' && document.getElementById('ref-list')) renderRefList();
   if (typeof renderEpisodeSlots === 'function' && document.getElementById('ep-ref-list')) renderEpisodeSlots();
+  if (document.getElementById('ep-custom-scene-thumb')) renderEpisodeCustomScene();
 }
 // ─── 人設書編輯 Modal ────────────────────────────
 function openPersonaEditor() {
