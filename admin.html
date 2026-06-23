@@ -1381,6 +1381,41 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 </head>
 <body>
 
+<!-- ★ B1: 後台 Google 登入閘(對齊主站視覺)-->
+<div id="adminLoginGate">
+  <div class="alg-glow1"></div>
+  <div class="alg-glow2"></div>
+  <div class="alg-card">
+    <img class="alg-logo" src="logo.webp" alt="" onerror="this.style.display='none'">
+    <span class="alg-title">BRAND OS</span>
+    <span class="alg-sub">ADMIN CONSOLE</span>
+    <div class="alg-desc">請用 Google 帳號登入後台</div>
+    <button id="adminLoginBtn" class="alg-btn" onclick="adminLogin()">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+      使用 Google 帳號啟航
+    </button>
+    <div id="adminLoginErr" class="alg-err"></div>
+    <div class="alg-footer">I, MULTIPLIED.</div>
+  </div>
+</div>
+<style>
+#adminLoginGate{position:fixed;inset:0;z-index:99999;background:#0A0A0F;display:flex;align-items:center;justify-content:center;font-family:'Noto Sans TC',sans-serif;overflow:hidden;}
+#adminLoginGate .alg-glow1{position:fixed;top:15%;right:8%;width:45vw;height:45vw;background:radial-gradient(circle,rgba(124,109,250,0.18) 0%,rgba(250,109,155,0.10) 35%,transparent 70%);filter:blur(50px);pointer-events:none;}
+#adminLoginGate .alg-glow2{position:fixed;bottom:12%;left:8%;width:35vw;height:35vw;background:radial-gradient(circle,rgba(109,250,194,0.12) 0%,transparent 65%);filter:blur(40px);pointer-events:none;}
+#adminLoginGate .alg-card{position:relative;z-index:1;width:420px;max-width:92vw;padding:50px 56px 42px;text-align:center;border:1px solid rgba(124,109,250,0.25);border-radius:28px;background:linear-gradient(180deg,rgba(20,20,28,0.90) 0%,rgba(10,10,15,0.95) 100%);box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 80px rgba(124,109,250,0.12);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);}
+#adminLoginGate .alg-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:28px 28px 0 0;background:linear-gradient(90deg,#6DFAC2 0%,#7C6DFA 50%,#FA6D9B 100%);}
+#adminLoginGate .alg-logo{width:84px;height:auto;display:block;margin:0 auto 14px;filter:drop-shadow(0 0 12px rgba(124,109,250,0.40)) drop-shadow(0 0 24px rgba(255,255,255,0.20));}
+#adminLoginGate .alg-title{display:block;font-family:'Syne',sans-serif;font-weight:800;font-size:40px;letter-spacing:4px;background:linear-gradient(135deg,#F4F4F8 20%,#7C6DFA 60%,#FA6D9B 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 30px rgba(124,109,250,0.20);}
+#adminLoginGate .alg-sub{display:block;font-family:'Syne',sans-serif;font-size:11px;color:#7C6DFA;letter-spacing:0.30em;font-weight:600;margin-top:8px;opacity:0.75;}
+#adminLoginGate .alg-desc{font-size:13px;color:#9a9ab0;margin:6px 0 30px;letter-spacing:0.5px;}
+#adminLoginGate .alg-btn{width:100%;padding:16px;border:none;border-radius:14px;cursor:pointer;background:linear-gradient(135deg,#7C6DFA,#FA6D9B);color:#fff;font-family:'Noto Sans TC';font-size:14px;font-weight:800;letter-spacing:1.5px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 24px rgba(124,109,250,0.30);transition:all .25s cubic-bezier(.4,0,.2,1);}
+#adminLoginGate .alg-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(124,109,250,0.45);}
+#adminLoginGate .alg-err{font-size:12px;color:#FA6D9B;margin-top:14px;min-height:20px;font-weight:700;}
+#adminLoginGate .alg-footer{font-family:'Syne',sans-serif;font-size:10px;color:#6a6a80;margin-top:28px;letter-spacing:0.20em;text-transform:uppercase;}
+#adminLoginGate .alg-footer::before,#adminLoginGate .alg-footer::after{content:'·';margin:0 10px;color:#7C6DFA;}
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-box"><div class="spinner"></div><p id="loadingMsg">載入中...</p></div>
 </div>
@@ -1666,6 +1701,51 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
+
+// ══ B1: 後台 Google 登入(真實身份)══
+const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googleusercontent.com';
+let ADMIN_USER_EMAIL = null;   // 真實登入者 email
+let ADMIN_USER_ROLE  = null;   // 'owner' | 'reviewer'
+let _adminTokenClient = null;
+
+function adminLogin() {
+  const errEl = document.getElementById('adminLoginErr');
+  if (errEl) errEl.textContent = '';
+  if (!window.google || !google.accounts) { if(errEl) errEl.textContent = '登入元件載入中,請稍候再按一次'; return; }
+  if (!_adminTokenClient) {
+    _adminTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOG_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/userinfo.email',
+      callback: async (resp) => {
+        if (!resp.access_token) { if(errEl) errEl.textContent = '登入未完成'; return; }
+        try {
+          const ui = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + resp.access_token } });
+          const info = await ui.json();
+          const email = (info.email || '').trim();
+          const r = await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}&password=${PASSWORD}`);
+          const j = await r.json();
+          const role = (j.role || '').toLowerCase();
+          if (j.ok && j.allowed && (role === 'owner' || role === 'reviewer')) {
+            ADMIN_USER_EMAIL = email;
+            ADMIN_USER_ROLE  = role;
+            const gate = document.getElementById('adminLoginGate');
+            if (gate) gate.style.display = 'none';
+            applyRoleUI();
+            bootAdmin();
+          } else {
+            if(errEl) errEl.textContent = '❌ 此帳號沒有後台權限';
+          }
+        } catch (e) { if(errEl) errEl.textContent = '❌ 登入失敗,請重試'; }
+      }
+    });
+  }
+  _adminTokenClient.requestAccessToken({ prompt: 'select_account' });
+}
+
+function applyRoleUI() {
+  const isOwner = ADMIN_USER_ROLE === 'owner';
+  document.querySelectorAll('[data-owner-only]').forEach(el => { el.style.display = isOwner ? '' : 'none'; });
+}
 const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 
 let DB = { brands: [], products: [], folders: [] };
@@ -1675,7 +1755,7 @@ let SMART_LAST_PARSED = null;
 let ENRICH_TARGET_INDEX = -1;
 let ENRICH_PARSED = null;
 
-window.onload = async () => {
+async function bootAdmin() {
   showLoading('載入品牌資料...');
   try {
     const r = await fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}`);
@@ -1685,7 +1765,7 @@ window.onload = async () => {
   } catch(e) { setStatus('❌ 連線失敗', 'err'); }
   hideLoading();
   loadApplyCount();
-};
+}
 
 function switchTab(name) {
   const tabs = ['brands','products','folders','delivers','memory','apply','staff'];
