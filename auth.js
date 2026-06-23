@@ -58,6 +58,7 @@ function initGoogleAuth() {
         sessionStorage.setItem('bs_email', _userEmail);
         const ok = await checkWhitelist(_userEmail);
         if (ok) {
+          try { localStorage.setItem('bs_sso_token', resp.access_token); localStorage.setItem('bs_sso_email', _userEmail); } catch(e){}
           _onLoginSuccess();
           await startSystem();
         } else {
@@ -219,6 +220,7 @@ function doLogout() {
   sessionStorage.removeItem('bs_token');
   sessionStorage.removeItem('bs_email');
   sessionStorage.removeItem('bs_worker_mode');
+  try { localStorage.removeItem('bs_sso_token'); localStorage.removeItem('bs_sso_email'); } catch(e){}
   window.S = { brandId:null, subId:null, prod:null, photos:[], videos:[], selPhoto:null, selVideo:null, scripts:[], delivers:[], openBrand:null };
   _isInitializing = false;
   if (window.google?.accounts?.oauth2) {
