@@ -1746,6 +1746,35 @@ function applyRoleUI() {
   const isOwner = ADMIN_USER_ROLE === 'owner';
   document.querySelectorAll('[data-owner-only]').forEach(el => { el.style.display = isOwner ? '' : 'none'; });
 }
+
+// ══ B1+: 免二次登入 — 用主站發的 SSO 票自動驗證 ══
+async function tryAdminSSO() {
+  let token = null;
+  try { token = localStorage.getItem('bs_sso_token'); } catch(e) {}
+  if (!token) return false;
+  try {
+    const ui = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + token } });
+    if (!ui.ok) return false;              // 票過期/無效 → 退回顯示登入畫面
+    const info = await ui.json();
+    const email = (info.email || '').trim();
+    if (!email) return false;
+    const r = await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}&password=${PASSWORD}`);
+    const j = await r.json();
+    const role = (j.role || '').toLowerCase();
+    if (j.ok && j.allowed && (role === 'owner' || role === 'reviewer')) {
+      ADMIN_USER_EMAIL = email;
+      ADMIN_USER_ROLE  = role;
+      const gate = document.getElementById('adminLoginGate');
+      if (gate) gate.style.display = 'none';
+      applyRoleUI();
+      bootAdmin();
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+window.addEventListener('DOMContentLoaded', () => { tryAdminSSO(); });
 const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 
 let DB = { brands: [], products: [], folders: [] };
