@@ -267,7 +267,7 @@ async function startSystem() {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}`, { signal: controller.signal });
+    const res = await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}&email=${encodeURIComponent(_userEmail||'')}`, { signal: controller.signal });
     clearTimeout(timer);
     const json = await res.json();
     if (!json.ok) throw new Error(json.error);
