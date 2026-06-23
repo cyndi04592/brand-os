@@ -107,7 +107,7 @@
       const quoted = lines.map(s => `"${s}"`).join(', ');
       const pronoun = persona?.gender === 'male' ? 'He' : 'She';
       const accent = natToAccent(persona?.nationality);
-      speechLine = `${pronoun} speaks in natural ${accent}, clear lip-sync, saying: ${quoted}. No background music.`;
+      speechLine = `${pronoun} speaks in natural ${accent}, clear lip-sync, saying ${quoted} — these words are spoken aloud as audio only and must never be shown as text; no subtitles, no captions and no on-screen text appear anywhere in the frame. No background music.`;
     }
     return { action, speechLine };
   }
