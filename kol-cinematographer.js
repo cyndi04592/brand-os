@@ -1,9 +1,9 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-cinematographer.js · v5.22
+//  kol-cinematographer.js · v5.23
 //  
 //  📷 攝影師 — 鏡頭、自然光、運鏡、電影寫實
 //  
-//  v5.22 變更(⑤ RIIV 寫實·打「背景假假的」):
+//  v5.23 變更(⑤ RIIV 寫實·打「背景假假的」):
 //   • 新增 SCENE_REALISM 場景落地錨,跟 REALISM_BASE 分開管:
 //       REALISM_BASE = 管「人/膚質/不修圖」
 //       SCENE_REALISM = 管「場景不假 + 人落進場景 + 整支統一色調」
@@ -33,7 +33,7 @@
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
-  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, no crowd, no extra background people, no stylized or exaggerated artificial elements';
+  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, no crowd, no extra background people, no stylized or exaggerated artificial elements';
 
   // 🎥 運鏡元資料
   const CAMERA_MOVEMENTS = {
@@ -128,5 +128,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.22 就緒 · 拔掉 one-continuous-photographic-frame(凍背景兇手)→ 背景恢復活的 · REALISM_BASE(人) + SCENE_REALISM(場景落地) + 台灣腔');
+  console.log('[KolCinematographer] 📷 v5.23 就緒 · 拔掉 one-continuous-photographic-frame(凍背景兇手)→ 背景恢復活的 · REALISM_BASE(人) + SCENE_REALISM(場景落地) + 台灣腔');
 })();
