@@ -111,6 +111,14 @@ const UNIVERSAL_POOL = {
     product_context_template: 'taking a break during exercise to {BRAND_ACTION}, energetic and sweaty',
     mood_default: 'energetic and active', duration_default: 10,
   },
+  sports_outlet: {
+    label: '👟 運動賣場特賣',
+    hint: '明亮運動賣場 · 球鞋特賣',
+    indoor: true, type: 'indoor',
+    env_prompt: 'standing at the same spot inside a large bright sporting-goods outlet store during a busy clearance shoe sale, long rows of metal shelving packed with sneakers and shoe boxes, plain bright fluorescent ceiling lighting, a slightly cluttered no-frills discount-warehouse retail feel — shot with a shallow depth of field so the busy bright background falls into soft creamy out-of-focus bokeh while the subject stays sharp, all background signage, price tags and text are far out of focus and unreadable, blurred into soft shapes with no legible lettering, a few shoppers far in the deep background melting into soft bokeh — the same store aisle and layout kept consistent in every shot, handheld vlog feel, 35mm film grain, ISO 400',
+    product_context_template: 'browsing the sale shelves and {BRAND_ACTION} with an upbeat bargain-hunting vibe',
+    mood_default: 'upbeat and energetic', duration_default: 10,
+  },
   living_room: {
     label: '🛋️ 客廳',
     hint: '沙發 · 居家放鬆',
