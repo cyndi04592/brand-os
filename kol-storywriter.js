@@ -90,12 +90,36 @@
       kolBackground: persona.background || '',
       kolPersonality: persona.personality || '',
       kolSpeakingStyle: persona.speaking_style || '',
+      kolNationality: persona.nationality || 'tw',
       kolCatchphrases: joinList(persona.catchphrases),
       kolTabooWords: joinList(persona.taboo_words),
       productName: product.name || '',
       productTag: product.tag || '',
       sceneLabel: sceneLabel || '',
     };
+  }
+
+  // 🆕 發音友善化:台詞送去生語音前,清掉會害引擎念歪的雷(只清發音,不改語意/口氣)
+  //   ⚠️ 看國籍:香港/廣東(講粵語)→ 跳過粵語轉換,保留他的腔;其餘(台灣/大陸/日本講國語)才套。
+  //   ⚠️ 只用在「非鎖定」台詞;使用者手鎖的台詞一字不改。
+  const _CANTO_MAP = [
+    ['呢個','這個'], ['嗰個','那個'], ['咁樣','這樣'], ['乜嘢','什麼'],
+    ['係','是'], ['唔','不'], ['咁','這樣'], ['嘅','的'], ['喺','在'],
+    ['畀','給'], ['乜','什麼'], ['冇','沒'], ['嘢','東西'],
+  ];
+  function speechFriendly(t, nationality){
+    if(!t) return t;
+    let s = String(t);
+    const nat = String(nationality || '').toLowerCase();
+    const isCantonese = (nat==='hk' || nat==='gd' || nat==='canton' || nat==='guangdong' || nat==='hkcanton');
+    if(!isCantonese){
+      _CANTO_MAP.forEach(function(p){ s = s.split(p[0]).join(p[1]); });
+    }
+    s = s.replace(/[。.]{2,}/g,'，').replace(/[…⋯]+/g,'，').replace(/[~～]+/g,'');
+    s = s.replace(/(欸){2,}/g,'欸').replace(/(啊){2,}/g,'啊');
+    s = s.replace(/，{2,}/g,'，').replace(/,{2,}/g,',')
+         .replace(/^[，,、\s]+/,'').replace(/[，,、\s]+$/,'').trim();
+    return s;
   }
 
   /**
@@ -123,7 +147,7 @@
          .trim();
     return s;
   }
-  function mergeExpandResult(skeleton, llmBeats, lockedLines = []) {
+  function mergeExpandResult(skeleton, llmBeats, lockedLines = [], nationality = '') {
     const lockMap = {};
     (lockedLines || []).forEach(l => {
       if (l && l.index != null && l.text) lockMap[l.index] = String(l.text);
@@ -134,7 +158,8 @@
     return skeleton.map(s => {
       const got = llmMap[s.index] || {};
       const locked = lockMap[s.index];
-      const dialogue = locked || got.dialogue || '';
+      let dialogue = locked || got.dialogue || '';
+      if (!locked) dialogue = speechFriendly(dialogue, nationality);
       const fit = checkDialogueFit(dialogue, s.seconds);
       return {
         ...s,
