@@ -1857,7 +1857,7 @@ let ENRICH_PARSED = null;
 async function bootAdmin() {
   showLoading('載入品牌資料...');
   try {
-    const r = await fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}`);
+    const r = await fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}&email=${encodeURIComponent(ADMIN_USER_EMAIL||'')}`);
     const j = await r.json();
     if (j.ok) { DB = j.data; renderAll(); setStatus('✅ 載入完成', 'ok'); }
     else setStatus('❌ ' + j.error, 'err');
