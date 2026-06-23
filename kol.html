@@ -4745,7 +4745,7 @@ function renderEpisodeProductPickerHTML() {
         <div class="kol-empty" style="padding:18px 14px;font-size:11.5px"><span class="spin">⏳</span> 讀取 Drive 商品照中…</div>
       </div>
       <div class="ep-product-footer">
-        <span style="font-size:10.5px;color:var(--text-dim)">已選 <span id="ep-product-count">${selected.length}</span> 張(建議 1-3 張最清晰的)</span>
+        <span style="font-size:10.5px;color:var(--text-dim)">已選 <span id="ep-product-count">${selected.length}</span>/6 件 · 已預留場景+服裝</span>
         <button class="btn btn-ghost btn-sm" onclick="reloadEpisodeProducts()">🔄 重新整理</button>
       </div>
       <!-- 🆕 v3.1 商品呈現方式(mode 選擇器 · STEP3) -->
@@ -4866,8 +4866,8 @@ async function handleEpisodeProductClick(e) {
       return;
     }
 
-    if (S.episodeProductUrls.length >= 4) {
-      toast('Tab 3 最多 4 張商品照', 'warn');
+    if (S.episodeProductUrls.length >= MAX_PRODUCT_REFS) {
+      toast('商品最多 ' + MAX_PRODUCT_REFS + ' 件 · 已預留臉/場景/服裝 3 格(要更多請接片)', 'warn');
       return;
     }
 
