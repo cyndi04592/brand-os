@@ -915,6 +915,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
 
+        <!-- 🆕 上傳自家實景當背景(賣場 / 快閃店 / 門市)→ 跳過 AI 生背景,直接鎖真照 -->
+        <div class="form-group" style="margin-top:0">
+          <label class="form-label">📍 或上傳自家實景背景(賣場 / 快閃店 · 選填)</label>
+          <div class="ref-url-input-row">
+            <input type="text" id="custom-scene-input" placeholder="貼實景照公開 URL(imgbb / R2 / 公開圖片)" onkeydown="if(event.key==='Enter')addCustomScene()">
+            <button onclick="addCustomScene()" style="background:#7c5cff;border:none;border-radius:6px;color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap">加入</button>
+          </div>
+          <div id="custom-scene-thumb"></div>
+          <div class="motion-hint">💡 給了實景照,系統就<b>跳過 AI 生背景、直接用你的真照</b>。記得上面場景卡仍要挑一張(它出文字),賣場就挑「🛍️ 精品百貨」,讓文字跟照片講同一個地方。</div>
+        </div>
+
         <!-- 🆕 v5.1: 地標庫(戶外場景可疊加) -->
         <div class="form-group" id="location-picker-group" style="display:none">
           <label class="form-label">📍 地標(選填,只在戶外場景生效)</label>
@@ -1692,6 +1703,7 @@ const S = {
   productModeOverride: {},  // 🆕 v3.1 prodName → 呈現方式 mode(客戶在 UI 選的;空=自動依商品表)
   episodeProductUrls: [],         // 🎯 v5.9: Tab 3 獨立商品照狀態
   selectedSceneId: '',            // 🆕 v5.1: 當前場景 id
+  customSceneUrl: '',             // 🆕 上傳的自家實景背景(有值就跳過 AI 生背景)
   selectedLocationId: 'none',     // 🆕 v5.1: 當前地標 id
   selectedMovementId: 'static',   // 🆕 v5.3: 當前運鏡 id,預設靜態
   selectedOutfitBrand: 'auto',    // 🆕 v5.13: 當前服飾品牌風格,預設 auto(系統自由搭配)
@@ -1950,6 +1962,7 @@ async function onBrandChange() {
   S.availableLooks = [];
   // 🆕 v5.1: 重置場景/地標
   S.selectedSceneId = '';
+  S.customSceneUrl = '';
   S.selectedLocationId = 'none';
   S.selectedMovementId = 'static';  // 🆕 v5.3: 重置運鏡為預設靜態
   S.selectedOutfitBrand = 'auto';   // 🆕 v5.13: 重置服飾品牌為 auto
@@ -2971,6 +2984,30 @@ function renderRefList() {
   renderProductModePicker('product-mode-s2');   // 🆕 v3.1 槽刷新時同步畫呈現方式選擇器
 }
 
+// 🆕 上傳自家實景背景:有值就跳過 AI 生背景,直接鎖真照
+function addCustomScene() {
+  const input = document.getElementById('custom-scene-input');
+  if (!input) return;
+  const url = input.value.trim();
+  if (!url) return;
+  if (!/^https?:\/\//i.test(url)) { toast('請貼有效的 http(s) 圖片網址', 'error'); return; }
+  S.customSceneUrl = url;
+  input.value = '';
+  renderCustomScene();
+  toast('已鎖實景背景 · 生成時直接用這張(跳過 AI 生背景)', 'ok');
+}
+function removeCustomScene() { S.customSceneUrl = ''; renderCustomScene(); }
+function renderCustomScene() {
+  const box = document.getElementById('custom-scene-thumb');
+  if (!box) return;
+  if (!S.customSceneUrl) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div style="position:relative;display:inline-block;margin-top:8px">`
+    + `<img src="${escapeHtml(S.customSceneUrl)}" style="width:120px;height:68px;object-fit:cover;border-radius:8px;border:1.5px solid #7c5cff" referrerpolicy="no-referrer" onerror="this.outerHTML='⚠️ 圖片載入失敗,確認網址是公開的';">`
+    + `<button onclick="removeCustomScene()" title="移除" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;line-height:16px;padding:0;border:none;border-radius:50%;background:#000;color:#fff;cursor:pointer;font-size:11px">✕</button>`
+    + `<div style="font-size:10px;color:#8fd9b8;margin-top:3px">✓ 實景背景已鎖 · 生成時直接用這張</div>`
+    + `</div>`;
+}
+
 // 🆕 v5.1: 場景系統 - 渲染場景網格
 function renderSceneGrid() {
   const grid = document.getElementById('scene-grid-cine');
@@ -3553,6 +3590,7 @@ async function createStitchedVideo(beats) {
       confirmed: true,   // 🛡️ 進入點已確認過,kol-stitch 內的窗不重跳
       kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
       productImageUrls: orderedProductUrls(),
+      sceneImageUrl: S.customSceneUrl || undefined,   // 🆕 有上傳實景就用真照,跳過 AI 生背景
       brandId: S.currentBrandId,
       kolName: S.selectedKol.name,
       mode: 'auto',
