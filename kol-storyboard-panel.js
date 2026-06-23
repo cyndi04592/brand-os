@@ -132,7 +132,7 @@
         alert('AI 編修失敗:' + (res?.error || '未知錯誤'));
       } else {
         const skeleton = window.KolStorywriter.planBeats(state.duration);
-        state.beats = window.KolStorywriter.mergeExpandResult(skeleton, res.beats, lockedLines);
+        state.beats = window.KolStorywriter.mergeExpandResult(skeleton, res.beats, lockedLines, ctx && ctx.persona && ctx.persona.nationality);
       }
     } catch (e) {
       alert('AI 編修錯誤:' + e.message);
