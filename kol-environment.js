@@ -131,7 +131,7 @@ const LOCATIONS = {
   // ─── 物理接地(接觸陰影 · 不打臉)──────────────────
   //  v5.18:加回「腳/手/商品 與 地板/桌面 的接觸陰影」——避免商品或人浮空。
   //         但刻意只「接地」、不碰臉(臉部打光才是烤肉網來源,維持拔除)。
-  //  v5.21:只留物理接地。「自然融入場景 / 統一光線 / 不貼上去」交給攝影師
+  //  v5.22:只留物理接地。「自然融入場景 / 統一光線 / 不貼上去」交給攝影師
   //         SCENE_REALISM(統一色調整合),這裡不再重複講,去掉語意疊字。
   const SCENE_HUMAN_INTEGRATION = 'soft natural contact shadows where her feet, hands and any product or object touch the ground or surfaces, so she and the product stay physically grounded and never appear to float';
   // ─── 🔧 濾除「會在臉上畫紋理/網格/紅斑」的詞 ──────────
@@ -288,6 +288,7 @@ const LOCATIONS = {
       'A wide full view of the whole environment showing its complete layout, structures and background. ' +
       'The scene is empty with no people, no person and no human anywhere in the frame, just the environment itself. ' +
       'Consistent soft natural lighting, realistic photographic detail, true accurate colors, ' +
+      'avoid dense repeating grid patterns: no venetian blinds, no louvre slats, no dense multi-pane window grilles or tight mullion grids; prefer plain simple glass windows and smooth clean surfaces. ' +
       'one single fixed wide establishing shot of the place only.';
 
     try {
@@ -327,5 +328,5 @@ const LOCATIONS = {
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.21 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地(去重·融入交給攝影師) + 濾膚質詞 + 場景參考圖(generateSceneRefImage·鎖跨段背景)');
+  console.log('[KolEnvironment] 🌆 v5.22 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地(去重·融入交給攝影師) + 濾膚質詞 + 場景參考圖(generateSceneRefImage·鎖跨段背景)');
 })();
