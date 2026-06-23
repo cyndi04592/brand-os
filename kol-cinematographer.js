@@ -1,9 +1,9 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-cinematographer.js · v5.20
+//  kol-cinematographer.js · v5.22
 //  
 //  📷 攝影師 — 鏡頭、自然光、運鏡、電影寫實
 //  
-//  v5.20 變更(⑤ RIIV 寫實·打「背景假假的」):
+//  v5.22 變更(⑤ RIIV 寫實·打「背景假假的」):
 //   • 新增 SCENE_REALISM 場景落地錨,跟 REALISM_BASE 分開管:
 //       REALISM_BASE = 管「人/膚質/不修圖」
 //       SCENE_REALISM = 管「場景不假 + 人落進場景 + 整支統一色調」
@@ -29,11 +29,11 @@
   'use strict';
 
   // 🎯 攝影風格基底 — 管「人/膚質/不修圖」(靈魂留、干擾拔)
-  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, soft natural subject edges that blend into the scene, no hard cutout outline, no over-sharpened subject edge, not a pasted-on composited look, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
+  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, soft natural subject edges that blend into the scene, no hard cutout outline, no over-sharpened subject edge, not a pasted-on composited look, soft diffused even light on her face, natural matte skin with no oily shine and no hot specular highlights on the skin, gentle low-contrast natural lighting, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
-  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, premium cinematic realism with high filmic production value, the subject and the background share one unified cinematic color grade and the same ambient color temperature so she genuinely belongs inside the scene and never looks pasted on, consistent filmic grading across the entire frame, no crowd, no extra background people, no stylized or exaggerated artificial elements';
+  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, no crowd, no extra background people, no stylized or exaggerated artificial elements';
 
   // 🎥 運鏡元資料
   const CAMERA_MOVEMENTS = {
@@ -128,5 +128,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.21 就緒 · 拔掉 one-continuous-photographic-frame(凍背景兇手)→ 背景恢復活的 · REALISM_BASE(人) + SCENE_REALISM(場景落地) + 台灣腔');
+  console.log('[KolCinematographer] 📷 v5.22 就緒 · 拔掉 one-continuous-photographic-frame(凍背景兇手)→ 背景恢復活的 · REALISM_BASE(人) + SCENE_REALISM(場景落地) + 台灣腔');
 })();
