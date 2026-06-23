@@ -1888,7 +1888,14 @@ function switchMode(mode) {
 // ─── 載入品牌清單 ──────────────────────────────────────────
 async function loadBrands() {
   try {
-    const res = await gasGet('getBrandOS');
+    const email = localStorage.getItem('bs_sso_email') || '';
+    if (!email) {
+      const sel = document.getElementById('brand-switcher');
+      if (sel) sel.innerHTML = '<option value="">請先從主站登入</option>';
+      toast('請先回主站登入,再進入 KOL Studio', 'error');
+      return;
+    }
+    const res = await gasGet('getBrandOS', { email });
     if (!res.ok) throw new Error('讀取品牌清單失敗');
 
     S.brands = res.data?.brands || [];
