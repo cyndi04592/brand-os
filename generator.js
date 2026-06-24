@@ -431,3 +431,19 @@ if (document.readyState === 'loading') {
 } else {
   injectMemoryCSS();
 }
+// 🆕 刷新 Bits 餘額顯示(header 右上)
+async function refreshBits() {
+  try {
+    const email = localStorage.getItem('bs_sso_email') || '';
+    if (!email) return;
+    const res = await fetch(`${GAS_URL}?action=getBits&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`);
+    const j = await res.json();
+    if (j && j.ok) {
+      const el = document.getElementById('bitsBalance');
+      const chip = document.getElementById('bitsChip');
+      if (el) el.textContent = Number(j.balance || 0).toLocaleString();
+      if (chip) chip.style.display = 'inline-flex';
+    }
+  } catch (e) { console.warn('refreshBits 失敗:', e); }
+}
+window.addEventListener('load', () => setTimeout(refreshBits, 1800));
