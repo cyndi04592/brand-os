@@ -254,6 +254,7 @@ ${memoryContext}
   } finally {
     btn.disabled = false;
     btn.innerHTML = '⚡ 生成腳本';
+    refreshBits();
   }
 }
 
