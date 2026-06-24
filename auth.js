@@ -257,6 +257,11 @@ async function startSystem() {
     }
   }
 
+  // 🆕 修「進站要按 F5 品牌才出來」:sessionStorage 沒 email 時,用上次登入的 localStorage email 補上
+  if (!_userEmail) {
+    try { _userEmail = localStorage.getItem('bs_sso_email') || ''; } catch(e) {}
+  }
+
   if (_systemStarted) return;
   _systemStarted = true;
 
