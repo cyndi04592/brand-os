@@ -223,7 +223,7 @@ ${memoryContext}
     const res = await fetch(CF_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ body: JSON.stringify({ action: 'claude_generate', password: GAS_PASSWORD, prompt, max_tokens: 4000, email: (localStorage.getItem('bs_sso_email') || '') })
+      body: JSON.stringify({ action: 'claude_generate', password: GAS_PASSWORD, prompt, max_tokens: 4000, email: (localStorage.getItem('bs_sso_email') || '') })
     });
     fill.style.width = '80%';
     btn.innerHTML = '<span class="spin"></span>整理中...';
