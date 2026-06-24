@@ -250,7 +250,11 @@ ${memoryContext}
     clearInterval(progInterval);
     prog.style.display = 'none';
     if (progPctEl) progPctEl.textContent = '';
-    alert('生成失敗：' + e.message);
+    if (String(e.message).includes('INSUFFICIENT_BITS')) {
+      alert('⚡ Bits 不足，無法生成。請儲值或聯繫管理員。');
+    } else {
+      alert('生成失敗：' + e.message);
+    }
   } finally {
     btn.disabled = false;
     btn.innerHTML = '⚡ 生成腳本';
