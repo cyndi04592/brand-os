@@ -244,6 +244,8 @@ ${memoryContext}
     clearInterval(progInterval);
     fill.style.width = '100%';
     if (progPctEl) progPctEl.textContent = '✅';
+    // 🆕 樂觀更新:生成成功=已扣 120,先讓 header 數字立刻跳(refreshBits 隨後對帳)
+    bumpBitsDisplay(-120);
     setTimeout(() => { prog.style.display = 'none'; if (progPctEl) progPctEl.textContent = ''; }, 800);
 
   } catch (e) {
@@ -435,6 +437,13 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', injectMemoryCSS);
 } else {
   injectMemoryCSS();
+}
+// 🆕 樂觀更新 Bits 顯示(立即,不等 refreshBits 來回)
+function bumpBitsDisplay(delta) {
+  const el = document.getElementById('bitsBalance');
+  if (!el) return;
+  const cur = Number(String(el.textContent).replace(/[^\d.-]/g, '')) || 0;
+  el.textContent = Math.max(0, cur + delta).toLocaleString();
 }
 // 🆕 刷新 Bits 餘額顯示(header 右上)
 async function refreshBits() {
