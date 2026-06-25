@@ -630,48 +630,93 @@ function openAdMakerDirect() {
 }
 
 // ══ Bits 補給包商城 ══
-let _shopPacks = null, _shopBank = null;
+let _shopPacks = null, _shopBank = null, _shopHoliday = null, _shopTimer = null;
 const _SHOP_ORDER = ['entry','advance','pro','max','holiday'];
 const _SHOP_TAGS  = { pro:'🔥 最熱賣', max:'💰 最划算', holiday:'🎁 限時加碼' };
 
 function openBitsShop() {
   document.getElementById('bitsShopModal').style.display = 'flex';
-  if (_shopPacks) { renderShopGrid(); return; }
   const grid = document.getElementById('bitsShopGrid');
   grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.5);padding:30px;">載入中…</div>';
   fetch(`${GAS_URL}?action=getTopupPacks&password=${GAS_PASSWORD}`)
     .then(r => r.json())
     .then(j => {
       if (!j.ok) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff7a7a;padding:30px;">載入失敗</div>'; return; }
-      _shopPacks = j.packs; _shopBank = j.bank; renderShopGrid();
+      _shopPacks = j.packs; _shopBank = j.bank; _shopHoliday = j.holiday || null; renderShopGrid();
     })
     .catch(() => { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff7a7a;padding:30px;">連線錯誤</div>'; });
 }
-function closeBitsShop() { document.getElementById('bitsShopModal').style.display = 'none'; }
+function closeBitsShop() {
+  if (_shopTimer) { clearInterval(_shopTimer); _shopTimer = null; }
+  document.getElementById('bitsShopModal').style.display = 'none';
+}
 
 function renderShopGrid() {
+  if (_shopTimer) { clearInterval(_shopTimer); _shopTimer = null; }
   let html = '';
   _SHOP_ORDER.forEach(k => {
     const p = _shopPacks[k]; if (!p) return;
-    const per = (p.price / p.bits).toFixed(2);
-    const hot = (k === 'pro');
     const holiday = (k === 'holiday');
+    const hot = (k === 'pro');
+    if (holiday && (!_shopHoliday || !_shopHoliday.enabled)) return;   // 節慶包未上架→不顯示
+    const avail = holiday ? !!(_shopHoliday && _shopHoliday.available) : true;
+    const per = (p.price / p.bits).toFixed(2);
     const tag = _SHOP_TAGS[k]
       ? `<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;padding:2px 9px;border-radius:999px;background:${holiday?'linear-gradient(135deg,#ff5d8f,#ff8c42)':hot?'linear-gradient(135deg,#7c6cff,#ff7ac3)':'linear-gradient(135deg,#ffb347,#ffce6b)'};color:#13131c;">${_SHOP_TAGS[k]}</div>`
       : '';
-    const border = hot ? 'rgba(124,108,255,0.6)' : holiday ? 'rgba(255,93,143,0.55)' : 'rgba(255,255,255,0.1)';
-    const glow = hot ? 'box-shadow:0 0 18px rgba(124,108,255,0.25);' : '';
-    html += `<div onclick="buyPack('${k}')" style="position:relative;cursor:pointer;background:rgba(255,255,255,0.03);border:1.5px solid ${border};border-radius:14px;padding:20px 14px 16px;text-align:center;transition:transform .15s,border-color .2s;${glow}" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+    const border = !avail ? 'rgba(255,255,255,0.08)' : hot ? 'rgba(124,108,255,0.6)' : holiday ? 'rgba(255,93,143,0.55)' : 'rgba(255,255,255,0.1)';
+    const glow = (avail && hot) ? 'box-shadow:0 0 18px rgba(124,108,255,0.25);' : '';
+    const dim = !avail ? 'opacity:0.45;' : '';
+    const clickAttr = avail ? `onclick="buyPack('${k}')"` : '';
+    const cursor = avail ? 'pointer' : 'not-allowed';
+    const hover = avail ? `onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''"` : '';
+    let extra = '';
+    if (holiday) {
+      const stockLine = (_shopHoliday.stockTotal > 0)
+        ? `<div style="font-size:11px;color:#ff8cae;font-weight:800;margin-top:6px;">僅剩 ${_shopHoliday.stockLeft} 組</div>` : '';
+      const cdLine = _shopHoliday.endAt
+        ? `<div id="hcCountdown" style="font-size:11px;color:#ffb3c8;margin-top:4px;font-variant-numeric:tabular-nums;"></div>` : '';
+      extra = stockLine + cdLine;
+    }
+    const btnText = avail ? '選這包'
+      : (holiday && _shopHoliday.reason === 'sold_out') ? '已售完'
+      : (holiday && _shopHoliday.reason === 'ended')    ? '已結束'
+      : '暫不開放';
+    const btnBg = avail ? 'linear-gradient(135deg,#7c6cff,#ff7ac3)' : 'rgba(255,255,255,0.12)';
+    html += `<div ${clickAttr} style="position:relative;cursor:${cursor};${dim}background:rgba(255,255,255,0.03);border:1.5px solid ${border};border-radius:14px;padding:20px 14px 16px;text-align:center;transition:transform .15s,border-color .2s;${glow}" ${hover}>
       ${tag}
       <div style="font-size:13px;color:rgba(255,255,255,0.6);font-weight:700;margin-bottom:8px;">${p.name}</div>
       <div style="font-size:26px;font-weight:900;color:#ffce6b;line-height:1;">${p.bits.toLocaleString()}</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.45);margin:2px 0 12px;">Bits</div>
       <div style="font-size:18px;font-weight:900;color:#fff;">NT$${p.price.toLocaleString()}</div>
       <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:3px;">每點約 NT$${per}</div>
-      <div style="margin-top:12px;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(135deg,#7c6cff,#ff7ac3);border-radius:8px;padding:8px 0;">選這包</div>
+      ${extra}
+      <div style="margin-top:12px;font-size:12px;font-weight:800;color:#fff;background:${btnBg};border-radius:8px;padding:8px 0;">${btnText}</div>
     </div>`;
   });
   document.getElementById('bitsShopGrid').innerHTML = html;
+  startHolidayCountdown();
+}
+
+function startHolidayCountdown() {
+  if (_shopTimer) { clearInterval(_shopTimer); _shopTimer = null; }
+  const el = document.getElementById('hcCountdown');
+  if (!el || !_shopHoliday || !_shopHoliday.endAt) return;
+  const end = new Date(_shopHoliday.endAt).getTime();
+  const pad = n => String(n).padStart(2, '0');
+  const tick = () => {
+    const node = document.getElementById('hcCountdown');
+    if (!node) { clearInterval(_shopTimer); _shopTimer = null; return; }
+    const diff = end - Date.now();
+    if (diff <= 0) { node.textContent = '⏰ 活動已結束'; clearInterval(_shopTimer); _shopTimer = null; return; }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor(diff % 86400000 / 3600000);
+    const m = Math.floor(diff % 3600000 / 60000);
+    const s = Math.floor(diff % 60000 / 1000);
+    node.textContent = '⏰ 剩 ' + (d > 0 ? (d + '天 ') : '') + pad(h) + ':' + pad(m) + ':' + pad(s);
+  };
+  tick();
+  _shopTimer = setInterval(tick, 1000);
 }
 
 function buyPack(k) {
@@ -686,6 +731,7 @@ function buyPack(k) {
 }
 
 function showOrderInfo(o) {
+  if (_shopTimer) { clearInterval(_shopTimer); _shopTimer = null; }
   const b = o.bank || _shopBank || {};
   document.getElementById('bitsShopGrid').innerHTML = `
     <div style="grid-column:1/-1;">
