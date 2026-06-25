@@ -1582,6 +1582,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="tab" onclick="switchTab('memory')">🧠 記憶庫</div>
   <div class="tab tab-pending" onclick="switchTab('apply')">📋 品牌審核<span class="pending-dot" id="pendingDot"></span></div>
   <div class="tab" onclick="switchTab('staff')">員工管理</div>
+  <div class="tab" onclick="switchTab('topup')">💎 儲值管理</div>
 </div>
 
 <div class="main">
@@ -1743,6 +1744,20 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     </div>
   </div>
 
+  <div class="section" id="sec-topup">
+    <div class="section-header">
+      <h2>💎 儲值管理(Bits 補給包訂單)</h2>
+      <button class="btn-refresh" onclick="loadTopup()">🔄 重新整理</button>
+    </div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:18px;line-height:1.9;">
+      客戶下單後出現在這裡。核對銀行**真的收到款**後按「✓ 確認入帳」,系統自動把 Bits 加進該客戶的加購池(永久保留)。<br>
+      ⚠️ 入帳後不可復原;同一張單按兩次也不會重複加點。
+    </div>
+    <div class="table-wrap" id="topupBody">
+      <div class="empty-state"><p>載入中...</p></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -1867,7 +1882,7 @@ async function bootAdmin() {
 }
 
 function switchTab(name) {
-  const tabs = ['brands','products','folders','delivers','memory','apply','staff'];
+  const tabs = ['brands','products','folders','delivers','memory','apply','staff','topup'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
@@ -1875,6 +1890,44 @@ function switchTab(name) {
   if (name==='staff') loadStaff();
   if (name==='memory') loadAdminMemory(1);
   if (name==='apply') loadApply();
+  if (name==='topup') loadTopup();
+}
+
+// 💎 儲值管理:列訂單 + 一鍵確認入帳
+async function loadTopup() {
+  const box = document.getElementById('topupBody');
+  if (!box) return;
+  box.innerHTML = '<div class="empty-state"><p>載入中...</p></div>';
+  try {
+    const r = await fetch(`${GAS_URL}?action=listTopupOrders&password=${PASSWORD}`);
+    const j = await r.json();
+    if (!j.ok) { box.innerHTML = '<div class="empty-state"><p>載入失敗</p></div>'; return; }
+    if (!j.orders || !j.orders.length) { box.innerHTML = '<div class="empty-state"><p>目前沒有訂單</p></div>'; return; }
+    let html = '<table><thead><tr><th>訂單編號</th><th>Email</th><th>包</th><th>金額</th><th>Bits</th><th>方式</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
+    j.orders.forEach(o => {
+      const st = o.status==='pending' ? '<span style="color:#ffb84d;font-weight:700">● 待確認</span>'
+               : o.status==='paid'    ? '<span style="color:#6dfac2;font-weight:700">✓ 已入帳</span>'
+               :                        '<span style="color:var(--t3)">取消</span>';
+      const act = o.status==='pending'
+        ? `<button class="btn-add-staff" style="padding:6px 12px;font-size:12px" onclick="confirmTopup('${o.orderId}')">✓ 確認入帳</button>`
+        : (o.paidAt ? ('<span style="font-size:11px;color:var(--t3)">'+new Date(o.paidAt).toLocaleString('zh-TW')+'</span>') : '—');
+      html += `<tr><td style="font-family:monospace;font-size:11px">${o.orderId}</td><td style="font-size:12px">${o.email}</td><td>${o.packName}</td><td>NT$${Number(o.amount).toLocaleString()}</td><td>${Number(o.bits).toLocaleString()}</td><td style="font-size:11px;color:var(--t3)">${o.method}</td><td>${st}</td><td>${act}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    box.innerHTML = html;
+  } catch (e) { box.innerHTML = '<div class="empty-state"><p>載入錯誤</p></div>'; }
+}
+
+async function confirmTopup(orderId) {
+  if (!confirm('確認此訂單「銀行已實際收到款項」?\n入帳後不可復原。\n\n' + orderId)) return;
+  try {
+    const r = await fetch(`${GAS_URL}?action=confirmTopupOrder&password=${PASSWORD}&orderId=${encodeURIComponent(orderId)}`);
+    const j = await r.json();
+    if (j.ok) { alert('✅ 已入帳 ' + Number(j.bits).toLocaleString() + ' Bits\n客戶加購池餘額:' + Number(j.extra).toLocaleString()); }
+    else if (j.error==='already_paid') { alert('⚠️ 此單先前已入帳,未重複加點'); }
+    else { alert('❌ 失敗:' + (j.message || j.error)); }
+    loadTopup();
+  } catch (e) { alert('❌ 連線錯誤,請重試'); }
 }
 
 function renderAll() { renderBrands(); renderProducts(); renderFolders(); updateFilters(); }
