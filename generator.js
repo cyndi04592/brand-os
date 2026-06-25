@@ -438,14 +438,39 @@ if (document.readyState === 'loading') {
 } else {
   injectMemoryCSS();
 }
-// 🆕 樂觀更新 Bits 顯示(立即,不等 refreshBits 來回)
+// 🆕 記住月配額上限(能量條算比例用)
+let _bitsMonthlyCap = 0;
+
+// 🆕 畫能量條:填充 = balance ÷ 月配額;顏色:足→紫粉 / ≤30%→橘 / ≤10%→紅(見底發光)
+function renderBitsBar(balance, monthly) {
+  if (monthly !== undefined && monthly !== null && Number(monthly) > 0) _bitsMonthlyCap = Number(monthly);
+  const bal  = Math.max(0, Number(balance) || 0);
+  const num  = document.getElementById('bitsBalance');
+  const fill = document.getElementById('bitsBarFill');
+  const chip = document.getElementById('bitsChip');
+  if (num) num.textContent = bal.toLocaleString();
+  if (!fill) return;
+  const cap = _bitsMonthlyCap;
+  const pct = cap > 0 ? Math.max(0, Math.min(100, (bal / cap) * 100)) : 100;
+  fill.style.width = pct + '%';
+  let grad = 'linear-gradient(90deg,#7c6cff,#ff7ac3)', glow = '';
+  if (pct <= 10)      { grad = 'linear-gradient(90deg,#ff4d4d,#ff7a3d)'; glow = '0 0 10px rgba(255,77,77,0.55)'; }
+  else if (pct <= 30) { grad = 'linear-gradient(90deg,#ff9a3d,#ffc46b)'; }
+  fill.style.background = grad;
+  if (chip) {
+    chip.style.borderColor = pct <= 10 ? 'rgba(255,77,77,0.6)' : 'rgba(124,108,255,0.35)';
+    chip.style.boxShadow   = glow;
+  }
+}
+
+// 🆕 樂觀更新 Bits 顯示(立即,不等 refreshBits 來回)— 順便縮能量條
 function bumpBitsDisplay(delta) {
   const el = document.getElementById('bitsBalance');
   if (!el) return;
   const cur = Number(String(el.textContent).replace(/[^\d.-]/g, '')) || 0;
-  el.textContent = Math.max(0, cur + delta).toLocaleString();
+  renderBitsBar(Math.max(0, cur + delta));
 }
-// 🆕 刷新 Bits 餘額顯示(header 右上)
+// 🆕 刷新 Bits 餘額顯示(header 右上)— 帶月配額畫能量條
 async function refreshBits() {
   try {
     const email = localStorage.getItem('bs_sso_email') || '';
@@ -453,10 +478,9 @@ async function refreshBits() {
     const res = await fetch(`${GAS_URL}?action=getBits&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`);
     const j = await res.json();
     if (j && j.ok) {
-      const el = document.getElementById('bitsBalance');
       const chip = document.getElementById('bitsChip');
-      if (el) el.textContent = Number(j.balance || 0).toLocaleString();
       if (chip) chip.style.display = 'inline-flex';
+      renderBitsBar(j.balance, j.monthlyBits);
     }
   } catch (e) { console.warn('refreshBits 失敗:', e); }
 }
