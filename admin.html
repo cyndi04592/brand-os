@@ -1753,6 +1753,31 @@ tr:hover td { background: rgba(124,109,250,0.04); }
       客戶下單後出現在這裡。核對銀行「真的收到款」後按「✓ 確認入帳」,系統自動把 Bits 加進該客戶的加購池(永久保留)。<br>
       ⚠️ 入帳後不可復原;同一張單按兩次也不會重複加點。
     </div>
+    <div style="background:rgba(255,93,143,0.06);border:1px solid rgba(255,93,143,0.25);border-radius:12px;padding:16px 18px;margin-bottom:22px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <span style="font-size:15px;font-weight:800;color:#ff8cae;">🎁 節慶包限時設定</span>
+        <span id="holidayStockLeft" style="font-size:12px;color:var(--t3);"></span>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;">
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--t2);cursor:pointer;font-weight:600;">
+          <input type="checkbox" id="hcEnabled" style="width:16px;height:16px;cursor:pointer;"> 上架販售
+        </label>
+        <div>
+          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;">限量(0 = 不限量)</label>
+          <input class="field-input" id="hcStock" type="number" min="0" style="width:130px;" placeholder="例:100">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;">開賣時間(可留空 = 立即)</label>
+          <input class="field-input" id="hcStart" type="datetime-local" style="width:210px;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;">截止時間</label>
+          <input class="field-input" id="hcEnd" type="datetime-local" style="width:210px;">
+        </div>
+        <button class="btn-add-staff" style="padding:9px 20px" onclick="saveHolidayCfg()">💾 儲存設定</button>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:11px;line-height:1.7;">※「儲存設定」會把剩餘庫存重設為限量值(重新上架 = 庫存歸位)。客戶端商城會顯示倒數計時與剩餘組數。</div>
+    </div>
     <div class="table-wrap" id="topupBody">
       <div class="empty-state"><p>載入中...</p></div>
     </div>
@@ -1895,6 +1920,7 @@ function switchTab(name) {
 
 // 💎 儲值管理:列訂單 + 一鍵確認入帳
 async function loadTopup() {
+  loadHolidayCfg();
   const box = document.getElementById('topupBody');
   if (!box) return;
   box.innerHTML = '<div class="empty-state"><p>載入中...</p></div>';
@@ -1927,6 +1953,42 @@ async function confirmTopup(orderId) {
     else if (j.error==='already_paid') { alert('⚠️ 此單先前已入帳,未重複加點'); }
     else { alert('❌ 失敗:' + (j.message || j.error)); }
     loadTopup();
+  } catch (e) { alert('❌ 連線錯誤,請重試'); }
+}
+
+// 🎁 節慶包設定
+function _isoToLocal(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes());
+}
+async function loadHolidayCfg() {
+  try {
+    const r = await fetch(`${GAS_URL}?action=getHolidayConfig&password=${PASSWORD}`);
+    const j = await r.json();
+    if (!j.ok) return;
+    document.getElementById('hcEnabled').checked = !!j.enabled;
+    document.getElementById('hcStock').value = j.stockTotal || 0;
+    document.getElementById('hcStart').value = _isoToLocal(j.startAt);
+    document.getElementById('hcEnd').value = _isoToLocal(j.endAt);
+    const sl = document.getElementById('holidayStockLeft');
+    if (j.available) sl.innerHTML = '<span style="color:#6dfac2">● 販售中</span>　剩 ' + j.stockLeft + (j.stockTotal>0 ? (' / '+j.stockTotal) : '(不限量)') + ' 組';
+    else sl.innerHTML = '<span style="color:var(--t3)">○ 未販售</span>　(' + (j.reason||'') + ')';
+  } catch (e) {}
+}
+async function saveHolidayCfg() {
+  const enabled = document.getElementById('hcEnabled').checked ? '1' : '0';
+  const stock = document.getElementById('hcStock').value || '0';
+  const start = document.getElementById('hcStart').value || '';
+  const end   = document.getElementById('hcEnd').value || '';
+  try {
+    const url = `${GAS_URL}?action=setHolidayConfig&password=${PASSWORD}&enabled=${enabled}&stockTotal=${encodeURIComponent(stock)}&startAt=${encodeURIComponent(start)}&endAt=${encodeURIComponent(end)}`;
+    const r = await fetch(url);
+    const j = await r.json();
+    if (j.ok) { alert('✅ 節慶包設定已儲存\n庫存重設為 ' + (j.stockTotal>0 ? (j.stockTotal+' 組') : '不限量')); loadHolidayCfg(); }
+    else alert('❌ 儲存失敗');
   } catch (e) { alert('❌ 連線錯誤,請重試'); }
 }
 
