@@ -1763,6 +1763,10 @@ tr:hover td { background: rgba(124,109,250,0.04); }
           <input type="checkbox" id="hcEnabled" style="width:16px;height:16px;cursor:pointer;"> 上架販售
         </label>
         <div>
+          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;">包名(可自訂檔期)</label>
+          <input class="field-input" id="hcName" type="text" style="width:180px;" placeholder="例:🎄 聖誕限定包 / 🐍 蛇年禮包">
+        </div>
+        <div>
           <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;">限量(0 = 不限量)</label>
           <input class="field-input" id="hcStock" type="number" min="0" style="width:130px;" placeholder="例:100">
         </div>
@@ -1970,6 +1974,7 @@ async function loadHolidayCfg() {
     const j = await r.json();
     if (!j.ok) return;
     document.getElementById('hcEnabled').checked = !!j.enabled;
+    document.getElementById('hcName').value = j.name || '';
     document.getElementById('hcStock').value = j.stockTotal || 0;
     document.getElementById('hcStart').value = _isoToLocal(j.startAt);
     document.getElementById('hcEnd').value = _isoToLocal(j.endAt);
@@ -1980,11 +1985,12 @@ async function loadHolidayCfg() {
 }
 async function saveHolidayCfg() {
   const enabled = document.getElementById('hcEnabled').checked ? '1' : '0';
+  const name  = document.getElementById('hcName').value || '';
   const stock = document.getElementById('hcStock').value || '0';
   const start = document.getElementById('hcStart').value || '';
   const end   = document.getElementById('hcEnd').value || '';
   try {
-    const url = `${GAS_URL}?action=setHolidayConfig&password=${PASSWORD}&enabled=${enabled}&stockTotal=${encodeURIComponent(stock)}&startAt=${encodeURIComponent(start)}&endAt=${encodeURIComponent(end)}`;
+    const url = `${GAS_URL}?action=setHolidayConfig&password=${PASSWORD}&enabled=${enabled}&stockTotal=${encodeURIComponent(stock)}&startAt=${encodeURIComponent(start)}&endAt=${encodeURIComponent(end)}&name=${encodeURIComponent(name)}`;
     const r = await fetch(url);
     const j = await r.json();
     if (j.ok) { alert('✅ 節慶包設定已儲存\n庫存重設為 ' + (j.stockTotal>0 ? (j.stockTotal+' 組') : '不限量')); loadHolidayCfg(); }
