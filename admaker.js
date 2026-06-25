@@ -905,13 +905,25 @@ function failProgress(interval, errMsg) {
   if (btn) { btn.disabled = false; btn.textContent = '✨ 套用 AI 效果'; }
 }
 
+// 各動作扣點對照(對齊 V2/PDF;前端樂觀扣,後端 Worker 真扣)
+const _BITS_COST = {
+  gpt_poster_edit_submit: 240,    // 廣告圖
+  flux_kontext_submit: 60,        // 換場景
+  kling_tryon_submit: 120,        // 試穿
+  kling_poster_video_submit: 960  // 影片(5秒 Kling)
+};
 async function callWorker(params) {
+  const _cost = _BITS_COST[params.action] || 0;
+  const _email = (typeof _userEmail !== 'undefined' && _userEmail) ? _userEmail : (localStorage.getItem('bs_sso_email') || '');
+  if (_cost > 0 && typeof bumpBitsDisplay === 'function') bumpBitsDisplay(-_cost);   // 樂觀扣點
   const resp = await fetch(CF_WORKER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...params, password: GAS_PASSWORD })
+    body: JSON.stringify({ ...params, email: _email, password: GAS_PASSWORD })
   });
-  return resp.json();
+  const j = await resp.json();
+  if (_cost > 0 && j && j.error === 'INSUFFICIENT_BITS' && typeof bumpBitsDisplay === 'function') bumpBitsDisplay(_cost);  // 不足→退回
+  return j;
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
