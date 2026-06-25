@@ -794,6 +794,21 @@ function buyPackManual(k) {
     .catch(() => alert('連線錯誤,請重試'));
 }
 
+function reportLast5(orderId) {
+  const inp = document.getElementById('payerLast5Input');
+  const msg = document.getElementById('last5Msg');
+  const v = (inp.value || '').replace(/\D/g, '').slice(-5);
+  if (v.length < 3) { msg.style.color = '#ff8cae'; msg.textContent = '請填轉出帳號後 5 碼'; return; }
+  msg.style.color = 'rgba(255,255,255,0.6)'; msg.textContent = '送出中…';
+  fetch(`${GAS_URL}?action=reportPayerLast5&password=${GAS_PASSWORD}&orderId=${encodeURIComponent(orderId)}&last5=${encodeURIComponent(v)}`)
+    .then(r => r.json())
+    .then(j => {
+      if (j.ok) { msg.style.color = '#6dfac2'; msg.textContent = '\u2705 \u5df2\u6536\u5230\u5f8c\u4e94\u78bc(' + j.last5 + '),\u5c0d\u5e33\u5f8c\u81ea\u52d5\u5165\u5e33'; inp.disabled = true; }
+      else { msg.style.color = '#ff8cae'; msg.textContent = '\u9001\u51fa\u5931\u6557:' + (j.message || j.error || ''); }
+    })
+    .catch(() => { msg.style.color = '#ff8cae'; msg.textContent = '\u9023\u7dda\u932f\u8aa4,\u8acb\u91cd\u8a66'; });
+}
+
 function showOrderInfo(o) {
   if (_shopTimer) { clearInterval(_shopTimer); _shopTimer = null; }
   const b = o.bank || _shopBank || {};
@@ -814,6 +829,15 @@ function showOrderInfo(o) {
         <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">戶名</span><b>${b.accountName||''}</b></div>
       </div>
       <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:12px;line-height:1.7;">※ 匯款時請於備註填「訂單編號」方便對帳。對帳後 Bits 會自動入帳,可在能量條右側數字看到增加。</div>
+      <div style="margin-top:14px;background:rgba(124,109,250,0.06);border:1px solid rgba(124,109,250,0.3);border-radius:11px;padding:13px 15px;">
+        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:3px;">📲 完成匯款後,填這欄</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:9px;">請填「你轉出帳號的後五碼」,方便我們對帳確認是你付的</div>
+        <div style="display:flex;gap:8px;">
+          <input id="payerLast5Input" maxlength="5" inputmode="numeric" placeholder="後五碼" style="flex:1;padding:10px 12px;border-radius:9px;border:1px solid rgba(124,109,250,0.4);background:rgba(255,255,255,0.06);color:#fff;font-size:16px;letter-spacing:3px;text-align:center;">
+          <button onclick="reportLast5('${o.orderId}')" style="padding:10px 20px;border:none;border-radius:9px;background:linear-gradient(135deg,#7c6cff,#ff7ac3);color:#fff;font-weight:800;cursor:pointer;white-space:nowrap;">送出</button>
+        </div>
+        <div id="last5Msg" style="font-size:12px;margin-top:8px;"></div>
+      </div>
       <button onclick="closeBitsShop()" style="width:100%;margin-top:16px;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c6cff,#ff7ac3);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">完成</button>
     </div>`;
 }
