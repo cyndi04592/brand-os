@@ -723,6 +723,70 @@ function buyPack(k) {
   const email = localStorage.getItem('bs_sso_email') || '';
   if (!email) { alert('請先登入再購買'); return; }
   const p = _shopPacks[k]; if (!p) return;
+  const bs = 'width:100%;margin-top:10px;padding:14px;border:none;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;color:#fff;';
+  document.getElementById('bitsShopGrid').innerHTML =
+    '<div style="grid-column:1/-1;text-align:center;">' +
+      '<div style="font-size:17px;font-weight:900;color:#fff;">' + p.name + '</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin:4px 0 20px;">' + p.bits.toLocaleString() + ' Bits ／ NT$' + p.price.toLocaleString() + '</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
+      '<button onclick="buyPackEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">💳 線上刷卡 / ATM（即時入帳）</button>' +
+      '<button onclick="buyPackManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">🏦 銀行轉帳（人工對帳）</button>' +
+      '<button onclick="renderShopGrid()" style="' + bs + 'background:transparent;color:rgba(255,255,255,0.45);font-weight:500;margin-top:14px;">← 返回</button>' +
+    '</div>';
+}
+
+function buyPackEcpay(k) {
+  const email = localStorage.getItem('bs_sso_email') || '';
+  if (!email) { alert('請先登入再購買'); return; }
+  const p = _shopPacks[k]; if (!p) return;
+  const grid = document.getElementById('bitsShopGrid');
+  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
+  // 1) 建單(method=ecpay)
+  fetch(`${GAS_URL}?action=createTopupOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&pack=${k}&method=ecpay`)
+    .then(r => r.json())
+    .then(j => {
+      if (!j.ok) { alert('下單失敗:' + (j.error || '')); renderShopGrid(); return; }
+      // 2) 跟 Worker 要 ECPay 導向參數
+      return fetch(CF_WORKER_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'ecpay_create', password: GAS_PASSWORD,
+          orderId: j.orderId, amount: j.amount,
+          itemName: `${j.pack} ${Number(j.bits).toLocaleString()} Bits`,
+          tradeDesc: 'Brand OS Bits 補給包',
+          clientBackURL: location.origin + location.pathname + '?paid=' + encodeURIComponent(j.orderId)
+        })
+      }).then(r => r.json()).then(e => {
+        if (!e.ok) { alert('建立付款失敗:' + (e.error || '')); renderShopGrid(); return; }
+        // 3) 動態建表單 → 導向 ECPay
+        const form = document.createElement('form');
+        form.method = 'POST'; form.action = e.endpoint;
+        for (const key in e.fields) {
+          const inp = document.createElement('input');
+          inp.type = 'hidden'; inp.name = key; inp.value = e.fields[key];
+          form.appendChild(inp);
+        }
+        document.body.appendChild(form); form.submit();
+      });
+    })
+    .catch(() => { alert('連線錯誤,請重試'); renderShopGrid(); });
+}
+
+// 付款完成從 ECPay 導回:提示 + 清掉網址參數(實際入帳由 ReturnURL→GAS 處理)
+(function () {
+  const m = /[?&]paid=([^&]+)/.exec(location.search);
+  if (m) {
+    setTimeout(function () {
+      alert('✅ 付款完成!Bits 會在幾秒內自動入帳,重新整理即可看到餘額。\n\n訂單編號:' + decodeURIComponent(m[1]));
+    }, 300);
+    history.replaceState(null, '', location.pathname);
+  }
+})();
+
+function buyPackManual(k) {
+  const email = localStorage.getItem('bs_sso_email') || '';
+  if (!email) { alert('請先登入再購買'); return; }
+  const p = _shopPacks[k]; if (!p) return;
   if (!confirm(`確認下單「${p.name}」?\n\n${p.bits.toLocaleString()} Bits ／ NT$${p.price.toLocaleString()}\n\n下單後依匯款資訊轉帳,我們對帳後為你入點。`)) return;
   fetch(`${GAS_URL}?action=createTopupOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&pack=${k}`)
     .then(r => r.json())
