@@ -441,20 +441,21 @@ if (document.readyState === 'loading') {
 } else {
   injectMemoryCSS();
 }
-// 🆕 記住月配額上限(能量條算比例用)
-let _bitsMonthlyCap = 0;
+// 🆕 雙池能量條狀態:cap=月配額上限 / monthly=月配額剩餘 / total=總額(月+加購)
+let _bitsCap = 0, _bitsMonthly = 0, _bitsTotal = 0;
 
-// 🆕 畫能量條:填充 = balance ÷ 月配額;顏色:足→紫粉 / ≤30%→橘 / ≤10%→紅(見底發光)
-function renderBitsBar(balance, monthly) {
-  if (monthly !== undefined && monthly !== null && Number(monthly) > 0) _bitsMonthlyCap = Number(monthly);
-  const bal  = Math.max(0, Number(balance) || 0);
+// 🆕 畫能量條:數字=總額;條只反映「月配額池 monthly ÷ cap」(加購不算進條)
+//   顏色:足→紫粉 / ≤30%→橘 / ≤10%→紅(見底發光)
+function renderBitsBar(total, monthly, monthlyBits) {
+  if (monthlyBits !== undefined && monthlyBits !== null && Number(monthlyBits) > 0) _bitsCap = Number(monthlyBits);
+  if (total   !== undefined && total   !== null) _bitsTotal   = Math.max(0, Number(total)   || 0);
+  if (monthly !== undefined && monthly !== null) _bitsMonthly = Math.max(0, Number(monthly) || 0);
   const num  = document.getElementById('bitsBalance');
   const fill = document.getElementById('bitsBarFill');
   const chip = document.getElementById('bitsChip');
-  if (num) num.textContent = bal.toLocaleString();
+  if (num) num.textContent = _bitsTotal.toLocaleString();
   if (!fill) return;
-  const cap = _bitsMonthlyCap;
-  const pct = cap > 0 ? Math.max(0, Math.min(100, (bal / cap) * 100)) : 100;
+  const pct = _bitsCap > 0 ? Math.max(0, Math.min(100, (_bitsMonthly / _bitsCap) * 100)) : 100;
   fill.style.width = pct + '%';
   let grad = 'linear-gradient(90deg,#7c6cff,#ff7ac3)', glow = '';
   if (pct <= 10)      { grad = 'linear-gradient(90deg,#ff4d4d,#ff7a3d)'; glow = '0 0 10px rgba(255,77,77,0.55)'; }
@@ -466,12 +467,9 @@ function renderBitsBar(balance, monthly) {
   }
 }
 
-// 🆕 樂觀更新 Bits 顯示(立即,不等 refreshBits 來回)— 順便縮能量條
+// 🆕 樂觀更新:扣點 → 總額 -120、月配額先扣(與後端「先扣月配」一致),條跟著縮
 function bumpBitsDisplay(delta) {
-  const el = document.getElementById('bitsBalance');
-  if (!el) return;
-  const cur = Number(String(el.textContent).replace(/[^\d.-]/g, '')) || 0;
-  renderBitsBar(Math.max(0, cur + delta));
+  renderBitsBar(Math.max(0, _bitsTotal + delta), Math.max(0, _bitsMonthly + delta));
 }
 // 🆕 刷新 Bits 餘額顯示(header 右上)— 帶月配額畫能量條
 async function refreshBits() {
@@ -483,7 +481,7 @@ async function refreshBits() {
     if (j && j.ok) {
       const chip = document.getElementById('bitsChip');
       if (chip) chip.style.display = 'inline-flex';
-      renderBitsBar(j.balance, j.monthlyBits);
+      renderBitsBar(j.balance, j.monthly, j.monthlyBits);
     }
   } catch (e) { console.warn('refreshBits 失敗:', e); }
 }
