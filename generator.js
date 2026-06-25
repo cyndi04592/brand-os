@@ -229,7 +229,10 @@ ${memoryContext}
     btn.innerHTML = '<span class="spin"></span>整理中...';
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || JSON.stringify(data));
-    const raw    = data.text.replace(/```json|```/g, '').trim();
+    let raw = data.text.replace(/```json|```/g, '').trim();
+    // 🆕 模型偶爾會在 JSON 前後多講說明(例:「我先進行字數驗算:」)→ 只抽第一個 { 到最後一個 } 再 parse
+    const _s = raw.indexOf('{'), _e = raw.lastIndexOf('}');
+    if (_s >= 0 && _e > _s) raw = raw.slice(_s, _e + 1);
     const parsed = JSON.parse(raw);
     window.S.scripts = parsed.combos || [];
     renderScripts(brandDisplay, sub?.color || brand?.navColor);
