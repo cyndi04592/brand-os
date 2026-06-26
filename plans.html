@@ -60,6 +60,11 @@
       '</div>';
     const note = '<div class="bos-foot">所有方案功能 100% 全開、沒有閹割;分級只在每月產能與算力檔次。<br>所有價格未稅,另計 5% 營業稅 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留</div>';
     const legalEN = '<div style="text-align:center;font-size:11.5px;color:rgba(255,206,107,.62);letter-spacing:.5px;margin-top:12px;font-weight:600;">Proprietary patent-pending technology — filed under PCT (WIPO), Taiwan IPO &amp; CNIPA.</div>';
+    const accountLinks = '<div style="text-align:center;margin-top:20px;font-size:12.5px;color:rgba(255,255,255,.55);line-height:2.1;">'
+      + '已經有帳號? <a href="index.html" style="color:#ffce6b;font-weight:700;text-decoration:none;">點這裡登入續約</a>'
+      + '<span style="color:rgba(255,255,255,.25);margin:0 8px;">·</span>'
+      + '第一次來? <a href="onboard.html" style="color:#ffce6b;font-weight:700;text-decoration:none;">點這裡申請開通帳號 →</a>'
+      + '</div>';
     document.getElementById('planRoot').innerHTML =
       '<div class="bos-plans">' +
         renderBrandosHeroStat() +
@@ -67,6 +72,7 @@
         renderBrandosCore() +
         '<div class="bos-toggles">' + grpToggle + cycToggle + '</div>' +
         renderBrandosPlanCards(g, _cyc, { selFn: 'buyPlan' }) +
+        accountLinks +
         note +
         legalEN +
       '</div>';
@@ -88,7 +94,11 @@
         '</div>';
       return;
     }
-    if (!email) { alert('請先登入再購買(回系統登入後再回來選方案)'); return; }
+    if (!email) {
+      // 未登入 = 新客 / 朋友 → 導去品牌入駐書申請,帶著選的方案(desiredPlan)
+      location.href = 'onboard.html?plan=' + encodeURIComponent(k);
+      return;
+    }
     const p = findBrandosPlan(k); if (!p) return;
     const yr = (_cyc === 'year');
     const monthPrice = (p.promo > 0) ? p.promo : p.price;
