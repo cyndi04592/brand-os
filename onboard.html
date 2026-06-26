@@ -193,6 +193,9 @@ body{
   backdrop-filter:blur(8px);
 }
 .section.active{display:block;animation:secFadeIn .4s ease;}
+/* 選方案步:拿掉外層卡框 + info 邊框,跟訂閱頁一樣攤平乾淨 */
+#sec46{background:none;border:none;border-radius:0;padding:0;backdrop-filter:none;}
+#sec46 .info-box{border-color:transparent;background:rgba(124,108,255,.06);}
 @keyframes secFadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
 .sec-title{
