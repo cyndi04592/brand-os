@@ -742,11 +742,13 @@ function openAdMaker(idx) {
   renderAmPhotoRow();
   updateBrandPackBadge();
   document.getElementById('adMakerModal').style.display = 'block';
+  if (typeof setVisionStage === 'function') setVisionStage(2);
   renderAdCanvas();
 }
 
 function closeAdMaker() {
   document.getElementById('adMakerModal').style.display = 'none';
+  if (typeof setVisionStage === 'function') setVisionStage(1);
 }
 
 function renderAmPhotoRow() {
