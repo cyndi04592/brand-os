@@ -924,8 +924,19 @@ async function callWorker(params) {
     body: JSON.stringify({ ...params, email: _email, password: GAS_PASSWORD })
   });
   const j = await resp.json();
-  if (_cost > 0 && j && j.error === 'INSUFFICIENT_BITS' && typeof bumpBitsDisplay === 'function') bumpBitsDisplay(_cost);  // 不足→退回
+  if (_cost > 0 && j && j.error === 'INSUFFICIENT_BITS') {
+    if (typeof bumpBitsDisplay === 'function') bumpBitsDisplay(_cost);  // 不足→退回
+    showInsufficientBits(_cost);
+  }
   return j;
+}
+
+// 點數不足:跳白話提示 + 導去儲值/升級
+function showInsufficientBits(cost) {
+  const go = confirm('⚡ 能量(點數)不足\n\n本次操作需要 ' + cost + ' 點,你目前的點數不夠,所以這次沒有扣款、也沒有產出。\n\n要前往儲值 / 升級方案嗎?');
+  if (!go) return;
+  if (typeof openBitsShop === 'function') openBitsShop();
+  else location.href = 'plans.html';
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
