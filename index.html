@@ -641,6 +641,7 @@
 <script src="assets.js"></script>
 <script src="generator.js"></script>
 <script src="admaker.js"></script>
+<script src="plans.js"></script>
 <script>
 function openAdMakerDirect() {
   if (!window.S) { alert('請先選擇品牌和商品'); return; }
@@ -862,69 +863,63 @@ function showOrderInfo(o) {
     </div>`;
 }
 
-// ══ 訂閱方案選單 ══
-const _SUB_PLANS = [
-  { key:'entry',  name:'入門', price:35000,  promo:30000, bits:70000,  tag:'', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 70,000 點 · 自動配發','約可生 290+ 張廣告圖','未來新功能免費'] },
-  { key:'growth', name:'成長', price:50000,  promo:0,     bits:100000, tag:'', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 100,000 點 · 自動配發','約可生 410+ 張廣告圖','未來新功能免費'] },
-  { key:'pro',    name:'專業', price:80000,  promo:0,     bits:160000, tag:'🔥 熱門', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 160,000 點 · 自動配發','約可生 660+ 張廣告圖','⚡ 優先生成','未來新功能免費'] },
-  { key:'ent',    name:'企業', price:150000, promo:0,     bits:300000, tag:'', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 300,000 點 · 自動配發','約可生 1,250+ 張廣告圖','⚡ 優先生成 · 專屬客服','未來新功能免費'] },
-  { key:'flag',   name:'旗艦', price:250000, promo:0,     bits:500000, tag:'頂規', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 500,000 點 · 自動配發','約可生 2,000+ 張廣告圖','👑 最高優先 · 專屬客服 · 客製','未來新功能免費'] },
-];
+// ══ 訂閱方案選單(資料/卡片渲染共用自 plans.js) ══
 let _subCycle = 'month';
+let _subGroup = 'small';
 
 function openSubMenu() {
   const email = localStorage.getItem('bs_sso_email') || '';
   if (!email) { alert('請先登入再查看方案'); return; }
   document.getElementById('subMenuModal').style.display = 'flex';
   _subCycle = 'month';
+  _subGroup = 'small';
   renderSubGrid();
 }
 function closeSubMenu() { document.getElementById('subMenuModal').style.display = 'none'; }
 function setSubCycle(c) { _subCycle = c; renderSubGrid(); }
+function setSubGroup(g) { _subGroup = g; renderSubGrid(); }
 
 function renderSubGrid() {
-  const yr = (_subCycle === 'year');
-  const toggle =
-    '<div style="display:flex;justify-content:center;margin-bottom:22px;">' +
-      '<div style="display:inline-flex;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:999px;padding:3px;">' +
-        '<button onclick="setSubCycle(\'month\')" style="border:none;cursor:pointer;border-radius:999px;padding:7px 22px;font-size:13px;font-weight:800;' + (!yr?'background:linear-gradient(135deg,#ffb347,#ffce6b);color:#13131c;':'background:transparent;color:rgba(255,255,255,0.55);') + '">月繳</button>' +
-        '<button onclick="setSubCycle(\'year\')" style="border:none;cursor:pointer;border-radius:999px;padding:7px 22px;font-size:13px;font-weight:800;' + (yr?'background:linear-gradient(135deg,#ffb347,#ffce6b);color:#13131c;':'background:transparent;color:rgba(255,255,255,0.55);') + '">年繳 <span style="font-size:10px;">省1個月</span></button>' +
-      '</div>' +
+  ensureBrandosPlanStyle();
+  const g = _subGroup, yr = (_subCycle === 'year');
+  const grpToggle =
+    '<div class="bos-seg grp">' +
+      '<button class="' + (g === 'small' ? 'on' : '') + '" onclick="setSubGroup(\'small\')">小品牌</button>' +
+      '<button class="' + (g === 'ent' ? 'on' : '') + '" onclick="setSubGroup(\'ent\')">企業 · 集團</button>' +
     '</div>';
-  let cards = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;">';
-  _SUB_PLANS.forEach(p => {
-    const hot = (p.key === 'pro');
-    const monthPrice = (p.promo > 0) ? p.promo : p.price;
-    const showPrice = yr ? (p.price * 12) : monthPrice;
-    const unit = yr ? '/ 年' : '/ 月';
-    const promoBadge = (!yr && p.promo > 0) ? `<div style="font-size:10px;color:#ff8cae;text-decoration:line-through;">原價 NT$${p.price.toLocaleString()}</div>` : '';
-    const yrNote = yr ? `<div style="font-size:10px;color:#ffce6b;margin-top:2px;">付12個月 · 開通13個月</div>` : '';
-    const tag = p.tag ? `<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;padding:2px 9px;border-radius:999px;background:${hot?'linear-gradient(135deg,#7c6cff,#ff7ac3)':'linear-gradient(135deg,#ffb347,#ffce6b)'};color:#13131c;">${p.tag}</div>` : '';
-    const border = hot ? 'rgba(124,108,255,0.6)' : 'rgba(255,255,255,0.1)';
-    const glow = hot ? 'box-shadow:0 0 18px rgba(124,108,255,0.22);' : '';
-    const featsHtml = (p.feats||[]).map(f => `<div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;color:rgba(255,255,255,0.72);line-height:1.5;text-align:left;margin-top:7px;"><span style="color:#7CFFB2;flex-shrink:0;font-weight:900;">✓</span><span>${f}</span></div>`).join('');
-    cards += `<div onclick="buyPlan('${p.key}')" style="position:relative;cursor:pointer;background:rgba(255,255,255,0.03);border:1.5px solid ${border};border-radius:14px;padding:22px 14px 16px;text-align:center;transition:transform .15s;${glow}" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-      ${tag}
-      <div style="font-size:14px;color:rgba(255,255,255,0.7);font-weight:800;margin-bottom:10px;">${p.name}</div>
-      <div style="font-size:24px;font-weight:900;color:#ffce6b;line-height:1;">${p.bits.toLocaleString()}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin:2px 0 12px;">點 / 月</div>
-      ${promoBadge}
-      <div style="font-size:18px;font-weight:900;color:#fff;">NT$${showPrice.toLocaleString()}<span style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:600;"> ${unit}</span></div>
-      ${yrNote}
-      <div style="height:1px;background:rgba(255,255,255,0.08);margin:14px 0 2px;"></div>
-      ${featsHtml}
-      <div style="margin-top:14px;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ffb347,#ff8c42);border-radius:8px;padding:8px 0;">選這方案</div>
-    </div>`;
-  });
-  cards += '</div>';
-  const note = '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.35);margin-top:18px;line-height:1.7;">所有價格未稅，將另計 5% 營業稅 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留</div>';
-  document.getElementById('subMenuGrid').innerHTML = toggle + cards + note;
+  const cycToggle =
+    '<div class="bos-seg cyc">' +
+      '<button class="' + (!yr ? 'on' : '') + '" onclick="setSubCycle(\'month\')">月繳</button>' +
+      '<button class="' + (yr ? 'on' : '') + '" onclick="setSubCycle(\'year\')">年繳 <span class="save">送1個月</span></button>' +
+    '</div>';
+  const note = '<div class="bos-foot">所有方案功能 100% 全開、沒有閹割;分級只在每月產能與算力檔次。<br>所有價格未稅,另計 5% 營業稅 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留</div>';
+  document.getElementById('subMenuGrid').innerHTML =
+    '<div class="bos-plans">' +
+      renderBrandosPatent() +
+      renderBrandosHeroStat() +
+      renderBrandosTagline() +
+      renderBrandosCore() +
+      '<div class="bos-toggles">' + grpToggle + cycToggle + '</div>' +
+      renderBrandosPlanCards(g, _subCycle, { selFn: 'buyPlan' }) +
+      note +
+    '</div>';
 }
 
 function buyPlan(k) {
   const email = localStorage.getItem('bs_sso_email') || '';
   if (!email) { alert('請先登入再購買'); return; }
-  const p = _SUB_PLANS.find(x => x.key === k); if (!p) return;
+  if (k === 'custom') {
+    document.getElementById('subMenuGrid').innerHTML =
+      '<div style="text-align:center;max-width:430px;margin:0 auto;padding:14px 0;">' +
+        '<div style="font-size:34px;">🤝</div>' +
+        '<div style="font-size:18px;font-weight:900;color:#fff;margin-top:8px;">客製方案 · 一對一報價</div>' +
+        '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin:10px 0 18px;line-height:1.8;">多品牌中控、超量產能、地端混合運算與專屬導入。<br>留下需求,我們依規模為你規劃。</div>' +
+        '<a href="mailto:admin@raby.com.tw?subject=Brand%20OS%20客製方案諮詢" style="display:block;text-decoration:none;width:100%;padding:14px;border-radius:11px;background:linear-gradient(135deg,#7c6cff,#ff7ac3);color:#fff;font-size:14px;font-weight:800;">✉️ admin@raby.com.tw</a>' +
+        '<button onclick="renderSubGrid()" style="width:100%;margin-top:14px;padding:12px;border:none;border-radius:11px;background:transparent;color:rgba(255,255,255,0.45);font-size:14px;cursor:pointer;">← 返回</button>' +
+      '</div>';
+    return;
+  }
+  const p = findBrandosPlan(k); if (!p) return;
   const yr = (_subCycle === 'year');
   const monthPrice = (p.promo > 0) ? p.promo : p.price;
   const amount = yr ? (p.price * 12) : monthPrice;
@@ -978,7 +973,7 @@ function buyPlanEcpay(k) {
 function buyPlanManual(k) {
   const email = localStorage.getItem('bs_sso_email') || '';
   if (!email) { alert('請先登入再購買'); return; }
-  const p = _SUB_PLANS.find(x => x.key === k); if (!p) return;
+  const p = findBrandosPlan(k); if (!p) return;
   const yr = (_subCycle === 'year');
   const monthPrice = (p.promo > 0) ? p.promo : p.price;
   const amount = yr ? (p.price * 12) : monthPrice;
