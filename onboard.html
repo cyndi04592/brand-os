@@ -580,7 +580,8 @@ body{
     <div class="step" id="step3"><div class="step-num">3</div><div class="step-lbl">商品資訊</div></div>
     <div class="step" id="step4"><div class="step-num">4</div><div class="step-lbl">風格設定</div></div>
     <div class="step" id="step45"><div class="step-num">5</div><div class="step-lbl">KOL 數字人</div></div>
-    <div class="step" id="step5"><div class="step-num">6</div><div class="step-lbl">確認送出</div></div>
+    <div class="step" id="step46"><div class="step-num">6</div><div class="step-lbl">選方案</div></div>
+    <div class="step" id="step5"><div class="step-num">7</div><div class="step-lbl">確認送出</div></div>
   </div>
 
   <div class="section active" id="sec1">
@@ -849,6 +850,19 @@ body{
 
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(4)">← 上一步</button>
+      <button class="btn-next" onclick="goStep(46)">下一步 →</button>
+    </div>
+  </div>
+
+  <div class="section" id="sec46">
+    <div class="sec-title">06 · 選擇方案 · 了解收費</div>
+    <div class="info-box" style="margin-bottom:18px;">
+      <div class="info-box-title">💡 這一步只是「告訴我們你想要的方案」</div>
+      <p>先看清楚每個方案的價格與收費模式,選一個最接近你需求的。<br>這裡<b>不會當場收款</b> —— 送出申請後由我們審核、開通,再依你選的方案計費。日後想換方案隨時可調。</p>
+    </div>
+    <div id="planPickRoot"></div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(45)">← 上一步</button>
       <button class="btn-next" onclick="goStep(5)">下一步 →</button>
     </div>
   </div>
@@ -860,7 +874,7 @@ body{
       <div class="info-box-title">⚡ 接下來會發生的事</div>
       <p>1. Claude AI 分析您的品牌資料(透過 Cloudflare 安全處理)<br>2. 自動生成「品牌靈魂書」(定位、文案風格、廣告策略)<br>3. 系統自動建立您的專屬 Google Drive 素材資料夾<br>4. 資料送交管理員審核<br>5. 審核通過後,品牌頁籤 + KOL 數字人將自動建立</p>
     </div>
-    <div class="btn-row"><button class="btn-back" onclick="goStep(45)">← 上一步</button><button class="btn-next" id="btnGenerate" onclick="doGenerate()">⚡ 生成品牌靈魂書</button></div>
+    <div class="btn-row"><button class="btn-back" onclick="goStep(46)">← 上一步</button><button class="btn-next" id="btnGenerate" onclick="doGenerate()">⚡ 生成品牌靈魂書</button></div>
   </div>
 
   <div id="resultSection">
@@ -885,6 +899,7 @@ body{
   <div class="gen-bar-wrap"><div class="gen-bar-fill" id="genBarFill"></div></div>
 </div>
 
+<script src="plans.js"></script>
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const GAS_PASSWORD = 'raby2026';
@@ -892,6 +907,36 @@ const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googl
 const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 const ROOT_FOLDER_ID = '14LlXgAzqds62VZuIBAdEDhoFt15b1t1b';
 let tokenClient=null,userEmail='',currentStep=1,generatedSoul='';
+
+// ── 選方案步(意向,送審後才開通,不在此收款)。卡片重用 plans.js ──
+let desiredPlan='', _pickGroup='small', _pickCycle='month';
+function setPickGroup(x){_pickGroup=x;renderPlanStep();}
+function setPickCycle(x){_pickCycle=x;renderPlanStep();}
+function pickPlan(k){desiredPlan=k;renderPlanStep();}
+function renderPlanStep(){
+  if(typeof ensureBrandosPlanStyle!=='function'){return;}
+  ensureBrandosPlanStyle();
+  const g=_pickGroup, yr=(_pickCycle==='year');
+  const grpToggle='<div class="bos-seg grp">'
+    +'<button class="'+(g==='small'?'on':'')+'" onclick="setPickGroup(\'small\')">小品牌</button>'
+    +'<button class="'+(g==='ent'?'on':'')+'" onclick="setPickGroup(\'ent\')">企業 · 集團</button></div>';
+  const cycToggle='<div class="bos-seg cyc">'
+    +'<button class="'+(!yr?'on':'')+'" onclick="setPickCycle(\'month\')">月繳</button>'
+    +'<button class="'+(yr?'on':'')+'" onclick="setPickCycle(\'year\')">年繳 <span class="save">送1個月</span></button></div>';
+  const cards=renderBrandosPlanCards(g,_pickCycle,{
+    selFn:'pickPlan', selectedKey:desiredPlan,
+    ctaLabel:p=>(desiredPlan===p.key?'✓ 已選這個方案':'選這個方案')
+  });
+  document.getElementById('planPickRoot').innerHTML=
+    '<div class="bos-plans"><div class="bos-toggles">'+grpToggle+cycToggle+'</div>'+cards+'</div>';
+}
+// 從訂閱頁帶 ?plan= 過來時,預選對應方案
+(function(){
+  const m=/[?&]plan=([^&]+)/.exec(location.search);
+  if(!m)return;
+  const k=decodeURIComponent(m[1]); desiredPlan=k;
+  if(typeof BRANDOS_PLANS!=='undefined' && BRANDOS_PLANS.ent && BRANDOS_PLANS.ent.some(p=>p.key===k)) _pickGroup='ent';
+})();
 let selectedColorHex='#E8A03A',selectedColorName='品牌金',extraColors=[];
 
 const COLOR_PRESETS=[
@@ -987,20 +1032,21 @@ function selectKolOption(n){
 function goStep(n){
   if(n>currentStep&&!validateStep(currentStep))return;
 
-  ['sec1','sec2','sec3','sec4','sec45','sec5'].forEach(id=>{
+  ['sec1','sec2','sec3','sec4','sec45','sec46','sec5'].forEach(id=>{
     document.getElementById(id).classList.remove('active');
   });
 
   const target=n===45?'sec45':('sec'+n);
   document.getElementById(target).classList.add('active');
 
-  const stepOrder=[1,2,3,4,45,5];
+  const stepOrder=[1,2,3,4,45,46,5];
   const currentIdx=stepOrder.indexOf(n);
   stepOrder.forEach((stepN,i)=>{
     const el=document.getElementById('step'+stepN);
     el.className='step'+(i<currentIdx?' done':i===currentIdx?' active':'');
   });
 
+  if(n===46)renderPlanStep();
   if(n===5)buildSummary();
   currentStep=n;
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1081,7 +1127,14 @@ function buildSummary(){
     kolDetail=`<br><b style="color:var(--purple)">創辦人:</b>${v('f_ownerName')}<br><b style="color:var(--purple)">品牌故事:</b>${v('f_ownerStory').slice(0,50)}...`;
   }
 
-  document.getElementById('summaryBox').innerHTML=`<b style="color:var(--gold)">品牌名稱:</b>${v('f_name')}<br><b style="color:var(--gold)">聯絡人:</b>${v('f_contact')} ${phoneCode} ${v('f_phone')}<br><b style="color:var(--gold)">官網:</b>${v('f_website')||'未填'}<br><b style="color:var(--gold)">商品類別:</b>${v('f_category')}<br><b style="color:var(--gold)">銷售平台:</b>${platforms}<br><b style="color:var(--gold)">目標客群:</b>${v('f_audience')||'未填'}<br><b style="color:var(--gold)">品牌風格:</b>${v('f_style')||'未選'}<br><b style="color:var(--gold)">品牌主色:</b><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${selectedColorHex};vertical-align:middle;margin:0 4px;"></span>${selectedColorHex}<br><b style="color:var(--purple)">🎭 KOL 數字人:</b>${kolLabel}${kolDetail}`;
+  let planLabel='未選(可日後補)';
+  if(desiredPlan==='custom'){planLabel='客製方案(一對一報價)';}
+  else if(desiredPlan&&typeof findBrandosPlan==='function'){
+    const pp=findBrandosPlan(desiredPlan);
+    if(pp)planLabel=pp.name+' 方案 · '+(_pickCycle==='year'?'年繳':'月繳');
+  }
+
+  document.getElementById('summaryBox').innerHTML=`<b style="color:var(--gold)">品牌名稱:</b>${v('f_name')}<br><b style="color:var(--gold)">聯絡人:</b>${v('f_contact')} ${phoneCode} ${v('f_phone')}<br><b style="color:var(--gold)">官網:</b>${v('f_website')||'未填'}<br><b style="color:var(--gold)">商品類別:</b>${v('f_category')}<br><b style="color:var(--gold)">銷售平台:</b>${platforms}<br><b style="color:var(--gold)">目標客群:</b>${v('f_audience')||'未填'}<br><b style="color:var(--gold)">品牌風格:</b>${v('f_style')||'未選'}<br><b style="color:var(--gold)">品牌主色:</b><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${selectedColorHex};vertical-align:middle;margin:0 4px;"></span>${selectedColorHex}<br><b style="color:var(--purple)">🎭 KOL 數字人:</b>${kolLabel}${kolDetail}<br><b style="color:var(--gold)">💎 想要的方案:</b>${planLabel}`;
 }
 
 function v(id){return document.getElementById(id)?.value?.trim()||'';}
@@ -1123,6 +1176,7 @@ async function doSubmit(){
     category:v('f_category'),products:v('f_products'),platforms:getPlatforms(),price:v('f_price'),audience:v('f_audience'),
     style:v('f_style'),ref:v('f_ref'),color:v('f_color'),colorHex:selectedColorHex,
     rootFolderId:ROOT_FOLDER_ID,soulBook:generatedSoul,status:'pending',
+    desiredPlan:desiredPlan,
     kolType:kolType,
     kolUrl1:kolType==='independent'?v('f_kolUrl1'):'',
     kolUrl2:kolType==='independent'?v('f_kolUrl2'):'',
