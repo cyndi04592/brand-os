@@ -855,7 +855,7 @@ body{
   </div>
 
   <div class="section" id="sec46">
-    <div class="sec-title">06 · 選擇方案 · 了解收費</div>
+    <div class="sec-title">05 · 選擇方案 · 了解收費</div>
     <div class="info-box" style="margin-bottom:18px;">
       <div class="info-box-title">💡 這一步只是「告訴我們你想要的方案」</div>
       <p>先看清楚每個方案的價格與收費模式,選一個最接近你需求的。<br>這裡<b>不會當場收款</b> —— 送出申請後由我們審核、開通,再依你選的方案計費。日後想換方案隨時可調。</p>
@@ -928,7 +928,13 @@ function renderPlanStep(){
     ctaLabel:p=>(desiredPlan===p.key?'✓ 已選這個方案':'選這個方案')
   });
   document.getElementById('planPickRoot').innerHTML=
-    '<div class="bos-plans"><div class="bos-toggles">'+grpToggle+cycToggle+'</div>'+cards+'</div>';
+    '<div class="bos-plans">'
+    + renderBrandosHeroStat()
+    + renderBrandosTagline()
+    + renderBrandosCore()
+    + '<div class="bos-toggles">'+grpToggle+cycToggle+'</div>'
+    + cards
+    + '</div>';
 }
 // 從訂閱頁帶 ?plan= 過來時,預選對應方案
 (function(){
