@@ -44,6 +44,7 @@
 <script>
   // ══ 整頁訂閱控制器(渲染重用 plans.js,購買流程自帶,不動 index 彈窗)══
   let _grp = 'small', _cyc = 'month';
+  let _pendingPlan = '';
 
   function renderPage() {
     ensureBrandosPlanStyle();
@@ -65,13 +66,20 @@
       + '<span style="color:rgba(255,255,255,.25);margin:0 8px;">·</span>'
       + '第一次來? <a href="onboard.html" style="color:#ffce6b;font-weight:700;text-decoration:none;">點這裡申請開通帳號 →</a>'
       + '</div>';
+    const payBanner = _pendingPlan
+      ? '<div style="background:linear-gradient(135deg,rgba(124,108,255,.18),rgba(255,122,195,.18));border:1px solid rgba(124,108,255,.45);border-radius:14px;padding:16px 20px;margin-bottom:20px;text-align:center;">'
+        + '<div style="font-size:15px;font-weight:900;color:#fff;">✅ 您的品牌已通過審核!</div>'
+        + '<div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:5px;">下方已幫您選好當初申請的方案,完成付款即可開通系統。</div>'
+        + '</div>'
+      : '';
     document.getElementById('planRoot').innerHTML =
       '<div class="bos-plans">' +
+        payBanner +
         renderBrandosHeroStat() +
         renderBrandosTagline() +
         renderBrandosCore() +
         '<div class="bos-toggles">' + grpToggle + cycToggle + '</div>' +
-        renderBrandosPlanCards(g, _cyc, { selFn: 'buyPlan' }) +
+        renderBrandosPlanCards(g, _cyc, { selFn: 'buyPlan', selectedKey: _pendingPlan, ctaLabel: p => (_pendingPlan === p.key ? '💳 立即付款開通' : '選這個方案') }) +
         accountLinks +
         note +
         legalEN +
@@ -216,6 +224,8 @@
   (function () {
     const m = /[?&]paid=([^&]+)/.exec(location.search);
     if (m) {
+      const email = localStorage.getItem('bs_sso_email') || '';
+      if (email) { fetch(`${GAS_URL}?action=clearPendingPayment&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`).catch(() => {}); }
       setTimeout(function () {
         alert('✅ 付款完成!方案點數會在幾秒內自動配發。\n\n訂單編號:' + decodeURIComponent(m[1]));
       }, 300);
@@ -223,7 +233,21 @@
     }
   })();
 
-  renderPage();
+  // ── 待付款:有就預選方案 + 橫幅 ──
+  (function initPending() {
+    const email = localStorage.getItem('bs_sso_email') || '';
+    if (!email) { renderPage(); return; }
+    fetch(`${GAS_URL}?action=getPendingPayment&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`)
+      .then(r => r.json())
+      .then(j => {
+        if (j && j.ok && j.pending && j.desiredPlan) {
+          _pendingPlan = j.desiredPlan;
+          _grp = ['ent', 'flag', 'custom'].includes(_pendingPlan) ? 'ent' : 'small';
+        }
+        renderPage();
+      })
+      .catch(() => renderPage());
+  })();
 </script>
 </body>
 </html>
