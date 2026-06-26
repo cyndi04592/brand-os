@@ -185,8 +185,31 @@
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">戶名</span><b>${b.accountName || ''}</b></div>
         </div>
         <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:12px;line-height:1.7;">※ 匯款時請於備註填「訂單編號」方便對帳。對帳開通後,方案點數會立即配發。</div>
+        <div style="margin-top:14px;background:rgba(124,108,255,0.08);border:1px solid rgba(124,108,255,0.3);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:12.5px;font-weight:800;color:#fff;margin-bottom:8px;">🏦 匯款完成後,回報您的帳號後五碼</div>
+          <div style="display:flex;gap:8px;">
+            <input id="last5Input" maxlength="5" inputmode="numeric" placeholder="帳號後 5 碼" style="flex:1;padding:10px 12px;border-radius:9px;border:1px solid rgba(255,255,255,0.18);background:rgba(0,0,0,0.3);color:#fff;font-family:monospace;font-size:14px;letter-spacing:2px;">
+            <button onclick="reportLast5('${o.orderId}')" style="padding:10px 18px;border:none;border-radius:9px;background:linear-gradient(135deg,#7c6cff,#ff7ac3);color:#fff;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap;">回報</button>
+          </div>
+          <div id="last5Msg" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:7px;line-height:1.6;">填了我們對帳更快、點數開通更即時。</div>
+        </div>
         <button onclick="renderPage()" style="width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#ffb347,#ff8c42);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">完成 · 回方案</button>
       </div>`;
+  }
+
+  function reportLast5(orderId) {
+    const el = document.getElementById('last5Input');
+    const msg = document.getElementById('last5Msg');
+    const v = (el.value || '').replace(/\D/g, '').slice(-5);
+    if (v.length < 5) { msg.textContent = '請輸入正確的後 5 碼(5 位數字)'; msg.style.color = '#ff9d9d'; return; }
+    msg.textContent = '回報中…'; msg.style.color = 'rgba(255,255,255,0.5)';
+    fetch(`${GAS_URL}?action=reportTransferLast5&password=${GAS_PASSWORD}&orderId=${encodeURIComponent(orderId)}&last5=${v}`)
+      .then(r => r.json())
+      .then(j => {
+        if (j.ok) { msg.textContent = '✅ 已收到後五碼,我們會盡快對帳開通'; msg.style.color = '#8effc0'; el.disabled = true; }
+        else { msg.textContent = '回報失敗:' + (j.error || ''); msg.style.color = '#ff9d9d'; }
+      })
+      .catch(() => { msg.textContent = '連線錯誤,請重試'; msg.style.color = '#ff9d9d'; });
   }
 
   // ── ECPay 導回提示(對齊 index)──
