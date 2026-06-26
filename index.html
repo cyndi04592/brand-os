@@ -864,11 +864,11 @@ function showOrderInfo(o) {
 
 // ══ 訂閱方案選單 ══
 const _SUB_PLANS = [
-  { key:'entry',  name:'入門', price:35000,  promo:30000, bits:70000,  tag:'' },
-  { key:'growth', name:'成長', price:50000,  promo:0,     bits:100000, tag:'' },
-  { key:'pro',    name:'專業', price:80000,  promo:0,     bits:160000, tag:'🔥 熱門' },
-  { key:'ent',    name:'企業', price:150000, promo:0,     bits:300000, tag:'' },
-  { key:'flag',   name:'旗艦', price:250000, promo:0,     bits:500000, tag:'頂規' },
+  { key:'entry',  name:'入門', price:35000,  promo:30000, bits:70000,  tag:'', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 70,000 點 · 自動配發','約可生 290+ 張廣告圖','未來新功能免費'] },
+  { key:'growth', name:'成長', price:50000,  promo:0,     bits:100000, tag:'', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 100,000 點 · 自動配發','約可生 410+ 張廣告圖','未來新功能免費'] },
+  { key:'pro',    name:'專業', price:80000,  promo:0,     bits:160000, tag:'🔥 熱門', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 160,000 點 · 自動配發','約可生 660+ 張廣告圖','⚡ 優先生成','未來新功能免費'] },
+  { key:'ent',    name:'企業', price:150000, promo:0,     bits:300000, tag:'', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 300,000 點 · 自動配發','約可生 1,250+ 張廣告圖','⚡ 優先生成 · 專屬客服','未來新功能免費'] },
+  { key:'flag',   name:'旗艦', price:250000, promo:0,     bits:500000, tag:'頂規', feats:['完整功能全開','AI 廣告圖 / 換場景 / 試穿 / 影片 / KOL','每月 500,000 點 · 自動配發','約可生 2,000+ 張廣告圖','👑 最高優先 · 專屬客服 · 客製','未來新功能免費'] },
 ];
 let _subCycle = 'month';
 
@@ -902,6 +902,7 @@ function renderSubGrid() {
     const tag = p.tag ? `<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;padding:2px 9px;border-radius:999px;background:${hot?'linear-gradient(135deg,#7c6cff,#ff7ac3)':'linear-gradient(135deg,#ffb347,#ffce6b)'};color:#13131c;">${p.tag}</div>` : '';
     const border = hot ? 'rgba(124,108,255,0.6)' : 'rgba(255,255,255,0.1)';
     const glow = hot ? 'box-shadow:0 0 18px rgba(124,108,255,0.22);' : '';
+    const featsHtml = (p.feats||[]).map(f => `<div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;color:rgba(255,255,255,0.72);line-height:1.5;text-align:left;margin-top:7px;"><span style="color:#7CFFB2;flex-shrink:0;font-weight:900;">✓</span><span>${f}</span></div>`).join('');
     cards += `<div onclick="buyPlan('${p.key}')" style="position:relative;cursor:pointer;background:rgba(255,255,255,0.03);border:1.5px solid ${border};border-radius:14px;padding:22px 14px 16px;text-align:center;transition:transform .15s;${glow}" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       ${tag}
       <div style="font-size:14px;color:rgba(255,255,255,0.7);font-weight:800;margin-bottom:10px;">${p.name}</div>
@@ -910,6 +911,8 @@ function renderSubGrid() {
       ${promoBadge}
       <div style="font-size:18px;font-weight:900;color:#fff;">NT$${showPrice.toLocaleString()}<span style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:600;"> ${unit}</span></div>
       ${yrNote}
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin:14px 0 2px;"></div>
+      ${featsHtml}
       <div style="margin-top:14px;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ffb347,#ff8c42);border-radius:8px;padding:8px 0;">選這方案</div>
     </div>`;
   });
