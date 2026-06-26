@@ -18,7 +18,7 @@
     return;
   }
   if (/MicroMessenger/i.test(ua) || /Telegram/i.test(ua)) {
-    var isWechat = /MicroMessenger/i.test(ua);Q
+    var isWechat = /MicroMessenger/i.test(ua);
     document.addEventListener('DOMContentLoaded', function() {
       document.body.innerHTML = '<div style="position:fixed;inset:0;background:#0A0A0F;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;font-family:sans-serif;z-index:99999;">' +
         '<div style="font-size:64px;margin-bottom:24px;">' + (isWechat ? '💬' : '✈️') + '</div>' +
@@ -644,12 +644,28 @@
 <script src="plans.js"></script>
 <script>
 // ══ STEP 狀態燈:依當前在做哪一步,把 active 框框搬到對應卡 ══
-function setVisionStage(n) {
+let _visionStage = 1;
+function paintVision(n) {
   for (let i = 1; i <= 3; i++) {
     const el = document.getElementById('vcol' + i);
     if (el) el.classList.toggle('active', i === n);
   }
 }
+function setVisionStage(n) { _visionStage = n; paintVision(n); }
+
+// 點到哪一區,STEP 燈就亮哪個:中間腳本=STEP01、右側素材/廣告圖=STEP02、Monitor=STEP03(投放/監控)
+(function bindVisionZones() {
+  const mid = document.querySelector('.workspace .mid');
+  const right = document.querySelector('.workspace .right');
+  const mon = document.querySelector('.nav-btn-monitor');
+  if (mid) mid.addEventListener('click', function () { setVisionStage(1); });
+  if (right) right.addEventListener('click', function () { setVisionStage(2); });
+  if (mon) {
+    mon.addEventListener('mouseenter', function () { paintVision(3); });
+    mon.addEventListener('mouseleave', function () { paintVision(_visionStage); });
+    mon.addEventListener('click', function () { setVisionStage(3); }); // 進入廣告監控(導去 monitor.html)
+  }
+})();
 
 function openAdMakerDirect() {
   if (!window.S) { alert('請先選擇品牌和商品'); return; }
