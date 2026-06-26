@@ -124,18 +124,18 @@ function ensureBrandosPlanStyle() {
 .bos-custom .big{font-size:19px;font-weight:900;margin:8px 0;color:#fff;}
 .bos-custom p{font-size:12px;color:var(--bp-t2);line-height:1.7;margin-bottom:16px;}
 .bos-foot{text-align:center;color:var(--bp-t3);font-size:11px;margin-top:20px;line-height:1.85;}
-/* 專利認證鋼印 */
-.bos-patent{display:flex;justify-content:center;margin:0 auto 20px;}
-.bos-seal{display:inline-flex;align-items:center;gap:11px;padding:9px 18px 9px 14px;border-radius:999px;
-  background:linear-gradient(135deg,rgba(255,206,107,.14),rgba(255,157,77,.06));
-  border:1px solid rgba(255,206,107,.45);box-shadow:0 0 0 1px rgba(255,206,107,.12) inset,0 6px 20px -10px rgba(255,157,77,.5);}
-.bos-seal .sh{flex-shrink:0;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,var(--bp-gold),var(--bp-amber));color:#13131c;}
-.bos-seal .sh svg{width:15px;height:15px;}
-.bos-seal .tx{display:flex;flex-direction:column;line-height:1.15;text-align:left;}
-.bos-seal .t1{font-size:12.5px;font-weight:900;color:var(--bp-gold);letter-spacing:1px;}
-.bos-seal .t2{font-size:10px;font-weight:700;color:var(--bp-t2);letter-spacing:.6px;margin-top:2px;}
-.bos-seal .t2 b{color:#ffe6ab;font-weight:900;}
+/* 專利認證鋼印(金色官章) */
+.bos-patent{display:flex;justify-content:center;margin:0 auto 22px;}
+.bos-seal{display:inline-flex;align-items:center;gap:15px;padding:13px 24px 13px 16px;border-radius:15px;
+  background:linear-gradient(135deg,rgba(255,206,107,.13),rgba(255,157,77,.045));
+  border:1px solid rgba(255,206,107,.5);
+  box-shadow:0 0 0 1px rgba(255,206,107,.1) inset,0 1px 0 rgba(255,255,255,.07) inset,0 12px 34px -16px rgba(255,157,77,.6);}
+.bos-seal .emblem{width:52px;height:52px;flex-shrink:0;filter:drop-shadow(0 2px 5px rgba(0,0,0,.45));}
+.bos-seal .tx{display:flex;flex-direction:column;line-height:1.18;text-align:left;}
+.bos-seal .t1{font-size:14.5px;font-weight:900;letter-spacing:2.5px;
+  background:linear-gradient(135deg,#fff0c9,#ffce6b,#ff9d4d);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.bos-seal .t2{font-size:10.5px;font-weight:700;color:rgba(255,255,255,.58);letter-spacing:1.2px;margin-top:4px;}
+.bos-seal .t2 b{color:#ffd98a;font-weight:900;letter-spacing:1.8px;}
 /* 零門檻金句 */
 .bos-tagline{text-align:center;font-size:13px;font-weight:700;color:#e8e3ff;margin:-4px auto 22px;letter-spacing:.3px;line-height:1.6;}
 .bos-tagline b{color:var(--bp-gold);font-weight:900;}
@@ -194,8 +194,38 @@ function bosShowTerm(el) {
 }
 
 function renderBrandosPatent() {
+  const svg =
+    '<svg class="emblem" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">'
+    + '<defs><linearGradient id="bosGold" x1="0" y1="0" x2="1" y2="1">'
+    +   '<stop offset="0" stop-color="#fff0c9"/><stop offset=".5" stop-color="#ffce6b"/><stop offset="1" stop-color="#ff9d4d"/>'
+    + '</linearGradient></defs>'
+    + '<g fill="none" stroke="url(#bosGold)" stroke-linecap="round">'
+    // 月桂左
+    +   '<g transform="translate(15,49)"><path d="M0 0 C-6 -8 -6 -20 1 -28" stroke-width="1.6"/>'
+    +     '<g fill="url(#bosGold)" stroke="none">'
+    +       '<path d="M-1 -4 c-4 -1 -6 -3 -6 -6 c3 0 5 2 6 6z"/>'
+    +       '<path d="M-2 -12 c-4 -1 -6 -3 -6 -6 c3 0 5 2 6 6z"/>'
+    +       '<path d="M-1 -20 c-4 -1 -5 -3 -5 -6 c3 0 4 2 5 6z"/>'
+    +     '</g></g>'
+    // 月桂右(鏡像)
+    +   '<g transform="translate(49,49) scale(-1,1)"><path d="M0 0 C-6 -8 -6 -20 1 -28" stroke-width="1.6"/>'
+    +     '<g fill="url(#bosGold)" stroke="none">'
+    +       '<path d="M-1 -4 c-4 -1 -6 -3 -6 -6 c3 0 5 2 6 6z"/>'
+    +       '<path d="M-2 -12 c-4 -1 -6 -3 -6 -6 c3 0 5 2 6 6z"/>'
+    +       '<path d="M-1 -20 c-4 -1 -5 -3 -5 -6 c3 0 4 2 5 6z"/>'
+    +     '</g></g>'
+    // 外環 + 地球
+    +   '<circle cx="32" cy="31" r="15" stroke-width="2.2"/>'
+    +   '<circle cx="32" cy="31" r="10.5" stroke-width="1.2"/>'
+    +   '<ellipse cx="32" cy="31" rx="4.4" ry="10.5" stroke-width="1.1"/>'
+    +   '<line x1="21.5" y1="31" x2="42.5" y2="31" stroke-width="1.1"/>'
+    +   '<path d="M24 24.5 H40 M24 37.5 H40" stroke-width=".9" stroke-opacity=".65"/>'
+    + '</g>'
+    // 頂部星
+    + '<path d="M32 6 l1.7 3.5 3.8.5 -2.8 2.6 .7 3.8 -3.4 -1.9 -3.4 1.9 .7 -3.8 -2.8 -2.6 3.8 -.5z" fill="url(#bosGold)"/>'
+    + '</svg>';
   return '<div class="bos-patent"><div class="bos-seal">'
-    + '<div class="sh"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.4 8.5-8 11-4.6-2.5-8-6-8-11V5l8-3zm-1.2 12.6l5-5-1.4-1.4-3.6 3.6-1.6-1.6L7.8 11.6l3 3z"/></svg></div>'
+    + svg
     + '<div class="tx"><span class="t1">多國專利技術</span>'
     + '<span class="t2">WIPO · 台灣 · 中國 · <b>PATENT PENDING</b></span></div>'
     + '</div></div>';
