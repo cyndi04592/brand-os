@@ -790,12 +790,12 @@ body{
         </div>
       </div>
 
-      <!-- 選項 2:品牌主理人 -->
-      <div class="kol-option" id="kolOpt2" onclick="selectKolOption(2)">
+      <!-- 選項 2:品牌主理人(尚未開放,暫鎖) -->
+      <div class="kol-option" id="kolOpt2" style="opacity:0.45;cursor:not-allowed;pointer-events:none;">
         <div class="kol-option-head">
           <div class="kol-option-radio"></div>
           <div class="kol-option-content">
-            <div class="kol-option-title">👑 品牌主理人 / 創辦人專屬數字人</div>
+            <div class="kol-option-title">👑 品牌主理人 / 創辦人專屬數字人 <span style="font-size:10px;font-weight:800;color:#ff9d4d;border:1px solid rgba(255,157,77,.5);border-radius:6px;padding:2px 7px;margin-left:6px;vertical-align:middle;letter-spacing:.5px;">尚未開放</span></div>
             <div class="kol-option-desc">
               適合不敢露鏡、沒時間拍的品牌主。<br>
               用你的臉 + 聲音生成數字人,由品牌主本人親自為品牌發聲,信任感最高。
@@ -860,7 +860,7 @@ body{
       <div class="info-box-title">💡 這一步只是「告訴我們你想要的方案」</div>
       <p>先看清楚每個方案的價格與收費模式,選一個最接近你需求的。<br>這裡<b>不會當場收款</b> —— 送出申請後由我們審核、開通,再依你選的方案計費。日後想換方案隨時可調。</p>
     </div>
-    <div id="planPickRoot"></div>
+    <div id="planPickRoot" style="width:min(1040px,94vw);margin-left:50%;transform:translateX(-50%);"></div>
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(45)">← 上一步</button>
       <button class="btn-next" onclick="goStep(5)">下一步 →</button>
@@ -1029,6 +1029,7 @@ function selectRadio(btn,group){
 }
 
 function selectKolOption(n){
+  if(n===2){ return; } // 品牌主理人(老闆臉)暫未開放
   document.querySelectorAll('.kol-option').forEach(el=>el.classList.remove('on'));
   document.getElementById('kolOpt'+n).classList.add('on');
   const typeMap={1:'independent',2:'brand_owner',3:'none'};
