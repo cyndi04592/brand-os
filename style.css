@@ -2225,7 +2225,7 @@ details[open] > summary::before { transform: rotate(90deg); }
 }
 .vision-col {
   cursor: pointer;
-  transition: all 0.25s;
+  transition: background 0.1s ease, box-shadow 0.1s ease;
 }
 .vision-col:hover {
   background: rgba(124,109,250,0.04);
