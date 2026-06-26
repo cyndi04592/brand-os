@@ -1053,10 +1053,16 @@ function showSubOrderInfo(o) {
       .catch(function () {});
   }
   window.checkPendingPay = checkPendingPay;
+  function syncUserEmail() {
+    var email = localStorage.getItem('bs_sso_email') || '';
+    var el = document.getElementById('userEmailNav');
+    if (el && email) el.textContent = email;
+  }
   document.addEventListener('DOMContentLoaded', function () {
+    syncUserEmail();
     checkPendingPay();
-    setTimeout(checkPendingPay, 1800);
-    setTimeout(checkPendingPay, 4000);
+    setTimeout(function () { syncUserEmail(); checkPendingPay(); }, 1800);
+    setTimeout(function () { syncUserEmail(); checkPendingPay(); }, 4000);
   });
 })();
 </script>
