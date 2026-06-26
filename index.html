@@ -107,6 +107,7 @@
 
     <!-- 帳號 + Drive 一整行貼最右 -->
     <div class="nav-account-row">
+      <button id="subMenuBtn" onclick="openSubMenu()" title="訂閱方案" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(255,206,107,0.18),rgba(255,140,66,0.16));border:1px solid rgba(255,190,90,0.5);cursor:pointer;margin-right:6px;font-size:12px;font-weight:900;color:#ffd98a;letter-spacing:0.3px;transition:transform .15s,box-shadow .2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 0 12px rgba(255,190,90,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow=''"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4v11H3V7z"/></svg>訂閱方案</button>
       <button id="bitsShopBtn" onclick="openBitsShop()" title="Bits 補給包商城" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,rgba(124,108,255,0.2),rgba(255,122,195,0.16));border:1px solid rgba(167,139,255,0.5);cursor:pointer;margin-right:3px;transition:transform .15s,box-shadow .2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 0 12px rgba(167,139,255,0.55)'" onmouseout="this.style.transform='';this.style.boxShadow=''"><svg width="18" height="18" viewBox="-20 -20 40 40"><defs><linearGradient id="bsGem" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a78bff"/><stop offset="0.5" stop-color="#7c6cff"/><stop offset="1" stop-color="#ff7ac3"/></linearGradient></defs><path d="M -16 -6 L -8 -16 L 8 -16 L 16 -6 L 0 16 Z" fill="url(#bsGem)"/><path d="M -16 -6 L 16 -6 L 0 16 Z" fill="#6a5cff" opacity="0.55"/><path d="M -8 -16 L 0 -6 L 8 -16 Z" fill="#ffffff" opacity="0.35"/><path d="M -16 -6 L -8 -16 L 0 -6 Z" fill="#c9b8ff" opacity="0.5"/><line x1="-16" y1="-6" x2="0" y2="16" stroke="#fff" stroke-opacity="0.25" stroke-width="0.8"/><line x1="16" y1="-6" x2="0" y2="16" stroke="#fff" stroke-opacity="0.25" stroke-width="0.8"/><line x1="0" y1="-6" x2="0" y2="16" stroke="#fff" stroke-opacity="0.18" stroke-width="0.6"/></svg></button>
       <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;">⚡<span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
       <span class="nav-email-chip">
@@ -614,6 +615,25 @@
   </div>
 </div>
 
+<!-- ══ 訂閱方案選單彈窗 ══ -->
+<div id="subMenuModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(5,5,12,0.78);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeSubMenu()">
+  <div style="width:100%;max-width:960px;max-height:88vh;overflow-y:auto;background:#13131c;border:1px solid rgba(255,190,90,0.25);border-radius:18px;box-shadow:0 30px 90px rgba(0,0,0,0.7);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;background:#13131c;border-radius:18px 18px 0 0;z-index:2;">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <span style="color:#ffce6b;font-size:18px;">⭐</span>
+        <div>
+          <div style="font-size:16px;font-weight:900;color:#fff;letter-spacing:0.5px;">訂閱方案</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px;">選方案直接開通，每月自動配發點數</div>
+        </div>
+      </div>
+      <button onclick="closeSubMenu()" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.6);font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <div id="subMenuBody" style="padding:24px;">
+      <div id="subMenuGrid"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ JS 載入順序很重要 ══ -->
 <script src="config.js"></script>
 <script src="auth.js"></script>
@@ -839,6 +859,155 @@ function showOrderInfo(o) {
         <div id="last5Msg" style="font-size:12px;margin-top:8px;"></div>
       </div>
       <button onclick="closeBitsShop()" style="width:100%;margin-top:16px;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c6cff,#ff7ac3);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">完成</button>
+    </div>`;
+}
+
+// ══ 訂閱方案選單 ══
+const _SUB_PLANS = [
+  { key:'entry',  name:'入門', price:35000,  promo:30000, bits:70000,  tag:'' },
+  { key:'growth', name:'成長', price:50000,  promo:0,     bits:100000, tag:'' },
+  { key:'pro',    name:'專業', price:80000,  promo:0,     bits:160000, tag:'🔥 熱門' },
+  { key:'ent',    name:'企業', price:150000, promo:0,     bits:300000, tag:'' },
+  { key:'flag',   name:'旗艦', price:250000, promo:0,     bits:500000, tag:'頂規' },
+];
+let _subCycle = 'month';
+
+function openSubMenu() {
+  const email = localStorage.getItem('bs_sso_email') || '';
+  if (!email) { alert('請先登入再查看方案'); return; }
+  document.getElementById('subMenuModal').style.display = 'flex';
+  _subCycle = 'month';
+  renderSubGrid();
+}
+function closeSubMenu() { document.getElementById('subMenuModal').style.display = 'none'; }
+function setSubCycle(c) { _subCycle = c; renderSubGrid(); }
+
+function renderSubGrid() {
+  const yr = (_subCycle === 'year');
+  const toggle =
+    '<div style="display:flex;justify-content:center;margin-bottom:22px;">' +
+      '<div style="display:inline-flex;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:999px;padding:3px;">' +
+        '<button onclick="setSubCycle(\'month\')" style="border:none;cursor:pointer;border-radius:999px;padding:7px 22px;font-size:13px;font-weight:800;' + (!yr?'background:linear-gradient(135deg,#ffb347,#ffce6b);color:#13131c;':'background:transparent;color:rgba(255,255,255,0.55);') + '">月繳</button>' +
+        '<button onclick="setSubCycle(\'year\')" style="border:none;cursor:pointer;border-radius:999px;padding:7px 22px;font-size:13px;font-weight:800;' + (yr?'background:linear-gradient(135deg,#ffb347,#ffce6b);color:#13131c;':'background:transparent;color:rgba(255,255,255,0.55);') + '">年繳 <span style="font-size:10px;">省1個月</span></button>' +
+      '</div>' +
+    '</div>';
+  let cards = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;">';
+  _SUB_PLANS.forEach(p => {
+    const hot = (p.key === 'pro');
+    const monthPrice = (p.promo > 0) ? p.promo : p.price;
+    const showPrice = yr ? (p.price * 12) : monthPrice;
+    const unit = yr ? '/ 年' : '/ 月';
+    const promoBadge = (!yr && p.promo > 0) ? `<div style="font-size:10px;color:#ff8cae;text-decoration:line-through;">原價 NT$${p.price.toLocaleString()}</div>` : '';
+    const yrNote = yr ? `<div style="font-size:10px;color:#ffce6b;margin-top:2px;">付12個月 · 開通13個月</div>` : '';
+    const tag = p.tag ? `<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;padding:2px 9px;border-radius:999px;background:${hot?'linear-gradient(135deg,#7c6cff,#ff7ac3)':'linear-gradient(135deg,#ffb347,#ffce6b)'};color:#13131c;">${p.tag}</div>` : '';
+    const border = hot ? 'rgba(124,108,255,0.6)' : 'rgba(255,255,255,0.1)';
+    const glow = hot ? 'box-shadow:0 0 18px rgba(124,108,255,0.22);' : '';
+    cards += `<div onclick="buyPlan('${p.key}')" style="position:relative;cursor:pointer;background:rgba(255,255,255,0.03);border:1.5px solid ${border};border-radius:14px;padding:22px 14px 16px;text-align:center;transition:transform .15s;${glow}" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+      ${tag}
+      <div style="font-size:14px;color:rgba(255,255,255,0.7);font-weight:800;margin-bottom:10px;">${p.name}</div>
+      <div style="font-size:24px;font-weight:900;color:#ffce6b;line-height:1;">${p.bits.toLocaleString()}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin:2px 0 12px;">點 / 月</div>
+      ${promoBadge}
+      <div style="font-size:18px;font-weight:900;color:#fff;">NT$${showPrice.toLocaleString()}<span style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:600;"> ${unit}</span></div>
+      ${yrNote}
+      <div style="margin-top:14px;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ffb347,#ff8c42);border-radius:8px;padding:8px 0;">選這方案</div>
+    </div>`;
+  });
+  cards += '</div>';
+  const note = '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.35);margin-top:18px;line-height:1.7;">所有價格未稅，將另計 5% 營業稅 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留</div>';
+  document.getElementById('subMenuGrid').innerHTML = toggle + cards + note;
+}
+
+function buyPlan(k) {
+  const email = localStorage.getItem('bs_sso_email') || '';
+  if (!email) { alert('請先登入再購買'); return; }
+  const p = _SUB_PLANS.find(x => x.key === k); if (!p) return;
+  const yr = (_subCycle === 'year');
+  const monthPrice = (p.promo > 0) ? p.promo : p.price;
+  const amount = yr ? (p.price * 12) : monthPrice;
+  const cycleText = yr ? '年繳（開通13個月）' : '月繳';
+  const bs = 'width:100%;margin-top:10px;padding:14px;border:none;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;color:#fff;';
+  document.getElementById('subMenuGrid').innerHTML =
+    '<div style="text-align:center;max-width:430px;margin:0 auto;">' +
+      '<div style="font-size:18px;font-weight:900;color:#fff;">' + p.name + ' 方案 · ' + cycleText + '</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin:6px 0 4px;">每月 ' + p.bits.toLocaleString() + ' 點 ／ NT$' + amount.toLocaleString() + (yr?'（年）':'（月）') + '</div>' +
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:18px;">未稅，另計 5% 營業稅</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
+      '<button onclick="buyPlanEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">💳 線上刷卡 / ATM（即時開通）</button>' +
+      '<button onclick="buyPlanManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">🏦 銀行轉帳（人工開通）</button>' +
+      '<button onclick="renderSubGrid()" style="' + bs + 'background:transparent;color:rgba(255,255,255,0.45);font-weight:500;margin-top:14px;">← 返回</button>' +
+    '</div>';
+}
+
+function buyPlanEcpay(k) {
+  const email = localStorage.getItem('bs_sso_email') || '';
+  if (!email) { alert('請先登入再購買'); return; }
+  const grid = document.getElementById('subMenuGrid');
+  if (grid) grid.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
+  fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_subCycle}&method=ecpay`)
+    .then(r => r.json())
+    .then(j => {
+      if (!j.ok) { alert('下單失敗:' + (j.error || '')); renderSubGrid(); return; }
+      return fetch(CF_WORKER_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'ecpay_create', password: GAS_PASSWORD,
+          orderId: j.orderId, amount: j.amount,
+          itemName: `${j.planName}方案 ${j.cycle==='year'?'年繳':'月繳'}`,
+          tradeDesc: 'Brand OS 訂閱方案',
+          clientBackURL: location.origin + location.pathname + '?paid=' + encodeURIComponent(j.orderId)
+        })
+      }).then(r => r.json()).then(e => {
+        if (!e.ok) { alert('建立付款失敗:' + (e.error || '')); renderSubGrid(); return; }
+        const form = document.createElement('form');
+        form.method = 'POST'; form.action = e.endpoint;
+        for (const key in e.fields) {
+          const inp = document.createElement('input');
+          inp.type = 'hidden'; inp.name = key; inp.value = e.fields[key];
+          form.appendChild(inp);
+        }
+        document.body.appendChild(form); form.submit();
+      });
+    })
+    .catch(() => { alert('連線錯誤,請重試'); renderSubGrid(); });
+}
+
+function buyPlanManual(k) {
+  const email = localStorage.getItem('bs_sso_email') || '';
+  if (!email) { alert('請先登入再購買'); return; }
+  const p = _SUB_PLANS.find(x => x.key === k); if (!p) return;
+  const yr = (_subCycle === 'year');
+  const monthPrice = (p.promo > 0) ? p.promo : p.price;
+  const amount = yr ? (p.price * 12) : monthPrice;
+  if (!confirm(`確認訂閱「${p.name} 方案 · ${yr?'年繳':'月繳'}」?\n\n每月 ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${yr?'（年）':'（月）'}（未稅）\n\n下單後依匯款資訊轉帳，我們對帳後為你開通。`)) return;
+  fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_subCycle}`)
+    .then(r => r.json())
+    .then(j => { if (!j.ok) { alert('下單失敗:' + (j.error || '')); return; } showSubOrderInfo(j); })
+    .catch(() => alert('連線錯誤,請重試'));
+}
+
+function showSubOrderInfo(o) {
+  const b = o.bank || {};
+  const cycleText = (o.cycle === 'year') ? '年繳（開通13個月）' : '月繳';
+  document.getElementById('subMenuGrid').innerHTML = `
+    <div style="max-width:460px;margin:0 auto;">
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-size:34px;">✅</div>
+        <div style="font-size:16px;font-weight:900;color:#fff;margin-top:6px;">訂閱單已建立</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:3px;">請依下方資訊匯款，我們對帳後為你開通 ${o.planName} 方案</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,190,90,0.25);border-radius:12px;padding:18px 20px;font-size:13px;line-height:2.1;color:rgba(255,255,255,0.85);">
+        <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">訂單編號</span><b style="font-family:monospace">${o.orderId}</b></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">方案</span><b>${o.planName} · ${cycleText}</b></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">每月配點</span><b>${Number(o.monthlyBits).toLocaleString()} 點</b></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">應付金額</span><b style="color:#ffce6b">NT$${Number(o.amount).toLocaleString()}（未稅）</b></div>
+        <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">銀行</span><b>${b.bankName||''} ${b.bankCode||''}</b></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">帳號</span><b style="font-family:monospace">${b.account||''}</b></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">戶名</span><b>${b.accountName||''}</b></div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:12px;line-height:1.7;">※ 匯款時請於備註填「訂單編號」方便對帳。對帳開通後，方案點數會立即配發，能量條右側數字即可看到。</div>
+      <button onclick="closeSubMenu()" style="width:100%;margin-top:16px;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#ffb347,#ff8c42);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">完成</button>
     </div>`;
 }
 </script>
