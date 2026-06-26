@@ -59,15 +59,16 @@
         '<button class="' + (yr ? 'on' : '') + '" onclick="setCyc(\'year\')">年繳 <span class="save">送1個月</span></button>' +
       '</div>';
     const note = '<div class="bos-foot">所有方案功能 100% 全開、沒有閹割;分級只在每月產能與算力檔次。<br>所有價格未稅,另計 5% 營業稅 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留</div>';
+    const legalEN = '<div style="text-align:center;font-size:11.5px;color:rgba(255,206,107,.62);letter-spacing:.5px;margin-top:12px;font-weight:600;">Proprietary patent-pending technology — filed under PCT (WIPO), Taiwan IPO &amp; CNIPA.</div>';
     document.getElementById('planRoot').innerHTML =
       '<div class="bos-plans">' +
-        renderBrandosPatent() +
         renderBrandosHeroStat() +
         renderBrandosTagline() +
         renderBrandosCore() +
         '<div class="bos-toggles">' + grpToggle + cycToggle + '</div>' +
         renderBrandosPlanCards(g, _cyc, { selFn: 'buyPlan' }) +
         note +
+        legalEN +
       '</div>';
   }
   function setGrp(x) { _grp = x; renderPage(); }
