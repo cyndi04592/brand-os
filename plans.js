@@ -64,8 +64,12 @@ function ensureBrandosPlanStyle() {
 .bos-core .h{text-align:center;font-size:13px;font-weight:900;color:#d4ccff;letter-spacing:.3px;line-height:1.5;}
 .bos-core .s{text-align:center;font-size:11px;color:var(--bp-t3);margin:4px 0 14px;}
 .bos-core .terms{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;}
-.bos-core .term{font-size:12px;color:var(--bp-t2);padding:5px 12px;border:1px solid var(--bp-line);border-radius:8px;background:rgba(255,255,255,.02);}
-.bos-core .term b{color:#fff;font-weight:700;}
+.bos-core .term{font-size:12.5px;font-weight:700;color:var(--bp-t2);padding:6px 13px;border:1px solid var(--bp-line);border-radius:8px;background:rgba(255,255,255,.02);cursor:pointer;transition:border-color .16s,color .16s,background .16s;}
+.bos-core .term:hover{border-color:rgba(124,108,255,.5);color:#fff;}
+.bos-core .term.on{border-color:rgba(124,108,255,.85);background:linear-gradient(135deg,rgba(124,108,255,.24),rgba(255,122,195,.16));color:#fff;}
+.bos-termdesc{max-height:0;overflow:hidden;opacity:0;transition:max-height .24s,opacity .24s,margin .24s,padding .24s;
+  font-size:12.5px;color:#ded9ff;line-height:1.65;text-align:center;margin-top:0;border-radius:10px;}
+.bos-termdesc.show{max-height:140px;opacity:1;margin-top:14px;padding:11px 16px;border:1px dashed rgba(124,108,255,.32);background:rgba(124,108,255,.05);}
 .bos-hstat{display:flex;justify-content:center;gap:30px;margin-bottom:20px;flex-wrap:wrap;}
 .bos-hstat .b{text-align:center;}
 .bos-hstat .v{font-size:26px;font-weight:700;line-height:1;
@@ -152,25 +156,41 @@ function renderBrandosHeroStat() {
 
 function renderBrandosCore() {
   const terms = [
-    '<b>品牌靈魂核</b> — 全產線唯一語意中樞,圖文影同源同調,品牌不走鐘',
-    '<b>AI 創意總監編制</b> — 攝影·燈光·場景·造型·文案·剪輯·數字人·投放,一組到位',
-    '<b>攝影指導級鏡頭語言</b> — 依主體自動選鏡:35mm 敘事·50mm 寫真·85mm 人像·望遠/微距特寫',
-    '<b>A-Roll／B-Roll 雙線運鏡</b> — 主述 + 空鏡,影片自帶導演分鏡',
-    '<b>電影級三點布光</b> — 主光塑形·輔光柔影·輪廓光勾邊,黃金構圖 + 情境色溫(3000–6000K)',
-    '<b>日韓秀場級彩妝參數庫</b> — 頂尖彩妝師調校:半霧光底妝·骨相修容·偏光打亮',
-    '<b>七階數字人鑄造引擎</b> — 骨相·膚質·毛流·神態,煉出會說話的品牌代言人',
-    '<b>主體保真鎖核</b> — 商品與臉部 DNA 級鎖定,換景不變形,杜絕錯置',
-    '<b>形體一致性引擎</b> — 虛擬試衣零變形,換衣不換人,身形神態完整保留',
-    '<b>物理級質感渲染</b> — 毛孔·織紋·景深真實,杜絕 AI 塑膠油光',
-    '<b>模型中立矩陣</b> — 六大頂尖模型協同,不綁單一引擎、不隨改版失效',
-    '<b>品牌自學習引擎</b> — 記住每次成效、自動演化,越用越懂你的品牌',
-    '<b>億級投放實戰診斷</b> — 操盤數億廣告金的 META 代理商判讀,冷數據翻成決策語言',
+    ['品牌靈魂核', '全產線唯一語意中樞,圖文影同源同調,品牌不走鐘'],
+    ['AI 創意總監編制', '攝影·燈光·場景·造型·文案·剪輯·數字人·投放,一聲令下整組到位'],
+    ['攝影指導級鏡頭語言', '依主體自動選鏡:35mm 敘事 · 50mm 寫真 · 85mm f/1.4 人像 · 望遠/微距特寫'],
+    ['A-Roll／B-Roll 雙線運鏡', '主述鏡 + 空鏡氛圍,影片自帶導演分鏡'],
+    ['電影級三點布光', '主光塑形 · 輔光柔影 · 輪廓光勾邊,黃金構圖 + 情境色溫(3000–6000K)'],
+    ['日韓秀場級彩妝參數庫', '頂尖彩妝師調校:半霧光底妝 · 骨相修容 · 偏光打亮,妝感直逼伸展台'],
+    ['七階數字人鑄造引擎', '骨相 · 膚質 · 毛流 · 神態,七道工藝煉出會說話的品牌代言人'],
+    ['主體保真鎖核', '商品與臉部 DNA 級鎖定,換景千變、主體不變形,杜絕 AI 錯置'],
+    ['形體一致性引擎', '虛擬試衣零變形,換衣不換人,身形姿態神態完整保留'],
+    ['物理級質感渲染', '毛孔 · 織紋 · 景深都真,徹底杜絕 AI 塑膠油光'],
+    ['模型中立矩陣', '六大頂尖 AI 各司其職,不綁單一引擎、不因任何模型改版而失效'],
+    ['品牌自學習引擎', '記住每一次成效、自動演化新方向,像越用越懂你品牌的 AI 操盤手'],
+    ['億級投放實戰診斷', '操盤數億廣告金的 META 代理商實戰判讀,把冷數據翻成老闆一看就懂的決策'],
   ];
+  const chips = terms.map(t =>
+    '<span class="term" data-desc="' + t[1].replace(/"/g, '&quot;') + '" onclick="bosShowTerm(this)">' + t[0] + '</span>'
+  ).join('');
   return '<div class="bos-core">'
     + '<div class="h">每一張圖、每一支片,背後是一整組 AI 創意團隊在運轉</div>'
-    + '<div class="s">不是單一工具 —— 是一座以品牌靈魂核驅動的多代理人創意中樞</div>'
-    + '<div class="terms">' + terms.map(t => '<span class="term">' + t + '</span>').join('') + '</div>'
+    + '<div class="s">不是單一工具 —— 是一座以品牌靈魂核驅動的多代理人創意中樞 · 點任一項看說明</div>'
+    + '<div class="terms">' + chips + '</div>'
+    + '<div class="bos-termdesc" id="bosTermDesc"></div>'
     + '</div>';
+}
+
+function bosShowTerm(el) {
+  const box = document.getElementById('bosTermDesc');
+  if (!box) return;
+  const wrap = el.parentElement;
+  const wasOn = el.classList.contains('on');
+  wrap.querySelectorAll('.term.on').forEach(x => x.classList.remove('on'));
+  if (wasOn) { box.classList.remove('show'); box.textContent = ''; return; } // 再點同一顆 = 收起
+  el.classList.add('on');
+  box.textContent = el.getAttribute('data-desc');
+  box.classList.add('show');
 }
 
 function renderBrandosPatent() {
