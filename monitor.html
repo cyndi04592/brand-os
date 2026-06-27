@@ -1574,7 +1574,7 @@ async function runAIDiagnosis(){
   if(!prompt){showDiagPanel('<div style="color:var(--gold);padding:20px;text-align:center;">⚠️ 請先載入廣告數據</div>');return;}
   var btn=document.getElementById('btnAIDiag');
   if(btn){btn.disabled=true;btn.innerHTML='🔄 診斷中...';}
-  showDiagPanel('<div class="diag-loading"><div class="spin2"></div><div style="color:var(--t3);margin-top:12px;font-size:11px;">Claude 正在分析...<br><span style="font-size:10px;color:rgba(255,255,255,0.2);">通常 10~20 秒</span></div></div>');
+  showDiagPanel('<div class="diag-loading"><div class="spin2"></div><div style="color:var(--t3);margin-top:12px;font-size:11px;">投放診斷引擎 正在分析...<br><span style="font-size:10px;color:rgba(255,255,255,0.2);">通常 10~20 秒</span></div></div>');
   try{
     var resp=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:GAS_PASSWORD,prompt:prompt,max_tokens:1000})});
     var data=await resp.json();
@@ -1615,7 +1615,7 @@ function showDiagPanel(html,hasPrompt){
     '<div style="padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:11px;flex-shrink:0;background:linear-gradient(135deg,rgba(124,109,250,0.08),rgba(250,109,155,0.04));">'
     +'<div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,rgba(124,109,250,0.25),rgba(250,109,155,0.2));border:1px solid rgba(124,109,250,0.4);display:flex;align-items:center;justify-content:center;font-size:17px;">🤖</div>'
     +'<div><div style="font-size:13px;font-weight:900;color:var(--t1);font-family:Syne,sans-serif;letter-spacing:0.5px;">AI 廣告診斷報告 · '+brandLabel+'</div>'
-    +'<div style="font-size:9px;color:var(--t3);font-family:DM Mono;">Claude Sonnet · '+ts+'</div></div>'
+    +'<div style="font-size:9px;color:var(--t3);font-family:DM Mono;">投放診斷引擎 · '+ts+'</div></div>'
     +'<div style="margin-left:auto;display:flex;gap:7px;">'
     +(hasPrompt?'<button onclick="copyDiagText()" style="padding:6px 11px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--t3);font-size:10px;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.color=\'var(--gold)\'" onmouseout="this.style.borderColor=\'var(--line)\';this.style.color=\'var(--t3)\'" id="btnCopyDiag">📋 複製</button>':'')
     +'<button onclick="closeDiagPanel()" style="padding:6px 11px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--t3);font-size:10px;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.borderColor=\'var(--pink)\';this.style.color=\'var(--pink)\'" onmouseout="this.style.borderColor=\'var(--line)\';this.style.color=\'var(--t3)\'">✕</button>'
