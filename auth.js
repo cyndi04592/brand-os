@@ -30,26 +30,14 @@ function initGoogleAuth() {
   if (!window.google) return;
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOG_CLIENT_ID,
-    scope: GOOG_SCOPE + ' https://www.googleapis.com/auth/userinfo.email',
+    scope: 'https://www.googleapis.com/auth/userinfo.email',
     callback: async (resp) => {
       if (!resp.access_token) return;
-
-      const isRelogin = !!window._driveToken;
-      window._driveToken = resp.access_token;
-      window._workerDriveMode = false; // Google 登入用原本流程
-      sessionStorage.setItem('bs_token', resp.access_token);
-      sessionStorage.removeItem('bs_worker_mode');
-
-      if (isRelogin) {
-        setDriveStatus('ok');
-        Object.keys(_assetCache || {}).forEach(k => delete _assetCache[k]);
-        if (window.S?.brandId) await autoFetchAssets(window.S.brandId);
-        return;
-      }
 
       if (_isInitializing) return;
       _isInitializing = true;
       try {
+        // 用 email-scope token 只讀一次 email,不留作 Drive token
         const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: 'Bearer ' + resp.access_token }
         });
@@ -58,15 +46,18 @@ function initGoogleAuth() {
         sessionStorage.setItem('bs_email', _userEmail);
         const ok = await checkWhitelist(_userEmail);
         if (ok) {
-          try { localStorage.setItem('bs_sso_token', resp.access_token); localStorage.setItem('bs_sso_email', _userEmail); } catch(e){}
-          _onLoginSuccess();
+          // ★ Google 登入改走 Worker Drive 模式(零 Drive 權限、零警告)
+          window._driveToken = null;
+          window._workerDriveMode = true;
+          sessionStorage.setItem('bs_worker_mode', '1');
+          sessionStorage.removeItem('bs_token');
+          try { localStorage.setItem('bs_sso_email', _userEmail); } catch(e){}
+          _onLoginSuccess(_userEmail);
           await startSystem();
         } else {
           document.getElementById('loginErr').textContent = '❌ 此帳號無使用權限';
           document.getElementById('loginBtn').disabled = false;
           document.getElementById('loginBtn').textContent = '使用 Google 帳號登入';
-          window._driveToken = null;
-          sessionStorage.removeItem('bs_token');
         }
       } catch (e) {
         document.getElementById('loginErr').textContent = '❌ 驗證失敗，請重試';
