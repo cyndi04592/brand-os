@@ -61,11 +61,14 @@
       '</div>';
     const note = '<div class="bos-foot">所有方案功能 100% 全開、沒有閹割;分級只在每月產能與算力檔次。<br>所有價格未稅,另計 5% 營業稅 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留</div>';
     const legalEN = '<div style="text-align:center;font-size:11.5px;color:rgba(255,206,107,.62);letter-spacing:.5px;margin-top:12px;font-weight:600;">Proprietary patent-pending technology — filed under PCT (WIPO), Taiwan IPO &amp; CNIPA.</div>';
-    const accountLinks = '<div style="text-align:center;margin-top:20px;font-size:12.5px;color:rgba(255,255,255,.55);line-height:2.1;">'
-      + '已經有帳號? <a href="index.html" style="color:#ffce6b;font-weight:700;text-decoration:none;">點這裡登入續約</a>'
-      + '<span style="color:rgba(255,255,255,.25);margin:0 8px;">·</span>'
-      + '第一次來? <a href="onboard.html" style="color:#ffce6b;font-weight:700;text-decoration:none;">點這裡申請開通帳號 →</a>'
-      + '</div>';
+    const _ssoEmail = localStorage.getItem('bs_sso_email') || '';
+    const accountLinks = _ssoEmail
+      ? ''  // 已登入 → 不顯示「登入續約/申請帳號」,避免點了又繞回首頁的死圈
+      : '<div style="text-align:center;margin-top:20px;font-size:12.5px;color:rgba(255,255,255,.55);line-height:2.1;">'
+        + '已經有帳號? <a href="index.html" style="color:#ffce6b;font-weight:700;text-decoration:none;">點這裡登入續約</a>'
+        + '<span style="color:rgba(255,255,255,.25);margin:0 8px;">·</span>'
+        + '第一次來? <a href="onboard.html" style="color:#ffce6b;font-weight:700;text-decoration:none;">點這裡申請開通帳號 →</a>'
+        + '</div>';
     const payBanner = _pendingPlan
       ? '<div style="background:linear-gradient(135deg,rgba(124,108,255,.18),rgba(255,122,195,.18));border:1px solid rgba(124,108,255,.45);border-radius:14px;padding:16px 20px;margin-bottom:20px;text-align:center;">'
         + '<div style="font-size:15px;font-weight:900;color:#fff;">✅ 您的品牌已通過審核!</div>'
