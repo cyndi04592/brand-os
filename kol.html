@@ -1349,6 +1349,49 @@ const WORKER = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const PASSWORD = 'raby2026';
 
+// 🆕 全域 fetch 攔截器 ───────────────────────────────────────────────
+// KOL 生成散在 16 支模組(kol.html api()、kol-ai-generator、kol-stitch、
+// kol-storywriter、kol-storyboard-panel…)各自 fetch kol-proxy。在這裡集中:
+//   ① 所有打 kol-proxy 的 POST 自動補上 email → 後端扣點關卡才吃得到
+//   ② billable 動作的回應統一處理「點數不足彈窗」+「刷新能量條」
+// 改一處,全模組覆蓋,以後新增模組也自動生效。
+const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit','ai_generate_social_posts','ai_generate_script','ai_generate_script_v2','storyboard_expand','ai_generate_persona'];
+(function () {
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = async function (input, init) {
+    let _billed = false;
+    try {
+      const _u = (typeof input === 'string') ? input : (input && input.url) || '';
+      if (init && String(init.method || '').toUpperCase() === 'POST'
+          && typeof init.body === 'string'
+          && _u.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1) {
+        const _o = JSON.parse(init.body);
+        if (_o && _o.password && _o.action) {
+          if (!_o.email) {
+            _o.email = localStorage.getItem('bs_sso_email') || '';
+            init = Object.assign({}, init, { body: JSON.stringify(_o) });
+          }
+          _billed = _BILLED_KOL.indexOf(_o.action) !== -1;
+        }
+      }
+    } catch (e) { /* 不是我們的 JSON 請求,原樣放行 */ }
+    const _resp = await _origFetch(input, init);
+    if (_billed) {
+      try {
+        _resp.clone().json().then(function (j) {
+          if (j && j.error === 'INSUFFICIENT_BITS') {
+            try { _kolInsufficientBits(j.need, j.balance); } catch (e) {}
+          } else if (j && j.ok) {
+            try { if (typeof refreshBits === 'function') setTimeout(refreshBits, 600); } catch (e) {}
+          }
+        }).catch(function () {});
+      } catch (e) {}
+    }
+    return _resp;
+  };
+})();
+// ─────────────────────────────────────────────────────────────────────
+
 const DEFAULT_VOICE_ID = 'df8b601598534e809e2baac52360dc7f';
 const DEFAULT_VOICE_NAME = '日女聲(Morioki)';
 
@@ -1736,18 +1779,8 @@ async function api(action, extra = {}) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password: PASSWORD, action, email: _email, ...extra }),
   });
-  const j = await r.json();
-  // 🆕 點數不足 → 彈窗導去主站儲值/升級
-  if (j && j.error === 'INSUFFICIENT_BITS') {
-    try { _kolInsufficientBits(j.need, j.balance); } catch (e) {}
-    return j;
-  }
-  // 🆕 扣點動作成功 → 刷新能量條(數字跟著掉)
-  const _BILLED = ['seedance_submit','heygen_create_video','ai_generate_social_posts','ai_generate_script','ai_generate_persona'];
-  if (j && j.ok && _BILLED.includes(action)) {
-    try { if (typeof refreshBits === 'function') setTimeout(refreshBits, 600); } catch (e) {}
-  }
-  return j;
+  return r.json();
+  // 註:點數不足彈窗 / 能量條刷新 一律由下方「全域 fetch 攔截器」統一處理(覆蓋所有 16 支模組)
 }
 
 async function gasGet(action, params = {}) {
