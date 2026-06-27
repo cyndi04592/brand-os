@@ -1375,14 +1375,19 @@ const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit',
         }
       }
     } catch (e) { /* 不是我們的 JSON 請求,原樣放行 */ }
+    if (_billed) {
+      // 扣點在後端「關卡」階段就先發生(生成可能還要跑好幾秒)→ 提早刷能量條,
+      // 數字不用等整個生成完才掉(從 ~5 秒縮短到 ~1.5 秒)。
+      try { if (typeof refreshBits === 'function') { setTimeout(refreshBits, 1500); setTimeout(refreshBits, 3000); } } catch (e) {}
+    }
     const _resp = await _origFetch(input, init);
     if (_billed) {
       try {
         _resp.clone().json().then(function (j) {
           if (j && j.error === 'INSUFFICIENT_BITS') {
             try { _kolInsufficientBits(j.need, j.balance); } catch (e) {}
-          } else if (j && j.ok) {
-            try { if (typeof refreshBits === 'function') setTimeout(refreshBits, 600); } catch (e) {}
+          } else {
+            try { if (typeof refreshBits === 'function') setTimeout(refreshBits, 300); } catch (e) {}
           }
         }).catch(function () {});
       } catch (e) {}
