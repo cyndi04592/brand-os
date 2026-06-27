@@ -1216,8 +1216,8 @@ async function renderAdCanvas() {
 
   if (photo && (photo.full || photo.src || photo.thumb)) {
     try {
-      await ensureFullRes(photo);   // 🆕 先走 GAS base64,canvas 才不會被 Drive 縮圖 taint(出不了圖/下載炸)
-      const { img, tainted } = await loadImageSmart(photo.full || photo.src || photo.thumb);
+      await ensureFullRes(photo, true);   // 🆕 canvas 用 s1600 縮圖(小、不爆 QUIC、畫 1080 夠;不影響 FAL 原圖)
+      const { img, tainted } = await loadImageSmart(photo.canvasRes || photo.full || photo.src || photo.thumb);
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, AM.w, AM.h);
       const scale = Math.min(AM.w/img.width, AM.h/img.height);
