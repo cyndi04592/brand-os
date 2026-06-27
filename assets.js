@@ -270,13 +270,15 @@ async function ensureFullRes(photo) {
   if (!photo || photo.full) return;              // 已抓過就直接用快取
   if (!photo.driveId) return;
   try {
-    // ★ 改走 GAS（伺服器端 DriveApp 讀圖→base64），不靠瀏覽器抓 Drive（會被 CORS/403 擋）
-    const r = await fetch(
-      `${GAS_URL}?action=getAssetBase64&password=${GAS_PASSWORD}&fileId=${encodeURIComponent(photo.driveId)}`
-    );
+    // ★ 改走 Worker（服務帳號讀 Drive→base64，大檔扛得住、自帶 CORS），不再打 GAS / 瀏覽器抓 Drive
+    const r = await fetch(CF_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_asset_base64', password: GAS_PASSWORD, driveFileId: photo.driveId })
+    });
     const data = await r.json();
     if (data.ok && data.dataUrl) photo.full = data.dataUrl;
-    else console.warn('ensureFullRes GAS error:', data.error);
+    else console.warn('ensureFullRes Worker error:', data.error);
   } catch (e) { console.warn('ensureFullRes error', e); }
 }
 
