@@ -34,7 +34,7 @@
   var ST = pick('S');
   var composeFn = pick('composeSeedancePrompt');
   var toastFn = pick('toast') || function (m) { console.log('[toast]', m); };
-  if (!ST || !composeFn) { console.warn('[Stitch/STEP2] 抓不到 S / composeSeedancePrompt'); return; }
+  if (!ST || !composeFn) { console.warn('[Stitch/STEP2] 抓不到必要函式'); return; }
 
   // 每段秒數 = 沿用上面「時長(秒)」選的 5/10/15。選 auto 或抓不到 → 預設 10。
   function segSec() {
@@ -56,7 +56,7 @@
       + 'border-radius:10px;padding:10px;font-size:13px;cursor:pointer;">＋ 需要 15 秒以上？開啟長影片接片</button>'
       + '<div id="ks-box" style="display:none;margin-top:10px;padding:14px;border:1px solid rgba(167,139,250,.30);'
       + 'border-radius:12px;background:#15151f;flex-direction:column;gap:10px;">'
-      + '  <div style="font-size:11px;color:#9a9ab0;line-height:1.55;">Seedance 單次最長約 15 秒。接片會自動生多段、每段<b style="color:#c8c8d8;">回錨原始照片＋接住前一段影片</b>（reference-to-video），臉、商品、情緒都不斷。<b style="color:#c8c8d8;">商品照、場景、畫質都沿用你上面選的。</b></div>'
+      + '  <div style="font-size:11px;color:#9a9ab0;line-height:1.55;">單段最長約 15 秒。接片會自動生多段、每段<b style="color:#c8c8d8;">回錨原始照片＋接住前一段影片</b>（reference-to-video），臉、商品、情緒都不斷。<b style="color:#c8c8d8;">商品照、場景、畫質都沿用你上面選的。</b></div>'
       + '  <div id="ks-hero" style="font-size:12px;background:#0e0e16;border:1px solid #2a2a3a;border-radius:9px;padding:8px 10px;"></div>'
       + '  <div style="display:flex;gap:8px;align-items:center;">'
       + '    <label style="font-size:12px;color:#9a9ab0;white-space:nowrap;">目標長度</label>'
