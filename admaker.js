@@ -1703,7 +1703,7 @@ async function generateGptPoster() {
           return { from: 'fal', imageUrl: r.imageUrl };
         }
         if (r.status === 'FAILED') {
-          console.warn('[雙保險] FAL poll FAILED,改等 Drive:', r.error);
+          console.warn('[雙保險] 影像輪詢失敗,改等 Drive:', r.error);
         }
         return null;
       })(),
