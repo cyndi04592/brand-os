@@ -228,7 +228,7 @@
       });
       const url = (r && r.images && r.images[0] && r.images[0].url) || null;
       if (url) console.log('[KolWardrobe] 👗 服裝參考圖已生成 →', url);
-      else     console.warn('[KolWardrobe] fal 回應無圖:', JSON.stringify(r).slice(0, 200));
+      else     console.warn('[KolWardrobe] 影像引擎回應無圖:', JSON.stringify(r).slice(0, 200));
       return url;
     } catch (e) {
       console.warn('[KolWardrobe] 服裝參考圖生成失敗(照舊純文字):', e.message);
