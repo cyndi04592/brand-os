@@ -1730,12 +1730,24 @@ const S = {
 window.S = S;   // 🆕 掛上 window,讓 crew-director 等模組撈得到 ctx.brand(品牌靈魂/道具師都靠這個)
 // ─── API helpers ──────────────────────────────────────────────
 async function api(action, extra = {}) {
+  const _email = localStorage.getItem('bs_sso_email') || '';
   const r = await fetch(WORKER, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: PASSWORD, action, ...extra }),
+    body: JSON.stringify({ password: PASSWORD, action, email: _email, ...extra }),
   });
-  return r.json();
+  const j = await r.json();
+  // 🆕 點數不足 → 彈窗導去主站儲值/升級
+  if (j && j.error === 'INSUFFICIENT_BITS') {
+    try { _kolInsufficientBits(j.need, j.balance); } catch (e) {}
+    return j;
+  }
+  // 🆕 扣點動作成功 → 刷新能量條(數字跟著掉)
+  const _BILLED = ['seedance_submit','heygen_create_video','ai_generate_social_posts','ai_generate_script','ai_generate_persona'];
+  if (j && j.ok && _BILLED.includes(action)) {
+    try { if (typeof refreshBits === 'function') setTimeout(refreshBits, 600); } catch (e) {}
+  }
+  return j;
 }
 
 async function gasGet(action, params = {}) {
@@ -1752,6 +1764,16 @@ async function gasPost(action, extra = {}) {
     redirect: 'follow',
   });
   return r.json();
+}
+
+// 🆕 點數不足 → 彈窗,選 OK 跳回主站(💎儲值 / ⭐訂閱方案都在那)
+function _kolInsufficientBits(need, balance) {
+  const go = confirm(
+    '⚡ 能量(點數)不足\n\n' +
+    '本次需要 ' + (need || '?') + ' 點,目前只剩 ' + (balance != null ? balance : '?') + ' 點。\n\n' +
+    '要前往主站儲值 / 升級方案嗎?'
+  );
+  if (go) location.href = 'index.html';
 }
 
 // ─── 初始化 ────────────────────────────────────────────────
