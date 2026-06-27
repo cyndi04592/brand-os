@@ -133,6 +133,10 @@ async function doPwdLogin() {
 function _onLoginSuccess(email, displayName) {
   document.getElementById('loginOverlay').style.display = 'none';
 
+  // 🆕 登入當下就同步右上角帳號 email(修:同瀏覽器換帳號沒重整時顯示舊 email)
+  const _navEmail = document.getElementById('userEmailNav');
+  if (_navEmail && (email || _userEmail)) _navEmail.textContent = email || _userEmail;
+
   // Worker mode 不顯示 Drive 連結按鈕
   if (window._workerDriveMode) {
     setDriveStatus('ok');
