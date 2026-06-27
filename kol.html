@@ -653,7 +653,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a class="topbar-logo" href="index.html">Brand <span>OS</span></a>
   <div class="topbar-sep"></div>
   <span class="topbar-title">KOL 數字人工作室</span>
-  <div class="topbar-badge">v5.16 · 劇情</div>
+  <span class="nav-bits-chip" id="bitsChip" style="margin-left:auto;display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;">⚡<span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
+  <div class="topbar-badge" style="margin-left:8px;">v5.16 · 劇情</div>
 </header>
 
 <main class="main">
@@ -6220,5 +6221,43 @@ window.addEventListener('load', function () {
   }, 120);
 });
 </script>  
+<script>
+/* 🆕 KOL 點數能量條 — 對齊主站 generator.js 的 refreshBits(同一個 getBits 來源)*/
+let _bitsCap = 0, _bitsMonthly = 0, _bitsTotal = 0;
+function renderBitsBar(total, monthly, monthlyBits) {
+  if (monthlyBits !== undefined && monthlyBits !== null && Number(monthlyBits) > 0) _bitsCap = Number(monthlyBits);
+  if (total   !== undefined && total   !== null) _bitsTotal   = Math.max(0, Number(total)   || 0);
+  if (monthly !== undefined && monthly !== null) _bitsMonthly = Math.max(0, Number(monthly) || 0);
+  const num  = document.getElementById('bitsBalance');
+  const fill = document.getElementById('bitsBarFill');
+  const chip = document.getElementById('bitsChip');
+  if (num) num.textContent = _bitsTotal.toLocaleString();
+  if (!fill) return;
+  const pct = _bitsCap > 0 ? Math.max(0, Math.min(100, (_bitsMonthly / _bitsCap) * 100)) : 100;
+  fill.style.width = pct + '%';
+  let grad = 'linear-gradient(90deg,#7c6cff,#ff7ac3)', glow = '';
+  if (pct <= 10)      { grad = 'linear-gradient(90deg,#ff4d4d,#ff7a3d)'; glow = '0 0 10px rgba(255,77,77,0.55)'; }
+  else if (pct <= 30) { grad = 'linear-gradient(90deg,#ff9a3d,#ffc46b)'; }
+  fill.style.background = grad;
+  if (chip) {
+    chip.style.borderColor = pct <= 10 ? 'rgba(255,77,77,0.6)' : 'rgba(124,108,255,0.35)';
+    chip.style.boxShadow   = glow;
+  }
+}
+async function refreshBits() {
+  try {
+    const email = localStorage.getItem('bs_sso_email') || '';
+    if (!email) return;
+    const res = await fetch(`${GAS_URL}?action=getBits&password=${PASSWORD}&email=${encodeURIComponent(email)}`);
+    const jj = await res.json();
+    if (jj && jj.ok) {
+      const chip = document.getElementById('bitsChip');
+      if (chip) chip.style.display = 'inline-flex';
+      renderBitsBar(jj.balance, jj.monthly, jj.monthlyBits);
+    }
+  } catch (e) { console.warn('refreshBits 失敗:', e); }
+}
+window.addEventListener('load', () => setTimeout(refreshBits, 1500));
+</script>
 </body>
 </html>
