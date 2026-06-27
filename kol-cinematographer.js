@@ -33,7 +33,7 @@
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
-  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, no crowd, no extra background people, no stylized or exaggerated artificial elements';
+  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, the subject stays in sharp focus while the background falls into soft shallow depth-of-field with reduced detail so all visual attention stays on her, no crowd, no extra background people, no stylized or exaggerated artificial elements';
 
   // 🎥 運鏡元資料
   const CAMERA_MOVEMENTS = {
