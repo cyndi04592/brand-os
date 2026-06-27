@@ -266,18 +266,19 @@ async function fetchFromDriveAPI(folderId, type, token) {
 
 // ══ 🆕 生圖前才抓「那一張」原圖 base64(避開列表全載的 324MB)══
 //    列表只有縮圖,真正生圖/合成才用 driveId 重新抓原檔 → 畫質一樣、不踩 CORS/tainted 坑
-async function ensureFullRes(photo) {
-  if (!photo || photo.full) return;              // 已抓過就直接用快取
-  if (!photo.driveId) return;
+async function ensureFullRes(photo, thumb) {
+  if (!photo || !photo.driveId) return;
+  const key = thumb ? 'canvasRes' : 'full';   // canvas 縮圖與 FAL 原圖分開存,絕不互蓋
+  if (photo[key]) return;                       // 已抓過就用快取
   try {
-    // ★ 改走 Worker（服務帳號讀 Drive→base64，大檔扛得住、自帶 CORS），不再打 GAS / 瀏覽器抓 Drive
+    // ★ 走 Worker（服務帳號讀 Drive→base64）。thumb=true → s1600 縮圖(canvas 用);否則原圖(FAL 用)
     const r = await fetch(CF_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'get_asset_base64', password: GAS_PASSWORD, driveFileId: photo.driveId })
+      body: JSON.stringify({ action: 'get_asset_base64', password: GAS_PASSWORD, driveFileId: photo.driveId, thumb: !!thumb })
     });
     const data = await r.json();
-    if (data.ok && data.dataUrl) photo.full = data.dataUrl;
+    if (data.ok && data.dataUrl) photo[key] = data.dataUrl;
     else console.warn('ensureFullRes Worker error:', data.error);
   } catch (e) { console.warn('ensureFullRes error', e); }
 }
