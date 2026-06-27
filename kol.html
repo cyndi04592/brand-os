@@ -3411,7 +3411,7 @@ function updateEpisodeSpecLabel() {
   const tierLabel = p.tier === 'standard' ? 'Standard' : 'Fast';
   const audio = p.generateAudio ? '' : ' · 無音效';
   const multi = p.duration === '15' ? ' 🎬' : '';
-  el.textContent = `Seedance · ${p.duration}s · ${p.resolution} · ${tierLabel}${audio}${multi}`;
+  el.textContent = `電影級運鏡 · ${p.duration}s · ${p.resolution} · ${tierLabel}${audio}${multi}`;
 }
 
 function toggleAdvanced() {
@@ -3766,18 +3766,18 @@ async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
                 || _procs.find(x => /(^|_)front|正臉/i.test(x.name || ''))
                 || _procs[0];
     const fileId = _front?.file_id || p?.photos?.[0]?.file_id;
-    if (!fileId) { console.warn('[臉乾淨圖] 找不到', personaName, '的原圖 → 用HeyGen'); return fallbackUrl; }
+    if (!fileId) { console.warn('[臉乾淨圖] 找不到', personaName, '的原圖 → 用備援圖'); return fallbackUrl; }
     if (window._kolCleanCache[fileId]) return window._kolCleanCache[fileId];
     const res = await api('drive_to_r2', { driveFileId: fileId, brandId: S.currentBrandId, role: 'kol', nameHint: (personaName || 'kol') + '.jpg' });
     const cleanUrl = res?.url || res?.publicUrl || res?.r2Url || res?.r2 || (res?.result && res.result.url) || '';
-    if (!cleanUrl) { console.warn('[臉乾淨圖] drive_to_r2 沒回網址 → 用HeyGen。回傳=', res); return fallbackUrl; }
+    if (!cleanUrl) { console.warn('[臉乾淨圖] drive_to_r2 沒回網址 → 用備援圖。回傳=', res); return fallbackUrl; }
     window._kolCleanCache[fileId] = cleanUrl;
     window._kolCleanCache[lsKey] = cleanUrl;
     try { localStorage.setItem(lsKey, cleanUrl); } catch (e) {}   // 🆕 存進瀏覽器,下次刷新也秒回
     console.log('[臉乾淨圖] ✅ 改用乾淨原圖:', cleanUrl);
     return cleanUrl;
   } catch (e) {
-    console.warn('[臉乾淨圖] 出錯 → 用HeyGen', e);
+    console.warn('[臉乾淨圖] 出錯 → 用備援圖', e);
     return fallbackUrl;
   }
 }
@@ -4722,7 +4722,7 @@ function renderEpisodeCard() {
         </select>
       </div>
       <div class="ep-field">
-        <label>💎 商品照 REFERENCE <small style="color:var(--text-dim);font-weight:normal">(讓 Seedance 生出真實商品而非腦補)</small></label>
+        <label>💎 商品照 REFERENCE <small style="color:var(--text-dim);font-weight:normal">(讓影像引擎生出真實商品而非腦補)</small></label>
         ${productPhotoBlock}
       </div>
       <div class="ep-summary">
@@ -4794,7 +4794,7 @@ function renderEpisodeCard() {
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:10.5px;color:var(--text-dim)">
           <button class="btn btn-ghost btn-sm" onclick="saveEpisodeDraft()">💾 存草稿</button>
-          <span style="margin-left:auto" id="ep-spec-label">Seedance · 10s · 720p · Fast</span>
+          <span style="margin-left:auto" id="ep-spec-label">電影級運鏡 · 10s · 720p · Fast</span>
         </div>
       </div>
       </div>
