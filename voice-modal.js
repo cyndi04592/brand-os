@@ -194,8 +194,8 @@ function buildModalHTML() {
         </div>
         <div class="vm-sub-body">
           <div class="vm-info-box">
-            💡 從 HeyGen 網頁複製你自己建立的 voice_id（例如 ElevenLabs 匯入的語音）。
-            <br>✨ <strong>建議選擇 Multilingual 引擎</strong>（ElevenLabs Multilingual v2），能講中/日/英等多語言。
+            💡 從你的語音平台複製自建的 voice_id（例如自行匯入的多語言語音）。
+            <br>✨ <strong>建議選擇 Multilingual 多語言引擎</strong>，能講中/日/英等多語言。
             <br>開啟網址：<code style="color:#b5abff">app.heygen.com/settings?nav=API</code> 或在語音編輯頁 URL 中取得。
           </div>
           <div class="vm-field">
@@ -229,8 +229,8 @@ function buildModalHTML() {
             <div class="vm-field">
               <label>引擎</label>
               <select id="vm-custom-engine">
-                <option value="ElevenLabs">ElevenLabs</option>
-                <option value="HeyGen">HeyGen</option>
+                <option value="ElevenLabs">進階多語言</option>
+                <option value="HeyGen">數字人語音</option>
                 <option value="Azure">Azure</option>
                 <option value="Fish">Fish</option>
               </select>
@@ -368,7 +368,7 @@ function updateCountChips() {
   if (toggleLabel) {
     if (State.brandOSFilter) {
       toggleLabel.innerHTML = '🔓 顯示全部 ' + (State.voices.libraryRawTotal || '2305');
-      if (toggleBtn) toggleBtn.title = '切換到完整模式（載入 HeyGen 全部 2305 個語音）';
+      if (toggleBtn) toggleBtn.title = '切換到完整模式（載入完整語音庫 2305 個語音）';
     } else {
       toggleLabel.innerHTML = '🌏 回亞洲精選';
       if (toggleBtn) toggleBtn.title = '切回精選模式（只看多國語言 + 中文 + 日文 共 116 個）';
@@ -383,7 +383,7 @@ function updateCountChips() {
     if (firstNode) {
       firstNode.textContent = State.brandOSFilter
         ? '🌏 亞洲業務精選 '
-        : '🌏 HeyGen 全語音庫 ';
+        : '🌏 完整語音庫 ';
     }
     if (countSpan) countSpan.textContent = State.voices.library.length || '—';
   }
@@ -526,7 +526,7 @@ function renderList() {
         </div>
       `;
     } else {
-      container.innerHTML = '<div class="vm-empty"><div class="vm-empty-icon">🎤</div><div class="vm-empty-title">找不到語音</div><div class="vm-empty-desc">請檢查 Worker 設定或 HeyGen API 狀態</div></div>';
+      container.innerHTML = '<div class="vm-empty"><div class="vm-empty-icon">🎤</div><div class="vm-empty-title">找不到語音</div><div class="vm-empty-desc">請檢查 Worker 設定或語音庫狀態</div></div>';
     }
     updateLangChipCounts();
     return;
@@ -653,7 +653,7 @@ function rowHTML(v, idx) {
         <div class="vm-name">
           ${esc(v.name || '未命名')}
           ${isMulti ? '<span class="vm-multi-badge" title="支援多國語言，能講中/日/英/西等 40+ 種">🌏 Multilingual</span>' : ''}
-          <span class="vm-engine-badge ${engine}">${esc(v.engine || 'HeyGen')}</span>
+          <span class="vm-engine-badge ${engine}">${esc(v.engine === 'ElevenLabs' ? '進階' : '標準')}</span>
           ${isCustom ? '<span class="vm-custom-badge">自訂</span>' : ''}
         </div>
         <div class="vm-tags">${esc(tagText)}</div>
