@@ -79,11 +79,11 @@ async function autoFetchAssetsWorker(brandId) {
   const promises = [];
   if (f.photo) {
     if (photoInput) photoInput.value = f.photo;
-    promises.push(fetchFromWorker(f.photo, 'photo'));
+    promises.push(fetchFromGAS(f.photo, 'photo'));
   }
   if (f.video) {
     if (videoInput) videoInput.value = f.video;
-    promises.push(fetchFromWorker(f.video, 'video'));
+    promises.push(fetchFromGAS(f.video, 'video'));
   }
   await Promise.all(promises);
 
@@ -129,6 +129,32 @@ async function fetchFromWorker(folderId, type) {
       }
     });
   } catch (e) { console.warn('fetchFromWorker error:', e); }
+}
+
+// ★ 透過 GAS（owner 帳號）抓 Drive 檔案 —— 不靠服務帳號金鑰，最穩（跟 KOL 同一條路）
+async function fetchFromGAS(folderId, type) {
+  if (!folderId) return;
+  try {
+    const url = `${GAS_URL}?action=listBrandAssets&password=${GAS_PASSWORD}&folderId=${encodeURIComponent(folderId)}&type=${type === 'photo' ? 'photo' : 'video'}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (!data.ok) { console.warn('GAS Drive error:', data.error); return; }
+
+    (data.files || []).forEach(f => {
+      const arr = type === 'photo' ? window.S.photos : window.S.videos;
+      if (!arr.find(x => x.driveId === f.id)) {
+        arr.push({
+          driveId: f.id,
+          name: f.name,
+          thumb:    `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`,
+          hiRes:    `https://drive.google.com/uc?id=${f.id}`,   // 生圖用原圖（跟 KOL 一樣）
+          driveUrl: `https://drive.google.com/file/d/${f.id}/view`,
+          src:      `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`,  // 列表用縮圖（載入快）
+          type
+        });
+      }
+    });
+  } catch (e) { console.warn('fetchFromGAS error:', e); }
 }
 
 // ══ 手動抓取（按鈕觸發）══
