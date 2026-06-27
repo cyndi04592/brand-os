@@ -1358,8 +1358,30 @@ const PASSWORD = 'raby2026';
 const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit','ai_generate_social_posts','ai_generate_script','ai_generate_script_v2','storyboard_expand','ai_generate_persona'];
 (function () {
   const _origFetch = window.fetch.bind(window);
+  // KOL 各動作點數(對齊 kol-proxy Worker 關卡;此表僅供前端樂觀扣顯示,後端 Worker 才是真扣)
+  function _kolCostOf(o) {
+    if (!o || !o.action) return 0;
+    switch (o.action) {
+      case 'storyboard_expand':        return 10;
+      case 'ai_generate_persona':      return 10;
+      case 'ai_generate_script':
+      case 'ai_generate_script_v2':    return 120;
+      case 'ai_generate_social_posts': return 120;
+      case 'fal_image_submit':         return 96 * (parseInt(o.num_images || 1, 10) || 1);
+      case 'heygen_create_video': {
+        const _len = String(o.script || '').length;
+        return Math.max(60, Math.round(260 * _len / 3.5 / 60));
+      }
+      case 'seedance_submit': {
+        const _sec = parseInt(o.duration || 5, 10) || 5;
+        const _hi  = /1080|1k|2k|4k/i.test(String(o.resolution || ''));
+        return Math.round(64 * _sec * (_hi ? 2.8 : 1));
+      }
+      default: return 0;
+    }
+  }
   window.fetch = async function (input, init) {
-    let _billed = false;
+    let _billed = false, _body = null;
     try {
       const _u = (typeof input === 'string') ? input : (input && input.url) || '';
       if (init && String(init.method || '').toUpperCase() === 'POST'
@@ -1371,20 +1393,23 @@ const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit',
             _o.email = localStorage.getItem('bs_sso_email') || '';
             init = Object.assign({}, init, { body: JSON.stringify(_o) });
           }
-          _billed = _BILLED_KOL.indexOf(_o.action) !== -1;
+          if (_BILLED_KOL.indexOf(_o.action) !== -1) { _billed = true; _body = _o; }
         }
       }
     } catch (e) { /* 不是我們的 JSON 請求,原樣放行 */ }
     if (_billed) {
-      // 扣點在後端「關卡」階段就先發生(生成可能還要跑好幾秒)→ 提早刷能量條,
-      // 數字不用等整個生成完才掉(從 ~5 秒縮短到 ~1.5 秒)。
-      try { if (typeof refreshBits === 'function') { setTimeout(refreshBits, 1500); setTimeout(refreshBits, 3000); } } catch (e) {}
+      // 🆕 樂觀扣點:送出就先把畫面數字減掉(跟主站 bumpBitsDisplay 一致,立刻掉);refreshBits 隨後對帳
+      try { const _c = _kolCostOf(_body); if (_c > 0 && typeof bumpKolBits === 'function') bumpKolBits(-_c); } catch (e) {}
+      // 後端關卡也已先扣,稍後再對帳兩次(校正樂觀值與實扣的出入)
+      try { if (typeof refreshBits === 'function') { setTimeout(refreshBits, 1800); setTimeout(refreshBits, 3500); } } catch (e) {}
     }
     const _resp = await _origFetch(input, init);
     if (_billed) {
       try {
         _resp.clone().json().then(function (j) {
           if (j && j.error === 'INSUFFICIENT_BITS') {
+            // 沒扣成 → 把剛剛樂觀扣掉的對帳加回來 + 彈窗
+            try { if (typeof refreshBits === 'function') refreshBits(); } catch (e) {}
             try { _kolInsufficientBits(j.need, j.balance); } catch (e) {}
           } else {
             try { if (typeof refreshBits === 'function') setTimeout(refreshBits, 300); } catch (e) {}
@@ -1811,7 +1836,7 @@ function _kolInsufficientBits(need, balance) {
     '本次需要 ' + (need || '?') + ' 點,目前只剩 ' + (balance != null ? balance : '?') + ' 點。\n\n' +
     '要前往主站儲值 / 升級方案嗎?'
   );
-  if (go) location.href = 'index.html';
+  if (go) location.href = 'index.html?openBits=1';
 }
 
 // ─── 初始化 ────────────────────────────────────────────────
@@ -6307,6 +6332,10 @@ function renderBitsBar(total, monthly, monthlyBits) {
     chip.style.borderColor = pct <= 10 ? 'rgba(255,77,77,0.6)' : 'rgba(124,108,255,0.35)';
     chip.style.boxShadow   = glow;
   }
+}
+// 🆕 樂觀扣點顯示:送出生成時先把畫面數字+能量條減掉(refreshBits 隨後對帳修正)
+function bumpKolBits(delta) {
+  renderBitsBar(Math.max(0, _bitsTotal + delta), Math.max(0, _bitsMonthly + delta));
 }
 async function refreshBits() {
   try {
