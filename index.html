@@ -699,7 +699,9 @@ function openBitsShop() {
   fetch(`${GAS_URL}?action=getBits&password=${GAS_PASSWORD}&email=${encodeURIComponent(_email)}`)
     .then(r => r.json())
     .then(b => {
-      const hasSub = b && b.ok && Number(b.monthlyBits) > 0;
+      // 🆕 改看「訂閱是否有效(subActive,後端用 subEnd 判到期)」;
+      //    若 GAS 尚未更新(subActive=undefined)→ 退回看 monthlyBits,避免誤擋有效訂閱者
+      const hasSub = b && b.ok && (b.subActive === true || (b.subActive === undefined && Number(b.monthlyBits) > 0));
       if (!hasSub) {
         grid.innerHTML =
           '<div style="grid-column:1/-1;text-align:center;padding:34px 16px;">'
