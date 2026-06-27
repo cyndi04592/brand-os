@@ -300,7 +300,7 @@ const LOCATIONS = {
       });
       const url = (r && r.images && r.images[0] && r.images[0].url) || null;
       if (url) console.log('[KolEnvironment] 🏠 場景參考圖已生成 →', url);
-      else     console.warn('[KolEnvironment] fal 回應無圖:', JSON.stringify(r).slice(0, 200));
+      else     console.warn('[KolEnvironment] 影像引擎回應無圖:', JSON.stringify(r).slice(0, 200));
       return url;
     } catch (e) {
       console.warn('[KolEnvironment] 場景參考圖生成失敗(照舊純文字):', e.message);
