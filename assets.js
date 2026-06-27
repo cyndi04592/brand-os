@@ -268,20 +268,15 @@ async function fetchFromDriveAPI(folderId, type, token) {
 //    列表只有縮圖,真正生圖/合成才用 driveId 重新抓原檔 → 畫質一樣、不踩 CORS/tainted 坑
 async function ensureFullRes(photo) {
   if (!photo || photo.full) return;              // 已抓過就直接用快取
-  if (!photo.driveId || !window._driveToken) return;
+  if (!photo.driveId) return;
   try {
+    // ★ 改走 GAS（伺服器端 DriveApp 讀圖→base64），不靠瀏覽器抓 Drive（會被 CORS/403 擋）
     const r = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${photo.driveId}?alt=media`,
-      { headers: { Authorization: 'Bearer ' + window._driveToken } }
+      `${GAS_URL}?action=getAssetBase64&password=${GAS_PASSWORD}&fileId=${encodeURIComponent(photo.driveId)}`
     );
-    if (!r.ok) return;
-    const blob = await r.blob();
-    photo.full = await new Promise((res, rej) => {
-      const reader = new FileReader();
-      reader.onload = () => res(reader.result);
-      reader.onerror = rej;
-      reader.readAsDataURL(blob);
-    });
+    const data = await r.json();
+    if (data.ok && data.dataUrl) photo.full = data.dataUrl;
+    else console.warn('ensureFullRes GAS error:', data.error);
   } catch (e) { console.warn('ensureFullRes error', e); }
 }
 
