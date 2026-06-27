@@ -1,9 +1,9 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-cinematographer.js · v5.23
+//  kol-cinematographer.js · v5.24
 //  
 //  📷 攝影師 — 鏡頭、自然光、運鏡、電影寫實
 //  
-//  v5.23 變更(⑤ RIIV 寫實·打「背景假假的」):
+//  v5.24 變更(⑤ RIIV 寫實·打「背景假假的」):
 //   • 新增 SCENE_REALISM 場景落地錨,跟 REALISM_BASE 分開管:
 //       REALISM_BASE = 管「人/膚質/不修圖」
 //       SCENE_REALISM = 管「場景不假 + 人落進場景 + 整支統一色調」
@@ -128,5 +128,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.23 就緒 · 拔掉 one-continuous-photographic-frame(凍背景兇手)→ 背景恢復活的 · REALISM_BASE(人) + SCENE_REALISM(場景落地) + 台灣腔');
+  console.log('[KolCinematographer] 📷 v5.24 就緒 · 拔掉 one-continuous-photographic-frame(凍背景兇手)→ 背景恢復活的 · REALISM_BASE(人) + SCENE_REALISM(場景落地) + 台灣腔');
 })();
