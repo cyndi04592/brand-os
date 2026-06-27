@@ -1216,6 +1216,7 @@ async function renderAdCanvas() {
 
   if (photo && (photo.full || photo.src || photo.thumb)) {
     try {
+      await ensureFullRes(photo);   // 🆕 先走 GAS base64,canvas 才不會被 Drive 縮圖 taint(出不了圖/下載炸)
       const { img, tainted } = await loadImageSmart(photo.full || photo.src || photo.thumb);
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, AM.w, AM.h);
