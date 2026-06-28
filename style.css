@@ -2386,5 +2386,15 @@ details[open] > summary::before { transform: rotate(90deg); }
 
 /* RWD nav 換行 */
 @media(max-width: 1280px) {
-  .nav-account-row { display: none; }
+  /* 🆕 RWD:不再整排隱藏帳號列 — 保留 訂閱+能量條+點數,只藏較占空間的 email/drive */
+  .nav-account-row { display: inline-flex; margin-left: 8px; padding-left: 10px; }
+  .nav-email-chip, .nav-drive-chip { display: none; }
+}
+@media(max-width: 768px) {
+  /* 🆕 RWD 手機:nav-right 換行,帳號列獨立一行整排顯示(訂閱/能量條/點數都看得到) */
+  .nav-right { flex-wrap: wrap; }
+  .nav-account-row {
+    width: 100%; margin-left: 0; padding-left: 0; border-left: none;
+    flex-wrap: wrap; gap: 8px; justify-content: flex-start; margin-top: 4px;
+  }
 }
