@@ -261,8 +261,25 @@ async function startSystem() {
   _systemStarted = true;
 
   const overlay = document.getElementById('initOverlay');
-  overlay.style.display = 'flex';
-  document.getElementById('initMsg').textContent = '初始化 Brand OS 系統...';
+  const _brandKey = 'bs_brandos_' + (_userEmail || '_anon'); // 🆕 WIN2：依帳號分開存,避免 A 看到 B 的品牌
+
+  // 🆕 WIN2：先用本地快取的品牌樹「秒開」,背景再去 GAS 拉最新(stale-while-revalidate)
+  let _shownFromCache = false;
+  try {
+    const cached = localStorage.getItem(_brandKey);
+    if (cached) {
+      buildDataFromSheets(JSON.parse(cached));
+      renderNavBrands();
+      renderBrandTree();
+      overlay.style.display = 'none';   // 不卡初始化畫面
+      _shownFromCache = true;
+    }
+  } catch (e) {}
+
+  if (!_shownFromCache) {
+    overlay.style.display = 'flex';
+    document.getElementById('initMsg').textContent = '初始化 Brand OS 系統...';
+  }
 
   try {
     const controller = new AbortController();
@@ -272,16 +289,22 @@ async function startSystem() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error);
     buildDataFromSheets(json.data);
-    document.getElementById('initMsg').textContent = '✅ 系統就緒！';
+    try { localStorage.setItem(_brandKey, JSON.stringify(json.data)); } catch(e) {} // 🆕 WIN2：存快取給下次秒開
+    if (!_shownFromCache) document.getElementById('initMsg').textContent = '✅ 系統就緒！';
+    // 背景刷新後,只有使用者還沒點任何品牌時才重畫(避免打斷操作)
+    if (_shownFromCache && !window.S.brandId) { renderNavBrands(); renderBrandTree(); }
   } catch (e) {
     console.warn('fallback:', e.message);
-    buildDataFromSheets(LOCAL_FALLBACK_DATA);
-    document.getElementById('initMsg').textContent = '✅ 系統就緒！（本地資料）';
+    if (!_shownFromCache) {
+      buildDataFromSheets(LOCAL_FALLBACK_DATA);
+      document.getElementById('initMsg').textContent = '✅ 系統就緒！（本地資料）';
+    }
   }
 
-  await new Promise(r => setTimeout(r, 600));
-  document.getElementById('initOverlay').style.display = 'none';
-
-  renderNavBrands();
-  renderBrandTree();
+  if (!_shownFromCache) {
+    await new Promise(r => setTimeout(r, 300)); // 🆕 WIN2：600→300,只留一下下讓「就緒」閃過
+    document.getElementById('initOverlay').style.display = 'none';
+    renderNavBrands();
+    renderBrandTree();
+  }
 }
