@@ -637,6 +637,7 @@
 </div>
 
 <!-- ══ JS 載入順序很重要 ══ -->
+<script src="loader.js"></script>
 <script src="config.js"></script>
 <script src="auth.js"></script>
 <script src="brands.js"></script>
@@ -687,13 +688,28 @@ function _loadTopupPacks(grid) {
     .then(j => {
       if (!j.ok) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff7a7a;padding:30px;">載入失敗</div>'; return; }
       _shopPacks = j.packs; _shopBank = j.bank; _shopHoliday = j.holiday || null; renderShopGrid();
+      try { localStorage.setItem('bs_topup_packs', JSON.stringify({ packs:j.packs, bank:j.bank, holiday:j.holiday||null })); } catch(e){} // 🆕 存本地給下次秒開
     })
     .catch(() => { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff7a7a;padding:30px;">連線錯誤</div>'; });
+}
+// 🆕 背景靜默更新補給包(快取秒開後偷偷拉最新,有變才重畫;同步修正聖誕包庫存)
+function _refreshTopupPacks() {
+  fetch(`${GAS_URL}?action=getTopupPacks&password=${GAS_PASSWORD}`)
+    .then(r => r.json())
+    .then(j => {
+      if (!j.ok) return;
+      _shopPacks = j.packs; _shopBank = j.bank; _shopHoliday = j.holiday || null;
+      try { localStorage.setItem('bs_topup_packs', JSON.stringify({ packs:j.packs, bank:j.bank, holiday:j.holiday||null })); } catch(e){}
+      var m = document.getElementById('bitsShopModal');
+      if (m && m.style.display !== 'none') renderShopGrid(); // 還開著才重畫
+    })
+    .catch(() => {});
 }
 function openBitsShop() {
   document.getElementById('bitsShopModal').style.display = 'flex';
   const grid = document.getElementById('bitsShopGrid');
-  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.5);padding:30px;">載入中…</div>';
+  if (window.showSpaceLoader) { showSpaceLoader(grid, '正在準備你的補給包'); var _sl0 = grid.querySelector('.bsSpaceLoader'); if (_sl0) _sl0.style.gridColumn = '1/-1'; }
+  else grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.5);padding:30px;">載入中…</div>';
   const _email = localStorage.getItem('bs_sso_email') || '';
   // 🆕 補給包=訂閱會員專屬加購;沒有效訂閱(monthlyBits<=0)就擋下,導去訂閱方案(防止用最低禮包繞過月費)
   fetch(`${GAS_URL}?action=getBits&password=${GAS_PASSWORD}&email=${encodeURIComponent(_email)}`)
@@ -712,7 +728,14 @@ function openBitsShop() {
           + '</div>';
         return;
       }
-      _loadTopupPacks(grid);
+      // 🆕 訂閱資格通過後:有本地快取就秒開,背景再更新;沒快取才照舊抓
+      var _tp = null; try { _tp = JSON.parse(localStorage.getItem('bs_topup_packs') || 'null'); } catch(e){}
+      if (_tp && _tp.packs) {
+        _shopPacks = _tp.packs; _shopBank = _tp.bank; _shopHoliday = _tp.holiday || null;
+        renderShopGrid(); _refreshTopupPacks();
+      } else {
+        _loadTopupPacks(grid);
+      }
     })
     .catch(() => { _loadTopupPacks(grid); });  // 查訂閱失敗→保守放行(網路抖動不誤擋付費客戶);伺服端購買流程仍應再驗
 }
