@@ -1,27 +1,4 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>loader.js 預覽</title>
-<style>
-  body{background:#06060f;font-family:"Noto Sans TC",system-ui,sans-serif;color:#fff;
-    min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:24px;padding:38px 16px;margin:0}
-  h1{font-size:16px;font-weight:800;opacity:.85}
-  .modal{width:min(560px,94vw);background:#0d0d18;border:1px solid rgba(167,139,255,.24);
-    border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.6);overflow:hidden}
-  .mh{padding:20px 24px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
-  .mh .t{font-size:17px;font-weight:900}.mh .d{font-size:12px;color:rgba(255,255,255,.6);margin-top:5px}
-  .box{min-height:230px}
-  .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
-  .mini{background:#0d0d18;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px;width:230px}
-  .mini small{display:block;text-align:center;font-size:11px;color:rgba(255,255,255,.55);margin-top:4px}
-</style></head><body>
-  <h1>🚀 loader.js · 縮小定版預覽</h1>
-  <div class="modal">
-    <div class="mh"><div class="t">💎 Bits 補給包商城</div><div class="d">能量條用完了?補給包 Bits 永久保留、不歸零</div></div>
-    <div class="box" id="demo1"></div>
-  </div>
-  <div class="row">
-    <div class="mini"><div id="demo2" style="min-height:170px"></div><small>訂閱頁文案</small></div>
-  </div>
-  <script>/* ══════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════
    Brand OS · 太空人 Loading 共用元件 (loader.js)
    用法:showSpaceLoader(容器元素或id, '文案')
         hideSpaceLoader(容器)  // 可選,通常直接覆蓋內容即可
@@ -86,8 +63,3 @@
     if (el) el.innerHTML = '';
   };
 })();
-
-    showSpaceLoader('demo1','正在準備你的補給包');
-    showSpaceLoader('demo2','載入訂閱方案');
-  </script>
-</body></html>
