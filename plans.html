@@ -6,6 +6,8 @@
 <title>Brand OS · 訂閱方案</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="script" href="config.js"><!-- 🆕 提早並行下載,中間內容更快出現 -->
+<link rel="preload" as="script" href="plans.js"><!-- 🆕 同上 -->
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root{ --bg:#0e0e16; --ink:#fff; --t2:rgba(255,255,255,.62); --t3:rgba(255,255,255,.4);
@@ -39,6 +41,7 @@
     <div id="planRoot"></div>
   </div>
 
+<script src="loader.js"></script>
 <script src="config.js"></script>
 <script src="plans.js"></script>
 <script>
@@ -132,7 +135,7 @@
     const email = localStorage.getItem('bs_sso_email') || '';
     if (!email) { alert('請先登入再購買'); return; }
     const root = document.getElementById('planRoot');
-    root.innerHTML = '<div style="text-align:center;padding:60px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
+    if (window.showSpaceLoader) showSpaceLoader(root, '正在建立付款'); else root.innerHTML = '<div style="text-align:center;padding:60px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
     fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_cyc}&method=ecpay`)
       .then(r => r.json())
       .then(j => {
