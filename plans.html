@@ -239,17 +239,19 @@
   // ── 待付款:有就預選方案 + 橫幅 ──
   (function initPending() {
     const email = localStorage.getItem('bs_sso_email') || '';
-    if (!email) { renderPage(); return; }
+    renderPage();                 // 🆕 先立刻畫:方案卡片資料全在本地,不必等 GAS → 秒出內容
+    if (!email) return;
+    // 背景查待付款,有才補橫幅+預選(不擋畫面)
     fetch(`${GAS_URL}?action=getPendingPayment&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`)
       .then(r => r.json())
       .then(j => {
         if (j && j.ok && j.pending && j.desiredPlan) {
           _pendingPlan = j.desiredPlan;
           _grp = ['ent', 'flag', 'custom'].includes(_pendingPlan) ? 'ent' : 'small';
+          renderPage();           // 只有真的有待付款才重畫
         }
-        renderPage();
       })
-      .catch(() => renderPage());
+      .catch(() => {});
   })();
 </script>
 
