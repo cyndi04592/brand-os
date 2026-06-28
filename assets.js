@@ -2,8 +2,50 @@
 //  assets.js — Drive素材庫、智慧快取、素材選取
 // ══════════════════════════════════════════
 
-// ══ 智慧快取：每個品牌只抓一次 ══
+// ══ 智慧快取：每個品牌只抓一次（記憶體層）══
 const _assetCache = {};
+
+// ══ 🆕 WIN1 持久快取（localStorage）：刷新後切品牌也秒開 ══
+//    只存「清單文字」(檔名/driveId/縮圖網址)，絕不存 full/canvasRes 原圖(MB 級)
+//    10 分鐘 TTL；「重新抓取」按鈕會連這層一起清
+const _ASSET_LS_PREFIX = 'bs_assets_';
+const _ASSET_LS_TTL = 10 * 60 * 1000; // 10 分鐘
+
+function _slimAsset(p) {
+  return {
+    driveId: p.driveId, name: p.name, thumb: p.thumb || '',
+    src: p.src || '', hiRes: p.hiRes || '', driveUrl: p.driveUrl || '', type: p.type
+  };
+}
+function _saveAssetCacheLS(brandId, photos, videos) {
+  try {
+    const payload = { t: Date.now(),
+      photos: (photos || []).map(_slimAsset),
+      videos: (videos || []).map(_slimAsset) };
+    localStorage.setItem(_ASSET_LS_PREFIX + brandId, JSON.stringify(payload));
+  } catch (e) { /* 滿或被禁用 → 靜默略過，不影響功能 */ }
+}
+function _loadAssetCacheLS(brandId) {
+  try {
+    const raw = localStorage.getItem(_ASSET_LS_PREFIX + brandId);
+    if (!raw) return null;
+    const payload = JSON.parse(raw);
+    if (!payload || (Date.now() - payload.t) > _ASSET_LS_TTL) {
+      localStorage.removeItem(_ASSET_LS_PREFIX + brandId);
+      return null; // 過期
+    }
+    return payload;
+  } catch (e) { return null; }
+}
+function _clearAssetCacheLS(brandId) {
+  try { localStorage.removeItem(_ASSET_LS_PREFIX + brandId); } catch (e) {}
+}
+// 記憶體沒有就從本地補進來(刷新後第一次切該品牌會用到)
+function _hydrateFromLS(brandId) {
+  if (_assetCache[brandId]?.loaded) return;
+  const ls = _loadAssetCacheLS(brandId);
+  if (ls) _assetCache[brandId] = { loaded: true, photos: ls.photos, videos: ls.videos };
+}
 
 async function autoFetchAssets(brandId) {
   // ★ Worker Drive 模式（帳密登入）
@@ -13,6 +55,7 @@ async function autoFetchAssets(brandId) {
   }
   // 原本 Google OAuth 模式
   if (!window._driveToken) return;
+  _hydrateFromLS(brandId); // 🆕 WIN1：刷新後先看本地有沒有
   if (_assetCache[brandId]?.loaded) {
     window.S.photos   = _assetCache[brandId].photos;
     window.S.videos   = _assetCache[brandId].videos;
@@ -49,6 +92,7 @@ async function autoFetchAssets(brandId) {
     photos: [...window.S.photos],
     videos: [...window.S.videos]
   };
+  _saveAssetCacheLS(brandId, window.S.photos, window.S.videos); // 🆕 WIN1
 
   renderAssets();
   setDriveStatus('ok');
@@ -56,6 +100,7 @@ async function autoFetchAssets(brandId) {
 
 // ★ Worker Drive 模式：透過小號 Refresh Token 抓圖
 async function autoFetchAssetsWorker(brandId) {
+  _hydrateFromLS(brandId); // 🆕 WIN1：刷新後先看本地有沒有
   if (_assetCache[brandId]?.loaded) {
     window.S.photos   = _assetCache[brandId].photos;
     window.S.videos   = _assetCache[brandId].videos;
@@ -92,6 +137,7 @@ async function autoFetchAssetsWorker(brandId) {
     photos: [...window.S.photos],
     videos: [...window.S.videos]
   };
+  _saveAssetCacheLS(brandId, window.S.photos, window.S.videos); // 🆕 WIN1
 
   renderAssets();
   setDriveStatus('ok');
@@ -183,7 +229,7 @@ async function fetchDriveAssets(type) {
 
 async function fetchBoth() {
   const bid = window.S.brandId;
-  if (bid) delete _assetCache[bid];
+  if (bid) { delete _assetCache[bid]; _clearAssetCacheLS(bid); } // 🆕 WIN1：手動重抓連本地一起清
   window.S.photos = [];
   window.S.videos = [];
 
