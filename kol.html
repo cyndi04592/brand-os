@@ -2524,14 +2524,33 @@ function renderPersonaSection(p) {
       </div>`
     : `<div class="drive-empty-persona">尚未放照片<br><a href="${escapeHtml(p.folder_url)}" target="_blank">📁 打開資料夾上傳</a></div>`;
 
+  // 🆕 情報A:也顯示「已處理」子資料夾(多角度人物表 / Seedance 乾淨參考照)。
+  //    GAS 早就回傳 processed_photos,前台之前沒畫出來 → 存了看不到。
+  const procs = p.processed_photos || [];
+  const processedHtml = procs.length > 0
+    ? `<div style="font-size:11px;color:#9a9aa8;margin:8px 0 4px;">📦 已處理 · 多角度/參考照(${procs.length})</div>
+       <div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
+        ${procs.map(ph => `
+          <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}" style="border:1px solid #3a3a4a;">
+            <img src="${escapeHtml(ph.thumbnail_url)}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder>🖼️</div>'" referrerpolicy="no-referrer">
+          </div>
+        `).join('')}
+      </div>`
+    : '';
+
+  const countText = (p.processed_count > 0)
+    ? `${p.photo_count} 張 · 已處理 ${p.processed_count} 張`
+    : `${p.photo_count} 張照片`;
+
   return `
     <div class="drive-persona-group">
       <div class="drive-persona-head">
         <span class="name">🎭 ${escapeHtml(p.persona_name)}</span>
-        <span class="count">${p.photo_count} 張照片</span>
+        <span class="count">${countText}</span>
         ${statusChip}
       </div>
       ${photosHtml}
+      ${processedHtml}
     </div>
   `;
 }
