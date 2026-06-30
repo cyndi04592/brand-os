@@ -2391,26 +2391,37 @@ function syncSelectedKolToCine() {
     destGrid.addEventListener('click', handleLookClick);
   }
 }
-
+// 🆕 單一真相:依角度從「已處理」挑「最新」那張(檔名含 sheet_front/q34/profile)。
+//    LOOK 顯示 + 生影片(Seedance)都用這個 → 看到的=用到的;重複/很多張只取最新一張。
+function pickAnglePhoto(procs, angle) {
+  const re = angle === 'profile' ? /sheet_profile/i
+           : angle === 'q34'     ? /sheet_q34/i
+           : /sheet_front/i;
+  const matches = (procs || []).filter(x => re.test(x.name || ''));
+  if (!matches.length) return null;
+  return matches.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
+}
 // ─── Look 選擇器 ──────────────────────────────────────────
 function renderLookPicker() {
   const picker = document.getElementById('look-picker');
   const grid = document.getElementById('look-grid');
   const hint = document.getElementById('look-picker-hint');
 
-  if (!S.availableLooks || S.availableLooks.length === 0) {
-    picker.style.display = 'none';
-    return;
-  }
-  if (S.availableLooks.length < 2) {
-    picker.style.display = 'none';
-    return;
-  }
+  // 🆕 多角度:照 Drive 檔名自動抓「最新」的 front/q34/profile,每角度一張(看到的=後台用到的)
+  const _norm = s => (s || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim();
+  const _kolName = _norm(S.selectedKol?.name);
+  const _persona = (S.drivePhotos?.personas || []).find(x => _norm(x.persona_name) === _kolName);
+  const _procs = _persona?.processed_photos || [];
+  const _angles = [['front','正臉'], ['q34','3/4'], ['profile','側臉']]
+    .map(([k, label]) => { const ph = pickAnglePhoto(_procs, k); return ph ? { ph, label } : null; })
+    .filter(Boolean);
 
+  const haveLooks = S.availableLooks && S.availableLooks.length >= 2;
+  if (!haveLooks && _angles.length === 0) { picker.style.display = 'none'; return; }
   picker.style.display = 'block';
 
   const groupId = S.selectedKol?.id || '';
-  const html = S.availableLooks.map(look => {
+  const looksHtml = (S.availableLooks || []).map(look => {
     const isSelected = look.id === S.selectedLookId;
     const isBase = look.id === groupId;
     const hasImage = look.image_url && String(look.image_url).trim();
@@ -2418,7 +2429,6 @@ function renderLookPicker() {
       ? `<img src="${escapeHtml(look.image_url)}" alt="${escapeHtml(look.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder>🖼️</div>'">`
       : `<div class="look-placeholder">🖼️</div>`;
     const tagName = look.name || `Look ${look.id.slice(0, 6)}`;
-
     return `
       <div class="look-item ${isSelected ? 'selected' : ''} ${isBase ? 'base-look' : ''}"
            data-look-id="${escapeHtml(look.id)}"
@@ -2430,8 +2440,16 @@ function renderLookPicker() {
     `;
   }).join('');
 
-  grid.innerHTML = html;
-  hint.textContent = `當前:${S.selectedLookName}`;
+  // 🆕 多角度顯示卡:紫虛線框 + 📐,純顯示(無 data-look-id → 不可選),來源=Drive 檔名
+  const anglesHtml = _angles.map(({ ph, label }) => `
+      <div class="look-item" style="border:1px dashed #6c4cf0;cursor:default;opacity:.9;" title="生影片時依鏡頭角度自動使用(來自 Drive)">
+        <img src="${escapeHtml(ph.thumbnail_url)}" alt="${escapeHtml(ph.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder>🖼️</div>'">
+        <div class="look-tag">📐 ${label}</div>
+      </div>
+    `).join('');
+
+  grid.innerHTML = looksHtml + anglesHtml;
+  hint.textContent = haveLooks ? `當前:${S.selectedLookName}` : '📐 多角度·自動依鏡頭使用';
 
   grid.removeEventListener('click', handleLookClick);
   grid.addEventListener('click', handleLookClick);
@@ -2441,6 +2459,7 @@ function handleLookClick(e) {
   const item = e.target.closest('.look-item');
   if (!item) return;
   const lookId = item.dataset.lookId;
+  if (!lookId) return;   // 🆕 多角度顯示卡純顯示,不可選
   const lookName = item.dataset.lookName;
   if (lookId === S.selectedLookId) return;
 
@@ -2478,6 +2497,7 @@ async function loadDrivePhotos(brandId, force) {
     S.drivePhotos = res;
     S._drivePhotoCache[brandId] = res;  // 🆕 抓過就記住
     renderDriveGallery();
+    renderLookPicker();   // 🆕 Drive 照片到了 → 重畫 LOOK,多角度才顯示得出來
   } catch (e) {
     wrap.innerHTML = `<div class="kol-empty">❌ ${escapeHtml(e.message)}</div>`;
   }
@@ -3809,7 +3829,7 @@ async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
     // 優先用「已處理」裡的乾淨原圖,沒有才退回未處理的
     // 🆕 明確挑「正臉」當 Seedance 預設參考(不盲抓 [0],避免多角度表存進已處理後 [0] 變側臉/3-4 → 人歪)
     const _procs = p?.processed_photos || [];
-    const _front = _procs.find(x => (_ang === 'profile' ? /sheet_profile/i : _ang === 'q34' ? /sheet_q34/i : /sheet_front/i).test(x.name || ''))
+    const _front = pickAnglePhoto(_procs, _ang)                         // 🆕 最新那張(=LOOK 顯示的同一張)
                 || _procs.find(x => /(^|_)front|正臉/i.test(x.name || ''))
                 || _procs[0];
     const fileId = _front?.file_id || p?.photos?.[0]?.file_id;
