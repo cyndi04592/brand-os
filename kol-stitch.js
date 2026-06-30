@@ -221,7 +221,7 @@ window.KolStitch = (function () {
         || 'tw';
       const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
       prompt += '\nAudio & lip-sync: she speaks ONLY the spoken dialogue explicitly written in a shot, in natural ' + _accent
-        + ' with clear lip-sync. In any shot with NO written dialogue (eating, chewing, tasting, holding or showing the product, or simply reacting) she does NOT speak — her mouth does not form words, there is no voice-over, only natural ambient sound.';
+        + ' at a natural conversational speaking pace — she does NOT stretch words, slow down unnaturally, or insert pauses between individual words just to fill the shot duration; the speech stays smooth and continuous as if a real person is talking normally, with clear lip-sync. In any shot with NO written dialogue (eating, chewing, tasting, holding or showing the product, or simply reacting) she does NOT speak — her mouth does not form words, there is no voice-over, only natural ambient sound.';
     }
 
     // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
@@ -429,7 +429,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v7.2 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v7.3 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
