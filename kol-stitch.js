@@ -155,7 +155,7 @@ window.KolStitch = (function () {
         bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': [Image1] ' + (list[i].prompt || '') + '\n';
         tb = tb1;
       }
-      bodyB += '\nHer face has natural matte skin with no oily shine, no greasy T-zone and no hot specular highlights — the light on her face is soft, even and gentle, exactly as understated as the light on her hands and arms, never glossy or over-lit. While speaking she looks directly into the camera lens with focused, present, engaged eyes — not staring blankly off to the side, not an empty unfocused gaze.';
+      bodyB += '\nHer face has natural matte skin with no oily shine, no greasy T-zone and no hot specular highlights — the light on her face is soft, even and gentle, exactly as understated as the light on her hands and arms, never glossy or over-lit. While speaking she looks directly into the camera lens and makes genuine eye contact, with bright lively expressive eyes that have clear catchlights and real sparkle — her gaze is warm, alert and emotionally present, subtly brightening and widening on the words she emphasises, with natural blinking and tiny lifelike micro-expressions around the eyes and cheeks, never a blank dead fish-eyed stare and never empty or unfocused. She delivers the written line naturally and lets it land on its own; once the written words are finished she does NOT improvise, ad-lib, mumble or invent any extra words, prices or filler speech to pad out the remaining time — she just keeps a relaxed natural living presence, no made-up dialogue beyond what is written.';
       if (shared.tail) bodyB += '\n' + shared.tail;
       return bodyB;
     }
@@ -430,7 +430,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v7.4 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v7.5 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
