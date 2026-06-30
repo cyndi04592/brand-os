@@ -3477,7 +3477,7 @@ function openStoryboardForCine() {
       const b = beats[0] || {};
       S.cineStoryboard = beats;   // 🆕 存整包分鏡
       S.cineStoryboardPending = false;   // 🛡️ 已確認分鏡
-      const sit = (b.shotDesc || '') + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
+      const sit = (b.shotDesc || '') + (b.dialogue ? `\n她直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
       const el = document.getElementById('cine-situation');
       if (el) el.value = sit;
       // 🛡️ 智能挑時長 + 鎖定:依台詞估計秒數決定檔位
@@ -3527,7 +3527,7 @@ function openStoryboardForEpisode() {
       const who = persona.persona_name || '主角';
       S.episodeStoryboard = (beats && beats.length > 1) ? beats : null;   // 🆕 多段→接片;單段→null走原單集
       S.episodeStoryboardPending = false;   // 🛡️ 已確認分鏡
-      const sit = (b.shotDesc || '') + (b.dialogue ? `。${who}直視鏡頭自然地說:「${b.dialogue}」` : '');
+      const sit = (b.shotDesc || '') + (b.dialogue ? `\n${who}直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
       const el = document.getElementById('ep-situation');
       if (el) el.value = sit;
 
@@ -3669,7 +3669,7 @@ async function createStitchedVideo(beats) {
     : null;
   const plan = beats.map((b, i) => {
     const sit = (b.shotDesc || '')
-      + (b.dialogue ? `。她直視鏡頭自然地說:「${b.dialogue}」` : '');
+      + (b.dialogue ? \n她直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
     let p;
     if (_shared) {
       // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞,不重複、不堆疊
