@@ -1425,20 +1425,48 @@ function showStatus(msg, type) {
 }
 
 // ── API helpers ───────────────────────────────────────────
+// 🆕 韌性核心:GAS 抽風自動重試(指數退避 + jitter)。
+//    傳輸/解析失敗 + 假性「密碼錯誤」→ 重試;真正業務 ok:false → 直接回不重試。
+async function gasFetch(doFetch, action) {
+  function wait(attempt) {
+    const base = [600, 1500, 3500][attempt - 1];
+    const jitter = Math.floor(Math.random() * 400); // 打散多客戶同時重試
+    return new Promise(r => setTimeout(r, base + jitter));
+  }
+  let lastErr;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt > 0) await wait(attempt);
+    try {
+      const res = await doFetch();
+      if (!res.ok) throw new Error('GAS_HTTP_' + res.status);
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch (_) { throw new Error('GAS_NON_JSON'); }
+      if (data && data.ok === false && data.error === '密碼錯誤') throw new Error('GAS_FALSE_PWD');
+      return data;
+    } catch (e) {
+      lastErr = e;
+      console.warn('[kai] GAS ' + action + ' 第 ' + (attempt + 1) + ' 次失敗:' + e.message);
+    }
+  }
+  const err = new Error('系統忙碌中,請稍候再試');
+  err.code = 'GAS_UNAVAILABLE';
+  throw err;
+}
+
 async function gasGet(action, params = {}) {
   const qs = new URLSearchParams({ action, password: PASSWORD, ...params }).toString();
-  const res = await fetch(GAS_URL + '?' + qs);
-  return res.json();
+  return gasFetch(() => fetch(GAS_URL + '?' + qs), action);
 }
 
 async function gasPost(action, extra = {}) {
-  const res = await fetch(GAS_URL, {
+  return gasFetch(() => fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action, password: PASSWORD, ...extra }),
     redirect: 'follow',
-  });
-  return res.json();
+  }), action);
 }
 
 // ── 同步載入 brands(給 folder hint 顯示品牌中文名)──
