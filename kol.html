@@ -3669,7 +3669,7 @@ async function createStitchedVideo(beats) {
     : null;
   const plan = beats.map((b, i) => {
     const sit = (b.shotDesc || '')
-      + (b.dialogue ? \n她直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
+      + (b.dialogue ? `\n她直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
     let p;
     if (_shared) {
       // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞,不重複、不堆疊
