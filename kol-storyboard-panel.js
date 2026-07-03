@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-storyboard-panel.js · v1.2
+//  kol-storyboard-panel.js · v1.4
 //  🎬 分鏡產生器面板 — 大綱 → AI 編修 → 分鏡卡片 → 確認分鏡(鎖定)/ 重新編輯(解鎖)
 //   • open(ctx): { containerId, persona, product, sceneLabel, onConfirm, onEdit }
 //   • 確認分鏡 → ctx.onConfirm(beats, duration)(填劇情+鎖設定,不生成)
@@ -14,6 +14,7 @@
   let rootEl = null;
   let ctx = null;
   const state = { duration: 15, outline: '', beats: [], busy: false, confirmed: false };
+  let prodCache = [];   // 🆕 1b 分段綁圖:商品照縮圖清單(每次 renderCards 從 ctx.getProductImages() 重讀)
 
   // 🛡️ v1.3 修:本面板同時掛在 STEP2(sbp-cine-mount)+ STEP3(sbp-episode-mount)兩個容器,
   //   固定 ID 在頁面上會「重複」→ document.getElementById 永遠抓到第一個(STEP2)→ STEP3 按 AI 編修
@@ -51,6 +52,10 @@
 .sbp-fit.over{color:#ff6b6b}
 .sbp-empty{color:var(--text-dim,#8a8a99);font-size:12px;padding:14px 0;text-align:center}
 .sbp-genrow{margin-top:14px;display:flex;align-items:center;gap:10px}
+.sbp-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center}
+.sbp-chip{width:46px;height:46px;object-fit:cover;border-radius:8px;border:2px solid var(--border,#2c2c38);cursor:pointer;opacity:.7;background:#0e0e14}
+.sbp-chip.on{border-color:#b9aaff;opacity:1;box-shadow:0 0 0 2px #241f3a}
+.sbp-chip-clear{font-size:11px;color:var(--text-dim,#8a8a99);border:1px dashed var(--border,#2c2c38);border-radius:7px;padding:3px 8px;cursor:pointer;background:transparent}
 .sbp-note{font-size:11px;color:var(--text-dim,#8a8a99);flex:1}`;
     const el = document.createElement('style');
     el.id = 'sbp-styles';
@@ -163,6 +168,21 @@
     if (b) b.dialogueLocked = !b.dialogueLocked;
     renderCards();
   }
+  // 🆕 1b 分段綁圖:點縮圖 = 這段配這張商品照;再點一下 = 取消(取消 = 該段回到「整批一起餵」)
+  function pickProduct(beatIdx, pIdx) {
+    syncDom();
+    const b = state.beats.find(x => x.index === beatIdx);
+    const u = prodCache[pIdx];
+    if (!b || !u) return;
+    b.productUrl = (b.productUrl === u) ? '' : u;
+    renderCards();
+  }
+  function clearProduct(beatIdx) {
+    syncDom();
+    const b = state.beats.find(x => x.index === beatIdx);
+    if (b) b.productUrl = '';
+    renderCards();
+  }
   function durationChange(v) {
     state.duration = parseInt(v);
     state.beats = [];
@@ -207,6 +227,20 @@
     renderCards();
   }
 
+  // 🆕 1b:此段商品縮圖列 —— 只有 2 張以上商品照才出現(1 張綁不綁都一樣,不干擾)
+  function productChipsHtml(b) {
+    if (prodCache.length < 2) return '';
+    const chips = prodCache.map((u, i) => {
+      const on = b.productUrl === u;
+      return `<img src="${esc(u)}" class="sbp-chip${on ? ' on' : ''}" title="商品照 ${i + 1}" loading="lazy"
+        onclick="KolStoryboardPanel.pickProduct(${b.index}, ${i})">`;
+    }).join('');
+    const clearBtn = b.productUrl
+      ? `<span class="sbp-chip-clear" onclick="KolStoryboardPanel.clearProduct(${b.index})">✕ 不指定</span>` : '';
+    return `<div class="sbp-mini">此段商品(點選指定 · 不選 = 整批一起餵)</div>
+  <div class="sbp-chips">${chips}${clearBtn}</div>`;
+  }
+
   function cardHtml(b) {
     const overCls = b.overflow ? ' over' : '';
     const fitTxt = b.dialogue
@@ -224,6 +258,7 @@
   <div class="sbp-mini">鏡頭</div>
   <textarea id="sbp-shot-${b.index}" class="sbp-textarea" rows="2"
     oninput="KolStoryboardPanel.shotInput(${b.index}, this.value)">${esc(b.shotDesc)}</textarea>
+  ${productChipsHtml(b)}
   <div class="sbp-mini">台詞「」</div>
   <textarea id="sbp-dlg-${b.index}" class="sbp-textarea" rows="2"
     oninput="KolStoryboardPanel.dialogueInput(${b.index}, this.value)">${esc(b.dialogue)}</textarea>
@@ -234,6 +269,8 @@
   function renderCards() {
     const box = $el('sbp-cards');
     if (!box) return;
+    // 🆕 1b:每次重畫都重讀一次商品照(妳在下面商品區加選後,鎖台詞/點縮圖等任何動作都會刷新這排)
+    prodCache = (typeof ctx?.getProductImages === 'function') ? (ctx.getProductImages() || []).filter(Boolean) : [];
     if (!state.beats.length) {
       box.innerHTML = `<div class="sbp-empty">填好大綱、按「AI 編修」,這裡會出現 ${window.KolStorywriter.planBeats(state.duration).length} 張分鏡卡片</div>`;
       return;
@@ -256,8 +293,9 @@
   window.KolStoryboardPanel = {
     mount, open, expand, lock, confirmToggle,
     durationChange, outlineInput, shotInput, dialogueInput,
+    pickProduct, clearProduct,
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] 🎬 v1.3 就緒(確認鎖定 / 重新編輯解鎖 · 🛡️雙容器各自獨立·STEP3修)');
+  console.log('[KolStoryboardPanel] 🎬 v1.4 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 🆕分段綁圖1b:每段可指定商品照)');
 })();
