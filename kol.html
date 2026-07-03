@@ -5548,15 +5548,11 @@ const CALENDAR_TOPIC_MAP = {
 
 // ─── Episode / Calendar API wrappers ────────────────────────────────
 async function apiListEpisodes(brandId, kolId, limit) {
-  const qs = new URLSearchParams({
-    action: 'listEpisodes',
-    password: PASSWORD,
+  return await gasGet('listEpisodes', {
     brandId: brandId || '',
     kolId: kolId || '',
     limit: String(limit || 20),
-  }).toString();
-  const r = await fetch(`${GAS_URL}?${qs}`);
-  return r.json();
+  });
 }
 
 async function apiSaveEpisode(data) {
@@ -5568,18 +5564,13 @@ async function apiUpdateEpisodeStatus(id, fields) {
 }
 
 async function apiListCalendar(brandId, kolId, year, month) {
-  const qs = new URLSearchParams({
-    action: 'listCalendar',
-    password: PASSWORD,
+  return await gasGet('listCalendar', {
     brandId: brandId || '',
     kolId: kolId || '',
     year: String(year),
     month: String(month),
-  }).toString();
-  const r = await fetch(`${GAS_URL}?${qs}`);
-  return r.json();
+  });
 }
-
 async function apiSaveCalendar(data) {
   return await gasPost('saveCalendar', { data });
 }
@@ -6408,8 +6399,7 @@ async function refreshBits() {
   try {
     const email = localStorage.getItem('bs_sso_email') || '';
     if (!email) return;
-    const res = await fetch(`${GAS_URL}?action=getBits&password=${PASSWORD}&email=${encodeURIComponent(email)}`);
-    const jj = await res.json();
+    const jj = await gasGet('getBits', { email });
     if (jj && jj.ok) {
       const chip = document.getElementById('bitsChip');
       if (chip) chip.style.display = 'inline-flex';
