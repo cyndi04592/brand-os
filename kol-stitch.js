@@ -258,7 +258,7 @@ window.KolStitch = (function () {
         || 'tw';
       const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
       prompt += '\nAudio & lip-sync: she speaks ONLY the spoken dialogue explicitly written in a shot, in natural ' + _accent
-        +  ' at a natural conversational speaking pace — she does NOT stretch words, slow down unnaturally, or insert pauses between individual words just to fill the shot duration; the speech stays smooth and continuous as if a real person is talking normally. She says EXACTLY the written dialogue word for word and nothing else — do NOT improvise, invent, add, drop, repeat or alter any words, numbers or prices, and do NOT generate any speech that was not written. With clear lip-sync. In any shot with NO written dialogue (eating, chewing, tasting, holding or showing the product, or simply reacting) she does NOT speak — her mouth does not form words, there is no voice-over, only natural ambient sound.';
+        +  ' at a natural conversational speaking pace — she does NOT stretch words, slow down unnaturally, or insert pauses between individual words just to fill the shot duration; the speech stays smooth and continuous as if a real person is talking normally. Every syllable is articulated clearly and distinctly — brand names, product names and numbers are pronounced precisely and cleanly, never slurred, blended or mumbled — with brief natural pauses of 200-400 milliseconds between phrases, subtle natural mouth movements, and absolutely no exaggerated or mechanical robotic delivery. She says EXACTLY the written dialogue word for word and nothing else — do NOT improvise, invent, add, drop, repeat or alter any words, numbers or prices, and do NOT generate any speech that was not written. With clear lip-sync. In any shot with NO written dialogue (eating, chewing, tasting, holding or showing the product, or simply reacting) she does NOT speak — her mouth does not form words, there is no voice-over, only natural ambient sound. After her final spoken line ends she does NOT freeze, stiffen or stand still — she keeps natural closing body language (a warm smile, a small nod, casually showing the product, or turning back to what she was doing) flowing until the very last frame of the shot.';
     }
 
     // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
@@ -481,4 +481,3 @@ window.KolStitch = (function () {
     _api: api,
   };
 })();
-
