@@ -125,25 +125,42 @@ window.KolStitch = (function () {
   // v6.2 多鏡頭 prompt:一次生成、內含多個 Shot(角度切換),家具/臉跨鏡頭鎖。
   //   beats = [{prompt, durationSec}] 或字串陣列;timecode 照每個 beat 的真實秒數排(尊重分鏡)。
   //   [Image1]=KOL角度圖(臉錨)· [SCENE_IMG]=同一間房 · [OUTFIT_IMG]=同一件衣服(Worker 換成真 [ImageN])。
+  // 🆕 分段綁圖:從 beats 收集「每段各自的商品圖」,去重保序,回傳 url→[ImageN] 對照。
+  //   [Image1] 固定是臉 → 商品從 [Image2] 起算,順位 k 的商品 = [Image(k+2)]。
+  //   沒有 beat 帶 productUrl → 走原本「全片一個商品」舊路(向後相容)。
+  function collectBeatProducts(beats) {
+    const list = (beats || []).map(function (b) { return (typeof b === 'string') ? {} : (b || {}); });
+    const urls = []; const idx = {};
+    list.forEach(function (b) {
+      const u = b.productUrl;
+      if (u && idx[u] === undefined) { idx[u] = urls.length; urls.push(u); }
+    });
+    return {
+      urls: urls,
+      has: urls.length > 0,
+      tagOf: function (u) { return (u && idx[u] !== undefined) ? ('[Image' + (idx[u] + 2) + ']') : ''; }
+    };
+  }
+
   function buildMultiShotPrompt(beats, totalSec, shared, continuityFrom) {
     const list = beats.map(function (b) { return (typeof b === 'string') ? { prompt: b } : b; });
     const n = Math.max(1, list.length);
     const dur = totalSec || 15;
     const pad = function (x) { return String(Math.round(x)).padStart(2, '0'); };
+    const bp = collectBeatProducts(list);   // 🆕 分段綁圖
 
-    // 🔗 v6.8 接棒:把「上一段結尾的動作」當文字餵進這段開頭 → 後段接著演、不從頭。
-    //   來源=分鏡文字(不是生成好的影片)→ 不破壞平行生成、不加成本。
     const carry = continuityFrom
       ? ('Continuing seamlessly from the previous moment — she has just ' + continuityFrom
          + '. Pick up the action naturally from exactly that point; do NOT restart, reset or re-establish the scene.\n\n')
       : '';
 
-    // 🆕 B 版(精簡敘事·去重複):有 shared.front 才走這條;真實度核心擺最前、講一次,每段只放靈魂(動作+台詞)。
-    //   沒傳 shared → 直接落到下面 A 版(現狀),向後相容、不影響現在生成。
     if (shared && shared.front) {
+      const prodRule = bp.has
+        ? 'in each shot she holds the specific product image referenced in that shot, kept at a consistent real-world size and the same scale relative to her hand within that shot — do not zoom or resize the product inside a shot; different shots deliberately show different products exactly as specified; '
+        : 'the snack package she holds is the exact same physical object kept at the exact same real-world size and the same scale relative to her hand in every single shot — never bigger or smaller, never zoomed or resized between cuts, do not change the product size anywhere across the video; ';
       let bodyB = shared.front + '\n'
         + 'Across all shots: the SAME woman [Image1], the same location [SCENE_IMG], the same outfit [OUTFIT_IMG], '
-        + 'the snack package she holds is the exact same physical object kept at the exact same real-world size and the same scale relative to her hand in every single shot — never bigger or smaller, never zoomed or resized between cuts, do not change the product size anywhere across the video; '
+        + prodRule
         + 'one unified colour grade and the same lighting across every cut — no change of person, scene, outfit or lighting, '
         + 'no smoothing or beautifying, no crowd.\n\n'
         + carry;
@@ -152,7 +169,9 @@ window.KolStitch = (function () {
         const bSecB = list[i].durationSec || Math.max(1, Math.round(dur / n));
         const tb0 = tb, tb1 = (i === n - 1) ? dur : Math.min(dur, tb + bSecB);
         const markerB = (i === 0) ? 'Shot 1' : ('Hard cut to Shot ' + (i + 1));
-        bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': [Image1] ' + (list[i].prompt || '') + '\n';
+        const _tagB = bp.tagOf(list[i].productUrl);
+        const _prodB = _tagB ? (' She is holding ' + _tagB + ' — this exact product in this shot.') : '';
+        bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': [Image1] ' + (list[i].prompt || '') + _prodB + '\n';
         tb = tb1;
       }
       bodyB += '\nHer face has natural matte skin with no oily shine, no greasy T-zone and no hot specular highlights — the light on her face is soft, even and gentle, exactly as understated as the light on her hands and arms, never glossy or over-lit. While speaking she looks directly into the camera lens and makes genuine eye contact, with bright lively expressive eyes that have clear catchlights and real sparkle — her gaze is warm, alert and emotionally present, subtly brightening and widening on the words she emphasises, with natural blinking and tiny lifelike micro-expressions around the eyes and cheeks, never a blank dead fish-eyed stare and never empty or unfocused; her gaze flows and shifts naturally with what she is saying — small natural eye movements that drift briefly and return to the lens, NOT a rigid fixed stare locked on a single spot. Her expression flows and changes continuously like a real person — any emotion such as surprise, delight or excitement appears only as a brief fleeting beat that immediately transitions naturally into the next expression, word or action; she NEVER holds one exaggerated frozen expression, never freezes or locks her face into a static pose, and never keeps the same surprised or wide-eyed look for more than about a second. She delivers the written line naturally and lets it land on its own; the written line inside the quotes is the COMPLETE and ONLY speech for the whole shot; the instant those quoted words end, her speech is finished and there is NO further voice, NO extra words, NO improvised prices, NO mumbling and NO filler syllables of any kind for the rest of the shot — silence except natural ambient sound.';
@@ -170,9 +189,11 @@ window.KolStitch = (function () {
       const t0 = t;
       const t1 = (i === n - 1) ? dur : Math.min(dur, t + bSec);
       const marker = (i === 0) ? 'Shot 1' : ('Hard cut to Shot ' + (i + 1));
+      const _tagA = bp.tagOf(list[i].productUrl);
+      const _prodA = _tagA ? (' She is holding ' + _tagA + ' — this exact product in this shot.') : '';
       body += '[00:' + pad(t0) + '-00:' + pad(t1) + '] ' + marker
         + ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME background, wearing [OUTFIT_IMG]. '
-        + (list[i].prompt || '') + '\n';
+        + (list[i].prompt || '') + _prodA + '\n';
       t = t1;
     }
     body += '\nGlobal: it is the same woman, the same location and the same background across all shots; '
@@ -182,6 +203,21 @@ window.KolStitch = (function () {
       + 'No change of setting, no different person, no smoothing or beautifying, no crowd.';
     return body;
   }
+
+  // 🆕 分段綁圖 1a 自測(不花錢):console 打 _testMultiShoe()
+  window._testMultiShoe = function () {
+    const fake = [
+      { prompt: 'shows the shoe: "太好穿了!"', durationSec: 5, productUrl: 'FILA.jpg' },
+      { prompt: 'picks up another: "這雙也是!"', durationSec: 5, productUrl: 'CHAMPION.jpg' },
+      { prompt: 'smiles at camera', durationSec: 5, productUrl: 'FILA.jpg' }
+    ];
+    const bp = collectBeatProducts(fake);
+    const p = buildMultiShotPrompt(fake, 15, { front: 'TEST realism anchor.' });
+    console.log('=== 送 Seedance 的商品圖順序([Image1]=臉,之後才是商品)===');
+    bp.urls.forEach(function (u, i) { console.log('  [Image' + (i + 2) + '] = ' + u); });
+    console.log('=== 生成的 prompt ===\n' + p);
+    return { productUrls: bp.urls, prompt: p };
+  };
 
   // 生一段(v6.2:一次生成多鏡頭 reference-to-video。chunk 內含多個 beat(Shot),
   //   每個 beat 帶自己的動作+秒數;chunk 總長 = 各 beat 秒數加總(封頂 15)。
@@ -228,9 +264,10 @@ window.KolStitch = (function () {
     // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
     //   Worker 自動把 [OUTFIT_IMG]/[SCENE_IMG] 換成真實 [ImageN]。
     if (onTick) onTick(0, 'reference-to-video(多鏡頭)');
+    const _segProducts = collectBeatProducts(beats);   // 🆕 分段綁圖:beats 帶鞋 → 用它組圖(順序對齊 prompt)
     const sub = await queuedSubmit(function () { return api('seedance_submit', {
       kolImageUrl: opts.kolImageUrl,                                       // → [Image1] 臉錨(該 chunk 的角度圖)
-      productImageUrls: Array.isArray(opts.productImageUrls) ? opts.productImageUrls : [],
+      productImageUrls: _segProducts.has ? _segProducts.urls : (Array.isArray(opts.productImageUrls) ? opts.productImageUrls : []),
       outfitImageUrl: opts.outfitImageUrl || undefined,                    // → [OUTFIT_IMG]→[ImageN]
       sceneImageUrl: opts.sceneImageUrl || undefined,                      // → [SCENE_IMG]→[ImageN]
       prompt: prompt,
