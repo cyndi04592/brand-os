@@ -481,4 +481,3 @@ window.KolStitch = (function () {
     _api: api,
   };
 })();
-
