@@ -37,7 +37,7 @@
   };
 
   const SECONDS_PER_BEAT = 15;
-  const SPEAK_RATE = 3.5; // 中文自然口播約 3-4 字/秒(留停頓呼吸,避免快轉)
+  const SPEAK_RATE = 4.2; // 2026-07-03 實測校準:欣怡 36字/8秒≈4.5字/秒,取保守4.2(舊值3.5低估→台詞配太少→尾段空窗7秒)
 
   /**
    * 依秒數產生 beat 骨架(純函式、無網路)
@@ -233,5 +233,5 @@
     window.CrewDirector.register('storywriter', window.KolStorywriter);
   }
 
-  console.log('[KolStorywriter] 📖 v5.15 就緒(語速3.5 · 分鏡 + AI 編修前端)');
+  console.log('[KolStorywriter] 📖 v5.16 就緒(語速4.2實測校準 · 分鏡 + AI 編修前端)');
 })();
