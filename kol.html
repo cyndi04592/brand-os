@@ -3539,6 +3539,7 @@ function openStoryboardForCine() {
     persona: S.selectedKol.persona || {},
     product: { name: '', tag: '' },   // STEP2 商品靠大綱描述,不強制
     sceneLabel: '',
+    getProductImages: () => (typeof orderedProductUrls === 'function' ? orderedProductUrls() : []),   // 🆕 1b 分段綁圖:縮圖來源
     // ✅ 按「確認分鏡」:填劇情 + 鎖時長 15s + 凍結下面設定
    onConfirm: (beats) => {
       const b = beats[0] || {};
@@ -3589,6 +3590,7 @@ function openStoryboardForEpisode() {
     persona: persona.persona || persona,
     product: { name: product?.name || '', tag: '' },
     sceneLabel: document.getElementById('ep-scene')?.selectedOptions?.[0]?.text || '',
+    getProductImages: () => (typeof orderedEpisodeUrls === 'function' ? orderedEpisodeUrls() : []),   // 🆕 1b 分段綁圖:縮圖來源
     onConfirm: (beats, duration) => {
       const b = beats[0] || {};
       const who = persona.persona_name || '主角';
@@ -3759,7 +3761,7 @@ async function createStitchedVideo(beats) {
       }
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
-    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw' };
+    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
   });
 
   const btn = document.getElementById('create-seedance-btn');
@@ -6190,7 +6192,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       }
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
-    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw' };
+    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
   });
   S.storyArc = prevArc;
 
