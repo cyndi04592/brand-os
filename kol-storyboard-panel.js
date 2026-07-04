@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-storyboard-panel.js · v1.4
+//  kol-storyboard-panel.js · v1.5
 //  🎬 分鏡產生器面板 — 大綱 → AI 編修 → 分鏡卡片 → 確認分鏡(鎖定)/ 重新編輯(解鎖)
 //   • open(ctx): { containerId, persona, product, sceneLabel, onConfirm, onEdit }
 //   • 確認分鏡 → ctx.onConfirm(beats, duration)(填劇情+鎖設定,不生成)
@@ -194,6 +194,12 @@
     if (!state.beats.length) { alert('請先按「AI 編修」產生分鏡'); return; }
     if (!state.confirmed) {
       syncDom();
+      // 🆕 v1.5 防呆:任何一段台詞超長(紅字)就擋下確認,不讓超長台詞進生成(超長=引擎趕戲吃字)
+      const _over = state.beats.filter(b => b.overflow);
+      if (_over.length) {
+        alert('還不能確認唷:第 ' + _over.map(b => b.index + 1).join('、') + ' 段的台詞太長,講不完會被趕戲。\n\n請把該段台詞刪短一點(看卡片下方的字數提示,變回灰色就 OK),或再按一次「AI 編修」重寫。');
+        return;
+      }
       state.confirmed = true;
       if (typeof ctx?.onConfirm === 'function') ctx.onConfirm(state.beats, state.duration);
       else alert('尚未接上確認流程(onConfirm)');
@@ -297,5 +303,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] 🎬 v1.4 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 🆕分段綁圖1b:每段可指定商品照)');
+  console.log('[KolStoryboardPanel] 🎬 v1.5 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 🆕超長台詞擋確認防呆)');
 })();
