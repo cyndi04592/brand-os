@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-storyboard-panel.js · v1.5
+//  kol-storyboard-panel.js · v1.6
 //  🎬 分鏡產生器面板 — 大綱 → AI 編修 → 分鏡卡片 → 確認分鏡(鎖定)/ 重新編輯(解鎖)
 //   • open(ctx): { containerId, persona, product, sceneLabel, onConfirm, onEdit }
 //   • 確認分鏡 → ctx.onConfirm(beats, duration)(填劇情+鎖設定,不生成)
@@ -50,6 +50,7 @@
 .sbp-mini{font-size:11px;color:var(--text-dim,#8a8a99);margin:8px 0 3px}
 .sbp-fit{font-size:11px;margin-top:4px;color:var(--text-dim,#8a8a99)}
 .sbp-fit.over{color:#ff6b6b}
+.sbp-fit.short{color:#f5c542}
 .sbp-empty{color:var(--text-dim,#8a8a99);font-size:12px;padding:14px 0;text-align:center}
 .sbp-genrow{margin-top:14px;display:flex;align-items:center;gap:10px}
 .sbp-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center}
@@ -158,8 +159,11 @@
     b.overflow = !b.fit.fits;
     const fitEl = $el('sbp-fit-' + idx);
     if (fitEl) {
-      fitEl.textContent = `${b.fit.chars} 字 · 約 ${b.fit.estSec} 秒` + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '');
-      fitEl.className = 'sbp-fit' + (b.overflow ? ' over' : '');
+      const _si = shortInfo(b);
+      fitEl.textContent = `${b.fit.chars} 字 · 約 ${b.fit.estSec} 秒`
+        + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '')
+        + (_si ? ` 💤 台詞偏短,結尾約空 ${_si.gap} 秒(建議補到約 ${_si.target} 字)` : '');
+      fitEl.className = 'sbp-fit' + (b.overflow ? ' over' : (_si ? ' short' : ''));
     }
   }
   function lock(idx) {
@@ -233,6 +237,16 @@
     renderCards();
   }
 
+  // 🆕 v1.6:台詞偏短判斷(對稱防線:紅=太長硬擋,黃=偏短提醒不擋)
+  function shortInfo(b) {
+    if (!b?.fit || b.overflow || !b.seconds) return null;
+    const est = +b.fit.estSec || 0;
+    if (est >= b.seconds - 3) return null;                    // 空窗 3 秒內可接受(留收尾動作)
+    const gap = Math.max(1, Math.round(b.seconds - est - 1)); // 估空秒(扣 1 秒開場呼吸)
+    const target = Math.round(b.seconds * 0.78 * 4.2);        // 建議字數(同 Worker 寧滿勿空公式)
+    return { gap, target };
+  }
+
   // 🆕 1b:此段商品縮圖列 —— 只有 2 張以上商品照才出現(1 張綁不綁都一樣,不干擾)
   function productChipsHtml(b) {
     if (prodCache.length < 2) return '';
@@ -250,7 +264,7 @@
   function cardHtml(b) {
     const overCls = b.overflow ? ' over' : '';
     const fitTxt = b.dialogue
-      ? `${b.fit?.chars ?? 0} 字 · 約 ${b.fit?.estSec ?? 0} 秒` + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '')
+      ? `${b.fit?.chars ?? 0} 字 · 約 ${b.fit?.estSec ?? 0} 秒` + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '') + (shortInfo(b) ? ` 💤 台詞偏短,結尾約空 ${shortInfo(b).gap} 秒(建議補到約 ${shortInfo(b).target} 字)` : '')
       : '';
     return `
 <div class="sbp-card">
@@ -268,7 +282,7 @@
   <div class="sbp-mini">台詞「」</div>
   <textarea id="sbp-dlg-${b.index}" class="sbp-textarea" rows="2"
     oninput="KolStoryboardPanel.dialogueInput(${b.index}, this.value)">${esc(b.dialogue)}</textarea>
-  <div id="sbp-fit-${b.index}" class="sbp-fit${overCls}">${fitTxt}</div>
+  <div id="sbp-fit-${b.index}" class="sbp-fit${overCls}${shortInfo(b) ? ' short' : ''}">${fitTxt}</div>
 </div>`;
   }
 
@@ -303,5 +317,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] 🎬 v1.5 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 🆕超長台詞擋確認防呆)');
+  console.log('[KolStoryboardPanel] 🎬 v1.6 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 超長擋確認 · 🆕偏短黃字提醒)');
 })();
