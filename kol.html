@@ -1843,7 +1843,21 @@ async function gasFetch(doFetch, action) {
   throw err;
 }
 
+// 🆕 第0期分流:高頻讀取改走 Worker KV 快取——新鮮秒回、過期才問 GAS、GAS 抽風時 Worker 出陳貨救場。
+// Worker 有任何問題 → 自動落回下面直打 GAS 的原路(含原本的 retry),行為最壞跟改造前一樣。
+const GAS_CACHED_READS = { getBits: 1, getBrandOS: 1, listKolPhotos: 1 };
 async function gasGet(action, params = {}) {
+  if (GAS_CACHED_READS[action]) {
+    try {
+      const r = await fetch(WORKER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'gas_cached', password: PASSWORD, gasAction: action, gasParams: params }),
+      });
+      const out = await r.json();
+      if (out && out.ok !== false) return out;   // fresh / miss / stale 都是可用資料
+    } catch (_) { /* Worker 連不上 → 落回原路 */ }
+  }
   const qs = new URLSearchParams({ action, password: PASSWORD, ...params }).toString();
   return gasFetch(() => fetch(`${GAS_URL}?${qs}`), action);
 }
