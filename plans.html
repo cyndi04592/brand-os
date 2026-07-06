@@ -144,6 +144,7 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'ecpay_create', password: GAS_PASSWORD,
+            orderType: 'sub',
             orderId: j.orderId, amount: j.amount,
             itemName: `${j.planName}方案 ${j.cycle === 'year' ? '年繳' : '月繳'}`,
             tradeDesc: 'Brand OS 訂閱方案',
