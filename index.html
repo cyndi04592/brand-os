@@ -712,8 +712,8 @@ function openBitsShop() {
   else grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.5);padding:30px;">載入中…</div>';
   const _email = localStorage.getItem('bs_sso_email') || '';
   // 🆕 補給包=訂閱會員專屬加購;沒有效訂閱(monthlyBits<=0)就擋下,導去訂閱方案(防止用最低禮包繞過月費)
-  fetch(`${GAS_URL}?action=getBits&password=${GAS_PASSWORD}&email=${encodeURIComponent(_email)}`)
-    .then(r => r.json())
+  authCachedGet('getBits', { email: _email })
+    .then(b => b || fetch(`${GAS_URL}?action=getBits&password=${GAS_PASSWORD}&email=${encodeURIComponent(_email)}`).then(r => r.json()))
     .then(b => {
       // 🆕 改看「訂閱是否有效(subActive,後端用 subEnd 判到期)」;
       //    若 GAS 尚未更新(subActive=undefined)→ 退回看 monthlyBits,避免誤擋有效訂閱者
