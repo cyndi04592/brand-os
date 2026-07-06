@@ -1,8 +1,14 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-cinematographer.js · v5.25
+//  kol-cinematographer.js · v5.26
 //  
 //  📷 攝影師 — 鏡頭、自然光、運鏡、電影寫實
 //  
+//  v5.26 變更(prompt 減重·打 422):
+//   • 三處瘦身共省 ~300 字元,語意零犧牲:AUDIO_REALISM 濃縮、
+//     手機色彩縮句、拔 REALISM_BASE 與眼神塊/劇組打光線重複的膚質句
+//     (霧面/無油光在 stitch 眼神塊仍完整存在;柔光在 crew ③打光仍在)
+//   • 動機:單段 prompt ~6400 字元撞引擎上限(422),今日+390 是壓垮稻草
+//
 //  v5.25 變更(⑤ RIIV 寫實·fal 官方 UGC anti-slop 植入):
 //   • REALISM_BASE 補「手機色彩性格」:the warm faintly oversaturated
 //     color of a good phone camera + no studio polish
@@ -41,7 +47,7 @@
 
   // 🎯 攝影風格基底 — 管「人/膚質/不修圖」(靈魂留、干擾拔)
   //   v5.25:尾段補手機色彩性格(warm faintly oversaturated)+ no studio polish
-  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, soft natural subject edges that blend into the scene, no hard cutout outline, no over-sharpened subject edge, not a pasted-on composited look, soft diffused even light on her face, natural matte skin with no oily shine and no hot specular highlights on the skin, gentle low-contrast natural lighting, the warm faintly oversaturated color of a good phone camera, no studio polish, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
+  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, soft natural subject edges that blend into the scene, no hard cutout outline, no over-sharpened subject edge, not a pasted-on composited look, gentle low-contrast natural lighting, warm slightly saturated phone-camera color, no studio polish, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
@@ -51,7 +57,7 @@
   //   只要「這個畫面裡真的會有的聲音」:現場動作音 + 環境底噪 + 乾淨人聲。
   //   明確禁配樂 —— 不寫,模型就自動配一首廣告罐頭樂壓在台詞上。
   //   ⚠️ 全域生效;之後若要做純氛圍配樂片,把 contribute() 裡這行拔掉即可。
-  const AUDIO_REALISM = 'natural diegetic ambient sound only, real room tone and everyday environmental sounds of the location, her voice clear and upfront, no background music, no soundtrack, no jingle, no musical score';
+  const AUDIO_REALISM = 'only the natural ambient sound of the location, her voice clear and upfront, absolutely no background music, no soundtrack, no jingle';
 
   // 🎥 運鏡元資料
   const CAMERA_MOVEMENTS = {
@@ -150,5 +156,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.25 就緒 · REALISM_BASE(人+手機色彩) + SCENE_REALISM(場景落地) + AUDIO_REALISM(禁罐頭配樂·只留現場音) + 台灣腔');
+  console.log('[KolCinematographer] 📷 v5.26 就緒 · 瘦身版(去重複句·防撞prompt上限) · REALISM_BASE + SCENE_REALISM + AUDIO_REALISM(禁罐頭配樂) + 台灣腔');
 })();
