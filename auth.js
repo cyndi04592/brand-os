@@ -191,10 +191,31 @@ function driveLogin() {
   tokenClient.requestAccessToken({ prompt: '' });
 }
 
+// 🆕 讀取分流:高頻讀取先走 Worker(D1 毫秒級 + KV 快取 + GAS 抽風出陳貨);Worker 有任何問題自動退回直打 GAS 原路
+const AUTH_WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+async function authCachedGet(gasAction, params, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs || 6000);
+  try {
+    const r = await fetch(AUTH_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'gas_cached', password: GAS_PASSWORD, gasAction, gasParams: params || {} }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const out = await r.json();
+    if (out && out.ok !== false) return out;
+    return null;
+  } catch (e) { clearTimeout(timer); return null; }
+}
+
 // ══ 白名單檢查 ══
 async function checkWhitelist(email) {
   if (!email) return false;
   if (email === ADMIN_EMAIL) return true;
+  const fast = await authCachedGet('checkWhitelist', { email });
+  if (fast) return !!(fast.ok && fast.allowed);
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
@@ -282,11 +303,14 @@ async function startSystem() {
   }
 
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}&email=${encodeURIComponent(_userEmail||'')}`, { signal: controller.signal });
-    clearTimeout(timer);
-    const json = await res.json();
+    let json = await authCachedGet('getBrandOS', { email: _userEmail || '' }, 8000);
+    if (!json) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}&email=${encodeURIComponent(_userEmail||'')}`, { signal: controller.signal });
+      clearTimeout(timer);
+      json = await res.json();
+    }
     if (!json.ok) throw new Error(json.error);
     buildDataFromSheets(json.data);
     try { localStorage.setItem(_brandKey, JSON.stringify(json.data)); } catch(e) {} // 🆕 WIN2：存快取給下次秒開
