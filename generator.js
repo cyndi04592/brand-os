@@ -34,9 +34,12 @@ let currentMemories = [];
 
 async function loadMemories(brandId, productId) {
   try {
-    const url  = `${GAS_URL}?action=getMemory&password=${GAS_PASSWORD}&brandId=${encodeURIComponent(brandId)}&productId=${encodeURIComponent(productId)}`;
-    const res  = await fetch(url);
-    const data = await res.json();
+    let data = (typeof authCachedGet === 'function') ? await authCachedGet('getMemory', { brandId, productId }) : null;
+    if (!data) {
+      const url  = `${GAS_URL}?action=getMemory&password=${GAS_PASSWORD}&brandId=${encodeURIComponent(brandId)}&productId=${encodeURIComponent(productId)}`;
+      const res  = await fetch(url);
+      data = await res.json();
+    }
     currentMemories = data.ok ? (data.memories || []) : [];
   } catch (e) {
     console.warn('記憶載入失敗:', e);
@@ -476,8 +479,11 @@ async function refreshBits() {
   try {
     const email = localStorage.getItem('bs_sso_email') || '';
     if (!email) return;
-    const res = await fetch(`${GAS_URL}?action=getBits&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`);
-    const j = await res.json();
+    let j = (typeof authCachedGet === 'function') ? await authCachedGet('getBits', { email }) : null;
+    if (!j) {
+      const res = await fetch(`${GAS_URL}?action=getBits&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`);
+      j = await res.json();
+    }
     if (j && j.ok) {
       const chip = document.getElementById('bitsChip');
       if (chip) chip.style.display = 'inline-flex';
