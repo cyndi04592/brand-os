@@ -1849,6 +1849,7 @@ async function posterToVideo() {
     finishProgress(interval);
     setPrStatus('✅ 影片生成完成!可右鍵下載', 'var(--mint)');
     videoBtn.textContent = '✅ 已生成影片';
+    saveVideoToDriveSilently(result.videoUrl);  // 🆕 影片也背景存進 Drive(照抄海報存檔;不扣點、失敗不影響)
     videoBtn.disabled = true;
 
   } catch(e) {
@@ -1923,5 +1924,33 @@ async function saveImageToDriveSilently(imageUrl, kind, reqId) {
     }
   } catch (e) {
     console.warn('[存檔] ⚠️ 存檔錯誤(不影響海報):', e.message);
+  }
+}
+
+// ★ 🆕 影片背景靜默存檔(照抄海報版,走 photoroom-proxy save_ai_video_to_drive → GAS saveVideoToDrive)
+async function saveVideoToDriveSilently(videoUrl) {
+  try {
+    const brandId = window.S?.brandId;
+    if (!brandId) { console.warn('[影片存檔] 無 brandId,跳過'); return; }
+    if (!videoUrl || videoUrl.startsWith('data:') || videoUrl.startsWith('blob:')) {
+      console.warn('[影片存檔] videoUrl 不是可存的網址,跳過'); return;
+    }
+    const brand = window.BRANDS?.find(b => b.id === brandId);
+    const prod  = window.S?.prod;
+    const res = await callWorker({
+      action: 'save_ai_video_to_drive',
+      brandId,
+      videoUrl,
+      nameHint: (brand?.name || '廣告') + '_' + (prod?.name || '影片') + '_' + Date.now(),
+    });
+    if (res.ok) {
+      console.log('[影片存檔] ✅ 已存進 Drive:', res.drive_url);
+      const el = document.getElementById('prStatus');
+      if (el && el.textContent.includes('完成')) el.textContent += ' · ☁️ 影片已存雲端';
+    } else {
+      console.warn('[影片存檔] ⚠️ Drive 存檔失敗(不影響影片):', res.error);
+    }
+  } catch (e) {
+    console.warn('[影片存檔] ⚠️ 存檔錯誤(不影響影片):', e.message);
   }
 }
