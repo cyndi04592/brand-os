@@ -1030,8 +1030,8 @@ async function applyPhotoroomBg() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇照片!', 'var(--red)'); return; }
   setPrStatus('⏳ 載入原圖...', 'var(--t3)');
-  await ensureFullRes(photo);   // 🆕 生圖前才抓那張原圖(列表只載縮圖)
-  const imgSrc = photo.full || photo.hiRes || photo.src || photo.thumb;
+  await ensureFullRes(photo, true);   // 🆕 改抓 s1600 縮圖:小回應不斷線,1600px 對 1080 海報綽綽有餘(治大 base64 回應斷線)
+  const imgSrc = photo.canvasRes || photo.full || photo.hiRes || photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 照片尚未載入', 'var(--red)'); return; }
 
   btn.disabled = true; btn.textContent = '⏳ AI 處理中...';
@@ -1649,8 +1649,8 @@ async function generateGptPoster() {
   const photo = window.S.selPhoto !== null ? window.S.photos[window.S.selPhoto] : null;
   if (!photo) { setPrStatus('⚠️ 請先選擇商品照片!', 'var(--red)'); return; }
   setPrStatus('⏳ 載入原圖...', 'var(--t3)');
-  await ensureFullRes(photo);   // 🆕 生圖前才抓那張原圖(列表只載縮圖)
-  const imgSrc = photo.full || photo.hiRes || photo.src || photo.thumb;
+  await ensureFullRes(photo, true);   // 🆕 改抓 s1600 縮圖:小回應不斷線,1600px 對 1080 海報綽綽有餘(治大 base64 回應斷線)
+  const imgSrc = photo.canvasRes || photo.full || photo.hiRes || photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 商品照尚未載入', 'var(--red)'); return; }
 
   const headline = document.getElementById('gptHeadline')?.value?.trim();
