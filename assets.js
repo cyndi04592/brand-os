@@ -143,11 +143,33 @@ async function autoFetchAssetsWorker(brandId) {
   setDriveStatus('ok');
 }
 
+// ══ 🆕 傳輸層自動重試:對付 Cloudflare QUIC/HTTP3 間歇性斷線 ══
+//    QUIC 斷線會讓 fetch 直接 throw「TypeError: Failed to fetch」(即使伺服器已回 200 OK)
+//    → 自動重打:指數退避 + jitter(跟 GAS gasFetch 同款抗性)
+//    ⚠️ 只用於「讀取類、可重複安全」的請求;上傳/建檔等寫入絕不可套(會重複)
+async function _retryFetch(makeReq, label, tries) {
+  tries = tries || 4;
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await makeReq();
+    } catch (e) {
+      lastErr = e;
+      if (i < tries - 1) {
+        const wait = Math.min(1600, 250 * Math.pow(2, i)) + Math.floor(Math.random() * 400);
+        console.warn(`[retryFetch] ${label || 'req'} 第 ${i + 1}/${tries} 次傳輸中斷,${wait}ms 後重試:`, (e && e.message) ? e.message : e);
+        await new Promise(r => setTimeout(r, wait));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 // ★ 透過 Cloudflare Worker 抓 Drive 檔案
 async function fetchFromWorker(folderId, type) {
   if (!folderId) return;
   try {
-    const resp = await fetch(CF_WORKER_URL, {
+    const resp = await _retryFetch(() => fetch(CF_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -156,7 +178,7 @@ async function fetchFromWorker(folderId, type) {
         folderId,
         type: type === 'photo' ? 'photo' : 'video'
       })
-    });
+    }), 'drive_files');
     const data = await resp.json();
     if (!data.ok) { console.warn('Worker Drive error:', data.error); return; }
 
@@ -318,11 +340,11 @@ async function ensureFullRes(photo, thumb) {
   if (photo[key]) return;                       // 已抓過就用快取
   try {
     // ★ 走 Worker（服務帳號讀 Drive→base64）。thumb=true → s1600 縮圖(canvas 用);否則原圖(FAL 用)
-    const r = await fetch(CF_WORKER_URL, {
+    const r = await _retryFetch(() => fetch(CF_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'get_asset_base64', password: GAS_PASSWORD, driveFileId: photo.driveId, thumb: !!thumb })
-    });
+    }), 'get_asset_base64');
     const data = await r.json();
     if (data.ok && data.dataUrl) photo[key] = data.dataUrl;
     else console.warn('ensureFullRes Worker error:', data.error);
