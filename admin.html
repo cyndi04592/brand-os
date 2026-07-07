@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · admin.html · v11.1 KOL 設計語言 + 爬網址 spec/feature
+   Brand OS · admin.html · v11.3 訂閱管理分頁(listSubOrders/confirmSubOrder/cancelSubOrder)
    2026-04-28: 紫粉薄荷三色 + Syne 字體
    ══════════════════════════════════════════════════════════════ */
 :root {
@@ -1583,6 +1583,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="tab tab-pending" onclick="switchTab('apply')">📋 品牌審核<span class="pending-dot" id="pendingDot"></span></div>
   <div class="tab" onclick="switchTab('staff')">員工管理</div>
   <div class="tab" onclick="switchTab('topup')">💎 儲值管理</div>
+  <div class="tab" onclick="switchTab('suborder')">📅 訂閱管理</div>
 </div>
 
 <div class="main">
@@ -1787,6 +1788,20 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     </div>
   </div>
 
+  <div class="section" id="sec-suborder">
+    <div class="section-header">
+      <h2>📅 訂閱管理(方案月繳/年繳訂單)</h2>
+      <button class="btn-refresh" onclick="loadSubOrders()">🔄 重新整理</button>
+    </div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:18px;line-height:1.9;">
+      客戶選方案(入門/專業/旗艦)下單後出現在這裡。核對「銀行實際收款」後按「✓ 確認開通」,系統自動開通該方案並發放月配額。<br>
+      ⚠️ 開通後不可復原;同一張單按兩次不會重複開通。銀行轉帳的客戶專用(信用卡走綠界自動回調,不需人工)。
+    </div>
+    <div class="table-wrap" id="subOrderBody">
+      <div class="empty-state"><p>載入中...</p></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -1911,7 +1926,7 @@ async function bootAdmin() {
 }
 
 function switchTab(name) {
-  const tabs = ['brands','products','folders','delivers','memory','apply','staff','topup'];
+  const tabs = ['brands','products','folders','delivers','memory','apply','staff','topup','suborder'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
@@ -1920,6 +1935,7 @@ function switchTab(name) {
   if (name==='memory') loadAdminMemory(1);
   if (name==='apply') loadApply();
   if (name==='topup') loadTopup();
+  if (name==='suborder') loadSubOrders();
 }
 
 // 💎 儲值管理:列訂單 + 一鍵確認入帳
@@ -1957,6 +1973,59 @@ async function confirmTopup(orderId) {
     else if (j.error==='already_paid') { alert('⚠️ 此單先前已入帳,未重複加點'); }
     else { alert('❌ 失敗:' + (j.message || j.error)); }
     loadTopup();
+  } catch (e) { alert('❌ 連線錯誤,請重試'); }
+}
+
+// 📅 訂閱管理:列訂單 + 一鍵確認開通 / 取消
+async function loadSubOrders() {
+  const box = document.getElementById('subOrderBody');
+  if (!box) return;
+  box.innerHTML = '<div class="empty-state"><p>載入中...</p></div>';
+  try {
+    const r = await fetch(`${GAS_URL}?action=listSubOrders&password=${PASSWORD}`);
+    const j = await r.json();
+    if (!j.ok) { box.innerHTML = '<div class="empty-state"><p>載入失敗</p></div>'; return; }
+    if (!j.orders || !j.orders.length) { box.innerHTML = '<div class="empty-state"><p>目前沒有訂閱訂單</p></div>'; return; }
+    let html = '<table><thead><tr><th>訂單編號</th><th>Email</th><th>方案</th><th>週期</th><th>金額</th><th>月配額</th><th>方式</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
+    j.orders.forEach(o => {
+      const cycleLabel = o.cycle==='year' ? '年繳' : '月繳';
+      const st = o.status==='pending' ? '<span style="color:#ffb84d;font-weight:700">● 待確認</span>'
+               : o.status==='paid'    ? '<span style="color:#6dfac2;font-weight:700">✓ 已開通</span>'
+               :                        '<span style="color:var(--t3)">已取消</span>';
+      let act = '—';
+      if (o.status==='pending') {
+        act = `<button class="btn-add-staff" style="padding:6px 12px;font-size:12px" onclick="confirmSubOrder('${o.orderId}')">✓ 確認開通</button>`
+            + ` <button class="btn-refresh" style="padding:6px 10px;font-size:12px;color:#ff6d9b" onclick="cancelSubOrder('${o.orderId}')">✕ 取消</button>`;
+      } else if (o.status==='paid' && o.paidAt) {
+        act = '<span style="font-size:11px;color:var(--t3)">'+new Date(o.paidAt).toLocaleString('zh-TW')+'</span>';
+      }
+      html += `<tr><td style="font-family:monospace;font-size:11px">${o.orderId}</td><td style="font-size:12px">${o.email}</td><td>${o.planName||o.planKey||'—'}</td><td style="font-size:12px;color:var(--t3)">${cycleLabel}</td><td>NT$${Number(o.amount).toLocaleString()}</td><td>${Number(o.monthlyBits||0).toLocaleString()}</td><td style="font-size:11px;color:var(--t3)">${o.method||'—'}</td><td>${st}</td><td>${act}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    box.innerHTML = html;
+  } catch (e) { box.innerHTML = '<div class="empty-state"><p>載入錯誤</p></div>'; }
+}
+
+async function confirmSubOrder(orderId) {
+  if (!confirm('確認此訂閱單「銀行已實際收到款項」?\n開通後不可復原。\n\n' + orderId)) return;
+  try {
+    const r = await fetch(`${GAS_URL}?action=confirmSubOrder&password=${PASSWORD}&orderId=${encodeURIComponent(orderId)}`);
+    const j = await r.json();
+    if (j.ok) { alert('✅ 已開通方案:' + (j.plan||'') + '\n月配額:' + Number(j.monthlyBits||0).toLocaleString() + ' Bits'); }
+    else if (j.error==='already_paid') { alert('⚠️ 此單先前已開通,未重複處理'); }
+    else { alert('❌ 失敗:' + (j.message || j.error)); }
+    loadSubOrders();
+  } catch (e) { alert('❌ 連線錯誤,請重試'); }
+}
+
+async function cancelSubOrder(orderId) {
+  if (!confirm('確定取消此訂閱單?\n(僅將訂單標記為取消,不影響已開通的方案)\n\n' + orderId)) return;
+  try {
+    const r = await fetch(`${GAS_URL}?action=cancelSubOrder&password=${PASSWORD}&orderId=${encodeURIComponent(orderId)}`);
+    const j = await r.json();
+    if (j.ok) { alert('✅ 訂單已取消'); }
+    else { alert('❌ 失敗:' + (j.message || j.error)); }
+    loadSubOrders();
   } catch (e) { alert('❌ 連線錯誤,請重試'); }
 }
 
