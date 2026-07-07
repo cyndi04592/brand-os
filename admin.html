@@ -2694,7 +2694,15 @@ async function doApprove(brandId) {
   try {
     const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_USER_EMAIL, brandId, customId: customId.trim() }), headers:{'Content-Type':'text/plain'} });
     const j = await r.json();
-    if (j.ok) { setStatus('✅ 品牌已核准上線!', 'ok'); await loadApply(); }
+    if (j.ok) {
+      setStatus('✅ 品牌已核准上線!同步中…', 'ok');
+      // 🆕 根治onboard:審核通過後立刻叫 kol-proxy 同步 D1(新會員登入/品牌立刻被認得,不用等)
+      try {
+        await fetch('https://kol-proxy.calm-sunset-6b66.workers.dev/', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'sync_after_approve', password:PASSWORD }) });
+        setStatus('✅ 品牌已核准上線 + D1 已同步!', 'ok');
+      } catch(_) { setStatus('✅ 已核准(D1 同步稍後自動補)', 'ok'); }
+      await loadApply();
+    }
     else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 操作失敗', 'err'); }
   hideLoading();
