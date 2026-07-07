@@ -124,11 +124,11 @@ async function autoFetchAssetsWorker(brandId) {
   const promises = [];
   if (f.photo) {
     if (photoInput) photoInput.value = f.photo;
-    promises.push(fetchFromGAS(f.photo, 'photo'));
+    promises.push(fetchFromWorker(f.photo, 'photo'));  // 🆕 Worker 直讀 Drive(Service Account+重試),不走 GAS 抽風
   }
   if (f.video) {
     if (videoInput) videoInput.value = f.video;
-    promises.push(fetchFromGAS(f.video, 'video'));
+    promises.push(fetchFromWorker(f.video, 'video'));  // 🆕 同上,走 Worker
   }
   await Promise.all(promises);
 
