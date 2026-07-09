@@ -229,6 +229,40 @@ window.KolStitch = (function () {
   //   序列化後:第 1 段把共用圖搬好,第 2~6 段去重直接 head 命中、跳過 PUT → 又快又不可能撞。
   //   只序列化「送出」這一下;送出拿到 requestId 後的輪詢(pollEpisode)照樣全部平行 → 生成總時間幾乎不變。
   let _submitChain = Promise.resolve();
+  // ---- 🆕 v6.5 多角度臉參考表(攝影師② Kling 鎖臉用)-------------------------
+  //  Drive「已處理」子夾裡的 {KOL名}_sheet_{角度}_{日期}.jpg
+  //    · _sheet_front_ → 正臉(首幀 + Element1 正面)
+  //    · 其餘 _sheet_  → 多角度 reference(profile / q34 …)→ 這是解「臉漂移」的關鍵
+  //  ⚠️ 只回 file_id,不回 thumbnail_url:listKolPhotos 對「已處理」夾只給 w400 縮圖,
+  //     縮圖絕不能餵引擎(鐵律)。file_id → Worker transferDriveToR2 才拿得到乾淨原圖。
+  const _sheetCache = {};
+  async function resolveKolSheet(brandId, kolName) {
+    if (!brandId || !kolName) throw new Error('resolveKolSheet 缺少 brandId 或 kolName');
+    const key = brandId + '::' + kolName;
+    if (_sheetCache[key]) return _sheetCache[key];
+
+    const d = await api('gas_cached', { gasAction: 'listKolPhotos', gasParams: { brandId: brandId } });
+    const p = (d.personas || []).find(function (x) { return x.persona_name === kolName; });
+    if (!p) throw new Error('在品牌「' + brandId + '」的相片夾找不到 KOL「' + kolName + '」');
+
+    const all = [].concat(p.photos || [], p.processed_photos || []);
+    const sheets = all.filter(function (x) { return x.name && x.name.indexOf('_sheet_') !== -1; });
+    if (!sheets.length) {
+      throw new Error('KOL「' + kolName + '」還沒有多角度臉參考表(檔名需含 _sheet_)。'
+        + '沒有多角度圖時 Kling 的臉會在講話/動作中漂移 → 請先生成參考表再用攝影師②。');
+    }
+    const front = sheets.find(function (x) { return x.name.indexOf('_sheet_front') !== -1; }) || sheets[0];
+    const angles = sheets.filter(function (x) { return x !== front; }).slice(0, 4);   // 不過載:最多 4 張
+
+    const out = {
+      faceId: front.file_id,
+      angleIds: angles.map(function (x) { return x.file_id; }),
+      _names: { front: front.name, angles: angles.map(function (x) { return x.name; }) }
+    };
+    _sheetCache[key] = out;
+    return out;
+  }
+
   function queuedSubmit(fn) {
     const p = _submitChain.then(function () { return fn(); });
     _submitChain = p.then(function () {}, function () {});   // 一段送出失敗也不卡住後面那幾段
@@ -247,6 +281,46 @@ window.KolStitch = (function () {
       return a + ((typeof b === 'object' && b.durationSec) ? b.durationSec : 5);
     }, 0);
     totalSec = Math.max(3, Math.min(15, totalSec || 15));
+
+    // ═══ 🆕 v6.5 引擎切換層 ═══════════════════════════════════════════════
+    //  一個攝影師一個檔:opts.engine 指定 → 交給 window.KolEngines[engine].submitSegment。
+    //  沒指定(或找不到模組)→ 原封不動走下面的 Seedance 老路(攝影師①,一個字沒改)。
+    //  輪詢/接片共用:pollEpisode 走 webhook + reqId,與引擎無關。
+    if (opts.engine && opts.engine !== 'seedance') {
+      const _eng = window.KolEngines && window.KolEngines[opts.engine];
+      if (!_eng || typeof _eng.submitSegment !== 'function') {
+        throw new Error('找不到攝影師模組「' + opts.engine + '」,請確認 kol-engine-' + opts.engine + '.js 已載入');
+      }
+      // 多角度臉參考表 → Element1 鎖臉(解臉漂移)。撈不到會 throw,不會默默退回單圖。
+      if (onTick) onTick(0, '讀取多角度臉參考表…');
+      const _sheet = await resolveKolSheet(opts.brandId, opts.kolName);
+
+      if (onTick) onTick(0, (_eng.label || opts.engine) + '(多角度鎖臉)');
+      const _bp = collectBeatProducts(beats);
+      const _sub = await queuedSubmit(function () {
+        return _eng.submitSegment({
+          kolFaceDriveId: _sheet.faceId,          // 正臉(首幀 + Element1)
+          kolAngleDriveIds: _sheet.angleIds,      // 多角度 → reference,鎖臉關鍵
+          kolImageUrl: opts.kolImageUrl,          // fallback:沒 driveId 時才用
+          productImageUrls: _bp.has ? _bp.urls : (Array.isArray(opts.productImageUrls) ? opts.productImageUrls : []),
+          outfitImageUrl: opts.outfitImageUrl || undefined,   // MVP 暫不塞 element(資產不過載),保留欄位
+          sceneImageUrl: opts.sceneImageUrl || undefined,
+          beats: beats,
+          totalSec: totalSec,
+          aspectRatio: opts.aspectRatio || '9:16',
+          resolution: opts.resolution || '720p',
+          generateAudio: opts.generateAudio === true,
+          seed: opts.seed,
+          brandId: opts.brandId,
+          kolName: opts.kolName,
+          nationality: opts.nationality,
+        });
+      });
+      const _url = await pollEpisode(_sub.requestId, opts.brandId, onTick);
+      if (!_url) throw new Error('攝影師「' + opts.engine + '」沒拿到影片 URL');
+      return _url;
+    }
+    // ═══ 以下 = 攝影師① Seedance 原路(未更動)═════════════════════════════
 
     let prompt = buildMultiShotPrompt(beats, totalSec, opts.shared, opts.continuityFrom);
 
@@ -428,6 +502,7 @@ window.KolStitch = (function () {
       // 該 chunk 的 KOL 圖:用第一個 beat 的角度圖(STEP2/STEP3 已挑好)→ 沒有才退 chunk/全域
       const chunkKol = (beats[0] && beats[0].kolImageUrl) || chunk.kolImageUrl || kolImg;
       return generateSegment({
+        engine: opts.engine,                       // 🆕 v6.5 攝影師選擇(未傳 → Seedance 原路)
         shared: opts.shared,                       // 🆕 B 版共用區塊(front/tail);沒傳就走 A 版
         continuityFrom: continuityFrom,            // 🔗 v6.8 接棒:上一段結尾動作 → 這段接著演(不從頭)
         kolImageUrl: chunkKol,                     // v6.2:用該 chunk 的角度圖當 [Image1](臉錨)
@@ -468,7 +543,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v7.7 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.5(引擎切換層)· 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
@@ -479,6 +554,7 @@ window.KolStitch = (function () {
     runStitchFlow,
     pickUrl,
     pollEpisode,
+    resolveKolSheet,     // 🆕 v6.5:Console 可單獨驗多角度表(不送 fal、不燒點數)
     _api: api,
   };
 })();
