@@ -1,5 +1,5 @@
 // ==========================================================================
-// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v1.5
+// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v1.7
 // --------------------------------------------------------------------------
 // v1.3 變更(對齊 Seedance 那條已打磨的路,連踩過的坑一起搬過來):
 //   🐛 修 bug:seed 沒傳給 Worker → 跨段用不同 seed → 一致性直接崩。Seedance 有共用 seed。
@@ -20,7 +20,7 @@
 //   · 每個 element 必須「frontal_image_url AND reference_image_urls」成對,只給 frontal → 422
 //     → 單張資產(商品/服裝/場景)由 Worker v3.51 自動用 frontal 補 reference
 //     ⚠️ 已知代價:單張商品在 shot2 會變形(模型不知道側面)→ 需要資產⑤ 商品三視圖
-//   · duration 只吃 5 / 8 / 10 / 15(Seedance 吃任意秒數 → 必須 snap,否則 422)
+//   · duration 3~15 任意整數秒(官方文件;不是 5/8/10/15,那是第三方誤傳)
 //   · elements 上限 4(Worker slice(0,4))
 //   · aspect_ratio 被模型忽略,比例由 start_image 決定
 //   · Kling v3/o3 並發上限 1/user → 多段排隊跑,非 bug
@@ -37,15 +37,9 @@
   const MAX_ELEMENTS = 4;   // Worker slice(0,4)
   const SHOT_LIMIT = 512;
   const CFG_SCALE = 0.6;
-  // ⚠️ Kling 只吃這四個秒數(fal 官方:5 / 8 / 10 / 15)。給 7 或 12 會被拒。
-  //    Seedance 吃任意秒數 → 分鏡秒數直接照抄過來會炸,必須 snap 到最近的合法值。
-  const LEGAL_SEC = [5, 8, 10, 15];
-  function snapSec(n) {
-    const v = parseInt(n, 10) || 5;
-    return LEGAL_SEC.reduce(function (best, cur) {
-      return Math.abs(cur - v) < Math.abs(best - v) ? cur : best;
-    }, LEGAL_SEC[0]);
-  }
+  // ⏱ duration:fal 官方文件 = 3~15 任意整數秒(v1.4 誤信第三方說只有 5/8/10/15,
+  //    加了 snapSec 會偷改 RA 的分鏡秒數 → v1.7 移除。分鏡秒數是 RA 的,不准擅自改。)
+  function clampSec(n) { return Math.max(3, Math.min(15, parseInt(n, 10) || 5)); }
 
   // ── 負向詞:全域欄位,不佔 512。= RA REALISM_BASE 負向半邊 + Seedance Global 跨段鎖定條款(反向)
   //    ⚠️ 嚴守雷區:不寫 pores / film grain / contact shadows / perfect / studio(驗過的烤肉紋兇手)
@@ -55,7 +49,10 @@
     'hot specular highlights', 'plastic skin', 'studio polish', 'glossy commercial look',
     'polished fashion model', 'CGI', '3D render', 'pasted-on composited look', 'hard cutout outline',
     // 生命感負向(眼神塊/生命感層的反面)
-    'statue-still frozen pose', 'blank fixed stare', 'dead fish eyes', 'frozen exaggerated expression',
+    // 🎭 反浮誇定格笑 + 反空洞眼神(Seedance 眼神/表情塊的負向半邊,搬來這裡 0 字元成本)
+    'statue-still frozen pose', 'blank fixed stare', 'dead fish eyes', 'unfocused empty eyes',
+    'frozen exaggerated expression', 'held exaggerated grin', 'frozen smile', 'rigid fixed stare',
+    'wide-eyed look held too long', 'same expression for the whole shot', 'locked static face pose',
     // 語音負向(AUDIO_REALISM)
     'robotic delivery', 'slurred speech', 'invented or extra words', 'repeated words',
     'background music', 'soundtrack', 'jingle',
@@ -69,12 +66,20 @@
 
   // ── 正向錨(必須留在 prompt)
   const B_REALISM = ' Handheld phone vlog, natural available light, her skin exactly like the reference, an ordinary real person.';
-  // 眼神塊(Seedance 有,補上;已把負向部分搬 negative_prompt,這裡只留「要什麼」)
-  const B_EYES    = ' Bright lively eyes with clear catchlights, warm and present; gaze drifts naturally and returns to the lens, relaxed blinking, expressions flow and change like a real person.';
-  const bAudio    = (accent) => ' She speaks only the written line, in natural ' + accent + ', brand names and numbers clear and unhurried; with no written line she stays silent.';
-  const bProduct  = (tag) => ' Holding ' + tag + ', the same physical product at a consistent real-world size.';
-  const bOutfit   = (tag) => ' Wearing ' + tag + ', the same outfit in every shot.';
-  const bScene    = (tag) => ' In ' + tag + ', the same location and background throughout.';
+  // ⚠️ 以下正向錨已「去重複」:凡負向部分(never/no …)一律搬 negative_prompt(0 字元成本)。
+  //    省下的空間補回 Seedance 眼神塊裡缺的三錨:眼神跟強調字 / 自然眨眼 / 微表情。
+  // 🎭 表情/眼神錨 —— 對齊 Seedance 打磨過的「反浮誇笑 + 反空洞眼神」兩個機制。
+  //   ① 反浮誇:情緒是「一閃而過的一拍」,立刻流進下一句話/下一個動作 → 不是掛著一個誇張的笑
+  //   ② 反空洞:眼睛有 catchlights,視線隨話語流動、飄開再回到鏡頭 → 不是死盯一個點
+  //   ⚠️ 這兩條是「要她怎麼演」的正向指令,negative_prompt 表達不了 → 必須留在 prompt。
+  //      所以優先級提到商品/服裝/場景之前(那些的負向已由 negative_prompt 反向覆蓋)。
+  //   負向半邊(never a held grin / never a fixed stare / >1 秒不放)已搬 negative_prompt。
+  //   對齊 Seedance 眼神塊全部六錨:①情緒一閃而過 ②眼神光 ③眼神隨強調字變亮 ④自然眨眼 ⑤微表情 ⑥視線流動
+  const B_EYES    = ' Expression flows; delight is a brief passing beat. Eyes catchlit, brightening on stressed words; natural blinking, micro-expressions, gaze drifts and returns.';
+  const bAudio    = (accent) => ' Speaks only the written line, natural ' + accent + ', brand names clear; no written line = silent.';
+  const bProduct  = (tag) => ' Holding ' + tag + ', same product, consistent real-world size.';
+  const bOutfit   = (tag) => ' Wearing ' + tag + ', same outfit throughout.';
+  const bScene    = (tag) => ' In ' + tag + ', same location and background.';
 
   function callWorker(action, params) {
     if (!window.KolStitch || typeof window.KolStitch._api !== 'function') {
@@ -172,13 +177,21 @@
     const action = ((typeof beat === 'string') ? beat : (beat.prompt || '')).trim();
     // 分段綁圖:這個 shot 綁哪一件商品(對齊 Seedance collectBeatProducts)
     const prodTag = tags.productOf ? tags.productOf(beat) : null;
+    // 優先級(由高到低)。⚠️ v1.6 調整:表情/眼神錨提到商品之前。
+    //   因為「怎麼演」只能正向講;而「不換衣/不換景/不修圖」的負向已在 negative_prompt 全域覆蓋。
+    // 優先級(由高到低)。v1.7 依據:
+    //   ① 口音 = 鐵律,永遠第一(v5.18 誤拔 → 又晴變中國腔)
+    //   ② 商品/服裝/場景錨 = 這三句是唯一「引用 @ElementN」的地方。
+    //      fal 官方:元素必須在 prompt 裡以 @ElementN 引用才生效 → 錨詞被丟 = 那張圖白傳(還白花 R2 轉檔錢)
+    //   ③ 表情/眼神 = 正向指令,negative_prompt 表達不了(要她「怎麼演」)
+    //   ④ 寫實錨 = 負向半邊已在 negative_prompt 全域覆蓋,最先犧牲
     const r = assemble('@Element1 ' + action, [
-      { name: '口音/音訊錨', text: opts.audioOn ? bAudio(opts.accent) : '' },   // 🔒 鐵律,優先級最高
-      { name: '商品錨',     text: prodTag ? bProduct(prodTag) : '' },
-      { name: '服裝錨',     text: tags.outfit ? bOutfit(tags.outfit) : '' },
-      { name: '場景錨',     text: tags.scene ? bScene(tags.scene) : '' },
-      { name: '寫實錨',     text: B_REALISM },
-      { name: '眼神/生命感錨', text: B_EYES },
+      { name: '口音/音訊錨', text: opts.audioOn ? bAudio(opts.accent) : '' },   // 🔒 鐵律
+      { name: '商品錨',     text: prodTag ? bProduct(prodTag) : '' },           // @ElementN 引用,丟了圖失效
+      { name: '服裝錨',     text: tags.outfit ? bOutfit(tags.outfit) : '' },    // 同上
+      { name: '場景錨',     text: tags.scene ? bScene(tags.scene) : '' },       // 同上
+      { name: '表情/眼神錨', text: B_EYES },                                     // 🎭 反浮誇笑 + 反空洞眼神
+      { name: '寫實錨',     text: B_REALISM },                                   // 負向已在 neg,最先丟
     ]);
     return r.text;
   }
@@ -264,7 +277,7 @@
         ? b.durationSec
         : Math.max(1, Math.round((seg.totalSec || 5) / beats.length));
       let p = buildShotPrompt(b, opts, built.tags);
-      return { prompt: p, duration: String(snapSec(dur)) };   // ⚠️ snap 到 5/8/10/15
+      return { prompt: p, duration: String(clampSec(dur)) };   // 官方 3~15,照抄分鏡秒數
     });
 
     // shared.front / shared.tail(B 版精簡敘事):塞不進 512 就自動被 assemble 擋掉,不會壞。
@@ -281,7 +294,7 @@
       elements: built.elements,
       multiPrompt: multiPrompt,
       shotType: 'customize',
-      totalSec: String(snapSec(seg.totalSec || 5)),        // ⚠️ snap 到 5/8/10/15
+      totalSec: String(clampSec(seg.totalSec || 5)),       // 官方 3~15
       aspectRatio: seg.aspectRatio || '9:16',       // ⚠️ 模型忽略;比例由首幀圖決定
       resolution: seg.resolution || '720p',
       generateAudio: audioOn,
@@ -319,9 +332,9 @@
     }
   };
 
-  console.log('[KolEngine] 🎥 攝影師② Kling v1.5 已註冊 · window.KolEngines.kling · '
+  console.log('[KolEngine] 🎥 攝影師② Kling v1.7 已註冊 · window.KolEngines.kling · '
     + '🐛修seed共用 · 👗服裝+🌆場景 element(共用資產·動態@ElementN編號) · 📦分段綁圖 · '
     + '🔒Seedance跨段鎖定條款搬negative_prompt(光向/色調/不換人場衣/no crowd·0字元成本) · 👁眼神塊 · '
     + '📏每shot上限512→三層保護(🔒台詞絕不動·動作整句丟不切字·錨詞整塊丟) · 🫀情緒要演不要講(RIIV⑤預警) · cfg_scale=' + CFG_SCALE + ' · 口音鐵律(Taiwanese Mandarin) · '
-    + '⏱duration自動snap(5/8/10/15) · ⚠️elements上限4 · ⚠️單張資產element會在轉向時變形(需三視圖) · ⚠️Kling並發=1→排隊跑');
+    + '⏱duration照抄分鏡3~15(不擅改) · ✅Seedance 32語意錨全對齊 · ⚠️elements上限4 · ⚠️單張資產element會在轉向時變形(需三視圖) · ⚠️Kling並發=1→排隊跑');
 })();
