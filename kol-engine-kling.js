@@ -1,5 +1,5 @@
 // ==========================================================================
-// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v2.1「完整對齊 CrewDirector」
+// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v2.2「場景當首幀 · 四鎖全開」
 // ==========================================================================
 // v2.0 是一次重構,不是打補丁。目標:Kling 的語意 = Seedance 的語意,一句不漏。
 //
@@ -28,11 +28,21 @@
 //     · multi_prompt 每 shot prompt ≤ 512 字元(官方文件沒寫,是我們用 422 測出來的)
 //     · 每個 element 必須 frontal_image_url AND reference_image_urls 成對,否則 422
 //     · elements 上限 3(fal 原文:"Maximum three image elements are allowed.")
-//       → 臉是必須的,只剩 2 個位置給 商品/服裝/場景 三者 → 物理上裝不下四鎖,必須取捨。
-//       預設優先級:臉 > 商品 > 場景 > 服裝(可用 seg.elementPriority 覆寫)
-//       ★ 為什麼丟服裝:start_image_url 就是 KOL 的 sheet_front —— 她在那張照片裡穿什麼,
-//         影片就從什麼開始;每段首幀相同 + 共用 seed + negative「changed outfit」→ 服裝天然一致。
-//       ★ 為什麼留場景:sheet_front 的背景不是目標場景(例:sports_outlet),不給圖就換不過去。
+//
+// ★ v2.2 的核心修正:start_image_url 放「場景圖」,不放 KOL 的臉。
+//   【症狀】v2.1 實測 30 秒成品:臉✅ 衣服✅ 商品✅ 無字幕✅ 笑不浮誇✅,但「背景在室內暗牆與賣場之間來回跳」。
+//   【根因】start_image_url = 欣怡的 sheet_front,那張照片的背景是室內暗牆+鼓。
+//           Kling 是 image-to-video → 首幀 = 那張圖 → 每段都從「室內」開始。
+//           @Element3 的賣場空景圖只是「參考」,打不過首幀的既成事實 → 模型在兩者間拉扯。
+//   【三方證據都指向同一件事:首幀該是場景,不是人】
+//     ① fal 官方 v3 multi_prompt 範例:start_image_url: "scene.png",角色靠 @Element 進場
+//     ② RA 藍圖:「場景平面布局圖當第 9 張 → AI 參考規劃空間 → 解背景假、跨段場景飄」(RA 標超需)
+//     ③ 刺蝟星球方法論:「資產 + 提示詞」—— 場景是「資產」,要先做出來當錨
+//   【順帶解掉三個問題】
+//     · 場景不再飄(首幀就是賣場)
+//     · 服裝 element 空位回來 → 臉 + 商品 + 服裝 = 四鎖全開
+//     · 輸出變真 9:16(場景圖是直幅;sheet_front 是 1000×1321 的 3:4)
+//   【首幀無人的處理】官方範例就是這樣拍的(shot1 空景 → 角色進場)。分鏡第一拍建議寫「她走進畫面」。
 //     · 元素必須在 prompt 裡以 @ElementN 引用才生效 → 引用句不可被丟
 //     · duration 3~15 任意整數秒(不是 5/8/10/15,那是第三方誤傳)
 //     · aspect_ratio 被模型忽略,實際比例由 start_image 決定
@@ -137,6 +147,9 @@
 
   const bOutfit = (tag) => ' Wearing ' + tag + ', same outfit.';
   const bScene  = (tag) => ' In ' + tag + ', same background.';
+  // v2.2:場景當首幀時沒有 @ElementN 可引用 → 改成「延續首幀的那個地方」。
+  //   跨段一致靠:同一張首幀 + 共用 seed + negative(different background / furniture moving)。
+  const B_SCENE_FRAME = ' Same location as the first frame; the background layout never changes.';
 
   // ══════════════════════════════════════════════════════════════════════
   //  512 的三層保護:① 台詞絕不動 ② 動作整句丟不切字 ③ 錨詞整塊丟
@@ -255,12 +268,13 @@
     const hasScene = !!(seg.sceneDriveId || seg.sceneImageUrl);
     const perBeat = (beats || []).some((b) => b && (b.productUrl || b.productDriveId));
 
-    // ★ elements 上限 3(fal 硬限制)。臉已佔 1 → 只剩 2 個位置。
-    //   預設優先級:商品 > 場景 > 服裝。理由見檔頭。可用 seg.elementPriority 覆寫,例如
-    //   elementPriority: ['product','outfit']  → 要 wardrobe 生的衣服、放棄場景圖
+    // ★ v2.2:場景已升格為 start_image_url(空間錨),不再佔用 element 名額。
+    //   elements 上限 3,臉佔 1 → 剩 2 格給 商品 + 服裝 = 四鎖全開。
+    //   ⚠️ 只有「沒有場景圖」時,場景才退回搶 element(那時它只是參考,效果差很多)。
+    const sceneIsStartFrame = hasScene;
     const priority = Array.isArray(seg.elementPriority) && seg.elementPriority.length
-      ? seg.elementPriority : ['product', 'scene', 'outfit'];
-    const available = { product: hasProduct, scene: hasScene, outfit: hasOutfit };
+      ? seg.elementPriority : ['product', 'outfit', 'scene'];
+    const available = { product: hasProduct, scene: hasScene && !sceneIsStartFrame, outfit: hasOutfit };
     const slots = MAX_ELEMENTS - 1;                       // = 2
     const chosen = priority.filter((k) => available[k]).slice(0, slots);
     const skipped = priority.filter((k) => available[k] && chosen.indexOf(k) === -1);
@@ -331,7 +345,7 @@
       // @ElementN 引用句:被丟 = 那張圖白傳(fal:元素必須被 @ 引用才生效)
       { name: '商品錨(道具師)', text: prodTag ? bProduct(prodTag, opts.productMode, opts.productScale) : '' },
       { name: '服裝錨@E', text: tags.outfit ? bOutfit(tags.outfit) : '' },
-      { name: '場景錨@E', text: tags.scene ? bScene(tags.scene) : '' },
+      { name: '場景錨', text: tags.scene ? bScene(tags.scene) : (opts.sceneIsStartFrame ? B_SCENE_FRAME : '') },
       // 🎭 「怎麼演」只能正向講,negative 表達不了
       { name: '表情/眼神🎭', text: B_EYES },
       // 以下三塊:負向已在 negative_prompt / 視覺已由 start_image 定調 → 最先犧牲
@@ -357,6 +371,7 @@
       audioOn: seg.generateAudio === true,
       productMode: productModeOf(seg),
       productScale: seg.productScale || '',
+      sceneIsStartFrame: !!(seg.sceneDriveId || seg.sceneImageUrl),
     };
 
     const multiPrompt = beats.map((b) => {
@@ -373,10 +388,20 @@
         + '其負向語意已在 negative_prompt 全域生效,正向已由 start_image + elements 承擔。');
     }
 
+    // ★ v2.2 首幀 = 空間錨。優先用場景圖(決定背景 + 9:16 比例);沒有場景圖才退回 KOL 臉。
+    //   ⚠️ 用 KOL 臉當首幀 = 把她照片的背景也帶進來 → 跨段場景飄(v2.1 實測踩過)。
+    const startDriveId = seg.sceneDriveId || (seg.sceneImageUrl ? undefined : seg.kolFaceDriveId);
+    const startImageUrl = seg.sceneDriveId ? undefined
+      : (seg.sceneImageUrl || (seg.kolFaceDriveId ? undefined : seg.kolImageUrl));
+    if (!seg.sceneDriveId && !seg.sceneImageUrl) {
+      console.warn('[KolEngine:kling] ⚠️ 沒有場景圖 → 首幀退回 KOL 照片,'
+        + '該照片的背景會變成影片起點(可能跨段飄)。建議傳 sceneCtx 讓系統生場景參考圖。');
+    }
+
     const sub = await callWorker('kling_submit', {
       endpoint: ENDPOINT,
-      startDriveId: seg.kolFaceDriveId || undefined,
-      startImageUrl: seg.kolFaceDriveId ? undefined : seg.kolImageUrl,
+      startDriveId: startDriveId || undefined,
+      startImageUrl: startImageUrl || undefined,
       elements: built.elements,
       multiPrompt: multiPrompt,
       shotType: 'customize',
@@ -407,9 +432,10 @@
       seg = seg || {};
       const list = (Array.isArray(beats) ? beats : [beats]).map((b) => (typeof b === 'string' ? { prompt: b } : b));
       const built = buildElements(Object.assign({ kolFaceDriveId: 'FACE' }, seg), list);
-      const opts = { accent: accentOf(seg), audioOn: seg.generateAudio === true, productMode: seg.productMode, productScale: seg.productScale };
-      console.log('elements', built.elements.length, '| 商品', built.tags.first || '無',
-        '| 服裝', built.tags.outfit || '無', '| 場景', built.tags.scene || '無',
+      const opts = { accent: accentOf(seg), audioOn: seg.generateAudio === true, productMode: seg.productMode, productScale: seg.productScale, sceneIsStartFrame: !!(seg.sceneDriveId || seg.sceneImageUrl) };
+      console.log('首幀', opts.sceneIsStartFrame ? '場景圖(空間錨)★' : '⚠️KOL照片(背景會帶進來)',
+        '| elements', built.elements.length, '| 商品', built.tags.first || '無',
+        '| 服裝', built.tags.outfit || '無', '| 場景', opts.sceneIsStartFrame ? '首幀' : (built.tags.scene || '無'),
         '| 模式', opts.productMode || 'held(預設)',
         '| negative_prompt', NEGATIVE.split(', ').length, '條');
       return list.map((b, i) => {
@@ -419,7 +445,7 @@
     }
   };
 
-  console.log('[KolEngine] 🎥 攝影師② Kling v2.1「完整對齊 CrewDirector」· window.KolEngines.kling · '
+  console.log('[KolEngine] 🎥 攝影師② Kling v2.2「完整對齊 CrewDirector」· window.KolEngines.kling · '
     + '📚語意來源:cinematographer(REALISM/SCENE/AUDIO) + crew-director(化妝/打光/接地/無字幕) + product(道具師7模式) + stitch(五鎖/眼神/表情/台詞) · '
     + '🚫negative_prompt ' + NEGATIVE.split(', ').length + ' 條(負向全搬·0字元成本·含無字幕+反貼上去感+道具一致性) · '
     + '📦商品多面向合一element(海苔包裝+內容物) vs 分段綁圖多element · '
