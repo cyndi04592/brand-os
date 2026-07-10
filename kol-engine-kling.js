@@ -1,5 +1,5 @@
 // ==========================================================================
-// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v1.4
+// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v1.5
 // --------------------------------------------------------------------------
 // v1.3 變更(對齊 Seedance 那條已打磨的路,連踩過的坑一起搬過來):
 //   🐛 修 bug:seed 沒傳給 Worker → 跨段用不同 seed → 一致性直接崩。Seedance 有共用 seed。
@@ -90,8 +90,71 @@
     return (typeof window.natToAccent === 'function') ? window.natToAccent(nat) : 'Taiwanese Mandarin';
   }
 
-  // ★ 按塊丟棄:超過 512 就整塊拿掉最低優先級的,絕不腰斬句子。
+  // ═══ 512 預算的三層保護(v1.5)══════════════════════════════════════════
+  //  ① 台詞(引號內)  → 🔒 絕對不動。少一個字 = 她會漏念/亂念。
+  //  ② 動作描述        → 🔒 不切字。真的超長 → 從尾端「整句」丟(以 。,、!? 為界)
+  //  ③ 錨詞(本檔加的) → ✅ 可整塊丟(優先級由低到高)
+  //  ★ 永遠不在句子/字詞中間切斷。
+  //  ⚠️ v1.4 的 bug:用 lastIndexOf(' ') 找詞邊界 —— 中文沒有空格 → 直接砍在字中間,
+  //     「撿到這100元的鞋子」被切成「撿到這10」。中文絕不能用空格當邊界。
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // 抓出所有引號台詞(中英雙引號都認),這些片段絕對不可被截斷。
+  const QUOTE_RE = /[「『"“”][^「『"“”」』]*[」』"“”]/g;
+  function quotedParts(text) { return String(text).match(QUOTE_RE) || []; }
+
+  // 依中文/英文句讀切句(保留標點),用來「整句丟棄」而不是切字。
+  function splitSentences(text) {
+    const out = [];
+    let buf = '';
+    for (const ch of String(text)) {
+      buf += ch;
+      if ('。!?!?;;\n'.indexOf(ch) !== -1) { out.push(buf); buf = ''; }
+    }
+    if (buf) out.push(buf);
+    return out;
+  }
+
+  // 動作太長 → 從尾端整句丟,但含台詞的句子永不丟。丟到底還是超長就回 null(讓上層 throw)。
+  function trimActionBySentence(action, budget) {
+    if (action.length <= budget) return action;
+    let sents = splitSentences(action);
+    const dropped = [];
+    while (sents.join('').length > budget && sents.length > 1) {
+      const last = sents[sents.length - 1];
+      if (quotedParts(last).length) break;          // 🔒 含台詞的句子不丟
+      dropped.push(last.trim());
+      sents.pop();
+    }
+    const joined = sents.join('').trim();
+    if (dropped.length) console.warn('[KolEngine:kling] 分鏡過長,整句丟棄(未切字):', dropped.join(' / '));
+    return (joined.length <= budget) ? joined : null;
+  }
+
+  // 🫀 RIIV⑤ 鐵律預警:情緒要「演出來」,不是「講出來」。模型看不懂「她很開心」。
+  const TELL_WORDS = ['心裡', '心理', '雀躍', '很開心', '非常開心', '覺得', '感到', '感覺', '內心', '興奮不已', '她很', '他很'];
+  function warnTellNotShow(action) {
+    const hit = TELL_WORDS.filter(function (w) { return action.indexOf(w) !== -1; });
+    if (hit.length) {
+      console.warn('[KolEngine:kling] 🫀 這句用「講」的描述情緒(' + hit.join('、') + '),模型看不懂。'
+        + '建議改成看得見的動作 —— ❌「她很開心」→ ✅「眼睛一亮,抓起鞋轉一圈」');
+    }
+  }
+
+  // ★ 組裝:動作(不可切) + 錨詞(可整塊丟)
   function assemble(action, blocks) {
+    warnTellNotShow(action);
+
+    // 動作本身就爆 512 → 先試整句丟;還是不行 → throw(絕不偷偷砍台詞)
+    if (action.length > SHOT_LIMIT) {
+      const trimmed = trimActionBySentence(action, SHOT_LIMIT);
+      if (trimmed === null) {
+        throw new Error('這個鏡頭的分鏡文字太長(' + action.length + ' 字元,上限 ' + SHOT_LIMIT + ')'
+          + ',而且含台詞不能截斷。請縮短分鏡或把台詞拆成兩個鏡頭。');
+      }
+      action = trimmed;
+    }
+
     let out = action;
     const dropped = [];
     for (const b of blocks) {                 // blocks 已依優先級由高到低
@@ -99,11 +162,7 @@
       if ((out + b.text).length <= SHOT_LIMIT) out += b.text;
       else dropped.push(b.name);
     }
-    if (out.length > SHOT_LIMIT) {            // 極端:分鏡動作本身就超過 512
-      const cut = out.lastIndexOf(' ', SHOT_LIMIT);   // 在詞邊界斷,不切字中間
-      out = out.slice(0, cut > 400 ? cut : SHOT_LIMIT);
-      dropped.push('⚠️動作被截斷(分鏡文字過長)');
-    }
+    // 到這裡 out 一定 <= SHOT_LIMIT(action 已保證合法,錨詞塞不下就不塞)
     if (dropped.length) console.warn('[KolEngine:kling] 512 預算不足,整塊丟棄:', dropped.join(' / '), '| 長度', out.length);
     return { text: out, dropped: dropped };
   }
@@ -260,9 +319,9 @@
     }
   };
 
-  console.log('[KolEngine] 🎥 攝影師② Kling v1.4 已註冊 · window.KolEngines.kling · '
+  console.log('[KolEngine] 🎥 攝影師② Kling v1.5 已註冊 · window.KolEngines.kling · '
     + '🐛修seed共用 · 👗服裝+🌆場景 element(共用資產·動態@ElementN編號) · 📦分段綁圖 · '
     + '🔒Seedance跨段鎖定條款搬negative_prompt(光向/色調/不換人場衣/no crowd·0字元成本) · 👁眼神塊 · '
-    + '📏每shot上限512→按塊丟棄不腰斬 · cfg_scale=' + CFG_SCALE + ' · 口音鐵律(Taiwanese Mandarin) · '
+    + '📏每shot上限512→三層保護(🔒台詞絕不動·動作整句丟不切字·錨詞整塊丟) · 🫀情緒要演不要講(RIIV⑤預警) · cfg_scale=' + CFG_SCALE + ' · 口音鐵律(Taiwanese Mandarin) · '
     + '⏱duration自動snap(5/8/10/15) · ⚠️elements上限4 · ⚠️單張資產element會在轉向時變形(需三視圖) · ⚠️Kling並發=1→排隊跑');
 })();
