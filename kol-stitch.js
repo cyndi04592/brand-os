@@ -73,17 +73,35 @@ window.KolStitch = (function () {
     return null;
   }
 
-  // webhook 輪詢 —— 問 episode_result(seedance_submit / video_compose 路徑用)。
-  async function pollEpisode(reqId, brandId, onTick) {
+  // webhook 輪詢 —— 問 episode_result(seedance_submit / kling_submit / video_compose 共用)。
+  // 🆕 v6.7:R2 還沒結果時,每 4 輪順手問一次 fal_poll 拿真實狀態,把「pending」翻成人話。
+  //   動機:客戶只看到 pending×100 會以為壞了(Wishlist⑤ STEP2 生成無回饋 = 最高商業風險)。
+  //   ⚠️ 不露引擎名(商業鐵律):只講「排隊中/生成中」,不講 fal / Kling / Seedance。
+  const _STATUS_TEXT = {
+    IN_QUEUE: '排隊中…(前面還有工作)',
+    IN_PROGRESS: '生成中…',
+    COMPLETED: '收尾中…',
+  };
+  async function pollEpisode(reqId, brandId, onTick, endpoint) {
     if (!reqId) throw new Error('pollEpisode 缺少 reqId');
     const brand = brandId || 'unknown';
+    let lastReal = '';
     for (let i = 0; i < cfg.pollMaxTries; i++) {
       try {
         const r = await api('episode_result', { brandId: brand, reqId });
         const st = String(r.status || 'pending').toLowerCase();
         if (st === 'done' && r.videoUrl) return r.videoUrl;
         if (st === 'failed') throw new Error('生成失敗：' + (r.error || '未知'));
-        if (onTick) onTick(i, st);
+
+        // 每 4 輪問一次真實狀態(輕量查詢,不燒點數);查失敗就沿用上一次的字。
+        if (endpoint && i % 4 === 0) {
+          try {
+            const fp = await api('fal_poll', { requestId: reqId, endpoint: endpoint });
+            const raw = String((fp && fp.status) || '').toUpperCase();
+            if (raw) lastReal = _STATUS_TEXT[raw] || raw;
+          } catch (_) {}
+        }
+        if (onTick) onTick(i, lastReal || '準備中…');
       } catch (e) {
         if (String((e && e.message) || '').indexOf('生成失敗') !== -1) throw e;
       }
@@ -320,7 +338,9 @@ window.KolStitch = (function () {
           nationality: opts.nationality,
         });
       });
-      const _url = await pollEpisode(_sub.requestId, opts.brandId, onTick);
+      // 🆕 v6.7:印出 reqId → 視窗關掉/斷線也能用 pollEpisode(reqId) 撈回,不必重生(省錢)。
+      console.log('[KolStitch] 🎫 本段 reqId:', _sub.requestId, '(關掉視窗可用它撈回,不用重生)');
+      const _url = await pollEpisode(_sub.requestId, opts.brandId, onTick, _sub.endpoint);
       if (!_url) throw new Error('攝影師「' + opts.engine + '」沒拿到影片 URL');
       return _url;
     }
@@ -453,7 +473,8 @@ window.KolStitch = (function () {
 
     const total = chunks.length;
     let doneCount = 0;
-    log(`${total} 段 × 15 秒多鏡頭同時生成中…(平行,reference-to-video · 臉=[Image1] 原圖鎖 · 場景圖鎖家具)`);
+    // 🆕 v6.7 引擎中性文案(不露 reference-to-video / [Image1] / 平行 等後端術語)
+    log(`共 ${total} 段,開始生成…(臉部鎖定 · 場景鎖定 · 服裝鎖定)`);
 
     // 整支共用同一 seed → 6 張 keyframe 彼此更一致
     const stitchSeed = (opts.seed != null && opts.seed !== '')
@@ -471,7 +492,7 @@ window.KolStitch = (function () {
           outfitBrand: (window.S && window.S.selectedOutfitBrand) || '',
           sceneId: (window.S && window.S.selectedSceneId) || '',
         };
-        log('生成服裝參考圖中…(當 compose 輸入,鎖跨段衣服)');
+        log('生成服裝參考圖中…(鎖跨段衣服,整支只生一次)');
         outfitImageUrl = await window.KolWardrobe.generateOutfitRefImage(outfitCtx);
       }
     } catch (e) { outfitImageUrl = null; }
@@ -485,12 +506,12 @@ window.KolStitch = (function () {
           sceneId: (window.S && window.S.selectedSceneId) || '',
           locationId: (window.S && window.S.selectedLocationId) || 'none',
         };
-        log('生成場景參考圖中…(當 compose 輸入,鎖跨段背景)');
+        log('生成場景參考圖中…(鎖跨段背景,整支只生一次)');
         sceneImageUrl = await window.KolEnvironment.generateSceneRefImage(sceneCtx);
       }
     } catch (e) { sceneImageUrl = null; }
 
-    log(`參考圖鎖定完成 ✓ · ${total} 段 × 15 秒多鏡頭生成中…(臉=[Image1]原圖 · 家具=同一張場景圖跨段鎖)`);
+    log(`參考圖鎖定完成 ✓ · ${total} 段生成中…(同一張臉 · 同一件衣服 · 同一個場景 · 跨段不飄)`);
 
     // 🔗 v6.8 接棒:取某 chunk 最後一個 beat 的「動作摘要」(來自分鏡文字),餵給下一段開頭。
     function lastActionText(chunk) {
@@ -550,7 +571,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.6(引擎切換層)· 🆕kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.7(引擎切換層)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
