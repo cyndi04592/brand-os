@@ -1,5 +1,5 @@
 // ==========================================================================
-// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v2.0「完整對齊 CrewDirector」
+// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v2.1「完整對齊 CrewDirector」
 // ==========================================================================
 // v2.0 是一次重構,不是打補丁。目標:Kling 的語意 = Seedance 的語意,一句不漏。
 //
@@ -27,7 +27,12 @@
 // ⚠️ 硬事實(fal 官方 + 實測):
 //     · multi_prompt 每 shot prompt ≤ 512 字元(官方文件沒寫,是我們用 422 測出來的)
 //     · 每個 element 必須 frontal_image_url AND reference_image_urls 成對,否則 422
-//     · elements 上限 4 → 臉 + 商品 + 服裝 + 場景 剛好用滿
+//     · elements 上限 3(fal 原文:"Maximum three image elements are allowed.")
+//       → 臉是必須的,只剩 2 個位置給 商品/服裝/場景 三者 → 物理上裝不下四鎖,必須取捨。
+//       預設優先級:臉 > 商品 > 場景 > 服裝(可用 seg.elementPriority 覆寫)
+//       ★ 為什麼丟服裝:start_image_url 就是 KOL 的 sheet_front —— 她在那張照片裡穿什麼,
+//         影片就從什麼開始;每段首幀相同 + 共用 seed + negative「changed outfit」→ 服裝天然一致。
+//       ★ 為什麼留場景:sheet_front 的背景不是目標場景(例:sports_outlet),不給圖就換不過去。
 //     · 元素必須在 prompt 裡以 @ElementN 引用才生效 → 引用句不可被丟
 //     · duration 3~15 任意整數秒(不是 5/8/10/15,那是第三方誤傳)
 //     · aspect_ratio 被模型忽略,實際比例由 start_image 決定
@@ -41,7 +46,7 @@
 
   const ENDPOINT = 'fal-ai/kling-video/v3/pro/image-to-video';
   const MAX_SHOTS = 6;
-  const MAX_ELEMENTS = 4;
+  const MAX_ELEMENTS = 3;   // fal 硬限制:Maximum three image elements are allowed
   const SHOT_LIMIT = 512;
   const CFG_SCALE = 0.6;
   const CONTACT_SHADOWS = true;   // ⚠️ 見上方矛盾註記;false = 依 cinematographer 雷區
@@ -231,8 +236,9 @@
   function buildElements(seg, beats) {
     const els = [];
     const tags = { outfit: null, scene: null, byKey: {}, first: null };
+    const mk = (drive, url) => (drive ? { frontal_drive_id: drive } : { frontal_image_url: url });
 
-    // @Element1 = 臉(正臉 + 多角度 reference)→ 解臉漂移,已驗證
+    // @Element1 = 臉(正臉 + 多角度 reference)→ 解臉漂移,已驗證。永遠佔位。
     const faceEl = {};
     if (seg.kolFaceDriveId) faceEl.frontal_drive_id = seg.kolFaceDriveId;
     else faceEl.frontal_image_url = seg.kolImageUrl;
@@ -244,49 +250,64 @@
 
     const prodIds = (seg.productDriveIds || []).filter(Boolean);
     const prodUrls = (seg.productImageUrls || []).filter(Boolean);
-    const wantOutfit = !!(seg.outfitDriveId || seg.outfitImageUrl);
-    const wantScene = !!(seg.sceneDriveId || seg.sceneImageUrl);
+    const hasProduct = !!(prodIds.length || prodUrls.length);
+    const hasOutfit = !!(seg.outfitDriveId || seg.outfitImageUrl);
+    const hasScene = !!(seg.sceneDriveId || seg.sceneImageUrl);
     const perBeat = (beats || []).some((b) => b && (b.productUrl || b.productDriveId));
 
-    const mk = (drive, url) => (drive ? { frontal_drive_id: drive } : { frontal_image_url: url });
+    // ★ elements 上限 3(fal 硬限制)。臉已佔 1 → 只剩 2 個位置。
+    //   預設優先級:商品 > 場景 > 服裝。理由見檔頭。可用 seg.elementPriority 覆寫,例如
+    //   elementPriority: ['product','outfit']  → 要 wardrobe 生的衣服、放棄場景圖
+    const priority = Array.isArray(seg.elementPriority) && seg.elementPriority.length
+      ? seg.elementPriority : ['product', 'scene', 'outfit'];
+    const available = { product: hasProduct, scene: hasScene, outfit: hasOutfit };
+    const slots = MAX_ELEMENTS - 1;                       // = 2
+    const chosen = priority.filter((k) => available[k]).slice(0, slots);
+    const skipped = priority.filter((k) => available[k] && chosen.indexOf(k) === -1);
 
-    if (prodIds.length || prodUrls.length) {
-      if (perBeat) {
-        // ② 分段綁圖:每件商品一個 element(受 elements 上限 4 壓縮)
-        const budget = Math.max(1, MAX_ELEMENTS - 1 - (wantOutfit ? 1 : 0) - (wantScene ? 1 : 0));
-        const list = prodIds.length ? prodIds.slice(0, budget) : prodUrls.slice(0, budget);
-        list.forEach((v) => {
-          els.push(prodIds.length ? mk(v, null) : mk(null, v));
-          tags.byKey[v] = '@Element' + els.length;
-        });
-        tags.first = '@Element2';
-        if ((prodIds.length || prodUrls.length) > budget) {
-          console.warn('[KolEngine:kling] elements 上限 4:商品只放得下 ' + budget + ' 件(臉/服裝/場景已佔位)。'
-            + '其餘商品的 shot 會沿用 @Element2。');
+    if (skipped.length) {
+      const why = {
+        outfit: '服裝(靠 start_image 首幀 + 共用 seed + negative「changed outfit」鎖住)',
+        scene:  '場景(靠 negative「different background / changed scene / furniture moving」鎖住)',
+        product:'商品',
+      };
+      console.warn('[KolEngine:kling] ⚠️ fal 硬限制:最多 3 個 image element(臉已佔 1)。'
+        + '本次未帶入:' + skipped.map((k) => why[k] || k).join('、')
+        + '。要改順序請傳 elementPriority,例如 [\'product\',\'outfit\']。');
+    }
+
+    chosen.forEach((kind) => {
+      if (kind === 'product') {
+        if (perBeat) {
+          // ② 分段綁圖:不同商品各自一個 element(但只剩這一格 → 只放得下 1 件)
+          const list = prodIds.length ? prodIds : prodUrls;
+          const one = prodIds.length ? mk(list[0], null) : mk(null, list[0]);
+          els.push(one);
+          tags.first = '@Element' + els.length;
+          list.forEach((v) => { tags.byKey[v] = tags.first; });   // 全部指向同一格
+          if (list.length > 1) {
+            console.warn('[KolEngine:kling] ⚠️ 分段綁圖有 ' + list.length + ' 件商品,但 element 只剩 1 格 → '
+              + '全部 shot 共用第一件。若要真正分段換商品,請拆成不同 chunk 生成。');
+          }
+        } else {
+          // ① 同一件商品的多面向(海苔外包裝 + 內容物 / 鞋子三視圖)→ 合成「一個」element
+          const el = prodIds.length ? mk(prodIds[0], null) : mk(null, prodUrls[0]);
+          const rest = prodIds.length ? prodIds.slice(1, 5) : prodUrls.slice(1, 5);
+          if (rest.length) {
+            if (prodIds.length) el.reference_drive_ids = rest; else el.reference_image_urls = rest;
+          }
+          els.push(el);
+          tags.first = '@Element' + els.length;
+          (prodIds.length ? prodIds : prodUrls).forEach((v) => { tags.byKey[v] = tags.first; });
         }
-      } else {
-        // ① 同一件商品的多面向 → 合成「一個」element(frontal + reference)
-        const el = prodIds.length ? mk(prodIds[0], null) : mk(null, prodUrls[0]);
-        const rest = prodIds.length ? prodIds.slice(1, 5) : prodUrls.slice(1, 5);
-        if (rest.length) {
-          if (prodIds.length) el.reference_drive_ids = rest; else el.reference_image_urls = rest;
-        }
-        els.push(el);
-        tags.first = '@Element' + els.length;
-        (prodIds.length ? prodIds : prodUrls).forEach((v) => { tags.byKey[v] = tags.first; });
+      } else if (kind === 'outfit') {
+        els.push(seg.outfitDriveId ? mk(seg.outfitDriveId, null) : mk(null, seg.outfitImageUrl));
+        tags.outfit = '@Element' + els.length;
+      } else if (kind === 'scene') {
+        els.push(seg.sceneDriveId ? mk(seg.sceneDriveId, null) : mk(null, seg.sceneImageUrl));
+        tags.scene = '@Element' + els.length;
       }
-    }
-
-    if (wantOutfit) {
-      els.push(seg.outfitDriveId ? mk(seg.outfitDriveId, null) : mk(null, seg.outfitImageUrl));
-      tags.outfit = '@Element' + els.length;
-    }
-    if (wantScene && els.length < MAX_ELEMENTS) {
-      els.push(seg.sceneDriveId ? mk(seg.sceneDriveId, null) : mk(null, seg.sceneImageUrl));
-      tags.scene = '@Element' + els.length;
-    } else if (wantScene) {
-      console.warn('[KolEngine:kling] elements 已滿 4,場景圖這次未帶入(背景靠 negative_prompt 的「不換背景」撐)。');
-    }
+    });
 
     tags.of = function (beat) {
       if (!tags.first) return null;
@@ -398,7 +419,7 @@
     }
   };
 
-  console.log('[KolEngine] 🎥 攝影師② Kling v2.0「完整對齊 CrewDirector」· window.KolEngines.kling · '
+  console.log('[KolEngine] 🎥 攝影師② Kling v2.1「完整對齊 CrewDirector」· window.KolEngines.kling · '
     + '📚語意來源:cinematographer(REALISM/SCENE/AUDIO) + crew-director(化妝/打光/接地/無字幕) + product(道具師7模式) + stitch(五鎖/眼神/表情/台詞) · '
     + '🚫negative_prompt ' + NEGATIVE.split(', ').length + ' 條(負向全搬·0字元成本·含無字幕+反貼上去感+道具一致性) · '
     + '📦商品多面向合一element(海苔包裝+內容物) vs 分段綁圖多element · '
