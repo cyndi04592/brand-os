@@ -270,7 +270,11 @@ window.KolStitch = (function () {
   }
 
   async function generateSegment(opts, onTick) {
-    if (!opts.kolImageUrl) throw new Error('generateSegment 缺少 kolImageUrl（KOL 角度圖）');
+    // 🆕 v6.6:kolImageUrl 是「Seedance 的 [Image1] 臉錨」前置條件,不是通用條件。
+    //   攝影師② Kling 走 kolFaceDriveId(Drive 多角度 sheet → R2 乾淨原圖),不需要 kolImageUrl。
+    //   ⚠️ 檢查若擋在分流之前,Kling 永遠走不進去(D 接片測試就是死在這裡)。
+    const _isSeedance = !opts.engine || opts.engine === 'seedance';
+    if (_isSeedance && !opts.kolImageUrl) throw new Error('generateSegment 缺少 kolImageUrl（KOL 角度圖）');
     let beats = (Array.isArray(opts.beats) && opts.beats.length) ? opts.beats
               : (Array.isArray(opts.shots) && opts.shots.length) ? opts.shots.map(function (s) { return { prompt: s }; })
               : (opts.prompt ? [{ prompt: opts.prompt }] : null);
@@ -394,7 +398,10 @@ window.KolStitch = (function () {
     opts = opts || {};
     const log = opts.onProgress || function () {};
     const kolImg = opts.kolImageUrl || opts.startImageUrl;
-    if (!kolImg) throw new Error('缺少 kolImageUrl(原始 KOL 照,每段都當錨點)');
+    // 🆕 v6.6:同上 — 只有 Seedance 需要 kolImageUrl 當每段錨點;Kling 用 resolveKolSheet 的 driveId。
+    if (!kolImg && (!opts.engine || opts.engine === 'seedance')) {
+      throw new Error('缺少 kolImageUrl(原始 KOL 照,每段都當錨點)');
+    }
     if (!Array.isArray(plan) || plan.length < 1) throw new Error('plan 至少要 1 段');
 
     // v6.2:把分鏡整理成 chunks —— 照「累積秒數 ≤15s 且 Shot 數 ≤maxShots」切,每個 chunk = 一次多鏡頭生成。
@@ -543,7 +550,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.5(引擎切換層)· 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.6(引擎切換層)· 🆕kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
