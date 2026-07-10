@@ -1,61 +1,80 @@
 // ==========================================================================
-// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v1.2
+// kol-engine-kling.js — 攝影師② Kling v3 Pro adapter  v1.4
 // --------------------------------------------------------------------------
-// v1.2 變更(打 422「Prompt must not exceed 512 characters」):
-//   ★ 硬事實(fal 官方):multi_prompt 每個 shot 的 prompt 上限 = 512 字元
-//     (2500 是「單 prompt 模式」的上限,不適用 multi_prompt)。
-//   ★ 修法照 RA 的 kol-cinematographer v5.26 壓縮法則,不自創:
-//       ①去跨模組重複句 ②濃縮同義句 ③保留不可拔靈魂
-//     再加一招:負向詞 → negative_prompt(Kling 獨立欄位,不佔 512)= 「不是刪掉,是搬家」。
-//   ★ 超額處理 = 「按塊丟棄」(dropBlock),絕不 slice 腰斬句子破壞語意。
-//     優先級:動作(絕不丟) > 商品錨 > 音訊/口音錨 > 寫實錨 > 生命感錨
-//   · 新增 negative_prompt / cfg_scale(0.6,比官方 0.5 更貼分鏡)
-//
-// 逐句去向(語意零犧牲,可追溯):
-//   no beauty filter / no smoothing / no retouching        → negative_prompt
-//   no oily shine / greasy T-zone / specular highlights     → negative_prompt(三句同義,合一)
-//   not a polished model / no studio polish                 → negative_prompt
-//   never statue-still / blank fixed stare                   → negative_prompt(負向)
-//   do NOT invent / add / drop / repeat words                → negative_prompt
-//   no background music / soundtrack / jingle (AUDIO_REALISM)→ negative_prompt(Kling 版原本漏,補上)
-//   handheld phone vlog / natural light / skin like ref      → 留 prompt(正向錨)
-//   gestures / weight shifts / blinking / gaze               → 留 prompt(生命感正向錨)
-//   🔒 Taiwanese Mandarin                                    → 留 prompt(鐵律·v5.18 誤拔過)
+// v1.3 變更(對齊 Seedance 那條已打磨的路,連踩過的坑一起搬過來):
+//   🐛 修 bug:seed 沒傳給 Worker → 跨段用不同 seed → 一致性直接崩。Seedance 有共用 seed。
+//   ➕ 接共用資產:服裝 @ElementN(資產②)、場景 @ElementN(資產④)
+//      ★ 藍圖鐵律:「資產庫生一次 → 三位攝影師都能吃」。服裝/場景不是 Seedance 專屬。
+//      ⚠️ @ElementN 編號是「動態」的:沒商品時服裝就變 @Element2。寫死必錯。
+//   ➕ 分段綁圖:不同 shot 綁不同商品(對齊 Seedance collectBeatProducts)
+//   ➕ Seedance 的「Global 跨段鎖定條款」搬進 negative_prompt(反向表達,不佔 512):
+//        Seedance「keep the exact same lighting in every shot」→ neg「lighting change between shots」
+//        Seedance「one unified colour grade」                  → neg「colour grade shift」
+//        Seedance「no change of person, scene, outfit」         → neg「different person / background / outfit」
+//        Seedance「no crowd」                                   → neg「crowd, bystanders」
+//   ➕ 眼神塊(catchlights / 不死魚眼 / 視線流動 / 不定格表情)—— Seedance 有,補上
+//   ➕ shared.front / shared.tail 支援(B 版精簡敘事)
 // --------------------------------------------------------------------------
-// 引擎切換層:一個攝影師一個檔。載入時 self-register 到 window.KolEngines.kling。
-//   · 鎖臉:elements[0] = { 正臉 + 多角度 reference } → prompt 用 @Element1(解臉漂移,已驗證)
-//   · 商品:elements[1] → @Element2(⚠️ fal 規定 frontal + reference 成對,Worker v3.51 自動補)
-//   · 分鏡:multi_prompt: [{prompt, duration}] + shot_type:'customize'(1~6 shot)
-//   · 首幀:start_image = KOL 正臉。⚠️ aspect_ratio 被模型忽略,實際比例由首幀圖決定
-//     (欣怡 sheet_front = 1000×1321 → 輸出 3:4。要 9:16 得先裁圖 → Wishlist)
-//   · 場景/服裝:MVP 先不塞 element(踩「資產不過載」鐵律)
+// ★ 硬事實(fal 官方 + 我們實測):
+//   · multi_prompt 每 shot 上限 512 字元(單 prompt 模式才 2500)
+//   · 每個 element 必須「frontal_image_url AND reference_image_urls」成對,只給 frontal → 422
+//     → 單張資產(商品/服裝/場景)由 Worker v3.51 自動用 frontal 補 reference
+//     ⚠️ 已知代價:單張商品在 shot2 會變形(模型不知道側面)→ 需要資產⑤ 商品三視圖
+//   · duration 只吃 5 / 8 / 10 / 15(Seedance 吃任意秒數 → 必須 snap,否則 422)
+//   · elements 上限 4(Worker slice(0,4))
+//   · aspect_ratio 被模型忽略,比例由 start_image 決定
+//   · Kling v3/o3 並發上限 1/user → 多段排隊跑,非 bug
 // --------------------------------------------------------------------------
-// ⚠️ Kling v3/o3 全系列並發上限預設 1/user → 多段排隊跑,非 bug。
+// 超額處理 = 「按塊丟棄」(assemble),絕不 slice 腰斬句子破壞語意。
+//   優先級:動作(絕不丟) > 口音/音訊(鐵律) > 商品 > 服裝 > 場景 > 寫實 > 眼神/生命感
+// 🔒 Taiwanese Mandarin 永不裸奔(v5.18 誤拔 → 又晴變中國腔)
 // ==========================================================================
 (function () {
   'use strict';
 
   const ENDPOINT = 'fal-ai/kling-video/v3/pro/image-to-video';
-  const MAX_SHOTS = 6;      // Kling multi_prompt 上限
-  const SHOT_LIMIT = 512;   // ★ 硬上限:每個 shot 的 prompt 字元數
-  const CFG_SCALE = 0.6;    // 官方預設 0.5;RA 分鏡要精確 → 0.6
+  const MAX_SHOTS = 6;
+  const MAX_ELEMENTS = 4;   // Worker slice(0,4)
+  const SHOT_LIMIT = 512;
+  const CFG_SCALE = 0.6;
+  // ⚠️ Kling 只吃這四個秒數(fal 官方:5 / 8 / 10 / 15)。給 7 或 12 會被拒。
+  //    Seedance 吃任意秒數 → 分鏡秒數直接照抄過來會炸,必須 snap 到最近的合法值。
+  const LEGAL_SEC = [5, 8, 10, 15];
+  function snapSec(n) {
+    const v = parseInt(n, 10) || 5;
+    return LEGAL_SEC.reduce(function (best, cur) {
+      return Math.abs(cur - v) < Math.abs(best - v) ? cur : best;
+    }, LEGAL_SEC[0]);
+  }
 
-  // ── 負向詞:獨立欄位,不佔 512。RA REALISM_BASE / AUDIO_REALISM 的負向半邊全搬這裡。
-  //    ⚠️ 嚴守雷區:不寫 pores / film grain / contact shadows / perfect / studio(烤肉紋兇手)。
+  // ── 負向詞:全域欄位,不佔 512。= RA REALISM_BASE 負向半邊 + Seedance Global 跨段鎖定條款(反向)
+  //    ⚠️ 嚴守雷區:不寫 pores / film grain / contact shadows / perfect / studio(驗過的烤肉紋兇手)
   const NEGATIVE = [
+    // 膚質/修圖(REALISM_BASE 負向半邊)
     'beauty filter', 'skin smoothing', 'skin retouching', 'oily shine', 'greasy T-zone',
     'hot specular highlights', 'plastic skin', 'studio polish', 'glossy commercial look',
     'polished fashion model', 'CGI', '3D render', 'pasted-on composited look', 'hard cutout outline',
-    'statue-still frozen pose', 'blank fixed stare', 'robotic delivery', 'slurred speech',
-    'invented or extra words', 'repeated words', 'background music', 'soundtrack', 'jingle',
+    // 生命感負向(眼神塊/生命感層的反面)
+    'statue-still frozen pose', 'blank fixed stare', 'dead fish eyes', 'frozen exaggerated expression',
+    // 語音負向(AUDIO_REALISM)
+    'robotic delivery', 'slurred speech', 'invented or extra words', 'repeated words',
+    'background music', 'soundtrack', 'jingle',
+    // 🆕 v1.3 Seedance Global 跨段鎖定條款(反向表達 → 全 shot 生效,0 字元成本)
+    'lighting change between shots', 'inconsistent light direction', 'colour grade shift',
+    'different person', 'different background', 'changed outfit', 'changed scene',
+    'crowd', 'bystanders', 'extra people',
+    // 通用
     'blur', 'distort', 'low quality'
   ].join(', ');
 
-  // ── 正向錨(必須留在 prompt;負向部分已搬走,這裡只留「要什麼」)
+  // ── 正向錨(必須留在 prompt)
   const B_REALISM = ' Handheld phone vlog, natural available light, her skin exactly like the reference, an ordinary real person.';
-  const B_ALIVE   = ' Natural gestures, subtle weight shifts, relaxed blinking, gaze drifts to the product and back to the lens.';
-  const B_PRODUCT = ' Holding @Element2, the same physical product at a consistent real-world size.';
-  const bAudio = (accent) => ' She speaks only the written line, in natural ' + accent + ', brand names and numbers clear and unhurried; with no written line she stays silent.';
+  // 眼神塊(Seedance 有,補上;已把負向部分搬 negative_prompt,這裡只留「要什麼」)
+  const B_EYES    = ' Bright lively eyes with clear catchlights, warm and present; gaze drifts naturally and returns to the lens, relaxed blinking, expressions flow and change like a real person.';
+  const bAudio    = (accent) => ' She speaks only the written line, in natural ' + accent + ', brand names and numbers clear and unhurried; with no written line she stays silent.';
+  const bProduct  = (tag) => ' Holding ' + tag + ', the same physical product at a consistent real-world size.';
+  const bOutfit   = (tag) => ' Wearing ' + tag + ', the same outfit in every shot.';
+  const bScene    = (tag) => ' In ' + tag + ', the same location and background throughout.';
 
   function callWorker(action, params) {
     if (!window.KolStitch || typeof window.KolStitch._api !== 'function') {
@@ -64,7 +83,6 @@
     return window.KolStitch._api(action, params);
   }
 
-  // 口音鐵律:台灣 KOL 一律 Taiwanese Mandarin,永不裸奔成大陸腔。
   function accentOf(seg) {
     const nat = seg.nationality
       || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
@@ -72,41 +90,104 @@
     return (typeof window.natToAccent === 'function') ? window.natToAccent(nat) : 'Taiwanese Mandarin';
   }
 
-  // ★ 按塊丟棄:超過 512 就整塊拿掉最低優先級的,絕不 slice 腰斬句子。
-  //   動作永遠留(那是 RA 的分鏡內容);真的連動作都超過 512 才在「詞邊界」截,並記警告。
+  // ★ 按塊丟棄:超過 512 就整塊拿掉最低優先級的,絕不腰斬句子。
   function assemble(action, blocks) {
     let out = action;
     const dropped = [];
-    for (const b of blocks) {                       // blocks 已依優先級由高到低排好
+    for (const b of blocks) {                 // blocks 已依優先級由高到低
       if (!b.text) continue;
       if ((out + b.text).length <= SHOT_LIMIT) out += b.text;
       else dropped.push(b.name);
     }
-    if (out.length > SHOT_LIMIT) {                  // 極端:分鏡動作本身就超過 512
-      const cut = out.lastIndexOf(' ', SHOT_LIMIT); // 在詞邊界斷,不切字中間
+    if (out.length > SHOT_LIMIT) {            // 極端:分鏡動作本身就超過 512
+      const cut = out.lastIndexOf(' ', SHOT_LIMIT);   // 在詞邊界斷,不切字中間
       out = out.slice(0, cut > 400 ? cut : SHOT_LIMIT);
       dropped.push('⚠️動作被截斷(分鏡文字過長)');
     }
-    if (dropped.length) console.warn('[KolEngine:kling] 512 預算不足,已整塊丟棄:', dropped.join(' / '), '| 長度', out.length);
-    return out;
+    if (dropped.length) console.warn('[KolEngine:kling] 512 預算不足,整塊丟棄:', dropped.join(' / '), '| 長度', out.length);
+    return { text: out, dropped: dropped };
   }
 
-  function buildShotPrompt(beat, opts) {
+  // ── 一個 beat → 一個 Kling shot 的 prompt。tags = 動態算好的 @ElementN 對照表。
+  function buildShotPrompt(beat, opts, tags) {
     const action = ((typeof beat === 'string') ? beat : (beat.prompt || '')).trim();
-    const hasProd = opts.hasProduct && (beat.productUrl || beat.productDriveId || opts.forceProductEveryShot);
-    // 優先級:動作(基底,絕不丟)→ 商品錨 → 音訊/口音錨 → 寫實錨 → 生命感錨
-    return assemble('@Element1 ' + action, [
-      { name: '商品錨', text: hasProd ? B_PRODUCT : '' },
-      { name: '口音/音訊錨', text: opts.audioOn ? bAudio(opts.accent) : '' },
-      { name: '寫實錨', text: B_REALISM },
-      { name: '生命感錨', text: B_ALIVE },
+    // 分段綁圖:這個 shot 綁哪一件商品(對齊 Seedance collectBeatProducts)
+    const prodTag = tags.productOf ? tags.productOf(beat) : null;
+    const r = assemble('@Element1 ' + action, [
+      { name: '口音/音訊錨', text: opts.audioOn ? bAudio(opts.accent) : '' },   // 🔒 鐵律,優先級最高
+      { name: '商品錨',     text: prodTag ? bProduct(prodTag) : '' },
+      { name: '服裝錨',     text: tags.outfit ? bOutfit(tags.outfit) : '' },
+      { name: '場景錨',     text: tags.scene ? bScene(tags.scene) : '' },
+      { name: '寫實錨',     text: B_REALISM },
+      { name: '眼神/生命感錨', text: B_EYES },
     ]);
+    return r.text;
+  }
+
+  // ── 組 elements + 算 @ElementN 動態編號(沒商品時服裝就變 @Element2)
+  function buildElements(seg) {
+    const els = [];
+    const tags = { outfit: null, scene: null, productTagByUrl: {} };
+
+    // Element1 = 臉(正臉 + 多角度 reference)→ 解臉漂移,已驗證
+    const faceEl = {};
+    if (seg.kolFaceDriveId) faceEl.frontal_drive_id = seg.kolFaceDriveId;
+    else faceEl.frontal_image_url = seg.kolImageUrl;
+    const angleIds = Array.isArray(seg.kolAngleDriveIds) ? seg.kolAngleDriveIds.filter(Boolean).slice(0, 4) : [];
+    const angleUrls = Array.isArray(seg.kolAngleUrls) ? seg.kolAngleUrls.filter(Boolean).slice(0, 4) : [];
+    if (angleIds.length) faceEl.reference_drive_ids = angleIds;
+    else if (angleUrls.length) faceEl.reference_image_urls = angleUrls;
+    els.push(faceEl);
+
+    // 商品(可多件 → 分段綁圖)。⚠️ elements 上限 4 → 臉+服裝+場景已佔 3,商品最多 1~3 件視情況。
+    const prodIds = Array.isArray(seg.productDriveIds) ? seg.productDriveIds.filter(Boolean) : [];
+    const prodUrls = Array.isArray(seg.productImageUrls) ? seg.productImageUrls.filter(Boolean) : [];
+    const wantOutfit = !!(seg.outfitDriveId || seg.outfitImageUrl);
+    const wantScene = !!(seg.sceneDriveId || seg.sceneImageUrl);
+    const prodBudget = Math.max(0, MAX_ELEMENTS - 1 - (wantOutfit ? 1 : 0) - (wantScene ? 1 : 0));
+
+    const prodList = prodIds.length
+      ? prodIds.slice(0, prodBudget).map(function (id) { return { drive: id }; })
+      : prodUrls.slice(0, prodBudget).map(function (u) { return { url: u }; });
+
+    prodList.forEach(function (p, i) {
+      const el = {};
+      if (p.drive) el.frontal_drive_id = p.drive; else el.frontal_image_url = p.url;
+      els.push(el);
+      const key = p.drive || p.url;
+      tags.productTagByUrl[key] = '@Element' + els.length;   // 動態編號
+    });
+    // 第一件商品固定是 @Element2(臉永遠 @Element1)
+    tags.firstProductTag = prodList.length ? '@Element2' : null;
+
+    // 服裝(共用資產②)
+    if (wantOutfit) {
+      const el = {};
+      if (seg.outfitDriveId) el.frontal_drive_id = seg.outfitDriveId; else el.frontal_image_url = seg.outfitImageUrl;
+      els.push(el);
+      tags.outfit = '@Element' + els.length;
+    }
+    // 場景(共用資產④)
+    if (wantScene) {
+      const el = {};
+      if (seg.sceneDriveId) el.frontal_drive_id = seg.sceneDriveId; else el.frontal_image_url = seg.sceneImageUrl;
+      els.push(el);
+      tags.scene = '@Element' + els.length;
+    }
+
+    // 分段綁圖:beat.productUrl / beat.productDriveId → 對應到它自己的 @ElementN
+    tags.productOf = function (beat) {
+      if (!prodList.length) return null;
+      if (typeof beat !== 'object') return tags.firstProductTag;
+      const key = beat.productDriveId || beat.productUrl;
+      if (key && tags.productTagByUrl[key]) return tags.productTagByUrl[key];
+      return (beat.productUrl || beat.productDriveId) ? tags.firstProductTag : null;
+    };
+    return { elements: els, tags: tags };
   }
 
   async function submitSegment(seg) {
-    const faceId = seg.kolFaceDriveId || null;
-    const faceUrl = seg.kolImageUrl || null;
-    if (!faceId && !faceUrl) throw new Error('KolEngine(kling):缺少 kolFaceDriveId 或 kolImageUrl');
+    if (!seg.kolFaceDriveId && !seg.kolImageUrl) throw new Error('KolEngine(kling):缺少 kolFaceDriveId 或 kolImageUrl');
 
     let beats = (Array.isArray(seg.beats) && seg.beats.length)
       ? seg.beats.map(function (b) { return (typeof b === 'string') ? { prompt: b } : b; })
@@ -116,49 +197,38 @@
 
     const accent = accentOf(seg);
     const audioOn = seg.generateAudio === true;
-
-    const prodIds = Array.isArray(seg.productDriveIds) ? seg.productDriveIds.filter(Boolean) : [];
-    const prodUrls = Array.isArray(seg.productImageUrls) ? seg.productImageUrls.filter(Boolean) : [];
-    const hasProduct = prodIds.length > 0 || prodUrls.length > 0;
-
-    const opts = { accent: accent, audioOn: audioOn, hasProduct: hasProduct };
+    const built = buildElements(seg);
+    const opts = { accent: accent, audioOn: audioOn };
 
     const multiPrompt = beats.map(function (b) {
       const dur = (typeof b === 'object' && b.durationSec)
         ? b.durationSec
         : Math.max(1, Math.round((seg.totalSec || 5) / beats.length));
-      return { prompt: buildShotPrompt(b, opts), duration: String(Math.max(3, Math.min(15, dur))) };
+      let p = buildShotPrompt(b, opts, built.tags);
+      return { prompt: p, duration: String(snapSec(dur)) };   // ⚠️ snap 到 5/8/10/15
     });
 
-    // elements:@Element1 = 臉(正臉 + 多角度 → 鎖臉);@Element2 = 商品
-    //   ⚠️ fal 規定每個 element 必須 frontal + reference 成對 → 單張商品圖由 Worker v3.51 自動補。
-    const faceEl = {};
-    if (faceId) faceEl.frontal_drive_id = faceId; else faceEl.frontal_image_url = faceUrl;
-    const angleIds = Array.isArray(seg.kolAngleDriveIds) ? seg.kolAngleDriveIds.filter(Boolean).slice(0, 4) : [];
-    const angleUrls = Array.isArray(seg.kolAngleUrls) ? seg.kolAngleUrls.filter(Boolean).slice(0, 4) : [];
-    if (angleIds.length) faceEl.reference_drive_ids = angleIds;
-    else if (angleUrls.length) faceEl.reference_image_urls = angleUrls;
-
-    const elements = [faceEl];
-    if (hasProduct) {
-      const pEl = {};
-      if (prodIds[0]) pEl.frontal_drive_id = prodIds[0]; else pEl.frontal_image_url = prodUrls[0];
-      elements.push(pEl);
+    // shared.front / shared.tail(B 版精簡敘事):塞不進 512 就自動被 assemble 擋掉,不會壞。
+    if (seg.shared && seg.shared.front && multiPrompt[0]) {
+      const merged = seg.shared.front + ' ' + multiPrompt[0].prompt;
+      if (merged.length <= SHOT_LIMIT) multiPrompt[0].prompt = merged;
+      else console.warn('[KolEngine:kling] shared.front 塞不進 512,已略過');
     }
 
     const sub = await callWorker('kling_submit', {
       endpoint: ENDPOINT,
-      startDriveId: faceId || undefined,
-      startImageUrl: faceId ? undefined : faceUrl,
-      elements: elements,
+      startDriveId: seg.kolFaceDriveId || undefined,
+      startImageUrl: seg.kolFaceDriveId ? undefined : seg.kolImageUrl,
+      elements: built.elements,
       multiPrompt: multiPrompt,
       shotType: 'customize',
-      totalSec: String(Math.max(3, Math.min(15, seg.totalSec || 5))),
-      aspectRatio: seg.aspectRatio || '9:16',   // ⚠️ 模型會忽略;實際比例由首幀圖決定
+      totalSec: String(snapSec(seg.totalSec || 5)),        // ⚠️ snap 到 5/8/10/15
+      aspectRatio: seg.aspectRatio || '9:16',       // ⚠️ 模型忽略;比例由首幀圖決定
       resolution: seg.resolution || '720p',
       generateAudio: audioOn,
-      negativePrompt: seg.negativePrompt || NEGATIVE,   // 🆕 負向詞搬家,不佔 512
+      negativePrompt: seg.negativePrompt || NEGATIVE,
       cfgScale: (typeof seg.cfgScale === 'number') ? seg.cfgScale : CFG_SCALE,
+      seed: seg.seed,                                // 🐛 v1.3 修:跨段共用 seed(對齊 Seedance)
       brandId: seg.brandId,
       kolName: seg.kolName
     });
@@ -174,22 +244,25 @@
     endpoint: ENDPOINT,
     submitSegment: submitSegment,
     negativePrompt: NEGATIVE,
-    // 除錯:Console 看每個 shot 的 prompt 與字數,不送 fal、不燒點數。
-    //   用法:KolEngines.kling._preview([{prompt:'...',productUrl:'x'}], {generateAudio:true})
+    // 除錯:看每 shot prompt、字數、@Element 對照。不送 fal、不燒點數。
     _preview: function (beats, seg) {
       seg = seg || {};
+      const built = buildElements(Object.assign({ kolFaceDriveId: 'FACE' }, seg));
       const accent = accentOf(seg);
-      const hasProduct = !!((seg.productDriveIds && seg.productDriveIds.length) || (seg.productImageUrls && seg.productImageUrls.length) || seg.hasProduct);
       const list = (Array.isArray(beats) ? beats : [beats]).map(function (b) { return (typeof b === 'string') ? { prompt: b } : b; });
+      console.log('elements 數:', built.elements.length,
+        '| 服裝=', built.tags.outfit || '無', '| 場景=', built.tags.scene || '無',
+        '| 商品=', built.tags.firstProductTag || '無');
       return list.map(function (b, i) {
-        const p = buildShotPrompt(b, { accent: accent, audioOn: seg.generateAudio === true, hasProduct: hasProduct });
+        const p = buildShotPrompt(b, { accent: accent, audioOn: seg.generateAudio === true }, built.tags);
         return { shot: i + 1, len: p.length, ok: p.length <= SHOT_LIMIT, prompt: p };
       });
     }
   };
 
-  console.log('[KolEngine] 🎥 攝影師② Kling v1.2 已註冊 · window.KolEngines.kling · '
-    + '📏每shot上限512字元→按塊丟棄不腰斬 · 🚫負向詞搬 negative_prompt(語意零犧牲) · cfg_scale=' + CFG_SCALE + ' · '
-    + 'driveId 乾淨原圖 · elements 多角度鎖臉(已驗證) · 口音鐵律(Taiwanese Mandarin) · '
-    + '⚠️aspect_ratio被模型忽略(比例=首幀圖) · ⚠️Kling並發=1→排隊跑');
+  console.log('[KolEngine] 🎥 攝影師② Kling v1.4 已註冊 · window.KolEngines.kling · '
+    + '🐛修seed共用 · 👗服裝+🌆場景 element(共用資產·動態@ElementN編號) · 📦分段綁圖 · '
+    + '🔒Seedance跨段鎖定條款搬negative_prompt(光向/色調/不換人場衣/no crowd·0字元成本) · 👁眼神塊 · '
+    + '📏每shot上限512→按塊丟棄不腰斬 · cfg_scale=' + CFG_SCALE + ' · 口音鐵律(Taiwanese Mandarin) · '
+    + '⏱duration自動snap(5/8/10/15) · ⚠️elements上限4 · ⚠️單張資產element會在轉向時變形(需三視圖) · ⚠️Kling並發=1→排隊跑');
 })();
