@@ -179,8 +179,7 @@ window.KolStitch = (function () {
       let bodyB = shared.front + '\n'
         + 'Across all shots: the SAME woman [Image1], the same location [SCENE_IMG], the same outfit [OUTFIT_IMG], '
         + prodRule
-        + 'one unified colour grade and the same lighting across every cut — no change of person, scene, outfit or lighting, '
-        + 'no smoothing or beautifying, no crowd.\n\n'
+        + 'no change of person, scene, outfit, no crowd.\n\n'
         + carry;
       let tb = 0;
       for (let i = 0; i < n; i++) {
@@ -192,12 +191,12 @@ window.KolStitch = (function () {
         bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': [Image1] ' + (list[i].prompt || '') + _prodB + '\n';
         tb = tb1;
       }
-      bodyB += '\nRealism: matte natural skin, no oily shine, no beautifying; she makes real eye contact with bright lively blinking eyes, gaze shifting naturally, NEVER a blank frozen fish-eyed stare; expressions flow continuously, no held frozen face; the quoted line is her COMPLETE and ONLY speech for the shot — once it ends there is no further voice, no extra words, no improvised prices, only natural ambient sound.';
+      bodyB += '\nThe quoted line is her COMPLETE and ONLY speech for the shot — once it ends there is no further voice, no extra words, no improvised prices, only natural ambient sound.';
       if (shared.tail) bodyB += '\n' + shared.tail;
       return bodyB;
     }
 
-    let body = 'candid realistic vertical UGC video, natural daylight, true-to-life skin.\n'
+    let body = 'candid realistic vertical UGC video.\n'
       + "Use [Image1] for the woman's face and identity. She is in the exact location of [SCENE_IMG], "
       + 'wearing the exact outfit of [OUTFIT_IMG], naturally holding and showing the product.\n\n'
       + carry;
@@ -214,7 +213,7 @@ window.KolStitch = (function () {
         + (list[i].prompt || '') + _prodA + '\n';
       t = t1;
     }
-    body += '\nGlobal: the same woman [Image1], the same location [SCENE_IMG], the same background and outfit [OUTFIT_IMG] across all shots; keep the exact same lighting between cuts (same direction, intensity and colour temperature); steady camera; realistic unretouched skin with real texture; do not change her face, the location, the background or the outfit; no beautifying, no different person, no crowd.';
+    body += '\nGlobal: the same woman [Image1], the same location [SCENE_IMG], the same background and outfit [OUTFIT_IMG] across all shots; steady camera; do not change her face, the location, the background or the outfit; no different person, no crowd.';
     return body;
   }
 
@@ -348,7 +347,7 @@ window.KolStitch = (function () {
     //   對 piapi 路線改用「精簡骨架」:五鎖錨 + 分鏡台詞 + 一句真實度;長篇 realism 交給參考圖扛。fal 路線維持完整敘述不動。
     if ((opts.provider || 'piapi') === 'piapi' && opts.shared && opts.shared.front) {
       const _leanFront =
-        'Realistic vertical UGC video, natural light, real unretouched skin, no beautifying or smoothing, no on-screen text or subtitles, no background music.';
+        'Realistic vertical UGC video, no on-screen text or subtitles, no background music.';
       prompt = buildMultiShotPrompt(beats, totalSec, { front: _leanFront }, opts.continuityFrom);
     }
 
@@ -580,7 +579,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.10(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.10(PiAPI改精簡骨架·丟長篇realism靠參考圖扛·📏送出長度探針·修400 prompt exceeds) · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
