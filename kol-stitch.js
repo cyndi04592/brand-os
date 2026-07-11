@@ -192,7 +192,7 @@ window.KolStitch = (function () {
         bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': [Image1] ' + (list[i].prompt || '') + _prodB + '\n';
         tb = tb1;
       }
-      bodyB += '\nHer face has natural matte skin with no oily shine, no greasy T-zone and no hot specular highlights — the light on her face is soft, even and gentle, exactly as understated as the light on her hands and arms, never glossy or over-lit. While speaking she looks directly into the camera lens and makes genuine eye contact, with bright lively expressive eyes that have clear catchlights and real sparkle — her gaze is warm, alert and emotionally present, subtly brightening and widening on the words she emphasises, with natural blinking and tiny lifelike micro-expressions around the eyes and cheeks, never a blank dead fish-eyed stare and never empty or unfocused; her gaze flows and shifts naturally with what she is saying — small natural eye movements that drift briefly and return to the lens, NOT a rigid fixed stare locked on a single spot. Her expression flows and changes continuously like a real person — any emotion such as surprise, delight or excitement appears only as a brief fleeting beat that immediately transitions naturally into the next expression, word or action; she NEVER holds one exaggerated frozen expression, never freezes or locks her face into a static pose, and never keeps the same surprised or wide-eyed look for more than about a second. She delivers the written line naturally and lets it land on its own; the written line inside the quotes is the COMPLETE and ONLY speech for the whole shot; the instant those quoted words end, her speech is finished and there is NO further voice, NO extra words, NO improvised prices, NO mumbling and NO filler syllables of any kind for the rest of the shot — silence except natural ambient sound.';
+      bodyB += '\nRealism: matte natural skin, no oily shine, no beautifying; she makes real eye contact with bright lively blinking eyes, gaze shifting naturally, NEVER a blank frozen fish-eyed stare; expressions flow continuously, no held frozen face; the quoted line is her COMPLETE and ONLY speech for the shot — once it ends there is no further voice, no extra words, no improvised prices, only natural ambient sound.';
       if (shared.tail) bodyB += '\n' + shared.tail;
       return bodyB;
     }
@@ -214,11 +214,7 @@ window.KolStitch = (function () {
         + (list[i].prompt || '') + _prodA + '\n';
       t = t1;
     }
-    body += '\nGlobal: it is the same woman, the same location and the same background across all shots; '
-      + 'keep the exact same lighting in every shot — the same light direction, intensity and colour temperature, matching the setting (indoor or outdoor) — and do not change the lighting between cuts; '
-      + 'camera mostly steady; realistic unretouched skin with real texture; '
-      + 'keep her face exactly [Image1]; do not change her face, the location, the background or the outfit between cuts. '
-      + 'No change of setting, no different person, no smoothing or beautifying, no crowd.';
+    body += '\nGlobal: the same woman [Image1], the same location [SCENE_IMG], the same background and outfit [OUTFIT_IMG] across all shots; keep the exact same lighting between cuts (same direction, intensity and colour temperature); steady camera; realistic unretouched skin with real texture; do not change her face, the location, the background or the outfit; no beautifying, no different person, no crowd.';
     return body;
   }
 
@@ -355,9 +351,7 @@ window.KolStitch = (function () {
         || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
         || 'tw';
       const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
-      prompt += '\nAudio & lip-sync: she speaks ONLY the spoken dialogue explicitly written in a shot, in natural ' + _accent
-        +  ' at a natural conversational speaking pace — she does NOT stretch words, slow down unnaturally, or insert pauses between individual words just to fill the shot duration; the speech stays smooth and continuous as if a real person is talking normally. Every syllable is articulated clearly and distinctly — brand names, product names and numbers are pronounced precisely and cleanly, never slurred, blended or mumbled — with brief natural pauses of 200-400 milliseconds between phrases, subtle natural mouth movements, and absolutely no exaggerated or mechanical robotic delivery. She says EXACTLY the written dialogue word for word and nothing else — do NOT improvise, invent, add, drop, repeat or alter any words, numbers or prices, and do NOT generate any speech that was not written. With clear lip-sync. In any shot with NO written dialogue (eating, chewing, tasting, holding or showing the product, or simply reacting) she does NOT speak — her mouth does not form words, there is no voice-over, only natural ambient sound. After her final spoken line ends she does NOT freeze, stiffen or stand still — she keeps natural closing body language (a warm smile, a small nod, casually showing the product, or turning back to what she was doing) flowing until the very last frame of the shot.'
-      prompt += '\nLiving-body realism: she is never statue-still. While speaking, her body talks with her — free hand gestures naturally with the rhythm of her words, weight shifts subtly from foot to foot, small head nods and tilts follow her sentences, eyebrows and eyes react to what she is saying. Her gaze behaves like a real person on camera: glancing down at the product, back up to the lens, briefly aside while thinking, with natural relaxed blinking — never a fixed unblinking stare into the camera. Any walking or turning follows real human gait mechanics: shoulders sway gently with each step, hips alternate weight, arms swing slightly, and each movement carries momentum into the next (natural inertia, no robotic stops).';
+      prompt += '\nVoice & body: she speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) she stays silent, mouth still, only ambient sound. She is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
     }
 
     // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
@@ -378,7 +372,7 @@ window.KolStitch = (function () {
       generateAudio: opts.generateAudio === true,
       tier: opts.tier || 'fast',
       seed: opts.seed,
-      provider: opts.provider || 'piapi',   // 🆕 v6.8 畫質主力預設 PiAPI(側門·吃真人臉);傳 provider:'fal' 切回官方 fal
+      provider: opts.provider || 'piapi',   // 🆕 v6.9 畫質主力預設 PiAPI(側門·吃真人臉);傳 provider:'fal' 切回官方 fal
       // 不傳 episodeId → 每段 keyed by 自己 reqId,平行不撞 key
     }); });
 
@@ -572,7 +566,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.8(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.9(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt(Seedance官方~60-100字·砍3700字realism boilerplate·修PiAPI 400 prompt exceeds) · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
