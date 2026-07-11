@@ -344,6 +344,14 @@ window.KolStitch = (function () {
 
     let prompt = buildMultiShotPrompt(beats, totalSec, opts.shared, opts.continuityFrom);
 
+    // 🩳 v6.10 PiAPI 硬上限修正:realism 冗字散在多模組(cinematographer/crew/product)→ shared.front 太長會撞 PiAPI prompt 上限。
+    //   對 piapi 路線改用「精簡骨架」:五鎖錨 + 分鏡台詞 + 一句真實度;長篇 realism 交給參考圖扛。fal 路線維持完整敘述不動。
+    if ((opts.provider || 'piapi') === 'piapi' && opts.shared && opts.shared.front) {
+      const _leanFront =
+        'Realistic vertical UGC video, natural light, real unretouched skin, no beautifying or smoothing, no on-screen text or subtitles, no background music.';
+      prompt = buildMultiShotPrompt(beats, totalSec, { front: _leanFront }, opts.continuityFrom);
+    }
+
     // 🔒 口音 + 口型鐵律(v6.4):開語音時,只有「有台詞的鏡頭」才說話+對嘴;
     //   沒台詞的鏡頭(吃/咀嚼/拿商品/純反應)→ 不講話、嘴不動、只有環境音 → 解決「邊吃邊有人聲」desync。
     if (opts.generateAudio === true && !/lip-sync/i.test(prompt)) {
@@ -351,11 +359,17 @@ window.KolStitch = (function () {
         || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
         || 'tw';
       const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
-      prompt += '\nVoice & body: she speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) she stays silent, mouth still, only ambient sound. She is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
+      if ((opts.provider || 'piapi') === 'piapi') {
+        // 🩳 v6.10 PiAPI 超短語音行(省字避開 prompt 上限;鐵律照留:只講台詞/台灣腔/對嘴/沒台詞不講話/不定格)
+        prompt += '\nVoice & lip-sync: she speaks ONLY the written dialogue word for word in natural ' + _accent + ', no improvising or changing words, numbers or prices; clear articulation and accurate lip-sync. In shots with no written line she stays silent (mouth still, ambient sound only). Never statue-still; natural gestures and gaze, still moving on the last frame.';
+      } else {
+        prompt += '\nVoice & body: she speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) she stays silent, mouth still, only ambient sound. She is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
+      }
     }
 
     // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
     //   Worker 自動把 [OUTFIT_IMG]/[SCENE_IMG] 換成真實 [ImageN]。
+    console.log('[KolStitch] 📏 送出 prompt 長度 =', prompt.length, '字 · provider=' + (opts.provider || 'piapi'));
     if (onTick) onTick(0, 'reference-to-video(多鏡頭)');
     const _segProducts = collectBeatProducts(beats);   // 🆕 分段綁圖:beats 帶鞋 → 用它組圖(順序對齊 prompt)
     const sub = await queuedSubmit(function () { return api('seedance_submit', {
@@ -566,7 +580,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.9(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt(Seedance官方~60-100字·砍3700字realism boilerplate·修PiAPI 400 prompt exceeds) · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.10(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.10(PiAPI改精簡骨架·丟長篇realism靠參考圖扛·📏送出長度探針·修400 prompt exceeds) · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + 每chunk角度圖 + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
