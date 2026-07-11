@@ -432,15 +432,6 @@ window.KolStitch = (function () {
     }
     if (!Array.isArray(plan) || plan.length < 1) throw new Error('plan 至少要 1 段');
 
-    // 🔒 v6.12 鎖臉:整支共用「同一張身份臉錨」當 [Image1](修「兩段臉不一樣」)。
-    //   病根:v6.2 讓每個 chunk 各挑各的「角度圖」當 [Image1] → Seedance 各段獨立生成 → 每段臉不同。
-    //   修法:回到「一張身份原圖鎖臉」(v6.2 之前「又晴臉永遠對」的那套),角度圖不再進 [Image1]。
-    //         哲學同 v6.11「相信臉圖」——只是確保每段相信的是「同一張」臉。鏡頭角度照樣由 prompt 的 Shot 描述決定。
-    //   身份臉來源:opts.identityImageUrl(想指定就傳)→ 沒傳退 kolImg(原始 KOL 照)。
-    //   保險絲:Console 打 window.KOL_LOCK_FACE = false → 退回 v6.2 逐段角度圖(除錯用)。
-    const _lockFace = (typeof window === 'undefined' || window.KOL_LOCK_FACE !== false);
-    const _identityFace = opts.identityImageUrl || kolImg;
-
     // v6.2:把分鏡整理成 chunks —— 照「累積秒數 ≤15s 且 Shot 數 ≤maxShots」切,每個 chunk = 一次多鏡頭生成。
     //   傳 [{shots:[...]}] 直接用;傳一串 beat 物件(STEP2/STEP3:{prompt,durationSec,kolImageUrl,...})→ 照秒數併。
     const MAX_CHUNK_SEC = opts.maxChunkSec || 15;   // 一個 chunk 上限 15 秒(Seedance 單次上限)
@@ -540,12 +531,30 @@ window.KolStitch = (function () {
       return t || null;
     }
 
+    // 🔒 v6.12.1 鎖臉:整支共用「同一張身份臉錨」當 [Image1](修「兩段臉不一樣」)。
+    //   病根:v6.2 讓每個 chunk 各挑各的「角度圖」當 [Image1] → Seedance 各段獨立生成 → 每段臉不同。
+    //   修法:整支鎖「第一個有角度圖的 beat」那張——它是 STEP2/STEP3 挑好、PiAPI 已證明能送的 URL。
+    //         哲學同 v6.11「相信臉圖」——只是確保每段相信的是「同一張」臉;鏡頭角度照樣由 prompt 的 Shot 描述決定。
+    //   ⚠️ v6.12 舊版誤鎖 opts.kolImageUrl(主肖像·多為 Drive/縮圖)→ PiAPI auto_upload 抓不到 → 提交 500。
+    //      本版改鎖「第一段角度圖」根治;想自訂可傳 opts.identityImageUrl。
+    //   保險絲:Console 打 window.KOL_LOCK_FACE = false → 退回 v6.2 逐段角度圖(除錯用)。
+    const _lockFace = (typeof window === 'undefined' || window.KOL_LOCK_FACE !== false);
+    let _identityFace = opts.identityImageUrl || '';
+    if (!_identityFace) {
+      for (let _ci = 0; _ci < chunks.length && !_identityFace; _ci++) {
+        const _cb = chunks[_ci].beats && chunks[_ci].beats[0];
+        _identityFace = (_cb && _cb.kolImageUrl) || chunks[_ci].kolImageUrl || '';
+      }
+    }
+    if (!_identityFace) _identityFace = kolImg;   // 最後退路(無角度圖時,行為同 v6.2 全域圖)
+    if (_lockFace) log('🔒 鎖臉:整支統一用同一張臉錨(跨段同一張臉)');
+
     const tasks = chunks.map(function (chunk, i) {
       const beats = chunk.beats || [];
       const continuityFrom = null;   // 🔗 v7.1 接棒關閉:文字接棒「she has just …上一段動作」會被模型當成「要演的動作」→ 連續重演(連開好幾次箱)。連貫改靠「分鏡本身是連續故事 + 視覺鎖定(同人/同景/同服裝/同seed)」。lastActionText 保留待日後改成「狀態接棒」再開。
       const chunkSec = Math.min(15, Math.max(3, beats.reduce(function (a, b) { return a + (b.durationSec || 5); }, 0) || 15));
-      // 🔒 v6.12 鎖臉:整支統一餵「同一張身份臉錨」當 [Image1](修「兩段臉不一樣」)。
-      //   _lockFace=true(預設)→ 全部 chunk 用 _identityFace,不再每段各挑各的角度圖。
+      // 🔒 v6.12.1 鎖臉:整支統一餵「同一張身份臉錨」當 [Image1](修「兩段臉不一樣」)。
+      //   _lockFace=true(預設)→ 全部 chunk 用 _identityFace(第一段角度圖),不再每段各挑各的。
       //   _lockFace=false(Console 設 window.KOL_LOCK_FACE=false)→ 退回 v6.2 逐段角度圖。
       const chunkKol = _lockFace
         ? _identityFace
@@ -592,7 +601,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.12 🔒鎖臉(整支共用同一張身份臉錨當[Image1]·修「兩段臉不一樣」·回到「一張原圖鎖臉」·相信臉圖;Console設window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.12.1 🔒鎖臉(整支共用同一張身份臉錨當[Image1]=第一段角度圖·PiAPI能送·修「兩段臉不一樣」;v6.12誤鎖主肖像→auto_upload抓不到→提交500·本版根治;Console設window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
