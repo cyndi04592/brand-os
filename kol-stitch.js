@@ -509,9 +509,17 @@ window.KolStitch = (function () {
     } catch (e) { outfitImageUrl = null; }
 
     // 場景參考圖(整支生一次,當 compose 的輸入之一)
+    // 🔬 診斷開關:Console 設 window.KOL_DROP_SCENE = true → 這支不帶場景圖。
+    //   用途:外部圖床(ibb.co)場景圖被 PiAPI 伺服器抓取擋掉 → 提交 500。
+    //   跳過場景可隔離該問題、純驗鎖臉(臉仍鎖 [Image1],背景不鎖而已)。場景之後系統性搬 R2 再開回。
     let sceneImageUrl = opts.sceneImageUrl || null;
+    const _dropScene = (typeof window !== 'undefined' && window.KOL_DROP_SCENE === true);
+    if (_dropScene) {
+      sceneImageUrl = null;
+      log('🔬 診斷:本支跳過場景圖(KOL_DROP_SCENE=on)→ 純驗鎖臉,背景暫不鎖');
+    }
     try {
-      if (!sceneImageUrl && window.KolEnvironment && typeof window.KolEnvironment.generateSceneRefImage === 'function') {
+      if (!_dropScene && !sceneImageUrl && window.KolEnvironment && typeof window.KolEnvironment.generateSceneRefImage === 'function') {
         const sceneCtx = opts.sceneCtx || {
           brandId: opts.brandId || (window.S && window.S.currentBrandId) || '',
           sceneId: (window.S && window.S.selectedSceneId) || '',
@@ -608,7 +616,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.12.2-diag 🔬鎖臉診斷(印出每段送出的[Image1]臉圖網址+鎖臉錨,抓500根因)· 🔒鎖臉(整支共用同一張身份臉錨當[Image1]=第一段角度圖;Console設window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.12.3-diag 🔬鎖臉診斷+場景隔離開關(印每段[Image1]臉圖網址;Console設window.KOL_DROP_SCENE=true跳過外部場景圖·純驗鎖臉·根因=ibb.co擋伺服器抓圖→提交500)· 🔒鎖臉(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
