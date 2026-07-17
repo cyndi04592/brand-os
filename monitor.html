@@ -665,6 +665,23 @@ body{
       </div>
     </div>
   </div>
+  <div id="smrSection" style="display:none;">
+    <div class="sec-title">SMR 真實成交 vs Meta<span style="font-size:9px;color:var(--sky);font-weight:400;margin-left:6px;">第一方數據 · 已付款才算</span></div>
+    <div class="roi-row">
+      <div class="roi-card">
+        <div class="roi-title">真實成交(SMR 第一方)</div>
+        <div class="roi-main" id="smrRealPur" style="color:var(--t3)">—</div>
+        <div class="roi-r"><span>真實成交(全站已付款)</span><span id="smrRealPur2">—</span></div>
+        <div class="roi-r"><span>Meta 回報購買(廣告歸因)</span><span id="smrMetaPur">—</span></div>
+        <div class="roi-r"><span>Meta 佔真實比</span><span id="smrRatio">—</span></div>
+        <div style="margin-top:10px;font-size:10px;color:var(--t3);line-height:1.7;">真實成交＝自家 SMR 全站「付款成功」訂單;Meta＝廣告歸因購買(7天窗)。兩者口徑不同,比例當參考,不是誰對誰錯。</div>
+      </div>
+      <div class="roi-card">
+        <div class="roi-title">廣告歸因 · 長週期(SMR)</div>
+        <div style="font-size:11px;color:var(--t2);line-height:1.9;" id="smrAttrBody">載入中...</div>
+      </div>
+    </div>
+  </div>
   <div class="sec-title">素材健康度 · AI vs 美編 · 受眾結構</div>
   <div class="creative-row">
     <div class="creative-card">
@@ -1000,12 +1017,87 @@ async function loadData(){
     renderScore();
     loadLearningPct90(brand, accountId);
     loadTrendData(brand, accountId);
+    loadSmrStats(brand);
 
     var _now=new Date();
     document.getElementById('lastUpd').textContent='更新:'+_now.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'})+' '+_now.toLocaleTimeString('zh-TW');
 
   }catch(e){
     setLoadState('❌ '+e.message+'<br><span style="font-size:10px;color:var(--t3)">確認 Worker Token</span>');
+  }
+}
+
+// ══ SMR 真實成交 vs Meta(走自家 Worker 代拿,SMR_KEY 不在前端)══
+var SMR_BRAND_MAP={moz:'MOZ'}; // 有接 SMR 的品牌才有這區塊
+
+function getSmrRange(){
+  // 回 {preset} 或 {since,until}。today/7d 用 preset(伺服器算台北日,最準)
+  if(curRange==='today') return{preset:'today'};
+  if(curRange==='7d') return{preset:'7d'};
+  if(curRange==='custom') return{since:document.getElementById('dateSince').value,until:document.getElementById('dateUntil').value};
+  var dm={'14d':14,'30d':30,'90d':90,'yoy':30};
+  var now=new Date(),past=new Date(now);
+  past.setDate(now.getDate()-((dm[curRange]||7)-1));
+  return{since:past.toISOString().split('T')[0],until:now.toISOString().split('T')[0]};
+}
+
+async function loadSmrStats(brand){
+  var sec=document.getElementById('smrSection');
+  var smrBrand=SMR_BRAND_MAP[brand];
+  if(!smrBrand){if(sec)sec.style.display='none';return;}
+  sec.style.display='block';
+  var rg=getSmrRange();
+
+  // ① 真實成交 vs Meta
+  try{
+    var body=Object.assign({action:'smr_stats',password:GAS_PASSWORD,kind:'count_range',smrBrand:smrBrand},rg);
+    var res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var j=await res.json();
+    if(j&&j.ok){
+      var purRow=(j.by_event||[]).find(function(r){return r.event_name==='purchase';})||{};
+      var realPur=parseInt(purRow.real_n||0);
+      var metaPur=allAds.reduce(function(s,a){return s+(a.purchases||0);},0);
+      document.getElementById('smrRealPur').textContent=realPur.toLocaleString();
+      document.getElementById('smrRealPur').style.color='var(--gold)';
+      document.getElementById('smrRealPur2').textContent=realPur.toLocaleString()+' 筆';
+      document.getElementById('smrMetaPur').textContent=metaPur.toLocaleString()+' 筆';
+      document.getElementById('smrRatio').textContent=realPur>0?Math.round(metaPur/realPur*100)+'%':'—';
+    }else{
+      document.getElementById('smrRealPur').textContent='—';
+      document.getElementById('smrRealPur2').textContent='讀取失敗';
+    }
+  }catch(e){
+    document.getElementById('smrRealPur2').textContent='讀取失敗';
+  }
+
+  // ② 廣告歸因 · 長週期(資料要等 utm 購買累積,沒料就顯示等待中)
+  try{
+    var rg2=(rg.preset==='today')?{since:new Date().toISOString().split('T')[0]}:(rg.preset==='7d'?(function(){var n=new Date(),p=new Date(n);p.setDate(n.getDate()-6);return{since:p.toISOString().split('T')[0],until:n.toISOString().split('T')[0]};})():rg);
+    var body2=Object.assign({action:'smr_stats',password:GAS_PASSWORD,kind:'ad_attribution',smrBrand:smrBrand},rg2);
+    var res2=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body2)});
+    var j2=await res2.json();
+    var el=document.getElementById('smrAttrBody');
+    if(j2&&j2.ok){
+      if(!j2.with_ad_source){
+        el.innerHTML='🕐 管線已接好,等「utm 廣告」的購買累積幾天就有料。<br><span style="font-size:10px;color:var(--t3);">期間內購買 '+(j2.total_purchases||0)+' 筆,目前都是直接/自然流量或尚未種名牌。</span>';
+      }else{
+        var camps=(j2.by_campaign||[]).filter(function(c){return c.campaign.indexOf('直接/自然')<0;}).slice(0,3);
+        var html='<div class="roi-r"><span>期間內購買</span><span>'+(j2.total_purchases||0)+' 筆</span></div>'
+          +'<div class="roi-r"><span>有廣告來源</span><span>'+(j2.with_ad_source||0)+' 筆</span></div>'
+          +'<div class="roi-r"><span>長週期成交(>7天,Meta漏算)</span><span>'+(j2.long_cycle_over_7d_purchases||0)+' 筆 / NT$'+(j2.long_cycle_over_7d_value||0).toLocaleString()+'</span></div>';
+        if(camps.length){
+          html+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;">成交最多的活動</div>';
+          camps.forEach(function(c){
+            html+='<div class="roi-r"><span style="max-width:65%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.campaign+'</span><span>'+c.purchases+' 筆'+(c.avg_cycle_days!=null?' · 平均'+c.avg_cycle_days+'天':'')+'</span></div>';
+          });
+        }
+        el.innerHTML=html;
+      }
+    }else{
+      el.textContent='讀取失敗:'+((j2&&j2.error)||'未知錯誤');
+    }
+  }catch(e){
+    document.getElementById('smrAttrBody').textContent='讀取失敗:'+e.message;
   }
 }
 
