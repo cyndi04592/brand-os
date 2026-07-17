@@ -1,7 +1,18 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-wardrobe.js · v5.17
+//  kol-wardrobe.js · v5.18
 //
 //  👗 服裝師 — 穿搭、品牌調性鎖、服裝 DNA(服裝師 v2 · 一支一鎖)
+//
+//  v5.18(服裝鎖定·解抽卡):
+//   ★ 新增 resolveLockedOutfitUrl(ctx) + generateOutfitRefImage() 最前面加「鎖定優先」判斷。
+//     有「釘住的固定服裝圖」就直接回傳那張、完全不現生 → 根治「同一句『牛仔褲』每次抽不同款」。
+//     沒釘 → 照舊走 v5.15 文字現生(零破壞、向下相容)。
+//   ★ 鎖定來源優先序:
+//       1) Console 保險絲 window.KOL_OUTFIT_LOCK = '圖網址'(=false 明確關閉鎖定,退回現生·方便 A/B)
+//       2) 呼叫端 ctx.lockedOutfitImageUrl
+//       3) persona.outfit_image_url / persona.outfitImageUrl(釘一次,以後都用)
+//   ⚠️ 釘「乾淨白底/去背」服裝圖最佳(避免背景漏進影片,同 v5.17 顧慮);
+//      建議用 R2/公開網址或 fal 圖網址,Drive 原圖 Worker 可能抓不到(同素材規則)。
 //
 //  v5.17:服裝參考圖 prompt 收乾淨 — 背景完全清空(無花瓶/植物/籃子/道具),
 //         避免參考圖背景小物之後漏進 Seedance 影片。模特用「無臉素白模特」。
@@ -198,15 +209,53 @@
     return full ? full.replace(/^wearing\s+/i, '').trim() : '';
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  //  🔒 v5.18:服裝鎖定 — 回傳「已釘住的固定服裝圖 URL」(有就用、不現生)
+  //    根治「同一句衣服文字每次現生一張新圖 → 每次款式不一樣 → 抽卡、跨段飄」。
+  //    優先序:Console 保險絲 > ctx 傳入 > persona 綁定。
+  //    ⚠️ 釘乾淨白底/去背圖最佳;建議 R2/公開網址或 fal 圖網址(Drive 原圖 Worker 可能抓不到)。
+  // ══════════════════════════════════════════════════════════════════
+  function resolveLockedOutfitUrl(ctx) {
+    // 1) Console 保險絲(臨時覆蓋 / A-B 測試):
+    //    window.KOL_OUTFIT_LOCK = '網址'  → 強制用這張
+    //    window.KOL_OUTFIT_LOCK = false   → 明確關閉鎖定,退回文字現生
+    const sw = (typeof window !== 'undefined') ? window.KOL_OUTFIT_LOCK : undefined;
+    if (sw === false) return '';
+    if (typeof sw === 'string' && sw.trim()) return sw.trim();
+
+    // 2) 呼叫端明確指定
+    if (ctx && typeof ctx.lockedOutfitImageUrl === 'string' && ctx.lockedOutfitImageUrl.trim()) {
+      return ctx.lockedOutfitImageUrl.trim();
+    }
+
+    // 3) persona 綁定的固定服裝圖(釘一次,以後都用)
+    const persona = (ctx && ctx.persona)
+      || (typeof window !== 'undefined' && window.S && window.S.selectedKol && window.S.selectedKol.persona)
+      || null;
+    const pinned = persona && (persona.outfit_image_url || persona.outfitImageUrl);
+    if (typeof pinned === 'string' && pinned.trim()) return pinned.trim();
+
+    return '';
+  }
+
   /**
    * 👗 自動生「無臉衣服平拍圖」當參考(Phase 1:鎖布料,不搶臉)
-   *   - flux 是純文字出圖 → 生「無頭/無臉乾淨服裝展示圖」,臉交給 [Image1]
+   *   - 🔒 v5.18:先看有沒有「釘住的固定服裝圖」→ 有就直接回傳、完全不現生(解抽卡)
+   *   - 沒釘 → flux 純文字出圖 → 生「無頭/無臉乾淨服裝展示圖」,臉交給 [Image1]
    *   - 刻意無臉:避免第二張臉跟 KOL 打架
-   *   - 回傳 flux 圖 URL;生不出來回 null(呼叫端容錯,照舊純文字)
+   *   - 回傳 圖 URL;生不出來回 null(呼叫端容錯,照舊純文字)
    * @param {object} ctx  跟 contribute 同一個 ctx(outfitBrand / sceneId / persona…)
+   *                       可額外帶 ctx.lockedOutfitImageUrl 直接指定固定服裝圖
    * @returns {Promise<string|null>}
    */
   async function generateOutfitRefImage(ctx) {
+    // 🔒 v5.18 服裝鎖定:有釘住的固定服裝圖 → 直接用,不現生
+    const lockedUrl = resolveLockedOutfitUrl(ctx);
+    if (lockedUrl) {
+      console.log('[KolWardrobe] 🔒 服裝鎖定:使用釘住的固定服裝圖(不現生)→', lockedUrl);
+      return lockedUrl;
+    }
+
     const outfitText = resolveOutfitText(ctx);
     if (!outfitText) { console.warn('[KolWardrobe] 沒有衣服文字,跳過服裝參考圖'); return null; }
 
@@ -244,11 +293,12 @@
     pickOutfitByScene,
     resolveOutfitText,          // 🆕 v5.15
     generateOutfitRefImage,     // 🆕 v5.15
+    resolveLockedOutfitUrl,     // 🆕 v5.18(除錯用:看目前會鎖到哪張)
   };
 
   if (window.CrewDirector?.register) {
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.17 就緒 · 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖(generateOutfitRefImage·背景清空·孤立去背)');
+  console.log('[KolWardrobe] 👗 v5.18 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
