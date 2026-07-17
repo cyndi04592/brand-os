@@ -772,6 +772,58 @@ var ACCOUNTS=[
   // 新品牌由管理員審核後加入
 ];
 
+// ══ 品牌權限檢查(重用 Brand OS getBrandOS 開關;查不到=一律擋)══
+var AUTH_WORKER_URL='https://kol-proxy.calm-sunset-6b66.workers.dev';
+var _allowedBrands=null; // null=尚未通過驗證
+
+function _extractBrandIds(j){
+  if(!j||j.ok===false) return null;
+  var d=(j.data&&Array.isArray(j.data.brands))?j.data:(Array.isArray(j.brands)?j:null);
+  if(!d) return null;
+  return d.brands.map(function(b){return String(b.id||'').toLowerCase();});
+}
+
+async function fetchAllowedBrands(email){
+  // 先走 kol-proxy 快取,失敗退回直打 GAS(跟 auth.js 同一套機制)
+  try{
+    var c1=new AbortController();
+    var t1=setTimeout(function(){c1.abort();},8000);
+    var r1=await fetch(AUTH_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'gas_cached',password:GAS_PASSWORD,gasAction:'getBrandOS',gasParams:{email:email}}),signal:c1.signal});
+    clearTimeout(t1);
+    var ids1=_extractBrandIds(await r1.json());
+    if(ids1) return ids1;
+  }catch(e){}
+  try{
+    var c2=new AbortController();
+    var t2=setTimeout(function(){c2.abort();},8000);
+    var r2=await fetch(GAS_URL+'?action=getBrandOS&password='+GAS_PASSWORD+'&email='+encodeURIComponent(email),{signal:c2.signal});
+    clearTimeout(t2);
+    var ids2=_extractBrandIds(await r2.json());
+    if(ids2) return ids2;
+  }catch(e){}
+  return null; // 查不到 → 上層當「無權限」擋下(寧可擋錯,不可放錯)
+}
+
+function _denyAccess(msg){
+  document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:14px;color:#e8e0d0;background:#14121f;font-family:\'Noto Sans TC\',sans-serif;"><div style="font-size:42px;">🔒</div><div style="font-size:15px;">'+msg+'</div><div style="font-size:12px;opacity:.6;">3 秒後回首頁…</div></div>';
+  setTimeout(function(){window.location.href='index.html';},3000);
+}
+
+async function checkBrandAccess(){
+  var email=(sessionStorage.getItem('bs_email')||'').trim().toLowerCase();
+  if(!email){window.location.href='index.html';return false;}
+  if(email===String(ADMIN_EMAIL).toLowerCase()){
+    _allowedBrands=ACCOUNTS.map(function(a){return a.brand;});
+    return true;
+  }
+  var list=await fetchAllowedBrands(email);
+  if(!list){_denyAccess('無法確認品牌權限,請重新登入');return false;}
+  _allowedBrands=ACCOUNTS.map(function(a){return a.brand;}).filter(function(b){return list.indexOf(b)>=0;});
+  if(_allowedBrands.length===0){_denyAccess('此帳號沒有可查看的品牌監控權限');return false;}
+  return true;
+}
+
 // ══ 全域變數 ══
 var curBrand=CFG.brand;
 var curAccountId=CFG.accountId;
@@ -784,7 +836,20 @@ var _fai=-1;
 var chartData=[];
 var chartMetric='spend';
 
-document.addEventListener('DOMContentLoaded',function(){
+document.addEventListener('DOMContentLoaded',async function(){
+  // ★ 先過品牌權限,沒過就不載任何數據
+  var ok=await checkBrandAccess();
+  if(!ok) return;
+  // 目前選的品牌不在權限清單 → 自動切到第一個有權限的品牌
+  if(_allowedBrands.indexOf(curBrand)<0){
+    var first=ACCOUNTS.filter(function(a){return _allowedBrands.indexOf(a.brand)>=0;})[0];
+    if(first){
+      curBrand=first.brand; curAccountId=first.accountId;
+      CFG.brand=first.brand; CFG.accountId=first.accountId;
+      localStorage.setItem('mon_brand',first.brand);
+      localStorage.setItem('mon_accountId',first.accountId);
+    }
+  }
   var today=new Date(), past7=new Date(today);
   past7.setDate(today.getDate()-7);
   document.getElementById('dateSince').value=past7.toISOString().split('T')[0];
@@ -810,7 +875,10 @@ function applyConfig(){
 }
 
 function saveSettings(){
-  CFG.brand=document.getElementById('cfgBrand').value.trim()||'moz';
+  // ★ 權限檢查:設定面板手動輸入的品牌也要在清單內
+  var _newBrand=document.getElementById('cfgBrand').value.trim()||'moz';
+  if(!_allowedBrands||_allowedBrands.indexOf(_newBrand)<0){alert('⚠️ 此帳號沒有品牌「'+_newBrand+'」的監控權限');return;}
+  CFG.brand=_newBrand;
   CFG.accountId=document.getElementById('cfgAccountId').value.trim()||'566452034785926';
   CFG.freqWarn=parseFloat(document.getElementById('cfgFreqWarn').value)||3.5;
   CFG.ctrWarn=parseFloat(document.getElementById('cfgCtrWarn').value)||0.8;
@@ -831,12 +899,16 @@ function saveSettings(){
 function toggleCfg(){document.getElementById('cfgPanel').classList.toggle('show');}
 
 function renderChips(){
-  document.getElementById('accChips').innerHTML=ACCOUNTS.map(function(a){
+  // ★ 只畫有權限的品牌
+  var visible=_allowedBrands?ACCOUNTS.filter(function(a){return _allowedBrands.indexOf(a.brand)>=0;}):[];
+  document.getElementById('accChips').innerHTML=visible.map(function(a){
     return '<span class="acc-chip '+(a.brand===curBrand?'on':'')+'" onclick="switchAcc(\''+a.brand+'\',\''+a.accountId+'\')">'+a.label+'</span>';
   }).join('');
 }
 
 function switchAcc(b,id){
+  // ★ 權限檢查:不在清單的品牌不給切
+  if(!_allowedBrands||_allowedBrands.indexOf(b)<0){alert('⚠️ 此帳號沒有該品牌的監控權限');return;}
   curBrand=b;
   curAccountId=id;
   CFG.brand=b;
