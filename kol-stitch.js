@@ -1,5 +1,10 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.4
+// kol-stitch.js — 自動接片引擎 v6.13
+// v6.13:🎨 色板師接線 — generateSegment 內 await KolColorboard.resolveColorLine(brandId 直綁 brand_packs)
+//        → 塞 opts.shared.colorLine → buildMultiShotPrompt(A/B 兩路)插入「整體色調傾向品牌色卡」一行
+//        (soft/natural·不加對比·不招烤肉紋)。PiAPI lean 重組補帶 colorLine 不掉色板。
+//        保險絲 window.KOL_COLORBOARD=false。⚠️ 色板行 ~241 字 → 注意總 prompt 撞 1700 牆,爆牆換標註瘦身版。
+//        (檔頭版本先前 lag 在 v6.4,實際內容已到 v6.12 鎖臉;本次一併更正)
 // v6.2：照分鏡秒數切 15 秒 chunk + 每個 chunk 用自己的角度圖 + beat 當 Shot(對齊 STEP2/STEP3 的 plan)。每段 = 多鏡頭 reference-to-video,原始 KOL 照當 [Image1] 鎖臉
 //       Seedance 2.0 reference-to-video,臉由模型層鎖死 → 跨段同一個又晴本人(不重畫、不換臉)。
 //         · [Image1] = 又晴原圖   → 鎖臉(這是她舊片臉永遠對的原因)
@@ -200,6 +205,7 @@ window.KolStitch = (function () {
         + 'Also keep the product locked: '
         + prodRule
         + 'no change of person, scene, outfit, no crowd.\n\n'
+        + (shared.colorLine ? shared.colorLine + '\n\n' : '')
         + carry;
       let tb = 0;
       for (let i = 0; i < n; i++) {
@@ -234,22 +240,28 @@ window.KolStitch = (function () {
       t = t1;
     }
     body += '\nGlobal: the same woman [Image1], the same location [SCENE_IMG], the same background and outfit [OUTFIT_IMG] across all shots; steady camera; do not change her face, the location, the background or the outfit; no different person, no crowd.';
+    if (shared && shared.colorLine) body += '\n' + shared.colorLine;
     return body;
   }
 
   // 🆕 分段綁圖 1a 自測(不花錢):console 打 _testMultiShoe()
-  window._testMultiShoe = function () {
+  //   🎨 v6.13:可傳色板行免費驗色板 →
+  //     _testMultiShoe(await window.KolColorboard.resolveColorLine({brandId:'ra'}))
+  //     對比 _testMultiShoe() 的長度差 = 色板行實際佔字,並看色板行插在 LOCKED 段之後。
+  window._testMultiShoe = function (colorLine) {
     const fake = [
       { prompt: 'shows the shoe: "太好穿了!"', durationSec: 5, productUrl: 'FILA.jpg' },
       { prompt: 'picks up another: "這雙也是!"', durationSec: 5, productUrl: 'CHAMPION.jpg' },
       { prompt: 'smiles at camera', durationSec: 5, productUrl: 'FILA.jpg' }
     ];
     const bp = collectBeatProducts(fake);
-    const p = buildMultiShotPrompt(fake, 15, { front: 'TEST realism anchor.' });
+    const shared = { front: 'TEST realism anchor.' };
+    if (colorLine) shared.colorLine = colorLine;
+    const p = buildMultiShotPrompt(fake, 15, shared);
     console.log('=== 送 Seedance 的商品圖順序([Image1]=臉,之後才是商品)===');
     bp.urls.forEach(function (u, i) { console.log('  [Image' + (i + 2) + '] = ' + u); });
-    console.log('=== 生成的 prompt ===\n' + p);
-    return { productUrls: bp.urls, prompt: p };
+    console.log('=== 生成的 prompt(' + p.length + ' 字' + (colorLine ? ' · 含色板' : ' · 無色板') + ')===\n' + p);
+    return { productUrls: bp.urls, prompt: p, length: p.length };
   };
 
   // 生一段(v6.2:一次生成多鏡頭 reference-to-video。chunk 內含多個 beat(Shot),
@@ -361,14 +373,25 @@ window.KolStitch = (function () {
     }
     // ═══ 以下 = 攝影師① Seedance 原路(未更動)═════════════════════════════
 
+    // 🎨 v6.13 色板師接線:整體色調傾向品牌色卡(soft/natural·不加對比·不招烤肉紋);brandId 直綁 brand_packs。
+    //   session 快取(window._brandPacksCache),只第一段真的打 GAS;找不到 pack / 無 brandId → 回空、不影響 prompt(向下相容)。
+    //   保險絲 window.KOL_COLORBOARD=false 可整個關閉(A/B、爆牆時)。
+    if (window.KOL_COLORBOARD !== false && window.KolColorboard && typeof window.KolColorboard.resolveColorLine === 'function') {
+      try {
+        const _cl = await window.KolColorboard.resolveColorLine({ brandId: opts.brandId });
+        if (_cl) { opts.shared = opts.shared || {}; opts.shared.colorLine = _cl; }
+      } catch (_) {}
+    }
+
     let prompt = buildMultiShotPrompt(beats, totalSec, opts.shared, opts.continuityFrom);
 
     // 🩳 v6.10 PiAPI 硬上限修正:realism 冗字散在多模組(cinematographer/crew/product)→ shared.front 太長會撞 PiAPI prompt 上限。
     //   對 piapi 路線改用「精簡骨架」:五鎖錨 + 分鏡台詞 + 一句真實度;長篇 realism 交給參考圖扛。fal 路線維持完整敘述不動。
+    //   ⚠️ v6.13:lean 重組會丟掉 shared 其他欄位 → 必須補帶 colorLine,不然主力路(PiAPI)會掉色板。
     if ((opts.provider || 'piapi') === 'piapi' && opts.shared && opts.shared.front) {
       const _leanFront =
         'Realistic vertical UGC video, no on-screen text or subtitles, no background music.';
-      prompt = buildMultiShotPrompt(beats, totalSec, { front: _leanFront }, opts.continuityFrom);
+      prompt = buildMultiShotPrompt(beats, totalSec, { front: _leanFront, colorLine: (opts.shared && opts.shared.colorLine) }, opts.continuityFrom);
     }
 
     // 🔒 口音 + 口型鐵律(v6.4):開語音時,只有「有台詞的鏡頭」才說話+對嘴;
@@ -642,7 +665,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
