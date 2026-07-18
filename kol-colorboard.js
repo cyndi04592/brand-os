@@ -45,7 +45,9 @@
   }
 
   // ── 核心(純函式·可 Console 免費測):pack 色卡 → 一行英文色調 ──
-  //   v0.1 刻意精簡守牆:只用 primary(帶 hex)當主調錨點,其餘三層語意帶過。
+  //   v0.1 刻意精簡守牆:只用 primary(帶 hex)當主調錨點,其餘語意帶過。
+  //   措辭用「整體色調傾向主色」而非「高光傾向」—— 深色主色(如炭黑)或帶
+  //   accent(如螢光橘)的品牌才不會語意打架、才守得住 no clashing cast。
   //   secondary 逐色鎖 / avoid 內容鎖 = 有餘裕再加(Wishlist);avoid 本屬
   //   environment/product 的畫面內容職責,不放色板師。
   function buildColorGradeLine(pack) {
@@ -53,11 +55,11 @@
     const primary = cleanColorPhrase(pack.primary_color);
     if (!primary) return '';   // 沒主色就不吐色板(避免空泛)
 
-    return 'Brand colour tone: soft, even, natural light; '
-      + 'key light and highlights lean ' + primary + '; '
+    return 'Colour grade toward the brand palette (' + primary + '): '
+      + 'soft, even, natural light; '
       + 'shadows fall into the deeper brand tones; '
       + 'skin stays warm with gentle falloff; '
-      + 'one cohesive tone, no clashing cast.';
+      + 'one cohesive tone, no clashing colour cast.';
   }
 
   // ── 直綁:用 brandId exact-match matchKeywords 找 pack ──
