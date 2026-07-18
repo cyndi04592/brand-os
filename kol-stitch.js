@@ -1,5 +1,11 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.13
+// kol-stitch.js — 自動接片引擎 v6.14
+// v6.14:🩳 1700 牆瘦身 — 色板師接線後 PiAPI(開語音)真實送出 ~2046 字已爆牆。
+//        瘦 4 處固定開銷:LOCKED 標註區塊(-145)/prodRule(-116)/PiAPI 語音行(-78)/
+//        台詞封鎖行(-44),含色板落 ~1663 字(距牆 ~37)。鐵律意思全保留(各參考圖角色鎖、
+//        只講台詞、沒台詞不講話、不定格、同物件同尺度、口音 _accent 不動)。
+//        ⚠️ 餘裕不寬:真實分鏡台詞很長那段仍可能貼牆 → 保險絲 window.KOL_COLORBOARD=false
+//        當場 A/B;若常態貼牆再瘦 kol-colorboard.js 色板行(-36,下一檔)或走 B 案(色板圖當參考圖)。
 // v6.13:🎨 色板師接線 — generateSegment 內 await KolColorboard.resolveColorLine(brandId 直綁 brand_packs)
 //        → 塞 opts.shared.colorLine → buildMultiShotPrompt(A/B 兩路)插入「整體色調傾向品牌色卡」一行
 //        (soft/natural·不加對比·不招烤肉紋)。PiAPI lean 重組補帶 colorLine 不掉色板。
@@ -195,13 +201,13 @@ window.KolStitch = (function () {
 
     if (shared && shared.front) {
       const prodRule = bp.has
-        ? 'in each shot she holds the specific product image referenced in that shot, kept at a consistent real-world size and the same scale relative to her hand within that shot — do not zoom or resize the product inside a shot; different shots deliberately show different products exactly as specified; '
-        : 'the snack package she holds is the exact same physical object kept at the exact same real-world size and the same scale relative to her hand in every single shot — never bigger or smaller, never zoomed or resized between cuts, do not change the product size anywhere across the video; ';
+        ? 'she holds the product referenced in each shot at a consistent real-world size and hand-scale; do not zoom or resize it within a shot; different shots show the specified products; '
+        : 'the product she holds is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ';
       let bodyB = shared.front + '\n'
-        + 'Reference images are LOCKED assets — each is the single source of truth for its element; keep it identical in every shot:\n'
-        + '[Image1] = identity asset: same face, features, hairstyle, body proportions and vibe, one same person throughout.\n'
-        + '[SCENE_IMG] = location asset: the visual anchor for the setting, same background and layout, do not rebuild or rearrange the space.\n'
-        + '[OUTFIT_IMG] = outfit asset: the exact same garment, fabric, pattern, colour and cut identical, do not restyle or swap it.\n'
+        + 'Reference images are LOCKED assets, each the single source of truth for its element — keep identical in every shot: '
+        + '[Image1] = identity (same face, hair, body proportions, vibe; one person). '
+        + '[SCENE_IMG] = location (same background and layout; do not rearrange). '
+        + '[OUTFIT_IMG] = outfit (same garment: fabric, pattern, colour, cut; do not restyle). '
         + 'Also keep the product locked: '
         + prodRule
         + 'no change of person, scene, outfit, no crowd.\n\n'
@@ -217,7 +223,7 @@ window.KolStitch = (function () {
         bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': [Image1] ' + (list[i].prompt || '') + _prodB + '\n';
         tb = tb1;
       }
-      bodyB += '\nThe quoted line is her COMPLETE and ONLY speech for the shot — once it ends there is no further voice, no extra words, no improvised prices, only natural ambient sound.';
+      bodyB += '\nThe quoted line is her COMPLETE and ONLY speech per shot — no extra words or improvised prices after it, only ambient sound.';
       if (shared.tail) bodyB += '\n' + shared.tail;
       return bodyB;
     }
@@ -403,7 +409,7 @@ window.KolStitch = (function () {
       const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
       if ((opts.provider || 'piapi') === 'piapi') {
         // 🩳 v6.10 PiAPI 超短語音行(省字避開 prompt 上限;鐵律照留:只講台詞/台灣腔/對嘴/沒台詞不講話/不定格)
-        prompt += '\nVoice & lip-sync: she speaks ONLY the written dialogue word for word in natural ' + _accent + ', no improvising or changing words, numbers or prices; clear articulation and accurate lip-sync. In shots with no written line she stays silent (mouth still, ambient sound only). Never statue-still; natural gestures and gaze, still moving on the last frame.';
+        prompt += '\nVoice & lip-sync: she speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still; still moving on the last frame.';
       } else {
         prompt += '\nVoice & body: she speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) she stays silent, mouth still, only ambient sound. She is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
       }
@@ -665,7 +671,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
