@@ -193,7 +193,11 @@ window.KolStitch = (function () {
         ? 'in each shot she holds the specific product image referenced in that shot, kept at a consistent real-world size and the same scale relative to her hand within that shot — do not zoom or resize the product inside a shot; different shots deliberately show different products exactly as specified; '
         : 'the snack package she holds is the exact same physical object kept at the exact same real-world size and the same scale relative to her hand in every single shot — never bigger or smaller, never zoomed or resized between cuts, do not change the product size anywhere across the video; ';
       let bodyB = shared.front + '\n'
-        + 'Across all shots: the SAME woman [Image1], the same location [SCENE_IMG], the same outfit [OUTFIT_IMG], '
+        + 'Reference images are LOCKED assets — each is the single source of truth for its element; keep it identical in every shot:\n'
+        + '[Image1] = identity asset: same face, features, hairstyle, body proportions and vibe, one same person throughout.\n'
+        + '[SCENE_IMG] = location asset: the visual anchor for the setting, same background and layout, do not rebuild or rearrange the space.\n'
+        + '[OUTFIT_IMG] = outfit asset: the exact same garment, fabric, pattern, colour and cut identical, do not restyle or swap it.\n'
+        + 'Also keep the product locked: '
         + prodRule
         + 'no change of person, scene, outfit, no crowd.\n\n'
         + carry;
