@@ -1,5 +1,9 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.14
+// kol-stitch.js — 自動接片引擎 v6.15
+// v6.15:🎨 色板師 A案2.0 — 品牌 look 改「當 front 取代 generic realism」(不再塞色板行到 LOCKED 後)。
+//        取代≠疊加 → 省字;look 來源=brand_packs.photography_style(沒設→iPhone 原生預設)。
+//        固定加膚色護欄(業界:膚色另一道,防高對比款把臉搞油);look 上限 200 字(字界切)防撞牆。
+//        呼叫 KolColorboard.resolveLookLine。保險絲 KOL_COLORBOARD=false → 退回 generic。
 // v6.14:🩳 1700 牆瘦身 — 色板師接線後 PiAPI(開語音)真實送出 ~2046 字已爆牆。
 //        瘦 4 處固定開銷:LOCKED 標註區塊(-145)/prodRule(-116)/PiAPI 語音行(-78)/
 //        台詞封鎖行(-44),含色板落 ~1663 字(距牆 ~37)。鐵律意思全保留(各參考圖角色鎖、
@@ -379,25 +383,34 @@ window.KolStitch = (function () {
     }
     // ═══ 以下 = 攝影師① Seedance 原路(未更動)═════════════════════════════
 
-    // 🎨 v6.13 色板師接線:整體色調傾向品牌色卡(soft/natural·不加對比·不招烤肉紋);brandId 直綁 brand_packs。
-    //   session 快取(window._brandPacksCache),只第一段真的打 GAS;找不到 pack / 無 brandId → 回空、不影響 prompt(向下相容)。
-    //   保險絲 window.KOL_COLORBOARD=false 可整個關閉(A/B、爆牆時)。
-    if (window.KOL_COLORBOARD !== false && window.KolColorboard && typeof window.KolColorboard.resolveColorLine === 'function') {
+    // 🎨 v6.15 色板師 A案2.0:讀品牌 look → 當 front 的「品牌調色」(取代 generic realism,不再塞色板行到 LOCKED 後)。
+    //   look 來源:brand_packs.photography_style(每品牌手填);沒設 → colorboard 回 iPhone 原生預設。
+    //   ① 長度上限 200 字(字界切)→ 不管 photography_style 填多長都不撞 1700 牆。
+    //   ② 膚色護欄固定加(業界:膚色永遠另一道)→ 任何 look(含高對比款)都不會把臉搞油。
+    //   保險絲 window.KOL_COLORBOARD=false → _lookFront 為空 → 退回原本 generic realism(A/B、爆牆時)。
+    let _lookFront = '';
+    if (window.KOL_COLORBOARD !== false && window.KolColorboard && typeof window.KolColorboard.resolveLookLine === 'function') {
       try {
-        const _cl = await window.KolColorboard.resolveColorLine({ brandId: opts.brandId });
-        if (_cl) { opts.shared = opts.shared || {}; opts.shared.colorLine = _cl; }
+        let _look = (await window.KolColorboard.resolveLookLine({ brandId: opts.brandId })) || '';
+        if (_look.length > 200) {
+          _look = _look.slice(0, 200).replace(/\S*$/, '').trim();   // 切到最後一個完整字,不砍半字
+          console.log('[KolStitch] 🎨 look 過長,截到 ' + _look.length + ' 字(避 1700 牆)');
+        }
+        if (_look) _lookFront = _look + ' Skin natural and matte, no oily specular on the face. No text, subtitles or music.';
       } catch (_) {}
     }
+    // look 當 front:兩路都吃 opts.shared.front(Seedance 完整敘述路 & piapi lean 路)
+    if (_lookFront) { opts.shared = opts.shared || {}; opts.shared.front = _lookFront; }
 
     let prompt = buildMultiShotPrompt(beats, totalSec, opts.shared, opts.continuityFrom);
 
-    // 🩳 v6.10 PiAPI 硬上限修正:realism 冗字散在多模組(cinematographer/crew/product)→ shared.front 太長會撞 PiAPI prompt 上限。
+    // 🩳 v6.10 PiAPI 硬上限修正:realism 冗字散在多模組 → shared.front 太長會撞 PiAPI prompt 上限。
     //   對 piapi 路線改用「精簡骨架」:五鎖錨 + 分鏡台詞 + 一句真實度;長篇 realism 交給參考圖扛。fal 路線維持完整敘述不動。
-    //   ⚠️ v6.13:lean 重組會丟掉 shared 其他欄位 → 必須補帶 colorLine,不然主力路(PiAPI)會掉色板。
+    //   ⚠️ v6.15:front 現在就是 look(或沒 look 時的 generic);lean 重組直接沿用 _lookFront,不再帶 colorLine。
     if ((opts.provider || 'piapi') === 'piapi' && opts.shared && opts.shared.front) {
-      const _leanFront =
-        'Realistic vertical UGC video, no on-screen text or subtitles, no background music.';
-      prompt = buildMultiShotPrompt(beats, totalSec, { front: _leanFront, colorLine: (opts.shared && opts.shared.colorLine) }, opts.continuityFrom);
+      const _leanFront = _lookFront
+        || 'Realistic vertical UGC video, no on-screen text or subtitles, no background music.';
+      prompt = buildMultiShotPrompt(beats, totalSec, { front: _leanFront }, opts.continuityFrom);
     }
 
     // 🔒 口音 + 口型鐵律(v6.4):開語音時,只有「有台詞的鏡頭」才說話+對嘴;
@@ -671,7 +684,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.15 🎨色板師A案2.0(品牌look當front取代generic·來源brand_packs.photography_style·沒設→iPhone預設·膚色護欄·look上限200字防撞牆·resolveLookLine) · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
