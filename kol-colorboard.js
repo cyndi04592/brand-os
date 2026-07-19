@@ -1,65 +1,58 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-colorboard.js · v0.1
+//  kol-colorboard.js · v0.4
 //
-//  🎨 色板師 — 把 Brand OS 品牌色卡轉成一行「柔和統一打光色調」塞進 prompt
+//  🎨 色板師 — 讀 Brand OS 品牌 look,吐一段「調色/攝影 look」給 stitch 當 front
 //
-//  職責(單一):讀 brand_packs 色卡 → 吐「一行」英文色調指令。
-//    不生圖、不打 Worker、不改 prompt 組裝 —— 只提供那一行,由 stitch/crew
-//    -director 之後接線塞入(本版尚未接線,可先 Console 免費驗字)。
+//  【v0.3】客人沒設 / 品牌沒填 / 沒綁定 → 回「預設 look」(Portra 暖調·常數
+//    DEFAULT_LOOK,改一行即可換),不再回空。全自動,無需客人選 look 的 UI。
+//    只有保險絲 window.KOL_COLORBOARD===false 時才回 ''(A/B:完全無 look)。
 //
-//  來源(直綁·RA 定調 A):brand_packs.matchKeywords 填入該品牌 brandId
-//    → 色板師用 brandId exact-match 抓對應 pack。不靠名字猜,系統不配錯。
-//    (在 brand_packs sheet 對應列的 matchKeywords 補上 brandId 即綁定)
+//  【v0.2 方向修正 · A案2.0】
+//   研究結論(2026-07,查 Seedance 2.0 + 真實調色師):AI 影片是「生成當下
+//   把調色烤進畫面」,調色靠 prompt 文字、不是餵色塊圖。所以色板師不再用
+//   primary_color 拼「色調行」額外塞在 LOCKED 後(會撞 1700 牆),改成:
+//     • 直接讀 brand_packs.photography_style(該欄本就是每品牌的攝影 look)
+//     • 由 stitch 拿去「取代」front 那句 generic realism(取代≠疊加 → 省字)
+//   例:又晴/ly 填「Fujifilm Eterna 日式淡調…」;美式品牌填「bold high-contrast…」。
 //
-//  鐵律:全程 soft / even / natural / cohesive 用詞,
-//    ❌ 禁 cinematic / high contrast / specular(=招烤肉紋、油光臉)。
-//    色板師是「統一色調 → 高端感」,不是「加對比」。
+//  職責(單一):讀 brand_packs → 回該品牌 photography_style(clean 過的一段)。
+//    不生圖、不打 Worker、不組 prompt。膚色護欄(no oily specular)由 stitch 加。
 //
-//  三層對齊規劃文件:高光受光面(key/highlights)、暗部(shadows)、
-//    皮膚受光面(skin warm)、主色(primary)全涵蓋。
-//
-//  ⚠️ 1700 字牆:標註紀律長版真實 prompt 已 ~1690,逼近牆。加色板行後
-//    務必重量 `📏 送出 prompt 長度`;爆牆時用 window.KOL_COLORBOARD 關掉,
-//    或改用標註「瘦身版」騰空間。本檔色板行已刻意精簡(只用 primary 帶 hex
-//    定主調,~180 字;secondary 逐色鎖與 avoid 內容鎖 = 有餘裕再加·Wishlist)。
+//  來源(直綁·RA 定調 A):brand_packs.matchKeywords 填該品牌 brandId
+//    → 用 brandId exact-match 抓對應 pack → 讀 pack.photography_style。
+//    (photography_style 沒填 → 回 '' → stitch 退回原本 generic realism,不卡生成)
 //
 //  保險絲 window.KOL_COLORBOARD:
 //    • undefined(預設)→ 正常運作
-//    • false            → 明確關閉,回空字串(A/B、爆牆時)
-//    • '任意字串'        → 直接用這串當色板行(手動覆蓋測試)
+//    • false            → 明確關閉,回 ''(A/B、爆牆時)
+//    • '任意字串'        → 直接用這串當 look(手動覆蓋測試)
 //
-//  向下相容:沒 brandId / 找不到 pack / GAS 失敗 → 一律回 '' → 不影響
-//    原本 prompt、不卡生成。
+//  向下相容:函式名 resolveColorLine / buildColorGradeLine 保留為別名,
+//    stitch v6.14 舊呼叫不會壞;新名 resolveLookLine / buildLookLine。
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
   'use strict';
 
-  // ── 去掉色碼片語裡的用途括號,留「色名 + hex」──
-  //   'deep forest green #3D5A3F (used for headlines…)' → 'deep forest green #3D5A3F'
-  function cleanColorPhrase(raw) {
+  // ── 預設 look(客人沒設 / 品牌沒填 / 沒綁定時的 fallback)──
+  //   iPhone 原生手機色:短影音 UGC 觀眾眼裡「真實網紅拍的」的樣子。
+  //   依 DXOMARK iPhone 17 影片特徵寫:自然渲染、中性白平衡、乾淨低噪、微 HDR、
+  //   膚色自然(臉安全)。想要電影質感的品牌 → 填 photography_style 選 15 種 look 之一。
+  //   想換全站預設,改這一行即可(不需 UI)。
+  const DEFAULT_LOOK = 'Clean modern smartphone video look (iPhone-style): true-to-life natural colours, fairly neutral white balance, bright well-exposed image, gentle natural contrast, subtle HDR pop, crisp low-noise detail, natural healthy skin, authentic short-video UGC feel';
+
+  // ── 清掉多餘空白(photography_style 是自由文字,保險清一下)──
+  function cleanLook(raw) {
     return String(raw || '')
-      .replace(/\([^)]*\)/g, ' ')   // 拔掉 (…用途…)
       .replace(/\s+/g, ' ')
       .trim();
   }
 
-  // ── 核心(純函式·可 Console 免費測):pack 色卡 → 一行英文色調 ──
-  //   v0.1 刻意精簡守牆:只用 primary(帶 hex)當主調錨點,其餘語意帶過。
-  //   措辭用「整體色調傾向主色」而非「高光傾向」—— 深色主色(如炭黑)或帶
-  //   accent(如螢光橘)的品牌才不會語意打架、才守得住 no clashing cast。
-  //   secondary 逐色鎖 / avoid 內容鎖 = 有餘裕再加(Wishlist);avoid 本屬
-  //   environment/product 的畫面內容職責,不放色板師。
-  function buildColorGradeLine(pack) {
+  // ── 核心(純函式·可 Console 免費測):pack → 該品牌 look 一段 ──
+  //   直接用 photography_style(RA 每品牌手填的攝影 look)。沒填就回 ''。
+  function buildLookLine(pack) {
     if (!pack) return '';
-    const primary = cleanColorPhrase(pack.primary_color);
-    if (!primary) return '';   // 沒主色就不吐色板(避免空泛)
-
-    return 'Colour grade toward the brand palette (' + primary + '): '
-      + 'soft, even, natural light; '
-      + 'shadows fall into the deeper brand tones; '
-      + 'skin stays warm with gentle falloff; '
-      + 'one cohesive tone, no clashing colour cast.';
+    return cleanLook(pack.photography_style);   // 沒填 → '' → stitch 用 generic
   }
 
   // ── 直綁:用 brandId exact-match matchKeywords 找 pack ──
@@ -79,7 +72,7 @@
     const KAI = window.KAI || {};
     const gasUrl = KAI.GAS_URL;
     if (!gasUrl) {
-      console.warn('[KolColorboard] 找不到 GAS_URL(window.KAI 未就緒)→ 略過色板');
+      console.warn('[KolColorboard] 找不到 GAS_URL(window.KAI 未就緒)→ 略過 look');
       return [];
     }
     const pwd = KAI.PASSWORD || 'raby2026';
@@ -90,13 +83,13 @@
       window._brandPacksCache = packs;   // 同 session 不重打
       return packs;
     } catch (e) {
-      console.warn('[KolColorboard] 讀 brand_packs 失敗(略過色板):', e.message);
+      console.warn('[KolColorboard] 讀 brand_packs 失敗(略過 look):', e.message);
       return [];
     }
   }
 
-  // ── 整合:ctx → 色板行(async·給 stitch/crew-director 之後接線用)──
-  async function resolveColorLine(ctx) {
+  // ── 整合:ctx → 品牌 look 一段(async·給 stitch 接線用)──
+  async function resolveLookLine(ctx) {
     ctx = ctx || {};
 
     // 保險絲
@@ -108,33 +101,45 @@
       || (window.S && (window.S.currentBrandId || window.S.selectedBrandId))
       || '';
     if (!brandId) {
-      console.warn('[KolColorboard] 沒有 brandId → 略過色板');
-      return '';
+      console.log('[KolColorboard] 🎨 沒 brandId → 用預設 look（' + DEFAULT_LOOK.length + ' 字）');
+      return DEFAULT_LOOK;
     }
 
     const packs = await loadBrandPacks();
     const pack = findPackForBrand(brandId, packs);
     if (!pack) {
-      console.warn('[KolColorboard] brandId「' + brandId + '」在 brand_packs.matchKeywords 找不到綁定 pack '
-        + '→ 略過色板(去 brand_packs sheet 該列 matchKeywords 補上此 brandId 即綁定)');
-      return '';
+      console.log('[KolColorboard] 🎨 brandId「' + brandId + '」未綁定 pack → 用預設 look'
+        + '（要換品牌 look:去 brand_packs 該列 matchKeywords 補此 brandId）');
+      return DEFAULT_LOOK;
     }
 
-    const line = buildColorGradeLine(pack);
-    console.log('[KolColorboard] 🎨 品牌「' + brandId + '」→ pack「' + pack.pack_key + '」· 色板行 ' + line.length + ' 字');
-    return line;
+    const look = buildLookLine(pack);
+    if (!look) {
+      console.log('[KolColorboard] 🎨 品牌「' + brandId + '」pack「' + pack.pack_key
+        + '」photography_style 空 → 用預設 look（要換:填該欄 photography_style）');
+      return DEFAULT_LOOK;
+    }
+    console.log('[KolColorboard] 🎨 品牌「' + brandId + '」→ pack「' + pack.pack_key + '」· look ' + look.length + ' 字');
+    return look;
   }
 
+  // ── 向下相容別名(stitch v6.14 呼叫 resolveColorLine 不會壞)──
+  const buildColorGradeLine = buildLookLine;
+  const resolveColorLine = resolveLookLine;
+
   window.KolColorboard = {
-    buildColorGradeLine,   // 純函式(Console 免費測用)
-    findPackForBrand,      // 直綁配對
-    loadBrandPacks,        // 讀 brand_packs + 快取
-    resolveColorLine,      // 整合(之後 stitch 接這個)
+    DEFAULT_LOOK,           // 預設 look(改全站預設看這)
+    buildLookLine,          // 純函式(Console 免費測用)
+    resolveLookLine,        // 整合(stitch 接這個)
+    findPackForBrand,       // 直綁配對
+    loadBrandPacks,         // 讀 brand_packs + 快取
+    buildColorGradeLine,    // 別名(舊)
+    resolveColorLine,       // 別名(舊·stitch v6.14 用)
   };
 
   if (window.CrewDirector && window.CrewDirector.register) {
     window.CrewDirector.register('colorboard', window.KolColorboard);
   }
 
-  console.log('[KolColorboard] 🎨 v0.1 就緒 · 品牌色卡→柔和統一色調一行(直綁 brand_packs.matchKeywords · 保險絲 window.KOL_COLORBOARD · 尚未接線 stitch)');
+  console.log('[KolColorboard] 🎨 v0.4 就緒 · 品牌 look 讀 brand_packs.photography_style,沒設→預設 iPhone 原生手機色(A案2.0·全自動無需客人選·保險絲 window.KOL_COLORBOARD · 待 stitch 接 front)');
 })();
