@@ -1,5 +1,9 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.17
+// kol-stitch.js — 自動接片引擎 v6.18
+// v6.18:🎯 智能資產選配器 Phase 1b(臉角度)— 保險絲 window.KOL_FACEANGLES(預設關=單張正臉不變)。
+//        開啟:讀 beats 的 angle → resolveKolSheet 挑對應角度臉 → 傳 kolFaceDriveIds(Worker 排最後幾格·9格自動停);
+//        每 beat 臉前綴 [Image1]→[FACE_角度]佔位(Worker 換真 [ImageN],沒對應退 [Image1])。殺抽卡:角度有真圖可抄。
+//        🔴 商品(collectBeatProducts)/場景(自傳優先)一律不動。沒 _sheet 的 KOL 自動退單張。
 // v6.17:🗺️ 場景九宮格接線 — 保險絲 window.KOL_SCENEGRID(預設關=生產走單張場景圖不變)。
 //        開啟時:runStitchFlow 改叫 environment.generateSceneGrid(藍圖→8角度空間庫),失敗自動退單張;
 //        [SCENE_IMG] 標註升級成「多角度空間庫·提取佈局·別把格線畫進畫面」。修「場景跨段飄」。
@@ -217,6 +221,7 @@ window.KolStitch = (function () {
         : 'the product she holds is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ';
       const _mc = (typeof window !== 'undefined' && window.KOL_MATCHCUT === true);  // 🎬 v6.16 結尾停+硬切(match cut)保險絲,預設關
       const _sg = (typeof window !== 'undefined' && window.KOL_SCENEGRID === true);  // 🗺️ v6.17 場景九宮格保險絲,預設關(標註用)
+      const _fa = (typeof window !== 'undefined' && window.KOL_FACEANGLES === true);  // 🎯 v6.18 多角度臉選配保險絲,預設關(每 beat 臉前綴用)
       let bodyB = shared.front + '\n'
         + 'Reference images are LOCKED assets, each the single source of truth for its element — keep identical in every shot: '
         + '[Image1] = identity (same face, hair, body proportions, vibe; one person). '
@@ -238,7 +243,7 @@ window.KolStitch = (function () {
         const markerB = (i === 0) ? 'Shot 1' : ((_mc ? 'Match cut to Shot ' : 'Hard cut to Shot ') + (i + 1));
         const _tagB = bp.tagOf(list[i].productUrl);
         const _prodB = _tagB ? (' She is holding ' + _tagB + ' — this exact product in this shot.') : '';
-        bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': [Image1] ' + (list[i].prompt || '') + _prodB + '\n';
+        bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': ' + ((_fa && list[i].angle && String(list[i].angle).toLowerCase() !== 'front') ? ('[FACE_' + String(list[i].angle).toUpperCase().replace(/[^A-Z0-9]/g, '') + ']') : '[Image1]') + ' ' + (list[i].prompt || '') + _prodB + '\n';
         tb = tb1;
       }
       bodyB += '\nThe quoted line is her COMPLETE and ONLY speech per shot — no extra words or improvised prices after it, only ambient sound.';
@@ -454,11 +459,38 @@ window.KolStitch = (function () {
     const _segProducts = collectBeatProducts(beats);   // 🆕 分段綁圖:beats 帶鞋 → 用它組圖(順序對齊 prompt)
     console.log('[KolStitch] 🔬 診斷 · 本段實送商品圖 =',
       _segProducts.has ? _segProducts.urls : (Array.isArray(opts.productImageUrls) ? opts.productImageUrls : []));
+    // 🎯 v6.18 選配器 Phase 1b:多角度臉選配(fuse window.KOL_FACEANGLES 預設關)
+    //   讀這段 beats 的 angle → 從 resolveKolSheet 挑對應角度臉 → 傳 kolFaceDriveIds(Worker 排最後幾格)。
+    //   沒 _sheet / 沒 brandId+kolName / fuse 關 → 空陣列 → 走原本單張正臉 [Image1](向下相容)。
+    //   9 格預算:臉角度排最後,Worker 到 9 張自動停 → 超額時角度臉先被丟(商品/場景優先),殘留 [FACE_*] 退 [Image1]。
+    let _faceDriveIds = [];
+    if (window.KOL_FACEANGLES === true && opts.brandId && opts.kolName) {
+      try {
+        const _wantAngles = [];
+        beats.forEach(function (b) {
+          const a = (b && typeof b === 'object' && b.angle) ? String(b.angle).toLowerCase() : '';
+          if (a && a !== 'front' && _wantAngles.indexOf(a) === -1) _wantAngles.push(a);
+        });
+        if (_wantAngles.length) {
+          const _sheet = await resolveKolSheet(opts.brandId, opts.kolName);
+          const _angleMap = {};
+          ((_sheet._names && _sheet._names.angles) || []).forEach(function (nm, k) {
+            const m = /_sheet_([a-z0-9]+)/i.exec(nm || '');
+            if (m && _sheet.angleIds[k]) _angleMap[m[1].toLowerCase()] = _sheet.angleIds[k];
+          });
+          _wantAngles.forEach(function (a) {
+            if (_angleMap[a]) _faceDriveIds.push({ driveId: _angleMap[a], angle: a });
+          });
+          if (_faceDriveIds.length) console.log('[KolStitch] 🎯 本段裝角度臉:', _faceDriveIds.map(function (f) { return f.angle; }).join('/'));
+        }
+      } catch (e) { console.warn('[KolStitch] 多角度臉選配略過(退單張正臉):', e.message); _faceDriveIds = []; }
+    }
     const sub = await queuedSubmit(function () { return api('seedance_submit', {
       kolImageUrl: opts.kolImageUrl,                                       // → [Image1] 臉錨(整支同一張身份臉錨·v6.12鎖臉)
       productImageUrls: _segProducts.has ? _segProducts.urls : (Array.isArray(opts.productImageUrls) ? opts.productImageUrls : []),
       outfitImageUrl: opts.outfitImageUrl || undefined,                    // → [OUTFIT_IMG]→[ImageN]
       sceneImageUrl: opts.sceneImageUrl || undefined,                      // → [SCENE_IMG]→[ImageN]
+      kolFaceDriveIds: _faceDriveIds.length ? _faceDriveIds : undefined,   // 🎯 v6.18 多角度臉 → [FACE_角度]→[ImageN]
       prompt: prompt,
       brandId: opts.brandId,
       kolName: opts.kolName,
@@ -707,7 +739,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut(保險絲window.KOL_MATCHCUT預設關·開啟Hard cut→Match cut+交棒句同一瞬間換角度不重演·look上限降150讓位) · v6.15 🎨色板師A案2.0(品牌look當front取代generic·來源brand_packs.photography_style·沒設→iPhone預設·膚色護欄·look上限200字防撞牆·resolveLookLine) · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
