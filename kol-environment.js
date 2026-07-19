@@ -308,6 +308,70 @@ const LOCATIONS = {
     }
   }
 
+  /**
+   * 🗺️ v5.23 場景九宮格(場景飄的治本):兩步生一張「多角度空間庫」
+   *   ① nano-banana-pro t2i 生平面藍圖(定義窗/門/櫃/架/家具位置 = 空間骨架)
+   *   ② nano-banana-pro edit 依藍圖生一張九宮格(8 角度 + 平面圖),每個 Shot 從中取一角度
+   *   → 牆面大結構跨格鎖死;獨立家具會微飄(模型天花板),故 prompt 點名鎖形狀+數量壓到最小。
+   *   session 快取:同 brand+scene 一次 session 不重生(省 $0.45)。失敗回 null → stitch 退回單張場景圖。
+   *   ⚠️ 資產級 pro,一次性生、影片重用。durable 跨 session 持久化 = 驗過再補(Worker scene_grid)。
+   *   Console 可單獨驗:await window.KolEnvironment.generateSceneGrid({ brandId, sceneId, locationId })
+   * @param {object} ctx  { brandId, sceneId, locationId } 或 { scene, locationId }
+   * @returns {Promise<string|null>}  九宮格圖網址
+   */
+  async function generateSceneGrid(ctx) {
+    ctx = ctx || {};
+    const sceneText = resolveSceneText(ctx);
+    if (!sceneText) { console.warn('[KolEnvironment] 沒有場景文字,跳過九宮格'); return null; }
+
+    const cacheKey = (ctx.brandId || 'b') + '|' + (ctx.sceneId || ctx.locationId || 'default');
+    window._sceneGridCache = window._sceneGridCache || {};
+    if (window._sceneGridCache[cacheKey]) {
+      console.log('[KolEnvironment] 🗺️ 九宮格快取命中(不重生)→', window._sceneGridCache[cacheKey]);
+      return window._sceneGridCache[cacheKey];
+    }
+
+    try {
+      // ① 平面藍圖 = 空間骨架
+      const bpPrompt =
+        'Top-down architectural floor-plan blueprint of this location: ' + sceneText + '. ' +
+        'Clean black-line blueprint on white. Clearly place and label the main fixed structures ' +
+        '(entrance, windows, wall shelving or cabinets, counter) and the freestanding furniture, ' +
+        'with simple text labels. Simple, precise, readable.';
+      const bpR = await evCallWorker('nanobanana_pro', {
+        prompt: bpPrompt, aspect_ratio: '1:1', resolution: '2K',
+      });
+      const bpUrl = (bpR && bpR.images && bpR.images[0] && bpR.images[0].url) || null;
+      if (!bpUrl) { console.warn('[KolEnvironment] 藍圖生成無圖:', JSON.stringify(bpR).slice(0, 200)); return null; }
+      console.log('[KolEnvironment] 🗺️ 藍圖已生成 →', bpUrl);
+
+      // ② 依藍圖生九宮格(點名鎖獨立家具,壓漂移)
+      const gridPrompt =
+        'Use this floor plan as the EXACT spatial layout of the location described as: ' + sceneText + '. ' +
+        'Output ONE image: a clean 3x3 grid of 9 panels, all showing the IDENTICAL empty place (no people, no person), ' +
+        'the same fixed structures, materials, colours and lighting across every panel. ' +
+        'Panel 1: wide front establishing view. Panel 2: left side. Panel 3: right side. ' +
+        'Panel 4: reverse angle looking back toward the entrance. Panel 5: high overhead corner view. ' +
+        'Panel 6: close view of a key fixture. Panel 7: close view of the central furniture. ' +
+        'Panel 8: entrance or doorway view from inside. Panel 9: the top-down floor plan. ' +
+        'IMPORTANT — keep every freestanding item identical in shape and count across all panels ' +
+        '(same benches, same number of stools or chairs, same tables); do not add, remove or reshape furniture between panels. ' +
+        'Photorealistic, consistent, evenly lit, no text overlays.';
+      const gR = await evCallWorker('nanobanana_pro', {
+        image_urls: [bpUrl], prompt: gridPrompt, aspect_ratio: '1:1', resolution: '4K',
+      });
+      const gUrl = (gR && gR.images && gR.images[0] && gR.images[0].url) || null;
+      if (!gUrl) { console.warn('[KolEnvironment] 九宮格生成無圖:', JSON.stringify(gR).slice(0, 200)); return null; }
+      console.log('[KolEnvironment] 🗺️ 九宮格已生成 →', gUrl);
+
+      window._sceneGridCache[cacheKey] = gUrl;
+      return gUrl;
+    } catch (e) {
+      console.warn('[KolEnvironment] 九宮格生成失敗(退回單張場景圖):', e.message);
+      return null;
+    }
+  }
+
   // ─── 導出 + 自動向總導演註冊 ─────────────────────────
   window.KolEnvironment = {
     LOCATIONS,
@@ -318,6 +382,7 @@ const LOCATIONS = {
     filterCompatible,
     resolveSceneText,        // 🆕 v5.20
     generateSceneRefImage,   // 🆕 v5.20
+    generateSceneGrid,       // 🆕 v5.23 場景九宮格(多角度空間庫)
   };
 
   // 向後相容:kol.html 仍會用到 window.LOCATIONS
@@ -328,5 +393,5 @@ const LOCATIONS = {
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.22 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地(去重·融入交給攝影師) + 濾膚質詞 + 場景參考圖(generateSceneRefImage·鎖跨段背景)');
+  console.log('[KolEnvironment] 🌆 v5.23 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·點名鎖家具·session快取·待stitch接)');
 })();
