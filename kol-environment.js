@@ -331,6 +331,16 @@ const LOCATIONS = {
       return window._sceneGridCache[cacheKey];
     }
 
+    // 🆕 v5.25 durable:先查 R2 有沒有這場景的九宮格(生一次·之後所有影片秒回·不即時生=不 524、不重花)
+    try {
+      const q = await evCallWorker('scene_grid', { brandId: ctx.brandId || 'b', sceneKey: cacheKey });
+      if (q && q.url) {
+        console.log('[KolEnvironment] 🗺️ 九宮格 R2 命中(不重生·秒回)→', q.url);
+        window._sceneGridCache[cacheKey] = q.url;
+        return q.url;
+      }
+    } catch (e) { console.warn('[KolEnvironment] 九宮格 R2 查詢略過:', e.message); }
+
     try {
       // ① 平面藍圖 = 空間骨架
       const bpPrompt =
@@ -358,14 +368,21 @@ const LOCATIONS = {
         '(same benches, same number of stools or chairs, same tables); do not add, remove or reshape furniture between panels. ' +
         'Photorealistic, consistent, evenly lit, no text overlays.';
       const gR = await evCallWorker('nanobanana_pro', {
-        image_urls: [bpUrl], prompt: gridPrompt, aspect_ratio: '1:1', resolution: '4K',
+        image_urls: [bpUrl], prompt: gridPrompt, aspect_ratio: '1:1', resolution: '2K',
       });
       const gUrl = (gR && gR.images && gR.images[0] && gR.images[0].url) || null;
       if (!gUrl) { console.warn('[KolEnvironment] 九宮格生成無圖:', JSON.stringify(gR).slice(0, 200)); return null; }
       console.log('[KolEnvironment] 🗺️ 九宮格已生成 →', gUrl);
 
-      window._sceneGridCache[cacheKey] = gUrl;
-      return gUrl;
+      // 🆕 v5.25 durable:生完存進 R2,回 durable 網址(下次起秒回·不重生不重花)
+      let finalUrl = gUrl;
+      try {
+        const st = await evCallWorker('scene_grid', { brandId: ctx.brandId || 'b', sceneKey: cacheKey, storeUrl: gUrl });
+        if (st && st.url) { finalUrl = st.url; console.log('[KolEnvironment] 🗺️ 九宮格已存 R2(之後重用)→', finalUrl); }
+      } catch (e) { console.warn('[KolEnvironment] 九宮格存 R2 略過(用原網址):', e.message); }
+
+      window._sceneGridCache[cacheKey] = finalUrl;
+      return finalUrl;
     } catch (e) {
       console.warn('[KolEnvironment] 九宮格生成失敗(退回單張場景圖):', e.message);
       return null;
@@ -393,5 +410,5 @@ const LOCATIONS = {
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.23 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·點名鎖家具·session快取·待stitch接)');
+  console.log('[KolEnvironment] 🌆 v5.25 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·2K避6000px·durable R2(生一次重用·治524逾時+不重花)·點名鎖家具)');
 })();
