@@ -1,5 +1,9 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.18
+// kol-stitch.js — 自動接片引擎 v6.19
+// v6.19:🧴 防油光護欄「永遠在」— 舊版把「霧面膚質·無油光」綁在 _lookFront(色板師開關),
+//        色板一關(如驗場景時)臉就上 AI 油光。改成 lean 路兩條 front(色板 look / 陽春 generic)
+//        都固定帶「柔散自然光·霧面膚質·無油光 specular·無硬高光」——依 v5.22 驗證措辭,只拔油光、
+//        保留自然光影(不是把光全消)。修「接 PiAPI 後臉油亮」的回歸。
 // v6.18:🎯 智能資產選配器 Phase 1b(臉角度)— 保險絲 window.KOL_FACEANGLES(預設關=單張正臉不變)。
 //        開啟:讀 beats 的 angle → resolveKolSheet 挑對應角度臉 → 傳 kolFaceDriveIds(Worker 排最後幾格·9格自動停);
 //        每 beat 臉前綴 [Image1]→[FACE_角度]佔位(Worker 換真 [ImageN],沒對應退 [Image1])。殺抽卡:角度有真圖可抄。
@@ -416,7 +420,7 @@ window.KolStitch = (function () {
           _look = _look.slice(0, _capLen).replace(/\S*$/, '').trim();   // 切到最後一個完整字,不砍半字
           console.log('[KolStitch] 🎨 look 過長,截到 ' + _look.length + ' 字(避 1700 牆)');
         }
-        if (_look) _lookFront = _look + ' Skin natural and matte, no oily specular on the face. No text, subtitles or music.';
+        if (_look) _lookFront = _look + ' Soft diffused natural light; matte skin, no oily specular sheen or hard glossy highlights on the face — keep natural light and shadow, just not oily. No text, subtitles or music.';
       } catch (_) {}
     }
     // look 當 front:兩路都吃 opts.shared.front(Seedance 完整敘述路 & piapi lean 路)
@@ -429,7 +433,7 @@ window.KolStitch = (function () {
     //   ⚠️ v6.15:front 現在就是 look(或沒 look 時的 generic);lean 重組直接沿用 _lookFront,不再帶 colorLine。
     if ((opts.provider || 'piapi') === 'piapi' && opts.shared && opts.shared.front) {
       const _leanFront = _lookFront
-        || 'Realistic vertical UGC video, no on-screen text or subtitles, no background music.';
+        || 'Realistic vertical UGC video with soft diffused natural light; matte skin, no oily specular sheen or hard glossy highlights on the face — keep natural light and shadow, just not oily. No on-screen text or subtitles, no background music.';
       prompt = buildMultiShotPrompt(beats, totalSec, { front: _leanFront }, opts.continuityFrom);
     }
 
@@ -739,7 +743,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.19 🧴防油光護欄永遠在(不綁色板開關·保留自然光只拔油光) · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
