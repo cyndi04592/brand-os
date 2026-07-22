@@ -304,7 +304,7 @@ async function startSystem() {
 
   try {
     let json = await authCachedGet('getBrandOS', { email: _userEmail || '' }, 8000);
-    if (!json) {
+    if (!json || !(json.data?.brands || []).length) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(`${GAS_URL}?action=getBrandOS&password=${GAS_PASSWORD}&email=${encodeURIComponent(_userEmail||'')}`, { signal: controller.signal });
