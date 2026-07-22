@@ -126,6 +126,7 @@ async function doPwdLogin() {
   sessionStorage.removeItem('bs_token');
 
   _onLoginSuccess(_userEmail, account.name);
+  _systemStarted = false;
   await startSystem();
 }
 
