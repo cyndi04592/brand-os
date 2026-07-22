@@ -125,6 +125,7 @@ async function doPwdLogin() {
   sessionStorage.setItem('bs_email', _userEmail);
   sessionStorage.removeItem('bs_token');
 
+ try { localStorage.setItem('bs_sso_email', _userEmail); } catch(e){}
   _onLoginSuccess(_userEmail, account.name);
   _systemStarted = false;
   await startSystem();
