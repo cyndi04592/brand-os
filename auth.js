@@ -368,6 +368,9 @@ async function startSystem() {
       json = await res.json();
     }
     if (!json.ok) throw new Error(json.error);
+    // 🆕 資安:後端說 ok 但品牌是空的,也視為「這次沒拿到」→ 走下面的錯誤處理,
+    //    不要靜靜畫出空白畫面讓客戶以為系統壞了。
+    if (!((json.data && json.data.brands) || []).length) throw new Error('後端未回傳任何品牌');
     buildDataFromSheets(json.data);
     // 🆕 只在「有 email + 真的有品牌」時才寫快取:避免寫出 bs_brandos__anon 或空清單這種髒快取
     try {
@@ -380,9 +383,21 @@ async function startSystem() {
     if (_shownFromCache && !window.S.brandId) { renderNavBrands(); renderBrandTree(); }
   } catch (e) {
     console.warn('fallback:', e.message);
+    // 🆕🔒 資安根治:LOCAL_FALLBACK_DATA 是「寫死的全部品牌」離線備援。
+    //    舊行為:只要跟後端拿品牌失敗(GAS 抽風/超時/Worker 異常),就無條件把全部品牌塞給畫面
+    //           → 客戶帳號(如 test)會看到不屬於他的所有品牌 = 跨帳號資料外洩。
+    //    新行為:只有管理員本人可用這份離線備援;其他帳號一律顯示「載入失敗」。
+    //           寧可什麼都不給,也絕不把別人的品牌給錯的人看。
     if (!_shownFromCache) {
-      buildDataFromSheets(LOCAL_FALLBACK_DATA);
-      document.getElementById('initMsg').textContent = '✅ 系統就緒！（本地資料）';
+      const _isOwner = _userEmail && (_userEmail === ADMIN_EMAIL);
+      if (_isOwner) {
+        buildDataFromSheets(LOCAL_FALLBACK_DATA);
+        document.getElementById('initMsg').textContent = '✅ 系統就緒！（本地資料）';
+      } else {
+        buildDataFromSheets({ brands: [], products: [], folders: [] });   // 明確清空,不留任何他人資料
+        document.getElementById('initMsg').textContent = '⚠️ 資料載入失敗,請重新整理頁面';
+        console.warn('[安全] 非管理員帳號不套用本地備援品牌清單,已清空。');
+      }
     }
   }
 
