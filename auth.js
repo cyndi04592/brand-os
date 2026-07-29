@@ -54,6 +54,13 @@ function initGoogleAuth() {
           _purgeOtherBrandCaches(_userEmail);   // 🆕 換帳號 → 先清他人品牌快取,避免吃到別人/空的殘留
           try { localStorage.setItem('bs_sso_email', _userEmail); } catch(e){}
           _onLoginSuccess(_userEmail);
+          // 🆕 真兇根治「切帳號品牌空白、非按 F5 不可」:
+          //    startSystem() 開頭有 `if (_systemStarted) return;` 守衛。這條 Google 登入路徑
+          //    先前漏了重設旗標,若同一個分頁內已經跑過一次(例如切帳號),旗標仍是 true →
+          //    startSystem 直接 return → buildDataFromSheets 從未執行 → window.DATA undefined、
+          //    S.brands = 0 → 畫面空白;重整才好是因為整頁重載會把旗標歸零。
+          //    (另一條 SSO 路徑本來就有重設,兩條行為現在一致)
+          _systemStarted = false;
           await startSystem();
         } else {
           document.getElementById('loginErr').textContent = '❌ 此帳號無使用權限';
