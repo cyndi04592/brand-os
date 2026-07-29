@@ -51,6 +51,7 @@ function initGoogleAuth() {
           window._workerDriveMode = true;
           sessionStorage.setItem('bs_worker_mode', '1');
           sessionStorage.removeItem('bs_token');
+          _purgeOtherBrandCaches(_userEmail);   // 🆕 換帳號 → 先清他人品牌快取,避免吃到別人/空的殘留
           try { localStorage.setItem('bs_sso_email', _userEmail); } catch(e){}
           _onLoginSuccess(_userEmail);
           await startSystem();
@@ -125,6 +126,7 @@ async function doPwdLogin() {
   sessionStorage.setItem('bs_email', _userEmail);
   sessionStorage.removeItem('bs_token');
 
+ _purgeOtherBrandCaches(_userEmail);   // 🆕 換帳號 → 先清他人品牌快取,避免吃到別人/空的殘留
  try { localStorage.setItem('bs_sso_email', _userEmail); } catch(e){}
   _onLoginSuccess(_userEmail, account.name);
   _systemStarted = false;
@@ -228,6 +230,24 @@ async function checkWhitelist(email) {
   } catch (e) { return false; }
 }
 
+// ══ 🆕 換帳號防呆:登入時若與上次登入的 email 不同,清掉「不屬於這個帳號」的品牌樹快取 ══
+//    根治「切帳號品牌不見、要按 F5」的第二條路徑:客戶沒點登出、直接換帳號登入時 doLogout 不會跑,
+//    舊快取殘留會讓開機那段「先拿快取秒開」顯示錯誤/空白畫面。
+function _purgeOtherBrandCaches(email) {
+  try {
+    const keep = 'bs_brandos_' + (email || '');
+    const prev = localStorage.getItem('bs_sso_email') || '';
+    if (prev && prev === email) return;          // 同一個帳號 → 快取可留,維持秒開
+    const dead = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('bs_brandos_') === 0 && k !== keep) dead.push(k);
+    }
+    dead.forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+    if (dead.length) console.log('[login] 換帳號 → 已清他人品牌快取 ' + dead.length + ' 筆');
+  } catch(e){}
+}
+
 // ══ 登出 ══
 function doLogout() {
   if (!confirm('確定要登出嗎？')) return;
@@ -239,6 +259,18 @@ function doLogout() {
   sessionStorage.removeItem('bs_email');
   sessionStorage.removeItem('bs_worker_mode');
   try { localStorage.removeItem('bs_sso_token'); localStorage.removeItem('bs_sso_email'); } catch(e){}
+  // 🆕 根治「切帳號品牌不見、要按 F5」:登出時把所有帳號的品牌樹快取(bs_brandos_*)一併清掉
+  //    原因:品牌快取 key 是 'bs_brandos_'+email,登出只清 token/email 時這些快取會留著,
+  //    換帳號登入時開機那段「先拿快取秒開」會吃到殘留/空的資料 → 畫面空白要手動硬重整。
+  try {
+    const _dead = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('bs_brandos_') === 0) _dead.push(k);
+    }
+    _dead.forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+    if (_dead.length) console.log('[logout] 已清品牌快取 ' + _dead.length + ' 筆');
+  } catch(e){}
   window.S = { brandId:null, subId:null, prod:null, photos:[], videos:[], selPhoto:null, selVideo:null, scripts:[], delivers:[], openBrand:null };
   _isInitializing = false;
   if (window.google?.accounts?.oauth2) {
