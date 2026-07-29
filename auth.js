@@ -319,17 +319,32 @@ async function startSystem() {
   const _brandKey = 'bs_brandos_' + (_userEmail || '_anon'); // 🆕 WIN2：依帳號分開存,避免 A 看到 B 的品牌
 
   // 🆕 WIN2：先用本地快取的品牌樹「秒開」,背景再去 GAS 拉最新(stale-while-revalidate)
+  // 🆕 根治「切帳號品牌空白要按 F5」:
+  //    ① 舊 bug:開機時 _userEmail 還沒讀到 → key 變 bs_brandos__anon,若那份是空的([]),
+  //       秒開會把畫面洗成空品牌且標記已顯示,後端明明回 10 個品牌也救不回來。
+  //    ② 兩道鎖:(a) 沒 email 時完全不吃快取 (b) 快取內品牌為空一律不採用,並順手刪掉那份髒快取。
   let _shownFromCache = false;
   try {
-    const cached = localStorage.getItem(_brandKey);
+    const cached = _userEmail ? localStorage.getItem(_brandKey) : null;   // (a) 沒 email → 不吃快取
     if (cached) {
-      buildDataFromSheets(JSON.parse(cached));
-      renderNavBrands();
-      renderBrandTree();
-      overlay.style.display = 'none';   // 不卡初始化畫面
-      _shownFromCache = true;
+      const _cd = JSON.parse(cached);
+      if (((_cd && _cd.brands) || []).length) {                            // (b) 只有真的有品牌才秒開
+        buildDataFromSheets(_cd);
+        renderNavBrands();
+        renderBrandTree();
+        overlay.style.display = 'none';   // 不卡初始化畫面
+        _shownFromCache = true;
+      } else {
+        try { localStorage.removeItem(_brandKey); } catch(e) {}            // 空快取 = 髒的,直接清掉
+        console.log('[boot] 忽略並清除空的品牌快取:' + _brandKey);
+      }
     }
   } catch (e) {}
+
+  // 🆕 順手清掉歷史遺留的 _anon 空快取(舊版寫進去的元凶)
+  try { const _a = localStorage.getItem('bs_brandos__anon');
+    if (_a && !((JSON.parse(_a) || {}).brands || []).length) localStorage.removeItem('bs_brandos__anon');
+  } catch(e) {}
 
   if (!_shownFromCache) {
     overlay.style.display = 'flex';
@@ -347,7 +362,12 @@ async function startSystem() {
     }
     if (!json.ok) throw new Error(json.error);
     buildDataFromSheets(json.data);
-    try { localStorage.setItem(_brandKey, JSON.stringify(json.data)); } catch(e) {} // 🆕 WIN2：存快取給下次秒開
+    // 🆕 只在「有 email + 真的有品牌」時才寫快取:避免寫出 bs_brandos__anon 或空清單這種髒快取
+    try {
+      if (_userEmail && ((json.data && json.data.brands) || []).length) {
+        localStorage.setItem(_brandKey, JSON.stringify(json.data));
+      }
+    } catch(e) {}
     if (!_shownFromCache) document.getElementById('initMsg').textContent = '✅ 系統就緒！';
     // 背景刷新後,只有使用者還沒點任何品牌時才重畫(避免打斷操作)
     if (_shownFromCache && !window.S.brandId) { renderNavBrands(); renderBrandTree(); }
