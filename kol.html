@@ -3957,6 +3957,10 @@ async function createFacelessVideo() {
     tier: S.seedanceParams.tier,
     brandId: S.currentBrandId,
     kolName: '無臉_' + action,
+    // 🆕 補 provider:Worker v3.54 靠這個參數分流到 PiAPI(less-restriction,唯一吃真人臉的路)。
+    //    先前這三處單段路徑沒帶 → Worker 走預設 fal → 又晴的臉被 fal 肖像過濾器 422 擋掉。
+    //    (kol-stitch.js 接片路徑本來就有帶,所以只有單段會失敗)
+    provider: (window.KOL_PROVIDER || 'piapi'),
   };
   if (S.seedanceSeedLocked) {
     const seedVal = (document.getElementById('seed-value')?.value || '').trim();
@@ -4049,6 +4053,7 @@ async function createSeedanceVideo() {
     tier: S.seedanceParams.tier,
     brandId: S.currentBrandId,
     kolName: S.selectedKol.name,
+    provider: (window.KOL_PROVIDER || 'piapi'),   // 🆕 同上:分流 PiAPI,避開 fal 肖像過濾 422
   };
   if (S.seedanceSeedLocked) {
     const seedVal = document.getElementById('seed-value').value.trim();
@@ -6083,6 +6088,7 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
     tier: S.episodeParams.tier,
     brandId: S.currentBrandId,
     kolName: persona.persona_name,
+    provider: (window.KOL_PROVIDER || 'piapi'),   // 🆕 同上:分流 PiAPI,避開 fal 肖像過濾 422
   };
   if (epSeed !== undefined) payload.seed = epSeed;
 
