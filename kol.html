@@ -4102,6 +4102,33 @@ async function pollSeedance(task) {
       renderSeedanceTasks();
       return;
     }
+    // 🆕 PiAPI 分支:PiAPI 不提供輪詢網址,結果由 webhook 寫進 R2 → 要問 episode_result。
+    //    舊版一律用 fal_poll → fal 不認識 PiAPI 的 task_id → 回 UNKNOWN → 單段被誤判「失敗」。
+    //    (接片路徑 KolStitch 本來就走 episode_result,所以只有單段路徑會壞)
+    if (task.endpoint === 'piapi') {
+      try {
+        const r = await api('episode_result', { brandId: S.currentBrandId, reqId: task.requestId });
+        if (r && r.status === 'done' && r.videoUrl) {
+          clearInterval(t);
+          task.status = 'COMPLETED';
+          task.url = r.videoUrl;
+          task.elapsed = Math.round((Date.now() - task.startTime) / 1000);
+          renderSeedanceTasks();
+          toast('🎉 電影鏡頭生成完成', 'success');
+          showSeedancePreview(task);
+        } else if (r && r.status === 'failed') {
+          clearInterval(t);
+          task.status = 'FAILED';
+          task.error = r.errorDetail || r.error || '生成失敗';
+          renderSeedanceTasks();
+          toast('影片生成失敗:' + task.error, 'error');
+        } else {
+          task.status = 'IN_PROGRESS';   // pending = webhook 還沒回寫,還在生
+          renderSeedanceTasks();
+        }
+      } catch (e) { console.warn('piapi poll error', e); }
+      return;
+    }
     try {
       const res = await api('fal_poll', {
         requestId: task.requestId,
@@ -5218,6 +5245,30 @@ async function pollEpisodeTask(task) {
       renderEpisodeTask(task);
       return;
     }
+    // 🆕 PiAPI 分支(同 pollSeedance):PiAPI 結果由 webhook 寫進 R2 → 問 episode_result
+    if (task.endpoint === 'piapi') {
+      try {
+        const r = await api('episode_result', { brandId: S.currentBrandId, reqId: task.requestId });
+        if (r && r.status === 'done' && r.videoUrl) {
+          clearInterval(t);
+          task.status = 'COMPLETED';
+          task.url = r.videoUrl;
+          task.elapsed = Math.round((Date.now() - task.startTime) / 1000);
+          renderEpisodeTask(task);
+          toast('🎉 影片生成完成', 'success');
+        } else if (r && r.status === 'failed') {
+          clearInterval(t);
+          task.status = 'FAILED';
+          task.error = r.errorDetail || r.error || '生成失敗';
+          renderEpisodeTask(task);
+          toast('影片生成失敗:' + task.error, 'error');
+        } else {
+          task.status = 'IN_PROGRESS';
+          renderEpisodeTask(task);
+        }
+      } catch (e) { console.warn('piapi poll error', e); }
+      return;
+    }
     try {
       const res = await api('fal_poll', {
         requestId: task.requestId,
@@ -6280,6 +6331,32 @@ async function pollEpisodeTaskV510(task) {
       task.error = 'Timeout (5min)';
       renderEpisodeTask(task);
       if (task.episodeId) apiUpdateEpisodeStatus(task.episodeId, { video_status: 'failed', notes: 'Timeout' });
+      return;
+    }
+    // 🆕 PiAPI 分支(同 pollSeedance):PiAPI 結果由 webhook 寫進 R2 → 問 episode_result
+    if (task.endpoint === 'piapi') {
+      try {
+        const r = await api('episode_result', { brandId: S.currentBrandId, reqId: task.requestId });
+        if (r && r.status === 'done' && r.videoUrl) {
+          clearInterval(t);
+          task.status = 'COMPLETED';
+          task.url = r.videoUrl;
+          task.elapsed = Math.round((Date.now() - task.startTime) / 1000);
+          renderEpisodeTask(task);
+          if (task.episodeId) apiUpdateEpisodeStatus(task.episodeId, { video_status: 'done', video_url: r.videoUrl });
+          toast('🎉 影片生成完成', 'success');
+        } else if (r && r.status === 'failed') {
+          clearInterval(t);
+          task.status = 'FAILED';
+          task.error = r.errorDetail || r.error || '生成失敗';
+          renderEpisodeTask(task);
+          if (task.episodeId) apiUpdateEpisodeStatus(task.episodeId, { video_status: 'failed', notes: task.error });
+          toast('影片生成失敗:' + task.error, 'error');
+        } else {
+          task.status = 'IN_PROGRESS';
+          renderEpisodeTask(task);
+        }
+      } catch (e) { console.warn('piapi poll error', e); }
       return;
     }
     try {
