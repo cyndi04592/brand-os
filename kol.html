@@ -2399,8 +2399,22 @@ function syncSelectedKolToCine() {
     const destGrid = document.getElementById('look-grid-cine');
     const srcHint = document.getElementById('look-picker-hint');
     const destHint = document.getElementById('look-picker-hint-cine');
-    if (srcGrid && destGrid) destGrid.innerHTML = srcGrid.innerHTML;
-    if (srcHint && destHint) destHint.textContent = srcHint.textContent;
+    if (srcGrid && destGrid) {
+      destGrid.innerHTML = srcGrid.innerHTML;
+      // 🆕 STEP2(電影鏡頭)只保留「Drive 多角度」卡,濾掉 HeyGen Avatar Group 的 look。
+      //    原因:電影鏡頭走 Seedance/PiAPI,吃的是 Drive 乾淨原圖(resolveKolImageUrl→R2),
+      //    HeyGen 那幾張是 WEBP 髒圖、這條路根本不會用到 → 顯示出來只會誤導
+      //    (客戶以為選了有用、也會誤以為 Drive 有那麼多張)。
+      //    判斷依據:多角度卡沒有 data-look-id(純顯示),HeyGen look 才有。
+      //    STEP1 單張照片口播不動 → 客戶摸索口播時照樣選得到 HeyGen look。
+      destGrid.querySelectorAll('.look-item[data-look-id]').forEach(el => el.remove());
+      const _angleCount = destGrid.querySelectorAll('.look-item').length;
+      destPicker.style.display = _angleCount ? srcPicker.style.display : 'none';
+      if (destHint) destHint.textContent = _angleCount
+        ? '📐 多角度 · 生影片時自動依鏡頭使用(來自 Drive)'
+        : '';
+    }
+    if (srcHint && destHint && !destGrid) destHint.textContent = srcHint.textContent;
     destGrid.removeEventListener('click', handleLookClick);
     destGrid.addEventListener('click', handleLookClick);
   }
