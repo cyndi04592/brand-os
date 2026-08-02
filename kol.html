@@ -1411,7 +1411,8 @@ const _LOG_KIND = {
       };
       const params = {};
       ['resolution','duration','totalSec','aspectRatio','aspect_ratio','tier',
-       'generateAudio','num_images','shotType','endpoint','locationId'].forEach(function (k) {
+       'generateAudio','num_images','shotType','endpoint','locationId',
+       'durationSec','episodeId','personaType','sceneKey'].forEach(function (k) {
         if (o[k] !== undefined && o[k] !== null && o[k] !== '') params[k] = o[k];
       });
       let result = null;
@@ -1428,15 +1429,17 @@ const _LOG_KIND = {
         brand_id:   o.brandId || (window.S && window.S.currentBrandId) || '',
         action:     o.action,
         kind:       _LOG_KIND[o.action],
-        prompt:     pick('prompt','text')
-                    || (Array.isArray(o.multiPrompt) ? o.multiPrompt.join('\n--- shot ---\n') : null),
-        kol_name:   pick('kolName','persona_name'),
-        face_url:   pick('kolImageUrl','startImageUrl','image_url')
+        prompt:     pick('prompt','text','outline')
+                    || (Array.isArray(o.multiPrompt) ? o.multiPrompt.join('\n--- shot ---\n') : null)
+                    || (Array.isArray(o.beats) ? JSON.stringify(o.beats) : null),
+        kol_name:   pick('kolName','persona_name','personaName'),
+        face_url:   pick('kolImageUrl','startImageUrl','image_url','imageUrl')
+                    || (Array.isArray(o.image_urls) ? o.image_urls[0] : null)
                     || pick('kolDriveFileId','startDriveId'),
         face_angle: pick('faceAngle','angle'),
         outfit_url: pick('outfitImageUrl'),
         scene_url:  pick('sceneImageUrl'),
-        scene_id:   pick('sceneId'),
+        scene_id:   pick('sceneId','sceneKey'),
         seed:       (o.seed === 0 || o.seed) ? String(o.seed) : null,
         voice_id:   pick('voice_id','voiceId'),
         provider:   pick('provider') || window.KOL_PROVIDER || null,
