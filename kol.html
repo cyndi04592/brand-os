@@ -1356,6 +1356,22 @@ const PASSWORD = 'raby2026';
 //   ② billable 動作的回應統一處理「點數不足彈窗」+「刷新能量條」
 // 改一處,全模組覆蓋,以後新增模組也自動生效。
 const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit','ai_generate_social_posts','ai_generate_script','ai_generate_script_v2','storyboard_expand','ai_generate_persona'];
+// 🆕 生成紀錄:要記進 D1 的動作 → kind 標籤
+//   理由:prompt 與素材網址「錯過就補不回來」,只有生成當下能收。
+//   接在既有攔截器上 → 16 支模組全覆蓋,不動任何生成邏輯。
+const _LOG_KIND = {
+  seedance_submit:             'video',
+  kling_submit:                'video',
+  seedance_image2video_submit: 'video',
+  heygen_create_video:         'talking',
+  fal_image_submit:            'image',
+  flux_kontext:                'image',
+  nanobanana_pro:              'image',
+  nanobanana_compose:          'image',
+  scene_grid:                  'scene',
+  storyboard_expand:           'text',
+  ai_generate_persona:         'text',
+};
 (function () {
   const _origFetch = window.fetch.bind(window);
   // KOL 各動作點數(對齊 kol-proxy Worker 關卡;此表僅供前端樂觀扣顯示,後端 Worker 才是真扣)
@@ -1380,8 +1396,65 @@ const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit',
       default: return 0;
     }
   }
+  // 🆕 生成紀錄:把這次生成的 prompt / 素材網址 / 結果寫進 D1
+  //   • fire-and-forget:用 _origFetch 直送,不經攔截器、不遞迴、絕不擋生成
+  //   • 任何一步出錯都吞掉(try/catch),紀錄失敗不能影響客戶生成
+  window._genLog = function (o, j, ms, ok) {
+    try {
+      if (!o || !o.action || !_LOG_KIND[o.action]) return;
+      const pick = function () {
+        for (let i = 0; i < arguments.length; i++) {
+          const v = o[arguments[i]];
+          if (v) return (typeof v === 'string') ? v : String(v);
+        }
+        return null;
+      };
+      const params = {};
+      ['resolution','duration','totalSec','aspectRatio','aspect_ratio','tier',
+       'generateAudio','num_images','shotType','endpoint','locationId'].forEach(function (k) {
+        if (o[k] !== undefined && o[k] !== null && o[k] !== '') params[k] = o[k];
+      });
+      let result = null;
+      if (j) {
+        result = j.video_url || j.videoUrl
+              || (j.images && j.images[0] && (j.images[0].url || j.images[0]))
+              || j.image_url || j.imageUrl || j.url
+              || (j.request_id ? 'req:' + j.request_id : null)
+              || (j.task_id ? 'task:' + j.task_id : null);
+      }
+      const row = {
+        ts:         new Date().toISOString(),
+        email:      localStorage.getItem('bs_sso_email') || '',
+        brand_id:   o.brandId || (window.S && window.S.currentBrandId) || '',
+        action:     o.action,
+        kind:       _LOG_KIND[o.action],
+        prompt:     pick('prompt','text')
+                    || (Array.isArray(o.multiPrompt) ? o.multiPrompt.join('\n--- shot ---\n') : null),
+        kol_name:   pick('kolName','persona_name'),
+        face_url:   pick('kolImageUrl','startImageUrl','image_url')
+                    || pick('kolDriveFileId','startDriveId'),
+        face_angle: pick('faceAngle','angle'),
+        outfit_url: pick('outfitImageUrl'),
+        scene_url:  pick('sceneImageUrl'),
+        scene_id:   pick('sceneId'),
+        seed:       (o.seed === 0 || o.seed) ? String(o.seed) : null,
+        voice_id:   pick('voice_id','voiceId'),
+        provider:   pick('provider') || window.KOL_PROVIDER || null,
+        params:     Object.keys(params).length ? JSON.stringify(params) : null,
+        ok:         ok ? 1 : 0,
+        result_url: result,
+        err:        (j && j.error) ? String(j.error) : null,
+        ms:         (ms && ms > 0) ? ms : null,
+      };
+      _origFetch(WORKER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: PASSWORD, action: 'gen_log', row: row }),
+      }).catch(function () {});
+    } catch (e) { /* 紀錄永遠不擋生成 */ }
+  };
   window.fetch = async function (input, init) {
-    let _billed = false, _body = null;
+    let _billed = false, _body = null, _logBody = null, _t0 = 0;
     try {
       const _u = (typeof input === 'string') ? input : (input && input.url) || '';
       if (init && String(init.method || '').toUpperCase() === 'POST'
@@ -1394,6 +1467,7 @@ const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit',
             init = Object.assign({}, init, { body: JSON.stringify(_o) });
           }
           if (_BILLED_KOL.indexOf(_o.action) !== -1) { _billed = true; _body = _o; }
+          if (_LOG_KIND[_o.action]) { _logBody = _o; _t0 = Date.now(); }   // 🆕 生成紀錄:記下送出的完整 body
         }
       }
     } catch (e) { /* 不是我們的 JSON 請求,原樣放行 */ }
@@ -1404,6 +1478,14 @@ const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit',
       try { if (typeof refreshBits === 'function') { setTimeout(refreshBits, 1800); setTimeout(refreshBits, 3500); } } catch (e) {}
     }
     const _resp = await _origFetch(input, init);
+    // 🆕 生成紀錄:拿到回應後非同步寫入 D1(不 await,不影響回傳時序)
+    if (_logBody) {
+      try {
+        _resp.clone().json()
+          .then(function (j) { window._genLog(_logBody, j, Date.now() - _t0, !!(j && j.ok !== false)); })
+          .catch(function () { window._genLog(_logBody, null, Date.now() - _t0, false); });
+      } catch (e) {}
+    }
     if (_billed) {
       try {
         _resp.clone().json().then(function (j) {
