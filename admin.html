@@ -1854,35 +1854,50 @@ if (sessionStorage.getItem(_AK_STORE) === null) { try { window._setAdminKey(); }
     } catch (_) { /* 攔截層永遠不擋請求 */ }
 
     // ═══════════════════════════════════════════════════════════
-    //  🔁 GAS 韌性層:Google 平台間歇性抽風(echo 404 / 冷啟動逾時 /
-    //     回 HTML 錯誤頁而非 JSON)時自動重試,指數退避 + jitter。
-    //  ⚠️ 只重試「唯讀」action(get* / list* / admin* / check* / find*)。
-    //     寫入類(grantBits / addWhitelist / saveBrandOS …)絕不重試——
-    //     GAS 常常是「執行成功、回傳頁面才掛」,重試會重複加點/重複新增。
+    //  🚀 後台讀取改走 Cloudflare Worker(D1 / KV / 伺服器對伺服器)
+    //  ─────────────────────────────────────────────────────────
+    //  為什麼:瀏覽器直打 GAS 會經過 script.googleusercontent.com
+    //  的重導向節點,那個節點間歇性回 404 / HTML 錯誤頁 =「載入失敗」。
+    //  Worker 打 GAS 是伺服器對伺服器,不走那條路 → 繞開 404。
+    //  且 getBrandOS / checkWhitelist 在 Worker 端直接由 D1 回答(~1 秒)。
+    //  ⚠️ 只轉「讀取」。寫入(加點/加員工/審核/刪除)一律維持直打 GAS,
+    //     因為寫入若中途改路徑、或被快取,後果是錢與權限,不可冒險。
     // ═══════════════════════════════════════════════════════════
     try {
       const _u = (typeof input === 'string') ? input : ((input && input.url) || '');
-      if (_u.indexOf('script.google.com') !== -1 && _isReadOnlyGasCall(_u, init)) {
-        return _gasRetryFetch(_origFetch, input, init, 4);
+      if (_u.indexOf('script.google.com') !== -1) {
+        const _act = (_u.match(/[?&]action=([a-zA-Z_0-9]+)/) || [])[1] || '';
+        if (READ_VIA_WORKER.indexOf(_act) !== -1) {
+          return _gasRetryFetch(_origFetch, WORKER_URL, _buildWorkerInit(_u, _act), 4);
+        }
+        if (/^(get|list|admin|check|find)/.test(_act)) {          // 讀取但不在名單 → 至少給重試
+          return _gasRetryFetch(_origFetch, input, init, 4);
+        }
       }
     } catch (_) { /* 韌性層出事也絕不擋請求 */ }
 
     return _origFetch(input, init);
   };
 
-  // 判斷這通是不是唯讀(可安全重試)
-  function _isReadOnlyGasCall(url, init) {
-    let act = '';
+  // 把原本的 GAS GET 網址,翻譯成 Worker 的 gas_cached POST
+  function _buildWorkerInit(url, act) {
+    const params = {};
     try {
-      const m = url.match(/[?&]action=([a-zA-Z_0-9]+)/);
-      if (m) act = m[1];
-      if (!act && init && typeof init.body === 'string') {
-        const o = JSON.parse(init.body);
-        act = (o && o.action) || '';
-      }
-    } catch (_) { return false; }
-    if (!act) return false;
-    return /^(get|list|admin|check|find)/.test(act);
+      const qs = url.split('?')[1] || '';
+      qs.split('&').forEach(function (kv) {
+        const i = kv.indexOf('=');
+        if (i === -1) return;
+        const k = decodeURIComponent(kv.slice(0, i));
+        if (k === 'action' || k === 'password') return;           // 這兩個由 Worker 自己帶
+        params[k] = decodeURIComponent(kv.slice(i + 1));
+      });
+    } catch (_) {}
+    params._ts = Date.now();                                       // 後台要看最新的,強制繞過快取
+    return {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'gas_cached', password: PASSWORD, gasAction: act, gasParams: params })
+    };
   }
 
   // 重試本體:網路斷、HTTP 非 2xx、回 HTML 而非 JSON → 都算失敗
@@ -1893,25 +1908,33 @@ if (sessionStorage.getItem(_AK_STORE) === null) { try { window._setAdminKey(); }
         const resp = await orig(input, init);
         lastResp = resp;
         if (resp && resp.ok) {
-          const txt = await resp.clone().text();          // clone 不消耗原 body
+          const txt = await resp.clone().text();
           const head = (txt || '').trim().charAt(0);
-          if (head === '{' || head === '[') return resp;  // 正常 JSON → 收工
-          lastErr = new Error('GAS 回了非 JSON(多半是 Google 錯誤頁)');
+          if (head === '{' || head === '[') return resp;
+          lastErr = new Error('回了非 JSON(多半是 Google 錯誤頁)');
         } else {
           lastErr = new Error('HTTP ' + (resp ? resp.status : '無回應'));
         }
       } catch (e) { lastErr = e; }
       if (i < tries - 1) {
         const wait = Math.min(1600, 250 * Math.pow(2, i)) + Math.floor(Math.random() * 400);
-        console.warn('[GAS重試] 第 ' + (i + 1) + '/' + tries + ' 次失敗,' + wait + 'ms 後再試:', lastErr && lastErr.message);
+        console.warn('[重試] 第 ' + (i + 1) + '/' + tries + ' 次失敗,' + wait + 'ms 後再試:', lastErr && lastErr.message);
         await new Promise(r => setTimeout(r, wait));
       }
     }
-    console.error('[GAS重試] ' + tries + ' 次都失敗,Google 平台可能正在抽風:', lastErr && lastErr.message);
-    if (lastResp) return lastResp;   // 把最後一次真實回應交還,呼叫端照原本邏輯處理
+    console.error('[重試] ' + tries + ' 次都失敗:', lastErr && lastErr.message);
+    if (lastResp) return lastResp;
     throw lastErr;
   }
 })();
+
+// 走 Worker(D1/KV)的唯讀 action。寫入類永遠不列在這裡。
+const READ_VIA_WORKER = [
+  'checkWhitelist', 'getWhitelist', 'adminGetAll', 'getBrandOS',
+  'getDelivers', 'getAllMemory', 'getHolidayConfig',
+  'listSubOrders', 'listTopupOrders'
+];
+const WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 const PASSWORD = 'raby2026';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 
