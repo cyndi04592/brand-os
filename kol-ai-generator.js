@@ -1455,7 +1455,29 @@ async function gasFetch(doFetch, action) {
   throw err;
 }
 
+// 走 Cloudflare Worker(D1/KV)的唯讀 action —— 照抄 kol.html 的 GAS_CACHED_READS 機制。
+//  原本這支完全直打 GAS,實測 getKolPersonas 會撞 script.googleusercontent.com 的 404。
+//  ⚠️ 只能列 Worker 端 gas_cached ALLOW 名單裡有的;寫入類永遠不准列進來。
+const GAS_CACHED_READS = {
+  getBits: 1, getBrandOS: 1, listKolPhotos: 1, getMemory: 1,
+  getKolPersonas: 1, getWhitelist: 1, adminGetAll: 1,
+  getDelivers: 1, getAllMemory: 1, getHolidayConfig: 1,
+  listSubOrders: 1, listTopupOrders: 1,
+  getTopupPacks: 1, getPendingPayment: 1,
+};
+
 async function gasGet(action, params = {}) {
+  if (GAS_CACHED_READS[action]) {
+    try {
+      const r = await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'gas_cached', password: PASSWORD, gasAction: action, gasParams: params }),
+      });
+      const out = await r.json();
+      if (out && out.ok !== false) return out;   // fresh / miss / stale 都是可用資料
+    } catch (_) { /* Worker 連不上 → 落回原路,不擋使用者 */ }
+  }
   const qs = new URLSearchParams({ action, password: PASSWORD, ...params }).toString();
   return gasFetch(() => fetch(GAS_URL + '?' + qs), action);
 }
