@@ -1944,6 +1944,26 @@ const READ_VIA_WORKER = [
   'listSubOrders', 'listTopupOrders'
 ];
 const WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+
+// ═══════════════════════════════════════════════════════════════
+//  💠 入點後把餘額抄進 D1(mirror_bits)
+//  為什麼:客戶端點數餘額之後改由 D1 回答,而 D1 的 bits 表沒有批次
+//  同步管道(GAS 沒有「列出全部點數」的 action)。後台確認入帳後若不
+//  抄一份,客戶會看到舊餘額 → 以為你沒加點。
+//  抄帳失敗不影響入帳本身(GAS 是正本),只是 D1 晚一步。
+// ═══════════════════════════════════════════════════════════════
+async function _mirrorBits(email) {
+  if (!email) { console.warn('[mirror_bits] 沒有 email,略過'); return; }
+  try {
+    const r = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mirror_bits', password: PASSWORD, email: email }),
+    });
+    const j = await r.json();
+    console.log(j && j.ok ? '[mirror_bits] ✅ 已抄進 D1:' + email : '[mirror_bits] ⚠️ 失敗:' + (j && j.error));
+  } catch (e) { console.warn('[mirror_bits] ⚠️ 連線失敗(不影響入帳):', e.message); }
+}
 const PASSWORD = 'raby2026';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 
@@ -2098,7 +2118,7 @@ async function loadTopup() {
                : o.status==='paid'    ? '<span style="color:#6dfac2;font-weight:700">✓ 已入帳</span>'
                :                        '<span style="color:var(--t3)">取消</span>';
       const act = o.status==='pending'
-        ? `<button class="btn-add-staff" style="padding:6px 12px;font-size:12px" onclick="confirmTopup('${o.orderId}')">✓ 確認入帳</button>`
+        ? `<button class="btn-add-staff" style="padding:6px 12px;font-size:12px" onclick="confirmTopup('${o.orderId}','${o.email}')">✓ 確認入帳</button>`
         : (o.paidAt ? ('<span style="font-size:11px;color:var(--t3)">'+new Date(o.paidAt).toLocaleString('zh-TW')+'</span>') : '—');
       html += `<tr><td style="font-family:monospace;font-size:11px">${o.orderId}</td><td style="font-size:12px">${o.email}</td><td>${o.packName}</td><td>NT$${Number(o.amount).toLocaleString()}</td><td>${Number(o.bits).toLocaleString()}</td><td style="font-size:11px;color:var(--t3)">${o.method}</td><td style="font-family:monospace;font-size:13px;color:#ffce6b;font-weight:700">${o.note||'—'}</td><td>${st}</td><td>${act}</td></tr>`;
     });
@@ -2107,12 +2127,12 @@ async function loadTopup() {
   } catch (e) { box.innerHTML = '<div class="empty-state"><p>載入錯誤</p></div>'; }
 }
 
-async function confirmTopup(orderId) {
+async function confirmTopup(orderId, email) {
   if (!confirm('確認此訂單「銀行已實際收到款項」?\n入帳後不可復原。\n\n' + orderId)) return;
   try {
     const r = await fetch(`${GAS_URL}?action=confirmTopupOrder&password=${PASSWORD}&orderId=${encodeURIComponent(orderId)}`);
     const j = await r.json();
-    if (j.ok) { alert('✅ 已入帳 ' + Number(j.bits).toLocaleString() + ' Bits\n客戶加購池餘額:' + Number(j.extra).toLocaleString()); }
+    if (j.ok) { await _mirrorBits(email || j.email); alert('✅ 已入帳 ' + Number(j.bits).toLocaleString() + ' Bits\n客戶加購池餘額:' + Number(j.extra).toLocaleString()); }
     else if (j.error==='already_paid') { alert('⚠️ 此單先前已入帳,未重複加點'); }
     else { alert('❌ 失敗:' + (j.message || j.error)); }
     loadTopup();
@@ -2137,7 +2157,7 @@ async function loadSubOrders() {
                :                        '<span style="color:var(--t3)">已取消</span>';
       let act = '—';
       if (o.status==='pending') {
-        act = `<button class="btn-add-staff" style="padding:6px 12px;font-size:12px" onclick="confirmSubOrder('${o.orderId}')">✓ 確認開通</button>`
+        act = `<button class="btn-add-staff" style="padding:6px 12px;font-size:12px" onclick="confirmSubOrder('${o.orderId}','${o.email}')">✓ 確認開通</button>`
             + ` <button class="btn-refresh" style="padding:6px 10px;font-size:12px;color:#ff6d9b" onclick="cancelSubOrder('${o.orderId}')">✕ 取消</button>`;
       } else if (o.status==='paid' && o.paidAt) {
         act = '<span style="font-size:11px;color:var(--t3)">'+new Date(o.paidAt).toLocaleString('zh-TW')+'</span>';
@@ -2149,12 +2169,12 @@ async function loadSubOrders() {
   } catch (e) { box.innerHTML = '<div class="empty-state"><p>載入錯誤</p></div>'; }
 }
 
-async function confirmSubOrder(orderId) {
+async function confirmSubOrder(orderId, email) {
   if (!confirm('確認此訂閱單「銀行已實際收到款項」?\n開通後不可復原。\n\n' + orderId)) return;
   try {
     const r = await fetch(`${GAS_URL}?action=confirmSubOrder&password=${PASSWORD}&orderId=${encodeURIComponent(orderId)}`);
     const j = await r.json();
-    if (j.ok) { alert('✅ 已開通方案:' + (j.plan||'') + '\n月配額:' + Number(j.monthlyBits||0).toLocaleString() + ' Bits'); }
+    if (j.ok) { await _mirrorBits(email || j.email); alert('✅ 已開通方案:' + (j.plan||'') + '\n月配額:' + Number(j.monthlyBits||0).toLocaleString() + ' Bits'); }
     else if (j.error==='already_paid') { alert('⚠️ 此單先前已開通,未重複處理'); }
     else { alert('❌ 失敗:' + (j.message || j.error)); }
     loadSubOrders();
