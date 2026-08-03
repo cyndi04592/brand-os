@@ -1976,6 +1976,36 @@ function _kolInsufficientBits(need, balance) {
   if (go) location.href = 'index.html?openBits=1';
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  🔊 語音綁定到 KOL 人設(跨裝置)
+//  saveKolPersona 是「整列覆蓋」,所以必須帶完整人設、只換 voice_id,
+//  少帶欄位會把其他資料清空。
+// ═══════════════════════════════════════════════════════════════
+async function _persistVoiceToPersona(v) {
+  try {
+    const kol = S.selectedKol || S.selectedPersona;
+    const p = kol && kol.persona;
+    if (!p || !p.persona_name || !p.brand_id) return;      // 沒有完整人設就不寫,避免建出殘缺列
+    if (!v || !v.id) return;
+    if (p.voice_id === v.id) return;                        // 沒變就不寫
+    const data = Object.assign({}, p, { voice_id: v.id });
+    const r = await gasPost('saveKolPersona', { data });
+    if (r && r.ok) { p.voice_id = v.id; console.log('[voice] 已綁定到 KOL 人設:' + p.persona_name + ' → ' + v.name); }
+    else console.warn('[voice] 綁定人設失敗(本機仍記住):', r && r.error);
+  } catch (e) { console.warn('[voice] 綁定人設例外(本機仍記住):', e.message); }
+}
+
+// 切換 KOL 後呼叫:人設上有綁語音就套用
+function applyPersonaVoice() {
+  const p = (S.selectedKol || S.selectedPersona)?.persona;
+  if (!p || !p.voice_id) return;
+  if (S.selectedVoice && S.selectedVoice.id === p.voice_id) return;
+  S.selectedVoice = { id: p.voice_id, name: (S.selectedVoice && S.selectedVoice.id === p.voice_id ? S.selectedVoice.name : '已綁定語音') };
+  try { updateVoiceTrigger(); } catch (_) {}
+  try { updateCreditEstimate(); } catch (_) {}
+}
+window.applyPersonaVoice = applyPersonaVoice;
+
 // ─── 初始化 ────────────────────────────────────────────────
 (async function init() {
   VoiceModal.init({
@@ -1985,7 +2015,12 @@ function _kolInsufficientBits(need, balance) {
       S.selectedVoice = v;
       updateVoiceTrigger();
       updateCreditEstimate();
-     toast(`已選定語音:${v.name}`, 'success');
+      toast(`已選定語音:${v.name}`, 'success');
+      // 🆕 語音跟著 KOL 走,不跟著瀏覽器走。
+      //    原本只存 localStorage → 換電腦/清快取/換瀏覽器就消失,
+      //    而且 STEP2/STEP3 沒有選語音的地方,客戶會不知道自己沒設。
+      //    kol_personas 本來就有 voice_id 欄,寫回去才是正解。
+      _persistVoiceToPersona(v);
     },
   });
 
@@ -1999,6 +2034,8 @@ function _kolInsufficientBits(need, balance) {
     S.selectedVoice = saved;
     updateVoiceTrigger();
   }
+  // 🆕 KOL 人設上若已綁語音,以它為準(跨裝置一致);沒綁才沿用本機記住的
+  try { applyPersonaVoice(); } catch (_) {}
 
   // Vision Banner 綁定點擊
   document.querySelectorAll('.vision-col').forEach(col => {
