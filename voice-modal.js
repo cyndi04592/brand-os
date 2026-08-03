@@ -27,7 +27,7 @@ const State = {
   onSelect: null,
 
   rootEl: null,
-  currentTab: 'favorites',   // 'favorites' | 'library'
+  currentTab: 'library',   // 'favorites' | 'library'  — 預設開在語音庫,見 open() 說明
   voices: { library: [], libraryRawTotal: 0 },
   loading: { library: false },
   loaded:  { library: false },
@@ -107,6 +107,13 @@ const VoiceModal = {
     State.tentative = State.confirmed;
     applyGenderLock(gender);
     State.rootEl.classList.add('open');
+    // 🆕 開場分頁:有收藏才進「我的收藏」,沒有就直接進「亞洲業務精選」。
+    //    原本一律預設 favorites → 新客戶第一次開就看到「還沒有收藏的語音」大字加空白畫面,
+    //    像壞掉的頁面。有東西可選才是好的第一印象。
+    try {
+      const _favs = (typeof getFavoriteVoices === 'function') ? getFavoriteVoices() : [];
+      State.currentTab = (_favs && _favs.length) ? 'favorites' : 'library';
+    } catch (_) { State.currentTab = 'library'; }
     switchTab(State.currentTab);
   },
 
@@ -367,7 +374,7 @@ function updateCountChips() {
   const toggleBtn = document.getElementById('vm-filter-toggle');
   if (toggleLabel) {
     if (State.brandOSFilter) {
-      toggleLabel.innerHTML = '🔓 顯示全部 ' + (State.voices.libraryRawTotal || '2305');
+      toggleLabel.innerHTML = '🔓 顯示全部' + (State.voices.libraryRawTotal ? ' ' + State.voices.libraryRawTotal : '');
       if (toggleBtn) toggleBtn.title = '切換到完整模式（載入完整語音庫 2305 個語音）';
     } else {
       toggleLabel.innerHTML = '🌏 回亞洲精選';
@@ -385,7 +392,12 @@ function updateCountChips() {
         ? '🌏 亞洲業務精選 '
         : '🌏 完整語音庫 ';
     }
-    if (countSpan) countSpan.textContent = State.voices.library.length || '—';
+    // 🆕 載入中顯示「…」而非「—」,讓客戶知道是在跑不是沒東西
+    if (countSpan) {
+      countSpan.textContent = (State.loading.library || !State.loaded.library)
+        ? '…'
+        : (State.voices.library.length || '0');
+    }
   }
 
   // 🆕 v3.1 更新每個語言 chip 的數字
@@ -394,6 +406,13 @@ function updateCountChips() {
 
 // 🆕 v3.1 計算每個語言 chip 的數量（考慮 search + gender 過濾後的）
 function updateLangChipCounts() {
+  // 🆕 載入中就先顯示「…」,不要顯示 0。
+  //    原本清單還沒回來時 list 是空陣列 → 每個分類都算出 0,
+  //    畫面等於在跟客戶說「一個語音都沒有」,會以為系統壞了。
+  if (State.loading.library || !State.loaded.library) {
+    document.querySelectorAll('.vm-lang-count').forEach(el => { el.textContent = '…'; });
+    return;
+  }
   const list = State.voices.library || [];
   const base = list.filter(v => {
     if (State.search && !v.name?.toLowerCase().includes(State.search)) return false;
