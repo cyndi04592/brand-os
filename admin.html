@@ -1806,6 +1806,55 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
+
+// ═══════════════════════════════════════════════════════════
+//  🔐 管理鑰匙(ADMIN_KEY)—— 後台專用第二道鎖
+//  為什麼要這層:PASSWORD 明文寫在所有前端檔案裡,客戶按 F12 就拿得到。
+//  ADMIN_KEY 只存在 GAS 指令碼屬性 + Worker Secret + 你自己的瀏覽器,
+//  「不寫進任何 code、不進 GitHub」,所以 repo 是 public 也翻不到。
+//  攔截器做法:所有打 GAS 的請求自動補上鑰匙 → 25 處呼叫零改動,不會漏。
+// ═══════════════════════════════════════════════════════════
+const _AK_STORE = 'bs_admin_key';
+function _adminKey() { return sessionStorage.getItem(_AK_STORE) || ''; }
+window._setAdminKey = function () {
+  const k = (window.prompt('🔐 Brand OS 管理後台\n\n請輸入管理密碼(ADMIN_KEY):') || '').trim();
+  sessionStorage.setItem(_AK_STORE, k);
+  if (k) { console.log('%c✅ 管理密碼已設定', 'color:#0a0'); }
+  else   { console.warn('⚠️ 未設定管理密碼,管理功能會被 GAS 擋下。輸入 _setAdminKey() 可重新設定'); }
+  return k ? '✅ 已設定' : '⚠️ 未設定';
+};
+window._resetAdminKey = function () { sessionStorage.removeItem(_AK_STORE); return window._setAdminKey(); };
+// 開頁問一次(這個分頁之後都不再問;關掉分頁才需重輸)
+if (sessionStorage.getItem(_AK_STORE) === null) { try { window._setAdminKey(); } catch (e) {} }
+
+(function () {
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    try {
+      const url = (typeof input === 'string') ? input : ((input && input.url) || '');
+      if (url.indexOf('script.google.com') !== -1) {
+        const ak = _adminKey();
+        if (ak) {
+          const method = String((init && init.method) || 'GET').toUpperCase();
+          if (method === 'GET') {
+            if (url.indexOf('adminKey=') === -1) {
+              input = url + (url.indexOf('?') === -1 ? '?' : '&') + 'adminKey=' + encodeURIComponent(ak);
+            }
+          } else if (init && typeof init.body === 'string') {
+            try {
+              const o = JSON.parse(init.body);
+              if (o && typeof o === 'object' && !o.adminKey) {
+                o.adminKey = ak;
+                init = Object.assign({}, init, { body: JSON.stringify(o) });
+              }
+            } catch (_) { /* 非 JSON body 就不動 */ }
+          }
+        }
+      }
+    } catch (_) { /* 攔截層永遠不擋請求 */ }
+    return _origFetch(input, init);
+  };
+})();
 const PASSWORD = 'raby2026';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 
