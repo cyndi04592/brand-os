@@ -16,6 +16,92 @@ const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googl
 const GOOG_SCOPE = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 
+// ═══════════════════════════════════════════════════════════════
+//  🚀 GAS 讀取改走 Cloudflare Worker(全站共用,index / plans / kol 都吃得到)
+//  ─────────────────────────────────────────────────────────────
+//  為什麼:瀏覽器直打 GAS 會經過 script.googleusercontent.com 的重導向節點,
+//  那個節點會間歇回 404 / HTML 錯誤頁 → 畫面卡住或空白。
+//  Worker 打 GAS 是伺服器對伺服器,不走那條路;而且名單內的 action
+//  由 D1 直接回答(0.4 毫秒)或有 KV 快取。
+//
+//  ⚠️ 只轉「讀取」。寫入(createSubOrder / createTopupOrder / reportPayerLast5…)
+//     一律維持直打 GAS —— 寫入若被快取或重試,後果是重複下單、重複入帳。
+// ═══════════════════════════════════════════════════════════════
+const KOL_WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+
+// 只有 Worker 的 gas_cached ALLOW 名單裡有的才放進來,否則 Worker 會回「不支援的讀取」
+const READ_VIA_WORKER = [
+  'getTopupPacks', 'getPendingPayment', 'getBits',
+  'getBrandOS', 'checkWhitelist', 'listKolPhotos', 'getMemory',
+  'getKolPersonas', 'getDelivers', 'getAllMemory',
+  'listSubOrders', 'listTopupOrders',
+];
+
+(function () {
+  if (window.__gasReadRouted) return;      // 防重複掛載
+  window.__gasReadRouted = true;
+  const _origFetch = window.fetch.bind(window);
+
+  window.fetch = function (input, init) {
+    try {
+      const u = (typeof input === 'string') ? input : ((input && input.url) || '');
+      if (u.indexOf('script.google.com') !== -1) {
+        const act = (u.match(/[?&]action=([a-zA-Z_0-9]+)/) || [])[1] || '';
+        if (act && READ_VIA_WORKER.indexOf(act) !== -1) {
+          return _gasRetry(_origFetch, KOL_WORKER_URL, _toWorkerInit(u, act), 4);
+        }
+      }
+    } catch (_) { /* 攔截層出事也絕不擋請求 */ }
+    return _origFetch(input, init);
+  };
+
+  // 把 GAS 的 GET 網址翻譯成 Worker 的 gas_cached POST
+  function _toWorkerInit(url, act) {
+    const params = {};
+    try {
+      (url.split('?')[1] || '').split('&').forEach(function (kv) {
+        const i = kv.indexOf('=');
+        if (i === -1) return;
+        const k = decodeURIComponent(kv.slice(0, i));
+        if (k === 'action' || k === 'password') return;   // 這兩個 Worker 自己帶
+        params[k] = decodeURIComponent(kv.slice(i + 1));
+      });
+    } catch (_) {}
+    return {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'gas_cached', password: GAS_PASSWORD, gasAction: act, gasParams: params }),
+    };
+  }
+
+  // 網路斷、HTTP 非 2xx、回 HTML 而非 JSON → 退避重試(只用於唯讀)
+  async function _gasRetry(orig, url, init, tries) {
+    let lastResp = null, lastErr = null;
+    for (let i = 0; i < tries; i++) {
+      try {
+        const resp = await orig(url, init);
+        lastResp = resp;
+        if (resp && resp.ok) {
+          const txt = await resp.clone().text();
+          const head = (txt || '').trim().charAt(0);
+          if (head === '{' || head === '[') return resp;
+          lastErr = new Error('回了非 JSON');
+        } else {
+          lastErr = new Error('HTTP ' + (resp ? resp.status : '無回應'));
+        }
+      } catch (e) { lastErr = e; }
+      if (i < tries - 1) {
+        const wait = Math.min(1600, 250 * Math.pow(2, i)) + Math.floor(Math.random() * 400);
+        console.warn('[讀取重試] 第 ' + (i + 1) + '/' + tries + ' 次,' + wait + 'ms 後再試:', lastErr && lastErr.message);
+        await new Promise(r => setTimeout(r, wait));
+      }
+    }
+    console.error('[讀取重試] ' + tries + ' 次都失敗:', lastErr && lastErr.message);
+    if (lastResp) return lastResp;
+    throw lastErr;
+  }
+})();
+
 // ══ 共用狀態(所有模組共享)══
 window.S = {
   brandId: null, subId: null, prod: null,
