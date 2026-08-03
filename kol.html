@@ -2927,9 +2927,8 @@ async function createVideo() {
   const script = document.getElementById('script-output').value.trim();
   if (!script) { toast('請先輸入腳本', 'error'); return; }
 
-  if (!S.selectedVoice) {
-    if (!confirm(`你還沒選擇語音,將使用預設${DEFAULT_VOICE_NAME},要繼續嗎?`)) return;
-  }
+  // 🆕 語音未綁定的警告已併入「生成前確認」視窗(preGenConfirm),
+  //    不再單獨彈一次 confirm —— 避免生成前連跳三個視窗。
 
   syncMotionPrompt();
 
@@ -4083,6 +4082,12 @@ function preGenConfirm(opts) {
     var warnHtml = opts.pending
       ? '<div style="margin-top:6px;padding:10px 12px;border:1px solid rgba(250,80,80,.55);background:rgba(250,80,80,.10);border-radius:10px;color:#ff5a5a;font-size:13px;line-height:1.6;font-weight:700;">⚠️ 尚未按「確認分鏡」!<br><span style="font-weight:400;color:#ff8a8a;">你用了分鏡產生器但還沒確認,直接生成有機率失敗 / 不照你的分鏡。建議先點上方「✅ 確認分鏡」按鈕,再按生成。</span></div>'
       : '';
+    // 🆕 語音未綁定警告:預設是「日女聲(Morioki)」,台灣品牌講中文配日語 = 災難。
+    //    用紅字而非黃字,因為那不是「稍微不理想」,是整支聽起來完全不對。
+    var voiceHtml = '';
+    if (!S.selectedVoice || !S.selectedVoice.id) {
+      voiceHtml = '<div style="margin-top:6px;padding:10px 12px;border:1px solid rgba(250,80,80,.55);background:rgba(250,80,80,.10);border-radius:10px;color:#ff5a5a;font-size:13px;line-height:1.6;font-weight:700;">⚠️ 尚未綁定口播語音!<br><span style="font-weight:400;color:#ff8a8a;">將使用預設「' + DEFAULT_VOICE_NAME + '」。若這支是中文口播,聽起來會完全不對。建議先到上方「口播語音」選一個 —— 選過一次就會綁在這位 KOL 身上,之後不用再選。</span></div>';
+    }
     var _p = pacePerItem(opts.itemCount, opts.duration);
     var paceHtml = '';
     if (_p.level !== 'ok') {
@@ -4096,11 +4101,11 @@ function preGenConfirm(opts) {
         '<div class="persona-modal-head"><span class="persona-modal-title">🎬 生成前確認</span></div>' +
         '<div class="persona-modal-body">' +
           '<div style="font-size:13px;color:var(--text);line-height:1.6;">即將開始生成影片,會消耗生成額度。</div>' +
-          warnHtml + paceHtml +
+          warnHtml + voiceHtml + paceHtml +
         '</div>' +
         '<div class="persona-modal-foot">' +
           '<button class="pgc-cancel" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;">取消</button>' +
-          '<button class="pgc-go" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#0a0a0f;font-weight:700;cursor:pointer;">' + (opts.pending ? '仍要生成' : '開始生成') + '</button>' +
+          '<button class="pgc-go" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#0a0a0f;font-weight:700;cursor:pointer;">' + ((opts.pending || voiceHtml) ? '仍要生成' : '開始生成') + '</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(wrap);
