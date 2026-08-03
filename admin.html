@@ -1815,17 +1815,26 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTr
 //  攔截器做法:所有打 GAS 的請求自動補上鑰匙 → 25 處呼叫零改動,不會漏。
 // ═══════════════════════════════════════════════════════════
 const _AK_STORE = 'bs_admin_key';
-function _adminKey() { return sessionStorage.getItem(_AK_STORE) || ''; }
+// 🔐 改用 localStorage:記住管理密碼,不必每次開分頁重打那串亂碼。
+//    要清除(換電腦/借人用)→ Console 打 _resetAdminKey()
+function _adminKey() {
+  try { return localStorage.getItem(_AK_STORE) || sessionStorage.getItem(_AK_STORE) || ''; }
+  catch (_) { return sessionStorage.getItem(_AK_STORE) || ''; }
+}
 window._setAdminKey = function () {
-  const k = (window.prompt('🔐 Brand OS 管理後台\n\n請輸入管理密碼(ADMIN_KEY):') || '').trim();
-  sessionStorage.setItem(_AK_STORE, k);
-  if (k) { console.log('%c✅ 管理密碼已設定', 'color:#0a0'); }
+  const k = (window.prompt('🔐 Brand OS 管理後台\n\n請輸入管理密碼(ADMIN_KEY):\n(輸入一次就會記住,要清除請打 _resetAdminKey())') || '').trim();
+  try { localStorage.setItem(_AK_STORE, k); } catch (_) { sessionStorage.setItem(_AK_STORE, k); }
+  if (k) { console.log('%c✅ 管理密碼已記住(下次不再問)', 'color:#0a0'); }
   else   { console.warn('⚠️ 未設定管理密碼,管理功能會被 GAS 擋下。輸入 _setAdminKey() 可重新設定'); }
-  return k ? '✅ 已設定' : '⚠️ 未設定';
+  return k ? '✅ 已記住' : '⚠️ 未設定';
 };
-window._resetAdminKey = function () { sessionStorage.removeItem(_AK_STORE); return window._setAdminKey(); };
-// 開頁問一次(這個分頁之後都不再問;關掉分頁才需重輸)
-if (sessionStorage.getItem(_AK_STORE) === null) { try { window._setAdminKey(); } catch (e) {} }
+window._resetAdminKey = function () {
+  try { localStorage.removeItem(_AK_STORE); } catch (_) {}
+  try { sessionStorage.removeItem(_AK_STORE); } catch (_) {}
+  return window._setAdminKey();
+};
+// 只有「從來沒設定過」才問;設定過就直接用,不再打擾
+if (!_adminKey()) { try { window._setAdminKey(); } catch (e) {} }
 
 (function () {
   const _origFetch = window.fetch.bind(window);
