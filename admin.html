@@ -1930,9 +1930,9 @@ if (sessionStorage.getItem(_AK_STORE) === null) { try { window._setAdminKey(); }
 
 // 走 Worker(D1/KV)的唯讀 action。寫入類永遠不列在這裡。
 const READ_VIA_WORKER = [
-  // 'checkWhitelist', 'getWhitelist', 'adminGetAll', 'getBrandOS',
-  // 'getDelivers', 'getAllMemory', 'getHolidayConfig',
-  // 'listSubOrders', 'listTopupOrders'
+  'checkWhitelist', 'getWhitelist', 'adminGetAll', 'getBrandOS',
+  'getDelivers', 'getAllMemory', 'getHolidayConfig',
+  'listSubOrders', 'listTopupOrders'
 ];
 const WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 const PASSWORD = 'raby2026';
