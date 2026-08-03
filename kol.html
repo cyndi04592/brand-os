@@ -3795,6 +3795,42 @@ async function saveStitchedToDrive(videoUrl) {
   }
 }
 // 🆕 v5.18: 多段分鏡 → 接片長片(beat 數=段數,每段照分鏡自己的秒數)
+
+// ═══════════════════════════════════════════════════════════════
+//  🚦 生成進度回饋(防「以為壞了」)
+//  問題:按下生成後,要先跑 3~4 次 resolveKolImageUrl(Drive→R2 轉檔),
+//        期間畫面完全沒動靜,最久近兩分鐘 → 客戶以為當機、狂點按鈕。
+//  做法:按下的那一瞬間就鎖按鈕 + 顯示步驟,每完成一步就更新。
+// ═══════════════════════════════════════════════════════════════
+function _genProgress(btnId, boxId) {
+  const btn = document.getElementById(btnId);
+  const box = document.getElementById(boxId);
+  const oldText = btn ? btn.textContent : '';
+  const steps = ['準備素材', '參考圖鎖定', '送出生成', '分段接片'];
+  let cur = 0;
+  function paint(note) {
+    if (btn) btn.textContent = '生成中…請勿離開';
+    if (!box) return;
+    const bar = steps.map(function (name, i) {
+      const mark = i < cur ? '✅' : (i === cur ? '⏳' : '⚪');
+      const color = i < cur ? '#8fd9b8' : (i === cur ? '#ffd479' : '#666');
+      return '<span style="color:' + color + ';margin-right:14px;white-space:nowrap;">'
+           + mark + ' ' + (i + 1) + '.' + name + '</span>';
+    }).join('');
+    box.innerHTML = '<div style="padding:12px;font-size:13px;line-height:1.9;">'
+      + '<div style="margin-bottom:6px;">' + bar + '</div>'
+      + '<div style="color:#8fd9b8;font-size:12px;">' + (note || '處理中,請勿關閉或重整') + '</div>'
+      + '</div>';
+  }
+  if (btn) btn.disabled = true;
+  paint('開始準備,請稍候…');
+  return {
+    step: function (i, note) { cur = i; paint(note); },
+    note: function (note) { paint(note); },
+    done: function () { if (btn) { btn.disabled = false; btn.textContent = oldText; } },
+  };
+}
+
 async function createStitchedVideo(beats) {
   if (typeof KolStitch === 'undefined' || !KolStitch.runStitchFlow) {
     toast('接片引擎(KolStitch)未載入', 'error'); return;
@@ -3833,11 +3869,15 @@ async function createStitchedVideo(beats) {
 
   // 👗 衣服改由服裝師(kol-wardrobe.js)單一決定;接片端不再讀 persona.outfit,只負責「整支不換裝」鎖
   // 🆕 預先取三角度乾淨圖(各一次),每段照分鏡角度挑
-  const _angleUrls = {
-    front:   await resolveKolImageUrl(S.selectedKol.name, lookImage, 'front'),
-    q34:     await resolveKolImageUrl(S.selectedKol.name, lookImage, 'q34'),
-    profile: await resolveKolImageUrl(S.selectedKol.name, lookImage, 'profile'),
-  };
+  const _P = _genProgress('create-seedance-btn', 'seedance-preview-section');
+  _P.step(0, '正在取得 KOL 乾淨素材 (1/3 正面)…');
+  const _angleUrls = {};
+  _angleUrls.front   = await resolveKolImageUrl(S.selectedKol.name, lookImage, 'front');
+  _P.step(0, '正在取得 KOL 乾淨素材 (2/3 四分之三側)…');
+  _angleUrls.q34     = await resolveKolImageUrl(S.selectedKol.name, lookImage, 'q34');
+  _P.step(0, '正在取得 KOL 乾淨素材 (3/3 側面)…');
+  _angleUrls.profile = await resolveKolImageUrl(S.selectedKol.name, lookImage, 'profile');
+  _P.step(1, '素材就緒,正在鎖定服裝與場景參考圖…');
   const _detectAngle = (t) => {
     t = t || '';
     if (/側臉|側面|側拍|profile/i.test(t)) return 'profile';
@@ -3881,8 +3921,7 @@ async function createStitchedVideo(beats) {
   const box = document.getElementById('seedance-preview-section');
   const totalSec = plan.reduce((a, s) => a + s.durationSec, 0);
   if (btn) { btn.disabled = true; btn.textContent = '接片生成中…請勿離開'; }
-  if (box) box.innerHTML = '<div style="padding:12px;color:#8fd9b8;font-size:13px;">🎬 接片開始…共 '
-    + plan.length + ' 段 ≈ ' + totalSec + ' 秒,請耐心等(分段生成較久)</div>';
+  _P.step(3, '🎬 分段接片中…共 ' + plan.length + ' 段 ≈ ' + totalSec + ' 秒,請耐心等候');
 
   try {
     const result = await KolStitch.runStitchFlow(plan, {
@@ -6269,6 +6308,7 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
 }
 // 🆕 STEP3 多段分鏡 → 接片(讀 STEP3 狀態,跟 createStitchedVideo 同邏輯)
 async function runEpisodeStitch(persona, beats, product, sceneId, movementId, tone, productImageUrls, episodeId) {
+  const _P3 = _genProgress('episode-video-btn', 'episode-task-box');
   if (typeof KolStitch === 'undefined' || !KolStitch.runStitchFlow) {
     toast('接片引擎(KolStitch)未載入', 'error');
     if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: '接片引擎未載入' });
@@ -6310,11 +6350,14 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
   console.log('[STEP3接片] 本支共用 seed:', runSeed, '· 段數:', beats.length);
 
   // 🆕 STEP3 多角度:預先取三角度乾淨圖,每段照分鏡 angle 挑(對齊 STEP2 createStitchedVideo)
-  const _angleUrls = {
-    front:   await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'front'),
-    q34:     await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'q34'),
-    profile: await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'profile'),
-  };
+  _P3.step(0, '正在取得 KOL 乾淨素材 (1/3 正面)…');
+  const _angleUrls = {};
+  _angleUrls.front   = await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'front');
+  _P3.step(0, '正在取得 KOL 乾淨素材 (2/3 四分之三側)…');
+  _angleUrls.q34     = await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'q34');
+  _P3.step(0, '正在取得 KOL 乾淨素材 (3/3 側面)…');
+  _angleUrls.profile = await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'profile');
+  _P3.step(1, '素材就緒,正在鎖定服裝與場景參考圖…');
   const _detectAngle = (t) => {
     t = t || '';
     if (/側臉|側面|側拍|profile/i.test(t)) return 'profile';
