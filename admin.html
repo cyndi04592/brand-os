@@ -1963,6 +1963,11 @@ function adminLogin() {
       scope: 'https://www.googleapis.com/auth/userinfo.email',
       callback: async (resp) => {
         if (!resp.access_token) { if(errEl) errEl.textContent = '登入未完成'; return; }
+        // 🔒 記住登入票:tryAdminSSO() 開頁時會讀這張票自動登入。
+        //    原本沒有任何地方寫入 bs_sso_token → 那條自動登入路徑永遠走不通,
+        //    所以每次開後台都要重按 Google。存起來就不用了。
+        //    (Google access_token 約 1 小時到期;過期時 _adminUserinfo 會失敗 → 自動退回登入畫面,安全。)
+        try { localStorage.setItem('bs_sso_token', resp.access_token); } catch (e) {}
         try {
           const ui = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + resp.access_token } });
           const info = await ui.json();
