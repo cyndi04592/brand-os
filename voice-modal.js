@@ -45,7 +45,7 @@ const State = {
   audio: new Audio(),
   audioRAF: null,
 
-  pageSize: 50,
+  pageSize: 10,   // 首屏只畫 10 張卡(每張含波形圖,畫太多會卡);其餘捲到底自動載入
   pageCount: 1,
   lastPlayingRowEl: null,
   lastSelectedRowEl: null,
@@ -585,6 +585,23 @@ function renderList() {
       State.pageCount++;
       renderList();
     });
+    // 🆕 捲到底自動載入下一批(按鈕保留當備援,舊瀏覽器沒有 IntersectionObserver 也能用)
+    try {
+      if (typeof IntersectionObserver !== 'undefined') {
+        if (State._io) { try { State._io.disconnect(); } catch (_) {} }
+        State._io = new IntersectionObserver((entries) => {
+          if (entries.some(e => e.isIntersecting)) {
+            try { State._io.disconnect(); } catch (_) {}
+            State.pageCount++;
+            renderList();
+          }
+        }, { root: container, rootMargin: '200px' });   // 提早 200px 就開始載,捲動不會頓
+        State._io.observe(loadMoreBtn);
+      }
+    } catch (_) {}
+  } else if (State._io) {
+    try { State._io.disconnect(); } catch (_) {}
+    State._io = null;
   }
 
   State.lastPlayingRowEl = null;
