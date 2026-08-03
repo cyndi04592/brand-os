@@ -53,6 +53,7 @@ function initGoogleAuth() {
           sessionStorage.removeItem('bs_token');
           _purgeOtherBrandCaches(_userEmail);   // 🆕 換帳號 → 先清他人品牌快取,避免吃到別人/空的殘留
           try { localStorage.setItem('bs_sso_email', _userEmail); } catch(e){}
+          _rememberSession(_userEmail);   // 🔒 記住登入:關掉分頁/瀏覽器再開不用重登
           _onLoginSuccess(_userEmail);
           // 🆕 真兇根治「切帳號品牌空白、非按 F5 不可」:
           //    startSystem() 開頭有 `if (_systemStarted) return;` 守衛。這條 Google 登入路徑
@@ -135,6 +136,7 @@ async function doPwdLogin() {
 
  _purgeOtherBrandCaches(_userEmail);   // 🆕 換帳號 → 先清他人品牌快取,避免吃到別人/空的殘留
  try { localStorage.setItem('bs_sso_email', _userEmail); } catch(e){}
+ _rememberSession(_userEmail);   // 🔒 記住登入
   _onLoginSuccess(_userEmail, account.name);
   _systemStarted = false;
   await startSystem();
@@ -266,6 +268,7 @@ function doLogout() {
   sessionStorage.removeItem('bs_email');
   sessionStorage.removeItem('bs_worker_mode');
   try { localStorage.removeItem('bs_sso_token'); localStorage.removeItem('bs_sso_email'); } catch(e){}
+  try { localStorage.removeItem('bs_email'); localStorage.removeItem('bs_worker_mode'); } catch(e){}   // 🔒 一併清掉「記住登入」
   // 🆕 根治「切帳號品牌不見、要按 F5」:登出時把所有帳號的品牌樹快取(bs_brandos_*)一併清掉
   //    原因:品牌快取 key 是 'bs_brandos_'+email,登出只清 token/email 時這些快取會留著,
   //    換帳號登入時開機那段「先拿快取秒開」會吃到殘留/空的資料 → 畫面空白要手動硬重整。
@@ -296,7 +299,35 @@ function goAdmin() {
 }
 
 // ══ 系統啟動 ══
+// ═══════════════════════════════════════════════════════════════
+//  🔒 記住登入(worker 模式)
+//  原本身分只存 sessionStorage → 關掉分頁就消失 → 每次都要重登。
+//  worker 模式不需要 Google token(Drive 走服務帳號),身分只是 email,
+//  因此可安全地複製一份到 localStorage,開機時回填。
+//  ⚠️ 登出會一併清除;白名單驗證仍在伺服器端,記住的只是「我是誰」。
+// ═══════════════════════════════════════════════════════════════
+function _rememberSession(email) {
+  try {
+    if (!email) return;
+    localStorage.setItem('bs_email', email);
+    localStorage.setItem('bs_worker_mode', '1');
+  } catch (e) {}
+}
+function _restoreSession() {
+  try {
+    if (sessionStorage.getItem('bs_email')) return;              // 這個分頁已有身分 → 不動
+    const em = localStorage.getItem('bs_email') || '';
+    const wm = localStorage.getItem('bs_worker_mode') || '';
+    if (em && wm === '1') {
+      sessionStorage.setItem('bs_email', em);
+      sessionStorage.setItem('bs_worker_mode', '1');
+      console.log('[login] 已還原上次登入:' + em);
+    }
+  } catch (e) {}
+}
+
 async function startSystem() {
+  _restoreSession();   // 🔒 先把記住的身分放回 sessionStorage,再走原本流程
   // 還原 worker mode session
   if (sessionStorage.getItem('bs_worker_mode') === '1') {
     window._workerDriveMode = true;
