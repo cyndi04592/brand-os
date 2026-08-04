@@ -1,289 +1,275 @@
-/* ═══════════════════════════════════════════════════════════════
- *  Brand OS · 方案資料 + 卡片渲染(共用)
- *  v1 · 2026-06
- *  訂閱選單(index.html)與 入駐書(onboard.html)共用同一份卡片細項。
- *  本檔自帶 scoped style(.bos-plans),include 即可,不依賴外部 CSS。
- *
- *  公開 API:
- *    BRANDOS_PLANS                 方案資料(small / ent 兩組)= 單一真實來源
- *    BRANDOS_PLAN_MAX              產能條基準(旗艦圖量)
- *    findBrandosPlan(key)          跨組查單一方案
- *    ensureBrandosPlanStyle()      注入 scoped 樣式(冪等)
- *    renderBrandosHeroStat()       15× / 零 / 24h 數據列
- *    renderBrandosCore()           技術內核硬核名詞 band
- *    renderBrandosPlanCards(group, cycle, opts)  卡片網格 HTML
- *      opts.selFn       點卡呼叫的全域函式名(預設 'buyPlan')
- *      opts.selectedKey 高亮已選方案(入駐書用)
- *      opts.ctaLabel    function(plan)->字串,自訂按鈕文字
- *
- *  ⚠️ 方案 key(entry/growth/pro/ent/flag)對齊 GAS SUB_PLANS,不可改。
- * ═══════════════════════════════════════════════════════════════ */
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand OS · 訂閱方案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="script" href="config.js"><!-- 🆕 提早並行下載,中間內容更快出現 -->
+<link rel="preload" as="script" href="plans.js"><!-- 🆕 同上 -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0e0e16; --ink:#fff; --t2:rgba(255,255,255,.62); --t3:rgba(255,255,255,.4);
+         --purple:#7c6cff; --pink:#ff7ac3; --gold:#ffce6b; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Sans TC',sans-serif;color:var(--ink);min-height:100vh;padding:52px 20px 90px;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(1200px 600px at 18% -10%,rgba(124,108,255,.10),transparent 60%),
+               radial-gradient(1000px 500px at 100% 0%,rgba(255,122,195,.08),transparent 55%),var(--bg);}
+  .wrap{max-width:1060px;margin:0 auto;}
+  .topbar{max-width:1060px;margin:0 auto 30px;display:flex;justify-content:space-between;align-items:center;}
+  .back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--t2);text-decoration:none;
+    padding:8px 15px;border:1px solid rgba(255,255,255,.1);border-radius:999px;transition:.16s;}
+  .back:hover{color:#fff;border-color:rgba(255,255,255,.25);}
+  .eyebrow{font-size:12px;letter-spacing:4px;color:var(--gold);font-weight:700;text-align:center;margin-bottom:16px;}
+  h1{font-size:clamp(28px,4.4vw,46px);font-weight:900;text-align:center;line-height:1.22;letter-spacing:-.5px;}
+  h1 .hl{background:linear-gradient(120deg,var(--purple),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{text-align:center;color:var(--t2);font-size:15px;margin-top:16px;line-height:1.8;}
+  #planRoot{margin-top:34px;}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="index.html">← 回系統</a>
+    <span style="font-size:12px;color:var(--t3);letter-spacing:2px;">BRAND OS</span>
+  </div>
 
-const BRANDOS_PLAN_MAX = 2083; // 旗艦每月圖量,作為產能條 100%
+  <div class="wrap">
+    <div class="eyebrow">BRAND OS · 訂閱方案</div>
+    <h1>用一點點人力,<br>做出 <span class="hl">一整間公司的產能</span>。</h1>
+    <p class="sub">全功能開好開滿、沒有閹割版。<br>你選的不是「能用哪些功能」,而是「這個月想把產能,放大成幾個人的團隊」。</p>
+    <div id="planRoot"></div>
+  </div>
 
-const BRANDOS_PLANS = {
-  small: [
-    { key:'entry',  name:'入門', who:'小品牌 · 商品起步', rep:'一組 8 人外拍製作團隊',
-      grade:'標準雜誌級', comp:'標準運算佇列', bits:70000,  price:35000, promo:30000,
-      imgs:290,  vids:72,  kol:'1 隻日更 / 3 隻週更 / 12 隻月更' },
-    { key:'growth', name:'成長', who:'穩定出圖的品牌', rep:'一個 15 人內容部',
-      grade:'雜誌級 + 進階修圖', comp:'優先運算佇列', bits:100000, price:50000, promo:0,
-      imgs:416,  vids:104, kol:'2 隻日更 / 5 隻週更 / 18 隻月更' },
-    { key:'pro',    name:'專業', who:'高頻投放 · 多商品線', rep:'一間 25 人製作公司',
-      grade:'高階雜誌級 + 商品保真', comp:'高速運算佇列', bits:160000, price:80000, promo:0,
-      imgs:666,  vids:166, kol:'3 隻日更 / 8 隻週更 / 30 隻月更', hot:true },
-  ],
-  ent: [
-    { key:'ent',  name:'企業', who:'多品牌 · 連鎖', rep:'一個 50 人行銷中心',
-      grade:'頂級算圖 + 多代理並行', comp:'企業級運算', bits:300000, price:150000, promo:0,
-      imgs:1250, vids:312, kol:'6 隻日更 / 15 隻週更 / 60 隻月更' },
-    { key:'flag', name:'旗艦', who:'國際品牌 · MCN', rep:'一個 100+ 人行銷集團',
-      grade:'最高級 + 地端混合運算', comp:'極速專屬佇列', bits:500000, price:250000, promo:0,
-      imgs:2083, vids:520, kol:'10 隻日更 / 26 隻週更 / 100 隻月更', top:true },
-    { key:'custom', custom:true },
-  ]
-};
+<script src="loader.js"></script>
+<script src="config.js"></script>
+<script src="plans.js"></script>
+<script>
+  // ══ 整頁訂閱控制器(渲染重用 plans.js,購買流程自帶,不動 index 彈窗)══
+  let _grp = 'small', _cyc = 'month';
+  let _pendingPlan = '';
 
-function findBrandosPlan(key) {
-  for (const g of Object.keys(BRANDOS_PLANS)) {
-    const f = BRANDOS_PLANS[g].find(p => p.key === key);
-    if (f) return f;
-  }
-  return null;
-}
-
-function ensureBrandosPlanStyle() {
-  if (document.getElementById('bos-plan-style')) return;
-  const css = `
-.bos-plans{ --bp-purple:#7c6cff; --bp-pink:#ff7ac3; --bp-gold:#ffce6b; --bp-amber:#ff9d4d;
-  --bp-line:rgba(255,255,255,.08); --bp-t2:rgba(255,255,255,.62); --bp-t3:rgba(255,255,255,.4);
-  font-family:'Noto Sans TC',sans-serif; }
-.bos-plans .num{font-variant-numeric:tabular-nums;}
-.bos-core{max-width:760px;margin:0 auto 22px;background:linear-gradient(180deg,rgba(124,108,255,.06),rgba(255,122,195,.03));
-  border:1px solid rgba(124,108,255,.2);border-radius:16px;padding:18px 22px;}
-.bos-core .h{text-align:center;font-size:13px;font-weight:900;color:#d4ccff;letter-spacing:.3px;line-height:1.5;}
-.bos-core .s{text-align:center;font-size:11px;color:var(--bp-t3);margin:4px 0 14px;}
-.bos-core .terms{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;}
-.bos-core .term{font-size:12.5px;font-weight:700;color:var(--bp-t2);padding:6px 13px;border:1px solid var(--bp-line);border-radius:8px;background:rgba(255,255,255,.02);cursor:pointer;transition:border-color .16s,color .16s,background .16s;}
-.bos-core .term:hover{border-color:rgba(124,108,255,.5);color:#fff;}
-.bos-core .term.on{border-color:rgba(124,108,255,.85);background:linear-gradient(135deg,rgba(124,108,255,.24),rgba(255,122,195,.16));color:#fff;}
-.bos-termdesc{max-height:0;overflow:hidden;opacity:0;transition:max-height .24s,opacity .24s,margin .24s,padding .24s;
-  font-size:12.5px;color:#ded9ff;line-height:1.65;text-align:center;margin-top:0;border-radius:10px;}
-.bos-termdesc.show{max-height:140px;opacity:1;margin-top:14px;padding:11px 16px;border:1px dashed rgba(124,108,255,.32);background:rgba(124,108,255,.05);}
-.bos-hstat{display:flex;justify-content:center;gap:30px;margin-bottom:20px;flex-wrap:wrap;}
-.bos-hstat .b{text-align:center;}
-.bos-hstat .v{font-size:26px;font-weight:700;line-height:1;
-  background:linear-gradient(120deg,var(--bp-purple),var(--bp-pink));-webkit-background-clip:text;background-clip:text;color:transparent;}
-.bos-hstat .l{font-size:11px;color:var(--bp-t3);margin-top:5px;letter-spacing:.3px;}
-.bos-toggles{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:22px;}
-.bos-seg{display:inline-flex;background:rgba(255,255,255,.05);border:1px solid var(--bp-line);border-radius:999px;padding:4px;}
-.bos-seg button{font-family:inherit;border:none;cursor:pointer;border-radius:999px;padding:8px 22px;font-size:13px;font-weight:700;color:var(--bp-t2);background:transparent;transition:.18s;}
-.bos-seg.grp button.on{background:linear-gradient(135deg,var(--bp-purple),var(--bp-pink));color:#fff;}
-.bos-seg.cyc button.on{background:linear-gradient(135deg,var(--bp-amber),var(--bp-gold));color:#13131c;}
-.bos-seg .save{font-size:10px;opacity:.85;}
-.bos-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr);align-items:stretch;}
-@media(max-width:720px){.bos-grid{grid-template-columns:1fr;}}
-.bos-card{position:relative;display:flex;flex-direction:column;background:#16161f;border:1.5px solid var(--bp-line);
-  border-radius:16px;padding:22px 18px;transition:transform .18s,border-color .2s;}
-.bos-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.18);}
-.bos-card.hot{border-color:rgba(124,108,255,.55);box-shadow:0 0 0 1px rgba(124,108,255,.25),0 18px 44px -20px rgba(124,108,255,.5);}
-.bos-card.top{border-color:rgba(255,206,107,.5);box-shadow:0 0 0 1px rgba(255,206,107,.22),0 18px 44px -20px rgba(255,157,77,.45);}
-.bos-card.sel{border-color:#7CFFB2;box-shadow:0 0 0 1px rgba(124,255,178,.45);}
-.bos-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:11px;font-weight:900;padding:3px 13px;border-radius:999px;color:#13131c;letter-spacing:.3px;}
-.bos-badge.hot{background:linear-gradient(135deg,var(--bp-purple),var(--bp-pink));color:#fff;}
-.bos-badge.top{background:linear-gradient(135deg,var(--bp-amber),var(--bp-gold));}
-.bos-who{font-size:11.5px;color:var(--bp-gold);font-weight:700;letter-spacing:.2px;}
-.bos-pname{font-size:20px;font-weight:900;margin:3px 0 14px;color:#fff;}
-.bos-replbl{font-size:11px;color:var(--bp-t3);letter-spacing:.5px;font-weight:700;}
-.bos-rep{font-size:19px;font-weight:900;line-height:1.25;margin:5px 0 2px;
-  background:linear-gradient(120deg,var(--bp-purple),var(--bp-pink));-webkit-background-clip:text;background-clip:text;color:transparent;}
-.bos-card.top .bos-rep{background:linear-gradient(120deg,var(--bp-amber),var(--bp-gold));-webkit-background-clip:text;background-clip:text;}
-.bos-bar{height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:12px 0;}
-.bos-bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--bp-purple),var(--bp-pink));}
-.bos-card.top .bos-bar>i{background:linear-gradient(90deg,var(--bp-amber),var(--bp-gold));}
-.bos-spec{font-size:12.5px;color:var(--bp-t2);line-height:1.5;}
-.bos-spec .r{display:flex;gap:8px;margin-top:7px;}
-.bos-spec .k{color:var(--bp-t3);flex-shrink:0;width:58px;}
-.bos-spec .vv{color:#fff;}
-.bos-spec .vv.grade{color:var(--bp-gold);font-weight:700;}
-.bos-meta{margin-top:auto;padding-top:14px;border-top:1px dashed var(--bp-line);}
-.bos-mrow{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--bp-t2);margin:10px 0 6px;}
-.bos-mrow b{color:#fff;font-weight:700;}
-.bos-price{display:flex;align-items:baseline;gap:6px;}
-.bos-price .amt{font-size:24px;font-weight:900;color:#fff;}
-.bos-price .per{font-size:12px;color:var(--bp-t3);}
-.bos-promo{font-size:12px;color:#ff8cae;text-decoration:line-through;margin-right:2px;}
-.bos-yhint{font-size:11px;color:var(--bp-gold);margin-top:3px;}
-.bos-cta{margin-top:15px;text-align:center;font-size:14px;font-weight:900;color:#fff;border-radius:11px;padding:11px;cursor:pointer;border:none;font-family:inherit;
-  background:linear-gradient(135deg,var(--bp-amber),#ff7a59);transition:filter .2s;width:100%;}
-.bos-card.hot .bos-cta{background:linear-gradient(135deg,var(--bp-purple),var(--bp-pink));}
-.bos-cta:hover{filter:brightness(1.08);}
-.bos-cta.ghost{background:transparent;border:1px solid var(--bp-line);color:var(--bp-t2);}
-.bos-custom{justify-content:center;align-items:center;text-align:center;border-style:dashed;
-  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));}
-.bos-custom .big{font-size:19px;font-weight:900;margin:8px 0;color:#fff;}
-.bos-custom p{font-size:12px;color:var(--bp-t2);line-height:1.7;margin-bottom:16px;}
-.bos-foot{text-align:center;color:var(--bp-t3);font-size:11px;margin-top:20px;line-height:1.85;}
-/* 專利認證鋼印(金色官章) */
-.bos-patent{display:flex;justify-content:center;margin:0 auto 22px;}
-.bos-seal{display:inline-flex;align-items:center;gap:15px;padding:13px 24px 13px 16px;border-radius:15px;
-  background:linear-gradient(135deg,rgba(255,206,107,.13),rgba(255,157,77,.045));
-  border:1px solid rgba(255,206,107,.5);
-  box-shadow:0 0 0 1px rgba(255,206,107,.1) inset,0 1px 0 rgba(255,255,255,.07) inset,0 12px 34px -16px rgba(255,157,77,.6);}
-.bos-seal .emblem{width:52px;height:52px;flex-shrink:0;filter:drop-shadow(0 2px 5px rgba(0,0,0,.45));}
-.bos-seal .tx{display:flex;flex-direction:column;line-height:1.18;text-align:left;}
-.bos-seal .t1{font-size:14.5px;font-weight:900;letter-spacing:2.5px;
-  background:linear-gradient(135deg,#fff0c9,#ffce6b,#ff9d4d);-webkit-background-clip:text;background-clip:text;color:transparent;}
-.bos-seal .t2{font-size:10.5px;font-weight:700;color:rgba(255,255,255,.58);letter-spacing:1.2px;margin-top:4px;}
-.bos-seal .t2 b{color:#ffd98a;font-weight:900;letter-spacing:1.8px;}
-/* 零門檻金句 */
-.bos-tagline{text-align:center;font-size:13px;font-weight:700;color:#e8e3ff;margin:-4px auto 22px;letter-spacing:.3px;line-height:1.6;}
-.bos-tagline b{color:var(--bp-gold);font-weight:900;}
-`;
-  const el = document.createElement('style');
-  el.id = 'bos-plan-style';
-  el.textContent = css;
-  document.head.appendChild(el);
-}
-
-function renderBrandosHeroStat() {
-  return '<div class="bos-hstat">'
-    + '<div class="b"><div class="v num">15×</div><div class="l">人力產能放大</div></div>'
-    + '<div class="b"><div class="v">零</div><div class="l">提示詞 · 零技術門檻</div></div>'
-    + '<div class="b"><div class="v num">24h</div><div class="l">不停工的製作團隊</div></div>'
-    + '</div>';
-}
-
-function renderBrandosCore() {
-  const terms = [
-    ['品牌靈魂核', '全產線唯一語意中樞,圖文影同源同調,品牌不走鐘'],
-    ['AI 創意總監編制', '攝影·燈光·場景·造型·文案·剪輯·數字人·投放,一聲令下整組到位'],
-    ['攝影指導級鏡頭語言', '依主體自動選鏡:35mm 敘事 · 50mm 寫真 · 85mm f/1.4 人像 · 望遠/微距特寫'],
-    ['A-Roll／B-Roll 雙線運鏡', '主述鏡 + 空鏡氛圍,影片自帶導演分鏡'],
-    ['電影級三點布光', '主光塑形 · 輔光柔影 · 輪廓光勾邊,黃金構圖 + 情境色溫(3000–6000K)'],
-    ['日韓秀場級彩妝參數庫', '頂尖彩妝師調校:半霧光底妝 · 骨相修容 · 偏光打亮,妝感直逼伸展台'],
-    ['七階數字人鑄造引擎', '骨相 · 膚質 · 毛流 · 神態,七道工藝煉出會說話的品牌代言人'],
-    ['主體保真鎖核', '商品與臉部 DNA 級鎖定,換景千變、主體不變形,杜絕 AI 錯置'],
-    ['形體一致性引擎', '虛擬試衣零變形,換衣不換人,身形姿態神態完整保留'],
-    ['物理級質感渲染', '毛孔 · 織紋 · 景深都真,徹底杜絕 AI 塑膠油光'],
-    ['模型中立矩陣', '六大頂尖 AI 各司其職,不綁單一引擎、不因任何模型改版而失效'],
-    ['品牌自學習引擎', '記住每一次成效、自動演化新方向,像越用越懂你品牌的 AI 操盤手'],
-    ['億級投放實戰診斷', '操盤數億廣告金的 META 代理商實戰判讀,把冷數據翻成老闆一看就懂的決策'],
-  ];
-  const chips = terms.map(t =>
-    '<span class="term" data-desc="' + t[1].replace(/"/g, '&quot;') + '" onclick="bosShowTerm(this)">' + t[0] + '</span>'
-  ).join('');
-  return '<div class="bos-core">'
-    + '<div class="h">每一張圖、每一支片,背後是一整組 AI 創意團隊在運轉</div>'
-    + '<div class="s">不是單一工具 —— 是一座以品牌靈魂核驅動的多代理人創意中樞 · 點任一項看說明</div>'
-    + '<div class="terms">' + chips + '</div>'
-    + '<div class="bos-termdesc" id="bosTermDesc"></div>'
-    + '</div>';
-}
-
-function bosShowTerm(el) {
-  const box = document.getElementById('bosTermDesc');
-  if (!box) return;
-  const wrap = el.parentElement;
-  const wasOn = el.classList.contains('on');
-  wrap.querySelectorAll('.term.on').forEach(x => x.classList.remove('on'));
-  if (wasOn) { box.classList.remove('show'); box.textContent = ''; return; } // 再點同一顆 = 收起
-  el.classList.add('on');
-  box.textContent = el.getAttribute('data-desc');
-  box.classList.add('show');
-}
-
-function renderBrandosPatent() {
-  const svg =
-    '<svg class="emblem" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">'
-    + '<defs><linearGradient id="bosGold" x1="0" y1="0" x2="1" y2="1">'
-    +   '<stop offset="0" stop-color="#fff0c9"/><stop offset=".5" stop-color="#ffce6b"/><stop offset="1" stop-color="#ff9d4d"/>'
-    + '</linearGradient></defs>'
-    + '<g fill="none" stroke="url(#bosGold)" stroke-linecap="round">'
-    // 月桂左
-    +   '<g transform="translate(15,49)"><path d="M0 0 C-6 -8 -6 -20 1 -28" stroke-width="1.6"/>'
-    +     '<g fill="url(#bosGold)" stroke="none">'
-    +       '<path d="M-1 -4 c-4 -1 -6 -3 -6 -6 c3 0 5 2 6 6z"/>'
-    +       '<path d="M-2 -12 c-4 -1 -6 -3 -6 -6 c3 0 5 2 6 6z"/>'
-    +       '<path d="M-1 -20 c-4 -1 -5 -3 -5 -6 c3 0 4 2 5 6z"/>'
-    +     '</g></g>'
-    // 月桂右(鏡像)
-    +   '<g transform="translate(49,49) scale(-1,1)"><path d="M0 0 C-6 -8 -6 -20 1 -28" stroke-width="1.6"/>'
-    +     '<g fill="url(#bosGold)" stroke="none">'
-    +       '<path d="M-1 -4 c-4 -1 -6 -3 -6 -6 c3 0 5 2 6 6z"/>'
-    +       '<path d="M-2 -12 c-4 -1 -6 -3 -6 -6 c3 0 5 2 6 6z"/>'
-    +       '<path d="M-1 -20 c-4 -1 -5 -3 -5 -6 c3 0 4 2 5 6z"/>'
-    +     '</g></g>'
-    // 外環 + 地球
-    +   '<circle cx="32" cy="31" r="15" stroke-width="2.2"/>'
-    +   '<circle cx="32" cy="31" r="10.5" stroke-width="1.2"/>'
-    +   '<ellipse cx="32" cy="31" rx="4.4" ry="10.5" stroke-width="1.1"/>'
-    +   '<line x1="21.5" y1="31" x2="42.5" y2="31" stroke-width="1.1"/>'
-    +   '<path d="M24 24.5 H40 M24 37.5 H40" stroke-width=".9" stroke-opacity=".65"/>'
-    + '</g>'
-    // 頂部星
-    + '<path d="M32 6 l1.7 3.5 3.8.5 -2.8 2.6 .7 3.8 -3.4 -1.9 -3.4 1.9 .7 -3.8 -2.8 -2.6 3.8 -.5z" fill="url(#bosGold)"/>'
-    + '</svg>';
-  return '<div class="bos-patent"><div class="bos-seal">'
-    + svg
-    + '<div class="tx"><span class="t1">多國專利技術</span>'
-    + '<span class="t2">WIPO · 台灣 · 中國 · <b>PATENT PENDING</b></span></div>'
-    + '</div></div>';
-}
-
-function renderBrandosTagline() {
-  return '<div class="bos-tagline">連菜市場的阿公阿嬤都會用 · 路人點一點就完成 · 提示詞?<b>完全不用</b></div>';
-}
-
-function renderBrandosPlanCards(group, cycle, opts) {
-  opts = opts || {};
-  const selFn = opts.selFn || 'buyPlan';
-  const selectedKey = opts.selectedKey || '';
-  const ctaLabel = opts.ctaLabel || null;
-  const yr = (cycle === 'year');
-  const fmt = n => Number(n).toLocaleString();
-  let html = '<div class="bos-grid">';
-  (BRANDOS_PLANS[group] || []).forEach(p => {
-    if (p.custom) {
-      html += '<div class="bos-card bos-custom">'
-        + '<div class="bos-who">更大規模 / 專屬需求</div>'
-        + '<div class="big">客製方案</div>'
-        + '<p>多品牌中控、超量產能、地端混合運算與專屬導入。<br>依規模一對一報價。</p>'
-        + '<button class="bos-cta ghost" onclick="' + selFn + '(\'custom\')">聯絡我們</button>'
+  function renderPage() {
+    ensureBrandosPlanStyle();
+    const g = _grp, yr = (_cyc === 'year');
+    const grpToggle =
+      '<div class="bos-seg grp">' +
+        '<button class="' + (g === 'small' ? 'on' : '') + '" onclick="setGrp(\'small\')">小品牌</button>' +
+        '<button class="' + (g === 'ent' ? 'on' : '') + '" onclick="setGrp(\'ent\')">企業 · 集團</button>' +
+      '</div>';
+    const cycToggle =
+      '<div class="bos-seg cyc">' +
+        '<button class="' + (!yr ? 'on' : '') + '" onclick="setCyc(\'month\')">月繳</button>' +
+        '<button class="' + (yr ? 'on' : '') + '" onclick="setCyc(\'year\')">年繳 <span class="save">送1個月</span></button>' +
+      '</div>';
+    const note = '<div class="bos-foot">所有方案功能 100% 全開、沒有閹割;分級只在每月產能與算力檔次。<br>所有價格未稅,另計 5% 營業稅 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留</div>';
+    const legalEN = '<div style="text-align:center;font-size:11.5px;color:rgba(255,206,107,.62);letter-spacing:.5px;margin-top:12px;font-weight:600;">Proprietary patent-pending technology — filed under PCT (WIPO), Taiwan IPO &amp; CNIPA.</div>';
+    const _ssoEmail = localStorage.getItem('bs_sso_email') || '';
+    const accountLinks = _ssoEmail
+      ? ''  // 已登入 → 不顯示「登入續約/申請帳號」,避免點了又繞回首頁的死圈
+      : '<div style="text-align:center;margin-top:20px;font-size:12.5px;color:rgba(255,255,255,.55);line-height:2.1;">'
+        + '已經有帳號? <a href="index.html" style="color:#ffce6b;font-weight:700;text-decoration:none;">點這裡登入續約</a>'
+        + '<span style="color:rgba(255,255,255,.25);margin:0 8px;">·</span>'
+        + '第一次來? <a href="onboard.html" style="color:#ffce6b;font-weight:700;text-decoration:none;">點這裡申請開通帳號 →</a>'
         + '</div>';
+    const payBanner = _pendingPlan
+      ? '<div style="background:linear-gradient(135deg,rgba(124,108,255,.18),rgba(255,122,195,.18));border:1px solid rgba(124,108,255,.45);border-radius:14px;padding:16px 20px;margin-bottom:20px;text-align:center;">'
+        + '<div style="font-size:15px;font-weight:900;color:#fff;">✅ 您的品牌已通過審核!</div>'
+        + '<div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:5px;">下方已幫您選好當初申請的方案,完成付款即可開通系統。</div>'
+        + '</div>'
+      : '';
+    document.getElementById('planRoot').innerHTML =
+      '<div class="bos-plans">' +
+        payBanner +
+        renderBrandosHeroStat() +
+        renderBrandosTagline() +
+        renderBrandosCore() +
+        '<div class="bos-toggles">' + grpToggle + cycToggle + '</div>' +
+        renderBrandosPlanCards(g, _cyc, { selFn: 'buyPlan', selectedKey: _pendingPlan, ctaLabel: p => (_pendingPlan === p.key ? '立即付款開通' : '選這個方案') }) +
+        accountLinks +
+        note +
+        legalEN +
+      '</div>';
+  }
+  function setGrp(x) { _grp = x; renderPage(); }
+  function setCyc(x) { _cyc = x; renderPage(); }
+
+  // ── 購買 ──
+  function buyPlan(k) {
+    const email = localStorage.getItem('bs_sso_email') || '';
+    if (k === 'custom') {
+      document.getElementById('planRoot').innerHTML =
+        '<div style="text-align:center;max-width:460px;margin:0 auto;padding:30px 0;">' +
+          '<div style="font-size:38px;"></div>' +
+          '<div style="font-size:20px;font-weight:900;color:#fff;margin-top:10px;">客製方案 · 一對一報價</div>' +
+          '<div style="font-size:14px;color:rgba(255,255,255,0.6);margin:12px 0 20px;line-height:1.8;">多品牌中控、超量產能、地端混合運算與專屬導入。<br>留下需求,我們依規模為你規劃。</div>' +
+          '<a href="mailto:admin@raby.com.tw?subject=Brand%20OS%20客製方案諮詢" style="display:block;text-decoration:none;width:100%;padding:15px;border-radius:12px;background:linear-gradient(135deg,#7c6cff,#ff7ac3);color:#fff;font-size:15px;font-weight:800;">admin@raby.com.tw</a>' +
+          '<button onclick="renderPage()" style="width:100%;margin-top:14px;padding:13px;border:none;border-radius:12px;background:transparent;color:rgba(255,255,255,0.45);font-size:14px;cursor:pointer;">← 返回方案</button>' +
+        '</div>';
       return;
     }
-    const hot = !!p.hot, top = !!p.top, sel = (selectedKey === p.key);
-    const monthPrice = p.promo > 0 ? p.promo : p.price;
-    const show = yr ? p.price * 12 : monthPrice;
-    const pct = Math.max(8, Math.round(p.imgs / BRANDOS_PLAN_MAX * 100));
-    const badge = hot ? '<div class="bos-badge hot">最多人選</div>'
-                : top ? '<div class="bos-badge top">頂規</div>' : '';
-    const cls = (hot ? ' hot' : top ? ' top' : '') + (sel ? ' sel' : '');
-    const promo = (!yr && p.promo > 0) ? '<span class="bos-promo num">NT$' + fmt(p.price) + '</span>' : '';
-    const yhint = yr ? '<div class="bos-yhint">付 12 個月 · 開通 13 個月</div>' : '';
-    const cta = ctaLabel ? ctaLabel(p) : ('選 ' + p.name + ' 方案');
-    html += '<div class="bos-card' + cls + '">'
-      + badge
-      + '<div class="bos-who">' + p.who + '</div>'
-      + '<div class="bos-pname">' + p.name + '</div>'
-      + '<div class="bos-replbl">這個方案 ≈</div>'
-      + '<div class="bos-rep">取代 ' + p.rep + '</div>'
-      + '<div class="bos-bar"><i style="width:' + pct + '%"></i></div>'
-      + '<div class="bos-spec">'
-        + '<div class="r"><span class="k">算圖等級</span><span class="vv grade">' + p.grade + '</span></div>'
-        + '<div class="r"><span class="k">運算檔次</span><span class="vv">' + p.comp + '</span></div>'
-        + '<div class="r"><span class="k">每月產能</span><span class="vv">約 <b class="num">' + fmt(p.imgs) + '</b> 張圖 · <b class="num">' + fmt(p.vids) + '</b> 支片</span></div>'
-        + '<div class="r"><span class="k">KOL數字人</span><span class="vv">' + p.kol + '</span></div>'
-      + '</div>'
-      + '<div class="bos-meta">'
-        + '<div class="bos-mrow"><span>每月點數</span><b class="num">' + fmt(p.bits) + ' 點</b></div>'
-        + '<div class="bos-price">' + promo + '<span class="amt num">NT$' + fmt(show) + '</span><span class="per num"> / ' + (yr ? '年' : '月') + '</span></div>'
-        + yhint
-        + '<button class="bos-cta" onclick="' + selFn + '(\'' + p.key + '\')">' + cta + '</button>'
-      + '</div>'
-      + '</div>';
-  });
-  html += '</div>';
-  return html;
-}
+    if (!email) {
+      // 未登入 = 新客 / 朋友 → 導去品牌入駐書申請,帶著選的方案(desiredPlan)
+      location.href = 'onboard.html?plan=' + encodeURIComponent(k);
+      return;
+    }
+    const p = findBrandosPlan(k); if (!p) return;
+    const yr = (_cyc === 'year');
+    const monthPrice = (p.promo > 0) ? p.promo : p.price;
+    const amount = yr ? (p.price * 12) : monthPrice;
+    const cycleText = yr ? '年繳（開通13個月）' : '月繳';
+    const bs = 'width:100%;margin-top:10px;padding:15px;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;color:#fff;';
+    document.getElementById('planRoot').innerHTML =
+      '<div style="text-align:center;max-width:450px;margin:0 auto;padding:20px 0;">' +
+        '<div style="font-size:20px;font-weight:900;color:#fff;">' + p.name + ' 方案 · ' + cycleText + '</div>' +
+        '<div style="font-size:14px;color:rgba(255,255,255,0.6);margin:8px 0 4px;">每月 ' + p.bits.toLocaleString() + ' 點 ／ NT$' + amount.toLocaleString() + (yr ? '（年）' : '（月）') + '</div>' +
+        '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:20px;">未稅,另計 5% 營業稅</div>' +
+        '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
+        '<button onclick="buyPlanEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">線上刷卡 / ATM（即時開通）</button>' +
+        '<button onclick="buyPlanManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">銀行轉帳（人工開通）</button>' +
+        '<button onclick="renderPage()" style="' + bs + 'background:transparent;color:rgba(255,255,255,0.45);font-weight:500;margin-top:14px;">← 返回方案</button>' +
+      '</div>';
+  }
+
+  function buyPlanEcpay(k) {
+    const email = localStorage.getItem('bs_sso_email') || '';
+    if (!email) { alert('請先登入再購買'); return; }
+    const root = document.getElementById('planRoot');
+    if (window.showSpaceLoader) showSpaceLoader(root, '正在建立付款'); else root.innerHTML = '<div style="text-align:center;padding:60px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
+    fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_cyc}&method=ecpay`)
+      .then(r => r.json())
+      .then(j => {
+        if (!j.ok) { alert('下單失敗:' + (j.error || '')); renderPage(); return; }
+        return fetch(CF_WORKER_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'ecpay_create', password: GAS_PASSWORD,
+            orderType: 'sub',
+            orderId: j.orderId, amount: j.amount,
+            itemName: `${j.planName}方案 ${j.cycle === 'year' ? '年繳' : '月繳'}`,
+            tradeDesc: 'Brand OS 訂閱方案',
+            clientBackURL: location.origin + location.pathname + '?paid=' + encodeURIComponent(j.orderId)
+          })
+        }).then(r => r.json()).then(e => {
+          if (!e.ok) { alert('建立付款失敗:' + (e.error || '')); renderPage(); return; }
+          const form = document.createElement('form');
+          form.method = 'POST'; form.action = e.endpoint;
+          for (const key in e.fields) {
+            const inp = document.createElement('input');
+            inp.type = 'hidden'; inp.name = key; inp.value = e.fields[key];
+            form.appendChild(inp);
+          }
+          document.body.appendChild(form); form.submit();
+        });
+      })
+      .catch(() => { alert('連線錯誤,請重試'); renderPage(); });
+  }
+
+  function buyPlanManual(k) {
+    const email = localStorage.getItem('bs_sso_email') || '';
+    if (!email) { alert('請先登入再購買'); return; }
+    const p = findBrandosPlan(k); if (!p) return;
+    const yr = (_cyc === 'year');
+    const monthPrice = (p.promo > 0) ? p.promo : p.price;
+    const amount = yr ? (p.price * 12) : monthPrice;
+    if (!confirm(`確認訂閱「${p.name} 方案 · ${yr ? '年繳' : '月繳'}」?\n\n每月 ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${yr ? '（年）' : '（月）'}（未稅）\n\n下單後依匯款資訊轉帳,我們對帳後為你開通。`)) return;
+    fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_cyc}`)
+      .then(r => r.json())
+      .then(j => { if (!j.ok) { alert('下單失敗:' + (j.error || '')); return; } showSubOrderInfo(j); })
+      .catch(() => alert('連線錯誤,請重試'));
+  }
+
+  function showSubOrderInfo(o) {
+    const b = o.bank || {};
+    const cycleText = (o.cycle === 'year') ? '年繳（開通13個月）' : '月繳';
+    document.getElementById('planRoot').innerHTML = `
+      <div style="max-width:480px;margin:0 auto;padding:14px 0;">
+        <div style="text-align:center;margin-bottom:18px;">
+          <div style="font-size:36px;">✅</div>
+          <div style="font-size:17px;font-weight:900;color:#fff;margin-top:6px;">訂閱單已建立</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:3px;">請依下方資訊匯款,我們對帳後為你開通 ${o.planName} 方案</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,190,90,0.25);border-radius:12px;padding:18px 20px;font-size:13px;line-height:2.1;color:rgba(255,255,255,0.85);">
+          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">訂單編號</span><b style="font-family:monospace">${o.orderId}</b></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">方案</span><b>${o.planName} · ${cycleText}</b></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">每月配點</span><b>${Number(o.monthlyBits).toLocaleString()} 點</b></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">應付金額</span><b style="color:#ffce6b">NT$${Number(o.amount).toLocaleString()}（未稅）</b></div>
+          <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">銀行</span><b>${b.bankName || ''} ${b.bankCode || ''}</b></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">帳號</span><b style="font-family:monospace">${b.account || ''}</b></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">戶名</span><b>${b.accountName || ''}</b></div>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:12px;line-height:1.7;">※ 匯款時請於備註填「訂單編號」方便對帳。對帳開通後,方案點數會立即配發。</div>
+        <div style="margin-top:14px;background:rgba(124,108,255,0.08);border:1px solid rgba(124,108,255,0.3);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:12.5px;font-weight:800;color:#fff;margin-bottom:8px;">匯款完成後,回報您的帳號後五碼</div>
+          <div style="display:flex;gap:8px;">
+            <input id="last5Input" maxlength="5" inputmode="numeric" placeholder="帳號後 5 碼" style="flex:1;padding:10px 12px;border-radius:9px;border:1px solid rgba(255,255,255,0.18);background:rgba(0,0,0,0.3);color:#fff;font-family:monospace;font-size:14px;letter-spacing:2px;">
+            <button onclick="reportLast5('${o.orderId}')" style="padding:10px 18px;border:none;border-radius:9px;background:linear-gradient(135deg,#7c6cff,#ff7ac3);color:#fff;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap;">回報</button>
+          </div>
+          <div id="last5Msg" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:7px;line-height:1.6;">填了我們對帳更快、點數開通更即時。</div>
+        </div>
+        <button onclick="renderPage()" style="width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#ffb347,#ff8c42);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">完成 · 回方案</button>
+      </div>`;
+  }
+
+  function reportLast5(orderId) {
+    const el = document.getElementById('last5Input');
+    const msg = document.getElementById('last5Msg');
+    const v = (el.value || '').replace(/\D/g, '').slice(-5);
+    if (v.length < 5) { msg.textContent = '請輸入正確的後 5 碼(5 位數字)'; msg.style.color = '#ff9d9d'; return; }
+    msg.textContent = '回報中…'; msg.style.color = 'rgba(255,255,255,0.5)';
+    fetch(`${GAS_URL}?action=reportTransferLast5&password=${GAS_PASSWORD}&orderId=${encodeURIComponent(orderId)}&last5=${v}`)
+      .then(r => r.json())
+      .then(j => {
+        if (j.ok) { msg.textContent = '✅ 已收到後五碼,我們會盡快對帳開通'; msg.style.color = '#8effc0'; el.disabled = true; }
+        else { msg.textContent = '回報失敗:' + (j.error || ''); msg.style.color = '#ff9d9d'; }
+      })
+      .catch(() => { msg.textContent = '連線錯誤,請重試'; msg.style.color = '#ff9d9d'; });
+  }
+
+  // ── ECPay 導回提示(對齊 index)──
+  (function () {
+    const m = /[?&]paid=([^&]+)/.exec(location.search);
+    if (m) {
+      const email = localStorage.getItem('bs_sso_email') || '';
+      if (email) { fetch(`${GAS_URL}?action=clearPendingPayment&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`).catch(() => {}); }
+      setTimeout(function () {
+        alert('✅ 付款完成!方案點數會在幾秒內自動配發。\n\n訂單編號:' + decodeURIComponent(m[1]));
+      }, 300);
+      history.replaceState(null, '', location.pathname);
+    }
+  })();
+
+  // ── 待付款:有就預選方案 + 橫幅 ──
+  (function initPending() {
+    const email = localStorage.getItem('bs_sso_email') || '';
+    renderPage();                 // 🆕 先立刻畫:方案卡片資料全在本地,不必等 GAS → 秒出內容
+    if (!email) return;
+    // 背景查待付款,有才補橫幅+預選(不擋畫面)
+    fetch(`${GAS_URL}?action=getPendingPayment&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`)
+      .then(r => r.json())
+      .then(j => {
+        if (j && j.ok && j.pending && j.desiredPlan) {
+          _pendingPlan = j.desiredPlan;
+          _grp = ['ent', 'flag', 'custom'].includes(_pendingPlan) ? 'ent' : 'small';
+          renderPage();           // 只有真的有待付款才重畫
+        }
+      })
+      .catch(() => {});
+  })();
+</script>
+
+  <footer style="max-width:880px;margin:56px auto 0;padding:28px 24px 48px;border-top:1px solid rgba(255,255,255,0.08);text-align:center;font-family:'Noto Sans TC',-apple-system,sans-serif;">
+    <div style="font-size:12.5px;color:#9a9a9a;margin-bottom:12px;letter-spacing:.3px;">
+      <a href="privacy.html" target="_blank" style="color:#5BC8C8;text-decoration:none;">隱私權政策</a>
+      &nbsp;·&nbsp;
+      <a href="terms.html" target="_blank" style="color:#5BC8C8;text-decoration:none;">服務條款</a>
+      &nbsp;·&nbsp;
+      <a href="https://raby.com.tw" target="_blank" style="color:#5BC8C8;text-decoration:none;">RABY 官網</a>
+      &nbsp;·&nbsp;
+      <a href="mailto:admin@raby.com.tw" style="color:#5BC8C8;text-decoration:none;">聯絡我們</a>
+    </div>
+    <div style="font-size:11.5px;color:#666;letter-spacing:0.5px;">© 2026 創捷國際貿易股份有限公司 · Brand OS</div>
+  </footer>
+</body>
+</html>
