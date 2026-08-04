@@ -67,7 +67,7 @@
       + '    </select>'
       + '  </div>'
       + '  <div id="ks-cost" style="font-size:11px;color:#9a9ab0;"></div>'
-      + '  <button id="ks-go" class="btn btn-primary">🎬 生成接片</button>'
+      + '  <button id="ks-go" class="btn btn-primary">生成接片</button>'
       + '  <div id="ks-status" style="font-size:12px;color:#8fd9b8;white-space:pre-wrap;"></div>'
       + '  <div id="ks-result"></div>'
       + '</div>';
@@ -193,16 +193,16 @@
         onProgress: function (m) { statusEl.textContent = '▶ ' + m; },
         onSegmentDone: function (idx) { statusEl.textContent = '✅ 第 ' + (idx + 1) + ' / ' + nSeg + ' 段完成'; },
       });
-      statusEl.textContent = '🎬 接片完成！';
+      statusEl.textContent = '接片完成！';
       resultEl.innerHTML =
         '<video src="' + result.finalUrl + '" controls autoplay loop style="width:100%;border-radius:10px;margin-top:10px;background:#000;"></video>'
         + '<div style="margin-top:6px;"><a href="' + result.finalUrl + '" target="_blank" style="color:#a78bfa;font-size:12px;word-break:break-all;">↗ 開新分頁 / 下載</a></div>';
-      toastFn('🎬 接片完成！', 'success');
+      toastFn('接片完成！', 'success');
     } catch (e) {
       statusEl.textContent = '❌ ' + e.message;
       toastFn('接片失敗：' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '🎬 生成接片';
+      btn.disabled = false; btn.textContent = '生成接片';
     }
   }
 
