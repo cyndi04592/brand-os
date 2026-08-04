@@ -667,8 +667,7 @@ function buildPanelHTML() {
   return `
     <div class="kai-panel" id="kai-panel">
       <div class="kai-head">
-        <span class="kai-title">AI KOL 人像生成</span>
-        <span class="kai-badge">Tab 3 · Phase 1</span>
+        <span class="kai-title">AI 生成 KOL 角色</span>
       </div>
 
       <div class="kai-row-persona">
