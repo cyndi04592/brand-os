@@ -920,20 +920,24 @@ async function syncBrandAndLoadPersonas(brandId) {
 
   if (!brandId) {
     personaSel.innerHTML = '<option value="">— 先選品牌 —</option>';
+    personaSel.style.color = '';
     updateFolderHint();
     return;
   }
 
   personaSel.innerHTML = '<option value="">載入中...</option>';
+  personaSel.style.color = '';
 
   try {
     const res = await gasGet('getKolPersonas', { brandId });
     S.personas = res.personas || [];
 
     if (S.personas.length === 0) {
-      personaSel.innerHTML = '<option value="">尚未創建KOL</option>';
+      personaSel.innerHTML = '<option value="" style="color:#ff6b6b">尚未創建KOL</option>';
+      personaSel.style.color = '#ff6b6b';   // 紅字警示:這是待辦事項,不是普通選項
     } else {
-      personaSel.innerHTML = '<option value="">— 選擇 persona —</option>' +
+      personaSel.style.color = '';
+      personaSel.innerHTML = '<option value="">— 選擇角色 —</option>' +
         S.personas.map(p =>
           `<option value="${escapeHtml(p.persona_name)}">${escapeHtml(p.persona_name)}</option>`
         ).join('');
@@ -941,7 +945,8 @@ async function syncBrandAndLoadPersonas(brandId) {
     updateFolderHint();
   } catch (e) {
     console.error('[kai] loadPersonas failed:', e);
-    personaSel.innerHTML = '<option value="">載入失敗</option>';
+    personaSel.innerHTML = '<option value="" style="color:#ff6b6b">載入失敗</option>';
+    personaSel.style.color = '#ff6b6b';
   }
 }
 
@@ -969,13 +974,15 @@ function updateFolderHint() {
   const brand = S.brands.find(b => b.id === brandId);
   const brandName = brand?.name || brandId || '(未選)';
 
-  if (!brandId) {
-    hint.textContent = '將存到:(請先選品牌)';
-  } else if (!persona) {
-    hint.textContent = '將存到:/KOL/' + brandName + '/(請選或新增 persona)';
-  } else {
-    hint.textContent = '將存到:/KOL/' + brandName + '/' + persona + '/';
+  // 還沒選到角色 → 整條不顯示(路徑對客戶沒意義,而且會露出內部術語)
+  //   選好角色後才顯示,那時它是有用的資訊:檔案會存到哪。
+  if (!brandId || !persona) {
+    hint.style.display = 'none';
+    hint.textContent = '';
+    return;
   }
+  hint.style.display = '';
+  hint.textContent = '將存到:/KOL/' + brandName + '/' + persona + '/';
 }
 
 // ── 新 Persona Modal ──────────────────────────────────────
