@@ -1,5 +1,27 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-cinematographer.js · v5.26
+//  kol-cinematographer.js · v5.28
+//
+//  v5.28 變更(抓拍感六槓桿補完·⑤光不完美 ⑥保留微光):
+//   • RA 實測證據:2026-08-02 那支「像手機藏鏡人拍的」測試片,跑的是
+//     跟現在完全相同的 code,她只在「劇情/情境」欄貼了一段文字,
+//     裡面就含「窗光從單側灑進來一邊臉稍暗」+「自然膚質保留一點點光澤」
+//     —— 結果不油、不烤肉紋。
+//     ★結論:⑤⑥ 早就跟 REALISM_BASE 的 gentle low-contrast 同時存在過,
+//       不互斥、不會變油。所以可以進程式,客戶不必手打。
+//   • 用法上刻意「只加不減」:REALISM_BASE 一字不改(防油光/防烤肉紋的
+//     既有措辭全部保留),只把 RA 驗證過的那兩句直譯加進 CANDID_FRAME。
+//     不自己另外發明講法 —— 措辭本身就是被驗證過的資產。
+//
+//  v5.27 變更(抓拍感·手持不完美):
+//   • 新增 CANDID_FRAME:把「手持感」從抽象形容詞升級成具體指令。
+//     原本 REALISM_BASE 只寫 handheld iPhone vlog aesthetic / candid
+//     unscripted moments —— 那是「形容詞」,引擎不會真的把畫面拍歪,
+//     結果就是完美置中、腳架級穩定 = 一眼 AI 廣告。
+//     這條給的是可執行的指令:略偏中心、輕微手持漂移、不刻意對稱。
+//   • ⚠️ 只加「取景」層,絕不碰膚質/光線。防油光的錨在 kol-stitch v6.20,
+//     不在這支(v5.26 為打 422 已把膚質句拔掉)——別在這裡重複。
+//   • 🔌 保險絲 window.KOL_CANDID:預設 true;設 false 立刻回到工整取景
+//     (例如給不懂「刻意拍歪」的審核方看時)。
 //  
 //  📷 攝影師 — 鏡頭、自然光、運鏡、電影寫實
 //  
@@ -47,6 +69,18 @@
 
   // 🎯 攝影風格基底 — 管「人/膚質/不修圖」(靈魂留、干擾拔)
   //   v5.25:尾段補手機色彩性格(warm faintly oversaturated)+ no studio polish
+  // 🤳 抓拍感·手持不完美(v5.27)— 只管「取景」,不含任何膚質/光線詞
+  //   刻意極簡:prompt 長度是稀缺資源(v5.26 才為 422 減重),
+  //   所以只留三個引擎真的吃得動的具體指令,不寫抽象形容詞。
+  //  ⑤ 光不完美 + ⑥ 保留微光 一起放進來(v5.28)——
+  //    兩句都是 RA 2026-08-02 那支成功測試片用過的原話直譯,不是新發明。
+  //    ⚠️ 絕不寫 oily / specular / shine highlight 這類字,那會把防油光推翻;
+  //      「faint natural sheen」是 UGC 圈驗證過的講法:留真皮膚的微光澤,
+  //      不是留油光。全平面霧面反而更假(RA 鐵律:只拔油光·別把光全消)。
+  const CANDID_FRAME = 'framing slightly off-center, tiny handheld drift, not deliberately symmetrical'
+    + ', window light from one side only so one side of her face falls slightly darker, not evenly lit'
+    + ', natural skin texture keeping a faint natural sheen, visible pores, small imperfections';
+
   const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, soft natural subject edges that blend into the scene, no hard cutout outline, no over-sharpened subject edge, not a pasted-on composited look, gentle low-contrast natural lighting, warm slightly saturated phone-camera color, no studio polish, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
@@ -112,6 +146,11 @@
       : 'Taiwanese Mandarin';
     parts.push(REALISM_BASE.replace('Taiwanese Mandarin accent', _accent));
 
+    // 🤳 抓拍感取景(v5.27)· 保險絲 window.KOL_CANDID(未設=開)
+    //   關掉的方法:Console 打 window.KOL_CANDID = false,或改這支預設值。
+    const _candid = (typeof window === 'undefined') || (window.KOL_CANDID !== false);
+    if (_candid) parts.push(CANDID_FRAME);
+
     // 🎬 場景落地錨(一定加)— ⑤ 打背景假假的
     parts.push(SCENE_REALISM);
 
@@ -136,6 +175,7 @@
   // ─── 導出 + 自動向總導演註冊 ─────────────────────────
   window.KolCinematographer = {
     REALISM_BASE,
+    CANDID_FRAME,
     SCENE_REALISM,
     AUDIO_REALISM,
     CAMERA_MOVEMENTS,
