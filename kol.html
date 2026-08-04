@@ -1999,7 +1999,24 @@ async function gasGet(action, params = {}) {
   return gasFetch(() => fetch(`${GAS_URL}?${qs}`), action);
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  寫入改走 Worker(第 C 期:一張表一張表交棒 D1)
+//  只有清單裡的動作改道,其餘照舊直打 GAS —— 所以一次只影響一張表,
+//  出事範圍看得見。Worker 那邊會先寫 D1(正本)再背景補寫 GAS(備份)。
+//  好處:① 存完立刻生效(不必等每 10 分鐘的同步)
+//        ② GAS 掛掉時還存得了
+// ═══════════════════════════════════════════════════════════════
+const WRITE_VIA_WORKER = { saveKolPersona: 1, deleteKolPersona: 1 };
+
 async function gasPost(action, extra = {}) {
+  if (WRITE_VIA_WORKER[action]) {
+    const r = await fetch(WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: PASSWORD, action: 'gas_write', gasAction: action, payload: extra }),
+    });
+    return r.json();
+  }
   return gasFetch(() => fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
