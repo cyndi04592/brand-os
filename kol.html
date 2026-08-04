@@ -58,6 +58,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .vision-col.future.active{box-shadow:inset 0 0 0 1.5px rgba(250,109,155,.6);}
 .vision-col.disabled{opacity:.4;cursor:not-allowed;}
 .vision-col.disabled:hover{transform:none;background:transparent;}
+.vision-col.step-locked{opacity:.45;cursor:not-allowed;}
+.vision-col.step-locked:hover{transform:none;background:transparent;}
 .vision-stage{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
 .vision-col.now .vision-stage{color:var(--accent3);}
 .vision-col.next .vision-stage{color:var(--accent);}
@@ -166,11 +168,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 /* 場景 */
 .scene-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;}
 @media(max-width:500px){.scene-grid{grid-template-columns:repeat(2,1fr);}}
-.scene-card{border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);overflow:hidden;cursor:pointer;transition:all .2s;}
-.scene-card:hover{border-color:rgba(124,109,250,.5);}
-.scene-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,109,250,.2);}
-.scene-thumb{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:20px;}
-.scene-info{padding:6px 8px;font-size:11px;color:var(--text-dim);}
+.scene-card{position:relative;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);padding:10px 22px 10px 13px;cursor:pointer;transition:all .2s;overflow:hidden;}
+.scene-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--sc,var(--accent));opacity:.5;transition:opacity .2s;}
+.scene-card:hover{border-color:rgba(124,109,250,.5);transform:translateY(-1px);}
+.scene-card:hover::before{opacity:.85;}
+.scene-card.selected{border-color:var(--accent);background:linear-gradient(135deg,rgba(124,109,250,.15) 0%,rgba(124,109,250,.03) 100%);}
+.scene-card.selected::before{opacity:1;}
+.scene-card.selected::after{content:'✓';position:absolute;top:7px;right:7px;width:16px;height:16px;background:var(--accent);color:#fff;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.scene-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;}
+.scene-desc{margin-top:3px;font-size:10.5px;color:var(--text-dim);line-height:1.4;}
 
 /* 表單 */
 .form-group{display:flex;flex-direction:column;gap:5px;margin-top:12px;}
@@ -667,17 +673,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="vision-banner">
     <div class="vision-card">
       <div class="vision-col now active" data-mode="talking">
-        <div class="vision-stage">STEP 1 <span class="vision-badge live">口播</span></div>
-        <div class="vision-title">單張照片口播</div>
-        <div class="vision-desc">建立品牌專屬 KOL → AI 生成真人口播短影音,穩定可直接交客戶上場。</div>
+        <div class="vision-stage">STEP 1 <span class="vision-badge live">從這裡開始</span></div>
+        <div class="vision-title">建立角色 + 口播</div>
+        <div class="vision-desc">所有 KOL 角色都在這裡建立 — 從 Google Drive 選照片 → 建立品牌專屬角色 → AI 生成真人口播短影音。<strong style="color:var(--accent3)">STEP 2、3 都要先在這裡建好角色。</strong></div>
       </div>
       <div class="vision-col next" data-mode="cinematic">
-        <div class="vision-stage">STEP 2 <span class="vision-badge live">電影鏡頭</span></div>
+        <div class="vision-stage">STEP 2 <span class="vision-badge live" data-badge="live">電影鏡頭</span><span class="vision-badge locked" data-badge="lock" style="display:none">需先建立角色</span></div>
         <div class="vision-title">Avatar 電影鏡頭</div>
         <div class="vision-desc"> KOL 照片 + 商品照 → AI 產出一支電影感廣告短片,含環境走動與自然運鏡,適合單支主打。</div>
       </div>
       <div class="vision-col future" data-mode="system">
-        <div class="vision-stage">STEP 3 <span class="vision-badge live">經營系統</span></div>
+        <div class="vision-stage">STEP 3 <span class="vision-badge live" data-badge="live">經營系統</span><span class="vision-badge locked" data-badge="lock" style="display:none">需先建立角色</span></div>
         <div class="vision-title">KOL 自動經營系統</div>
         <div class="vision-desc">Brand OS 當你的 KOL 經紀人,每天自動產出短影音、排程發各大社群,持續把人流導回你的網站。</div>
       </div>
@@ -770,10 +776,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
         <div class="form-label">影片場景</div>
         <div class="scene-grid">
-          <div class="scene-card selected" data-scene="product"><div class="scene-thumb" style="background:linear-gradient(135deg,#1a1a2e,#2a2a4e)"></div><div class="scene-info">產品開箱</div></div>
-          <div class="scene-card" data-scene="review"><div class="scene-thumb" style="background:linear-gradient(135deg,#1a2e1a,#2a4e2a)">⭐</div><div class="scene-info">使用心得</div></div>
-          <div class="scene-card" data-scene="promo"><div class="scene-thumb" style="background:linear-gradient(135deg,#2e1a1a,#4e2a2a)"></div><div class="scene-info">限時優惠</div></div>
-          <div class="scene-card" data-scene="edu"><div class="scene-thumb" style="background:linear-gradient(135deg,#1a2e2e,#2a4e4e)"></div><div class="scene-info">教育知識</div></div>
+          <div class="scene-card selected" data-scene="product" style="--sc:#7c6dfa"><div class="scene-name">產品開箱</div><div class="scene-desc">拆封 → 展示 → 賣點</div></div>
+          <div class="scene-card" data-scene="review" style="--sc:#6dfac2"><div class="scene-name">使用心得</div><div class="scene-desc">真實體驗分享</div></div>
+          <div class="scene-card" data-scene="promo" style="--sc:#ff6b6b"><div class="scene-name">限時優惠</div><div class="scene-desc">促銷 · 倒數</div></div>
+          <div class="scene-card" data-scene="edu" style="--sc:#4dd0e1"><div class="scene-name">教育知識</div><div class="scene-desc">知識型說明</div></div>
         </div>
 
         <div class="divider"></div>
@@ -2073,11 +2079,16 @@ window.applyPersonaVoice = applyPersonaVoice;
         toast('即將開放,敬請期待', 'warn');
         return;
       }
+      if (col.classList.contains('step-locked')) {
+        toast('請先在 STEP 1 建立 KOL 角色,才能使用 STEP 2 / STEP 3', 'warn');
+        return;
+      }
       const mode = col.dataset.mode;
       if (mode === S.currentMode) return;
       switchMode(mode);
     });
   });
+  updateStepLocks();   // 開場預設上鎖,等 loadKolList 確認有角色才解
 
   // 場景卡綁定(口播用)
   document.querySelectorAll('.scene-card').forEach(c => {
@@ -2191,6 +2202,28 @@ function switchMode(mode) {
   }
 }
 
+// ─── STEP2 / STEP3 角色門檻鎖 ──────────────────────────────
+// 判斷依據跟 loadKolList 完全一致:S.personas 裡有 talking_photo_id 的才算「已建立角色」
+function hasBoundKol() {
+  return (S.personas || []).some(p => p.talking_photo_id && String(p.talking_photo_id).trim());
+}
+
+function updateStepLocks() {
+  const locked = !S.currentBrandId || !hasBoundKol();
+  ['cinematic', 'system'].forEach(m => {
+    const col = document.querySelector(`.vision-col[data-mode="${m}"]`);
+    if (!col) return;
+    col.classList.toggle('step-locked', locked);
+    const live = col.querySelector('[data-badge="live"]');
+    const lock = col.querySelector('[data-badge="lock"]');
+    if (live) live.style.display = locked ? 'none' : '';
+    if (lock) lock.style.display = locked ? '' : 'none';
+  });
+  // 已經站在被鎖的分頁上 → 靜默退回 STEP 1(不彈 toast,免得切品牌時一直跳)
+  if (locked && S.currentMode !== 'talking') switchMode('talking');
+}
+window.updateStepLocks = updateStepLocks;
+
 // ─── 載入品牌清單 ──────────────────────────────────────────
 async function loadBrands() {
   try {
@@ -2297,6 +2330,7 @@ async function onBrandChange() {
     document.getElementById('no-brand-panel').style.display = '';
     document.getElementById('main-layout-talking').style.display = 'none';
     document.getElementById('main-layout-cinematic').style.display = 'none';
+    updateStepLocks();
     return;
   }
 
@@ -2376,6 +2410,8 @@ async function loadKolList(brandId, force) {
   listEl.innerHTML = '<div class="kol-empty">載入中…</div>';
 
   const boundPersonas = S.personas.filter(p => p.talking_photo_id && String(p.talking_photo_id).trim());
+
+  updateStepLocks();   // personas 已是最新 → 這裡才是唯一權威的上鎖時機
 
   if (countEl) {
     if (boundPersonas.length > 0) {
