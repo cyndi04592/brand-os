@@ -673,7 +673,7 @@ function buildPanelHTML() {
 
       <div class="kai-row-persona">
         <div class="kai-field">
-          <label class="kai-label">目標 KOL (Persona)</label>
+          <label class="kai-label">創建專屬 KOL 角色</label>
           <select class="kai-select" id="kai-persona">
             <option value="">— 先選品牌 —</option>
           </select>
@@ -711,7 +711,7 @@ function buildPanelHTML() {
 
       <div class="kai-row">
         <div class="kai-field">
-          <label class="kai-label">光源場景</label>
+          <label class="kai-label">佈光氛圍</label>
           <select class="kai-select kai-param" data-k="lighting">${ligOpts}</select>
         </div>
         <div class="kai-field">
@@ -722,7 +722,7 @@ function buildPanelHTML() {
 
       <div class="kai-row">
         <div class="kai-field">
-          <label class="kai-label">場景背景</label>
+          <label class="kai-label">角色場域</label>
           <select class="kai-select kai-param" data-k="scene">${scnOpts}</select>
         </div>
         <div class="kai-field"></div>
