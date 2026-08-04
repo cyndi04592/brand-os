@@ -31,6 +31,7 @@
     storywriter: null,
     brandSoul: null,
     environment: null,
+    colorboard: null,   // kol-colorboard.js 會自行報到;名冊沒這個 key 會被 register 擋掉並噴「未知角色」
   };
 
   function register(role, module) {
