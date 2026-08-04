@@ -170,7 +170,7 @@ const PRODUCT_SCENES = {
 const LAYOUT_TEMPLATES = {
   // 1. 雜誌封面型 (圖 2 BREW / 巧福串圖-05 致敬)
   magazine_cover: {
-    label: '📖 雜誌封面型',
+    label: '雜誌封面型',
     desc: '人物+商品+大字標題+引言區,封面雜誌排版',
     composition: `Editorial magazine cover composition layout:
 - Top-left corner: large display title in elegant typography (the headline)
@@ -186,7 +186,7 @@ Reference aesthetic: Japanese lifestyle magazines (BRUTUS, &Premium, POPEYE), Ki
 
   // 2. 規格分解型 (圖 3 COCONUT MILK / 巧福串圖-04 編號功能 / 巧福串圖-03 規格頁)
   spec_breakdown: {
-    label: '📐 規格分解型',
+    label: '規格分解型',
     desc: '商品+功能編號圈+規格說明,科普展示',
     composition: `Product spec breakdown layout:
 - Center: the product placed prominently as hero
@@ -201,7 +201,7 @@ Reference aesthetic: Japanese food/appliance ad spreads (UCC, Muji), Tesla spec 
 
   // 3. 情境寫真型 (圖 4 椰子場景 / 圖 7 木頭+植物 / 巧福串圖-05 沙發場景)
   scene_lifestyle: {
-    label: '🌿 情境寫真型',
+    label: '情境寫真型',
     desc: '商品+情境道具+人物互動,生活場景',
     composition: `Lifestyle scene photography layout:
 - Product placed naturally within a curated everyday scene
@@ -217,7 +217,7 @@ Reference aesthetic: Kinfolk lifestyle photography, Muji homeware catalogs, Japa
 
   // 4. 戲劇飛濺型 (圖 5 椰子飛濺 / 圖 3 上半部材料噴飛)
   dramatic_splash: {
-    label: '💥 戲劇飛濺型',
+    label: '戲劇飛濺型',
     desc: '商品懸浮+材料飛濺,動態爆發力',
     composition: `Dramatic splash hero photography layout:
 - Product is the absolute center hero, visually prominent and razor-sharp
@@ -234,7 +234,7 @@ Reference aesthetic: Pinterest food photography hero shots, premium beverage com
 
   // 5. 極簡海報型 (圖 6 Creamy Layer / 巧福串圖-05 大字版)
   minimal_poster: {
-    label: '✨ 極簡海報型',
+    label: '極簡海報型',
     desc: '商品大特寫+大字標題+極簡裝飾',
     composition: `Minimal poster layout:
 - Product centered, slightly off-axis (rule of thirds), occupying 40-55% of vertical canvas
@@ -372,19 +372,19 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add Korean beauty brand flavor: soft pastel ivory and dusty pink palette, very high-key bright exposure, glossy clean surfaces, holographic micro sparkles, dreamy soft-focus highlights, OliveYoung / Innisfree campaign vibe.'
   },
   showa_retro: {
-    label: '📻 昭和復古',
+    label: '昭和復古',
     flavor: 'Add 1970s Showa-era retro flavor: slight Kodachrome film grain, faded warm highlights, terrazzo floor or vintage wallpaper background, retro objects like turntables, rotary phones, glass bottles as props, sepia-amber color cast, soft vignetting at edges.'
   },
   retro_future_y2k: {
-    label: '🌌 復古未來 Y2K',
+    label: '復古未來 Y2K',
     flavor: 'Add Y2K retro-futuristic flavor: chrome metallic highlights, holographic gradient backgrounds (purple to blue to pink), bubble-shaped soft UI elements, slight CRT scan lines, 2000s techno-optimism, soft glow halations.'
   },
   bold_clash_2026: {
-    label: '🎨 2026 大膽撞色',
+    label: '2026 大膽撞色',
     flavor: 'Add 2026 trend bold color clashing flavor: high-saturation contrasting color pairs (electric blue + acid yellow, bubblegum pink + lime green, terracotta orange + cobalt), oversized typography, brutalist blocky layouts, intentional roughness.'
   },
   ugly_cute_2026: {
-    label: '😜 2026 醜萌',
+    label: '2026 醜萌',
     flavor: 'Add 2026 ugly-cute trend flavor: hand-drawn squiggly lines, intentionally awkward emoji-like decorations, mixed mismatched fonts, scrapbook-style pasted elements, casual snapshot energy, NewJeans-cover aesthetic.'
   },
   euro_editorial: {
@@ -402,55 +402,55 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add Bauhaus design flavor: bold geometric blocks, circles and triangles in primary red/blue/yellow, strict grid-based composition, clean negative space, modernist sans-serif typography, flat color planes, balanced structural layout.'
   },
   chrome_futurism: {
-    label: '🪞 鍍鉻未來',
+    label: '鍍鉻未來',
     flavor: 'Add chrome futurism flavor: reflective liquid-metal chrome surfaces, silver and dark backdrop, high-contrast studio lighting, sci-fi luxury sheen, sleek modern typography, glossy premium product feel.'
   },
   neo_minimal: {
-    label: '🤍 溫暖新極簡',
+    label: '溫暖新極簡',
     flavor: 'Add warm neo-minimalism flavor: single hero subject in generous negative space, soft natural daylight, restrained palette with one warm accent, quiet-luxury calm, subtle paper or fabric texture, refined modern composition.'
   },
   architectural_min: {
-    label: '🏛️ 建築極簡',
+    label: '建築極簡',
     flavor: 'Add architectural minimalism flavor: clean concrete and stone surfaces, sharp directional sunlight casting deep crisp shadows, monochrome or warm-grey palette, strong spatial geometry, precise lines, calm premium structure.'
   },
   experimental_type: {
-    label: '🔠 實驗字體',
+    label: '實驗字體',
     flavor: 'Add experimental typography flavor: oversized distorted and overlapping headline text as the main visual, layered ink/spray/glitch textures, broken asymmetric grid, bold graphic tension, contemporary design-studio energy.'
   },
   cinematic_light: {
-    label: '🎬 光影電影感',
+    label: '光影電影感',
     flavor: 'Add cinematic light flavor: a single dramatic beam of light on the subject, dark moody negative space around it, deep atmospheric shadows, film-poster tension, emotional minimal staging.'
   },
   gradient_glow: {
-    label: '🌈 漸層光暈',
+    label: '漸層光暈',
     flavor: 'Add gradient glow flavor: smooth vibrant gradient field (pink to blue to orange to purple), soft glowing abstract spheres, clean tech-minimal layout, futuristic typography, polished digital sheen.'
   },
   blurry_floral: {
-    label: '🌸 模糊花卉',
+    label: '模糊花卉',
     flavor: 'Add blurry floral flavor: soft-focus flowers melting into a dreamy grainy gradient, ethereal pastel haze, atmosphere over detail, delicate luminous mood, fine grain texture overlay.'
   },
   geometric_abstract: {
-    label: '🔷 幾何抽象',
+    label: '幾何抽象',
     flavor: 'Add geometric abstract flavor: circles, rectangles and lines in confident asymmetric composition, bold flat color accents, strong visual rhythm, controlled modern graphic structure.'
   },
   mono_contrast: {
-    label: '⚫ 黑白高對比',
+    label: '黑白高對比',
     flavor: 'Add black-and-white high-contrast flavor: stark monochrome palette, torn-paper texture, bold condensed typography, dramatic light/dark separation, raw gritty editorial impact.'
   },
   natural_shadow: {
-    label: '🍃 自然光影',
+    label: '自然光影',
     flavor: 'Add natural light-and-shadow flavor: soft sunlight casting leaf or window shadows across a warm neutral wall, quiet lifestyle calm, subtle texture, refined minimal editorial tone.'
   },
   luxury_texture: {
-    label: '✨ 輕奢質感',
+    label: '輕奢質感',
     flavor: 'Add luxury-texture flavor: black and gold palette, premium material surfaces (marble, brushed metal, velvet), single dramatic spotlight, refined high-end beauty-campaign elegance.'
   },
   hand_doodle: {
-    label: '✏️ 手繪塗鴉',
+    label: '手繪塗鴉',
     flavor: 'Add hand-drawn doodle flavor: sketchy black pen lines, playful handwritten text, raw paper texture, casual imperfect strokes, youthful energetic charm.'
   },
   collage_art: {
-    label: '📰 拼貼藝術',
+    label: '拼貼藝術',
     flavor: 'Add collage-art flavor: torn paper layers, mixed photo fragments, rough cut-and-paste textures, editorial vintage-modern hybrid, expressive layered contrast.'
   },
   line_art: {
@@ -458,7 +458,7 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add line-art minimal flavor: single continuous-line drawing or delicate abstract linework, neutral background, elegant negative space, calm gallery-poster refinement.'
   },
   pop_art: {
-    label: '💥 普普藝術',
+    label: '普普藝術',
     flavor: 'Add pop-art flavor: comic-style illustration, halftone dots, bold primary colors, playful retro energy, high-contrast graphic punch, iconic commercial pop look.'
   },
   acid_neon: {
@@ -466,45 +466,45 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add acid neon flavor: fluorescent green and electric color clashes, surreal glossy 3D form, cyber-inspired composition, bold glow effects, edgy experimental energy.'
   },
   ink_zen: {
-    label: '🖌️ 水墨禪意',
+    label: '水墨禪意',
     flavor: 'Add ink-wash zen flavor: black sumi ink mountain or abstract stroke, rice-paper texture, calm minimal composition, poetic negative space, meditative East-Asian tone.'
   },
   chaos_pkg: {
-    label: '🌀 混沌極繁',
+    label: '混沌極繁',
     flavor: 'Add chaos / maximalist packaging flavor: loud clashing colors, playful display fonts, hand-drawn illustration and sticker elements, dense cut-and-paste layout, confident over-the-top personality.'
   },
   kinetic_3d: {
-    label: '🫧 立體動態',
+    label: '立體動態',
     flavor: 'Add 3D kinetic flavor: oversized sculptural 3D forms (giant spheres, twisted ribbons, liquid metal shapes), surreal depth, energetic motion feel, futuristic dimensional layout.'
   },
   scattered_layout: {
-    label: '🗺️ 散布佈局',
+    label: '散布佈局',
     flavor: 'Add scattered-layout flavor: elements freely placed across the frame like a discovery map, playful non-linear arrangement, looks random but carefully balanced, experimental editorial feel.'
   },
   candid_film: {
-    label: '📷 真實膠卷',
+    label: '真實膠卷',
     flavor: 'Add candid film-roll flavor: natural unretouched lighting, slightly imperfect snapshot framing, warm film-grain texture, real spontaneous everyday moment, anti-polished authenticity.'
   },
   trinket: {
-    label: '🧸 收藏品式',
+    label: '收藏品式',
     flavor: 'Add trinket-collection flavor: objects arranged and numbered like museum specimens, neat grid of small items, nostalgic cataloguing charm, playful curated collector mood.'
   },
   blueprint: {
-    label: '📐 藍圖風格',
+    label: '藍圖風格',
     flavor: 'Add blueprint flavor: object rendered as a precise white technical line-drawing on deep blue, engineering schematic labels and measurement lines, rigorous structural tech-aesthetic.'
   },
   surveillance: {
-    label: '🛰️ 監控美學',
+    label: '監控美學',
     flavor: 'Add surveillance-aesthetic flavor: machine-vision overlays, face-tracking frames, infrared/thermal color mapping, timestamped data grids, cold futuristic monitoring tone.'
   },
   future_medieval: {
-    label: '🜲 未來中世紀',
+    label: '未來中世紀',
     flavor: 'Add future-medieval flavor: mystical gothic symbols and blackletter type fused with digital patterns and AI-generated ornament, ornate layered florals, both ancient and futuristic ritual mood.'
   },
 
   // ══ v11 新增:標竿品牌風格 (7) ══
   brand_3coins: {
-    label: '🛍️ 3COINS',
+    label: '3COINS',
     flavor: 'Add 3COINS lifestyle flavor: bright airy Japanese variety-goods styling, soft fresh pastel palette, casual handwritten captions, neatly arranged everyday small items as a friendly life proposal.'
   },
   brand_uniqlo: {
@@ -512,23 +512,23 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add UNIQLO LifeWear flavor: clean minimal grid layout, product front-and-center on plain white, restrained palette with red/black accents, functional honest simplicity, large crisp product photography.'
   },
   brand_muji: {
-    label: '🤎 無印良品',
+    label: '無印良品',
     flavor: 'Add MUJI flavor: ultra-minimal no-brand calm, off-white and natural-wood tones, generous empty space, no decoration, soft even natural light, quiet honest materials.'
   },
   brand_beams: {
-    label: '🧢 BEAMS',
+    label: 'BEAMS',
     flavor: 'Add BEAMS select-shop flavor: Japanese street-meets-refined styling, lively accent-color blocking, editorial collage energy, curated fashion-forward mix, confident youthful tone.'
   },
   brand_issey: {
-    label: '🌀 三宅一生',
+    label: '三宅一生',
     flavor: 'Add Issey Miyake flavor: pleated sculptural structure, avant-garde minimalism, bold single-color planes, material and form experimentation, architectural fashion sophistication.'
   },
   brand_snowpeak: {
-    label: '🏕️ Snow Peak',
+    label: 'Snow Peak',
     flavor: 'Add Snow Peak outdoor flavor: refined nature aesthetic, muted grey-green and earth tones, metal and raw-wood textures, calm functional craftsmanship, quiet premium outdoor mood.'
   },
   brand_plusd: {
-    label: '🐤 +d',
+    label: '+d',
     flavor: 'Add +d (h concept) flavor: playful Japanese everyday-object design, warm humorous kawaii spirit, simple clean form, single hero object on soft uplifting background, friendly product-still styling.'
   }
 };
@@ -543,39 +543,39 @@ const CONTEXT_THEMES = {
     context: ''
   },
   summer: {
-    label: '☀️ 夏日',
+    label: '夏日',
     context: 'Summer season context: hot bright daylight, refreshing cool elements, outdoor or near-window setting, light fabric and glass textures.'
   },
   winter_cozy: {
-    label: '🍂 冬日溫暖',
+    label: '冬日溫暖',
     context: 'Winter cozy context: warm indoor setting, soft yellow tungsten light, knit blanket textures, hot beverage prop, condensation on window.'
   },
   festive_cny: {
-    label: '🧧 農曆新年',
+    label: '農曆新年',
     context: 'Lunar New Year festive context: subtle red and gold accent elements, hint of plum blossom or auspicious decoration in background bokeh, warm celebratory atmosphere — but keep it tasteful, NOT loud or kitschy.'
   },
   back_to_school: {
-    label: '📚 開學季',
+    label: '開學季',
     context: 'Back-to-school context: study desk setting, books and stationery as props, fresh autumn morning light, optimistic productive mood.'
   },
   unboxing: {
-    label: '📦 開箱時刻',
+    label: '開箱時刻',
     context: 'Unboxing moment context: brand box and tissue paper visible, anticipation atmosphere, hands-in-frame interaction, the product just revealed.'
   },
   daily_use: {
-    label: '🌱 日常使用',
+    label: '日常使用',
     context: 'Everyday-use context: the product naturally integrated into a real daily scene (bedroom, kitchen, living room, work desk), no staged feel.'
   },
   promo_sale: {
-    label: '🎯 限時促銷',
+    label: '限時促銷',
     context: 'Promotional sale context: include a small price tag or "限時優惠 EARLY BIRD" badge, clear call-to-action visual emphasis, but keep the design refined NOT garish.'
   },
   gift_giving: {
-    label: '🎁 送禮場合',
+    label: '送禮場合',
     context: 'Gift-giving context: ribbon, wrapping paper, small card, two-hands-presenting gesture, intimate warm-toned scene.'
   },
   year_end_sale: {
-    label: '🎀 年終特賣',
+    label: '年終特賣',
     context: 'Year-end mega sale context: bold festive red and gold sale energy, a clear "年終特賣 / YEAR-END SALE" badge, percentage-off price tags, abundant celebratory atmosphere with strong urgency — keep it punchy but still structured, not messy.'
   },
   double11: {
@@ -765,7 +765,7 @@ function renderAmPhotoRow() {
     const thumb = f.src || f.thumb;
     const imgHtml = thumb
       ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:contain;border-radius:3px;">`
-      : '<span style="font-size:16px;">🖼️</span>';
+      : '<span style="font-size:16px;"></span>';
     return `<div onclick="selectPhotoInAM(${i})" title="${f.name}"
       style="width:36px;height:36px;border-radius:5px;overflow:hidden;flex-shrink:0;cursor:pointer;
              border:2px solid ${isSelected?'#C9A665':'rgba(255,255,255,0.1)'};background:var(--bg4);
@@ -873,7 +873,7 @@ function startProgress(totalMs) {
   const prPct  = document.getElementById('prPct');
   if (prBar) prBar.style.display = 'block';
   let pctVal = 0;
-  const msgs = ['📤 上傳中...','🎨 生成場景...','🖌️ 光影融合...','⚡ 最終輸出...'];
+  const msgs = ['上傳中...','生成場景...','光影融合...','最終輸出...'];
   const interval = setInterval(() => {
     if (pctVal >= 90) return;
     pctVal = Math.min(90, pctVal + (pctVal < 30 ? 2 : pctVal < 60 ? 1 : 0.4));
@@ -893,7 +893,7 @@ function finishProgress(interval) {
   if (prFill) prFill.style.width = '100%';
   if (prPct) prPct.textContent = '100%';
   setTimeout(() => { if(prBar) prBar.style.display='none'; if(prPct) prPct.textContent=''; }, 2000);
-  if (btn) { btn.disabled = false; btn.textContent = '✨ 套用 AI 效果'; }
+  if (btn) { btn.disabled = false; btn.textContent = '套用 AI 效果'; }
 }
 
 function failProgress(interval, errMsg) {
@@ -904,7 +904,7 @@ function failProgress(interval, errMsg) {
   if (prBar) prBar.style.display = 'none';
   if (prPct) prPct.textContent = '';
   setPrStatus('❌ ' + errMsg, 'var(--red)');
-  if (btn) { btn.disabled = false; btn.textContent = '✨ 套用 AI 效果'; }
+  if (btn) { btn.disabled = false; btn.textContent = '套用 AI 效果'; }
 }
 
 // 各動作扣點對照(對齊 V2/PDF;前端樂觀扣,後端 Worker 真扣)
@@ -933,7 +933,7 @@ async function callWorker(params) {
 
 // 點數不足:跳白話提示 + 導去儲值/升級
 function showInsufficientBits(cost) {
-  const go = confirm('⚡ 能量(點數)不足\n\n本次操作需要 ' + cost + ' 點,你目前的點數不夠,所以這次沒有扣款、也沒有產出。\n\n要前往儲值 / 升級方案嗎?');
+  const go = confirm('能量(點數)不足\n\n本次操作需要 ' + cost + ' 點,你目前的點數不夠,所以這次沒有扣款、也沒有產出。\n\n要前往儲值 / 升級方案嗎?');
   if (!go) return;
   if (typeof openBitsShop === 'function') openBitsShop();
   else location.href = 'plans.html';
@@ -1044,7 +1044,7 @@ async function applyPhotoroomBg() {
       const compressed = await compressImageBase64(base64, 1500, 0.90);
       const mdImg = document.getElementById('mdPhotoImg');
       if (!mdImg || !mdImg.src || mdImg.style.display === 'none') throw new Error('請先上傳 MD 照片!');
-      setPrStatus('📤 送出試穿任務...', 'var(--t3)');
+      setPrStatus('送出試穿任務...', 'var(--t3)');
       const submitData = await callWorker({
         action: 'kling_tryon_submit',
         humanImageBase64: mdImg.src,
@@ -1054,7 +1054,7 @@ async function applyPhotoroomBg() {
       setPrStatus('⏳ AI 試穿中(約30-90秒)...', 'var(--t3)');
       let result = await pollUntilDone(submitData.requestId, submitData.endpoint, 180000, submitData.responseUrl, submitData.statusUrl);
       if (result.status === 'TIMEOUT') {
-        setPrStatus('🔄 超時,最後查詢一次...', 'var(--t3)');
+        setPrStatus('超時,最後查詢一次...', 'var(--t3)');
         for (let i = 0; i < 3; i++) {
           await sleep(5000);
           result = await callWorker({ action:'fal_poll', requestId: submitData.requestId, endpoint: submitData.endpoint, responseUrl: submitData.responseUrl, statusUrl: submitData.statusUrl });
@@ -1083,13 +1083,13 @@ async function applyPhotoroomBg() {
       const customPrompt = document.getElementById('prCustomPrompt')?.value?.trim();
       const scenePrompt = customPrompt || PRODUCT_SCENES[sceneKey] || PRODUCT_SCENES.studio_white;
 
-      setPrStatus('🎨 AI 情境生成中...', 'var(--t3)');
+      setPrStatus('AI 情境生成中...', 'var(--t3)');
 
       let result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
 
       if (!result.ok && result.reason === 'BLACK_IMAGE') {
         console.warn('[v10.2] 第一次被擋,自動重試中...');
-        setPrStatus('🔄 內容審查擋下,重試中...', '#E8C878');
+        setPrStatus('內容審查擋下,重試中...', '#E8C878');
         result = await submitFluxAndCheckBlob(scenePrompt, paddedBase64);
       }
 
@@ -1142,9 +1142,9 @@ function showBlackImageWarning(blobSize) {
   ctx.fillStyle = '#E8C878';
   ctx.font = '500 22px "Noto Sans TC",sans-serif';
   const suggestions = [
-    '👗  改用「AI 真人試穿」(內衣類推薦)',
-    '🏝️  換海邊場景: 炎熱夏日/熱帶渡假/沖繩海邊',
-    '🔄  或換一張商品照再試'
+    ' 改用「AI 真人試穿」(內衣類推薦)',
+    ' 換海邊場景: 炎熱夏日/熱帶渡假/沖繩海邊',
+    ' 或換一張商品照再試'
   ];
   suggestions.forEach((s, i) => {
     ctx.fillText(s, AM.w/2, AM.h/2 + 110 + i * 42);
@@ -1464,14 +1464,14 @@ function blobToBase64(blob) {
 // ═══════════════════════════════════════════════════════════════════════
 
 const INSPIRATION_KEYS = {
-  summer_beach: { label: '🌊 夏日海邊', style: 'vibrant tropical summer scene...' },
-  japan_minimal: { label: '✨ 日系極簡', style: 'Japanese minimalist editorial...' },
-  korean_ecom: { label: '🎯 韓系電商', style: 'Korean e-commerce glossy...' },
-  japan_food: { label: '🍶 日式食品', style: 'Japanese food editorial dark...' },
-  family_warm: { label: '👶 家庭溫馨', style: 'warm cozy family lifestyle...' },
-  surreal_art: { label: '🎨 超現實藝術', style: 'surreal art photography...' },
-  tech_detail: { label: '🏆 科技詳情頁', style: 'high-tech product detail page...' },
-  retro_vintage: { label: '📰 復古印刷', style: '1970s Taiwanese vintage magazine...' }
+  summer_beach: { label: '夏日海邊', style: 'vibrant tropical summer scene...' },
+  japan_minimal: { label: '日系極簡', style: 'Japanese minimalist editorial...' },
+  korean_ecom: { label: '韓系電商', style: 'Korean e-commerce glossy...' },
+  japan_food: { label: '日式食品', style: 'Japanese food editorial dark...' },
+  family_warm: { label: '家庭溫馨', style: 'warm cozy family lifestyle...' },
+  surreal_art: { label: '超現實藝術', style: 'surreal art photography...' },
+  tech_detail: { label: '科技詳情頁', style: 'high-tech product detail page...' },
+  retro_vintage: { label: '復古印刷', style: '1970s Taiwanese vintage magazine...' }
 };
 
 function setInspiration(btn, key) {
@@ -1657,7 +1657,7 @@ async function generateGptPoster() {
   if (!headline) {
     setPrStatus('⚠️ 請至少填主標(大字)', 'var(--red)');
     document.getElementById('prApplyBtn').disabled = false;
-    document.getElementById('prApplyBtn').textContent = '✨ 套用 AI 效果';
+    document.getElementById('prApplyBtn').textContent = '套用 AI 效果';
     return;
   }
 
@@ -1669,7 +1669,7 @@ async function generateGptPoster() {
   try {
     updateBrandPackBadge();
 
-    setPrStatus('📤 上傳商品照處理中...', 'var(--t3)');
+    setPrStatus('上傳商品照處理中...', 'var(--t3)');
     const blob = await urlToBlob(imgSrc);
     const base64 = await blobToBase64(blob);
     const paddedBase64 = await padImageTo1080(base64);
@@ -1678,7 +1678,7 @@ async function generateGptPoster() {
     const prompt = buildPosterPrompt();
     console.log('[v11.2] 懶人廣告圖 prompt 長度:', prompt.length, '字元 · reqid:', reqid);
 
-    setPrStatus('🎨 廣告圖生成中(品牌包+版式合成,約 60-90 秒)...', 'var(--t3)');
+    setPrStatus('廣告圖生成中(品牌包+版式合成,約 60-90 秒)...', 'var(--t3)');
     const submitData = await callWorker({
       action: 'gpt_poster_edit_submit',
       prompt,
@@ -1741,16 +1741,16 @@ async function generateGptPoster() {
 
     const brandPack = detectBrandPack();
     const layoutLabel = LAYOUT_TEMPLATES[SELECTED_LAYOUT]?.label || '';
-    const srcTag = winner.from === 'drive' ? ' · ☁️雲端補圖' : '';
+    const srcTag = winner.from === 'drive' ? ' · 雲端補圖' : '';
     const usedSec = Math.round((Date.now() - t0) / 1000);   // 🆕 真實用時
     console.log('[計時] 懶人廣告圖真實出圖時間:', usedSec, '秒 · reqid:', reqid);
-    setPrStatus(`✅ 完成![${brandPack.label} × ${layoutLabel}]${srcTag} · ⏱${usedSec}秒 · 可點「🎬 變影片」`, 'var(--mint)');
+    setPrStatus(`✅ 完成![${brandPack.label} × ${layoutLabel}]${srcTag} · ⏱${usedSec}秒 · 可點「變影片」`, 'var(--mint)');
 
     const videoBtn = document.getElementById('posterToVideoBtn');
     if (videoBtn) {
       videoBtn.style.display = 'block';
       videoBtn.disabled = false;
-      videoBtn.textContent = '🎬 變 5 秒影片';
+      videoBtn.textContent = '變 5 秒影片';
     }
   } catch(e) {
     failProgress(interval, e.message);
@@ -1806,12 +1806,12 @@ async function posterToVideo() {
   const interval = startProgress(120000);
 
   try {
-    setPrStatus('🎬 送出影片任務...', 'var(--t3)');
+    setPrStatus('送出影片任務...', 'var(--t3)');
     const submitData = await callWorker({
       action: 'kling_poster_video_submit',
       imageUrl: LAST_POSTER_URL,
       duration: 5,
-      aspect_ratio: '1:1'   // 🔧 跟 1:1 海報一致 → kling 不重裁,影片=海報動起來
+      aspect_ratio: '1:1'   // 跟 1:1 海報一致 → kling 不重裁,影片=海報動起來
     });
     if (!submitData.ok) throw new Error(submitData.error || '提交失敗');
 
@@ -1825,7 +1825,7 @@ async function posterToVideo() {
     );
 
     if (result.status === 'TIMEOUT') {
-      setPrStatus('🔄 最後查詢一次...', 'var(--t3)');
+      setPrStatus('最後查詢一次...', 'var(--t3)');
       for (let i = 0; i < 3; i++) {
         await sleep(5000);
         result = await callWorker({
@@ -1855,7 +1855,7 @@ async function posterToVideo() {
   } catch(e) {
     failProgress(interval, e.message);
     videoBtn.disabled = false;
-    videoBtn.textContent = '🎬 變 5 秒影片 — 失敗,重試';
+    videoBtn.textContent = '變 5 秒影片 — 失敗,重試';
   }
 }
 
@@ -1881,7 +1881,7 @@ function showVideoInCanvas(videoUrl) {
   container.appendChild(video);
 
   const lbl = document.getElementById('previewLabel');
-  if (lbl) lbl.textContent = '🎬 影片預覽 5 秒循環播放';
+  if (lbl) lbl.textContent = '影片預覽 5 秒循環播放';
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1917,7 +1917,7 @@ async function saveImageToDriveSilently(imageUrl, kind, reqId) {
       console.log('[存檔] ✅ 已存進 Drive:', res.drive_url);
       const el = document.getElementById('prStatus');
       if (el && el.textContent.includes('完成')) {
-        el.textContent += ' · ☁️ 已存雲端';
+        el.textContent += ' · 已存雲端';
       }
     } else {
       console.warn('[存檔] ⚠️ Drive 存檔失敗(不影響海報):', res.error);
@@ -1946,7 +1946,7 @@ async function saveVideoToDriveSilently(videoUrl) {
     if (res.ok) {
       console.log('[影片存檔] ✅ 已存進 Drive:', res.drive_url);
       const el = document.getElementById('prStatus');
-      if (el && el.textContent.includes('完成')) el.textContent += ' · ☁️ 影片已存雲端';
+      if (el && el.textContent.includes('完成')) el.textContent += ' · 影片已存雲端';
     } else {
       console.warn('[影片存檔] ⚠️ Drive 存檔失敗(不影響影片):', res.error);
     }
