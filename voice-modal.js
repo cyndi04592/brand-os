@@ -132,6 +132,27 @@ const VoiceModal = {
     if (v) localStorage.setItem(LS_CONFIRMED, JSON.stringify(v));
     else   localStorage.removeItem(LS_CONFIRMED);
   },
+
+  // 🆕 依 voice_id 查完整語音資料(名字/性別/語言)。
+  //    重登後只從 KOL 人設拿得到 voice_id,沒有名字 → 畫面只能顯示「已綁定語音」。
+  //    這裡依序查:已載入的語音庫 → 自訂語音 → 本機記住的那筆。查不到回 null。
+  findVoiceById(id) {
+    if (!id) return null;
+    const key = String(id);
+    const pools = [State.voices.library || [], State.customVoices || []];
+    for (const pool of pools) {
+      const hit = pool.find(v => String(v.id) === key);
+      if (hit) return hit;
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(LS_CONFIRMED) || 'null');
+      if (saved && String(saved.id) === key) return saved;
+    } catch (_) {}
+    return null;
+  },
+
+  // 語音庫載入完成後通知外部重新套用名字(kol.html 會掛這個)
+  onLibraryLoaded(fn) { State._onLibLoaded = fn; },
 };
 
 global.VoiceModal = VoiceModal;
@@ -451,6 +472,7 @@ async function loadLibraryVoices() {
     if (res.ok) {
       State.voices.library = res.voices || [];
       State.voices.libraryRawTotal = res._total_raw || 0;
+      try { if (typeof State._onLibLoaded === 'function') State._onLibLoaded(); } catch (_) {}
       State.loaded.library = true;
       updateCountChips();
     }
