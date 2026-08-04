@@ -667,7 +667,7 @@ function buildPanelHTML() {
   return `
     <div class="kai-panel" id="kai-panel">
       <div class="kai-head">
-        <span class="kai-title">🎨 AI KOL 人像生成</span>
+        <span class="kai-title">AI KOL 人像生成</span>
         <span class="kai-badge">Tab 3 · Phase 1</span>
       </div>
 
@@ -684,7 +684,7 @@ function buildPanelHTML() {
       </div>
 
       <div class="kai-folder-hint" id="kai-folder-hint">
-        📁 將存到:(請先選品牌和 Persona)
+        將存到:(請先選品牌和 Persona)
       </div>
 
       <div class="kai-row">
@@ -794,7 +794,7 @@ function buildPanelHTML() {
 
       <div class="kai-gen-row">
         <button class="kai-btn-gen" id="kai-btn-gen">
-          🎨 生成 AI KOL
+          生成 AI KOL
         </button>
         <span class="kai-cost">
           預估 <span class="num" id="kai-cost-num">$0.18</span>
@@ -819,7 +819,7 @@ function buildModalHTML() {
       <div class="kai-modal">
         <h3>🆕 新增 AI KOL Persona</h3>
         <div class="sub">
-          系統會在 <code style="color:#6dfac2;">/🎭 KOL/{品牌}/</code> 下建立新的子資料夾。<br>
+          系統會在 <code style="color:#6dfac2;">/KOL/{品牌}/</code> 下建立新的子資料夾。<br>
           名字請用純個人名(例如「柚子」「小晴」),不要加品牌字樣。
         </div>
         <input class="kai-input" id="kai-new-name" type="text"
@@ -971,11 +971,11 @@ function updateFolderHint() {
   const brandName = brand?.name || brandId || '(未選)';
 
   if (!brandId) {
-    hint.textContent = '📁 將存到:(請先選品牌)';
+    hint.textContent = '將存到:(請先選品牌)';
   } else if (!persona) {
-    hint.textContent = '📁 將存到:/🎭 KOL/' + brandName + '/(請選或新增 persona)';
+    hint.textContent = '將存到:/KOL/' + brandName + '/(請選或新增 persona)';
   } else {
-    hint.textContent = '📁 將存到:/🎭 KOL/' + brandName + '/' + persona + '/';
+    hint.textContent = '將存到:/KOL/' + brandName + '/' + persona + '/';
   }
 }
 
@@ -1271,7 +1271,7 @@ async function generate() {
     }
 
     meta.textContent = data.images.length + ' 張 · seed=' + data.seed + ' · ' + latency + 's';
-    showStatus('✅ 生成完成,挑一張點「📁 存 Drive」', 'ok');
+    showStatus('✅ 生成完成,挑一張點「存 Drive」', 'ok');
 
   } catch (e) {
     console.error('[kai] generate failed:', e);
@@ -1280,7 +1280,7 @@ async function generate() {
   } finally {
     S.generating = false;
     btn.disabled = false;
-    btn.innerHTML = '🎨 生成 AI KOL';
+    btn.innerHTML = '生成 AI KOL';
   }
 }
 
@@ -1366,7 +1366,7 @@ async function saveImageToDrive(idx) {
   const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const filename = S.currentPersonaName + '_ai_' + img.seed + '_' + timestamp + '_' + (idx + 1) + '.jpg';
 
-  // 👗 把創角選的服裝一起存進 persona(以後免手填 outfit)
+  // 把創角選的服裝一起存進 persona(以後免手填 outfit)
   const _outfitSel = document.querySelector('.kai-param[data-k="outfit"]');
   const _outfitText = _outfitSel ? (OUTFIT_MAP[_outfitSel.value] || '') : '';
 
@@ -1392,7 +1392,7 @@ async function saveImageToDrive(idx) {
     img.driveFileId = res.file_id;
     renderGallery();
 
-    showStatus('✅ 已存入 Drive:' + res.filename + ' — 👈 左欄 Gallery 請點「🔄 重新載入」', 'ok');
+    showStatus('✅ 已存入 Drive:' + res.filename + ' — 左欄 Gallery 請點「重新載入」', 'ok');
 
     // 嘗試自動刷新左欄(如果 kol.html 有暴露)
     if (typeof window.refreshAll === 'function') {
@@ -1408,7 +1408,7 @@ async function saveImageToDrive(idx) {
     showStatus('❌ 存 Drive 失敗:' + e.message, 'err');
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '📁 存 Drive';
+      btn.innerHTML = '存 Drive';
     }
   }
 }
@@ -1455,29 +1455,7 @@ async function gasFetch(doFetch, action) {
   throw err;
 }
 
-// 走 Cloudflare Worker(D1/KV)的唯讀 action —— 照抄 kol.html 的 GAS_CACHED_READS 機制。
-//  原本這支完全直打 GAS,實測 getKolPersonas 會撞 script.googleusercontent.com 的 404。
-//  ⚠️ 只能列 Worker 端 gas_cached ALLOW 名單裡有的;寫入類永遠不准列進來。
-const GAS_CACHED_READS = {
-  getBits: 1, getBrandOS: 1, listKolPhotos: 1, getMemory: 1,
-  getKolPersonas: 1, getWhitelist: 1, adminGetAll: 1,
-  getDelivers: 1, getAllMemory: 1, getHolidayConfig: 1,
-  listSubOrders: 1, listTopupOrders: 1,
-  getTopupPacks: 1, getPendingPayment: 1,
-};
-
 async function gasGet(action, params = {}) {
-  if (GAS_CACHED_READS[action]) {
-    try {
-      const r = await fetch(WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'gas_cached', password: PASSWORD, gasAction: action, gasParams: params }),
-      });
-      const out = await r.json();
-      if (out && out.ok !== false) return out;   // fresh / miss / stale 都是可用資料
-    } catch (_) { /* Worker 連不上 → 落回原路,不擋使用者 */ }
-  }
   const qs = new URLSearchParams({ action, password: PASSWORD, ...params }).toString();
   return gasFetch(() => fetch(GAS_URL + '?' + qs), action);
 }
