@@ -70,6 +70,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 @media(max-width:600px){.onb-opts{grid-template-columns:1fr;}}
 .onb-opt{text-align:left;padding:14px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s;font-family:inherit;}
 .onb-opt:hover{border-color:var(--accent);transform:translateY(-2px);}
+.onb-opt:disabled{opacity:.4;cursor:not-allowed;}
+.onb-opt:disabled:hover{border-color:var(--border);transform:none;}
+.onb-opt .tag.soon{background:rgba(255,255,255,.07);color:var(--text-dim);}
+.onb-blocked{opacity:.32;pointer-events:none;filter:grayscale(.45);transition:opacity .25s;}
 .onb-opt .t{font-size:14px;font-weight:700;color:var(--text);display:block;margin-bottom:5px;}
 .onb-opt .d{font-size:11.5px;color:var(--text-dim);line-height:1.5;display:block;}
 .onb-opt .tag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(109,250,194,.15);color:var(--accent3);margin-left:6px;vertical-align:2px;}
@@ -735,7 +739,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <!-- ═══════════════════════════════════════════════════════ -->
   <div class="layout" id="main-layout-talking" style="display:none">
     <div class="panel">
-      <div class="panel-title">
+      <div class="panel-title" id="kol-gallery-title">
         <div class="dot"></div>
         KOL 形象庫
         <span class="kol-count-chip" id="kol-count" style="display:none">0</span>
@@ -743,7 +747,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="kol-list" id="kol-list">
         <div class="kol-empty">載入中…</div>
       </div>
-      <div class="drive-section">
+      <div class="drive-section" id="drive-section">
         <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent2)"></div>Drive 照片庫</div>
         <div class="drive-hint">品牌主放的照片會出現在這裡。選照片後可建立/追加 Avatar Group。</div>
         <div id="drive-gallery-wrap">
@@ -784,9 +788,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <span class="t">用 AI 生成一位<span class="tag">最快</span></span>
             <span class="d">不用準備照片,選性別、年齡、氣質,AI 直接生出一位虛擬 KOL。</span>
           </button>
-          <button type="button" class="onb-opt" onclick="kolOnboardGoDrive()">
-            <span class="t">用真人照片建立</span>
-            <span class="d">在 Google Drive 的 /KOL 資料夾裡,用 KOL 名稱開子資料夾並放入照片。</span>
+          <button type="button" class="onb-opt" disabled title="流程調整中,暫時停用">
+            <span class="t">用真人照片建立<span class="tag soon">即將推出</span></span>
+            <span class="d">上傳真人照片,建立專屬於你的 KOL 形象。</span>
           </button>
         </div>
       </div>
@@ -2250,6 +2254,9 @@ function kolOnboardGoAI() {
 }
 window.kolOnboardGoAI = kolOnboardGoAI;
 
+// ⏸ 暫時停用:按鈕已 disabled。真人照片正確流程是「先 + 新 KOL 建資料列與同名資料夾
+//    → 再放照片」,直接丟客戶去 Drive 根目錄會做出沒有 persona 資料列的壞資料夾。
+//    之後補完流程再把 onclick 接回來。
 function kolOnboardGoDrive() {
   const url = S.drivePhotos && S.drivePhotos.kol_folder_url;
   if (url) { window.open(url, '_blank', 'noopener'); return; }
@@ -2277,6 +2284,15 @@ function updateStepLocks() {
   const _noKol = !hasBoundKol();
   if (_onb) _onb.style.display = (S.currentBrandId && _noKol) ? '' : 'none';
   if (_vid) _vid.style.display = (S.currentBrandId && _noKol) ? 'none' : '';
+
+  // 沒角色 → 左欄「KOL 形象庫」與「Drive 照片庫」整區變暗且不可點。
+  //   理由:同事實測會一直去點這兩區問「是點這裡嗎」,新客更找不到路。
+  //   沒角色時唯一該能點的只有引導卡 + AI 生成器(生成器是 panel 的最後子元素,不在封鎖範圍)。
+  const _blocked = !!(S.currentBrandId && _noKol);
+  ['kol-gallery-title', 'kol-list', 'drive-section'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('onb-blocked', _blocked);
+  });
 
   // 已經站在被鎖的分頁上 → 靜默退回 STEP 1(不彈 toast,免得切品牌時一直跳)
   if (locked && S.currentMode !== 'talking') switchMode('talking');
@@ -2482,7 +2498,7 @@ async function loadKolList(brandId, force) {
   }
 
   if (!boundPersonas.length) {
-    const emptyHtml = `<div class="kol-empty"><span class="emoji"></span>該品牌還沒有已綁定的 KOL<br><small>下方 Drive 照片庫選照片建立</small></div>`;
+    const emptyHtml = `<div class="kol-empty"><span class="emoji"></span>該品牌還沒有已綁定的 KOL<br><small>請從右側「建立你的 KOL 角色」開始</small></div>`;
     listEl.innerHTML = emptyHtml;
     document.getElementById('kol-list-cine').innerHTML = emptyHtml;
     return;
