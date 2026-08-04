@@ -1459,7 +1459,24 @@ async function gasFetch(doFetch, action) {
   throw err;
 }
 
+// 🆕 第2期補漏:讀取分流走 Worker(D1 毫秒級 + KV 快取 + GAS 抽風出陳貨)。
+//    這支檔原本自己直打 GAS,繞過了 kol.html 早就鋪好的分流 → 客戶會吃到 GAS_HTTP_404 重試等待。
+//    白名單只列「Worker gas_cached ALLOW 有的唯讀 action」;Worker 有任何問題會自動落回下方直打 GAS 原路
+//    (含既有 gasFetch 重試),最壞行為跟改造前完全一樣。
+//    ⚠️ 寫入類永遠不准列進來(會被快取 → 重複下單/重複扣點)。
+const GAS_CACHED_READS = { getBrandOS: 1, getKolPersonas: 1 };
 async function gasGet(action, params = {}) {
+  if (GAS_CACHED_READS[action]) {
+    try {
+      const r = await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'gas_cached', password: PASSWORD, gasAction: action, gasParams: params }),
+      });
+      const out = await r.json();
+      if (out && out.ok !== false) return out;   // fresh / miss / stale 都是可用資料
+    } catch (_) { /* Worker 連不上 → 落回原路 */ }
+  }
   const qs = new URLSearchParams({ action, password: PASSWORD, ...params }).toString();
   return gasFetch(() => fetch(GAS_URL + '?' + qs), action);
 }
