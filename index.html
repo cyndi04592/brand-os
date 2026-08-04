@@ -838,7 +838,7 @@ function buyPackEcpay(k) {
   fetch(`${GAS_URL}?action=createTopupOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&pack=${k}&method=ecpay`)
     .then(r => r.json())
     .then(j => {
-      if (!j.ok) { alert('下單失敗:' + (j.error || '')); renderShopGrid(); return; }
+      if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); renderShopGrid(); return; }
       // 2) 跟 Worker 要 ECPay 導向參數
       return fetch(CF_WORKER_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -883,7 +883,7 @@ function buyPackManual(k) {
   if (!confirm(`確認下單「${p.name}」?\n\n${p.bits.toLocaleString()} Bits ／ NT$${p.price.toLocaleString()}\n\n下單後依匯款資訊轉帳,我們對帳後為你入點。`)) return;
   fetch(`${GAS_URL}?action=createTopupOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&pack=${k}`)
     .then(r => r.json())
-    .then(j => { if (!j.ok) { alert('下單失敗:' + (j.error || '')); return; } showOrderInfo(j); })
+    .then(j => { if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); return; } showOrderInfo(j); })
     .catch(() => alert('連線錯誤,請重試'));
 }
 
@@ -1017,7 +1017,7 @@ function buyPlanEcpay(k) {
   fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_subCycle}&method=ecpay`)
     .then(r => r.json())
     .then(j => {
-      if (!j.ok) { alert('下單失敗:' + (j.error || '')); renderSubGrid(); return; }
+      if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); renderSubGrid(); return; }
       return fetch(CF_WORKER_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1052,7 +1052,7 @@ function buyPlanManual(k) {
   if (!confirm(`確認訂閱「${p.name} 方案 · ${yr?'年繳':'月繳'}」?\n\n每月 ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${yr?'（年）':'（月）'}（未稅）\n\n下單後依匯款資訊轉帳，我們對帳後為你開通。`)) return;
   fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_subCycle}`)
     .then(r => r.json())
-    .then(j => { if (!j.ok) { alert('下單失敗:' + (j.error || '')); return; } showSubOrderInfo(j); })
+    .then(j => { if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); return; } showSubOrderInfo(j); })
     .catch(() => alert('連線錯誤,請重試'));
 }
 
