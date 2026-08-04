@@ -16,92 +16,6 @@ const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googl
 const GOOG_SCOPE = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
 const ADMIN_EMAIL = 'cyndi04592@gmail.com';
 
-// ═══════════════════════════════════════════════════════════════
-//  🚀 GAS 讀取改走 Cloudflare Worker(全站共用,index / plans / kol 都吃得到)
-//  ─────────────────────────────────────────────────────────────
-//  為什麼:瀏覽器直打 GAS 會經過 script.googleusercontent.com 的重導向節點,
-//  那個節點會間歇回 404 / HTML 錯誤頁 → 畫面卡住或空白。
-//  Worker 打 GAS 是伺服器對伺服器,不走那條路;而且名單內的 action
-//  由 D1 直接回答(0.4 毫秒)或有 KV 快取。
-//
-//  ⚠️ 只轉「讀取」。寫入(createSubOrder / createTopupOrder / reportPayerLast5…)
-//     一律維持直打 GAS —— 寫入若被快取或重試,後果是重複下單、重複入帳。
-// ═══════════════════════════════════════════════════════════════
-const KOL_WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
-
-// 只有 Worker 的 gas_cached ALLOW 名單裡有的才放進來,否則 Worker 會回「不支援的讀取」
-const READ_VIA_WORKER = [
-  'getTopupPacks', 'getPendingPayment', 'getBits',
-  'getBrandOS', 'checkWhitelist', 'listKolPhotos', 'getMemory',
-  'getKolPersonas', 'getDelivers', 'getAllMemory',
-  'listSubOrders', 'listTopupOrders',
-];
-
-(function () {
-  if (window.__gasReadRouted) return;      // 防重複掛載
-  window.__gasReadRouted = true;
-  const _origFetch = window.fetch.bind(window);
-
-  window.fetch = function (input, init) {
-    try {
-      const u = (typeof input === 'string') ? input : ((input && input.url) || '');
-      if (u.indexOf('script.google.com') !== -1) {
-        const act = (u.match(/[?&]action=([a-zA-Z_0-9]+)/) || [])[1] || '';
-        if (act && READ_VIA_WORKER.indexOf(act) !== -1) {
-          return _gasRetry(_origFetch, KOL_WORKER_URL, _toWorkerInit(u, act), 4);
-        }
-      }
-    } catch (_) { /* 攔截層出事也絕不擋請求 */ }
-    return _origFetch(input, init);
-  };
-
-  // 把 GAS 的 GET 網址翻譯成 Worker 的 gas_cached POST
-  function _toWorkerInit(url, act) {
-    const params = {};
-    try {
-      (url.split('?')[1] || '').split('&').forEach(function (kv) {
-        const i = kv.indexOf('=');
-        if (i === -1) return;
-        const k = decodeURIComponent(kv.slice(0, i));
-        if (k === 'action' || k === 'password') return;   // 這兩個 Worker 自己帶
-        params[k] = decodeURIComponent(kv.slice(i + 1));
-      });
-    } catch (_) {}
-    return {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'gas_cached', password: GAS_PASSWORD, gasAction: act, gasParams: params }),
-    };
-  }
-
-  // 網路斷、HTTP 非 2xx、回 HTML 而非 JSON → 退避重試(只用於唯讀)
-  async function _gasRetry(orig, url, init, tries) {
-    let lastResp = null, lastErr = null;
-    for (let i = 0; i < tries; i++) {
-      try {
-        const resp = await orig(url, init);
-        lastResp = resp;
-        if (resp && resp.ok) {
-          const txt = await resp.clone().text();
-          const head = (txt || '').trim().charAt(0);
-          if (head === '{' || head === '[') return resp;
-          lastErr = new Error('回了非 JSON');
-        } else {
-          lastErr = new Error('HTTP ' + (resp ? resp.status : '無回應'));
-        }
-      } catch (e) { lastErr = e; }
-      if (i < tries - 1) {
-        const wait = Math.min(1600, 250 * Math.pow(2, i)) + Math.floor(Math.random() * 400);
-        console.warn('[讀取重試] 第 ' + (i + 1) + '/' + tries + ' 次,' + wait + 'ms 後再試:', lastErr && lastErr.message);
-        await new Promise(r => setTimeout(r, wait));
-      }
-    }
-    console.error('[讀取重試] ' + tries + ' 次都失敗:', lastErr && lastErr.message);
-    if (lastResp) return lastResp;
-    throw lastErr;
-  }
-})();
-
 // ══ 共用狀態(所有模組共享)══
 window.S = {
   brandId: null, subId: null, prod: null,
@@ -191,15 +105,15 @@ function getColor(key) {
 //   v10.5: 福臨門 navColor 改成 brand_flm(對應未來 brand_packs)
 const LOCAL_FALLBACK_DATA = {
   brands: [
-    { id:'cf',  name:'巧福健康家電', icon:'🏠', navColor:'gold',   soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。', adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊', hashtags:'#居家健康 #巧福 #台灣品牌' },
-    { id:'ww',  name:'旺味米香腸',   icon:'🌾', navColor:'red',    soul:'全台首創米香腸,傳承阿公家訓。', adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景', hashtags:'#旺味米香腸 #米香腸 #台灣豬' },
-    { id:'ly',  name:'琉宇醬選',     icon:'🫙', navColor:'mint',   soul:'琉宇醬選主理頂級進口醬料。', adStyle:'精緻質感、食材溯源、料理升級', hashtags:'#琉宇醬選 #好滋好滋 #PASSERI' },
-    { id:'moz', name:'MOZ瑞典駝鹿',  icon:'🦌', navColor:'sky',    soul:'瑞典駝鹿DNA,用北歐色彩與趣味設計讓日常更輕鬆愉快。', adStyle:'北歐輕鬆感、顏值日常、戶外露營風、多色搭配', hashtags:'#MOZ瑞典駝鹿 #北歐設計 #洞洞鞋 #雲朵包' },
-    { id:'ka',  name:'空瑪那',        icon:'🎯', navColor:'purple', soul:'空瑪那是台灣頂尖身心靈國際學院,由宸甄老師創立。', adStyle:'療癒禪意、國際專業、身心靈覺醒、名人背書', hashtags:'#空瑪那 #頌缽療癒 #瑜珈師資 #冥想' },
-    { id:'la',  name:'LACEZ',         icon:'💎', navColor:'mint',   soul:'LACEZ是台灣MIT內衣品牌,工廠直接賣給消費者。', adStyle:'閨蜜親切、精品感平價、MIT驕傲、穿出自信', hashtags:'#LACEZ #台灣MIT #好內衣不貴 #無鋼圈' },
-    { id:'ra',  name:'RADESIGN',      icon:'🏷️', navColor:'gold',   soul:'RADESIGN專營正版品牌鞋Outlet,百分百原廠授權。', adStyle:'直白促銷、正版保證、超值撿漏、蝦皮熱銷', hashtags:'#RADESIGN #正版outlet #品牌鞋特賣 #蝦皮' },
+    { id:'cf',  name:'巧福健康家電', icon:'', navColor:'gold',   soul:'溫暖居家、守護家人健康、實用親切、台灣品牌精神。', adStyle:'溫暖生活感、家人守護、療癒放鬆、痛點直擊', hashtags:'#居家健康 #巧福 #台灣品牌' },
+    { id:'ww',  name:'旺味米香腸',   icon:'', navColor:'red',    soul:'全台首創米香腸,傳承阿公家訓。', adStyle:'台灣古早味、手工真材實料、烤肉聚餐場景', hashtags:'#旺味米香腸 #米香腸 #台灣豬' },
+    { id:'ly',  name:'琉宇醬選',     icon:'', navColor:'mint',   soul:'琉宇醬選主理頂級進口醬料。', adStyle:'精緻質感、食材溯源、料理升級', hashtags:'#琉宇醬選 #好滋好滋 #PASSERI' },
+    { id:'moz', name:'MOZ瑞典駝鹿',  icon:'', navColor:'sky',    soul:'瑞典駝鹿DNA,用北歐色彩與趣味設計讓日常更輕鬆愉快。', adStyle:'北歐輕鬆感、顏值日常、戶外露營風、多色搭配', hashtags:'#MOZ瑞典駝鹿 #北歐設計 #洞洞鞋 #雲朵包' },
+    { id:'ka',  name:'空瑪那',        icon:'', navColor:'purple', soul:'空瑪那是台灣頂尖身心靈國際學院,由宸甄老師創立。', adStyle:'療癒禪意、國際專業、身心靈覺醒、名人背書', hashtags:'#空瑪那 #頌缽療癒 #瑜珈師資 #冥想' },
+    { id:'la',  name:'LACEZ',         icon:'', navColor:'mint',   soul:'LACEZ是台灣MIT內衣品牌,工廠直接賣給消費者。', adStyle:'閨蜜親切、精品感平價、MIT驕傲、穿出自信', hashtags:'#LACEZ #台灣MIT #好內衣不貴 #無鋼圈' },
+    { id:'ra',  name:'RADESIGN',      icon:'', navColor:'gold',   soul:'RADESIGN專營正版品牌鞋Outlet,百分百原廠授權。', adStyle:'直白促銷、正版保證、超值撿漏、蝦皮熱銷', hashtags:'#RADESIGN #正版outlet #品牌鞋特賣 #蝦皮' },
     // ★ v10.5:福臨門 navColor 改 brand_flm(對應 brand_packs 的 pack_key)
-    { id:'flm', name:'香港福臨門',    icon:'🏮', navColor:'brand_flm',
+    { id:'flm', name:'香港福臨門',    icon:'', navColor:'brand_flm',
       soul:'1948年創立於香港灣仔,近八十載粵菜傳承。米其林一星連續七年、富豪飯堂、中餐少林寺。每日新鮮食材、傳統手工烹製、百道工序成就每一味。',
       adStyle:'高端粵菜質感、傳承匠心、米其林星級、香港在地情懷、簡體中文為主(小紅書/抖音)、港味文案風格、不涉及家族歷史',
       hashtags:'#福臨門 #FookLamMoon #香港美食 #米其林 #粵菜 #富豪飯堂 #香港必吃' }
@@ -384,7 +298,7 @@ function buildDataFromSheets(data) {
     }
   });
   window.BRANDS = (brands || []).map(b => ({
-    id: b.id, name: b.name, icon: b.icon || '🏷️', navColor: b.navColor || 'gold',
+    id: b.id, name: b.name, icon: '', navColor: b.navColor || 'gold',   // 🆕 商業化:品牌不再用 emoji 圖示,一律純文字
     soul: b.soul || '', adStyle: b.adStyle || '', hashtags: b.hashtags || '',
     subs: Object.values(prodByBrand[b.id] || {})
   }));
