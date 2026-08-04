@@ -1995,15 +1995,25 @@ async function _persistVoiceToPersona(v) {
   } catch (e) { console.warn('[voice] 綁定人設例外(本機仍記住):', e.message); }
 }
 
-// 切換 KOL 後呼叫:人設上有綁語音就套用
-function applyPersonaVoice() {
+// 切換 KOL 後呼叫:語音一律以「這位 KOL 的人設」為準。
+//  人設有 voice_id → 套用;沒有 → 清空,畫面顯示未選擇。
+//  絕不沿用上一個 KOL 的語音 —— 那會讓客戶誤以為已經綁好。
+function syncVoiceForCurrentKol() {
   const p = (S.selectedKol || S.selectedPersona)?.persona;
-  if (!p || !p.voice_id) return;
-  if (S.selectedVoice && S.selectedVoice.id === p.voice_id) return;
-  S.selectedVoice = { id: p.voice_id, name: (S.selectedVoice && S.selectedVoice.id === p.voice_id ? S.selectedVoice.name : '已綁定語音') };
+  const vid = p && p.voice_id ? String(p.voice_id) : '';
+  if (!vid) {
+    S.selectedVoice = null;                       // 這位 KOL 沒綁 → 清空
+  } else if (!S.selectedVoice || S.selectedVoice.id !== vid) {
+    const cached = (function () {
+      try { return VoiceModal.findVoiceById ? VoiceModal.findVoiceById(vid) : null; } catch (_) { return null; }
+    })();
+    S.selectedVoice = cached || { id: vid, name: '已綁定語音' };
+  }
   try { updateVoiceTrigger(); } catch (_) {}
   try { updateCreditEstimate(); } catch (_) {}
 }
+window.syncVoiceForCurrentKol = syncVoiceForCurrentKol;
+function applyPersonaVoice() { return syncVoiceForCurrentKol(); }   // 舊名保留,避免別處呼叫壞掉
 window.applyPersonaVoice = applyPersonaVoice;
 
 // ─── 初始化 ────────────────────────────────────────────────
@@ -2029,13 +2039,9 @@ window.applyPersonaVoice = applyPersonaVoice;
     VoiceModal.open((S.selectedKol || S.selectedPersona)?.persona?.gender);
   };
 
-  const saved = VoiceModal.getSelected();
-  if (saved) {
-    S.selectedVoice = saved;
-    updateVoiceTrigger();
-  }
-  // 🆕 KOL 人設上若已綁語音,以它為準(跨裝置一致);沒綁才沿用本機記住的
-  try { applyPersonaVoice(); } catch (_) {}
+  // 🆕 開頁時不再無條件套用 localStorage 的語音。
+  //    等 selectKol() 依該 KOL 的人設決定要套用還是清空。
+  try { syncVoiceForCurrentKol(); } catch (_) {}
 
   // Vision Banner 綁定點擊
   document.querySelectorAll('.vision-col').forEach(col => {
@@ -2481,6 +2487,11 @@ function selectKol(g) {
 
   renderSelectedKolBanner(g);
   renderLookPicker();
+
+  // 🆕 換 KOL 時重算語音。
+  //    原本語音是「全域」的:換到沒綁過語音的 KOL,畫面照樣顯示上一個 KOL 的語音,
+  //    客戶以為綁好了,其實沒有 → 換裝置就變成預設日女聲。
+  try { syncVoiceForCurrentKol(); } catch (_) {}
 
   // 同步電影鏡頭版面
   syncSelectedKolToCine();
