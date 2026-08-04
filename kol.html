@@ -1398,6 +1398,50 @@ const PASSWORD = 'raby2026';
 //   ② billable 動作的回應統一處理「點數不足彈窗」+「刷新能量條」
 // 改一處,全模組覆蓋,以後新增模組也自動生效。
 const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit','ai_generate_social_posts','ai_generate_script','ai_generate_script_v2','storyboard_expand','ai_generate_persona'];
+
+// ═══════════════════════════════════════════════════════════════
+//  🛡 網路抖動免疫層(2026-08-04 實測驅動)
+//
+//  為什麼要有:實測看到 net::ERR_CONNECTION_CLOSED 連噴三次 —— 同一時間
+//    Netflix 和手機看片都正常。差別不在網路品質,在「對抖動的容忍度」:
+//    影音串流切成小塊、掉一塊自動重抓;我們是一個大請求從頭撐到尾,
+//    抖一下整個請求就死。客戶不會覺得是自己網路不好,只會覺得系統爛。
+//    客戶的網路我們修不了(電梯、地下室、咖啡廳 WiFi)→ 只能讓系統免疫。
+//  做法照抄廣告圖線已驗證的 _retryFetchJson(那條加了之後就沒再斷過)。
+//
+//  ⚠️⚠️ 最重要的一條:只重試「重複做也沒關係」的動作。
+//    扣點類若在「Worker 已扣點、回應半路斷掉」時重試 → 扣兩次、生兩支影片。
+//    所以白名單制:沒列在下面的一律只送一次,寧可失敗也不重複收錢。
+// ═══════════════════════════════════════════════════════════════
+const _RETRY_SAFE_KOL = [
+  'gas_cached',      // 純讀取(品牌/日曆/點數/人設清單)
+  'episode_result',  // 問影片好了沒 —— 純查詢
+  'fal_poll',        // 問進度 —— 純查詢
+  'ping',            // 健康檢查
+];
+async function _kolRetryFetch(origFetch, input, init, label) {
+  const TRIES = 4;
+  let lastErr;
+  for (let i = 0; i < TRIES; i++) {
+    try {
+      const resp = await origFetch(input, init);
+      if (resp.status >= 500 && i < TRIES - 1) throw new Error('HTTP ' + resp.status);
+      // ★ 關鍵:body 也要在重試圈內驗。斷線常見「假 200 但 body 壞掉」,
+      //   只包 fetch 抓不到 —— 這是廣告圖那條線踩過才學到的。
+      await resp.clone().json();
+      return resp;
+    } catch (e) {
+      lastErr = e;
+      if (i < TRIES - 1) {
+        const wait = Math.min(1600, 250 * Math.pow(2, i)) + Math.floor(Math.random() * 400);
+        console.warn('[kolRetry] ' + (label || 'req') + ' 第 ' + (i + 1) + '/' + TRIES
+          + ' 次傳輸中斷,' + wait + 'ms 後重試:', (e && e.message) ? e.message : e);
+        await new Promise(function (r) { setTimeout(r, wait); });
+      }
+    }
+  }
+  throw lastErr;
+}
 // 🆕 生成紀錄:要記進 D1 的動作 → kind 標籤
 //   理由:prompt 與素材網址「錯過就補不回來」,只有生成當下能收。
 //   接在既有攔截器上 → 16 支模組全覆蓋,不動任何生成邏輯。
@@ -1500,6 +1544,7 @@ const _LOG_KIND = {
   };
   window.fetch = async function (input, init) {
     let _billed = false, _body = null, _logBody = null, _t0 = 0;
+    let _retrySafe = false, _retryLabel = '';
     try {
       const _u = (typeof input === 'string') ? input : (input && input.url) || '';
       if (init && String(init.method || '').toUpperCase() === 'POST'
@@ -1512,6 +1557,11 @@ const _LOG_KIND = {
             init = Object.assign({}, init, { body: JSON.stringify(_o) });
           }
           if (_BILLED_KOL.indexOf(_o.action) !== -1) { _billed = true; _body = _o; }
+          // 🛡 只有白名單裡的唯讀/查詢動作才進重試圈(扣點類永遠只送一次)
+          if (_RETRY_SAFE_KOL.indexOf(_o.action) !== -1) {
+            _retrySafe = true;
+            _retryLabel = _o.action + (_o.gasAction ? ':' + _o.gasAction : '');
+          }
           if (_LOG_KIND[_o.action]) { _logBody = _o; _t0 = Date.now(); }   // 🆕 生成紀錄:記下送出的完整 body
         }
       }
@@ -1522,7 +1572,9 @@ const _LOG_KIND = {
       // 後端關卡也已先扣,稍後再對帳兩次(校正樂觀值與實扣的出入)
       try { if (typeof refreshBits === 'function') { setTimeout(refreshBits, 1800); setTimeout(refreshBits, 3500); } } catch (e) {}
     }
-    const _resp = await _origFetch(input, init);
+    const _resp = _retrySafe
+      ? await _kolRetryFetch(_origFetch, input, init, _retryLabel)   // 🛡 唯讀/查詢:抖了自己重來
+      : await _origFetch(input, init);                               //    其餘:只送一次,不重複收錢
     // 🆕 生成紀錄:拿到回應後非同步寫入 D1(不 await,不影響回傳時序)
     if (_logBody) {
       try {
