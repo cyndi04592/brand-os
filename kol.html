@@ -4022,6 +4022,32 @@ function _genProgress(btnId, boxId) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  STEP3 三顆生成鈕的連點鎖
+//  問題:STEP3 的「全套生成 / 只影片 / 只貼文」原本沒有 id,程式想鎖也抓不到
+//        （runEpisodeStitch 裡寫的 'episode-video-btn' 這個 id 從來不存在,
+//         getElementById 回 null、被 if (btn) 靜靜吃掉 → 鎖完全失效）。
+//        生成要等一兩分鐘,客戶以為沒反應就再按一次 → 每按一次都真的扣點。
+//  做法:三顆一起鎖(不能只鎖按下的那顆,否則點另一顆一樣重複送),
+//        文字改成「生成中…」讓人知道系統在動,結束後一起解鎖並還原文字。
+// ═══════════════════════════════════════════════════════════════
+const _EP_BTN_IDS = ['ep-btn-all', 'ep-btn-video', 'ep-btn-posts'];
+const _epBtnText = {};
+function _epBtnLock(on) {
+  _EP_BTN_IDS.forEach(function (id) {
+    const b = document.getElementById(id);
+    if (!b) return;
+    if (on) {
+      if (_epBtnText[id] === undefined) _epBtnText[id] = b.textContent;
+      b.disabled = true;
+      b.textContent = '生成中…';
+    } else {
+      b.disabled = false;
+      if (_epBtnText[id] !== undefined) b.textContent = _epBtnText[id];
+    }
+  });
+}
+
 async function createStitchedVideo(beats) {
   if (typeof KolStitch === 'undefined' || !KolStitch.runStitchFlow) {
     toast('接片引擎(KolStitch)未載入', 'error'); return;
@@ -5236,9 +5262,9 @@ function renderEpisodeCard() {
       </div>
 <div class="ep-actions" style="padding-top:6px;flex-direction:column;align-items:stretch;gap:8px">
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-success" onclick="generateEpisodeV510('all')" style="flex:1;min-width:180px">全套生成</button>
-          <button class="btn btn-primary" onclick="generateEpisodeV510('video')">只影片</button>
-          <button class="btn btn-ghost" onclick="generateEpisodeV510('posts')">只貼文</button>
+          <button class="btn btn-success" id="ep-btn-all" onclick="generateEpisodeV510('all')" style="flex:1;min-width:180px">全套生成</button>
+          <button class="btn btn-primary" id="ep-btn-video" onclick="generateEpisodeV510('video')">只影片</button>
+          <button class="btn btn-ghost" id="ep-btn-posts" onclick="generateEpisodeV510('posts')">只貼文</button>
         </div>
         <div style="font-size:10.5px;color:var(--text-dim);padding-left:2px">全套生成 = 影片 + Instagram / Threads / Facebook 三平台貼文</div>
         </div>
@@ -6371,6 +6397,10 @@ async function generateEpisodeV510(mode) {
     posts_status: mode === 'video' ? 'skipped' : 'pending',
   };
 
+  // 🔒 從這裡開始都是要等的非同步工作 → 立刻鎖三顆鈕,防連點重複扣點
+  //    （放在所有驗證與確認視窗之後:使用者按取消時不會留下鎖死的按鈕）
+  _epBtnLock(true);
+
   let episodeId = null;
   try {
     const saved = await apiSaveEpisode(episodeData);
@@ -6392,7 +6422,11 @@ async function generateEpisodeV510(mode) {
     tasks.push(runPostsGeneration(persona, product, situation, sceneId, movementId, tone, episodeId));
   }
 
-  await Promise.allSettled(tasks);
+  try {
+    await Promise.allSettled(tasks);
+  } finally {
+    _epBtnLock(false);   // 🔓 用 finally:就算生成失敗也一定解鎖,不必重整頁面
+  }
 
   // 3. 刷新日曆/佇列
   renderSystemCalendar();
@@ -6505,7 +6539,6 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
 }
 // 🆕 STEP3 多段分鏡 → 接片(讀 STEP3 狀態,跟 createStitchedVideo 同邏輯)
 async function runEpisodeStitch(persona, beats, product, sceneId, movementId, tone, productImageUrls, episodeId) {
-  const _P3 = _genProgress('episode-video-btn', 'episode-task-box');
   if (typeof KolStitch === 'undefined' || !KolStitch.runStitchFlow) {
     toast('接片引擎(KolStitch)未載入', 'error');
     if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: '接片引擎未載入' });
@@ -6516,6 +6549,11 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: 'KOL 未綁定照片' });
     return;
   }
+  // 進度框:容器是 system-episode-task（原本寫 'episode-task-box' 這個 id 不存在
+  //   → 前置取素材那一兩分鐘畫面完全沒動靜,客戶以為當機)。
+  //   按鈕不在這裡鎖(由 generateEpisodeV510 的 _epBtnLock 統一管三顆)→ 第一參數傳 null。
+  //   建立時機移到兩道驗證之後:驗證失敗直接 return,不會留下卡住的進度框。
+  const _P3 = _genProgress(null, 'system-episode-task');
 
   let kolImageUrl = '';
   try {
