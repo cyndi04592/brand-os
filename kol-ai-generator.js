@@ -682,9 +682,7 @@ function buildPanelHTML() {
         </div>
       </div>
 
-      <div class="kai-folder-hint" id="kai-folder-hint">
-        將存到:(請先選品牌和 Persona)
-      </div>
+      <div class="kai-folder-hint" id="kai-folder-hint" style="display:none"></div>
 
       <div class="kai-row">
         <div class="kai-field">
@@ -816,7 +814,7 @@ function buildModalHTML() {
   return `
     <div class="kai-modal-wrap" id="kai-modal-wrap">
       <div class="kai-modal">
-        <h3>🆕 新增 AI KOL Persona</h3>
+        <h3>建立 KOL 角色</h3>
         <div class="sub">
           系統會在 <code style="color:#6dfac2;">/KOL/{品牌}/</code> 下建立新的子資料夾。<br>
           名字請用純個人名(例如「柚子」「小晴」),不要加品牌字樣。
@@ -1047,7 +1045,7 @@ async function confirmNewPersona() {
     updateFolderHint();
 
     closeModal();
-    showStatus('✅ 已建立 persona「' + name + '」資料夾', 'ok');
+    showStatus('✅ 已建立角色「' + name + '」資料夾', 'ok');
   } catch (e) {
     alert('❌ 建立失敗:' + e.message);
   } finally {
@@ -1184,7 +1182,7 @@ async function generate() {
     return;
   }
   if (!S.currentPersonaName) {
-    alert('請先選或新增 persona');
+    alert('請先選擇或建立 KOL 角色');
     return;
   }
 
@@ -1359,7 +1357,7 @@ async function saveImageToDrive(idx) {
   if (img.saved) return;
 
   if (!S.currentBrandId || !S.currentPersonaName) {
-    alert('品牌或 persona 未選');
+    alert('尚未選擇品牌或 KOL 角色');
     return;
   }
 
