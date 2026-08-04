@@ -678,7 +678,7 @@ function buildPanelHTML() {
           </select>
         </div>
         <div style="display:flex;align-items:end;">
-          <button class="kai-btn-add" id="kai-btn-new-persona">+ 新 KOL</button>
+          <button class="kai-btn-add" id="kai-btn-new-persona">創建KOL</button>
         </div>
       </div>
 
@@ -931,7 +931,7 @@ async function syncBrandAndLoadPersonas(brandId) {
     S.personas = res.personas || [];
 
     if (S.personas.length === 0) {
-      personaSel.innerHTML = '<option value="">— 此品牌尚無 persona,點 + 新增 —</option>';
+      personaSel.innerHTML = '<option value="">尚未創建KOL</option>';
     } else {
       personaSel.innerHTML = '<option value="">— 選擇 persona —</option>' +
         S.personas.map(p =>
