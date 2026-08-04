@@ -2062,6 +2062,9 @@ window.applyPersonaVoice = applyPersonaVoice;
   // 🆕 開頁時不再無條件套用 localStorage 的語音。
   //    等 selectKol() 依該 KOL 的人設決定要套用還是清空。
   try { syncVoiceForCurrentKol(); } catch (_) {}
+  // 🆕 語音庫載入完成後再套一次:重登時只從人設拿得到 voice_id(沒有名字),
+  //    畫面會先顯示「已綁定語音」;等清單回來就換成真正的語音名稱。
+  try { VoiceModal.onLibraryLoaded && VoiceModal.onLibraryLoaded(() => syncVoiceForCurrentKol()); } catch (_) {}
 
   // Vision Banner 綁定點擊
   document.querySelectorAll('.vision-col').forEach(col => {
