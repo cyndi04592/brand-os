@@ -1981,6 +1981,19 @@ function _kolInsufficientBits(need, balance) {
 //  saveKolPersona 是「整列覆蓋」,所以必須帶完整人設、只換 voice_id,
 //  少帶欄位會把其他資料清空。
 // ═══════════════════════════════════════════════════════════════
+// 寫完人設後把 kol_personas 同步進 D1(fire-and-forget,不擋 UI)
+function _syncPersonasToD1() {
+  try {
+    fetch(WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'd1_sync', password: PASSWORD, adminKey: 'ruby2026sync', table: 'kol_personas' }),
+    }).then(r => r.json())
+      .then(d => console.log(d && d.ok ? '[voice] D1 已同步' : '[voice] D1 同步失敗(排程稍後會補):' + (d && d.error)))
+      .catch(e => console.warn('[voice] D1 同步連線失敗(排程稍後會補):', e.message));
+  } catch (_) {}
+}
+
 async function _persistVoiceToPersona(v) {
   try {
     const kol = S.selectedKol || S.selectedPersona;
@@ -1990,7 +2003,14 @@ async function _persistVoiceToPersona(v) {
     if (p.voice_id === v.id) return;                        // 沒變就不寫
     const data = Object.assign({}, p, { voice_id: v.id });
     const r = await gasPost('saveKolPersona', { data });
-    if (r && r.ok) { p.voice_id = v.id; console.log('[voice] 已綁定到 KOL 人設:' + p.persona_name + ' → ' + v.name); }
+    if (r && r.ok) {
+      p.voice_id = v.id;
+      console.log('[voice] 已綁定到 KOL 人設:' + p.persona_name + ' → ' + v.name);
+      // 🆕 寫入進 GAS(正本),但前端讀人設走 D1 → 不同步的話重整/換裝置會看到「尚未選擇」。
+      //    排程 10 分鐘才跑一次,對客戶來說太久,這裡寫完立刻同步這一張表。
+      //    失敗也沒關係:排程稍後會補上,而且 GAS 正本已經存好了。
+      _syncPersonasToD1();
+    }
     else console.warn('[voice] 綁定人設失敗(本機仍記住):', r && r.error);
   } catch (e) { console.warn('[voice] 綁定人設例外(本機仍記住):', e.message); }
 }
