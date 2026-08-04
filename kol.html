@@ -63,6 +63,16 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .vision-col.future.active{box-shadow:inset 0 0 0 1.5px rgba(250,109,155,.6);}
 .vision-col.disabled{opacity:.4;cursor:not-allowed;}
 .vision-col.disabled:hover{transform:none;background:transparent;}
+.onb-card{border:1px solid rgba(109,250,194,.35)!important;background:linear-gradient(135deg,rgba(109,250,194,.07),rgba(124,109,250,.05))!important;}
+.onb-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:5px;}
+.onb-sub{font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;}
+.onb-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:600px){.onb-opts{grid-template-columns:1fr;}}
+.onb-opt{text-align:left;padding:14px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s;font-family:inherit;}
+.onb-opt:hover{border-color:var(--accent);transform:translateY(-2px);}
+.onb-opt .t{font-size:14px;font-weight:700;color:var(--text);display:block;margin-bottom:5px;}
+.onb-opt .d{font-size:11.5px;color:var(--text-dim);line-height:1.5;display:block;}
+.onb-opt .tag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(109,250,194,.15);color:var(--accent3);margin-left:6px;vertical-align:2px;}
 .vision-col.step-locked{opacity:.45;cursor:not-allowed;}
 .vision-col.step-locked:hover{transform:none;background:transparent;}
 .vision-stage{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
@@ -763,6 +773,21 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           <div class="look-grid" id="look-grid">
             <div class="kol-empty" style="grid-column:1/-1;padding:20px">載入 Look 中…</div>
           </div>
+        </div>
+      </div>
+
+      <div class="panel onb-card" id="kol-onboard-card" style="display:none">
+        <div class="onb-title">第一步:建立你的 KOL 角色</div>
+        <div class="onb-sub">這個品牌還沒有 KOL。先建立一位角色,才能製作口播影片,STEP 2、3 也才會解鎖。</div>
+        <div class="onb-opts">
+          <button type="button" class="onb-opt" onclick="kolOnboardGoAI()">
+            <span class="t">用 AI 生成一位<span class="tag">最快</span></span>
+            <span class="d">不用準備照片,選性別、年齡、氣質,AI 直接生出一位虛擬 KOL。</span>
+          </button>
+          <button type="button" class="onb-opt" onclick="kolOnboardGoDrive()">
+            <span class="t">用真人照片建立</span>
+            <span class="d">在 Google Drive 的 /KOL 資料夾裡,用 KOL 名稱開子資料夾並放入照片。</span>
+          </button>
         </div>
       </div>
 
@@ -2215,6 +2240,25 @@ function hasBoundKol() {
   return (S.personas || []).some(p => p.talking_photo_id && String(p.talking_photo_id).trim());
 }
 
+// 空狀態卡片:① 捲到 AI 生成器並閃一下 ② 開 Drive 的 /KOL 資料夾
+function kolOnboardGoAI() {
+  const el = document.getElementById('kai-panel');
+  if (!el) { toast('生成器還在載入,請稍候再試', 'warn'); return; }
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.add('sbp-recommend');
+  setTimeout(() => el.classList.remove('sbp-recommend'), 3000);
+}
+window.kolOnboardGoAI = kolOnboardGoAI;
+
+function kolOnboardGoDrive() {
+  const url = S.drivePhotos && S.drivePhotos.kol_folder_url;
+  if (url) { window.open(url, '_blank', 'noopener'); return; }
+  const el = document.getElementById('drive-gallery-wrap');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  else toast('Drive 照片庫還在載入,請稍候再試', 'warn');
+}
+window.kolOnboardGoDrive = kolOnboardGoDrive;
+
 function updateStepLocks() {
   const locked = !S.currentBrandId || !hasBoundKol();
   ['cinematic', 'system'].forEach(m => {
@@ -2226,6 +2270,14 @@ function updateStepLocks() {
     if (live) live.style.display = locked ? 'none' : '';
     if (lock) lock.style.display = locked ? '' : 'none';
   });
+  // 沒角色 → 右欄的「口播影片設定」收起來,換成建立角色引導卡
+  //   理由:設定全開但按下去會被擋,客戶會白填一輪腳本才發現不能生成。
+  const _onb = document.getElementById('kol-onboard-card');
+  const _vid = document.getElementById('video-panel');
+  const _noKol = !hasBoundKol();
+  if (_onb) _onb.style.display = (S.currentBrandId && _noKol) ? '' : 'none';
+  if (_vid) _vid.style.display = (S.currentBrandId && _noKol) ? 'none' : '';
+
   // 已經站在被鎖的分頁上 → 靜默退回 STEP 1(不彈 toast,免得切品牌時一直跳)
   if (locked && S.currentMode !== 'talking') switchMode('talking');
 }
