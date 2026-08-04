@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════════
 //  kol-storyboard-panel.js · v1.6
-//  🎬 分鏡產生器面板 — 大綱 → AI 編修 → 分鏡卡片 → 確認分鏡(鎖定)/ 重新編輯(解鎖)
+//  分鏡產生器面板 — 大綱 → AI 編修 → 分鏡卡片 → 確認分鏡(鎖定)/ 重新編輯(解鎖)
 //   • open(ctx): { containerId, persona, product, sceneLabel, onConfirm, onEdit }
 //   • 確認分鏡 → ctx.onConfirm(beats, duration)(填劇情+鎖設定,不生成)
 //   • 重新編輯 → ctx.onEdit()(解鎖)
@@ -16,7 +16,7 @@
   const state = { duration: 15, outline: '', beats: [], busy: false, confirmed: false };
   let prodCache = [];   // 🆕 1b 分段綁圖:商品照縮圖清單(每次 renderCards 從 ctx.getProductImages() 重讀)
 
-  // 🛡️ v1.3 修:本面板同時掛在 STEP2(sbp-cine-mount)+ STEP3(sbp-episode-mount)兩個容器,
+  // v1.3 修:本面板同時掛在 STEP2(sbp-cine-mount)+ STEP3(sbp-episode-mount)兩個容器,
   //   固定 ID 在頁面上會「重複」→ document.getElementById 永遠抓到第一個(STEP2)→ STEP3 按 AI 編修
   //   請求有送、200 有回,但卡片被畫進 STEP2 的隱藏容器,STEP3 看起來「沒反應」。
   //   解法:面板內部一律「只在當前掛載的 rootEl 裡找元素」,兩個容器各自獨立。
@@ -145,7 +145,7 @@
     }
 
     state.busy = false;
-    if (btn) { btn.disabled = false; btn.textContent = '✨ AI 編修成分鏡'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'AI 編修成分鏡'; }
     renderCards();
   }
 
@@ -162,7 +162,7 @@
       const _si = shortInfo(b);
       fitEl.textContent = `${b.fit.chars} 字 · 約 ${b.fit.estSec} 秒`
         + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '')
-        + (_si ? ` 💤 台詞偏短,結尾約空 ${_si.gap} 秒(建議補到約 ${_si.target} 字)` : '');
+        + (_si ? ` 台詞偏短,結尾約空 ${_si.gap} 秒(建議補到約 ${_si.target} 字)` : '');
       fitEl.className = 'sbp-fit' + (b.overflow ? ' over' : (_si ? ' short' : ''));
     }
   }
@@ -218,7 +218,7 @@
     if (!rootEl) return;
     rootEl.innerHTML = `
 <div class="sbp-wrap">
-  <div class="sbp-head">🎬 分鏡產生器<span class="sbp-sub">大綱 → AI 編修 → 分鏡卡片</span></div>
+  <div class="sbp-head">分鏡產生器<span class="sbp-sub">大綱 → AI 編修 → 分鏡卡片</span></div>
   <div class="sbp-row">
     <label class="sbp-label" style="margin:0">長度</label>
     <select id="sbp-duration" class="sbp-select" style="width:auto" onchange="KolStoryboardPanel.durationChange(this.value)">
@@ -230,7 +230,7 @@
     placeholder="例:健一在日本富士山的登山步道休息,隨身帶著防熊噴霧,最近日本熊出沒新聞變多..."
     oninput="KolStoryboardPanel.outlineInput(this.value)">${esc(state.outline)}</textarea>
   <div class="sbp-actions">
-    <button id="sbp-expand-btn" class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.expand()">✨ AI 編修成分鏡</button>
+    <button id="sbp-expand-btn" class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.expand()">AI 編修成分鏡</button>
   </div>
   <div id="sbp-cards"></div>
 </div>`;
@@ -264,7 +264,7 @@
   function cardHtml(b) {
     const overCls = b.overflow ? ' over' : '';
     const fitTxt = b.dialogue
-      ? `${b.fit?.chars ?? 0} 字 · 約 ${b.fit?.estSec ?? 0} 秒` + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '') + (shortInfo(b) ? ` 💤 台詞偏短,結尾約空 ${shortInfo(b).gap} 秒(建議補到約 ${shortInfo(b).target} 字)` : '')
+      ? `${b.fit?.chars ?? 0} 字 · 約 ${b.fit?.estSec ?? 0} 秒` + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '') + (shortInfo(b) ? ` 台詞偏短,結尾約空 ${shortInfo(b).gap} 秒(建議補到約 ${shortInfo(b).target} 字)` : '')
       : '';
     return `
 <div class="sbp-card">
@@ -301,12 +301,12 @@
           ? `✅ 已確認 · ${state.beats.length} 段會自動接成 ≈ ${state.duration} 秒長片,挑好設定按生成`
           : '✅ 分鏡已確認 · 單段,挑好設定按生成')
       : (multi
-          ? `🎬 ${state.beats.length} 段分鏡 → 按「確認分鏡」後會自動接成 ≈ ${state.duration} 秒長片`
+          ? `${state.beats.length} 段分鏡 → 按「確認分鏡」後會自動接成 ≈ ${state.duration} 秒長片`
           : '確認後會鎖定下面設定');
     box.innerHTML = state.beats.map(cardHtml).join('') + `
 <div class="sbp-genrow">
   <span class="sbp-note">${note}</span>
-  <button class="btn ${state.confirmed ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="KolStoryboardPanel.confirmToggle()">${state.confirmed ? '✏️ 重新編輯(解鎖)' : '✅ 確認分鏡'}</button>
+  <button class="btn ${state.confirmed ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="KolStoryboardPanel.confirmToggle()">${state.confirmed ? '重新編輯(解鎖)' : '✅ 確認分鏡'}</button>
 </div>`;
   }
 
@@ -317,5 +317,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] 🎬 v1.6 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 超長擋確認 · 🆕偏短黃字提醒)');
+  console.log('[KolStoryboardPanel] v1.6 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 超長擋確認 · 🆕偏短黃字提醒)');
 })();
