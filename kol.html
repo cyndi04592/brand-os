@@ -2029,7 +2029,7 @@ function _syncPersonasToD1() {
     fetch(WORKER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'd1_sync', password: PASSWORD, adminKey: 'ruby2026sync', table: 'kol_personas' }),
+      body: JSON.stringify({ action: 'sync_personas', password: PASSWORD }),
     }).then(r => r.json())
       .then(d => console.log(d && d.ok ? '[voice] D1 已同步' : '[voice] D1 同步失敗(排程稍後會補):' + (d && d.error)))
       .catch(e => console.warn('[voice] D1 同步連線失敗(排程稍後會補):', e.message));
