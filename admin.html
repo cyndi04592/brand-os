@@ -1460,7 +1460,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="smart-modal">
     <div class="smart-modal-header">
       <div>
-        <div class="smart-modal-title">✨ 智慧新增商品</div>
+        <div class="smart-modal-title">智慧新增商品</div>
         <div class="smart-modal-sub">用一句話 + 商品網址,AI 自動爬規格</div>
       </div>
       <button class="smart-modal-close" onclick="closeSmartModal()">✕</button>
@@ -1485,13 +1485,13 @@ tr:hover td { background: rgba(124,109,250,0.04); }
         </div>
         <button class="smart-url-add" id="smartUrlAddBtn" onclick="addSmartUrl()">+ 新增備援網址</button>
         <div class="smart-examples" style="margin-top:8px;">
-          <b style="color:var(--mint);">💡 為什麼建議多貼?</b> 品牌官網有時是 SPA,AI 抓不到 → 加 MOMO/嘖嘖/PChome 成功率更高
+          <b style="color:var(--mint);">為什麼建議多貼?</b> 品牌官網有時是 SPA,AI 抓不到 → 加 MOMO/嘖嘖/PChome 成功率更高
         </div>
       </div>
 
       <div class="smart-action-row">
         <button class="btn-ai-cancel" onclick="closeSmartModal()">取消</button>
-        <button class="btn-ai-parse" id="btnAiParse" onclick="aiParseProduct()">✨ AI 解析</button>
+        <button class="btn-ai-parse" id="btnAiParse" onclick="aiParseProduct()">AI 解析</button>
       </div>
     </div>
 
@@ -1503,7 +1503,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     </div>
 
     <div id="smartResultView" class="smart-result">
-      <div class="smart-result-title">🤖 AI 預填結果(綠=高信心 / 紫=請確認 / 紅=低信心)</div>
+      <div class="smart-result-title">AI 預填結果(綠=高信心 / 紫=請確認 / 紅=低信心)</div>
       <div class="smart-result-grid" id="smartResultGrid"></div>
       <div class="smart-reasoning" id="smartReasoning"></div>
       <div class="smart-scrape-report" id="smartScrapeReport" style="display:none"></div>
@@ -1520,7 +1520,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="enrich-modal">
     <div class="smart-modal-header">
       <div>
-        <div class="smart-modal-title">✨ AI 補齊規格</div>
+        <div class="smart-modal-title">AI 補齊規格</div>
         <div class="smart-modal-sub">給 AI 商品網址,自動抽出規格與賣點</div>
       </div>
       <button class="smart-modal-close" onclick="closeEnrichModal()">✕</button>
@@ -1542,7 +1542,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 
       <div class="smart-action-row">
         <button class="btn-ai-cancel" onclick="closeEnrichModal()">取消</button>
-        <button class="btn-ai-parse" onclick="aiEnrichProduct()">✨ 開始抽取</button>
+        <button class="btn-ai-parse" onclick="aiEnrichProduct()">開始抽取</button>
       </div>
     </div>
 
@@ -1554,7 +1554,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     </div>
 
     <div id="enrichResultView" class="smart-result">
-      <div class="smart-result-title">🤖 AI 抽取結果</div>
+      <div class="smart-result-title">AI 抽取結果</div>
       <div class="smart-result-grid" id="enrichResultGrid"></div>
       <div class="smart-reasoning" id="enrichReasoning"></div>
       <div class="smart-scrape-report" id="enrichScrapeReport" style="display:none"></div>
@@ -1567,11 +1567,11 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 </div>
 
 <div class="top-bar">
-  <h1>⚙️ Brand OS 後台</h1>
+  <h1>Brand OS 後台</h1>
   <span class="badge">芮比廣告行銷</span>
   <div class="spacer"></div>
   <span class="status-msg" id="statusMsg"></span>
-  <button class="btn-save-all" id="btnSaveAll" onclick="saveAll()">💾 儲存全部</button>
+  <button class="btn-save-all" id="btnSaveAll" onclick="saveAll()">儲存全部</button>
 </div>
 
 <div class="tabs">
@@ -1579,11 +1579,11 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="tab" onclick="switchTab('products')">商品管理</div>
   <div class="tab" onclick="switchTab('folders')">素材資料夾</div>
   <div class="tab" onclick="switchTab('delivers')">投手交付表</div>
-  <div class="tab" onclick="switchTab('memory')">🧠 記憶庫</div>
-  <div class="tab tab-pending" onclick="switchTab('apply')">📋 品牌審核<span class="pending-dot" id="pendingDot"></span></div>
+  <div class="tab" onclick="switchTab('memory')">記憶庫</div>
+  <div class="tab tab-pending" onclick="switchTab('apply')">品牌審核<span class="pending-dot" id="pendingDot"></span></div>
   <div class="tab" onclick="switchTab('staff')">員工管理</div>
-  <div class="tab" onclick="switchTab('topup')">💎 儲值管理</div>
-  <div class="tab" onclick="switchTab('suborder')">📅 訂閱管理</div>
+  <div class="tab" onclick="switchTab('topup')">儲值管理</div>
+  <div class="tab" onclick="switchTab('suborder')">訂閱管理</div>
 </div>
 
 <div class="main">
@@ -1591,7 +1591,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="section active" id="sec-brands">
     <div class="section-header">
       <h2>品牌列表</h2>
-      <span style="font-size:11px;color:var(--t3);font-style:italic;margin-left:8px;">品牌透過「📋 品牌進駐問卷」進來,核准後才出現在這</span>
+      <span style="font-size:11px;color:var(--t3);font-style:italic;margin-left:8px;">品牌透過「品牌進駐問卷」進來,核准後才出現在這</span>
     </div>
     <div class="brands-grid" id="brandsGrid"></div>
   </div>
@@ -1600,7 +1600,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     <div class="section-header">
       <h2>商品列表</h2>
       <button class="btn-add" onclick="addProduct()">＋ 新增商品</button>
-      <button class="btn-smart-add" onclick="openSmartModal()">✨ 智慧新增</button>
+      <button class="btn-smart-add" onclick="openSmartModal()">智慧新增</button>
     </div>
     <div class="filter-row">
       <select class="filter-select" id="filterBrand" onchange="renderProducts()"><option value="">全部品牌</option></select>
@@ -1620,7 +1620,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="section" id="sec-delivers">
     <div class="section-header">
       <h2>投手交付表</h2>
-      <button class="btn-refresh" onclick="loadDelivers()">🔄 重新整理</button>
+      <button class="btn-refresh" onclick="loadDelivers()">重新整理</button>
     </div>
     <div class="filter-row">
       <select class="filter-select" id="deliverFilterBrand" onchange="renderDelivers()"><option value="">全部品牌</option></select>
@@ -1628,7 +1628,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
         <option value="">全部狀態</option>
         <option value="素材已備妥">✅ 素材已備妥</option>
         <option value="缺素材">⚠️ 缺素材</option>
-        <option value="已投放">🚀 已投放</option>
+        <option value="已投放">已投放</option>
       </select>
       <span class="stat-label" id="deliverStat">共 0 筆</span>
     </div>
@@ -1642,8 +1642,8 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 
   <div class="section" id="sec-memory">
     <div class="section-header">
-      <h2>🧠 文案記憶庫</h2>
-      <button class="btn-refresh mem-btn-reload" onclick="loadAdminMemory(1)">🔄 重新整理</button>
+      <h2>文案記憶庫</h2>
+      <button class="btn-refresh mem-btn-reload" onclick="loadAdminMemory(1)">重新整理</button>
     </div>
     <div class="mem-admin-toolbar">
       <div class="mem-filter-group">
@@ -1661,8 +1661,8 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 
   <div class="section" id="sec-apply">
     <div class="section-header">
-      <h2>📋 品牌進駐審核</h2>
-      <button class="btn-refresh" onclick="loadApply()">🔄 重新整理</button>
+      <h2>品牌進駐審核</h2>
+      <button class="btn-refresh" onclick="loadApply()">重新整理</button>
     </div>
     <div class="apply-filter-tabs">
       <button class="apply-ftab on" onclick="filterApply('all',this)">全部</button>
@@ -1674,30 +1674,30 @@ tr:hover td { background: rgba(124,109,250,0.04); }
       <div class="mem-loading">載入中...</div>
     </div>
     <div class="apply-api-links">
-      <div class="api-links-title">🔗 API 費用快速連結</div>
+      <div class="api-links-title">API 費用快速連結</div>
       <div class="api-links-grid">
         <a class="api-link-card" href="https://console.anthropic.com/settings/billing" target="_blank">
-          <div class="api-link-icon">🤖</div><div class="api-link-name">Claude API</div>
+          <div class="api-link-icon"></div><div class="api-link-name">Claude API</div>
           <div class="api-link-url">console.anthropic.com</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://app.photoroom.com/account" target="_blank">
-          <div class="api-link-icon">📸</div><div class="api-link-name">PhotoRoom</div>
+          <div class="api-link-icon"></div><div class="api-link-name">PhotoRoom</div>
           <div class="api-link-url">app.photoroom.com</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://fal.ai/dashboard" target="_blank">
-          <div class="api-link-icon">🎨</div><div class="api-link-name">fal.ai</div>
+          <div class="api-link-icon"></div><div class="api-link-name">fal.ai</div>
           <div class="api-link-url">fal.ai/dashboard</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://dash.cloudflare.com" target="_blank">
-          <div class="api-link-icon">☁️</div><div class="api-link-name">Cloudflare</div>
+          <div class="api-link-icon"></div><div class="api-link-name">Cloudflare</div>
           <div class="api-link-url">dash.cloudflare.com</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://ai.raby.com.tw/onboard.html" target="_blank">
-          <div class="api-link-icon">📝</div><div class="api-link-name">品牌進駐問卷</div>
+          <div class="api-link-icon"></div><div class="api-link-name">品牌進駐問卷</div>
           <div class="api-link-url">ai.raby.com.tw/onboard.html</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://script.google.com" target="_blank">
-          <div class="api-link-icon">📋</div><div class="api-link-name">Apps Script</div>
+          <div class="api-link-icon"></div><div class="api-link-name">Apps Script</div>
           <div class="api-link-url">script.google.com</div><div class="api-link-arrow">↗</div>
         </a>
       </div>
@@ -1707,7 +1707,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="section" id="sec-staff">
     <div class="section-header">
       <h2>員工白名單管理</h2>
-      <button class="btn-refresh" onclick="loadStaff()">🔄 重新整理</button>
+      <button class="btn-refresh" onclick="loadStaff()">重新整理</button>
     </div>
     <div style="font-size:12px;color:var(--t3);margin-bottom:18px;line-height:1.9;">
       只有在白名單內的 Google 帳號才能登入 Brand OS。<br>
@@ -1747,8 +1747,8 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 
   <div class="section" id="sec-topup">
     <div class="section-header">
-      <h2>💎 儲值管理(Bits 補給包訂單)</h2>
-      <button class="btn-refresh" onclick="loadTopup()">🔄 重新整理</button>
+      <h2>儲值管理(Bits 補給包訂單)</h2>
+      <button class="btn-refresh" onclick="loadTopup()">重新整理</button>
     </div>
     <div style="font-size:12px;color:var(--t3);margin-bottom:18px;line-height:1.9;">
       客戶下單後出現在這裡。核對銀行「真的收到款」後按「✓ 確認入帳」,系統自動把 Bits 加進該客戶的加購池(永久保留)。<br>
@@ -1756,7 +1756,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     </div>
     <div style="background:rgba(255,93,143,0.06);border:1px solid rgba(255,93,143,0.25);border-radius:12px;padding:16px 18px;margin-bottom:22px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-        <span style="font-size:15px;font-weight:800;color:#ff8cae;">🎁 節慶包限時設定</span>
+        <span style="font-size:15px;font-weight:800;color:#ff8cae;">節慶包限時設定</span>
         <span id="holidayStockLeft" style="font-size:12px;color:var(--t3);"></span>
       </div>
       <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;">
@@ -1765,7 +1765,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
         </label>
         <div>
           <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;">包名(可自訂檔期)</label>
-          <input class="field-input" id="hcName" type="text" style="width:180px;" placeholder="例:🎄 聖誕限定包 / 🐍 蛇年禮包">
+          <input class="field-input" id="hcName" type="text" style="width:180px;" placeholder="例:聖誕限定包 / 蛇年禮包">
         </div>
         <div>
           <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;">限量(0 = 不限量)</label>
@@ -1779,7 +1779,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
           <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;">截止時間</label>
           <input class="field-input" id="hcEnd" type="datetime-local" style="width:210px;">
         </div>
-        <button class="btn-add-staff" style="padding:9px 20px" onclick="saveHolidayCfg()">💾 儲存設定</button>
+        <button class="btn-add-staff" style="padding:9px 20px" onclick="saveHolidayCfg()">儲存設定</button>
       </div>
       <div style="font-size:11px;color:var(--t3);margin-top:11px;line-height:1.7;">※「儲存設定」會把剩餘庫存重設為限量值(重新上架 = 庫存歸位)。客戶端商城會顯示倒數計時與剩餘組數。</div>
     </div>
@@ -1790,8 +1790,8 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 
   <div class="section" id="sec-suborder">
     <div class="section-header">
-      <h2>📅 訂閱管理(方案月繳/年繳訂單)</h2>
-      <button class="btn-refresh" onclick="loadSubOrders()">🔄 重新整理</button>
+      <h2>訂閱管理(方案月繳/年繳訂單)</h2>
+      <button class="btn-refresh" onclick="loadSubOrders()">重新整理</button>
     </div>
     <div style="font-size:12px;color:var(--t3);margin-bottom:18px;line-height:1.9;">
       客戶選方案(入門/專業/旗艦)下單後出現在這裡。核對「銀行實際收款」後按「✓ 確認開通」,系統自動開通該方案並發放月配額。<br>
@@ -1808,21 +1808,21 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 
 // ═══════════════════════════════════════════════════════════
-//  🔐 管理鑰匙(ADMIN_KEY)—— 後台專用第二道鎖
+//  管理鑰匙(ADMIN_KEY)—— 後台專用第二道鎖
 //  為什麼要這層:PASSWORD 明文寫在所有前端檔案裡,客戶按 F12 就拿得到。
 //  ADMIN_KEY 只存在 GAS 指令碼屬性 + Worker Secret + 你自己的瀏覽器,
 //  「不寫進任何 code、不進 GitHub」,所以 repo 是 public 也翻不到。
 //  攔截器做法:所有打 GAS 的請求自動補上鑰匙 → 25 處呼叫零改動,不會漏。
 // ═══════════════════════════════════════════════════════════
 const _AK_STORE = 'bs_admin_key';
-// 🔐 改用 localStorage:記住管理密碼,不必每次開分頁重打那串亂碼。
+// 改用 localStorage:記住管理密碼,不必每次開分頁重打那串亂碼。
 //    要清除(換電腦/借人用)→ Console 打 _resetAdminKey()
 function _adminKey() {
   try { return localStorage.getItem(_AK_STORE) || sessionStorage.getItem(_AK_STORE) || ''; }
   catch (_) { return sessionStorage.getItem(_AK_STORE) || ''; }
 }
 window._setAdminKey = function () {
-  const k = (window.prompt('🔐 Brand OS 管理後台\n\n請輸入管理密碼(ADMIN_KEY):\n(輸入一次就會記住,要清除請打 _resetAdminKey())') || '').trim();
+  const k = (window.prompt('Brand OS 管理後台\n\n請輸入管理密碼(ADMIN_KEY):\n(輸入一次就會記住,要清除請打 _resetAdminKey())') || '').trim();
   try { localStorage.setItem(_AK_STORE, k); } catch (_) { sessionStorage.setItem(_AK_STORE, k); }
   if (k) { console.log('%c✅ 管理密碼已記住(下次不再問)', 'color:#0a0'); }
   else   { console.warn('⚠️ 未設定管理密碼,管理功能會被 GAS 擋下。輸入 _setAdminKey() 可重新設定'); }
@@ -1863,7 +1863,7 @@ if (!_adminKey()) { try { window._setAdminKey(); } catch (e) {} }
     } catch (_) { /* 攔截層永遠不擋請求 */ }
 
     // ═══════════════════════════════════════════════════════════
-    //  🚀 後台讀取改走 Cloudflare Worker(D1 / KV / 伺服器對伺服器)
+    //  後台讀取改走 Cloudflare Worker(D1 / KV / 伺服器對伺服器)
     //  ─────────────────────────────────────────────────────────
     //  為什麼:瀏覽器直打 GAS 會經過 script.googleusercontent.com
     //  的重導向節點,那個節點間歇性回 404 / HTML 錯誤頁 =「載入失敗」。
@@ -1946,7 +1946,7 @@ const READ_VIA_WORKER = [
 const WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
-//  💠 入點後把餘額抄進 D1(mirror_bits)
+//  入點後把餘額抄進 D1(mirror_bits)
 //  為什麼:客戶端點數餘額之後改由 D1 回答,而 D1 的 bits 表沒有批次
 //  同步管道(GAS 沒有「列出全部點數」的 action)。後台確認入帳後若不
 //  抄一份,客戶會看到舊餘額 → 以為你沒加點。
@@ -2101,7 +2101,7 @@ function switchTab(name) {
   if (name==='suborder') loadSubOrders();
 }
 
-// 💎 儲值管理:列訂單 + 一鍵確認入帳
+// 儲值管理:列訂單 + 一鍵確認入帳
 async function loadTopup() {
   loadHolidayCfg();
   const box = document.getElementById('topupBody');
@@ -2139,7 +2139,7 @@ async function confirmTopup(orderId, email) {
   } catch (e) { alert('❌ 連線錯誤,請重試'); }
 }
 
-// 📅 訂閱管理:列訂單 + 一鍵確認開通 / 取消
+// 訂閱管理:列訂單 + 一鍵確認開通 / 取消
 async function loadSubOrders() {
   const box = document.getElementById('subOrderBody');
   if (!box) return;
@@ -2192,7 +2192,7 @@ async function cancelSubOrder(orderId) {
   } catch (e) { alert('❌ 連線錯誤,請重試'); }
 }
 
-// 🎁 節慶包設定
+// 節慶包設定
 function _isoToLocal(s) {
   if (!s) return '';
   const d = new Date(s);
@@ -2381,11 +2381,11 @@ function renderSmartResult(parsed) {
       <span class="confidence-tag ${parsed.tagConfidence || 'medium'}">${({high:'高信心',medium:'中信心',low:'低信心'})[parsed.tagConfidence] || '中信心'}</span>
     </div>
     <div class="smart-field-textarea">
-      <label>📐 規格(spec) ${hasSpec ? '<span style="color:var(--mint)">✓ 從網頁抓到</span>' : '<span style="color:var(--t4)">⚠️ 沒抓到/沒給網址</span>'}</label>
+      <label>規格(spec) ${hasSpec ? '<span style="color:var(--mint)">✓ 從網頁抓到</span>' : '<span style="color:var(--t4)">⚠️ 沒抓到/沒給網址</span>'}</label>
       <textarea id="smartFieldSpec" placeholder="例:16吋/復古銅色/無線2小時/噴霧">${esc(parsed.spec || '')}</textarea>
     </div>
     <div class="smart-field-textarea">
-      <label>🌟 特色(feature) ${hasFeat ? '<span style="color:var(--mint)">✓ 抓到</span>' : '<span style="color:var(--t4)">⚠️ 沒抓到</span>'}</label>
+      <label>特色(feature) ${hasFeat ? '<span style="color:var(--mint)">✓ 抓到</span>' : '<span style="color:var(--t4)">⚠️ 沒抓到</span>'}</label>
       <textarea id="smartFieldFeature" placeholder="例:嘖嘖募資/超靜音/復古設計">${esc(parsed.feature || '')}</textarea>
     </div>
     <div class="smart-field confidence-high">
@@ -2402,9 +2402,9 @@ function renderSmartResult(parsed) {
   const reportEl = document.getElementById('smartScrapeReport');
   if (parsed.scrapeReport && parsed.scrapeReport.totalUrls > 0) {
     const r = parsed.scrapeReport;
-    reportEl.innerHTML = `<b>🌐 網址爬取報告:</b> 共 ${r.totalUrls} 個 / 成功 ${r.successCount} 個<br>` +
+    reportEl.innerHTML = `<b>網址爬取報告:</b> 共 ${r.totalUrls} 個 / 成功 ${r.successCount} 個<br>` +
       (r.details || []).map(d =>
-        `<div class="smart-scrape-item ${d.ok ? 'ok' : 'fail'}">${d.ok ? '✓' : '✗'} ${esc(d.url)}${d.reason ? ' — ' + esc(d.reason) : ''}</div>`
+        `<div class="smart-scrape-item ${d.ok ? 'ok' : 'fail'}">${d.ok ? '✓' : ''} ${esc(d.url)}${d.reason ? ' — ' + esc(d.reason) : ''}</div>`
       ).join('');
     reportEl.style.display = 'block';
   } else {
@@ -2512,7 +2512,7 @@ function showDuplicateModal(dupInfo, newData) {
               ${fmt('商品名', old.prodName, nu.prodName)}
               ${fmt('系列', old.subId, nu.subId)}
               ${fmt('標籤', old.prodTag, nu.prodTag)}
-              ${fmt('📐 規格', old.spec, nu.spec)}
+              ${fmt('規格', old.spec, nu.spec)}
               ${fmt('⭐ 特色', old.feature, nu.feature)}
             </tbody>
           </table>
@@ -2520,10 +2520,10 @@ function showDuplicateModal(dupInfo, newData) {
 
         <div style="display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:10px;">
           <button onclick="resolveDuplicate('overwrite')" style="padding:14px 10px;border-radius:11px;border:1px solid rgba(244,67,54,0.4);background:rgba(244,67,54,0.06);color:#f44336;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;line-height:1.4;">
-            🔄 覆蓋舊的<br><span style="font-size:9px;font-weight:400;color:var(--t3);letter-spacing:0.3px;">用新資料蓋掉</span>
+            覆蓋舊的<br><span style="font-size:9px;font-weight:400;color:var(--t3);letter-spacing:0.3px;">用新資料蓋掉</span>
           </button>
           <button id="btnDupMerge" onclick="resolveDuplicate('merge')" style="padding:14px 10px;border-radius:11px;border:none;background:linear-gradient(135deg, var(--mint), #4DD8A0);color:#003020;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(109,250,194,0.35);line-height:1.4;letter-spacing:0.5px;">
-            🤝 合併(推薦)<br><span style="font-size:9px;font-weight:600;letter-spacing:0.3px;">只補空欄位,不動已有</span>
+            合併(推薦)<br><span style="font-size:9px;font-weight:600;letter-spacing:0.3px;">只補空欄位,不動已有</span>
           </button>
           <button onclick="resolveDuplicate('new')" style="padding:14px 10px;border-radius:11px;border:1px solid rgba(124,109,250,0.4);background:var(--purple-soft);color:var(--purple);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;line-height:1.4;">
             ➕ 新建第 2 筆<br><span style="font-size:9px;font-weight:400;color:var(--t3);letter-spacing:0.3px;">真的是不同款式</span>
@@ -2574,7 +2574,7 @@ function performSmartAdd(action, nu, dupIndex) {
       ...subDefaults,
       prodId: nu.prodId, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature,
     });
-    setStatus(`✨ 已新增「${nu.prodName}」— 記得按右上「💾 儲存全部」`, 'ok');
+    setStatus(`已新增「${nu.prodName}」— 記得按右上「儲存全部」`, 'ok');
   } else if (action === 'overwrite') {
     // 整筆替換
     DB.products[dupIndex] = {
@@ -2582,7 +2582,7 @@ function performSmartAdd(action, nu, dupIndex) {
       ...subDefaults,
       prodId: nu.prodId, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature,
     };
-    setStatus(`🔄 已覆蓋「${nu.prodName}」— 記得按右上「💾 儲存全部」`, 'ok');
+    setStatus(`已覆蓋「${nu.prodName}」— 記得按右上「儲存全部」`, 'ok');
   } else if (action === 'merge') {
     // 只補空欄位
     const old = DB.products[dupIndex];
@@ -2596,8 +2596,8 @@ function performSmartAdd(action, nu, dupIndex) {
     if (!old.prodTag && nu.prodTag) filled.push('標籤');
     if (!old.spec && nu.spec) filled.push('規格');
     if (!old.feature && nu.feature) filled.push('特色');
-    const msg = filled.length ? `🤝 已合併補上:${filled.join('、')}` : '🤝 沒有空欄位需要補(舊資料完整)';
-    setStatus(msg + ' — 記得按右上「💾 儲存全部」', 'ok');
+    const msg = filled.length ? `已合併補上:${filled.join('、')}` : '沒有空欄位需要補(舊資料完整)';
+    setStatus(msg + ' — 記得按右上「儲存全部」', 'ok');
   }
 
   document.getElementById('filterBrand').value = nu.brandId;
@@ -2614,7 +2614,7 @@ function openEnrichModal(productIndex) {
 
   const brand = DB.brands.find(b => b.id === p.brandId);
   document.getElementById('enrichProductName').innerHTML =
-    `🎯 <b>${esc(brand?.name || p.brandId)}</b> › ${esc(p.subName || '')} › <b style="color:var(--purple)">${esc(p.prodName)}</b>${p.spec ? `<div style="font-size:10px;color:var(--t3);margin-top:5px;">目前規格:${esc(p.spec)}(會被覆蓋)</div>` : ''}`;
+    `<b>${esc(brand?.name || p.brandId)}</b> › ${esc(p.subName || '')} › <b style="color:var(--purple)">${esc(p.prodName)}</b>${p.spec ? `<div style="font-size:10px;color:var(--t3);margin-top:5px;">目前規格:${esc(p.spec)}(會被覆蓋)</div>` : ''}`;
 
   document.getElementById('enrichModalOverlay').classList.add('show');
   document.getElementById('enrichInputView').style.display = 'block';
@@ -2722,11 +2722,11 @@ function renderEnrichResult(parsed) {
   const grid = document.getElementById('enrichResultGrid');
   grid.innerHTML = `
     <div class="smart-field-textarea">
-      <label>📐 規格(spec) ${hasSpec ? '<span style="color:var(--mint)">✓ 抓到</span>' : '<span style="color:#f44336">⚠️ 沒抓到</span>'}</label>
+      <label>規格(spec) ${hasSpec ? '<span style="color:var(--mint)">✓ 抓到</span>' : '<span style="color:#f44336">⚠️ 沒抓到</span>'}</label>
       <textarea id="enrichFieldSpec" placeholder="例:16吋/復古銅色/無線2小時">${esc(parsed.spec || '')}</textarea>
     </div>
     <div class="smart-field-textarea">
-      <label>🌟 特色(feature) ${hasFeat ? '<span style="color:var(--mint)">✓ 抓到</span>' : '<span style="color:#f44336">⚠️ 沒抓到</span>'}</label>
+      <label>特色(feature) ${hasFeat ? '<span style="color:var(--mint)">✓ 抓到</span>' : '<span style="color:#f44336">⚠️ 沒抓到</span>'}</label>
       <textarea id="enrichFieldFeature" placeholder="例:嘖嘖募資/超靜音">${esc(parsed.feature || '')}</textarea>
     </div>
   `;
@@ -2736,9 +2736,9 @@ function renderEnrichResult(parsed) {
   const reportEl = document.getElementById('enrichScrapeReport');
   if (parsed.scrapeReport && parsed.scrapeReport.totalUrls > 0) {
     const r = parsed.scrapeReport;
-    reportEl.innerHTML = `<b>🌐 網址爬取報告:</b> 共 ${r.totalUrls} 個 / 成功 ${r.successCount} 個<br>` +
+    reportEl.innerHTML = `<b>網址爬取報告:</b> 共 ${r.totalUrls} 個 / 成功 ${r.successCount} 個<br>` +
       (r.details || []).map(d =>
-        `<div class="smart-scrape-item ${d.ok ? 'ok' : 'fail'}">${d.ok ? '✓' : '✗'} ${esc(d.url)}${d.reason ? ' — ' + esc(d.reason) : ''}</div>`
+        `<div class="smart-scrape-item ${d.ok ? 'ok' : 'fail'}">${d.ok ? '✓' : ''} ${esc(d.url)}${d.reason ? ' — ' + esc(d.reason) : ''}</div>`
       ).join('');
     reportEl.style.display = 'block';
   } else {
@@ -2758,7 +2758,7 @@ function confirmEnrichApply() {
   p.feature = feature;
   renderProducts();
   closeEnrichModal();
-  setStatus(`✨ 已套用規格/特色 — 記得按右上「💾 儲存全部」`, 'ok');
+  setStatus(`已套用規格/特色 — 記得按右上「儲存全部」`, 'ok');
 }
 
 // ══ 品牌審核 ══
@@ -2798,7 +2798,7 @@ function filterApply(filter, btn) {
 function renderApply() {
   const filtered = applyFilter === 'all' ? APPLIES : APPLIES.filter(b => b.status === applyFilter);
   const el = document.getElementById('applyList');
-  if (!filtered.length) { el.innerHTML = '<div class="empty-state"><div style="font-size:36px;margin-bottom:12px;">✨</div><p>沒有符合的申請</p></div>'; return; }
+  if (!filtered.length) { el.innerHTML = '<div class="empty-state"><div style="font-size:36px;margin-bottom:12px;"></div><p>沒有符合的申請</p></div>'; return; }
   const sorted = [...filtered].sort((a,b) => {
     if (a.status==='pending'&&b.status!=='pending') return -1;
     if (b.status==='pending'&&a.status!=='pending') return 1;
@@ -2811,16 +2811,16 @@ function renderApply() {
     const date = b.submittedAt ? new Date(b.submittedAt).toLocaleDateString('zh-TW') : '-';
     return `<div class="apply-card ${cardClass[b.status]||''}" id="applycard-${esc(b.id)}">
       <div class="apply-card-top">
-        <div class="apply-icon">${esc(b.icon||'🏷️')}</div>
+        <div class="apply-icon">${esc(b.icon||'')}</div>
         <div class="apply-info">
           <div class="apply-name">${esc(b.name||'未命名品牌')}</div>
           <div class="apply-email">${esc(b.email||'')}</div>
           <div class="apply-meta">類別:${esc(b.category||'-')} · 申請日:${date}</div>
           <div class="apply-info-grid">
-            ${b.website?`<div class="apply-info-item">🌐 <span><a href="${esc(b.website)}" target="_blank" style="color:#5BC8E8">${esc(b.website)}</a></span></div>`:''}
-            ${b.platforms?`<div class="apply-info-item">🛒 <span>${esc(b.platforms)}</span></div>`:''}
-            ${b.audience?`<div class="apply-info-item">👥 <span>${esc(b.audience)}</span></div>`:''}
-            ${b.contact?`<div class="apply-info-item">👤 <span>${esc(b.contact)} ${esc(b.phone||'')}</span></div>`:''}
+            ${b.website?`<div class="apply-info-item"><span><a href="${esc(b.website)}" target="_blank" style="color:#5BC8E8">${esc(b.website)}</a></span></div>`:''}
+            ${b.platforms?`<div class="apply-info-item"><span>${esc(b.platforms)}</span></div>`:''}
+            ${b.audience?`<div class="apply-info-item"><span>${esc(b.audience)}</span></div>`:''}
+            ${b.contact?`<div class="apply-info-item"><span>${esc(b.contact)} ${esc(b.phone||'')}</span></div>`:''}
           </div>
         </div>
         <span class="apply-status-badge ${statusClass[b.status]||'sb-pending'}">${statusMap[b.status]||b.status}</span>
@@ -2831,7 +2831,7 @@ function renderApply() {
           <button class="btn-approve" onclick="doApprove('${esc(b.id)}')">✅ 核准上線</button>
           <button class="btn-reject-brand" onclick="doReject('${esc(b.id)}')">❌ 拒絕</button>
         `:''}
-        <button class="btn-toggle-soul" onclick="toggleSoul('${esc(b.id)}')">📄 靈魂書</button>
+        <button class="btn-toggle-soul" onclick="toggleSoul('${esc(b.id)}')">靈魂書</button>
         <button class="btn-reject-brand" style="margin-left:auto;border-color:rgba(100,100,100,0.4);color:var(--t3);background:transparent;" onclick="doDeleteBrand('${esc(b.id)}','${esc(b.name||'此品牌')}')">🗑 刪除</button>
       </div>
     </div>`;
@@ -2929,7 +2929,7 @@ function renderBrands() {
       <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(b.id)}" oninput="DB.brands[${i}].id=this.value;renderBrands()" style="font-family:var(--font-mono);font-size:12px"></div>
 
       <div class="field-row" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">
-        <label style="color:var(--purple)">🎨 品牌色票(用於 AI 生圖 / 文案)</label>
+        <label style="color:var(--purple)">品牌色票(用於 AI 生圖 / 文案)</label>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
         <div>
@@ -2955,7 +2955,7 @@ function renderBrands() {
         </div>
       </div>
       <div class="field-row">
-        <label>🎭 視覺調性形容詞(給 AI 抓 mood)</label>
+        <label>視覺調性形容詞(給 AI 抓 mood)</label>
         <input class="field-input" value="${esc(colorMood)}" oninput="DB.brands[${i}].colorMood=this.value" placeholder="例:溫暖居家、自然手作、復古質感">
       </div>
 
@@ -3001,7 +3001,7 @@ function renderProducts() {
       <td><input class="td-input" value="${esc(p.spec||'')}" placeholder="如:16吋/復古銅" oninput="DB.products[${i}].spec=this.value" title="${esc(p.spec||'')}" style="min-width:140px"></td>
       <td><input class="td-input" value="${esc(p.feature||'')}" placeholder="如:嘖嘖募資" oninput="DB.products[${i}].feature=this.value" title="${esc(p.feature||'')}" style="min-width:130px"></td>
       <td style="white-space:nowrap;">
-        <button class="btn-row-enrich" onclick="openEnrichModal(${i})" title="AI 補規格/特色">✨</button>
+        <button class="btn-row-enrich" onclick="openEnrichModal(${i})" title="AI 補規格/特色"></button>
         <button class="btn-row-del" onclick="deleteProduct(${i})">✕</button>
       </td>
     </tr>`;
@@ -3025,11 +3025,11 @@ function renderFolders() {
         <button class="btn-delete" onclick="deleteFolder(${i})" style="margin-left:auto">🗑 刪除</button>
       </div>
       <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(f.brandId)}" oninput="DB.folders[${i}].brandId=this.value"></div>
-      <div class="field-row"><label>📷 照片資料夾 ID</label><input class="field-input" value="${esc(f.photoFolderId)}" oninput="DB.folders[${i}].photoFolderId=this.value"></div>
-      <div class="field-row"><label>🎬 影片資料夾 ID</label><input class="field-input" value="${esc(f.videoFolderId)}" oninput="DB.folders[${i}].videoFolderId=this.value"></div>
+      <div class="field-row"><label>照片資料夾 ID</label><input class="field-input" value="${esc(f.photoFolderId)}" oninput="DB.folders[${i}].photoFolderId=this.value"></div>
+      <div class="field-row"><label>影片資料夾 ID</label><input class="field-input" value="${esc(f.videoFolderId)}" oninput="DB.folders[${i}].videoFolderId=this.value"></div>
       <div style="margin-top:10px;display:flex;gap:12px;">
-        <a href="https://drive.google.com/drive/folders/${f.photoFolderId}" target="_blank" style="font-size:12px;color:var(--purple);text-decoration:none;">📷 開啟照片資料夾 ↗</a>
-        <a href="https://drive.google.com/drive/folders/${f.videoFolderId}" target="_blank" style="font-size:12px;color:var(--purple);text-decoration:none;">🎬 開啟影片資料夾 ↗</a>
+        <a href="https://drive.google.com/drive/folders/${f.photoFolderId}" target="_blank" style="font-size:12px;color:var(--purple);text-decoration:none;">開啟照片資料夾 ↗</a>
+        <a href="https://drive.google.com/drive/folders/${f.videoFolderId}" target="_blank" style="font-size:12px;color:var(--purple);text-decoration:none;">開啟影片資料夾 ↗</a>
       </div>
     </div>`;
   }).join('');
@@ -3064,12 +3064,12 @@ function renderDelivers() {
       <td style="font-size:12px;white-space:nowrap">${brand?.icon||''} ${brand?.name||esc(d.brand)}</td>
       <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(d.product)}">${esc(d.product)}</td>
       <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)" title="${esc(d.hookScript)}">${esc(d.hookScript)}</td>
-      <td>${d.photoUrl?`<a class="asset-link al-photo" href="${d.photoUrl}" target="_blank">🖼️ 看</a>`:'<span class="asset-link al-none">無</span>'}</td>
-      <td>${d.videoUrl?`<a class="asset-link al-video" href="${d.videoUrl}" target="_blank">🎬 看</a>`:'<span class="asset-link al-none">無</span>'}</td>
+      <td>${d.photoUrl?`<a class="asset-link al-photo" href="${d.photoUrl}" target="_blank">看</a>`:'<span class="asset-link al-none">無</span>'}</td>
+      <td>${d.videoUrl?`<a class="asset-link al-video" href="${d.videoUrl}" target="_blank">看</a>`:'<span class="asset-link al-none">無</span>'}</td>
       <td><select class="status-select" onchange="updateStatus(${d._rowIndex},this.value)">
         <option value="素材已備妥" ${d.status==='素材已備妥'?'selected':''}>✅ 素材已備妥</option>
         <option value="缺素材" ${d.status==='缺素材'?'selected':''}>⚠️ 缺素材</option>
-        <option value="已投放" ${d.status==='已投放'?'selected':''}>🚀 已投放</option>
+        <option value="已投放" ${d.status==='已投放'?'selected':''}>已投放</option>
       </select></td>
       <td><button class="btn-row-del" onclick="deleteDeliverRow(${d._rowIndex})">✕</button></td>
     </tr>`;
@@ -3187,9 +3187,9 @@ function renderStaff() {
     const isOwnerRow = role === 'owner';
     const initials = (s.name||s.email||'?')[0].toUpperCase();
     const date = s.addedAt ? new Date(s.addedAt).toLocaleDateString('zh-TW') : '-';
-    const badge = role==='owner' ? '<span class="staff-badge badge-admin">👑 管理員</span>'
-                : role==='reviewer' ? '<span class="staff-badge badge-reviewer">🛡️ 審核員</span>'
-                : '<span class="staff-badge badge-staff">👤 客戶</span>';
+    const badge = role==='owner' ? '<span class="staff-badge badge-admin">管理員</span>'
+                : role==='reviewer' ? '<span class="staff-badge badge-reviewer">審核員</span>'
+                : '<span class="staff-badge badge-staff">客戶</span>';
     const brandsLine = (role==='owner'||role==='reviewer')
                 ? '<div class="staff-email" style="color:var(--t3)">可看:全部品牌</div>'
                 : `<div class="staff-email" style="color:var(--t3)">可看:${brandsToNames(s.brands)}</div>`;
