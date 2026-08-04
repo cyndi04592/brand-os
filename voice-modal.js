@@ -3,7 +3,7 @@
  *
  *  v3.1 重大改動（2026-04）：
  *    • Worker v3.6 合作：一次載 116 個（Multilingual 70 + 中文 25 + 日文 21）
- *    • 新增語言 chip 群組（🌏 全部 / 🌐 多國語言 / 🇹🇼 中文 / 🇯🇵 日文）
+ *    • 新增語言 chip 群組（全部 / 多國語言 / 🇹🇼 中文 / 🇯🇵 日文）
  *      切換 chip 純前端過濾，不打 API（毫秒級切換，不 LAG）
  *    • 保留「顯示全部 2305」逃生門
  *    • animation-delay 收緊到 200ms 上限（v3 是 400ms，切換時會卡）
@@ -173,17 +173,17 @@ function buildModalHTML() {
         ⭐ 我的收藏 <span class="vm-tab-count" id="vm-count-favorites">—</span>
       </button>
       <button class="vm-tab" data-tab="library">
-        🌏 亞洲業務精選 <span class="vm-tab-count" id="vm-count-library">—</span>
+        亞洲業務精選 <span class="vm-tab-count" id="vm-count-library">—</span>
       </button>
     </div>
 
     <!-- 🆕 v3.1 語言 chip 群組（library tab 才顯示） -->
     <div class="vm-langbar" id="vm-langbar" style="display:none">
       <button class="vm-lang-chip active" data-lang="all">
-        🌏 全部 <span class="vm-lang-count" data-count="all">—</span>
+        全部 <span class="vm-lang-count" data-count="all">—</span>
       </button>
       <button class="vm-lang-chip" data-lang="multilingual">
-        🌐 多國語言 <span class="vm-lang-count" data-count="multilingual">—</span>
+        多國語言 <span class="vm-lang-count" data-count="multilingual">—</span>
       </button>
       <button class="vm-lang-chip" data-lang="chinese">
         🇹🇼 中文 <span class="vm-lang-count" data-count="chinese">—</span>
@@ -222,8 +222,8 @@ function buildModalHTML() {
         </div>
         <div class="vm-sub-body">
           <div class="vm-info-box">
-            💡 從你的語音平台複製自建的 voice_id（例如自行匯入的多語言語音）。
-            <br>✨ <strong>建議選擇 Multilingual 多語言引擎</strong>，能講中/日/英等多語言。
+            從你的語音平台複製自建的 voice_id（例如自行匯入的多語言語音）。
+            <br><strong>建議選擇 Multilingual 多語言引擎</strong>，能講中/日/英等多語言。
             <br>開啟網址：<code style="color:#b5abff">app.heygen.com/settings?nav=API</code> 或在語音編輯頁 URL 中取得。
           </div>
           <div class="vm-field">
@@ -398,7 +398,7 @@ function updateCountChips() {
       toggleLabel.innerHTML = '🔓 顯示全部' + (State.voices.libraryRawTotal ? ' ' + State.voices.libraryRawTotal : '');
       if (toggleBtn) toggleBtn.title = '切換到完整模式（載入完整語音庫 2305 個語音）';
     } else {
-      toggleLabel.innerHTML = '🌏 回亞洲精選';
+      toggleLabel.innerHTML = '回亞洲精選';
       if (toggleBtn) toggleBtn.title = '切回精選模式（只看多國語言 + 中文 + 日文 共 116 個）';
     }
   }
@@ -410,8 +410,8 @@ function updateCountChips() {
     const firstNode = Array.from(libTab.childNodes).find(n => n.nodeType === 3);
     if (firstNode) {
       firstNode.textContent = State.brandOSFilter
-        ? '🌏 亞洲業務精選 '
-        : '🌏 完整語音庫 ';
+        ? '亞洲業務精選 '
+        : '完整語音庫 ';
     }
     // 🆕 載入中顯示「…」而非「—」,讓客戶知道是在跑不是沒東西
     if (countSpan) {
@@ -481,7 +481,7 @@ async function loadLibraryVoices() {
   renderList();
 }
 
-// 🌏 切換「亞洲精選 / 全部 2305」模式（會重打 API）
+// 切換「亞洲精選 / 全部 2305」模式（會重打 API）
 function toggleBrandOSFilter() {
   State.brandOSFilter = !State.brandOSFilter;
   State.loaded.library = false;
@@ -567,7 +567,7 @@ function renderList() {
         </div>
       `;
     } else {
-      container.innerHTML = '<div class="vm-empty"><div class="vm-empty-icon">🎤</div><div class="vm-empty-title">找不到語音</div><div class="vm-empty-desc">請檢查 Worker 設定或語音庫狀態</div></div>';
+      container.innerHTML = '<div class="vm-empty"><div class="vm-empty-icon"></div><div class="vm-empty-title">找不到語音</div><div class="vm-empty-desc">請檢查 Worker 設定或語音庫狀態</div></div>';
     }
     updateLangChipCounts();
     return;
@@ -577,7 +577,7 @@ function renderList() {
   updateLangChipCounts();
 
   if (filtered.length === 0) {
-    container.innerHTML = '<div class="vm-empty"><div class="vm-empty-icon">🔍</div><div class="vm-empty-title">沒有符合條件的語音</div><div class="vm-empty-desc">試試調整篩選條件或搜尋關鍵字</div></div>';
+    container.innerHTML = '<div class="vm-empty"><div class="vm-empty-icon"></div><div class="vm-empty-title">沒有符合條件的語音</div><div class="vm-empty-desc">試試調整篩選條件或搜尋關鍵字</div></div>';
     return;
   }
 
@@ -657,7 +657,7 @@ function renderList() {
   syncRowPlayingState();
 }
 
-// 🔧 v3.1 過濾邏輯：search + gender + 語言 chip
+// v3.1 過濾邏輯：search + gender + 語言 chip
 function filterVoices(list) {
   let out = list.filter(v => {
     if (State.search && !v.name?.toLowerCase().includes(State.search)) return false;
@@ -710,7 +710,7 @@ function rowHTML(v, idx) {
       <div class="vm-info">
         <div class="vm-name">
           ${esc(v.name || '未命名')}
-          ${isMulti ? '<span class="vm-multi-badge" title="支援多國語言，能講中/日/英/西等 40+ 種">🌏 Multilingual</span>' : ''}
+          ${isMulti ? '<span class="vm-multi-badge" title="支援多國語言，能講中/日/英/西等 40+ 種">Multilingual</span>' : ''}
           <span class="vm-engine-badge ${engine}">${esc(v.engine === 'ElevenLabs' ? '進階' : '標準')}</span>
           ${isCustom ? '<span class="vm-custom-badge">自訂</span>' : ''}
         </div>
@@ -740,7 +740,7 @@ function waveformHTML(id) {
 
 // v3.1: 優先用 category 決定 flag（比 language 字串解析準）
 function flagForLang(lang = '', category = '') {
-  if (category === 'multilingual') return '🌏';
+  if (category === 'multilingual') return '';
   if (category === 'chinese') return '🇹🇼';
   if (category === 'japanese') return '🇯🇵';
   const L = lang.toLowerCase();
@@ -750,8 +750,8 @@ function flagForLang(lang = '', category = '') {
   if (L.includes('chinese') || L.includes('mandarin')) return '🇨🇳';
   if (L.includes('english')) return '🇺🇸';
   if (L.includes('korean')) return '🇰🇷';
-  if (L.includes('multilingual')) return '🌏';
-  return '🌐';
+  if (L.includes('multilingual')) return '';
+  return '';
 }
 
 // ─── 播放控制 ────────────────────────────────────────────────
