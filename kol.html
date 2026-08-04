@@ -1982,6 +1982,9 @@ const GAS_CACHED_READS = {
   getDelivers: 1, getAllMemory: 1, getHolidayConfig: 1,
   listSubOrders: 1, listTopupOrders: 1,
   getTopupPacks: 1, getPendingPayment: 1,
+  // STEP3 劇情記憶 + 內容日曆:這兩支還沒搬 D1,直撞 GAS 常 404(Google echo 節點抖動)。
+  //   走 Worker 快取後,GAS 掛掉會出「陳貨」而不是空白列表。
+  listEpisodes: 1, listCalendar: 1,
 };
 async function gasGet(action, params = {}) {
   if (GAS_CACHED_READS[action]) {
