@@ -682,9 +682,21 @@ let _shopPacks = null, _shopBank = null, _shopHoliday = null, _shopTimer = null;
 const _SHOP_ORDER = ['entry','advance','pro','max','holiday'];
 const _SHOP_TAGS  = { pro:'最熱賣', max:'最划算', holiday:'限時加碼' };
 
+// 🔀 2026-08-05 兩邊對齊:購買頁改走 Worker(D1 + KV 快取),不再直撞 GAS。
+//   為什麼:Worker 早就支援 getTopupPacks(快取 24 小時)且 KOL 那邊已經在用,
+//   主站卻漏接、還在直打 GAS → Google 的 echo 節點一抽風,方案列表就是空白。
+//   那是最不能出事的畫面(客戶正要付錢)。
+//   authCachedGet 在 auth.js:走 Worker gas_cached,失敗自動退回 GAS,行為不變。
+function _shopFetch(gasAction, params) {
+  if (typeof authCachedGet === 'function') {
+    return authCachedGet(gasAction, params || {}).then(j => j || Promise.reject(new Error('worker null')));
+  }
+  const qs = new URLSearchParams(Object.assign({ action: gasAction, password: GAS_PASSWORD }, params || {}));
+  return fetch(`${GAS_URL}?${qs}`).then(r => r.json());
+}
+
 function _loadTopupPacks(grid) {
-  fetch(`${GAS_URL}?action=getTopupPacks&password=${GAS_PASSWORD}`)
-    .then(r => r.json())
+  _shopFetch('getTopupPacks')
     .then(j => {
       if (!j.ok) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff7a7a;padding:30px;">載入失敗</div>'; return; }
       _shopPacks = j.packs; _shopBank = j.bank; _shopHoliday = j.holiday || null; renderShopGrid();
@@ -694,8 +706,7 @@ function _loadTopupPacks(grid) {
 }
 // 🆕 背景靜默更新補給包(快取秒開後偷偷拉最新,有變才重畫;同步修正聖誕包庫存)
 function _refreshTopupPacks() {
-  fetch(`${GAS_URL}?action=getTopupPacks&password=${GAS_PASSWORD}`)
-    .then(r => r.json())
+  _shopFetch('getTopupPacks')
     .then(j => {
       if (!j.ok) return;
       _shopPacks = j.packs; _shopBank = j.bank; _shopHoliday = j.holiday || null;
@@ -1093,8 +1104,8 @@ function showSubOrderInfo(o) {
     var dot = document.getElementById('payAlertDot');
     if (!dot) return;
     if (!email) { dot.style.display = 'none'; return; }
-    fetch(GAS_URL + '?action=getPendingPayment&password=' + GAS_PASSWORD + '&email=' + encodeURIComponent(email))
-      .then(function (r) { return r.json(); })
+    // 🔀 2026-08-05 兩邊對齊:待付款紅點也改走 Worker(TTL 5 秒,仍即時)
+    _shopFetch('getPendingPayment', { email: email })
       .then(function (j) { dot.style.display = (j && j.ok && j.pending) ? 'inline-block' : 'none'; })
       .catch(function () {});
   }
