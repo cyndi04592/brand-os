@@ -3295,12 +3295,23 @@ async function saveAll() {
   showLoading('儲存中...');
   document.getElementById('btnSaveAll').disabled = true;
   try {
-    const r = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action:'saveBrandOS', password:PASSWORD, data:DB })
-    });
-    const j = await r.json();
+    // 🔀 2026-08-06 第3批:品牌樹寫入改走 Worker(D1 正本 + 背景補寫 GAS)
+    //   附帶修掉一個資料流失 bug:GAS 版是「整表刪光重寫、只寫前 12 欄」,
+    //   所以 products 後面那 9 欄 KOL 專用資料(口播價格/賣點台詞/包裝形狀/
+    //   法規注意…)每次在這裡按儲存就被清空。
+    //   Worker 版改成「有給才更新、沒給保留原值」,那些欄位才活得下來。
+    let j = null;
+    try {
+      j = await workerWrite('saveBrandOS', { data: DB });
+    } catch (_) { j = null; }
+    if (!j || j.ok !== true) {          // Worker 出事才落回原本直打 GAS,行為不會比現在差
+      const r = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action:'saveBrandOS', password:PASSWORD, data:DB })
+      });
+      j = await r.json();
+    }
     if (j.ok) setStatus('✅ 儲存成功!','ok');
     else setStatus('❌ '+j.error,'err');
   } catch(e) { setStatus('❌ 連線失敗','err'); }
