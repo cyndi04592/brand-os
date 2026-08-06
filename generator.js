@@ -76,12 +76,26 @@ async function saveMemory(combo, brandId, subId, brandName, productName) {
       ctaScript:   combo.cta?.script  || '',
       adId:        combo.id           || ''
     };
-    const res  = await fetch(GAS_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body:    JSON.stringify(payload)
-    });
-    const data = await res.json();
+    // 🔀 2026-08-06 第4批:記憶庫寫入改走 Worker(D1 正本 + 背景補寫 GAS)
+    //   好處:① 存完立刻生效 ② GAS 抽風時照樣存得進去
+    //   Worker 掛掉才落回原本直打 GAS,行為不變。
+    let data;
+    try {
+      const wr = await fetch('https://kol-proxy.calm-sunset-6b66.workers.dev', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: GAS_PASSWORD, action: 'gas_write',
+                               gasAction: 'addMemory', payload: { data: payload } })
+      });
+      data = await wr.json();
+    } catch (_) { data = null; }
+    if (!data || data.ok !== true) {
+      const res = await fetch(GAS_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body:    JSON.stringify(payload)
+      });
+      data = await res.json();
+    }
     if (data.ok) {
       currentMemories.unshift({ ...payload, id: data.id, timestamp: data.timestamp, score: 1 });
       if (currentMemories.length > 10) currentMemories = currentMemories.slice(0, 10);
