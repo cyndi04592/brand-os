@@ -3258,12 +3258,20 @@ async function addStaff() {
   }
   showLoading('新增中...');
   try {
-    const r = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action:'addWhitelist', password:PASSWORD, email:ADMIN_USER_EMAIL, targetEmail:email, name, role, brands })
-    });
-    const j = await r.json();
+    // 🔀 2026-08-06 白名單搬 D1(資料庫搬遷最後一塊)
+    //   Worker 端照抄 GAS 的三道權限檢查,另加死鎖保護:管理員永遠不可被移除。
+    //   Worker 失敗會落回原本直打 GAS —— 白名單是登入守門員,絕不能沒有退路。
+    let j = null;
+    try { j = await workerWrite('addWhitelist',
+      { email: ADMIN_USER_EMAIL, targetEmail: email, name, role, brands }); } catch (_) { j = null; }
+    if (!j) {
+      const r = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action:'addWhitelist', password:PASSWORD, email:ADMIN_USER_EMAIL, targetEmail:email, name, role, brands })
+      });
+      j = await r.json();
+    }
     if (j.ok) {
       setStatus('✅ 已加入白名單','ok');
       document.getElementById('newStaffEmail').value = '';
@@ -3279,12 +3287,18 @@ async function removeStaff(email) {
   if (!confirm(`確定移除 ${email}?\n移除後該員工立即無法登入。`)) return;
   showLoading('移除中...');
   try {
-    const r = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action:'removeWhitelist', password:PASSWORD, email:ADMIN_USER_EMAIL, targetEmail:email })
-    });
-    const j = await r.json();
+    // 🔀 白名單移除也改走 Worker(Worker 端會擋「移除管理員自己」)
+    let j = null;
+    try { j = await workerWrite('removeWhitelist',
+      { email: ADMIN_USER_EMAIL, targetEmail: email }); } catch (_) { j = null; }
+    if (!j) {
+      const r = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action:'removeWhitelist', password:PASSWORD, email:ADMIN_USER_EMAIL, targetEmail:email })
+      });
+      j = await r.json();
+    }
     if (j.ok) { setStatus('✅ 已移除','ok'); await loadStaff(); }
     else setStatus('❌ '+j.error,'err');
   } catch(e) { setStatus('❌ 移除失敗','err'); }
