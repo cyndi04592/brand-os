@@ -2061,7 +2061,14 @@ async function gasGet(action, params = {}) {
 //  好處:① 存完立刻生效(不必等每 10 分鐘的同步)
 //        ② GAS 掛掉時還存得了
 // ═══════════════════════════════════════════════════════════════
-const WRITE_VIA_WORKER = { saveKolPersona: 1, deleteKolPersona: 1 };
+const WRITE_VIA_WORKER = {
+  saveKolPersona: 1, deleteKolPersona: 1,          // 第1批(2026-08-04)
+  // 第2批(2026-08-05):集數與日曆。這兩張表是 404 紅字的來源,
+  //   讀寫必須一起切 —— 只切讀取的話,新資料寫進 GAS、D1 不更新,
+  //   客戶會看到舊資料,而且不會報錯(比 404 更難查)。
+  saveEpisode: 1, updateEpisodeStatus: 1,
+  saveCalendar: 1, deleteCalendar: 1,
+};
 
 async function gasPost(action, extra = {}) {
   if (WRITE_VIA_WORKER[action]) {
