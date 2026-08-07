@@ -2146,9 +2146,13 @@ async function loadTopup() {
 async function confirmTopup(orderId, email) {
   if (!confirm('確認此訂單「銀行已實際收到款項」?\n入帳後不可復原。\n\n' + orderId)) return;
   try {
-    const r = await fetch(`${GAS_URL}?action=confirmTopupOrder&password=${PASSWORD}&orderId=${encodeURIComponent(orderId)}`);
-    const j = await r.json();
-    if (j.ok) { await _mirrorBits(email || j.email); alert('✅ 已入帳 ' + Number(j.bits).toLocaleString() + ' Bits\n客戶加購池餘額:' + Number(j.extra).toLocaleString()); }
+    // 🔀 v3.94:改走 Worker(D1 正本)。舊版直打 GAS 只加點到 Sheets,
+    //   D1 的 bits 不動 → 客戶付了錢、系統顯示成功、點數其實沒進去。
+    const j = await workerWrite('confirmTopupOrder', { email: ADMIN_USER_EMAIL, orderId });
+    // ⚠️ v3.94:拿掉 _mirrorBits —— 那是「從 GAS 抄餘額回 D1」的舊補丁。
+    //   現在 D1 已經是正本(點數就是在 D1 加的),再從 GAS 抄反而可能
+    //   用 Sheets 的舊數字蓋掉剛加好的餘額。
+    if (j.ok) { alert('✅ 已入帳 ' + Number(j.bits).toLocaleString() + ' Bits\n客戶加購池餘額:' + Number(j.extra).toLocaleString()); }
     else if (j.error==='already_paid') { alert('⚠️ 此單先前已入帳,未重複加點'); }
     else { alert('❌ 失敗:' + (j.message || j.error)); }
     loadTopup();
@@ -2188,9 +2192,10 @@ async function loadSubOrders() {
 async function confirmSubOrder(orderId, email) {
   if (!confirm('確認此訂閱單「銀行已實際收到款項」?\n開通後不可復原。\n\n' + orderId)) return;
   try {
-    const r = await fetch(`${GAS_URL}?action=confirmSubOrder&password=${PASSWORD}&orderId=${encodeURIComponent(orderId)}`);
-    const j = await r.json();
-    if (j.ok) { await _mirrorBits(email || j.email); alert('✅ 已開通方案:' + (j.plan||'') + '\n月配額:' + Number(j.monthlyBits||0).toLocaleString() + ' Bits'); }
+    // 🔀 v3.94:改走 Worker(D1 正本)
+    const j = await workerWrite('confirmSubOrder', { email: ADMIN_USER_EMAIL, orderId });
+    // ⚠️ v3.94:同上,D1 已是正本,不再從 GAS 抄回
+    if (j.ok) { alert('✅ 已開通方案:' + (j.plan||'') + '\n月配額:' + Number(j.monthlyBits||0).toLocaleString() + ' Bits'); }
     else if (j.error==='already_paid') { alert('⚠️ 此單先前已開通,未重複處理'); }
     else { alert('❌ 失敗:' + (j.message || j.error)); }
     loadSubOrders();
@@ -2200,8 +2205,8 @@ async function confirmSubOrder(orderId, email) {
 async function cancelSubOrder(orderId) {
   if (!confirm('確定取消此訂閱單?\n(僅將訂單標記為取消,不影響已開通的方案)\n\n' + orderId)) return;
   try {
-    const r = await fetch(`${GAS_URL}?action=cancelSubOrder&password=${PASSWORD}&orderId=${encodeURIComponent(orderId)}`);
-    const j = await r.json();
+    // 🔀 v3.94:改走 Worker(D1 正本)
+    const j = await workerWrite('cancelSubOrder', { email: ADMIN_USER_EMAIL, orderId });
     if (j.ok) { alert('✅ 訂單已取消'); }
     else { alert('❌ 失敗:' + (j.message || j.error)); }
     loadSubOrders();
