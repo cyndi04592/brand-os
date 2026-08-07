@@ -839,15 +839,24 @@ function buyPack(k) {
     '</div>';
 }
 
-function buyPackEcpay(k) {
-  const email = localStorage.getItem('bs_sso_email') || '';
+// ★ v3.95:建單改走 Worker(D1 正本),不再直打 GAS。
+//   為什麼:GAS 是單一佇列,尖峰會排隊 2 秒以上,客戶按了購買在那邊乾等;
+//   而且訂單正本已經在 D1,寫 GAS 等於寫到備份去,兩邊會不一致。
+//   回傳形狀跟 GAS 完全一樣,所以下面四個呼叫點只要換這一行。
+function _wWrite(gasAction, payload) {
+  return fetch(CF_WORKER_URL, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'gas_write', password: GAS_PASSWORD, gasAction, payload })
+  }).then(r => r.json());
+}
+
+function buyPackEcpay(k) {  const email = localStorage.getItem('bs_sso_email') || '';
   if (!email) { alert('請先登入再購買'); return; }
   const p = _shopPacks[k]; if (!p) return;
   const grid = document.getElementById('bitsShopGrid');
   if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
   // 1) 建單(method=ecpay)
-  fetch(`${GAS_URL}?action=createTopupOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&pack=${k}&method=ecpay`)
-    .then(r => r.json())
+  _wWrite('createTopupOrder', { email, pack: k, method: 'ecpay' })
     .then(j => {
       if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); renderShopGrid(); return; }
       // 2) 跟 Worker 要 ECPay 導向參數
@@ -895,8 +904,7 @@ function buyPackManual(k) {
   if (!email) { alert('請先登入再購買'); return; }
   const p = _shopPacks[k]; if (!p) return;
   if (!confirm(`確認下單「${p.name}」?\n\n${p.bits.toLocaleString()} Bits ／ NT$${p.price.toLocaleString()}\n\n下單後依匯款資訊轉帳,我們對帳後為你入點。`)) return;
-  fetch(`${GAS_URL}?action=createTopupOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&pack=${k}`)
-    .then(r => r.json())
+  _wWrite('createTopupOrder', { email, pack: k, method: 'manual' })
     .then(j => { if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); return; } showOrderInfo(j); })
     .catch(() => alert('連線錯誤,請重試'));
 }
@@ -1028,8 +1036,7 @@ function buyPlanEcpay(k) {
   if (!email) { alert('請先登入再購買'); return; }
   const grid = document.getElementById('subMenuGrid');
   if (grid) grid.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
-  fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_subCycle}&method=ecpay`)
-    .then(r => r.json())
+  _wWrite('createSubOrder', { email, plan: k, cycle: _subCycle, method: 'ecpay' })
     .then(j => {
       if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); renderSubGrid(); return; }
       return fetch(CF_WORKER_URL, {
@@ -1070,8 +1077,7 @@ function buyPlanManual(k) {
   const monthPrice = (p.promo > 0) ? p.promo : p.price;
   const amount = yr ? (p.price * 12) : monthPrice;
   if (!confirm(`確認訂閱「${p.name} 方案 · ${yr?'年繳':'月繳'}」?\n\n每月 ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${yr?'（年）':'（月）'}（未稅）\n\n下單後依匯款資訊轉帳，我們對帳後為你開通。`)) return;
-  fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_subCycle}`)
-    .then(r => r.json())
+  _wWrite('createSubOrder', { email, plan: k, cycle: _subCycle, method: 'manual' })
     .then(j => { if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); return; } showSubOrderInfo(j); })
     .catch(() => alert('連線錯誤,請重試'));
 }
