@@ -679,8 +679,12 @@ function openAdMakerDirect() {
 
 // ══ Bits 補給包商城 ══
 let _shopPacks = null, _shopBank = null, _shopHoliday = null, _shopTimer = null;
-const _SHOP_ORDER = ['entry','advance','pro','max','holiday'];
-const _SHOP_TAGS  = { pro:'最熱賣', max:'最划算', holiday:'限時加碼' };
+// ★ test30 = 30 元測試包(驗證綠界回呼用)。
+//   它排在最前面方便按,但只有 Worker 的 TEST_PACK_ON 開著時才會回傳這個 key,
+//   關掉之後 _shopPacks.test30 是 undefined → 下面 `if (!p) return` 自動略過,
+//   前端不必再改一次。
+const _SHOP_ORDER = ['test30','entry','advance','pro','max','holiday'];
+const _SHOP_TAGS  = { test30:'🧪測試用', pro:'最熱賣', max:'最划算', holiday:'限時加碼' };
 
 // 🔀 2026-08-05 兩邊對齊:購買頁改走 Worker(D1 + KV 快取),不再直撞 GAS。
 //   為什麼:Worker 早就支援 getTopupPacks(快取 24 小時)且 KOL 那邊已經在用,
