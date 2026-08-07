@@ -2068,6 +2068,11 @@ const WRITE_VIA_WORKER = {
   //   客戶會看到舊資料,而且不會報錯(比 404 更難查)。
   saveEpisode: 1, updateEpisodeStatus: 1,
   saveCalendar: 1, deleteCalendar: 1,
+  // 第5批(2026-08-06):Drive 建資料夾。
+  //   搬的理由是吞吐量 —— GAS 整個帳號同時只能跑 30 個執行,
+  //   而這兩支每建一個 KOL、每切一次品牌就觸發,最容易跟生影片搶名額。
+  //   Worker 沒有這個限制。
+  ensurePersonaFolder: 1, ensureProductFolder: 1,
 };
 
 async function gasPost(action, extra = {}) {
