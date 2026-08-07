@@ -1200,7 +1200,22 @@ async function doSubmit(){
     ownerTone:kolType==='brand_owner'?v('f_ownerTone'):'',
   };
 
-  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain'}});}catch(e){console.warn(e);}
+  // 🔀 2026-08-06 入駐搬 Worker(D1 + Drive + Resend)
+  //   為什麼:GAS 整個帳號同時只能跑 30 個執行、寄信一天 100 封硬上限,
+  //   而入駐要建 4 個資料夾 + 寄通知信 —— 100~1000 人規模必塞車。
+  //   Worker 沒有這兩個限制。失敗才落回原本直打 GAS,不會比現在差。
+  let _sent=false;
+  try{
+    const _r=await fetch('https://kol-proxy.calm-sunset-6b66.workers.dev',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:GAS_PASSWORD,action:'gas_write',
+        gasAction:'submitBrand',payload:{data:payload}})});
+    const _j=await _r.json();
+    _sent=!!(_j&&_j.ok);
+  }catch(e){console.warn('Worker 送出失敗,改走 GAS:',e);}
+  if(!_sent){
+    try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain'}});}catch(e){console.warn(e);}
+  }
   document.getElementById('resultSection').style.display='none';document.getElementById('successSection').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
