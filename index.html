@@ -847,8 +847,11 @@ function buyPack(k) {
 //   為什麼:GAS 是單一佇列,尖峰會排隊 2 秒以上,客戶按了購買在那邊乾等;
 //   而且訂單正本已經在 D1,寫 GAS 等於寫到備份去,兩邊會不一致。
 //   回傳形狀跟 GAS 完全一樣,所以下面四個呼叫點只要換這一行。
+//   ⚠️ 這裡不能用 CF_WORKER_URL —— 那支是 photoroom-proxy(綠界建單專用),
+//     沒有 gas_write。訂單/點數/D1 全部在 kol-proxy。
+const KOL_WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 function _wWrite(gasAction, payload) {
-  return fetch(CF_WORKER_URL, {
+  return fetch(KOL_WORKER_URL, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'gas_write', password: GAS_PASSWORD, gasAction, payload })
   }).then(r => r.json());
