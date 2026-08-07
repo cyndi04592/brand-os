@@ -2871,7 +2871,12 @@ async function doApprove(brandId) {
 
   showLoading('核准中...');
   try {
-    const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_USER_EMAIL, brandId, customId: customId.trim() }), headers:{'Content-Type':'text/plain'} });
+    // 🔀 2026-08-06 核准改走 Worker:建資料夾 + 寫 D1 + Resend 寄通知信,
+    //   只有「自動生成 KOL 人設」那步 Worker 內部仍會呼叫一次 GAS(AI 鏈)。
+    //   ⚠️ Worker 端不會背景補寫 GAS —— 否則會重複建資料夾、客戶收到兩封信。
+    let _wj = null;
+    try { _wj = await workerWrite('approveBrand', { email: ADMIN_USER_EMAIL, brandId, customId: customId.trim() }); } catch (_) { _wj = null; }
+    const r = _wj ? { json: async () => _wj } : await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_USER_EMAIL, brandId, customId: customId.trim() }), headers:{'Content-Type':'text/plain'} });
     const j = await r.json();
     if (j.ok) {
       setStatus('✅ 品牌已核准上線!同步中…', 'ok');
