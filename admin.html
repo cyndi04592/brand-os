@@ -2874,20 +2874,16 @@ async function doApprove(brandId) {
     // 🔀 2026-08-06 核准改走 Worker:建資料夾 + 寫 D1 + Resend 寄通知信,
     //   只有「自動生成 KOL 人設」那步 Worker 內部仍會呼叫一次 GAS(AI 鏈)。
     //   ⚠️ Worker 端不會背景補寫 GAS —— 否則會重複建資料夾、客戶收到兩封信。
-    let _wj = null;
-    try { _wj = await workerWrite('approveBrand', { email: ADMIN_USER_EMAIL, brandId, customId: customId.trim() }); } catch (_) { _wj = null; }
-    const r = _wj ? { json: async () => _wj } : await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'approveBrand', password:PASSWORD, email:ADMIN_USER_EMAIL, brandId, customId: customId.trim() }), headers:{'Content-Type':'text/plain'} });
-    const j = await r.json();
+    // 🔀 v3.92:移除 GAS 落回。
+    //   舊版 Worker 一失敗就改打 GAS —— GAS 版會再建一次 Drive 資料夾、
+    //   再寄一封信,而且資料寫進 Sheets 不是 D1,畫面卻照樣顯示成功。
+    //   現在改成失敗就明確報錯,寧可重按一次,也不要偷偷產生重複資料。
+    const j = await workerWrite('approveBrand', { email: ADMIN_USER_EMAIL, brandId, customId: customId.trim() });
     if (j.ok) {
-      setStatus('✅ 品牌已核准上線!同步中…', 'ok');
-      // 🆕 根治onboard:審核通過後立刻叫 kol-proxy 同步 D1(新會員登入/品牌立刻被認得,不用等)
-      try {
-        await fetch('https://kol-proxy.calm-sunset-6b66.workers.dev/', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'sync_after_approve', password:PASSWORD }) });
-        setStatus('✅ 品牌已核准上線 + D1 已同步!', 'ok');
-      } catch(_) { setStatus('✅ 已核准(D1 同步稍後自動補)', 'ok'); }
+      setStatus('✅ 品牌已核准上線!', 'ok');
       await loadApply();
     }
-    else setStatus('❌ '+j.error, 'err');
+    else setStatus('❌ '+(j.error||'核准失敗,請重試'), 'err');
   } catch(e) { setStatus('❌ 操作失敗', 'err'); }
   hideLoading();
 }
@@ -2895,8 +2891,10 @@ async function doDeleteBrand(brandId, name) {
   if (!confirm(`確定刪除「${name}」?`)) return;
   showLoading('刪除中...');
   try {
-    const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'deleteBrand', password:PASSWORD, email:ADMIN_USER_EMAIL, brandId }), headers:{'Content-Type':'text/plain'} });
-    const j = await r.json();
+    // 🔀 v3.92:改走 Worker(D1 正本),不再直打 GAS。
+    //   舊版直打 GAS 只刪 Sheets,D1 那筆申請單原封不動 → 後台看起來刪了、
+    //   實際資料還在,重新整理又冒出來。
+    const j = await workerWrite('deleteBrand', { email: ADMIN_USER_EMAIL, brandId });
     if (j.ok) { setStatus('✅ 已刪除', 'ok'); await loadApply(); }
     else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 刪除失敗', 'err'); }
@@ -2908,8 +2906,8 @@ async function doReject(brandId) {
   if (reason === null) return;
   showLoading('處理中...');
   try {
-    const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'rejectBrand', password:PASSWORD, email:ADMIN_USER_EMAIL, brandId, reason }), headers:{'Content-Type':'text/plain'} });
-    const j = await r.json();
+    // 🔀 v3.92:改走 Worker(D1 正本),不再直打 GAS。
+    const j = await workerWrite('rejectBrand', { email: ADMIN_USER_EMAIL, brandId, reason });
     if (j.ok) { setStatus('已拒絕品牌申請', 'ok'); await loadApply(); }
     else setStatus('❌ '+j.error, 'err');
   } catch(e) { setStatus('❌ 操作失敗', 'err'); }
