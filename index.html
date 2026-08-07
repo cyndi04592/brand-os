@@ -858,6 +858,9 @@ function buyPackEcpay(k) {
           orderId: j.orderId, amount: j.amount,
           itemName: `${j.pack} ${Number(j.bits).toLocaleString()} Bits`,
           tradeDesc: 'Brand OS Bits 補給包',
+          // 明確標示訂單類型,不依賴 Worker 的預設值(預設雖然也是 topup,
+          // 但寫清楚以後改預設值時不會被波及)
+          orderType: 'topup',
           clientBackURL: location.origin + location.pathname + '?paid=' + encodeURIComponent(j.orderId)
         })
       }).then(r => r.json()).then(e => {
@@ -1036,6 +1039,12 @@ function buyPlanEcpay(k) {
           orderId: j.orderId, amount: j.amount,
           itemName: `${j.planName}方案 ${j.cycle==='year'?'年繳':'月繳'}`,
           tradeDesc: 'Brand OS 訂閱方案',
+          // ★ v3.94 修正:一定要帶 orderType='sub'。
+          //   Worker 會把它塞進 ECPay 的 CustomField1,綠界原樣送回,
+          //   回呼靠它決定要開通 sub_orders 還是 topup_orders。
+          //   沒帶 → 預設當成 topup → 回呼在儲值表找不到這張單 →
+          //   客戶付了錢、方案不會開通。
+          orderType: 'sub',
           clientBackURL: location.origin + location.pathname + '?paid=' + encodeURIComponent(j.orderId)
         })
       }).then(r => r.json()).then(e => {
