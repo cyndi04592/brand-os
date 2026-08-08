@@ -2497,13 +2497,17 @@ details[open] > summary::before { transform: rotate(90deg); }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   🆕 2026-08-08 · RWD 第三波(手機 APP 化)
+   🆕 2026-08-08 · RWD 第三波 v2(手機 APP 化)
 
-   RA 實測回饋:手機不能把電腦版全部展開,要像 APP —
-   ① 導覽列一整排按鈕 → 收進「☰ 漢堡選單」,平常只剩薄薄一條
-   ② STEP 01/02/03 三張卡太佔空間 → 每個只留一排標題
-   對應的 HTML:index.html 的 nav 裡加了一顆 .nav-hamburger 按鈕。
-   桌機、平板完全不受影響(全包在 ≤768px 裡)。
+   RA 實測回饋(兩輪):
+   ① 導覽列 → 薄薄一條 + ☰ 漢堡選單(裡面只放 Monitor/KOL/Admin/Logout)
+   ② 訂閱方案/鑽石/點數/email/Drive → 不收進選單,
+      變成 LOGO 下方「一直看得到的狀態列」,像遊戲角色的 HUD
+      (HTML 配合:.nav-account-row 已搬出 .nav-right,變 nav 直屬子元素;
+       桌機排列順序不變,所以桌機視覺完全一樣)
+   ③ STEP 01/02/03 → 真正一行一個:「STEP 01|AI 廣告腳本生成」,
+      LIVE/SOON 徽章與描述文在手機全部收掉
+   桌機、平板不受影響(全包在 ≤768px 裡)。
    ═══════════════════════════════════════════════════════════ */
 
 /* 漢堡按鈕:桌機/平板永遠隱藏 */
@@ -2511,15 +2515,16 @@ details[open] > summary::before { transform: rotate(90deg); }
 
 @media(max-width: 768px) {
 
-  /* ── 導覽列:回到「一條薄列」,而且因為夠薄,重新開回 sticky ── */
+  /* ── 導覽列:第一排 LOGO+☰(52px),第二排狀態列,整包 sticky ── */
   .nav {
     position: sticky;
     top: 0;
-    height: 52px;
-    flex-wrap: nowrap;        /* 蓋掉前面 wrap 的舊規則,不准換行 */
+    height: auto;
+    flex-wrap: wrap;
     padding: 0 14px;
     gap: 0;
   }
+  .nav-logo-wrap { height: 52px; }
 
   /* 漢堡按鈕本體(三條線 → 點開變 ✕) */
   .nav-hamburger {
@@ -2530,6 +2535,7 @@ details[open] > summary::before { transform: rotate(90deg); }
     width: 40px;
     height: 38px;
     padding: 9px 10px;
+    margin: 7px 0;
     background: transparent;
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -2547,11 +2553,26 @@ details[open] > summary::before { transform: rotate(90deg); }
   body.nav-open .nav-hamburger span:nth-child(2) { opacity: 0; }
   body.nav-open .nav-hamburger span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
-  /* ── 選單:平常整包收起來,點漢堡才從導覽列下方滑出 ── */
+  /* ── 狀態列(HUD):訂閱/鑽石/點數/email/Drive,LOGO 下方一直顯示 ── */
+  .nav-account-row {
+    order: 10;                 /* 排到最後 → 換行變成第二排 */
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 8px 0 10px;
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+  .nav-email-chip, .nav-drive-chip { display: inline-flex; }  /* 蓋掉 1280 的隱藏 */
+
+  /* ── 漢堡選單:只剩四顆入口按鈕,點漢堡才滑出 ── */
   .nav-right {
     display: none;
     position: absolute;
-    top: 52px;
+    top: 100%;                 /* 貼著整個 nav(含狀態列)的下緣 */
     left: 0; right: 0;
     flex-direction: column;
     align-items: stretch;
@@ -2564,40 +2585,26 @@ details[open] > summary::before { transform: rotate(90deg); }
     box-shadow: 0 18px 40px rgba(0,0,0,0.55);
   }
   body.nav-open .nav-right { display: flex; }
-
-  /* 選單裡的按鈕整排等寬,像 APP 的選單列 */
   .nav-right > a,
   .nav-right > button { width: 100%; justify-content: center; }
 
-  /* 帳號列:放選單最下面,分隔線隔開;email / Drive 狀態在選單裡放回來 */
-  .nav-account-row {
-    display: flex;
-    width: 100%;
-    margin: 4px 0 0;
-    padding: 12px 0 0;
-    border-left: none;
-    border-top: 1px solid var(--line);
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: flex-start;
-  }
-  .nav-email-chip, .nav-drive-chip { display: inline-flex; }  /* 蓋掉 1280 的隱藏 */
-
-  /* ── STEP 01/02/03:三張卡 → 三行標題,描述文全部收掉 ── */
+  /* ── STEP 01/02/03:真正的一行一個 ── */
   .vision-wrap { padding: 12px 14px 0; }
   .vision-card {
     grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 12px 14px;
+    gap: 4px;
+    padding: 10px 14px;
   }
-  .vision-desc { display: none; }
+  .vision-desc  { display: none; }
+  .vision-badge { display: none; }   /* LIVE/SOON/ALPHA 徽章收掉 */
   .vision-col {
-    display: flex;
+    flex-direction: row;             /* 原本是直排,這行才是真正讓它變一行的關鍵 */
     align-items: center;
     gap: 10px;
-    padding: 4px 0;
+    padding: 6px 4px 6px 12px;
   }
-  .vision-stage { flex-shrink: 0; }
+  .vision-stage { font-size: 0; gap: 0; flex-shrink: 0; }  /* 「· LIVE」等小字縮到看不見 */
+  .vision-stage .step-num { font-size: 12px; }             /* 只留 STEP 01 */
   .vision-title {
     font-size: 13.5px;
     white-space: nowrap;
@@ -2605,7 +2612,49 @@ details[open] > summary::before { transform: rotate(90deg); }
     text-overflow: ellipsis;
   }
 
-  /* 主標題跟著收斂一點,別跟 STEP 搶高度 */
+  /* 主標題收斂 */
   .page-header { padding: 14px 16px 4px; }
   .page-header h1 { font-size: 26px; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · RWD 第四波(品牌列 = 選角色橫向滑動)
+
+   RA 回饋:品牌 10 張卡直排太長(只有最高管理員會這麼多),
+   手機改成「像遊戲選角色」左右滑,一行搞定。
+   ★ 純 CSS,brands.js 一個字沒動:#brandTree 從直排改橫向捲動,
+     每張品牌卡固定寬度 + 滑動吸附;展開的系列/商品收在卡片裡。
+   另:手機隱藏「← 選品牌 再選商品」空狀態(箭頭方向在手機上不成立,
+   反而像突然蹦出一行字;暗掉+變亮的狀態引導已經足夠)。
+   桌機、平板完全不變。
+   ═══════════════════════════════════════════════════════════ */
+@media(max-width: 768px) {
+
+  /* 品牌樹 → 橫向滑軌 */
+  #brandTree {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 2px 2px 10px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  #brandTree::-webkit-scrollbar { height: 4px; }
+  #brandTree::-webkit-scrollbar-thumb {
+    background: rgba(124,109,250,0.30);
+    border-radius: 2px;
+  }
+
+  /* 每個品牌(卡片+它展開的系列)= 一張固定寬度的「角色卡」 */
+  #brandTree > div {
+    flex: 0 0 172px;
+    scroll-snap-align: start;
+  }
+  #brandTree .brand-row { margin-bottom: 6px; }
+
+  /* 展開的商品列在窄卡片裡別再縮排 36px(蓋掉 JS 的 inline style 需要 !important) */
+  #brandTree .prod-row-inline { margin-left: 8px !important; }
+
+  /* 空狀態「← 選品牌 再選商品」在手機收掉 */
+  #prodList .empty { display: none; }
 }
