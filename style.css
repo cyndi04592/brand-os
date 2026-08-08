@@ -2710,7 +2710,7 @@ details[open] > summary::before { transform: rotate(90deg); }
 @media(max-width: 768px) {
 
   /* ② STEP 三排:同大小、同對齊(蓋掉 active 的放大與亮底) */
-  .vision-stage { width: 74px; }                    /* 序號欄固定寬 → 標題起點對齊 */
+  .vision-stage { width: 88px; white-space: nowrap; }  /* STEP 01 同一排不折行,固定寬對齊 */
   .vision-title,
   .vision-col.active .vision-title { font-size: 13.5px; font-weight: 700; }
   .vision-col.active { background: transparent; box-shadow: none; }
@@ -2839,4 +2839,20 @@ details[open] > summary::before { transform: rotate(90deg); }
     text-overflow: ellipsis;
     max-width: 130px;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · RWD 第九波(手機分段感)
+
+   RA 回饋:手機上「生成區 / 廣告文案 / 素材庫」全糊在一起,
+   不像電腦版有欄位分界。改法:三大段之間留 14px 深色帶,
+   每段上下加細邊線 → 一眼看出「這是一段一段的」。
+   ═══════════════════════════════════════════════════════════ */
+@media(max-width: 768px) {
+  .workspace { gap: 14px; }                /* 段落之間露出深色底,形成分隔帶 */
+  .left, .mid, .right {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .mid { background: var(--bg2); }         /* 中段補底色,跟左右段一致成「卡」 */
 }
