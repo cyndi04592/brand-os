@@ -2814,3 +2814,29 @@ details[open] > summary::before { transform: rotate(90deg); }
   #brandTree .prod-row-inline div[style*="font-size:11px"] { font-size: 9.5px !important; }
   #brandTree .prod-row-inline div[style*="font-size:9px"]  { display: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · RWD 第八波(生成列真正對齊)
+
+   實際渲染抓到的真兇:.gb-ctx 是個 flex:1 的空佔位
+   (今天移除品牌狀態列後留下的空殼),在手機上把
+   「目標受眾」整組推到右邊,跟上面所有區塊對不齊。
+   手機直接藏掉它,控制項改直向堆疊、全部貼齊 16px 左邊界。
+   ═══════════════════════════════════════════════════════════ */
+@media(max-width: 768px) {
+  .gb-ctx  { display: none; }              /* 空佔位,手機不需要 */
+  .gb-row1 {
+    flex-direction: column;
+    align-items: stretch;                  /* 每一組控制項吃滿寬度、齊左 */
+    gap: 10px;
+  }
+  .gb-row1 select { width: 100%; }
+
+  /* 商品小格的名字太長時別折兩行,收尾用 … */
+  #brandTree .prod-row-inline div[style*="font-size:11px"] {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+  }
+}
