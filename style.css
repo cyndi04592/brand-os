@@ -2789,3 +2789,28 @@ details[open] > summary::before { transform: rotate(90deg); }
     color: #FAFAFA !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · RWD 第七波(左邊界對齊 + 大中小再拉開)
+
+   ① 手機統一左右邊界 16px:STEP 卡、標題、品牌滑軌、生成列、
+      文案分頁通通切齊同一條垂直線(原本 gen-bar 是 22px,突出去)
+   ② 滑軌階級再拉開:品牌卡加大(180px、字 14px)、系列維持中、
+      商品縮到最小(藏副標「主力旗艦」那行,只留一行小字)
+   ═══════════════════════════════════════════════════════════ */
+@media(max-width: 768px) {
+
+  /* ① 全部切齊 16px 左邊界 */
+  .vision-wrap { padding: 12px 16px 0; }
+  .gen-bar     { padding: 12px 16px; }
+  .tab         { padding: 13px 16px; }   /* 分頁鈕自帶內距,直接調成 16 對齊 */
+
+  /* ② L1 品牌卡:加大 */
+  #brandTree .brand-row { flex: 0 0 180px; }
+  #brandTree .br-name { font-size: 14px; }
+
+  /* ② L3 商品:再縮 —— 副標藏掉,只留一行最小字 */
+  #brandTree .prod-row-inline { padding: 3px 9px !important; max-width: 150px; }
+  #brandTree .prod-row-inline div[style*="font-size:11px"] { font-size: 9.5px !important; }
+  #brandTree .prod-row-inline div[style*="font-size:9px"]  { display: none !important; }
+}
