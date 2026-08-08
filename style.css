@@ -2658,3 +2658,34 @@ details[open] > summary::before { transform: rotate(90deg); }
   /* 空狀態「← 選品牌 再選商品」在手機收掉 */
   #prodList .empty { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · RWD 第五波(HUD 狀態列瘦身成一排 icon)
+
+   RA 回饋:狀態列擠成兩排很醜。改成一排純 icon:
+   👑 訂閱(藏字留皇冠)· 鑽石 · 生命條(點數)· ✉ 信封(藏 email 字)
+   Drive 狀態整顆搬去素材庫標題旁(HTML 已移,桌機也顯示在那,
+   因為「有連結才有素材」,狀態跟素材庫住一起才合理)。
+   ═══════════════════════════════════════════════════════════ */
+@media(max-width: 768px) {
+
+  /* 一排到底,不准換行 */
+  .nav-account-row {
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  /* 👑 訂閱方案:把字縮到看不見,只留皇冠(inline style 要用 !important 蓋) */
+  #subMenuBtn {
+    font-size: 0 !important;
+    gap: 0 !important;
+    padding: 7px 9px !important;
+    margin-right: 0 !important;
+  }
+  #subMenuBtn svg { width: 16px; height: 16px; }
+
+  /* ✉ email:藏字留信封 */
+  .nav-email-chip #userEmailNav { display: none; }
+  .nav-email-chip { padding: 6px 9px; }
+}
