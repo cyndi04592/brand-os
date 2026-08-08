@@ -825,8 +825,20 @@ body::before {
   background: rgba(124,109,250,0.30);
   border-radius: 2px;
 }
-.asset-sec { margin-bottom: 16px; }
+/* 🆕 2026-08-08:素材從「長條列表」改成「格狀縮圖牆」。
+   舊版一列一張、縮圖只有 38px,要一直往下捲才看得到第五張 ——
+   但客戶是「看圖選圖」,不是「讀檔名選圖」。
+   改成一排 2-3 格、縮圖放大到 76px,一眼掃完。
+   ★ 純 CSS 改,assets.js 的 HTML 結構一個字都沒動。 */
+.asset-sec {
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
 .asset-sec-lbl {
+  grid-column: 1 / -1;   /* 🆕 標題橫跨整排,不要被塞進格子裡 */
   font-family: 'Syne', sans-serif;
   font-size: 10px;
   font-weight: 700;
@@ -846,20 +858,25 @@ body::before {
   font-weight: 700;
   color: var(--t2);
 }
+/* 🆕 2026-08-08:改直式卡片(縮圖在上、檔名在下) */
 .asset-item {
-  display: flex; align-items: center; gap: 9px;
-  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 6px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line);
   background: var(--bg3);
   cursor: pointer;
-  margin-bottom: 5px;
+  margin-bottom: 0;          /* grid 的 gap 已經負責間距 */
   transition: all 0.2s;
+  position: relative;
 }
 .asset-item:hover {
   border-color: var(--accent3);
   background: linear-gradient(135deg, var(--bg3), rgba(109,250,194,0.04));
-  transform: translateX(2px);
+  transform: translateY(-2px);   /* 🆕 格狀改成上浮,橫移在格子裡會怪 */
 }
 .asset-item.on.photo {
   border-color: var(--accent3);
@@ -871,8 +888,9 @@ body::before {
   background: var(--accent-mid);
   box-shadow: 0 0 0 1px rgba(124,109,250,0.30);
 }
+/* 🆕 2026-08-08:縮圖從 38px 放大成整格寬 × 76px 高 —— 這才看得出是什麼東西 */
 .ai-thumb {
-  width: 38px; height: 38px;
+  width: 100%; height: 76px;
   border-radius: var(--r-sm);
   overflow: hidden;
   flex-shrink: 0;
@@ -882,7 +900,8 @@ body::before {
 .ai-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .ai-info { flex: 1; min-width: 0; }
 .ai-name {
-  font-size: 11.5px;
+  font-size: 9.5px;      /* 🆕 格子變窄,字跟著縮 */
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
