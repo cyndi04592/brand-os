@@ -2689,3 +2689,54 @@ details[open] > summary::before { transform: rotate(90deg); }
   .nav-email-chip #userEmailNav { display: none; }
   .nav-email-chip { padding: 6px 9px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · RWD 第六波
+
+   ① STEP 03(FB 廣告自動上架)反黑:自動上下架還沒完成,
+      先灰掉表示「後續會出」,桌機手機都適用。要開賣時刪這段就好。
+   ② 手機 STEP 三排大小不一、沒對齊 → 強制同尺寸 + STEP 序號固定寬度
+   ③ 品牌橫滑:系列/商品不再垂直吊一條,改「插隊進同一條滑軌」——
+      點開品牌,系列膠囊接在那張卡右邊,繼續右滑看完(display:contents 技巧)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ① STEP 03 反黑(全裝置)。功能上線時把這三行刪掉即可 */
+.vision-col.future {
+  opacity: 0.38;
+  filter: grayscale(0.5);
+  pointer-events: none;
+}
+
+@media(max-width: 768px) {
+
+  /* ② STEP 三排:同大小、同對齊(蓋掉 active 的放大與亮底) */
+  .vision-stage { width: 74px; }                    /* 序號欄固定寬 → 標題起點對齊 */
+  .vision-title,
+  .vision-col.active .vision-title { font-size: 13.5px; font-weight: 700; }
+  .vision-col.active { background: transparent; box-shadow: none; }
+
+  /* ③ 品牌滑軌 v2:包一層的 div 改 display:contents,
+        讓品牌卡、系列膠囊、商品膠囊全部變成滑軌的直接成員 */
+  #brandTree > div { display: contents; }
+  #brandTree .brand-row {
+    flex: 0 0 172px;
+    margin-bottom: 0;
+    scroll-snap-align: start;
+  }
+  #brandTree .sub-brand-row {
+    flex: 0 0 auto;
+    align-self: center;
+    margin-bottom: 0;
+    white-space: nowrap;
+    padding: 9px 14px;
+  }
+  #brandTree .prod-row-inline {
+    flex: 0 0 auto;
+    align-self: center;
+    max-width: 200px;
+    margin: 0 !important;               /* 蓋掉 JS inline 的 36px 縮排 */
+    border: 1px solid var(--line) !important;
+    background: var(--bg3) !important;
+    border-radius: 8px !important;
+  }
+}
