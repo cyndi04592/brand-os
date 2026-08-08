@@ -61,6 +61,14 @@ function renderBrandTree() {
       ${subRows}
     </div>`;
   }).join('');
+
+  // 🩹 2026-08-08 修正:頁面剛載入時 updateCtx() 從來沒被呼叫過
+  //   (它原本只掛在「點品牌／點子品牌／點商品」三個事件上),
+  //   所以 need-brand 這個狀態 class 根本沒機會加上去 —— 一進站是全亮的,
+  //   等於狀態引導完全沒作用。
+  //   renderBrandTree() 是初始化一定會跑到的地方(auth.js 三處都會呼叫),
+  //   在這裡補叫一次,進站當下就會正確判斷該亮還是該暗。
+  updateCtx();
 }
 
 function renderProds() {
