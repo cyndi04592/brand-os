@@ -2740,3 +2740,52 @@ details[open] > summary::before { transform: rotate(90deg); }
     border-radius: 8px !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · RWD 第六波補丁(滑軌三層視覺階級)
+
+   RA 回饋:品牌卡/系列/商品在滑軌上看起來同一層級,分不出誰是誰。
+   改成明確的大中小階級:
+     L1 品牌卡  = 大(172px 卡片,強邊框)
+     L2 系列    = 中(膠囊,11px)
+     L3 商品    = 小(最小格、虛線框、文字弱化,選中才亮起來)
+   ★ 商品字級是蓋 brands.js 的 inline style,用了屬性選擇器 +
+     !important;若未來改了 brands.js 的模板字串,這裡要跟著對一下。
+   ═══════════════════════════════════════════════════════════ */
+@media(max-width: 768px) {
+
+  /* L2 系列:中等膠囊 */
+  #brandTree .sub-brand-row {
+    padding: 7px 12px;
+    font-size: 11px;
+  }
+
+  /* L3 商品:最小、最淡 */
+  #brandTree .prod-row-inline {
+    padding: 4px 10px !important;
+    max-width: 165px;
+    background: transparent !important;
+    border: 1px dashed rgba(255,255,255,0.16) !important;
+    border-radius: 7px !important;
+    opacity: 0.75;
+  }
+  /* 商品名(inline 是 11px 白字)→ 縮小變灰 */
+  #brandTree .prod-row-inline div[style*="font-size:11px"] {
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    color: #a9a6b8 !important;
+  }
+  /* 商品小標(主力旗艦那行)再更小 */
+  #brandTree .prod-row-inline div[style*="font-size:9px"] {
+    font-size: 8.5px !important;
+  }
+  /* 選中的商品:亮回來,清楚知道現在選誰 */
+  #brandTree .prod-row-inline.on {
+    opacity: 1;
+    border: 1px solid rgba(91,200,200,0.45) !important;
+    background: rgba(91,200,200,0.10) !important;
+  }
+  #brandTree .prod-row-inline.on div[style*="font-size:11px"] {
+    color: #FAFAFA !important;
+  }
+}
