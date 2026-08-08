@@ -2493,8 +2493,119 @@ details[open] > summary::before { transform: rotate(90deg); }
         放大到 116px,一排約 3 格,拇指剛好。 */
   .asset-sec { grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); }
 
-  /* ③ 導覽列在手機換行成 2-3 排,再黏在最上面就吃掉小半個螢幕。
-        手機改回「不黏」:要換品牌/看點數,往上捲就有(手機使用者的正常習慣)。
-        桌機和平板維持 sticky 不動。 */
-  .nav { position: static; }
+  /* ③(已由第三波取代)nav 改為「單排 + 漢堡選單」,見下方 APP 化區塊 */ }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · RWD 第三波(手機 APP 化)
+
+   RA 實測回饋:手機不能把電腦版全部展開,要像 APP —
+   ① 導覽列一整排按鈕 → 收進「☰ 漢堡選單」,平常只剩薄薄一條
+   ② STEP 01/02/03 三張卡太佔空間 → 每個只留一排標題
+   對應的 HTML:index.html 的 nav 裡加了一顆 .nav-hamburger 按鈕。
+   桌機、平板完全不受影響(全包在 ≤768px 裡)。
+   ═══════════════════════════════════════════════════════════ */
+
+/* 漢堡按鈕:桌機/平板永遠隱藏 */
+.nav-hamburger { display: none; }
+
+@media(max-width: 768px) {
+
+  /* ── 導覽列:回到「一條薄列」,而且因為夠薄,重新開回 sticky ── */
+  .nav {
+    position: sticky;
+    top: 0;
+    height: 52px;
+    flex-wrap: nowrap;        /* 蓋掉前面 wrap 的舊規則,不准換行 */
+    padding: 0 14px;
+    gap: 0;
+  }
+
+  /* 漢堡按鈕本體(三條線 → 點開變 ✕) */
+  .nav-hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 40px;
+    height: 38px;
+    padding: 9px 10px;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .nav-hamburger span {
+    display: block;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--t1);
+    transition: transform .25s ease, opacity .2s ease;
+  }
+  body.nav-open .nav-hamburger span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  body.nav-open .nav-hamburger span:nth-child(2) { opacity: 0; }
+  body.nav-open .nav-hamburger span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* ── 選單:平常整包收起來,點漢堡才從導覽列下方滑出 ── */
+  .nav-right {
+    display: none;
+    position: absolute;
+    top: 52px;
+    left: 0; right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 16px 18px;
+    background: rgba(10,10,15,0.97);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+  }
+  body.nav-open .nav-right { display: flex; }
+
+  /* 選單裡的按鈕整排等寬,像 APP 的選單列 */
+  .nav-right > a,
+  .nav-right > button { width: 100%; justify-content: center; }
+
+  /* 帳號列:放選單最下面,分隔線隔開;email / Drive 狀態在選單裡放回來 */
+  .nav-account-row {
+    display: flex;
+    width: 100%;
+    margin: 4px 0 0;
+    padding: 12px 0 0;
+    border-left: none;
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  .nav-email-chip, .nav-drive-chip { display: inline-flex; }  /* 蓋掉 1280 的隱藏 */
+
+  /* ── STEP 01/02/03:三張卡 → 三行標題,描述文全部收掉 ── */
+  .vision-wrap { padding: 12px 14px 0; }
+  .vision-card {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 12px 14px;
+  }
+  .vision-desc { display: none; }
+  .vision-col {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+  }
+  .vision-stage { flex-shrink: 0; }
+  .vision-title {
+    font-size: 13.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 主標題跟著收斂一點,別跟 STEP 搶高度 */
+  .page-header { padding: 14px 16px 4px; }
+  .page-header h1 { font-size: 26px; }
 }
