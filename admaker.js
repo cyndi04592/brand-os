@@ -1329,6 +1329,12 @@ function autoLines(ctx, text, maxWidth) {
 
 function drawOverlay(ctx, title, accent) {
   const W=AM.w, H=AM.h;
+  // 🩹 2026-08-08 修正:沒有標題就整個不畫(含暗化漸層)。
+  //   舊順序是「先畫暗化 → 才檢查有沒有標題」,所以空標題也會蓋一層黑。
+  //   以前靠滑桿把強度拉到最低壓下去,滑桿移除後就只能吃 85% 預設 —— 
+  //   預覽圖平白多一層灰,而且關不掉。
+  //   暗化的存在意義是「讓白色標題看得清楚」,沒有字就沒有理由暗化。
+  if (!title) return;
   const gradStartPct = (parseInt(document.getElementById('amGradStart')?.value||38))/100;
   const gradStrength = (parseInt(document.getElementById('amGradStrength')?.value||85))/100;
   const grad = ctx.createLinearGradient(0, H*gradStartPct, 0, H);
@@ -1336,7 +1342,6 @@ function drawOverlay(ctx, title, accent) {
   grad.addColorStop(0.35, `rgba(0,0,0,${Math.round(gradStrength*0.65*100)/100})`);
   grad.addColorStop(1, `rgba(0,0,0,${gradStrength})`);
   ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
-  if (!title) return;
   const baseFontSize = parseInt(document.getElementById('amFontSize')?.value||94);
   const textYPct = parseInt(document.getElementById('amTextY')?.value||80)/100;
   const align = TEXT_ALIGN||'left';
