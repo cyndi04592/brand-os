@@ -176,14 +176,13 @@
   <div class="mid">
     <div class="gen-bar">
       <div class="gb-row1">
-        <div class="gb-ctx">
-          <div class="gb-brand" id="gbBrand" style="color:var(--t3)">尚未選擇品牌</div>
-          <div class="gb-prod"  id="gbProd"  style="color:var(--t3)">← 先選商品</div>
-          <!-- 🗑️ 2026-08-08 移除:這裡曾加過「① 選品牌 → ② 選商品 → ③ 做廣告圖」提示。
-               .gb-ctx 是 flex:1 的彈性欄,塞三行字進去會把整欄擠成直排,
-               連「尚未選擇品牌」都被壓成一個字一行 —— 反效果。
-               動線引導改用別的方式(見上方大標的流程列)。 -->
-        </div>
+        <!-- 🗑️ 2026-08-08 移除:整個「品牌/商品狀態列」(gbBrand + gbProd)。
+             理由:客戶登入後只看得到自己的品牌,「尚未選擇品牌 / ← 先選商品」
+             是多餘的提示,而且這欄是 flex:1,擠在下拉選單旁邊會被壓成直排。
+             ⚠️ brands.js 的 updateCtx() 已同步補 null 檢查(原本是裸賦值,
+               不補會在每次切品牌時噴錯,連鎖弄壞整頁)。
+             要還原就去 git 歷史撿這段。 -->
+        <div class="gb-ctx"></div>
         <div style="display:flex;flex-direction:column;gap:3px;">
           <div class="sel-lbl">目標受眾</div>
           <select class="sel" id="selAud">
