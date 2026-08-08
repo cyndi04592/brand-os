@@ -125,6 +125,12 @@ function updateCtx() {
   const sc    = getColor(sub?.color || brand?.navColor);
   const bEl   = document.getElementById('gbBrand');
   const pEl   = document.getElementById('gbProd');
+  // 🆕 2026-08-08:這兩個顯示元素已從 index.html 移除
+  //   (客戶登入只看得到自己的品牌,「尚未選擇品牌」是多餘的提示)。
+  //   ⚠️ 原本這裡是裸的 bEl.textContent = ... —— 元素不在就會噴 null,
+  //     而 updateCtx() 每次切品牌都會跑,等於整頁功能連鎖失效。
+  //   保留賦值邏輯是為了「哪天想把狀態列加回來」時不用再改這裡。
+  if (!bEl || !pEl) return;
   if (!brand) {
     bEl.textContent = '尚未選擇品牌'; bEl.style.color = 'var(--t3)';
     pEl.textContent = '← 先選商品';   pEl.style.color = 'var(--t3)';
