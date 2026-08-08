@@ -253,6 +253,31 @@ body::before {
   z-index: 1;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08:狀態引導(需要先選品牌)
+
+   問題:客戶第一次進來,中間的「廣告文案」和右邊的「素材庫」都亮著,
+     但兩邊都還沒東西可用 —— 他會盯著中間發呆,不知道要先去左邊點品牌。
+   做法:沒選品牌時整片暗掉 + 不可點,只剩左欄是亮的。
+     客戶不用讀說明,眼睛自然被帶到唯一亮著的地方。
+   ★ class 由 brands.js 的 updateCtx() 控制,選了品牌就自動移除。
+   ★ 沒有這個 class = 一切正常,所以 JS 沒跑到也不會把人鎖在外面。
+   ═══════════════════════════════════════════════════════════ */
+body.need-brand .mid,
+body.need-brand .right {
+  opacity: 0.28;
+  filter: grayscale(0.5);
+  pointer-events: none;          /* 暗的時候點不動,免得客戶按了沒反應更困惑 */
+  user-select: none;
+  transition: opacity 0.35s ease, filter 0.35s ease;
+}
+/* 左欄反過來:微微發亮,把視線拉過去 */
+body.need-brand .left {
+  box-shadow: inset -1px 0 0 rgba(124,109,250,0.45);
+}
+/* 選好品牌後亮回來也要順順的 */
+.mid, .right { transition: opacity 0.35s ease, filter 0.35s ease; }
+
 /* ══ Left Panel(v11.0 KOL panel 風格)══ */
 .left {
   background: var(--bg2);
