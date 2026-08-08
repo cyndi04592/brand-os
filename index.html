@@ -215,11 +215,19 @@
             </optgroup>
           </select>
         </div>
-        <div style="display:flex;flex-direction:column;gap:3px;">
-          <div class="sel-lbl">組數</div>
-          <select class="sel" id="selN" style="width:72px">
-            <option>1組</option><option>5組</option><option>10組</option><option selected>20組</option>
-          </select>
+        <!-- 🆕 2026-08-08:組數從下拉改成拖拉滑桿。
+             舊版只有 1/5/10/20 四個跳點,想要 7 組、12 組都做不到。
+             改滑桿後 1-30 任選,而且不用點兩下(展開→再選)。
+             ⚠️ generator.js 是 `parseInt(selN.value)` 讀值,滑桿回傳純數字,
+               所以 JS 一行都不用改。 -->
+        <div style="display:flex;flex-direction:column;gap:3px;min-width:120px;">
+          <div class="sel-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+            <span>組數</span>
+            <span id="selNVal" style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--accent);">20</span>
+          </div>
+          <input type="range" id="selN" min="1" max="30" step="1" value="20"
+            style="width:100%;accent-color:var(--accent);cursor:pointer;height:22px;"
+            oninput="document.getElementById('selNVal').textContent=this.value">
         </div>
         <div style="display:flex;flex-direction:column;gap:3px;">
           <div class="sel-lbl">文案長度</div>
