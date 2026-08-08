@@ -590,7 +590,10 @@ const CONTEXT_THEMES = {
 // ═══════════════════════════════════════════════════════════════════════
 let AM = { w:1080, h:1080, scriptIdx:null };
 let PR_BG_IMG  = null;
-let PR_MODE    = 'product_shot';
+// 🆕 2026-08-08:預設模式改「懶人 AI 廣告圖」。
+//   實務上使用者一進來就是要用這個,情境生成／真人試穿已在 index.html 隱藏
+//   (只是 display:none,沒有刪掉 —— 之後有更強的 AI 再打開)。
+let PR_MODE    = 'gpt_poster';
 let TEXT_ALIGN = 'left';
 let TEXT_FONT  = 'bold';
 let CANVAS_TAINTED = false;
@@ -713,20 +716,27 @@ function detectBrandPack() {
 //  v9.x 原樣保留
 // ═══════════════════════════════════════════════════════════════════════
 function openAdMaker(idx) {
-  PR_BG_IMG = null; PR_MODE = 'product_shot';
+  PR_BG_IMG = null; PR_MODE = 'gpt_poster';   // 🆕 2026-08-08:開啟編輯器就是懶人模式
   CANVAS_TAINTED = false;
   setPrStatus('', '');
 
   fetchAndMergeBrandPacksFromGAS();
 
   document.querySelectorAll('.pr-mode-btn').forEach(b => b.classList.remove('on'));
-  document.querySelector('.pr-mode-btn')?.classList.add('on');
+  // 🆕 2026-08-08:亮起「懶人 AI 廣告圖」那顆,不再是第一顆(第一顆已隱藏)。
+  //   用 id 找,找不到才退回第一顆 → index.html 還沒更新也不會壞。
+  (document.getElementById('prModeGpt') || document.querySelector('.pr-mode-btn'))?.classList.add('on');
   ['prSceneSection','prVirtualSection'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = id === 'prSceneSection' ? 'block' : 'none';
+    if (el) el.style.display = 'none';        // 🆕 兩個舊模式的設定區一律收起
   });
   const gpt = document.getElementById('prGptPosterSection');
-  if (gpt) gpt.style.display = 'none';
+  if (gpt) gpt.style.display = 'block';       // 🆕 直接展開懶人模式的設定區
+  // 懶人模式的預設選取狀態(照抄 setPrMode 的 gpt_poster 分支)
+  if (typeof updateBrandPackBadge === 'function') updateBrandPackBadge();
+  document.querySelector(`.layout-btn[data-layout="${SELECTED_LAYOUT}"]`)?.classList.add('on');
+  document.querySelector(`.flavor-btn[data-flavor="${SELECTED_FLAVOR}"]`)?.classList.add('on');
+  document.querySelector(`.context-btn[data-context="${SELECTED_CONTEXT}"]`)?.classList.add('on');
 
   let initialTitle = '';
   if (idx === -1 || idx == null || !window.S.scripts?.[idx]) {
@@ -737,7 +747,11 @@ function openAdMaker(idx) {
     initialTitle = s.hook?.script || '';
   }
 
-  document.getElementById('amTitle').value = initialTitle;
+  // 🆕 2026-08-08:amTitle 已從 index.html 移除(手動打字跟「懶人」定位相反)。
+  //   ⚠️ 這行原本沒有 ?. —— 元素不在就會噴 null,整個編輯器打不開。
+  //   保留賦值是為了「哪天想把輸入框加回來」時不用再改這裡。
+  const _amTitleEl = document.getElementById('amTitle');
+  if (_amTitleEl) _amTitleEl.value = initialTitle;
   document.getElementById('prCustomPrompt').value = '';
   renderAmPhotoRow();
   updateBrandPackBadge();
