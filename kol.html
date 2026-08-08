@@ -4540,10 +4540,10 @@ async function createSeedanceVideo() {
 async function pollSeedance(task) {
   let count = 0;
   const t = setInterval(async () => {
-    if (++count > 150) {  // 150 × 2s = 5 分鐘 timeout
+    if (++count > 300) {  // 🆕 v4.02:300 × 2s = 10 分鐘(90 秒接片要跑三段生成 + 一次合成,5 分鐘不夠)
       clearInterval(t);
       task.status = 'FAILED';
-      task.error = 'Timeout (5min)';
+      task.error = 'Timeout (10min)';
       renderSeedanceTasks();
       return;
     }
@@ -5683,10 +5683,10 @@ function renderEpisodeTask(task) {
 async function pollEpisodeTask(task) {
   let count = 0;
   const t = setInterval(async () => {
-    if (++count > 150) {
+    if (++count > 300) {  // 🆕 v4.02:300 × 2s = 10 分鐘(90 秒接片要跑三段生成 + 一次合成,5 分鐘不夠)
       clearInterval(t);
       task.status = 'FAILED';
-      task.error = 'Timeout (5min)';
+      task.error = 'Timeout (10min)';
       renderEpisodeTask(task);
       return;
     }
@@ -6786,10 +6786,10 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
 async function pollEpisodeTaskV510(task) {
   let count = 0;
   const t = setInterval(async () => {
-    if (++count > 150) {
+    if (++count > 300) {  // 🆕 v4.02:300 × 2s = 10 分鐘(90 秒接片要跑三段生成 + 一次合成,5 分鐘不夠)
       clearInterval(t);
       task.status = 'FAILED';
-      task.error = 'Timeout (5min)';
+      task.error = 'Timeout (10min)';
       renderEpisodeTask(task);
       if (task.episodeId) apiUpdateEpisodeStatus(task.episodeId, { video_status: 'failed', notes: 'Timeout' });
       return;
