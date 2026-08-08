@@ -2455,3 +2455,46 @@ details[open] > summary::before { transform: rotate(90deg); }
     flex-wrap: wrap; gap: 8px; justify-content: flex-start; margin-top: 4px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · RWD 第二波(手機三修 + 平板主版面)
+
+   背景:今天把整頁改可捲 + workspace 撐 760px 之後,
+   桌機變舒服了,但手機/平板出現三個新問題 + 一個舊問題。
+   這一段全部集中修,規則一律「越下面越窄」:先平板、再手機。
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 平板 769px–1280px:三欄(270+內容+340)擠不下 ──
+   做法:素材庫(右欄)整條移到下方全寬,
+   上面留「品牌欄 240px + 工作區」兩欄,工作區終於有呼吸空間。
+   ★ 這也順便對齊 Wishlist「素材庫搬中間欄」的方向,不是另做一套。 */
+@media(max-width: 1280px) and (min-width: 769px) {
+  .workspace {
+    grid-template-columns: 240px 1fr;  /* 左欄稍收窄,剩下全給工作區 */
+  }
+  .mid { min-width: 0; }               /* 防 grid 內容把欄撐爆 */
+  .right {
+    grid-column: 1 / -1;               /* 橫跨整排,自動落到第二列 */
+    border-left: none;
+    border-top: 1px solid var(--line);
+    max-height: 440px;                 /* 縮圖牆自己捲,不把頁尾推到天邊 */
+  }
+  /* 素材區變全寬後,格子從 92px 放大到 120px,一排大約 5-7 格 */
+  .asset-sec { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+}
+
+/* ── 手機 ≤768px:修今天造成的三個問題 ── */
+@media(max-width: 768px) {
+  /* ① 760px 是「桌機的舒服工作高度」,
+        手機三欄直排後整條被硬撐 760 → 多出一段空白。歸零。 */
+  .workspace { min-height: 0; }
+
+  /* ② 素材格 92px 在手機上太小:看不清、也點不準。
+        放大到 116px,一排約 3 格,拇指剛好。 */
+  .asset-sec { grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); }
+
+  /* ③ 導覽列在手機換行成 2-3 排,再黏在最上面就吃掉小半個螢幕。
+        手機改回「不黏」:要換品牌/看點數,往上捲就有(手機使用者的正常習慣)。
+        桌機和平板維持 sticky 不動。 */
+  .nav { position: static; }
+}
