@@ -130,6 +130,13 @@ function updateCtx() {
   //   ⚠️ 原本這裡是裸的 bEl.textContent = ... —— 元素不在就會噴 null,
   //     而 updateCtx() 每次切品牌都會跑,等於整頁功能連鎖失效。
   //   保留賦值邏輯是為了「哪天想把狀態列加回來」時不用再改這裡。
+  // 🆕 2026-08-08:狀態引導。沒選品牌時,中間欄與右欄整片暗掉、不可點,
+  //   客戶自然只會去點左邊亮著的品牌 —— 比寫「① 選品牌 → ②…」有效得多,
+  //   而且不佔版面。選了品牌就自動亮回來。
+  //   ★ 用 class 開關,樣式全在 style.css;這裡只負責「現在該亮還是暗」。
+  //   ★ 預設不加 class → 萬一這段沒跑到,畫面是正常的(不會把客戶鎖在外面)。
+  document.body.classList.toggle('need-brand', !brand);
+
   if (!bEl || !pEl) return;
   if (!brand) {
     bEl.textContent = '尚未選擇品牌'; bEl.style.color = 'var(--t3)';
