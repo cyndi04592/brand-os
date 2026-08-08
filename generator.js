@@ -279,7 +279,7 @@ ${memoryContext}
     }
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '⚡ 生成腳本';
+    btn.innerHTML = '⚡ 生成文案';
     refreshBits();
   }
 }
