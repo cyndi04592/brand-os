@@ -288,32 +288,12 @@
         <div id="amPhotoName" style="font-size:10px;color:var(--accent3);letter-spacing:0.3px;">尚未選擇</div>
       </div>
 
-      <!-- 文字設定 -->
-      <div style="flex-shrink:0;">
-        <div class="sel-lbl">主標題文字</div>
-        <textarea id="amTitle" rows="2" style="width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:7px;color:var(--t1);font-family:'Noto Sans TC';font-size:12px;padding:8px;outline:none;resize:none;margin-top:4px;line-height:1.7;" placeholder="廣告主標題（可留空直接做背景圖）" oninput="renderAdCanvas()"></textarea>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;">
-          <div><div class="sel-lbl">文字大小</div><input type="range" id="amFontSize" min="40" max="160" value="94" style="width:100%;accent-color:var(--accent);" oninput="document.getElementById('amFontSizeVal').textContent=this.value+'px';renderAdCanvas()"><span id="amFontSizeVal" style="font-size:9px;color:var(--t3);">94px</span></div>
-          <div><div class="sel-lbl">文字 Y 位置</div><input type="range" id="amTextY" min="10" max="95" value="80" style="width:100%;accent-color:var(--accent);" oninput="document.getElementById('amTextYVal').textContent=this.value+'%';renderAdCanvas()"><span id="amTextYVal" style="font-size:9px;color:var(--t3);">80%</span></div>
-          <div><div class="sel-lbl">暗化起始點</div><input type="range" id="amGradStart" min="0" max="80" value="38" style="width:100%;accent-color:var(--accent3);" oninput="document.getElementById('amGradStartVal').textContent=this.value+'%';renderAdCanvas()"><span id="amGradStartVal" style="font-size:9px;color:var(--t3);">38%</span></div>
-          <div><div class="sel-lbl">暗化強度</div><input type="range" id="amGradStrength" min="20" max="98" value="85" style="width:100%;accent-color:var(--accent3);" oninput="document.getElementById('amGradStrengthVal').textContent=this.value+'%';renderAdCanvas()"><span id="amGradStrengthVal" style="font-size:9px;color:var(--t3);">85%</span></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:8px;">
-          <button onclick="setTextAlign('left',this)"   class="pr-scene-btn on" id="alignLeft">靠左</button>
-          <button onclick="setTextAlign('center',this)" class="pr-scene-btn"    id="alignCenter">置中</button>
-          <button onclick="setTextAlign('right',this)"  class="pr-scene-btn"    id="alignRight">靠右</button>
-        </div>
-
-        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
-          <div class="sel-lbl" style="margin-bottom:5px;">字體風格</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
-            <button onclick="setTextFont('bold',this)"   class="pr-scene-btn on" id="fontBold"   title="電商快消 (巧福/旺味)"><span style="font-family:'Noto Sans TC';font-weight:900;font-size:11px;">粗黑 <span style="font-size:8px;color:var(--t3);">·電商</span></span></button>
-            <button onclick="setTextFont('serif',this)"  class="pr-scene-btn"    id="fontSerif"  title="精品時尚 (LACEZ/RADESIGN)"><span style="font-family:'Playfair Display',serif;font-weight:500;font-size:12px;font-style:italic;">Serif <span style="font-size:8px;color:var(--t3);font-style:normal;">·精品</span></span></button>
-            <button onclick="setTextFont('light',this)"  class="pr-scene-btn"    id="fontLight"  title="文青設計 (MOZ/設計家電)"><span style="font-family:'Inter',sans-serif;font-weight:300;font-size:11px;letter-spacing:1px;">Light <span style="font-size:8px;color:var(--t3);">·文青</span></span></button>
-            <button onclick="setTextFont('script',this)" class="pr-scene-btn"    id="fontScript" title="手寫裝飾 (古早味/手作)"><span style="font-family:'Caveat',cursive;font-weight:700;font-size:14px;">Script <span style="font-size:8px;color:var(--t3);font-family:'Noto Sans TC';">·手寫</span></span></button>
-          </div>
-        </div>
-      </div>
+      <!-- 🗑️ 2026-08-08 移除:整個「文字設定」區(主標題輸入框 + 文字大小／Y 位置／
+           暗化／對齊／字體風格)。理由:全部要手動打字、手動拉,跟「懶人 AI 廣告圖」
+           的定位相反,實務上沒人用。
+           ⚠️ admaker.js 已同步補防呆:第 750 行的 amTitle 賦值原本沒有 null 檢查,
+             不補會讓編輯器直接打不開。其餘讀取都是 `?.value || 預設`,安全。
+           要還原就去 git 歷史撿這段。 -->
 
       <!-- AI 影像處理 -->
       <div style="border:1px solid rgba(124,109,250,0.3);border-radius:11px;overflow:hidden;flex-shrink:0;">
@@ -321,9 +301,9 @@
 
         <div style="padding:9px 11px;border-bottom:1px solid var(--line);">
           <div style="display:grid;grid-template-columns:1fr;gap:5px;">
-            <button class="pr-mode-btn on" onclick="setPrMode(this,'product_shot')" style="font-weight:900;padding:9px;">AI 情境生成 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換場景)</span></button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')" style="border-color:rgba(250,109,155,0.5);color:#FFA8C8;font-weight:900;padding:9px;">AI 真人試穿 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換模特)</span></button>
-            <button class="pr-mode-btn" onclick="setPrMode(this,'gpt_poster')" style="border-color:rgba(124,109,250,0.5);background:linear-gradient(135deg,rgba(124,109,250,0.08),rgba(109,250,194,0.08));color:#C9B8E8;font-weight:900;padding:9px;">懶人 AI 廣告圖 <span style="opacity:0.55;font-weight:400;font-size:9px;">(品牌包模式)</span></button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'product_shot')" style="display:none;font-weight:900;padding:9px;">AI 情境生成 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換場景)</span></button>
+            <button class="pr-mode-btn" onclick="setPrMode(this,'kling_tryon')" style="display:none;border-color:rgba(250,109,155,0.5);color:#FFA8C8;font-weight:900;padding:9px;">AI 真人試穿 <span style="opacity:0.55;font-weight:400;font-size:9px;">(換模特)</span></button>
+            <button class="pr-mode-btn on" id="prModeGpt" onclick="setPrMode(this,'gpt_poster')" style="border-color:rgba(124,109,250,0.5);background:linear-gradient(135deg,rgba(124,109,250,0.08),rgba(109,250,194,0.08));color:#C9B8E8;font-weight:900;padding:9px;">懶人 AI 廣告圖 <span style="opacity:0.55;font-weight:400;font-size:9px;">(品牌包模式)</span></button>
           </div>
         </div>
 
