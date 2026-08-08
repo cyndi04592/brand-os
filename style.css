@@ -106,7 +106,13 @@
 
 /* ══ Reset ══ */
 * { margin:0; padding:0; box-sizing:border-box; }
-html, body { height:100%; overflow:hidden; }
+/* 🆕 2026-08-08:整頁改成可以往下捲。
+   舊寫法 height:100% + overflow:hidden 把整個網站鎖在「一個螢幕高」裡,
+   三欄只能各自開小捲軸 → 不管螢幕多大,工作區永遠是那一小塊。
+   (手機版早就是可捲的,反而是桌機版被鎖住)
+   改法:body 允許直向捲動,workspace 給一個最小高度撐開。 */
+html { height:100%; }
+body { min-height:100%; overflow-x:hidden; overflow-y:auto; }
 body {
   background: var(--bg);
   color: var(--t1);
@@ -130,7 +136,11 @@ body::before {
 }
 
 /* ══ Nav(v11.0 升級毛玻璃)══ */
+/* 🆕 2026-08-08:整頁可捲之後,導覽列改成黏在最上面。
+   不然往下捲時品牌選單、點數、登出全部消失,客戶會找不到。 */
 .nav {
+  position: sticky;
+  top: 0;
   height: 56px;
   background: rgba(10,10,15,0.85);
   backdrop-filter: blur(24px) saturate(140%);
@@ -140,7 +150,6 @@ body::before {
   padding: 0 24px;
   flex-shrink: 0;
   z-index: 100;
-  position: relative;
 }
 
 .nav-logo-wrap {
@@ -232,10 +241,14 @@ body::before {
 /* ══ Workspace Layout ══ */
 .workspace {
   flex: 1;
-  min-height: 0;
+  /* 🆕 2026-08-08:min-height 從 0 改成 760px。
+     0 的意思是「可以被壓到多小都行」,那正是畫面擠的原因。
+     760px 是一個舒服的工作高度:螢幕夠高就填滿,不夠高就讓整頁往下捲。 */
+  min-height: 760px;
   display: grid;
   grid-template-columns: 270px 1fr 340px;
-  overflow: hidden;
+  /* 🆕 從 hidden 改 visible:三欄的內容可以自然長高,由整頁負責捲動 */
+  overflow: visible;
   position: relative;
   z-index: 1;
 }
