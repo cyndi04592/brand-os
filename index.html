@@ -179,6 +179,10 @@
         <div class="gb-ctx">
           <div class="gb-brand" id="gbBrand" style="color:var(--t3)">尚未選擇品牌</div>
           <div class="gb-prod"  id="gbProd"  style="color:var(--t3)">← 先選商品</div>
+          <!-- 🆕 2026-08-08:給新客戶的動線提示。老手看得懂流程,新客戶不會。 -->
+          <div style="font-size:9.5px;color:var(--t3);letter-spacing:0.5px;margin-top:4px;opacity:0.75;">
+            ① 左側選品牌 → ② 選商品 → ③ 按「做廣告圖」
+          </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px;">
           <div class="sel-lbl">目標受眾</div>
@@ -223,7 +227,15 @@
             <option value="short">短文案</option><option value="medium" selected>中等</option><option value="long">長文案</option>
           </select>
         </div>
-        <button class="gen-btn" id="genBtn" onclick="doGenerate()">生成腳本</button>
+        <!-- 🆕 2026-08-08:主/次按鈕對調。
+             舊版最大的按鈕是「生成腳本」,但客戶進來要的是廣告圖 ——
+             最重要的功能長得最不重要,新客戶一定按錯。
+             現在:做廣告圖 = 主按鈕(大、亮);生成腳本 = 次要(外框、不搶戲)。 -->
+        <button class="gen-btn" id="adBtn" onclick="openAdMakerDirect()">做廣告圖</button>
+        <button id="genBtn" onclick="doGenerate()"
+          style="padding:12px 20px;background:transparent;border:1.5px solid rgba(124,109,250,0.45);border-radius:var(--r-md);color:#C9B8E8;font-family:'Noto Sans TC';font-size:12px;font-weight:800;cursor:pointer;letter-spacing:1px;white-space:nowrap;flex-shrink:0;transition:all .25s;"
+          onmouseover="this.style.background='rgba(124,109,250,0.12)'"
+          onmouseout="this.style.background='transparent'">生成腳本</button>
       </div>
       <div class="prog" id="prog">
         <div class="prog-fill" id="progFill"></div>
