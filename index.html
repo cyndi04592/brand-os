@@ -179,10 +179,10 @@
         <div class="gb-ctx">
           <div class="gb-brand" id="gbBrand" style="color:var(--t3)">尚未選擇品牌</div>
           <div class="gb-prod"  id="gbProd"  style="color:var(--t3)">← 先選商品</div>
-          <!-- 🆕 2026-08-08:給新客戶的動線提示。老手看得懂流程,新客戶不會。 -->
-          <div style="font-size:9.5px;color:var(--t3);letter-spacing:0.5px;margin-top:4px;opacity:0.75;">
-            ① 左側選品牌 → ② 選商品 → ③ 按「做廣告圖」
-          </div>
+          <!-- 🗑️ 2026-08-08 移除:這裡曾加過「① 選品牌 → ② 選商品 → ③ 做廣告圖」提示。
+               .gb-ctx 是 flex:1 的彈性欄,塞三行字進去會把整欄擠成直排,
+               連「尚未選擇品牌」都被壓成一個字一行 —— 反效果。
+               動線引導改用別的方式(見上方大標的流程列)。 -->
         </div>
         <div style="display:flex;flex-direction:column;gap:3px;">
           <div class="sel-lbl">目標受眾</div>
