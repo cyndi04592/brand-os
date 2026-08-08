@@ -261,7 +261,10 @@
     <div class="drive-cfg">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div class="l-sec" style="margin-bottom:0;">Drive 素材庫</div>
-        <button onclick="openAdMakerDirect()" style="padding:6px 13px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-family:'Noto Sans TC';font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(124,109,250,0.30);">直接做廣告圖</button>
+        <!-- 🗑️ 2026-08-08 移除:這裡原本還有一顆「直接做廣告圖」。
+             中間欄已經有主按鈕「做廣告圖」了,同一個動作出現兩顆按鈕
+             只會讓客戶猶豫「這兩顆是不是不一樣?」。留一個入口就好。
+             (兩顆呼叫的都是 openAdMakerDirect(),功能完全相同) -->
       </div>
       <div id="driveWarningBanner" style="display:none;margin-bottom:10px;padding:11px 13px;background:rgba(250,109,155,0.10);border:1.5px solid rgba(250,109,155,0.45);border-radius:10px;text-align:center;">
         <div class="drive-warning-text" style="font-size:12px;font-weight:900;color:var(--accent2);margin-bottom:5px;letter-spacing:0.5px;">· 尚未連結 Google Drive</div>
