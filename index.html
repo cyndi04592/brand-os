@@ -91,6 +91,12 @@
 
   <div style="flex:1;"></div>
 
+  <!-- 🆕 2026-08-08 手機漢堡選單按鈕(桌機由 CSS 隱藏) -->
+  <button class="nav-hamburger" id="navHamburger" aria-label="開啟選單"
+          onclick="document.body.classList.toggle('nav-open')">
+    <span></span><span></span><span></span>
+  </button>
+
   <div class="nav-right">
     <a href="monitor.html" class="nav-btn-monitor" title="廣告監控儀表板">
       <svg width="16" height="16" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="14" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.5"/><circle cx="18" cy="18" r="8.5" stroke="currentColor" stroke-width="1.4" opacity="0.7"/><circle cx="18" cy="18" r="2.5" fill="currentColor"/><line x1="18" y1="18" x2="18" y2="4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -123,6 +129,12 @@
     </div>
   </div>
 </nav>
+<script>
+/* 🆕 2026-08-08 手機選單:點了任何選項就自動收合(像 APP) */
+document.querySelector('.nav-right').addEventListener('click', function(e){
+  if (e.target.closest('a,button')) document.body.classList.remove('nav-open');
+});
+</script>
 
 <!-- ══ Vision Banner + 大標題 ══ -->
 <div class="vision-wrap">
