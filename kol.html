@@ -2984,6 +2984,9 @@ function syncSelectedKolToCine() {
       //    判斷依據:多角度卡沒有 data-look-id(純顯示),HeyGen look 才有。
       //    STEP1 單張照片口播不動 → 客戶摸索口播時照樣選得到 HeyGen look。
       destGrid.querySelectorAll('.look-item[data-look-id]').forEach(el => el.remove());
+      // 🔧 2026-08-09(RA):STEP1 為了不跟 BASE 重複而藏起來的「正臉」卡,
+      //   在這裡(STEP2 沒有 BASE)要重新顯示 → 電影鏡頭牆 = 正臉+3/4+側臉 齊全。
+      destGrid.querySelectorAll('.look-item.angle-front').forEach(el => { el.style.display = ''; });
       const _angleCount = destGrid.querySelectorAll('.look-item').length;
       destPicker.style.display = _angleCount ? srcPicker.style.display : 'none';
       if (destHint) destHint.textContent = _angleCount
@@ -3045,14 +3048,14 @@ function renderLookPicker() {
   }).join('');
 
   // 🆕 多角度顯示卡:紫虛線框 + ,純顯示(無 data-look-id → 不可選),來源=Drive 檔名
-  // 🔧 2026-08-09(RA):BASE(HeyGen Look)跟正臉是同一張臉 → 有任何 Look 卡在牆上時,
-  //   「正臉」預覽卡隱藏,免得出現雙胞胎。純顯示層:Drive 的 sheet_front 檔案照存不動,
-  //   生影片時後台照檔名抓角度完全不受影響。該 KOL 完全沒綁 Look 時才顯示正臉卡(不然看不到臉)。
-  const _shownAngles = ((S.availableLooks || []).length >= 1)
-    ? _angles.filter(a => a.label !== '正臉')
-    : _angles;
-  const anglesHtml = _shownAngles.map(({ ph, label }) => `
-      <div class="look-item" style="border:1px dashed #6c4cf0;cursor:default;opacity:.9;" title="生影片時依鏡頭角度自動使用(來自 Drive)">
+  // 🔧 2026-08-09(RA):BASE(HeyGen Look)跟正臉是同一張臉 → STEP1 這面牆上
+  //   「正臉」卡隱藏(display:none),免得出現雙胞胎。但卡片仍在 DOM 裡 ——
+  //   STEP2 電影鏡頭複製這面牆後會刪掉 HeyGen 卡(那邊沒有 BASE),
+  //   所以 syncSelectedKolToCine 會把正臉卡「重新顯示」→ STEP2 = 正臉+3/4+側臉。
+  //   純顯示層:Drive 的 sheet_front 檔案照存不動,生影片時後台照檔名抓角度不受影響。
+  const _hideFront = ((S.availableLooks || []).length >= 1);
+  const anglesHtml = _angles.map(({ ph, label }) => `
+      <div class="look-item ${label === '正臉' ? 'angle-front' : ''}" style="border:1px dashed #6c4cf0;cursor:default;opacity:.9;${(label === '正臉' && _hideFront) ? 'display:none;' : ''}" title="生影片時依鏡頭角度自動使用(來自 Drive)">
         <img src="${escapeHtml(ph.thumbnail_url)}" alt="${escapeHtml(ph.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder></div>'">
         <div class="look-tag">${label}</div>
       </div>
