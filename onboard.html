@@ -568,7 +568,8 @@ body{
   </div>
   <div class="nav-right">
     <span id="navEmail" style="font-size:10px;color:var(--t3);font-family:'DM Mono';"></span>
-    <a href="index.html" style="font-size:10px;color:var(--t3);text-decoration:none;padding:4px 10px;border:1px solid var(--line);border-radius:6px;transition:all .2s;" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--line)';this.style.color='var(--t3)'">← 返回系統</a>
+    <!-- 🗑️ 2026-08-09 移除「← 返回系統」:進駐頁的訪客都是還沒開通的新客,
+       這顆按鈕只會引他們去撞主系統的登入牆。要復原從 git 歷史撿。 -->
   </div>
 </nav>
 
@@ -697,7 +698,10 @@ body{
       <label>品牌主色系</label>
       <div class="color-section">
         <div class="color-presets" id="colorPresets"></div>
-        <div class="color-custom-area">
+        <!-- 🗑️ 2026-08-09 下架「網址抓色系」:抓回來的常是 AI 亂猜的色碼
+             (PAZZO 抓成紅綠聖誕配),客戶用了反而毀品牌感。
+             一律改選上面設計好的公版色系。程式碼保留,要復活拿掉 display:none。 -->
+        <div class="color-custom-area" style="display:none;">
           <div class="color-custom-title">✨ 輸入你喜歡的品牌網址,AI 自動抓取主色系</div>
           <div class="color-url-row">
             <input class="color-url-input" id="colorUrlInput" placeholder="例:https://www.apple.com" type="url">
@@ -858,15 +862,15 @@ body{
   </div>
 
   <div class="section" id="sec46">
-    <div class="sec-title">05 · 選擇方案 · 了解收費</div>
+    <div class="sec-title">05 · 選擇方案(這一步不會付款)</div>
     <div style="text-align:center;margin:6px 0 22px;">
       <div style="font-size:11px;letter-spacing:4px;color:#ffce6b;font-weight:700;margin-bottom:12px;">BRAND OS · 訂閱方案</div>
       <div style="font-size:clamp(24px,4vw,38px);font-weight:900;line-height:1.25;letter-spacing:-.5px;color:#fff;">用一點點人力,<br>做出 <span style="background:linear-gradient(120deg,#7c6cff,#ff7ac3);-webkit-background-clip:text;background-clip:text;color:transparent;">一整間公司的產能</span>。</div>
       <div style="color:rgba(255,255,255,.62);font-size:14px;margin-top:14px;line-height:1.8;">全功能開好開滿、沒有閹割版。<br>你選的不是「能用哪些功能」,而是「這個月想把產能,放大成幾個人的團隊」。</div>
     </div>
-    <div class="info-box" style="margin-bottom:18px;">
-      <div class="info-box-title">💡 這一步只是「告訴我們你想要的方案」</div>
-      <p>先看清楚每個方案的價格與收費模式,選一個最接近你需求的。<br>這裡<b>不會當場收款</b> —— 送出申請後由我們審核、開通,再依你選的方案計費。日後想換方案隨時可調。</p>
+    <div class="info-box" style="margin-bottom:18px;border:1.5px solid rgba(255,206,107,.55);background:rgba(255,206,107,.07);">
+      <div class="info-box-title" style="color:#ffce6b;">💡 放心逛:這一步「不會付款、不會綁卡」</div>
+      <p>這裡只是先告訴我們你想要的方案,方便審核後幫你開通。<br><b>送出申請完全免費</b> —— 審核通過、你確認要開始用,才會依方案計費。日後想換方案隨時可調,也可以現在先不選。</p>
     </div>
     <div id="planPickRoot" style="width:min(1040px,94vw);margin-left:50%;transform:translateX(-50%);"></div>
     <div class="btn-row">
