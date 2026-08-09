@@ -747,6 +747,61 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   /* 選單打開時底下的字會透出來 → 背景改全不透明 */
   .kol-menu{background:#0b0b12;backdrop-filter:none;-webkit-backdrop-filter:none;}
 }
+/* ── 第三波:太長的清單全面「選角色化」+ 書類折疊 ──
+   RA 回饋:場景卡/形象庫/多角度照直排太長;人設書要能折疊。 */
+
+/* 書類折疊(桌機也可以用,預設只有手機自動折) */
+.book-toggle{cursor:pointer;user-select:none;}
+.book-toggle::after{content:'▾';margin-left:6px;color:var(--text-dim);font-size:11px;
+  display:inline-block;transition:transform .2s;}
+.panel.collapsed .book-toggle::after{transform:rotate(-90deg);}
+.panel.collapsed #system-persona-card,
+.panel.collapsed #system-soul-card{display:none;}
+
+@media(max-width:768px){
+
+  /* 場景卡:直排 20 張 → 橫向滑軌、上下兩排,往右滑就看完 */
+  .scene-grid-v2{
+    display:grid;
+    grid-auto-flow:column;
+    grid-template-rows:1fr 1fr;
+    grid-auto-columns:190px;
+    overflow-x:auto;
+    gap:8px;
+    padding-bottom:8px;
+    scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;
+  }
+  .scene-grid-v2 .scene-card{scroll-snap-align:start;}
+  .scene-grid-v2::-webkit-scrollbar{height:4px;}
+  .scene-grid-v2::-webkit-scrollbar-thumb{background:rgba(124,109,250,.3);border-radius:2px;}
+
+  /* KOL 形象庫:直排 → 選角色橫滑 */
+  .kol-list{
+    flex-direction:row;
+    overflow-x:auto;
+    max-height:none;
+    gap:8px;
+    padding-bottom:6px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .kol-list .kol-card-v2{flex:0 0 158px;}
+  .kol-list::-webkit-scrollbar{height:4px;}
+  .kol-list::-webkit-scrollbar-thumb{background:rgba(124,109,250,.3);border-radius:2px;}
+
+  /* 多角度/參考照:大格網 → 一條小縮圖滑軌,不再霸佔半個螢幕 */
+  .drive-gallery{
+    display:flex;
+    overflow-x:auto;
+    gap:6px;
+    padding-bottom:6px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .drive-gallery .drive-photo{flex:0 0 84px;width:84px;height:84px;aspect-ratio:auto;}
+  .drive-gallery::-webkit-scrollbar{height:4px;}
+  .drive-gallery::-webkit-scrollbar-thumb{background:rgba(124,109,250,.3);border-radius:2px;}
+}
+
 @media(min-width:769px){
   /* 桌機:.kol-menu wrapper 接手「推到最右」,內部照舊排 */
   .kol-menu{margin-left:auto;display:flex;align-items:center;gap:16px;}
@@ -782,6 +837,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 document.querySelector('.kol-menu').addEventListener('click', function(e){
   if (e.target.closest('a,button')) document.body.classList.remove('kol-nav-open');
 });
+/* 🆕 2026-08-09 手機:人設書/靈魂書太長,進頁面預設折疊(點標題展開) */
+if (window.innerWidth <= 768) {
+  document.querySelectorAll('.book-toggle').forEach(function(t){
+    t.parentElement.classList.add('collapsed');
+  });
+}
 </script>
 
 <main class="main">
@@ -1328,10 +1389,10 @@ document.querySelector('.kol-menu').addEventListener('click', function(e){
 
           <!-- 1. KOL 人設書(容器) -->
           <div class="panel system-panel">
-            <div class="panel-title">
+            <div class="panel-title book-toggle" onclick="this.parentElement.classList.toggle('collapsed')">
               <div class="dot"></div>
               <span id="system-persona-title">KOL 人設書</span>
-              <button class="btn btn-ghost btn-sm" id="system-persona-edit-btn" onclick="openPersonaEditor()" style="margin-left:auto" disabled>編輯</button>
+              <button class="btn btn-ghost btn-sm" id="system-persona-edit-btn" onclick="event.stopPropagation();openPersonaEditor()" style="margin-left:auto" disabled>編輯</button>
             </div>
             <div id="system-persona-card">
               <div class="kol-empty" style="padding:16px">選 KOL 以載入人設書…</div>
@@ -1340,7 +1401,7 @@ document.querySelector('.kol-menu').addEventListener('click', function(e){
 
           <!-- 2. 品牌靈魂書(容器) -->
           <div class="panel system-panel">
-            <div class="panel-title">
+            <div class="panel-title book-toggle" onclick="this.parentElement.classList.toggle('collapsed')">
               <div class="dot" style="background:var(--accent2)"></div>
               <span id="system-soul-title">品牌靈魂書</span>
               <span class="chip green" style="margin-left:auto">已接真資料</span>
