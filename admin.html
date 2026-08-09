@@ -3348,6 +3348,15 @@ function renderStaff() {
         subLine = '<span style="font-size:11px;color:var(--t4);">未訂閱</span>';
       }
     }
+    // 👁 v4.04 上帝視角:每張卡直接顯示剩餘點數,不用登入他的帳號。
+    //   格式:💎 剩餘(月池 X + 加購 Y)/ 月配額 Z。沒有點數紀錄的帳號不顯示。
+    //   ⚠️ 顯示的是「帳上目前」:久沒登入的人月池可能還是上一期殘值,他一登入就會自動回滿。
+    let ptsLine = '';
+    if (!isOwnerRow && (Number(s.balance||0) > 0 || Number(s.monthlyBits||0) > 0)) {
+      const bal = Number(s.balance||0), mon = Number(s.monthlyBalance||0), ext = Number(s.extraBalance||0), mb2 = Number(s.monthlyBits||0);
+      ptsLine = `<span style="font-size:11px;color:var(--purple);font-family:var(--font-mono)"
+        title="月池剩 ${mon.toLocaleString()}・加購剩 ${ext.toLocaleString()}${mb2>0?('・每月配額 '+mb2.toLocaleString()):''}">💎 ${bal.toLocaleString()}${mb2>0?(' / '+mb2.toLocaleString()):''}</span>`;
+    }
     // 📛 v4.02:同一個 customer 角色,靠點數來源自動掛對牌子 ——
     //   手動開配額(有 monthlyBits、無 subEnd)= 員工;其餘 = 客戶
     const isManualStaff = Number(s.monthlyBits || 0) > 0 && !/^\d{4}-\d{2}-\d{2}$/.test(String(s.subEnd || '').slice(0, 10));
@@ -3372,6 +3381,7 @@ function renderStaff() {
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-left:8px;">
         <span style="font-size:11px;color:var(--t4);font-family:var(--font-mono)" title="加入日期">${date}</span>
         ${subLine}
+        ${ptsLine}
       </div>
       ${isOwnerRow?'':`<button onclick="setStaffQuota('${esc(s.email)}')" title="設定每月配額(送點數給員工;0=取消授權)"
         style="background:none;border:1px solid var(--line);border-radius:6px;color:var(--t3);cursor:pointer;font-size:12px;padding:3px 8px;margin-left:8px;white-space:nowrap;">⚡ 配額</button>`}
