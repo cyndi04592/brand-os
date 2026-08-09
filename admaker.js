@@ -555,7 +555,7 @@ const CONTEXT_THEMES = {
     context: 'Lunar New Year festive context: subtle red and gold accent elements, hint of plum blossom or auspicious decoration in background bokeh, warm celebratory atmosphere — but keep it tasteful, NOT loud or kitschy.'
   },
   back_to_school: {
-    label: '開學季',
+    label: '開學前哨站',
     context: 'Back-to-school context: study desk setting, books and stationery as props, fresh autumn morning light, optimistic productive mood.'
   },
   unboxing: {
@@ -581,6 +581,52 @@ const CONTEXT_THEMES = {
   double11: {
     label: '1️⃣1️⃣ 雙11',
     context: 'Double 11 shopping-festival context: high-energy e-commerce sale mood, vivid red and magenta, large "11.11" numerals, countdown and price-slash badges, bold urgent call-to-action — loud but clean composition.'
+  },
+  // ★ 2026-08-09 節慶檔期擴充(RA:客戶檔期一直換,點一點就要有 —— 不叫客戶打字)
+  //   台灣全年檔期一次補齊;順序照月曆走,方便之後維護。
+  valentines: {
+    label: '情人節',
+    context: 'Valentine\'s Day context: romantic soft pink and deep red palette, rose petals and subtle heart-shaped bokeh, intimate candlelit warmth, gift-for-your-loved-one mood — elegant and dreamy, NOT cheesy.'
+  },
+  zhongyuan_pudu: {
+    label: '中元普渡',
+    context: 'Zhongyuan Pudu (Taiwan mid-summer offering season) context: abundant offering-table arrangement with generously stacked snack and beverage multipacks, traditional Taiwanese market vibrancy, bright auspicious warm tone — strictly NO spooky, ghost or dark imagery; keep it respectful, bountiful and cheerful.'
+  },
+  mid_autumn: {
+    label: '中秋節',
+    context: 'Mid-Autumn Festival context: full moon glow in deep blue evening sky, mooncakes and pomelo props, warm family reunion atmosphere with a hint of Taiwanese rooftop BBQ, gold and navy palette — cozy and elegant.'
+  },
+  national_day: {
+    label: '國慶日',
+    context: 'Taiwan Double-Tenth National Day holiday-sale context: celebratory fireworks bokeh, tasteful red and blue accent elements, "10/10" numerals as a design motif, festive long-weekend energy — clean and modern, NO political figures or flags close-up.'
+  },
+  halloween: {
+    label: '萬聖節',
+    context: 'Halloween context: playful orange and purple palette, cute pumpkins, whimsical bats and cobweb line-art accents, fun costume-party mood — mischievous and charming, NOT scary or gory.'
+  },
+  black_friday: {
+    label: '黑色星期五',
+    context: 'Black Friday mega-sale context: dominant matte black background, bold white and warning-yellow typography, "BLACK FRIDAY" badge and slashed price tags, spotlight on product, maximum urgency — powerful but tightly structured, not cluttered.'
+  },
+  double12: {
+    label: '1️⃣2️⃣ 雙12',
+    context: 'Double 12 year-end shopping-festival context: energetic pink and violet e-commerce sale mood, large "12.12" numerals, coupon and free-shipping badges, countdown urgency — festive, loud but clean.'
+  },
+  christmas: {
+    label: '聖誕節',
+    context: 'Christmas context: warm fairy-light bokeh, red-green-gold palette, wrapped gifts and ribbon props, hint of Christmas tree in background blur, cozy joyful gifting atmosphere — refined and heartwarming.'
+  },
+  nye_countdown: {
+    label: '跨年倒數',
+    context: 'New Year\'s Eve countdown context: midnight-blue sky with golden fireworks, champagne sparkle and confetti, glowing countdown clock motif, celebratory party-night energy — glamorous and vibrant.'
+  },
+  weiya: {
+    label: '尾牙',
+    context: 'Taiwanese year-end company banquet (Weiya) context: festive red and gold banquet atmosphere, generous gift-box stacks and lucky-draw prize mood, appreciation-and-reward theme for teams and clients — lively, prosperous, premium.'
+  },
+  brand_anniversary: {
+    label: '品牌周年慶',
+    context: 'Brand anniversary celebration context: elegant gold confetti and ribbon, "ANNIVERSARY" badge motif, thank-you-to-fans celebratory mood with exclusive-offer feel — premium, polished, joyful.'
   }
 };
 
