@@ -1807,7 +1807,10 @@ tr:hover td { background: rgba(124,109,250,0.04); }
         <div style="min-width:200px;">
           <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;font-weight:600;letter-spacing:0.5px;">角色</label>
           <select class="field-input" id="newStaffRole" onchange="onRoleChange()">
-            <option value="customer">客戶(只看指定品牌)</option>
+            <!-- 📛 v4.02:員工與客戶「權限相同」(都只看指定品牌),共用同一個角色 ——
+                 差別在點數來源:員工=後台手動開配額(卡片自動顯示「員工授權」),
+                 客戶=自己訂閱付費(卡片顯示到期日)。所以不需要第三種角色。 -->
+            <option value="customer">客戶/員工(只看指定品牌)</option>
             <option value="reviewer" data-owner-only-opt>審核員(可審核 · 看全部)</option>
           </select>
         </div>
@@ -3345,8 +3348,12 @@ function renderStaff() {
         subLine = '<span style="font-size:11px;color:var(--t4);">未訂閱</span>';
       }
     }
+    // 📛 v4.02:同一個 customer 角色,靠點數來源自動掛對牌子 ——
+    //   手動開配額(有 monthlyBits、無 subEnd)= 員工;其餘 = 客戶
+    const isManualStaff = Number(s.monthlyBits || 0) > 0 && !/^\d{4}-\d{2}-\d{2}$/.test(String(s.subEnd || '').slice(0, 10));
     const badge = role==='owner' ? '<span class="staff-badge badge-admin">管理員</span>'
                 : role==='reviewer' ? '<span class="staff-badge badge-reviewer">審核員</span>'
+                : isManualStaff ? '<span class="staff-badge badge-staff" title="手動開通配額,無到期日">員工</span>'
                 : '<span class="staff-badge badge-staff">客戶</span>';
     const brandsLine = (role==='owner'||role==='reviewer')
                 ? '<div class="staff-email" style="color:var(--t3)">可看:全部品牌</div>'
@@ -3366,6 +3373,8 @@ function renderStaff() {
         <span style="font-size:11px;color:var(--t4);font-family:var(--font-mono)" title="加入日期">${date}</span>
         ${subLine}
       </div>
+      ${isOwnerRow?'':`<button onclick="setStaffQuota('${esc(s.email)}')" title="設定每月配額(送點數給員工;0=取消授權)"
+        style="background:none;border:1px solid var(--line);border-radius:6px;color:var(--t3);cursor:pointer;font-size:12px;padding:3px 8px;margin-left:8px;white-space:nowrap;">⚡ 配額</button>`}
       ${isOwnerRow?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" style="margin-left:8px;font-size:18px;" title="移除">✕</button>`}
     </div>`;
   }).join('');
@@ -3387,6 +3396,32 @@ function brandsToNames(csv) {
   if (!csv) return '<span style="color:var(--t4)">未綁品牌</span>';
   const ids = String(csv).split(',').map(x => x.trim()).filter(Boolean);
   return ids.map(id => { const b = (DB.brands||[]).find(x => x.id === id); return esc(b ? b.name : id); }).join('、');
+}
+
+// ⚡ v4.03(2026-08-09):一鍵送員工點數 —— 設「每月配額」,不用再開 Console。
+//   設完立即給滿一條,之後每月照他自己的週期自動回滿(周年制),沒有到期日。
+//   輸入 0 = 取消授權(月配額停發;他自己買過的加購點保留)。
+//   ⚠️ 需配 Worker v4.03 以上(setBitsPlan 這支,僅 owner 可呼叫)。
+async function setStaffQuota(email) {
+  const cur = prompt(
+    '⚡ 設定每月配額(送點數給員工)\n\n' + email + '\n\n' +
+    '輸入每月 Bits 數字,例如 100000\n輸入 0 = 取消授權(停發月配額,他自購的點數會保留)',
+    '100000');
+  if (cur === null) return;
+  const mb = parseInt(String(cur).replace(/[^\d]/g, ''), 10);
+  if (isNaN(mb)) { alert('請輸入數字'); return; }
+  const msg = mb > 0
+    ? ('確定給 ' + email + '\n每月 ' + mb.toLocaleString() + ' Bits?\n\n・立即生效,馬上就有一整條\n・之後每月自動回滿\n・沒有到期日(離職時移除白名單即可)')
+    : ('確定取消 ' + email + ' 的配額授權?\n(月配額停發;他自購的加購點保留)');
+  if (!confirm(msg)) return;
+  showLoading('設定中...');
+  try {
+    const j = await workerWrite('setBitsPlan',
+      { email: ADMIN_USER_EMAIL, targetEmail: email, monthlyBits: mb, plan: mb > 0 ? '員工授權' : '' });
+    if (j && j.ok) { alert('✅ 完成!\n' + email + '\n每月配額:' + mb.toLocaleString() + ' Bits'); loadStaff(); }
+    else alert('❌ 失敗:' + ((j && j.error) || '連線問題,再試一次'));
+  } catch (e) { alert('❌ 連線失敗,請重試'); }
+  hideLoading();
 }
 
 async function addStaff() {
