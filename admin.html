@@ -3269,8 +3269,8 @@ function renderStaff() {
       <div class="staff-avatar">${initials}</div>
       <div class="staff-info">
         <div class="staff-name" id="staffName-${esc(s.email)}">${esc(s.name||'未設定姓名')}
-          <button onclick="editStaffName('${esc(s.email)}')" title="改名"
-            style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:0 4px;">✎</button>
+          ${isOwnerRow?'':`<button onclick="editStaffName('${esc(s.email)}')" title="改名"
+            style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:0 4px;">✎</button>`}
         </div>
         <div class="staff-email">${esc(s.email)}</div>
         ${brandsLine}
@@ -3367,22 +3367,48 @@ async function saveStaffName(email, name) {
   name = (name || '').trim();
   const s = STAFF.find(x => x.email === email);
   if (!s || name === (s.name || '')) { renderStaff(); return; }
+  const role = (s.role || 'customer').toLowerCase();
+  if (role === 'owner') { renderStaff(); return; }
+
+  /* ⚠️ 2026-08-09 過渡方案:後端 addWhitelist 會擋重複(「已在白名單」),
+     沒有 updateWhitelist 可用 → 改名 = 移除後帶新名字加回。
+     風險窗:兩步之間若斷線,帳號會暫時消失 → 失敗時自動用原資料加回(急救),
+     急救也失敗才要求手動重加。正解(Worker 補 updateWhitelist)已記在 Wishlist。 */
+  async function _wl(gasAction, extra) {
+    let j = null;
+    try { j = await workerWrite(gasAction, Object.assign({ email: ADMIN_USER_EMAIL }, extra)); } catch (_) { j = null; }
+    if (!j) {
+      try {
+        const r = await fetch(GAS_URL, {
+          method: 'POST', headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(Object.assign({ action: gasAction, password: PASSWORD, email: ADMIN_USER_EMAIL }, extra))
+        });
+        j = await r.json();
+      } catch (e) { j = { ok: false, error: '連線失敗' }; }
+    }
+    return j || { ok: false, error: '無回應' };
+  }
+
   showLoading('更新姓名...');
   try {
-    let j = null;
-    try { j = await workerWrite('addWhitelist',
-      { email: ADMIN_USER_EMAIL, targetEmail: email, name, role: (s.role||'customer'), brands: (s.brands||'') }); } catch (_) { j = null; }
-    if (!j) {
-      const r = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action:'addWhitelist', password:PASSWORD, email:ADMIN_USER_EMAIL, targetEmail:email, name, role:(s.role||'customer'), brands:(s.brands||'') })
-      });
-      j = await r.json();
+    const del = await _wl('removeWhitelist', { targetEmail: email });
+    if (!del.ok) { setStatus('❌ 改名失敗:' + (del.error || '移除被擋'), 'err'); renderStaff(); hideLoading(); return; }
+
+    const add = await _wl('addWhitelist', { targetEmail: email, name, role, brands: (s.brands || '') });
+    if (add.ok) {
+      setStatus('✅ 姓名已更新', 'ok');
+      await loadStaff();
+    } else {
+      // 🚑 急救:用原本的資料加回去,不能讓這個帳號登不進來
+      const back = await _wl('addWhitelist', { targetEmail: email, name: (s.name || ''), role, brands: (s.brands || '') });
+      if (back.ok) {
+        setStatus('❌ 改名失敗(' + (add.error || '') + '),帳號已還原,請再試一次', 'err');
+        await loadStaff();
+      } else {
+        alert('🚨 嚴重:' + email + ' 改名失敗且自動還原也失敗!\n請立刻在「新增員工」把這個帳號重新加回白名單,否則對方無法登入。');
+      }
     }
-    if (j.ok) { setStatus('✅ 姓名已更新','ok'); await loadStaff(); }
-    else { setStatus('❌ '+ (j.error || '更新失敗') + '(若訊息說已存在,需 Worker 補 updateWhitelist,跟 Claude 說)','err'); renderStaff(); }
-  } catch(e) { setStatus('❌ 連線失敗','err'); renderStaff(); }
+  } catch (e) { setStatus('❌ 連線失敗', 'err'); renderStaff(); }
   hideLoading();
 }
 
