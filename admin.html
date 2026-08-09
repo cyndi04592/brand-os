@@ -2344,11 +2344,20 @@ async function saveHolidayCfg() {
   const start = document.getElementById('hcStart').value || '';
   const end   = document.getElementById('hcEnd').value || '';
   try {
-    const url = `${GAS_URL}?action=setHolidayConfig&password=${PASSWORD}&enabled=${enabled}&stockTotal=${encodeURIComponent(stock)}&startAt=${encodeURIComponent(start)}&endAt=${encodeURIComponent(end)}&name=${encodeURIComponent(name)}`;
-    const r = await fetch(url);
-    const j = await r.json();
-    if (j.ok) { alert('✅ 節慶包設定已儲存\n庫存重設為 ' + (j.stockTotal>0 ? (j.stockTotal+' 組') : '不限量')); loadHolidayCfg(); }
-    else alert('❌ 儲存失敗');
+    // 🎁 v4.00(2026-08-09):改走 Worker 寫 D1 正本,不再直打 GAS。
+    //   舊路線的病灶:設定存 GAS、扣庫存扣 D1 → 手動完整同步一跑,
+    //   D1 的剩餘庫存被 GAS 舊值蓋回去 → 超賣。
+    //   ⚠️ 要配 Worker v4.00-holidayd1 以上(有 setHolidayConfig 這支)才會動。
+    const j = await workerWrite('setHolidayConfig', {
+      email: ADMIN_USER_EMAIL,
+      enabled: enabled,
+      name: name,
+      stockTotal: stock,
+      startAt: start,
+      endAt: end,
+    });
+    if (j && j.ok) { alert('✅ 節慶包設定已儲存\n庫存重設為 ' + (j.stockTotal>0 ? (j.stockTotal+' 組') : '不限量')); loadHolidayCfg(); }
+    else alert('❌ 儲存失敗' + (j && j.error ? ':' + j.error : ''));
   } catch (e) { alert('❌ 連線錯誤,請重試'); }
 }
 
