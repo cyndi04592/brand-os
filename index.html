@@ -725,8 +725,40 @@ function setVisionStage(n) { _visionStage = n; paintVision(n); }
 function openAdMakerDirect() {
   if (!window.S) { alert('請先選擇品牌和商品'); return; }
   if (!window.S.brandId) { alert('請先選擇品牌'); return; }
+  /* 🆕 2026-08-09 沒選素材就不開編輯器(不然進去是黑畫面,
+     第一次用的客戶會以為壞掉)。改成:提示 + 自動捲到素材庫 + 發光引導。 */
+  if (window.S.selPhoto === null || window.S.selPhoto === undefined ||
+      !window.S.photos || !window.S.photos.length) {
+    _guideToAssets();
+    return;
+  }
   if (!window.S.scripts) window.S.scripts = [];
   openAdMaker(-1);
+}
+
+/* 沒選素材時的引導:底部提示膠囊(3 秒自動消失)+ 捲到素材庫 + 紅光框 */
+function _guideToAssets() {
+  var tip = document.getElementById('assetGuideTip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'assetGuideTip';
+    tip.textContent = '⚠ 尚未選擇素材 — 請先在素材庫點一張商品照';
+    tip.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:26px;z-index:1200;' +
+      'background:linear-gradient(135deg,#ff4d6d,#fa6d9b);color:#fff;font-size:13px;font-weight:900;' +
+      'padding:12px 20px;border-radius:999px;box-shadow:0 10px 34px rgba(0,0,0,0.55);' +
+      'letter-spacing:0.5px;white-space:nowrap;pointer-events:none;';
+    document.body.appendChild(tip);
+  }
+  tip.style.display = 'block';
+  clearTimeout(tip._t);
+  tip._t = setTimeout(function(){ tip.style.display = 'none'; }, 3200);
+
+  var right = document.querySelector('.right');
+  if (right) {
+    right.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    right.style.boxShadow = 'inset 0 0 0 2px rgba(255,77,109,0.65)';
+    setTimeout(function(){ right.style.boxShadow = ''; }, 2600);
+  }
 }
 
 // ══ Bits 補給包商城 ══
