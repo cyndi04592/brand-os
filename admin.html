@@ -3357,7 +3357,7 @@ function editStaffName(email) {
   const div = document.getElementById('staffName-' + email);
   if (!div || div.querySelector('input')) return;
   const cur = s.name || '';
-  div.innerHTML = `<input type="text" class="field-input" value="${esc(cur)}" placeholder="輸入姓名"
+  div.innerHTML = `<input type="text" class="field-input" data-no-dirty value="${esc(cur)}" placeholder="輸入姓名"
       style="width:130px;padding:4px 8px;font-size:13px;"
       onkeydown="if(event.key==='Enter')this.blur()"
       onblur="saveStaffName('${esc(email)}', this.value)">`;
@@ -3449,6 +3449,7 @@ function _markSaved() {
   document.getElementById('btnSaveAll')?.classList.remove('dirty');
 }
 document.addEventListener('input', function(e){
+  if (e.target.closest('[data-no-dirty]')) return;   // 🆕 即時寫入類(✎改名等)不算未存檔
   if (e.target.closest('.main')) _markDirty();   // 只追蹤內容區的輸入,過濾器下拉不算
 });
 window.addEventListener('beforeunload', function(e){
