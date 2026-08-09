@@ -2685,8 +2685,9 @@ details[open] > summary::before { transform: rotate(90deg); }
   }
   #subMenuBtn svg { width: 16px; height: 16px; }
 
-  /* ✉ email:藏字留信封 */
+  /* ✉ email:平常只留信封,點一下展開帳號、再點收回(客戶自查登入身分) */
   .nav-email-chip #userEmailNav { display: none; }
+  .nav-email-chip.show-email #userEmailNav { display: inline; }
   .nav-email-chip { padding: 6px 9px; }
 }
 
