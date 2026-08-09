@@ -3269,8 +3269,9 @@ function renderStaff() {
       <div class="staff-avatar">${initials}</div>
       <div class="staff-info">
         <div class="staff-name" id="staffName-${esc(s.email)}">${esc(s.name||'未設定姓名')}
-          ${isOwnerRow?'':`<button onclick="editStaffName('${esc(s.email)}')" title="改名"
-            style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:0 4px;">✎</button>`}
+          <!-- 🚧 2026-08-09 ✎ 改名暫時下架:過渡方案(移除→加回)實戰踩到
+               「加回失敗」,疑似 D1 whitelist 表缺 name 欄。等 Worker 補
+               updateWhitelist(Wishlist 已排)再開回來。程式碼都在,只是不顯示按鈕。 -->
         </div>
         <div class="staff-email">${esc(s.email)}</div>
         ${brandsLine}
