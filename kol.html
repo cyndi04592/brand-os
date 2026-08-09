@@ -7240,6 +7240,30 @@ window.addEventListener('load', () => {
     if (_adminBtn && em && em.trim().toLowerCase() === 'cyndi04592@gmail.com') {
       _adminBtn.style.display = 'inline-flex';
     }
+
+    /* 🆕 2026-08-09 客戶簡化模式:1080p / 480p / 精緻 只有管理員看得到。
+       理由(RA 實測):720p+快速 是效果最好的配置 —— 1080p 太銳利露 AI 感
+       且成本 2 倍、480p 爛畫質傷品牌、精緻成本 +25% 但扣點沒加價(吃毛利)。
+       客戶看不到就不會手賤;管理員保留全部檔位方便測試。 */
+    if (!(em && em.trim().toLowerCase() === 'cyndi04592@gmail.com')) {
+      /* 不藏、改「尚未開放」:客戶看得到有更高檔位(期待感),但點不動 */
+      var _lockOpt = function(r){
+        r.style.opacity = '.35';
+        r.style.pointerEvents = 'none';
+        r.title = '尚未開放';
+        r.innerHTML += ' <span style="font-size:9px;opacity:.85">🔒</span>';
+      };
+      document.querySelectorAll(
+        '[data-group="resolution"] .seedance-radio, [data-ep-group="resolution"] .seedance-radio'
+      ).forEach(function(r){
+        if (r.dataset.value !== '720p') _lockOpt(r);
+      });
+      document.querySelectorAll(
+        '[data-group="tier"], [data-ep-group="tier"] .seedance-radio'
+      ).forEach(function(r){
+        if (r.dataset && r.dataset.value === 'standard') _lockOpt(r);
+      });
+    }
     const _logoutBtn = document.getElementById('navLogoutBtn');
     if (_logoutBtn && em) _logoutBtn.style.display = 'inline-flex';
   } catch (e) {}
