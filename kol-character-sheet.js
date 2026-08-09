@@ -12,7 +12,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v0.6-kontext-drive';
+  var VER = 'v0.7-pick-selected';
 
   function K() { return window.KAI || null; }
 
@@ -112,37 +112,15 @@
       });
     }
 
-    btnLoad.onclick = function () {
-      thumbs.innerHTML = '';
-      var items = [];   // { url: 縮圖/網址, driveId: 有值=Drive 圖要先轉存 }
-      var seen = {};
-      function push(u, driveId) { if (!u || seen[u]) return; seen[u] = 1; items.push({ url: u, driveId: driveId || null }); }
-
-      // ① 這一輪剛生成的 AI 正臉(原本邏輯)
-      var st = K() && K().S;
-      if (st && st.lastImages && st.lastImages.length) st.lastImages.forEach(function (x) { push(x.url || x, null); });
-      // ② 生成器面板裡的 fal / R2 圖(原本邏輯)
-      [].slice.call(document.querySelectorAll('.kai-panel img')).forEach(function (i) {
-        if (i.closest('#cs-box')) return;
-        var s = i.src || '';
-        if (s.indexOf('fal.media') > -1 || s.indexOf('r2.dev') > -1) push(s, null);
-      });
-      // ③ 🔧 v0.6:整頁的 Drive 相簿縮圖(已處理・多角度/參考照、形象庫)——
-      //   舊 KOL「只有正面照存 Drive」就是靠這條讀進來
-      [].slice.call(document.querySelectorAll('img')).forEach(function (i) {
-        if (i.closest('#cs-box')) return;
-        var s = i.src || '';
-        var m = s.match(/drive\.google\.com\/thumbnail\?id=([a-zA-Z0-9_-]+)/);
-        if (m) push(s, m[1]);
-      });
-
-      if (!items.length) { status.textContent = '上面還沒有照片 → 先生一批正臉、打開 Drive 相簿,或直接貼網址。'; return; }
-      status.textContent = '點一張當正臉(標 📁 的是 Drive 舊照,會自動取原圖):';
+    // 🔧 v0.7(RA 拍板):讀取邏輯改「你勾哪張、就讀哪張」——
+    //   最優先抓上面「KOL 形象庫」已勾選(✓)的照片(.drive-photo.selected 自帶 file-id + persona),
+    //   不再把整頁 100 個 KOL 的相簿全倒出來。沒勾選才退回這一輪剛生成的 AI 正臉。
+    function renderThumbs(items) {
       items.forEach(function (it) {
         var wrap = el('div', 'position:relative;');
         var t = el('img', 'width:70px;height:90px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;display:block;');
         t.src = it.url;
-        if (it.driveId) wrap.appendChild(el('div', 'position:absolute;top:2px;left:2px;font-size:10px;background:rgba(0,0,0,.55);border-radius:4px;padding:0 3px;pointer-events:none;', '📁'));
+        if (it.driveId) wrap.appendChild(el('div', 'position:absolute;top:2px;left:2px;font-size:10px;background:rgba(0,0,0,.55);border-radius:4px;padding:0 3px;pointer-events:none;', '📁' + (it.label ? ' ' + it.label : '')));
         t.onclick = function () {
           [].forEach.call(thumbs.querySelectorAll('img'), function (c) { c.style.borderColor = 'transparent'; });
           t.style.borderColor = '#7ee0a0';
@@ -151,7 +129,51 @@
         };
         wrap.appendChild(t);
         thumbs.appendChild(wrap);
+        if (it.autoPick) t.onclick();   // 只勾一張 → 免再點,直接取原圖
       });
+    }
+
+    btnLoad.onclick = function () {
+      thumbs.innerHTML = '';
+      var items = [];   // { url: 縮圖/網址, driveId: 有值=Drive 圖要先轉存, label: persona 名 }
+      var seen = {};
+      function push(u, driveId, label) { var k = driveId || u; if (!k || seen[k]) return; seen[k] = 1; items.push({ url: u, driveId: driveId || null, label: label || '' }); }
+
+      // ① 最優先:形象庫「已勾選 ✓」的照片(跟「加入 Look」同一套勾選)
+      [].slice.call(document.querySelectorAll('.drive-photo.selected')).forEach(function (d) {
+        var img = d.querySelector('img');
+        if (img && img.src) push(img.src, d.getAttribute('data-file-id'), d.getAttribute('data-persona') || '');
+      });
+      var fromGallery = items.length > 0;
+
+      if (!fromGallery) {
+        // ② 沒勾選 → 這一輪剛生成的 AI 正臉(原本邏輯)
+        var st = K() && K().S;
+        if (st && st.lastImages && st.lastImages.length) st.lastImages.forEach(function (x) { push(x.url || x, null, ''); });
+        // ③ 再沒有 → 生成器面板裡的 fal / R2 圖(原本邏輯)
+        if (!items.length) [].slice.call(document.querySelectorAll('.kai-panel img')).forEach(function (i) {
+          if (i.closest('#cs-box')) return;
+          var s = i.src || '';
+          if (s.indexOf('fal.media') > -1 || s.indexOf('r2.dev') > -1) push(s, null, '');
+        });
+      }
+
+      if (!items.length) {
+        status.textContent = '沒有可用的正臉 → 去上面「KOL 形象庫」勾選(✓)一張,或先生一批 AI 正臉,或直接貼網址。';
+        return;
+      }
+
+      if (fromGallery && items.length === 1) {
+        // 勾了剛好一張 → 最順路:直接當正臉,自動取原圖
+        items[0].autoPick = true;
+        status.textContent = '讀到你勾選的那張(' + (items[0].label || '') + '),自動取原圖中…';
+        renderThumbs(items);
+        return;
+      }
+      status.textContent = fromGallery
+        ? ('讀到你勾選的 ' + items.length + ' 張,點一張當正臉:')
+        : '點一張當正臉:';
+      renderThumbs(items);
     };
 
     inUrl.oninput = function () {
