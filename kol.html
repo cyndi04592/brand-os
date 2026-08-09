@@ -732,6 +732,20 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   .brand-switcher, .brand-switcher-row{flex-wrap:wrap;}
   .brand-switcher-select{flex:1;min-width:0;}
   .brand-switcher-info{flex-basis:100%;font-size:11px;line-height:1.6;margin-top:2px;}
+
+  /* ── 第二波:分段感(RA 回饋:跟主頁一樣糊在一起) ──
+     卡片底色調亮一階 + 紫色描邊,卡與卡之間拉開,
+     深色底自然變成分隔帶,一眼看出一段一段。 */
+  .panel{
+    background:var(--surface2);
+    border:1px solid rgba(124,109,250,.22);
+  }
+  .layout{gap:16px;padding:0 16px 60px;}
+  .brand-switcher{padding:18px 16px 0;}
+  .page-header{padding:16px 16px 18px;}
+
+  /* 選單打開時底下的字會透出來 → 背景改全不透明 */
+  .kol-menu{background:#0b0b12;backdrop-filter:none;-webkit-backdrop-filter:none;}
 }
 @media(min-width:769px){
   /* 桌機:.kol-menu wrapper 接手「推到最右」,內部照舊排 */
