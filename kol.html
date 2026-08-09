@@ -4137,6 +4137,7 @@ function openStoryboardForCine() {
   if (!S.selectedKol) { toast('請先選 KOL', 'warn'); return; }
   document.getElementById('sbp-cine-mount').style.display = '';
   S.cineStoryboardPending = true;   // 用了產生器但還沒按確認分鏡 → 生成前紅字提醒
+  _lockDurationGroups(true);        // 🆕 2026-08-09 一開產生器就鎖時長(分鏡決定時長,避免客戶跟它打架)
   KolStoryboardPanel.open({
     containerId: 'sbp-cine-mount',
     persona: S.selectedKol.persona || {},
@@ -4188,6 +4189,7 @@ function openStoryboardForEpisode() {
   const product = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
 
   S.episodeStoryboardPending = true;   // 用了產生器但還沒按確認分鏡 → 生成前紅字提醒
+  _lockDurationGroups(true);           // 🆕 2026-08-09 一開產生器就鎖時長
   KolStoryboardPanel.open({
     containerId: 'sbp-episode-mount',
     persona: persona.persona || persona,
@@ -4518,6 +4520,17 @@ async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
     return fallbackUrl;
   }
 }
+/* 🆕 2026-08-09 分鏡產生器時長鎖:一點「用分鏡產生器」就把時長(秒)按鈕群
+   變暗鎖住 —— 時長由分鏡決定,客戶再手動點只會打架。
+   解析度/畫幅/品質不鎖(那些是客戶自由)。分鏡自動選檔位的程式照常能設定。 */
+function _lockDurationGroups(lock) {
+  document.querySelectorAll('[data-group="duration"]').forEach(function(g){
+    g.style.opacity = lock ? '0.38' : '';
+    g.style.pointerEvents = lock ? 'none' : '';
+    g.title = lock ? '⏱ 時長由分鏡決定(已鎖定)' : '';
+  });
+}
+
 // 生成前確認視窗(自製 → 可放紅字)。pending=true:用了分鏡產生器卻還沒按「確認分鏡」。
 // 回傳 Promise<boolean>:true=繼續生成,false=取消。STEP2/STEP3、單支/接片共用這一個。
 // 🆕 商品節奏防呆 v6.0-pace ─────────────────────────────
