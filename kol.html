@@ -746,6 +746,25 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
   /* 選單打開時底下的字會透出來 → 背景改全不透明 */
   .kol-menu{background:#0b0b12;backdrop-filter:none;-webkit-backdrop-filter:none;}
+
+  /* ── 第四波:爆版修正(商品照/LOOK 變超大的真兇) ──
+     橫向滑軌的「內容寬」會把 grid 欄撐爆 → 整頁被撐寬、
+     照片吃百分比跟著變巨大。min-width:0 斬斷傳染。 */
+  .main{overflow-x:hidden;}
+  .layout > *, .panel{min-width:0;max-width:100%;}
+  #ep-product-gallery-wrap img{max-width:100%;}
+  .scene-grid-v2{grid-template-columns:none;}  /* 修滑軌前兩欄被壓扁(備援用) */
+
+  /* 場景下拉(取代長清單,學 STEP3) */
+  .scene-select-mobile{
+    width:100%;margin:6px 0 10px;
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);
+    font-size:13px;font-weight:600;padding:11px 12px;outline:none;
+  }
+
+  /* 劇情記憶列表:配合面板折疊 */
+  .panel.collapsed .queue-list{display:none;}
 }
 /* ── 第三波:太長的清單全面「選角色化」+ 書類折疊 ──
    RA 回饋:場景卡/形象庫/多角度照直排太長;人設書要能折疊。 */
@@ -826,7 +845,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="admin.html" target="_blank" rel="noopener" id="navAdminBtn" class="nav-btn-admin" title="管理後台" style="display:none;">Admin</a>
   <button type="button" id="navLogoutBtn" class="nav-btn-logout" onclick="kolLogout()" style="display:none;">Logout</button>
   </div>
-  <a href="plans.html" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:999px;border:1px solid rgba(255,200,80,.4);background:linear-gradient(135deg,rgba(255,200,80,.16),rgba(255,160,60,.12));color:#ffd479;font-size:12px;font-weight:700;text-decoration:none;">⭐ <span class="sub-label">訂閱方案</span></a>
+  <a href="plans.html" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:999px;border:1px solid rgba(255,200,80,.4);background:linear-gradient(135deg,rgba(255,200,80,.16),rgba(255,160,60,.12));color:#ffd479;font-size:12px;font-weight:700;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4v11H3V7z"/></svg> <span class="sub-label">訂閱方案</span></a>
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;">—</span>
@@ -837,12 +856,37 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 document.querySelector('.kol-menu').addEventListener('click', function(e){
   if (e.target.closest('a,button')) document.body.classList.remove('kol-nav-open');
 });
-/* 🆕 2026-08-09 手機:人設書/靈魂書太長,進頁面預設折疊(點標題展開) */
-if (window.innerWidth <= 768) {
+/* 🆕 2026-08-09 手機 RWD 第四波 */
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.innerWidth > 768) return;
+
+  /* 人設書/靈魂書預設折疊(修正:原本跑太早,那時元素還沒生出來,所以沒折到) */
   document.querySelectorAll('.book-toggle').forEach(function(t){
     t.parentElement.classList.add('collapsed');
   });
-}
+
+  /* 場景長清單 → 下拉選單(學 STEP3)。卡片是動態生的,用 MutationObserver 盯著轉換 */
+  function selectify(g){
+    if (g.dataset.selectified) return;
+    var cards = Array.prototype.slice.call(g.querySelectorAll('.scene-card'));
+    if (!cards.length) return;
+    g.dataset.selectified = '1';
+    var sel = document.createElement('select');
+    sel.className = 'scene-select-mobile';
+    var opts = '<option value="" disabled selected>— 選場景(選了直接生成)—</option>';
+    cards.forEach(function(c, i){
+      var n = c.querySelector('.scene-name');
+      opts += '<option value="' + i + '">' + (n ? n.textContent : ('場景 ' + (i+1))) + '</option>';
+    });
+    sel.innerHTML = opts;
+    sel.addEventListener('change', function(){ if (sel.value !== '') cards[sel.value].click(); });
+    g.parentNode.insertBefore(sel, g);
+    g.style.display = 'none';
+  }
+  function scanScenes(){ document.querySelectorAll('.scene-grid-v2').forEach(selectify); }
+  new MutationObserver(scanScenes).observe(document.body, {childList:true, subtree:true});
+  scanScenes();
+});
 </script>
 
 <main class="main">
@@ -6500,7 +6544,7 @@ async function renderSystemQueue() {
   }
 
   wrap.innerHTML = `
-    <div class="panel-title">
+    <div class="panel-title book-toggle" onclick="this.parentElement.classList.toggle('collapsed')">
       <div class="dot" style="background:var(--accent3)"></div>
       KOL 劇情記憶 · 最近 20 集
       <span class="chip green" style="margin-left:auto">🟢 真 Episodes</span>
@@ -6509,6 +6553,7 @@ async function renderSystemQueue() {
       <div class="kol-empty" style="padding:20px"><span class="spin">⏳</span> 讀取中…</div>
     </div>
   `;
+  if (window.innerWidth <= 768) wrap.classList.add('collapsed');  /* 🆕 手機預設收起 */
 
   try {
     const res = await apiListEpisodes(S.currentBrandId, persona.persona_id, 20);
