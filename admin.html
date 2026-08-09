@@ -114,6 +114,22 @@ body {
 }
 .btn-save-all:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
 
+/* 🆕 有未存檔的變更:按鈕轉紅、輕微脈動,想忘記都難 */
+.btn-save-all.dirty {
+  background: linear-gradient(135deg, #ff4d6d, #fa6d9b);
+  box-shadow: 0 0 0 3px rgba(255,77,109,0.25), 0 4px 16px rgba(255,77,109,0.5);
+  animation: savePulse 1.4s ease-in-out infinite;
+}
+@keyframes savePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+
+/* 🆕 2026-08-09 後台手機版微調 */
+@media(max-width: 768px) {
+  .top-bar h1 { font-size: 16px; white-space: nowrap; }   /* Brand OS 後台一排到底 */
+  .top-bar .badge { display: none; }                      /* 公司名手機不用出現 */
+  .btn-save-all { padding: 8px 16px; font-size: 13px; white-space: nowrap; }
+  .status-msg { display: none; }                          /* 狀態字太長會擠爆,提示改靠按鈕變色 */
+}
+
 .status-msg { font-size: 13px; color: var(--t3); }
 .status-msg.ok { color: var(--mint); }
 .status-msg.err { color: #f44336; }
@@ -125,7 +141,11 @@ body {
   border-bottom: 1px solid var(--line);
   padding: 0 24px;
   overflow-x: auto;
+  /* 🆕 2026-08-09 藏捲軸:手機上那條紫粉「怪線」就是被全站漸層染色的捲軸。
+     分頁改用「點了自動滑過去」,不靠捲軸。 */
+  scrollbar-width: none;
 }
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
   padding: 13px 22px;
   cursor: pointer;
@@ -1571,7 +1591,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <span class="badge">芮比廣告行銷</span>
   <div class="spacer"></div>
   <span class="status-msg" id="statusMsg"></span>
-  <button class="btn-save-all" id="btnSaveAll" onclick="saveAll()">儲存全部</button>
+  <button class="btn-save-all" id="btnSaveAll" onclick="saveAll()">存檔</button>
 </div>
 
 <div class="tabs">
@@ -2595,7 +2615,7 @@ function performSmartAdd(action, nu, dupIndex) {
       ...subDefaults,
       prodId: nu.prodId, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature,
     });
-    setStatus(`已新增「${nu.prodName}」— 記得按右上「儲存全部」`, 'ok');
+    setStatus(`已新增「${nu.prodName}」— 記得按右上「存檔」`, 'ok');
   } else if (action === 'overwrite') {
     // 整筆替換
     DB.products[dupIndex] = {
@@ -2603,7 +2623,7 @@ function performSmartAdd(action, nu, dupIndex) {
       ...subDefaults,
       prodId: nu.prodId, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature,
     };
-    setStatus(`已覆蓋「${nu.prodName}」— 記得按右上「儲存全部」`, 'ok');
+    setStatus(`已覆蓋「${nu.prodName}」— 記得按右上「存檔」`, 'ok');
   } else if (action === 'merge') {
     // 只補空欄位
     const old = DB.products[dupIndex];
@@ -2618,7 +2638,7 @@ function performSmartAdd(action, nu, dupIndex) {
     if (!old.spec && nu.spec) filled.push('規格');
     if (!old.feature && nu.feature) filled.push('特色');
     const msg = filled.length ? `已合併補上:${filled.join('、')}` : '沒有空欄位需要補(舊資料完整)';
-    setStatus(msg + ' — 記得按右上「儲存全部」', 'ok');
+    setStatus(msg + ' — 記得按右上「存檔」', 'ok');
   }
 
   document.getElementById('filterBrand').value = nu.brandId;
@@ -2779,7 +2799,7 @@ function confirmEnrichApply() {
   p.feature = feature;
   renderProducts();
   closeEnrichModal();
-  setStatus(`已套用規格/特色 — 記得按右上「儲存全部」`, 'ok');
+  setStatus(`已套用規格/特色 — 記得按右上「存檔」`, 'ok');
 }
 
 // ══ 品牌審核 ══
@@ -3334,12 +3354,41 @@ async function saveAll() {
       });
       j = await r.json();
     }
-    if (j.ok) setStatus('✅ 儲存成功!','ok');
+    if (j.ok) { setStatus('✅ 儲存成功!','ok'); _markSaved(); }
     else setStatus('❌ '+j.error,'err');
   } catch(e) { setStatus('❌ 連線失敗','err'); }
   document.getElementById('btnSaveAll').disabled = false;
   hideLoading();
 }
+
+/* ═══ 🆕 2026-08-09 未存檔守門員 ═══
+   RA:「我很常忘記按存檔」。三道保險:
+   ① 只要在任何欄位打字 → 存檔鈕轉紅脈動
+   ② 關閉/離開頁面時若有未存檔變更 → 瀏覽器攔截確認
+   ③ 存檔成功 → 按鈕恢復、解除攔截
+   (審核/儲值/訂閱那些「按了就生效」的動作不受影響,它們本來就即時寫入) */
+let _hasUnsaved = false;
+function _markDirty() {
+  if (_hasUnsaved) return;
+  _hasUnsaved = true;
+  document.getElementById('btnSaveAll')?.classList.add('dirty');
+}
+function _markSaved() {
+  _hasUnsaved = false;
+  document.getElementById('btnSaveAll')?.classList.remove('dirty');
+}
+document.addEventListener('input', function(e){
+  if (e.target.closest('.main')) _markDirty();   // 只追蹤內容區的輸入,過濾器下拉不算
+});
+window.addEventListener('beforeunload', function(e){
+  if (_hasUnsaved) { e.preventDefault(); e.returnValue = ''; }
+});
+
+/* 🆕 分頁點了自動滑進視野正中(手機分頁多、又沒捲軸,靠這個導航) */
+document.querySelector('.tabs')?.addEventListener('click', function(e){
+  const t = e.target.closest('.tab');
+  if (t) t.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+});
 
 function timeAgo(timestamp) {
   if (!timestamp) return '';
