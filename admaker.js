@@ -1672,9 +1672,22 @@ async function generateGptPoster() {
   const imgSrc = photo.canvasRes || photo.full || photo.hiRes || photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 商品照尚未載入', 'var(--red)'); return; }
 
-  const headline = document.getElementById('gptHeadline')?.value?.trim();
+  const hEl = document.getElementById('gptHeadline');
+  const headline = hEl?.value?.trim();
   if (!headline) {
-    setPrStatus('⚠️ 請至少填主標(大字)', 'var(--red)');
+    // 🆕 2026-08-09 必填強化:原本只有一行小字提示,手機上根本看不到。
+    //   現在:紅框 + 自動捲到欄位 + 聚焦,開始打字紅框才消。
+    setPrStatus('⚠️ 請先填「主標(大字)」才能生成', 'var(--red)');
+    if (hEl) {
+      hEl.style.border = '1.5px solid #ff4d6d';
+      hEl.style.boxShadow = '0 0 0 3px rgba(255,77,109,0.25)';
+      hEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(function(){ hEl.focus(); }, 350);
+      hEl.addEventListener('input', function clearWarn(){
+        hEl.style.border = ''; hEl.style.boxShadow = '';
+        hEl.removeEventListener('input', clearWarn);
+      });
+    }
     document.getElementById('prApplyBtn').disabled = false;
     document.getElementById('prApplyBtn').textContent = '套用 AI 效果';
     return;
