@@ -4524,7 +4524,8 @@ async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
    變暗鎖住 —— 時長由分鏡決定,客戶再手動點只會打架。
    解析度/畫幅/品質不鎖(那些是客戶自由)。分鏡自動選檔位的程式照常能設定。 */
 function _lockDurationGroups(lock) {
-  document.querySelectorAll('[data-group="duration"]').forEach(function(g){
+  /* STEP2 用 data-group、STEP3 用 data-ep-group,兩套一起鎖 */
+  document.querySelectorAll('[data-group="duration"], [data-ep-group="duration"]').forEach(function(g){
     g.style.opacity = lock ? '0.38' : '';
     g.style.pointerEvents = lock ? 'none' : '';
     g.title = lock ? '⏱ 時長由分鏡決定(已鎖定)' : '';
