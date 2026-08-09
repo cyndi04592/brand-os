@@ -348,8 +348,12 @@ function injectStyle() {
   .kai-row-persona {
     display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 10px;
   }
+  /* 🆕 2026-08-09 RWD:手機「保持」兩欄 —— 舊寫法在 680px 以下改成一欄,
+     八個下拉直直排下來太冗長(RA 實測回饋)。390px 寬兩欄放下拉綽綽有餘。 */
   @media (max-width: 680px) {
-    .kai-row, .kai-row-3 { grid-template-columns: 1fr; }
+    .kai-row   { grid-template-columns: 1fr 1fr; }
+    .kai-row-3 { grid-template-columns: 1fr 1fr; }
+    .kai-prompt-preview { max-height: 92px; }
   }
   .kai-field { display: flex; flex-direction: column; gap: 5px; }
   .kai-label {
