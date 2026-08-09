@@ -1702,32 +1702,43 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     <div id="applyList" class="apply-list">
       <div class="mem-loading">載入中...</div>
     </div>
-    <div class="apply-api-links">
-      <div class="api-links-title">API 費用快速連結</div>
+    <!-- 🆕 2026-08-09 統整:對齊現行技術棧、全部直達「儲值/帳單」頁。
+         data-owner-only + 預設隱藏:只有 owner(cyndi04592)登入才看得到,
+         員工/審核員進來不會知道 API 從哪儲值。 -->
+    <div class="apply-api-links" data-owner-only style="display:none;">
+      <div class="api-links-title">API 費用快速連結(僅管理員可見)</div>
       <div class="api-links-grid">
         <a class="api-link-card" href="https://console.anthropic.com/settings/billing" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">Claude API</div>
+          <div class="api-link-icon"></div><div class="api-link-name">Claude API · 文案</div>
           <div class="api-link-url">console.anthropic.com</div><div class="api-link-arrow">↗</div>
         </a>
-        <a class="api-link-card" href="https://app.photoroom.com/account" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">PhotoRoom</div>
-          <div class="api-link-url">app.photoroom.com</div><div class="api-link-arrow">↗</div>
-        </a>
-        <a class="api-link-card" href="https://fal.ai/dashboard" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">fal.ai</div>
+        <a class="api-link-card" href="https://fal.ai/dashboard/billing" target="_blank">
+          <div class="api-link-icon"></div><div class="api-link-name">fal.ai · 圖像</div>
           <div class="api-link-url">fal.ai/dashboard</div><div class="api-link-arrow">↗</div>
         </a>
-        <a class="api-link-card" href="https://dash.cloudflare.com" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">Cloudflare</div>
+        <a class="api-link-card" href="https://piapi.ai/workspace" target="_blank">
+          <div class="api-link-icon"></div><div class="api-link-name">PiAPI · 影片 Seedance</div>
+          <div class="api-link-url">piapi.ai/workspace</div><div class="api-link-arrow">↗</div>
+        </a>
+        <a class="api-link-card" href="https://app.heygen.com/settings?nav=billing" target="_blank">
+          <div class="api-link-icon"></div><div class="api-link-name">HeyGen · 口播</div>
+          <div class="api-link-url">app.heygen.com</div><div class="api-link-arrow">↗</div>
+        </a>
+        <a class="api-link-card" href="https://dash.cloudflare.com/?to=/:account/billing" target="_blank">
+          <div class="api-link-icon"></div><div class="api-link-name">Cloudflare · 主機/R2/D1</div>
           <div class="api-link-url">dash.cloudflare.com</div><div class="api-link-arrow">↗</div>
+        </a>
+        <a class="api-link-card" href="https://vendor.ecpay.com.tw" target="_blank">
+          <div class="api-link-icon"></div><div class="api-link-name">綠界 ECPay · 金流</div>
+          <div class="api-link-url">vendor.ecpay.com.tw</div><div class="api-link-arrow">↗</div>
+        </a>
+        <a class="api-link-card" href="https://github.com/cyndi04592/brand-os" target="_blank">
+          <div class="api-link-icon"></div><div class="api-link-name">GitHub · 程式碼</div>
+          <div class="api-link-url">github.com/cyndi04592</div><div class="api-link-arrow">↗</div>
         </a>
         <a class="api-link-card" href="https://ai.raby.com.tw/onboard.html" target="_blank">
           <div class="api-link-icon"></div><div class="api-link-name">品牌進駐問卷</div>
           <div class="api-link-url">ai.raby.com.tw/onboard.html</div><div class="api-link-arrow">↗</div>
-        </a>
-        <a class="api-link-card" href="https://script.google.com" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">Apps Script</div>
-          <div class="api-link-url">script.google.com</div><div class="api-link-arrow">↗</div>
         </a>
       </div>
     </div>
@@ -3473,4 +3484,3 @@ function hideLoading() { document.getElementById('loadingOverlay').classList.rem
 </body>
 </html>
 
-ㄒ
