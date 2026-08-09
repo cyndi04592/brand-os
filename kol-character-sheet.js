@@ -12,7 +12,11 @@
 */
 (function () {
   'use strict';
-  var VER = 'v0.7-pick-selected';
+  var VER = 'v0.8-save-persona';
+
+  // 🔧 v0.8:記住「這張正臉是誰的」—— 從形象庫勾選讀進來時,persona 跟著圖走,
+  //   存 Drive 不再要求去 AI 生成器另外選 persona(那是舊流程的殘留)。
+  var PICKED = { persona: '' };
 
   function K() { return window.KAI || null; }
 
@@ -124,6 +128,7 @@
         t.onclick = function () {
           [].forEach.call(thumbs.querySelectorAll('img'), function (c) { c.style.borderColor = 'transparent'; });
           t.style.borderColor = '#7ee0a0';
+          PICKED.persona = it.label || '';   // v0.8:persona 跟著圖走
           if (it.driveId) frontFromDrive(it.driveId);
           else setFront(it.url);
         };
@@ -179,6 +184,7 @@
     inUrl.oninput = function () {
       var v = inUrl.value.trim();
       if (v.indexOf('http') !== 0) return;
+      PICKED.persona = '';   // v0.8:手貼網址不知道是誰的 → 存檔時退回生成器選的 persona
       // 🔧 v0.6:貼的是 Drive 連結 → 抽 fileId 自動轉存;其他網址照舊直接用
       var m = v.match(/drive\.google\.com\/(?:thumbnail\?id=|uc\?id=|file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/) || v.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
       if (m && v.indexOf('drive.google.com') > -1) frontFromDrive(m[1]);
@@ -225,9 +231,12 @@
 
     btnUse.onclick = function () {
       var kai = K();
-      var brandId = kai && kai.S && kai.S.currentBrandId;
-      var persona = kai && kai.S && kai.S.currentPersonaName;
-      if (!brandId || !persona) { btnUse.textContent = '⚠️ 上面先選好品牌+persona(米禾)再存'; return; }
+      // 🔧 v0.8:來源順位 —— ①勾選照片自帶的 persona ②AI 生成器選的 persona;
+      //   品牌 ID:①生成器的 ②頁面本身選的(window.S)。存誰的臉就進誰的資料夾。
+      var brandId = (kai && kai.S && kai.S.currentBrandId) ||
+                    (window.S && window.S.currentBrandId) || '';
+      var persona = PICKED.persona || (kai && kai.S && kai.S.currentPersonaName) || '';
+      if (!brandId || !persona) { btnUse.textContent = '⚠️ 讀不到品牌/persona —— 從形象庫勾一張照片再讀取,或在生成器選 persona'; return; }
       if (typeof kai.gasPost !== 'function') { btnUse.textContent = '⚠️ 需更新 kol-ai-generator → v3.30'; return; }
 
       btnUse.disabled = true;
