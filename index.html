@@ -132,6 +132,41 @@
 document.querySelector('.nav-right').addEventListener('click', function(e){
   if (e.target.closest('a,button')) document.body.classList.remove('nav-open');
 });
+
+/* 🆕 2026-08-09 手機:廣告圖產生器「排版/設計風格/情境」按鈕牆 → 下拉選單
+   (RA:風格後續會擴到 400-500 種,按鈕牆撐不住;下拉怎麼長都是一顆)
+   分隔標籤(— 2026 設計風格 — 等)自動變下拉裡的分組標題。桌機維持按鈕牆。 */
+if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', function(){
+  ['layout-btn','flavor-btn','context-btn'].forEach(function(cls){
+    var btns = document.querySelectorAll('.' + cls);
+    if (!btns.length) return;
+    var grid = btns[0].parentElement;
+    var sel = document.createElement('select');
+    sel.style.cssText = "width:100%;margin:2px 0 4px;padding:11px 12px;border-radius:8px;" +
+      "background:var(--bg3);border:1px solid rgba(124,109,250,0.35);color:var(--t1);" +
+      "font-size:13px;font-weight:600;font-family:'Noto Sans TC';outline:none;";
+    var group = sel;
+    Array.prototype.forEach.call(grid.children, function(el){
+      if (el.tagName === 'BUTTON') {
+        var o = document.createElement('option');
+        o.textContent = el.textContent.trim();
+        o._btn = el;
+        if (el.classList.contains('on')) o.selected = true;
+        group.appendChild(o);
+      } else {
+        group = document.createElement('optgroup');
+        group.label = el.textContent.trim();
+        sel.appendChild(group);
+      }
+    });
+    sel.addEventListener('change', function(){
+      var o = sel.options[sel.selectedIndex];
+      if (o && o._btn) o._btn.click();
+    });
+    grid.parentElement.insertBefore(sel, grid);
+    grid.style.display = 'none';
+  });
+});
 </script>
 
 <!-- ══ Vision Banner + 大標題 ══ -->
