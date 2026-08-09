@@ -194,7 +194,7 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
 <div class="page-header">
   <div>
     <h1>品牌投放實驗室</h1>
-    <p>選品牌 → 選商品 → AI 生成 → 廣告圖 → 投放</p>
+    <p>選品牌 → 選商品 → AI文案 → AI廣告圖 → 自動投放(未開放)</p>
   </div>
 </div>
 
@@ -547,12 +547,24 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
               <button class="context-btn" data-context="summer" onclick="setContext(this,'summer')">夏日</button>
               <button class="context-btn" data-context="winter_cozy" onclick="setContext(this,'winter_cozy')">冬日溫暖</button>
               <button class="context-btn" data-context="festive_cny" onclick="setContext(this,'festive_cny')">農曆新年</button>
-              <button class="context-btn" data-context="back_to_school" onclick="setContext(this,'back_to_school')">開學季</button>
+              <button class="context-btn" data-context="back_to_school" onclick="setContext(this,'back_to_school')">開學前哨站</button>
               <button class="context-btn" data-context="unboxing" onclick="setContext(this,'unboxing')">開箱時刻</button>
               <button class="context-btn" data-context="daily_use" onclick="setContext(this,'daily_use')">日常使用</button>
               <button class="context-btn" data-context="promo_sale" onclick="setContext(this,'promo_sale')">限時促銷</button>
               <button class="context-btn" data-context="year_end_sale" onclick="setContext(this,'year_end_sale')">年終特賣</button>
               <button class="context-btn" data-context="double11" onclick="setContext(this,'double11')">雙11</button>
+              <!-- ★ 2026-08-09 節慶檔期擴充:客戶點一點就有節慶圖,不用打字(admaker.js CONTEXT_THEMES 同步新增) -->
+              <button class="context-btn" data-context="valentines" onclick="setContext(this,'valentines')">情人節</button>
+              <button class="context-btn" data-context="zhongyuan_pudu" onclick="setContext(this,'zhongyuan_pudu')">中元普渡</button>
+              <button class="context-btn" data-context="mid_autumn" onclick="setContext(this,'mid_autumn')">中秋節</button>
+              <button class="context-btn" data-context="national_day" onclick="setContext(this,'national_day')">國慶日</button>
+              <button class="context-btn" data-context="halloween" onclick="setContext(this,'halloween')">萬聖節</button>
+              <button class="context-btn" data-context="black_friday" onclick="setContext(this,'black_friday')">黑色星期五</button>
+              <button class="context-btn" data-context="double12" onclick="setContext(this,'double12')">雙12</button>
+              <button class="context-btn" data-context="christmas" onclick="setContext(this,'christmas')">聖誕節</button>
+              <button class="context-btn" data-context="nye_countdown" onclick="setContext(this,'nye_countdown')">跨年倒數</button>
+              <button class="context-btn" data-context="weiya" onclick="setContext(this,'weiya')">尾牙</button>
+              <button class="context-btn" data-context="brand_anniversary" onclick="setContext(this,'brand_anniversary')">品牌周年慶</button>
               <button class="context-btn" data-context="gift_giving" onclick="setContext(this,'gift_giving')" style="grid-column:1/-1;">送禮場合</button>
             </div>
           </div>
