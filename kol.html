@@ -707,7 +707,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   .sub-label{display:none;}
   .topbar>a[href^="index.html?openBits"]{order:4;}
   #bitsChip{order:5;}
-  #navUserEmail{display:none !important;}
+  /* 🆕 email:手機顯示信封 icon,點一下展開帳號(客戶要能自查登入身分) */
+  #navUserEmail{order:6;}
+  #navUserEmail #navUserEmailTxt{display:none;}
+  #navUserEmail.show-email #navUserEmailTxt{display:inline;}
 
   /* ③ 漢堡選單 */
   .kol-menu{display:none;position:absolute;top:100%;left:0;right:0;
@@ -859,7 +862,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="plans.html" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:999px;border:1px solid rgba(255,200,80,.4);background:linear-gradient(135deg,rgba(255,200,80,.16),rgba(255,160,60,.12));color:#ffd479;font-size:12px;font-weight:700;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4v11H3V7z"/></svg> <span class="sub-label">訂閱方案</span></a>
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
-  <span id="navUserEmail" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;">—</span>
+  <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
   <div class="topbar-badge" style="margin-left:8px;">v5.16 · 劇情</div>
 </header>
 <script>
@@ -7215,7 +7218,7 @@ window.addEventListener('load', () => {
   setTimeout(refreshBits, 1500);
   try {
     const em = localStorage.getItem('bs_sso_email') || '';
-    const el = document.getElementById('navUserEmail');
+    const el = document.getElementById('navUserEmailTxt');  /* 🆕 改塞內層,別蓋掉信封 icon */
     if (el && em) el.textContent = '' + em;
     // Admin 入口:只有管理員看得到(值同 config.js 的 ADMIN_EMAIL;
     // kol.html 不載 config.js —— 那支有 const GAS_URL / window.S,會跟本檔撞名)
