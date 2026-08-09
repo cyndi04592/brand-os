@@ -671,6 +671,73 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .cine-dur-locked{opacity:.55;pointer-events:none;filter:grayscale(.3);transition:opacity .2s;}
 @keyframes sbpGlow{0%,100%{box-shadow:0 0 0 0 rgba(124,109,250,0);}50%{box-shadow:0 0 0 3px rgba(124,109,250,.22);}}
 .sbp-recommend{animation:sbpGlow 2.4s ease-in-out infinite;border-color:rgba(124,109,250,.5)!important;}
+
+/* ═══════════════════════════════════════════════════════════
+   🆕 2026-08-08 · KOL 工作室 RWD 第一波(對齊 Brand OS 主頁手法)
+
+   手機 ≤768px:
+   ① topbar 改「一條薄列」:LOGO + ☰ 漢堡;標題/分隔線/版本徽章收掉
+      (fixed 改 sticky,.main 不再需要 padding-top)
+   ② HUD 第二列:⭐訂閱(藏字留星)· 💎 · 生命條;email 手機不顯示
+   ③ 漢堡選單:回主系統 / Admin / Logout
+   ④ STEP 1-3 三卡 → 一行一個(仍可點,模式切換功能不變)
+   桌機完全不受影響。
+   ═══════════════════════════════════════════════════════════ */
+.kol-hamburger{display:none;}
+@media(max-width:768px){
+
+  /* ① 薄列 + sticky */
+  .topbar{position:sticky;top:0;height:auto;flex-wrap:wrap;padding:7px 14px;gap:10px;}
+  .main{padding-top:0;}
+  .topbar-sep,.topbar-title,.topbar-badge{display:none;}
+
+  .kol-hamburger{display:flex;flex-direction:column;justify-content:center;gap:4px;
+    width:40px;height:38px;padding:9px 10px;background:transparent;
+    border:1px solid var(--border);border-radius:10px;cursor:pointer;
+    margin-left:auto;order:1;flex-shrink:0;}
+  .kol-hamburger span{display:block;height:2px;border-radius:2px;background:var(--text);
+    transition:transform .25s ease,opacity .2s ease;}
+  body.kol-nav-open .kol-hamburger span:nth-child(1){transform:translateY(6px) rotate(45deg);}
+  body.kol-nav-open .kol-hamburger span:nth-child(2){opacity:0;}
+  body.kol-nav-open .kol-hamburger span:nth-child(3){transform:translateY(-6px) rotate(-45deg);}
+
+  /* ② HUD 列(flex 換行技巧:::after 佔滿一整行逼出第二排) */
+  .topbar::after{content:'';flex-basis:100%;order:2;margin:-4px 0;}
+  .topbar>a[href="plans.html"]{order:3;}
+  .sub-label{display:none;}
+  .topbar>a[href^="index.html?openBits"]{order:4;}
+  #bitsChip{order:5;}
+  #navUserEmail{display:none !important;}
+
+  /* ③ 漢堡選單 */
+  .kol-menu{display:none;position:absolute;top:100%;left:0;right:0;
+    flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px 18px;
+    background:rgba(10,10,15,.97);backdrop-filter:blur(24px);
+    border-bottom:1px solid var(--border);box-shadow:0 18px 40px rgba(0,0,0,.55);}
+  body.kol-nav-open .kol-menu{display:flex;}
+  .kol-menu a,.kol-menu button{margin:0 !important;justify-content:center;width:100%;display:inline-flex !important;}
+  .kol-menu #navAdminBtn[style*="display:none"],
+  .kol-menu #navLogoutBtn[style*="display:none"]{display:none !important;} /* 未登入時維持隱藏 */
+
+  /* ④ STEP 三卡 → 一行一個(對齊主頁) */
+  .vision-banner{padding:0 16px;}
+  .vision-card{grid-template-columns:1fr;gap:4px;padding:10px 14px;}
+  .vision-desc{display:none;}
+  .vision-badge{display:none;}
+  .vision-col{display:flex;flex-direction:row;align-items:center;gap:10px;padding:6px 4px 6px 12px;}
+  .vision-stage{flex-shrink:0;white-space:nowrap;}
+  .vision-title{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* 「當前品牌」列:提示字改到下方整行,不再被擠成直條 */
+  .brand-switcher, .brand-switcher-row{flex-wrap:wrap;}
+  .brand-switcher-select{flex:1;min-width:0;}
+  .brand-switcher-info{flex-basis:100%;font-size:11px;line-height:1.6;margin-top:2px;}
+}
+@media(min-width:769px){
+  /* 桌機:.kol-menu wrapper 接手「推到最右」,內部照舊排 */
+  .kol-menu{margin-left:auto;display:flex;align-items:center;gap:16px;}
+  .kol-menu a[href="index.html"]{margin-left:0 !important;}
+}
 </style>
 </head>
 <body>
@@ -678,15 +745,30 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a class="topbar-logo" href="index.html">Brand <span>OS</span></a>
   <div class="topbar-sep"></div>
   <span class="topbar-title">KOL 數字人工作室</span>
+
+  <!-- 🆕 2026-08-08 手機漢堡選單(桌機由 CSS 隱藏) -->
+  <button class="kol-hamburger" id="kolHamburger" aria-label="開啟選單"
+          onclick="document.body.classList.toggle('kol-nav-open')">
+    <span></span><span></span><span></span>
+  </button>
+  <!-- 🆕 2026-08-08 手機收進漢堡選單;桌機排列順序不變 -->
+  <div class="kol-menu">
   <a href="index.html" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);font-size:12px;text-decoration:none;">← 回主系統</a>
   <a href="admin.html" target="_blank" rel="noopener" id="navAdminBtn" class="nav-btn-admin" title="管理後台" style="display:none;">Admin</a>
   <button type="button" id="navLogoutBtn" class="nav-btn-logout" onclick="kolLogout()" style="display:none;">Logout</button>
-  <a href="plans.html" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:999px;border:1px solid rgba(255,200,80,.4);background:linear-gradient(135deg,rgba(255,200,80,.16),rgba(255,160,60,.12));color:#ffd479;font-size:12px;font-weight:700;text-decoration:none;">⭐ 訂閱方案</a>
+  </div>
+  <a href="plans.html" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:999px;border:1px solid rgba(255,200,80,.4);background:linear-gradient(135deg,rgba(255,200,80,.16),rgba(255,160,60,.12));color:#ffd479;font-size:12px;font-weight:700;text-decoration:none;">⭐ <span class="sub-label">訂閱方案</span></a>
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;">—</span>
   <div class="topbar-badge" style="margin-left:8px;">v5.16 · 劇情</div>
 </header>
+<script>
+/* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
+document.querySelector('.kol-menu').addEventListener('click', function(e){
+  if (e.target.closest('a,button')) document.body.classList.remove('kol-nav-open');
+});
+</script>
 
 <main class="main">
 
