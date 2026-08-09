@@ -1,13 +1,18 @@
-/* kol-character-sheet.js · v0.4 — 多角度人物表(Kontext 鎖臉轉頭 + 存 Drive)
+/* kol-character-sheet.js · v0.6 — 多角度人物表(Kontext 鎖臉轉頭 + 存 Drive)
    依賴 window.KAI(kol-ai-generator v3.30+ 提供 WORKER_URL / PASSWORD / S / gasPost / GAS_URL)
    機制:餵「同一張真實正臉」給 flux Kontext,各轉一次角度
         → 編輯真圖、只換角度 → 不磨皮、不換人(非重生成)
    每個角度都餵「原始正臉」,不連續編輯,避免累積飄移。
    v0.4:「用這組」→ 同 AI KOL 那條管線(saveAiKolPhotoToDrive)把三張存進 Drive 變永久資產;按鈕本身顯示狀態。
+   v0.6(2026-08-09):🔧 修「舊 KOL 只有正面照(存 Drive)→ 讀取不到」——
+     ① 讀取來源加上頁面上所有 Drive 相簿縮圖(已處理/形象庫,drive.google.com/thumbnail)
+     ② 點 Drive 圖 → 先走 Worker 現成的 drive_to_r2(service account 抓「原始全解析度」
+        轉存 R2 乾淨網址)再餵 Kontext —— 縮圖只有 w400,直接餵會糊;Drive 網址 fal 也抓不動
+     ③ 網址框貼 Drive 連結(含 id=)也自動轉存
 */
 (function () {
   'use strict';
-  var VER = 'v0.5-kontext';
+  var VER = 'v0.6-kontext-drive';
 
   function K() { return window.KAI || null; }
 
@@ -83,33 +88,80 @@
       btnGen.disabled = !url; btnGen.style.opacity = url ? 1 : .5;
     }
 
+    // 🔧 v0.6:Drive 圖先轉 R2 乾淨網址再當正臉(縮圖只有 w400、fal 抓不動 Drive 網址)
+    //   走 Worker 現成的 drive_to_r2(商品照同一條,service account 抓原始全解析度)
+    function frontFromDrive(driveId, doneCb) {
+      var kai = K();
+      var st = kai && kai.S;
+      status.textContent = '📥 從 Drive 取原圖轉存中…(第一次約 3–8 秒,之後同一張秒回)';
+      fetch(kai.WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: kai.PASSWORD, action: 'drive_to_r2', driveFileId: driveId,
+          brandId: (st && st.currentBrandId) || 'unknown', role: 'kolsheet', nameHint: 'sheet_front'
+        })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d.ok || !d.url) throw new Error(d.error || 'drive_to_r2 失敗');
+        setFront(d.url);
+        status.textContent = '✅ 原圖已就緒(全解析度),可以生成了。';
+        if (doneCb) doneCb(true);
+      }).catch(function (e) {
+        status.textContent = '❌ Drive 取圖失敗:' + e.message;
+        if (doneCb) doneCb(false);
+      });
+    }
+
     btnLoad.onclick = function () {
       thumbs.innerHTML = '';
-      var imgs = [];
+      var items = [];   // { url: 縮圖/網址, driveId: 有值=Drive 圖要先轉存 }
+      var seen = {};
+      function push(u, driveId) { if (!u || seen[u]) return; seen[u] = 1; items.push({ url: u, driveId: driveId || null }); }
+
+      // ① 這一輪剛生成的 AI 正臉(原本邏輯)
       var st = K() && K().S;
-      if (st && st.lastImages && st.lastImages.length) imgs = st.lastImages.map(function (x) { return x.url || x; });
-      if (!imgs.length) {
-        imgs = [].slice.call(document.querySelectorAll('.kai-panel img'))
-          .filter(function (i) { return !i.closest('#cs-box'); })
-          .map(function (i) { return i.src; })
-          .filter(function (s) { return s && (s.indexOf('fal.media') > -1 || s.indexOf('r2.dev') > -1); });
-        imgs = imgs.filter(function (v, i) { return imgs.indexOf(v) === i; });
-      }
-      if (!imgs.length) { status.textContent = '上面還沒有結果 → 先生一批正臉,或直接貼網址。'; return; }
-      status.textContent = '點一張當正臉:';
-      imgs.forEach(function (u) {
-        var t = el('img', 'width:70px;height:90px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;');
-        t.src = u;
+      if (st && st.lastImages && st.lastImages.length) st.lastImages.forEach(function (x) { push(x.url || x, null); });
+      // ② 生成器面板裡的 fal / R2 圖(原本邏輯)
+      [].slice.call(document.querySelectorAll('.kai-panel img')).forEach(function (i) {
+        if (i.closest('#cs-box')) return;
+        var s = i.src || '';
+        if (s.indexOf('fal.media') > -1 || s.indexOf('r2.dev') > -1) push(s, null);
+      });
+      // ③ 🔧 v0.6:整頁的 Drive 相簿縮圖(已處理・多角度/參考照、形象庫)——
+      //   舊 KOL「只有正面照存 Drive」就是靠這條讀進來
+      [].slice.call(document.querySelectorAll('img')).forEach(function (i) {
+        if (i.closest('#cs-box')) return;
+        var s = i.src || '';
+        var m = s.match(/drive\.google\.com\/thumbnail\?id=([a-zA-Z0-9_-]+)/);
+        if (m) push(s, m[1]);
+      });
+
+      if (!items.length) { status.textContent = '上面還沒有照片 → 先生一批正臉、打開 Drive 相簿,或直接貼網址。'; return; }
+      status.textContent = '點一張當正臉(標 📁 的是 Drive 舊照,會自動取原圖):';
+      items.forEach(function (it) {
+        var wrap = el('div', 'position:relative;');
+        var t = el('img', 'width:70px;height:90px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;display:block;');
+        t.src = it.url;
+        if (it.driveId) wrap.appendChild(el('div', 'position:absolute;top:2px;left:2px;font-size:10px;background:rgba(0,0,0,.55);border-radius:4px;padding:0 3px;pointer-events:none;', '📁'));
         t.onclick = function () {
-          [].forEach.call(thumbs.children, function (c) { c.style.borderColor = 'transparent'; });
+          [].forEach.call(thumbs.querySelectorAll('img'), function (c) { c.style.borderColor = 'transparent'; });
           t.style.borderColor = '#7ee0a0';
-          setFront(u);
+          if (it.driveId) frontFromDrive(it.driveId);
+          else setFront(it.url);
         };
-        thumbs.appendChild(t);
+        wrap.appendChild(t);
+        thumbs.appendChild(wrap);
       });
     };
 
-    inUrl.oninput = function () { var v = inUrl.value.trim(); if (v.indexOf('http') === 0) setFront(v); };
+    inUrl.oninput = function () {
+      var v = inUrl.value.trim();
+      if (v.indexOf('http') !== 0) return;
+      // 🔧 v0.6:貼的是 Drive 連結 → 抽 fileId 自動轉存;其他網址照舊直接用
+      var m = v.match(/drive\.google\.com\/(?:thumbnail\?id=|uc\?id=|file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/) || v.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+      if (m && v.indexOf('drive.google.com') > -1) frontFromDrive(m[1]);
+      else setFront(v);
+    };
 
     function card(label, url, angleKey) {
       var c = el('div', 'width:120px;');
