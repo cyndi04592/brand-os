@@ -46,7 +46,7 @@ function renderBrandTree() {
         onclick="clickSub('${b.id}','${sb.id}')">
         <div class="dot"></div>${sb.name}
       </div>
-      ${prodRows}`;
+      ${prodRows ? `<div class="prod-stack">${prodRows}</div>` : ''}`;
     }).join('') : '';
 
     return `<div>
