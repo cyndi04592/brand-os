@@ -698,10 +698,7 @@ body{
       <label>品牌主色系</label>
       <div class="color-section">
         <div class="color-presets" id="colorPresets"></div>
-        <!-- 🗑️ 2026-08-09 下架「網址抓色系」:抓回來的常是 AI 亂猜的色碼
-             (PAZZO 抓成紅綠聖誕配),客戶用了反而毀品牌感。
-             一律改選上面設計好的公版色系。程式碼保留,要復活拿掉 display:none。 -->
-        <div class="color-custom-area" style="display:none;">
+        <div class="color-custom-area">
           <div class="color-custom-title">✨ 輸入你喜歡的品牌網址,AI 自動抓取主色系</div>
           <div class="color-url-row">
             <input class="color-url-input" id="colorUrlInput" placeholder="例:https://www.apple.com" type="url">
@@ -926,27 +923,36 @@ function setPickGroup(x){_pickGroup=x;renderPlanStep();}
 function setPickCycle(x){_pickCycle=x;renderPlanStep();}
 function pickPlan(k){desiredPlan=k;renderPlanStep();}
 function renderPlanStep(){
-  if(typeof ensureBrandosPlanStyle!=='function'){return;}
-  ensureBrandosPlanStyle();
-  const g=_pickGroup, yr=(_pickCycle==='year');
-  const grpToggle='<div class="bos-seg grp">'
-    +'<button class="'+(g==='small'?'on':'')+'" onclick="setPickGroup(\'small\')">小品牌</button>'
-    +'<button class="'+(g==='ent'?'on':'')+'" onclick="setPickGroup(\'ent\')">企業 · 集團</button></div>';
-  const cycToggle='<div class="bos-seg cyc">'
-    +'<button class="'+(!yr?'on':'')+'" onclick="setPickCycle(\'month\')">月繳</button>'
-    +'<button class="'+(yr?'on':'')+'" onclick="setPickCycle(\'year\')">年繳 <span class="save">送1個月</span></button></div>';
-  const cards=renderBrandosPlanCards(g,_pickCycle,{
-    selFn:'pickPlan', selectedKey:desiredPlan,
-    ctaLabel:p=>(desiredPlan===p.key?'✓ 已選這個方案':'選這個方案')
-  });
+  /* 🆕 2026-08-09 RA:進駐流程不放整套行銷頁(太重),改精簡價格表。
+     完整版行銷體驗在 plans.html,這裡只要「看懂價格帶、勾一個」。 */
+  if(typeof BRANDOS_PLANS==='undefined'){return;}
+  const rows=[...BRANDOS_PLANS.small,...BRANDOS_PLANS.ent.filter(p=>!p.custom)];
+  const fmt=n=>'NT$'+Number(n).toLocaleString();
+  const tr=rows.map(p=>{
+    const on=desiredPlan===p.key;
+    const price=p.promo?'<s style="opacity:.45">'+fmt(p.price)+'</s> <b style="color:#ffce6b">'+fmt(p.promo)+'</b>':'<b>'+fmt(p.price)+'</b>';
+    return '<tr class="'+(on?'on':'')+'" onclick="pickPlan(\''+p.key+'\')">'
+      +'<td style="width:34px;text-align:center;">'+(on?'✅':'⚪')+'</td>'
+      +'<td><b>'+p.name+'</b>'+(p.hot?' <span style="color:#ff7ac3;font-size:10px;">最熱門</span>':'')+(p.top?' <span style="color:#ffce6b;font-size:10px;">旗艦</span>':'')+'</td>'
+      +'<td class="plan-lite-who">'+p.who+'</td>'
+      +'<td>'+price+'<span style="color:rgba(255,255,255,.4);font-size:10px;">/月</span></td>'
+      +'<td class="plan-lite-cap">約 '+p.imgs+' 圖 · '+p.vids+' 支影片/月</td>'
+      +'</tr>';
+  }).join('');
   document.getElementById('planPickRoot').innerHTML=
-    '<div class="bos-plans">'
-    + renderBrandosHeroStat()
-    + renderBrandosTagline()
-    + renderBrandosCore()
-    + '<div class="bos-toggles">'+grpToggle+cycToggle+'</div>'
-    + cards
-    + '</div>';
+    '<style>'
+    +'.plan-lite{width:100%;border-collapse:collapse;font-size:13px;background:rgba(17,17,24,.55);border:1px solid rgba(124,108,255,.22);border-radius:12px;overflow:hidden;}'
+    +'.plan-lite th{font-size:10.5px;color:rgba(255,255,255,.45);font-weight:700;letter-spacing:1px;text-align:left;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);}'
+    +'.plan-lite td{padding:12px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;}'
+    +'.plan-lite tr:last-child td{border-bottom:none;}'
+    +'.plan-lite tbody tr:hover td{background:rgba(124,108,255,.06);}'
+    +'.plan-lite tr.on td{background:rgba(124,108,255,.13);}'
+    +'@media(max-width:600px){.plan-lite-who{display:none;}.plan-lite td{padding:11px 8px;}}'
+    +'</style>'
+    +'<table class="plan-lite"><thead><tr><th></th><th>方案</th><th class="plan-lite-who">適合</th><th>月繳</th><th>每月產能</th></tr></thead><tbody>'+tr+'</tbody></table>'
+    +'<div style="text-align:center;font-size:11px;color:rgba(255,255,255,.5);margin-top:10px;line-height:1.8;">'
+    +'年繳送 1 個月 · 現在不選也可以,審核通過後再決定<br>完整方案說明:<a href="plans.html" target="_blank" style="color:#7c6cff;">plans 頁</a>'
+    +'</div>';
 }
 // 從訂閱頁帶 ?plan= 過來時,預選對應方案
 (function(){
@@ -1016,7 +1022,8 @@ async function grabColors(){
       body:JSON.stringify({action:'extract_brand_colors',password:'raby2026',url})});
     const data=await res.json();
     if(!data.ok)throw new Error(data.error||'抓取失敗');
-    const colors=data.colors||[];
+    // 🆕 2026-08-09 去重:Worker 有時回傳重複色碼(紅綠紅綠排三輪很嚇人)
+    const colors=[...new Set(data.colors||[])].slice(0,6);
     if(!colors.length)throw new Error('這個網站抓不到色碼');
 
     document.getElementById('colorSwatches').innerHTML=colors.map(hex=>
@@ -1113,7 +1120,7 @@ function validateStep(n){
     // 註:f_ref 允許純文字描述(例「Apple 的簡潔感」),所以不硬擋格式
     // ★ 軟提示:風格沒選,提醒但放行
     if(!v('f_style')){
-      if(!confirm('還沒選「喜歡的品牌風格」。\n\n選一個 AI 抓調性會更準,出圖更貼近你要的感覺。\n\n要先跳過、繼續下一步嗎?')) return false;
+      if(!confirm('還差一小步:「喜歡的品牌風格」還沒挑\n(溫暖親切、專業質感…那排標籤,跟顏色無關,顏色已經選好了)。\n\n挑 1-2 個,AI 抓品牌調性會更準;不挑也能繼續。\n\n要直接繼續下一步嗎?')) return false;
     }
   }
 
