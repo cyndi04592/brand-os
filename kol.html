@@ -3045,7 +3045,13 @@ function renderLookPicker() {
   }).join('');
 
   // 🆕 多角度顯示卡:紫虛線框 + ,純顯示(無 data-look-id → 不可選),來源=Drive 檔名
-  const anglesHtml = _angles.map(({ ph, label }) => `
+  // 🔧 2026-08-09(RA):BASE(HeyGen Look)跟正臉是同一張臉 → 有任何 Look 卡在牆上時,
+  //   「正臉」預覽卡隱藏,免得出現雙胞胎。純顯示層:Drive 的 sheet_front 檔案照存不動,
+  //   生影片時後台照檔名抓角度完全不受影響。該 KOL 完全沒綁 Look 時才顯示正臉卡(不然看不到臉)。
+  const _shownAngles = ((S.availableLooks || []).length >= 1)
+    ? _angles.filter(a => a.label !== '正臉')
+    : _angles;
+  const anglesHtml = _shownAngles.map(({ ph, label }) => `
       <div class="look-item" style="border:1px dashed #6c4cf0;cursor:default;opacity:.9;" title="生影片時依鏡頭角度自動使用(來自 Drive)">
         <img src="${escapeHtml(ph.thumbnail_url)}" alt="${escapeHtml(ph.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder></div>'">
         <div class="look-tag">${label}</div>
