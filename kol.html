@@ -765,6 +765,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
   /* 劇情記憶列表:配合面板折疊 */
   .panel.collapsed .queue-list{display:none;}
+
+  /* ── Drive 商品照(STEP2/STEP3 共用 .drive-product-gallery):
+     格網保留(選商品要用眼睛掃,比橫滑好比較),
+     但鎖在約兩排高,再多就在框內捲,頁面不再被拉長。 ── */
+  .drive-product-gallery{
+    max-height:320px;
+    overflow-y:auto;
+    padding-right:4px;
+  }
+  .drive-product-gallery::-webkit-scrollbar{width:4px;}
+  .drive-product-gallery::-webkit-scrollbar-thumb{background:rgba(124,109,250,.3);border-radius:2px;}
 }
 /* ── 第三波:太長的清單全面「選角色化」+ 書類折疊 ──
    RA 回饋:場景卡/形象庫/多角度照直排太長;人設書要能折疊。 */
@@ -6547,7 +6558,7 @@ async function renderSystemQueue() {
     <div class="panel-title book-toggle" onclick="this.parentElement.classList.toggle('collapsed')">
       <div class="dot" style="background:var(--accent3)"></div>
       KOL 劇情記憶 · 最近 20 集
-      <span class="chip green" style="margin-left:auto">🟢 真 Episodes</span>
+      <span class="chip green" style="margin-left:auto">已接真資料</span>
     </div>
     <div id="system-queue-list" class="queue-list">
       <div class="kol-empty" style="padding:20px"><span class="spin">⏳</span> 讀取中…</div>
