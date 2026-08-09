@@ -3324,10 +3324,14 @@ function renderStaff() {
     const isOwnerRow = role === 'owner';
     const initials = (s.name||s.email||'?')[0].toUpperCase();
     const date = s.addedAt ? new Date(s.addedAt).toLocaleDateString('zh-TW') : '-';
-    // 📅 v4.02(2026-08-09):訂閱到期顯示。資料來自 Worker _d1Whitelist 新增的
-    //   plan/subEnd 欄位(bits 表)。到期配色:過期紅、剩≤5天橘、正常綠、沒訂閱灰。
+    // 📅 v4.02(2026-08-09):訂閱狀態顯示。資料來自 Worker _d1Whitelist 新增的
+    //   plan/subEnd/monthlyBits 欄位(bits 表)。角色分流(RA 拍板):
+    //   ・管理員/審核員(主管,出國時代管維護審核)= 內部人,不顯示訂閱 —— 他們本來就不用買
+    //   ・有配額但沒到期日 = 手動開通戶(員工在職期間授權使用)→ 顯示「員工授權」
+    //   ・有 subEnd = 真的付費客戶 → 到期配色:過期紅、剩≤5天橘(同提醒信門檻)、正常綠
+    //   ・什麼都沒有 = 登入過但沒買 → 灰字「未訂閱」
     let subLine = '';
-    if (!isOwnerRow) {
+    if (!isOwnerRow && role !== 'reviewer') {
       const se = String(s.subEnd || '').slice(0, 10);
       if (/^\d{4}-\d{2}-\d{2}$/.test(se)) {
         const daysLeft = Math.round((Date.parse(se) - Date.now()) / 86400000);
@@ -3335,6 +3339,8 @@ function renderStaff() {
         const label = daysLeft < 0 ? ('⛔ 已到期 ' + se)
                     : ('訂閱至 ' + se + '(剩 ' + daysLeft + ' 天)');
         subLine = `<span style="font-size:11px;color:${color};font-family:var(--font-mono)" title="${esc(s.plan||'')}">${label}</span>`;
+      } else if (Number(s.monthlyBits || 0) > 0) {
+        subLine = '<span style="font-size:11px;color:var(--t3);" title="手動開通配額,無到期日">員工授權・無期限</span>';
       } else {
         subLine = '<span style="font-size:11px;color:var(--t4);">未訂閱</span>';
       }
