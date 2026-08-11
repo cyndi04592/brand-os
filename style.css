@@ -2441,6 +2441,33 @@ details[open] > summary::before { transform: rotate(90deg); }
   box-shadow: 0 6px 20px rgba(124,109,250,0.15);
 }
 
+/* 🩹 2026-08-11 中型筆電擠成一團(RA 實測 14~15 吋機):
+   原本第一個斷點在 1280px,但 1300~1600 這一段(常見筆電 + 開 DevTools)
+   按鈕、能量條、email 全擠在同一排,字都快黏在一起。
+   這裡補一個中間段:先收 email 的文字(只留信封,點一下才展開)、
+   再把按鈕與間距縮一級。順序是「先犧牲最不重要的」——
+   email 只是給客戶自查身分用,不是每天要看的東西。 */
+@media(max-width: 1600px) {
+  .nav { padding: 0 16px; }
+  .nav-right { gap: 7px; }
+  .nav-email-chip #userEmailNav { display: none; }
+  .nav-email-chip.show-email #userEmailNav { display: inline; }
+  .nav-email-chip { padding: 6px 9px; }
+  .nav-btn-monitor, .nav-btn-kol, .nav-btn-admin, .nav-btn-logout {
+    padding: 7px 12px; font-size: 12px;
+  }
+  #subMenuBtn { padding: 5px 9px; font-size: 11.5px; margin-right: 4px; }
+}
+@media(max-width: 1440px) {
+  /* 再窄一級:訂閱鈕只留皇冠圖示,能量條縮短 */
+  #subMenuBtn { font-size: 0; gap: 0; padding: 6px 8px; }
+  #subMenuBtn svg { width: 15px; height: 15px; }
+  .nav-bits-chip .bits-bar-track { width: 38px !important; }
+  .nav-btn-monitor, .nav-btn-kol, .nav-btn-admin, .nav-btn-logout {
+    padding: 7px 10px; font-size: 11.5px;
+  }
+}
+
 /* RWD nav 換行 */
 @media(max-width: 1280px) {
   /* 🆕 RWD:不再整排隱藏帳號列 — 保留 訂閱+能量條+點數,只藏較占空間的 email/drive */
