@@ -156,6 +156,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .drive-photo img{width:100%;height:100%;object-fit:cover;display:block;}
 .drive-photo .placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:20px;}
 .drive-action-bar{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+/* 🩹 2026-08-11:綁定鈕改成「每個角色自己一顆,就長在他照片正下方」。
+   以前全站只有底部一顆共用鈕,客戶看到「待綁定」卻找不到哪裡綁。 */
+.drive-persona-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+.drive-persona-actions .persona-bind-btn{flex:1;min-width:140px;}
+.drive-persona-actions .persona-bind-btn:disabled{opacity:.45;cursor:not-allowed;}
 .drive-selected-count{font-size:11px;color:var(--accent);font-weight:600;}
 .drive-empty-persona{text-align:center;padding:20px;color:var(--text-dim);font-size:11px;background:var(--surface2);border-radius:var(--radius-sm);border:1px dashed var(--border);}
 .drive-empty-persona a{color:var(--accent);text-decoration:none;}
@@ -3137,15 +3142,22 @@ function renderDriveGallery() {
   wrap.innerHTML = rootWarn + sections;
   wrap.removeEventListener('click', handleDriveGalleryClick);
   wrap.addEventListener('click', handleDriveGalleryClick);
+  updatePersonaBindButtons();   // 🩹 2026-08-11:畫完就把每顆鈕的文字/狀態設好
 }
 
 function renderPersonaSection(p) {
   const personaData = S.personas.find(x => x.persona_name === p.persona_name);
   const isBound = personaData && personaData.talking_photo_id && String(personaData.talking_photo_id).trim();
 
+  // 🩹 2026-08-11:以前只有「已綁定 / 待綁定」兩種。問題是 Drive 有資料夾、
+  //   但 KOL 角色還沒建立的(例:橘子),也被標成「待綁定」——
+  //   客戶照著點下去只會拿到「找不到 persona 資料」,永遠綁不起來。
+  //   現在分三態,直接告訴客戶下一步該做什麼。
   const statusChip = isBound
     ? `<span class="status bound">已綁定 · ${personaData.talking_photo_id.slice(0,8)}</span>`
-    : `<span class="status unbound">待綁定</span>`;
+    : (personaData
+        ? `<span class="status unbound">待綁定 · 選照片後按下方綠鈕</span>`
+        : `<span class="status unbound" style="background:rgba(255,107,107,.15);color:#ff6b6b">尚未建立角色</span>`);
 
   const photosHtml = p.photos.length > 0
     ? `<div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
@@ -3175,8 +3187,19 @@ function renderPersonaSection(p) {
     ? `${p.photo_count} 張 · 已處理 ${p.processed_count} 張`
     : `${p.photo_count} 張照片`;
 
+  // 🩹 2026-08-11:綁定鈕改成「每個角色自己一顆,就在他照片正下方」。
+  //   以前全站只有一顆,躲在整個照片庫最底下 → 客戶看到「待綁定」卻找不到哪裡綁。
+  //   現在你在誰的照片下面點,就按誰的鈕,不用猜。
+  const actionsHtml = `
+    <div class="drive-persona-actions">
+      <button class="btn btn-success btn-sm persona-bind-btn"
+              data-persona="${escapeHtml(p.persona_name)}" disabled>綁定</button>
+      <button class="btn btn-ghost btn-sm persona-clear-btn"
+              data-persona="${escapeHtml(p.persona_name)}" style="display:none">清除選取</button>
+    </div>`;
+
   return `
-    <div class="drive-persona-group">
+    <div class="drive-persona-group" data-persona="${escapeHtml(p.persona_name)}">
       <div class="drive-persona-head">
         <span class="name">${escapeHtml(p.persona_name)}</span>
         <span class="count">${countText}</span>
@@ -3184,11 +3207,45 @@ function renderPersonaSection(p) {
       </div>
       ${photosHtml}
       ${processedHtml}
+      ${actionsHtml}
     </div>
   `;
 }
 
+// 🩹 2026-08-11:每個角色那顆鈕的狀態機(選了幾張 / 有沒有角色 / 綁過沒)
+function updatePersonaBindButtons() {
+  document.querySelectorAll('.persona-bind-btn').forEach(btn => {
+    const persona = btn.dataset.persona || '';
+    const n = (S.selectedDrivePhotos[persona] || []).length;
+    const pd = S.personas.find(x => x.persona_name === persona);
+    const bound = pd && pd.talking_photo_id && String(pd.talking_photo_id).trim();
+    const clearBtn = btn.parentElement.querySelector('.persona-clear-btn');
+    if (clearBtn) clearBtn.style.display = n > 0 ? '' : 'none';
+
+    if (!pd) {                                   // Drive 有資料夾、但沒建 KOL 角色
+      btn.textContent = '⚠️ 先建立 KOL 角色';
+      btn.disabled = true;
+      btn.classList.remove('btn-success'); btn.classList.add('btn-ghost');
+      return;
+    }
+    btn.classList.remove('btn-ghost'); btn.classList.add('btn-success');
+    if (n === 0) {
+      btn.textContent = bound ? '➕ 選照片可追加 Look' : '↑ 先選照片再綁定';
+      btn.disabled = true;
+    } else {
+      btn.textContent = bound ? `➕ 加入 ${n} 張 Look` : `建立 Avatar Group(${n} 張)`;
+      btn.disabled = false;
+    }
+  });
+}
+
 function handleDriveGalleryClick(e) {
+  // 🩹 2026-08-11:先接「每個角色自己那顆鈕」,再接照片點選
+  const bindBtn = e.target.closest('.persona-bind-btn');
+  if (bindBtn) { if (!bindBtn.disabled) confirmDrivePhotos(bindBtn.dataset.persona); return; }
+  const clearBtn = e.target.closest('.persona-clear-btn');
+  if (clearBtn) { clearDriveSelection(); return; }
+
   const photo = e.target.closest('.drive-photo');
   if (!photo) return;
   const fileId = photo.dataset.fileId;
@@ -3219,14 +3276,14 @@ function updateDriveActionBar() {
   const arr = persona ? (S.selectedDrivePhotos[persona] || []) : [];
   const count = arr.length;
 
-  if (count === 0) { bar.style.display = 'none'; S.selectedPersonaForDrive = ''; return; }
+  // 🩹 2026-08-11:綁定鈕已改成「每個角色自己一顆」→ 底部這條全站共用的橫幅退休,
+  //   永遠不顯示。函式保留是因為別的地方還會呼叫它,拆掉會連鎖壞掉。
+  if (bar) bar.style.display = 'none';
+  updatePersonaBindButtons();
 
-  bar.style.display = 'flex';
-  const personaData = S.personas.find(x => x.persona_name === persona);
-  const isBound = personaData && personaData.talking_photo_id && String(personaData.talking_photo_id).trim();
-  countEl.textContent = `已選 ${count} 張(${persona})`;
-  btn.textContent = isBound ? `➕ 加入 ${count} 張 Look 到「${persona}」` : `建立「${persona}」Avatar Group(${count} 張)`;
-  btn.disabled = false;
+  if (count === 0) { S.selectedPersonaForDrive = ''; return; }
+  if (countEl) countEl.textContent = `已選 ${count} 張(${persona})`;
+  if (btn) btn.disabled = true;
 }
 
 function clearDriveSelection() {
@@ -3236,17 +3293,21 @@ function clearDriveSelection() {
   updateDriveActionBar();
 }
 
-async function confirmDrivePhotos() {
-  const persona = S.selectedPersonaForDrive;
+async function confirmDrivePhotos(personaArg) {
+  const persona = personaArg || S.selectedPersonaForDrive;
   const fileIds = S.selectedDrivePhotos[persona] || [];
-  if (!persona || fileIds.length === 0) return;
+  if (!persona || fileIds.length === 0) { toast('請先點選這位角色的照片', 'warn'); return; }
 
   const personaData = S.personas.find(x => x.persona_name === persona);
-  if (!personaData) { toast('找不到 persona 資料', 'error'); return; }
+  if (!personaData) {
+    toast(`「${persona}」在 Drive 有資料夾,但還沒建立 KOL 角色。\n請先用下方「AI 生成 KOL 角色」建立同名角色,再回來綁定。`, 'error');
+    return;
+  }
 
-  const btn = document.getElementById('drive-confirm-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spin">⏳</span> 處理中…';
+  // 🩹 2026-08-11:改成鎖「這位角色自己那顆鈕」,不再動全站橫幅那顆
+  const btn = document.querySelector('.persona-bind-btn[data-persona="' + String(persona).replace(/"/g, '\\"') + '"]')
+           || document.getElementById('drive-confirm-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span> 處理中…'; }
 
   try {
     const res = await gasPost('createKolLookFromDrive', {
@@ -3266,8 +3327,8 @@ async function confirmDrivePhotos() {
   } catch (e) {
     toast('失敗:' + e.message, 'error');
   } finally {
-    btn.disabled = false;
-    updateDriveActionBar();
+    if (btn) btn.disabled = false;
+    updateDriveActionBar();   // 內含 updatePersonaBindButtons(),重畫後標籤會自己回正
   }
 }
 
