@@ -1615,8 +1615,25 @@ function buildPosterPrompt() {
   prompt += `- Do NOT redesign the product, do NOT invent new packaging, do NOT alter brand marks\n`;
   prompt += `- The product is the hero — build the advertising scene AROUND it\n\n`;
 
+  // 🩹 2026-08-11 品牌色開關:
+  //   病灶:品牌包的 DNA 把主色寫死(巧福 = deep forest green #3D5A3F),
+  //         所以同一個品牌生一百張,一百張都是同一個綠 —— 客戶會膩,節慶檔期也套不進去。
+  //   修法:加一顆「鎖定品牌色」開關(預設開,維持原行為)。關掉時把 DNA 裡的
+  //         「Primary brand color / Secondary palette」兩行濾掉,並改叫 AI 自己配色,
+  //         但字體、攝影風格、氛圍、構圖習慣、AVOID 全部保留 —— 換色不換品牌個性。
+  const _lockColor = (document.getElementById('lockBrandColor')?.checked !== false);
+  let _dna = brandPack.dna || '';
+  if (!_lockColor) {
+    _dna = _dna.split('\n')
+      .filter(function (l) { return !/^\s*-\s*(Primary brand color|Secondary palette)\s*:/i.test(l); })
+      .join('\n');
+  }
+
   prompt += `=== BRAND STYLE PACK (AMBIENCE ONLY — does NOT define product look) ===\n`;
-  prompt += brandPack.dna + '\n';
+  prompt += _dna + '\n';
+  if (!_lockColor) {
+    prompt += `COLOR FREEDOM (brand colour lock is OFF): do not restrict yourself to the brand's usual colour palette. Choose a fresh, well-considered colour scheme that suits the selected design style, the context/season and the product's own packaging colours. Keep everything else from the brand DNA — typography habits, photography style, mood, decorative language, composition habits and the AVOID list — only the colour palette is free.\n`;
+  }
   if (ctx.brand) prompt += `Brand name to display (small signature): "${ctx.brand}"${ctx.subBrand ? ' · ' + ctx.subBrand : ''}\n`;
   if (ctx.adStyle) prompt += `Additional brand direction note: ${ctx.adStyle}\n`;
   prompt += '\n';
