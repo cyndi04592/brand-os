@@ -4952,6 +4952,25 @@ async function pollSeedance(task) {
   }, 2000);
 }
 
+// 🈶 2026-08-10:狀態中文化 + 編號去識別化
+//   ① 客戶看不懂 IN_PROGRESS / IN_QUEUE 這種英文代碼,一律翻成白話
+//   ② 原本直接印 requestId(引擎給的原始 task id)—— 依「前台不露引擎」鐵律,
+//      改成中性的「編號 XXXXXXXX」(大寫短碼),客服對單夠用,又看不出後端是誰
+const _TASK_STATUS_TW = {
+  IN_QUEUE: '排隊中', PENDING: '排隊中', STAGED: '排隊中', QUEUED: '排隊中',
+  IN_PROGRESS: '生成中', PROCESSING: '生成中', RUNNING: '生成中', STARTED: '生成中',
+  COMPLETED: '完成', SUCCESS: '完成', FINISHED: '完成',
+  FAILED: '失敗', ERROR: '失敗', CANCELLED: '已取消',
+};
+function _taskStatusTW(s) {
+  const k = String(s || '').toUpperCase();
+  return _TASK_STATUS_TW[k] || '處理中';
+}
+function _taskCode(id) {
+  // 取前 8 碼、去掉連字號、轉大寫 → 像訂單編號,不像技術 ID
+  return String(id || '').replace(/-/g, '').slice(0, 8).toUpperCase();
+}
+
 function renderSeedanceTasks() {
   const wrap = document.getElementById('seedance-tasks');
   wrap.innerHTML = S.seedanceTasks.map((t, i) => {
@@ -4963,8 +4982,8 @@ function renderSeedanceTasks() {
            ${t.fileSize ? `<span><span class="lbl">檔案:</span><span class="val">${(t.fileSize/1024/1024).toFixed(1)}MB</span></span>` : ''}
          </div>`
       : `<div class="seedance-task-meta">
-           <span><span class="lbl">狀態:</span><span class="val">${t.status}</span></span>
-           <span><span class="lbl">已等:</span><span class="val">${elapsed}s</span></span>
+           <span><span class="lbl">狀態:</span><span class="val">${_taskStatusTW(t.status)}</span></span>
+           <span><span class="lbl">已等:</span><span class="val">${elapsed} 秒</span></span>
          </div>`;
 
     return `
@@ -4972,9 +4991,9 @@ function renderSeedanceTasks() {
         <div class="seedance-task-head">
           <div class="seedance-task-info">
             <strong>${escapeHtml(t.label)}</strong>
-            <small>${t.created} · ${escapeHtml(String(t.requestId).slice(0,12))}…</small>
+            <small>${t.created} · 編號 ${escapeHtml(_taskCode(t.requestId))}</small>
           </div>
-          <span class="task-badge ${t.status}">${t.status === 'IN_QUEUE' ? '排隊中' : t.status === 'IN_PROGRESS' ? '生成中' : t.status === 'COMPLETED' ? '完成 ✓' : '失敗'}</span>
+          <span class="task-badge ${t.status}">${t.status === 'COMPLETED' ? '完成 ✓' : _taskStatusTW(t.status)}</span>
         </div>
         ${metaLine}
         ${t.error ? `<div style="margin-top:6px;font-size:11px;color:var(--accent2)">❌ ${escapeHtml(t.error)}</div>` : ''}
@@ -6000,18 +6019,19 @@ function renderEpisodeTask(task) {
   const wrap = document.getElementById('system-episode-task');
   if (!wrap) return;
   const elapsed = task.elapsed || Math.round((Date.now() - task.startTime) / 1000);
-  const statusLabel = task.status === 'IN_QUEUE' ? '排隊中' : task.status === 'IN_PROGRESS' ? '生成中' : task.status === 'COMPLETED' ? '完成 ✓' : task.status;
+  // 🈶 2026-08-10:同上,狀態中文化 + 編號去識別化(這是接片面板的卡片)
+  const statusLabel = task.status === 'COMPLETED' ? '完成 ✓' : _taskStatusTW(task.status);
   wrap.innerHTML = `
     <div class="seedance-task" ${task.url ? 'style="cursor:pointer"' : ''}>
       <div class="seedance-task-head">
         <div class="seedance-task-info">
           <strong>${escapeHtml(task.label)}</strong>
-          <small>${task.created} · ${escapeHtml(String(task.requestId).slice(0, 12))}…</small>
+          <small>${task.created} · 編號 ${escapeHtml(_taskCode(task.requestId))}</small>
         </div>
         <span class="task-badge ${task.status}">${statusLabel}</span>
       </div>
       <div class="seedance-task-meta">
-        <span><span class="lbl">已等:</span><span class="val">${elapsed}s</span></span>
+        <span><span class="lbl">已等:</span><span class="val">${elapsed} 秒</span></span>
       </div>
       ${task.url ? `
       <video src="${escapeHtml(task.url)}" controls autoplay playsinline loop style="width:100%;margin-top:10px;border-radius:var(--radius-sm);background:#000;max-height:400px"></video>
