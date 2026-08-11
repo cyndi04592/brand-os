@@ -1386,6 +1386,16 @@ document.addEventListener('DOMContentLoaded', function(){
                 <option value="shoes">試穿鞋(只有腳)</option>
                 <option value="hold">手持展示(只有手)</option>
               </select>
+              <!-- 🩹 2026-08-11 無臉模式說明卡:客戶打開後完全不知道規則變了
+                   (不用選 KOL、分鏡會被忽略、生成鈕改看商品照)。不講的話
+                   只會看到「按鈕按不下去」然後放棄。 -->
+              <div id="faceless-notice" style="margin-top:8px;padding:10px 12px;border-radius:10px;background:rgba(124,109,250,.10);border:1px solid rgba(124,109,250,.35);font-size:11.5px;line-height:1.75;color:var(--text)">
+                <div style="font-weight:700;margin-bottom:4px">無臉模式規則(跟平常不一樣)</div>
+                <div>· <b>不用選 KOL、不用選場景</b> —— 主角是商品</div>
+                <div>· <b>分鏡不會被使用</b> —— 想指定動作請寫下方「劇情 / 情境」欄</div>
+                <div>· <b>商品照建議 2 張以上</b>(同商品不同角度),成功率高很多</div>
+                <div id="faceless-block-hint" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,107,107,.3);color:#ff6b6b;font-weight:700"></div>
+              </div>
             </div>
 
             <div class="toggle-row">
@@ -4376,6 +4386,27 @@ function toggleFaceConsistency() {
 function updateSeedanceSubmitButton() {
   const btn = document.getElementById('create-seedance-btn');
   if (!btn) return;
+
+  // 🩹 2026-08-11:這支函式以前不知道「無臉模式」存在。
+  //   病灶:toggleFaceless() 打開時會把按鈕點亮,但只要客戶接著動任何設定
+  //         (加商品照 / 改時長 / 換解析度)都會呼叫這裡,又用「要選 KOL + 場景」
+  //         把按鈕關回去 → 客戶開了無臉卻永遠按不下生成,而且完全看不出原因。
+  //   無臉模式的真正條件:不用 KOL、不用場景,只要有商品照。
+  const faceless = document.getElementById('faceless-toggle')?.classList.contains('on');
+  if (faceless) {
+    const n = (S.seedanceProductUrls || []).length;
+    btn.disabled = !(n > 0);
+    // 🩹 按不下去一定要講原因,不然客戶只會覺得「壞了」
+    const hint = document.getElementById('faceless-block-hint');
+    if (hint) {
+      if (n === 0)      { hint.style.display = ''; hint.textContent = '⚠️ 還不能生成:請先加至少 1 張商品照(建議 2 張以上)'; }
+      else if (n === 1) { hint.style.display = ''; hint.textContent = '⚠️ 目前只有 1 張商品照 — 可以生成,但建議再加 1~2 張同商品的不同角度'; }
+      else              { hint.style.display = 'none'; }
+    }
+    return;
+  }
+  { const hint = document.getElementById('faceless-block-hint'); if (hint) hint.style.display = 'none'; }
+
   const hasKol = !!S.selectedKol;
   const hasScene = !!S.selectedSceneId;  // 🆕 v5.1: 改為檢查是否選了場景
   btn.disabled = !(hasKol && hasScene);
@@ -4879,9 +4910,10 @@ function toggleFaceless() {
   const on = t.classList.contains('on');
   const row = document.getElementById('faceless-action-row');
   if (row) row.style.display = on ? 'block' : 'none';
-  // 無臉模式不需要 KOL → 讓生成鈕可按;關掉則恢復「要選 KOL 才可按」
-  const btn = document.getElementById('create-seedance-btn');
-  if (btn) btn.disabled = on ? false : !S.selectedKol;
+  // 🩹 2026-08-11:按鈕該不該亮,統一交給 updateSeedanceSubmitButton() 判斷。
+  //   以前在這裡自己設 disabled,結果被那支函式蓋掉(它不知道無臉模式存在)。
+  //   規則只寫在一個地方,才不會兩邊打架。
+  updateSeedanceSubmitButton();
 }
 
 async function createFacelessVideo() {
