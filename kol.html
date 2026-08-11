@@ -3663,6 +3663,16 @@ async function handleDriveProductClick(e) {
       if (!res || res.ok === false || !res.url) {
         throw new Error((res && res.error) || '沒拿到 R2 網址');
       }
+      // 🖼 2026-08-10:尺寸守門員 —— 影片引擎規定參考圖高度必須 300~6000px。
+      //   病灶:Shopline/蝦皮那種「電商長圖」(寬 750 高 10000+)一送過去就被打回,
+      //   而且是等 30 秒後才失敗、訊息還是一長串英文,客戶完全看不懂。
+      //   現在改成選圖當下就量,不合格直接不給選 + 白話說明。
+      const _sz = await _checkRefImageSize(res.url);
+      if (!_sz.ok) {
+        item.classList.remove('selected');
+        toast(_sz.msg, 'error');
+        return;
+      }
       S.driveFileR2[fileId] = res.url;
       S.seedanceProductUrls.push(res.url);
       S.productRefRole[res.url] = defaultProductRole();
@@ -3679,6 +3689,99 @@ async function handleDriveProductClick(e) {
     updateSeedanceCostEstimate();
   }
 }
+// 🚨 2026-08-10 生成失敗提示框:取代會自己消失的 toast。
+//   病灶:失敗訊息用 toast 幾秒就不見 → 客戶只看到「按了、轉一下、沒反應」,
+//   會直接認定產品壞掉然後關掉頁面。這是最貴的流失點。
+//   修法:彈出不會自動消失的視窗,把引擎丟回來的英文翻成白話,
+//   而且若查得出是哪一張參考圖出問題,直接寫出檔名。
+function showGenError(rawMsg, r2Refs) {
+  const raw = String(rawMsg || '');
+  let title = '生成失敗', body = '', hint = '';
+
+  // ① 參考圖尺寸不合格(最常見)
+  const mIdx = raw.match(/image url\[(\d+)\]/i);
+  if (/Height\s*must\s*be\s*between|HeightToLarge|WidthTooLarge|InvalidParameter\.\w*TooLarge/i.test(raw)) {
+    title = '有一張參考圖尺寸不符';
+    let who = '';
+    if (mIdx && Array.isArray(r2Refs)) {
+      const ref = r2Refs[Number(mIdx[1])] || r2Refs[Number(mIdx[1]) - 1];
+      if (ref && ref.url) {
+        const fname = decodeURIComponent(String(ref.url).split('/').pop() || '').split('_jpg')[0];
+        who = '(第 ' + (Number(mIdx[1]) + 1) + ' 張:' + fname + ')';
+      }
+    }
+    body = '影片引擎規定參考圖的長寬都必須在 300 ~ 6000 像素之間,你選的其中一張' + who + '超出範圍了。';
+    hint = '最常見原因:那是攝影師交的「全尺寸原檔」(例如 5504×8256)。\n\n'
+         + '解法:換一張小一點的照片,或先用手機/小畫家把圖縮到 3000px 以內再上傳到 Drive。';
+  }
+  // ② 點數不足
+  else if (/INSUFFICIENT_BITS|insufficient/i.test(raw)) {
+    title = '能量不足';
+    body = '這支影片需要的能量超過你目前的餘額。';
+    hint = '可以到「訂閱方案」開通或加購補給包,開通後月配額會立刻入帳。';
+  }
+  // ③ 訂閱限定
+  else if (/no_subscription|訂閱會員專屬/i.test(raw)) {
+    title = '此功能為訂閱會員專屬';
+    body = '補給包與部分功能需要先開通訂閱方案。';
+    hint = '請到「訂閱方案」選擇適合的方案。';
+  }
+  // ④ 其他
+  else {
+    body = '系統在送出時被拒絕了,你的能量已自動退還,不會被扣。';
+    hint = '如果重試幾次都一樣,把下面的技術訊息截圖給我們,我們會處理。';
+  }
+
+  const old = document.getElementById('genErrMask'); if (old) old.remove();
+  const mask = document.createElement('div');
+  mask.id = 'genErrMask';
+  mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  mask.innerHTML = `
+    <div style="background:#16161d;border:1px solid #3a2a3a;border-radius:16px;max-width:520px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+      <div style="font-size:17px;font-weight:800;color:#ff8099;margin-bottom:12px;">⚠️ ${escapeHtml(title)}</div>
+      <div style="font-size:14px;color:#e8e0d0;line-height:1.7;margin-bottom:12px;">${escapeHtml(body)}</div>
+      <div style="font-size:13px;color:#9a9aa8;line-height:1.7;white-space:pre-wrap;background:rgba(255,255,255,.04);border-radius:10px;padding:12px;margin-bottom:14px;">${escapeHtml(hint)}</div>
+      <div style="font-size:12px;color:#6dfac2;margin-bottom:16px;">💎 這次消耗的能量已自動退還,不會被扣款。</div>
+      <details style="margin-bottom:16px;">
+        <summary style="font-size:12px;color:#6a6a78;cursor:pointer;">技術訊息(給工程師看的)</summary>
+        <div style="font-size:11px;color:#6a6a78;word-break:break-all;margin-top:8px;max-height:140px;overflow:auto;">${escapeHtml(raw.slice(0, 800))}</div>
+      </details>
+      <button id="genErrOk" style="width:100%;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#7C6DFA,#FA6D9B);color:#fff;font-weight:700;font-size:14px;cursor:pointer;">我知道了</button>
+    </div>`;
+  document.body.appendChild(mask);
+  document.getElementById('genErrOk').onclick = () => mask.remove();
+  mask.onclick = (e) => { if (e.target === mask) mask.remove(); };
+}
+
+// 🖼 2026-08-10 尺寸守門員:量一張圖的真實尺寸,判斷影片引擎收不收。
+//   規則(PiAPI/Seedance):高與寬都必須落在 300px ~ 6000px。
+//   量不到尺寸(跨網域/載入失敗)→ 一律放行,絕不因為量不到就擋住客戶。
+function _checkRefImageSize(url) {
+  return new Promise((resolve) => {
+    const MIN = 300, MAX = 6000;
+    const img = new Image();
+    let done = false;
+    const finish = (r) => { if (!done) { done = true; resolve(r); } };
+    setTimeout(() => finish({ ok: true, skipped: 'timeout' }), 6000);   // 量太久就放行
+    img.onload = () => {
+      const w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) return finish({ ok: true, skipped: 'no-size' });
+      if (h > MAX || w > MAX) {
+        return finish({ ok: false, w, h, msg:
+          '這張圖太大(' + w + '×' + h + ')—— 影片引擎最多只吃 6000px。\n' +
+          '常見原因:這是「電商長圖」(商品說明那種長條圖)。請改用單張商品照,或先裁切。' });
+      }
+      if (h < MIN || w < MIN) {
+        return finish({ ok: false, w, h, msg:
+          '這張圖太小(' + w + '×' + h + ')—— 影片引擎最少要 300px。\n請改用大一點的原圖。' });
+      }
+      finish({ ok: true, w, h });
+    };
+    img.onerror = () => finish({ ok: true, skipped: 'load-error' });   // 載不到 → 放行,交給後端判斷
+    img.src = url;
+  });
+}
+
 function addProductUrl() {
   const input = document.getElementById('ref-url-input');
   const url = input.value.trim();
@@ -4746,8 +4849,10 @@ async function createSeedanceVideo() {
   const btn = document.getElementById('create-seedance-btn');
   btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span> 送出中…';
 
+  let _failRes = null;   // 🚨 2026-08-10:留住回應,失敗時才查得出是「哪一張」參考圖出問題
   try {
     const res = await api('seedance_submit', payload);
+    _failRes = res;
     if (!res.ok) throw new Error(res.error);
 
     const task = {
@@ -4770,7 +4875,8 @@ async function createSeedanceVideo() {
     toast(`生成任務已送出 (預估約 4 分鐘)`, 'success');
     pollSeedance(task);
   } catch (e) {
-    toast('提交失敗:' + e.message, 'error');
+    // 🚨 2026-08-10:改用不會消失的提示框(toast 幾秒就不見,客戶會以為「按了沒反應」)
+    showGenError(e.message, _failRes && _failRes.r2Refs);
   }
   btn.disabled = false; btn.textContent = '生成電影鏡頭';
 }
