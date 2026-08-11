@@ -4725,16 +4725,35 @@ function toggleFaceless() {
 }
 
 async function createFacelessVideo() {
-  const heroUrl = orderedProductUrls()[0];
+  // 🩹 2026-08-11 無臉模式修補(NICOLE failed to process result 事件)
+  //   病灶:這裡原本寫死 productImageUrls: [],只送 1 張參考圖 —— 全系統唯一的單張圖路徑。
+  //         正常生成一定 ≥2 張(臉 + 商品),PiAPI 收單成功、上游卻產不出東西,
+  //         回 {"code":10000,"message":"failed to process result"},PiAPI 自己也收 $0。
+  //   排除過程(靠 D1 gen_log,沒燒任何點數):
+  //     ① face_url = /ly/product/... → [Image1] 是商品照,不是 KOL 臉,「臉/無臉矛盾」排除
+  //     ② 該檔名帶 Drive fileId → 是從商品庫勾選進來的,勾選時已過尺寸守門員,「圖太大」排除
+  //     ③ 15s/720p/fast/有聲音 與又晴那支成功的完全相同,「參數」排除
+  //   修法:把其餘商品照一起送進去湊張數。prompt 只引用 [Image1],多的圖不被引用 ——
+  //         這跟正常生成一模一樣(ly 走 default 模板也只引用 [Image1]),所以零風險。
+  const _allProducts = orderedProductUrls();
+  const heroUrl = _allProducts[0];
   if (!heroUrl) { toast('無臉模式需要至少一張商品照(放進商品槽)', 'error'); return; }
   const action = document.getElementById('faceless-action')?.value || 'cooking';
   const situation = document.getElementById('cine-situation')?.value?.trim() || '';
   const prompt = window.composeFacelessPrompt ? window.composeFacelessPrompt(action, { situation }) : '';
   if (!prompt) { toast('組無臉 prompt 失敗,請確認 crew-director 已更新到 v5.13-faceless', 'error'); return; }
 
+  // 只有 1 張商品照 → 還是會落回單張圖那條已知會掛的路。先講白話,讓客戶自己決定。
+  if (_allProducts.length < 2) {
+    if (!confirm('無臉模式建議至少放 2 張商品照。\n\n' +
+                 '目前只有 1 張,影片引擎有機會生不出來(生成失敗會自動退點,不會白扣)。\n\n' +
+                 '建議:回商品照庫再勾 1~2 張同商品的不同角度,成功率會高很多。\n\n' +
+                 '還是要用 1 張直接送嗎?')) return;
+  }
+
   const payload = {
     kolImageUrl: heroUrl,
-    productImageUrls: [],
+    productImageUrls: _allProducts.slice(1),
     prompt,
     resolution: S.seedanceParams.resolution,
     duration: S.seedanceParams.duration,
