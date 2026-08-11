@@ -20,6 +20,14 @@ const _ASSET_LS_TTL = 10 * 60 * 1000; // 10 分鐘
 //     10 分鐘內怎麼重整都還是錯的,客戶只會覺得系統在亂給素材。
 //   修法:每次發動抓取就給一個流水號;回應回來時流水號對不上 = 已經切走了,整包丟掉。
 let _assetReqSeq = 0;
+
+// 🩹 2026-08-11 素材庫不再抓/顯示影片。
+//   病灶:Drive 的「影片」資料夾裝的是 Brand OS「生成完的成品」(saveVideoToDrive 存回去的),
+//   不是可以拿來做廣告的素材。素材庫把成品當素材列出來,邏輯是反的,客戶會困惑。
+//   而且 window.S.selVideo 全站沒有任何地方在讀 —— 點了不會發生任何事,是死功能。
+//   附帶好處:每次切品牌少打一次 Drive,載入更快。
+//   要恢復的話把這個改回 true 即可(渲染與抓取都吃這個旗標)。
+const SHOW_VIDEO_ASSETS = false;
 function _assetReqStale(reqId) { return reqId !== undefined && reqId !== _assetReqSeq; }
 
 function _slimAsset(p) {
@@ -55,7 +63,8 @@ function _clearAssetCacheLS(brandId) {
 function _hydrateFromLS(brandId) {
   if (_assetCache[brandId]?.loaded) return;
   const ls = _loadAssetCacheLS(brandId);
-  if (ls) _assetCache[brandId] = { loaded: true, photos: ls.photos, videos: ls.videos };
+  // 🩹 2026-08-11:舊快取裡可能還存著影片清單 → 關閉影片素材時一律不還原,免得舊資料又冒出來
+  if (ls) _assetCache[brandId] = { loaded: true, photos: ls.photos, videos: SHOW_VIDEO_ASSETS ? ls.videos : [] };
 }
 
 async function autoFetchAssets(brandId) {
@@ -93,7 +102,7 @@ async function autoFetchAssets(brandId) {
     photoInput.value = f.photo;
     promises.push(fetchFromDriveAPI(f.photo, 'photo', window._driveToken, _req));
   }
-  if (f.video && videoInput) {
+  if (SHOW_VIDEO_ASSETS && f.video && videoInput) {
     videoInput.value = f.video;
     promises.push(fetchFromDriveAPI(f.video, 'video', window._driveToken, _req));
   }
@@ -141,7 +150,7 @@ async function autoFetchAssetsWorker(brandId) {
     if (photoInput) photoInput.value = f.photo;
     promises.push(fetchFromWorker(f.photo, 'photo', _req));  // 🆕 Worker 直讀 Drive(Service Account+重試),不走 GAS 抽風
   }
-  if (f.video) {
+  if (SHOW_VIDEO_ASSETS && f.video) {
     if (videoInput) videoInput.value = f.video;
     promises.push(fetchFromWorker(f.video, 'video', _req));  // 🆕 同上,走 Worker
   }
@@ -300,7 +309,7 @@ async function fetchBoth() {
 
   const promises = [];
   if (pRaw) promises.push(fetchFromDriveAPI(parseDriveId(pRaw) || pRaw, 'photo', window._driveToken));
-  if (vRaw) promises.push(fetchFromDriveAPI(parseDriveId(vRaw) || vRaw, 'video', window._driveToken));
+  if (SHOW_VIDEO_ASSETS && vRaw) promises.push(fetchFromDriveAPI(parseDriveId(vRaw) || vRaw, 'video', window._driveToken));
   await Promise.all(promises);
 
   if (bid) {
@@ -383,7 +392,7 @@ function renderAssets() {
       ${window.S.photos.map((f, i) => assetItemHtml(f, i, 'photo', window.S.selPhoto === i)).join('')}
     </div>`;
   }
-  if (window.S.videos.length) {
+  if (SHOW_VIDEO_ASSETS && window.S.videos.length) {
     html += `<div class="asset-sec">
       <div class="asset-sec-lbl">影 影片素材 <span class="asset-count" style="color:var(--peach)">${window.S.videos.length}</span></div>
       ${window.S.videos.map((f, i) => assetItemHtml(f, i, 'video', window.S.selVideo === i)).join('')}
