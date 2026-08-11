@@ -3383,6 +3383,8 @@ function renderStaff() {
         ${subLine}
         ${ptsLine}
       </div>
+      ${(isOwnerRow||role==='reviewer')?'':`<button onclick="editStaffBrands('${esc(s.email)}')" title="編輯這個帳號可看的品牌"
+        style="background:none;border:1px solid var(--line);border-radius:6px;color:var(--t3);cursor:pointer;font-size:12px;padding:3px 8px;margin-left:8px;white-space:nowrap;">🏷 品牌</button>`}
       ${isOwnerRow?'':`<button onclick="setStaffQuota('${esc(s.email)}')" title="設定每月配額(送點數給員工;0=取消授權)"
         style="background:none;border:1px solid var(--line);border-radius:6px;color:var(--t3);cursor:pointer;font-size:12px;padding:3px 8px;margin-left:8px;white-space:nowrap;">⚡ 配額</button>`}
       ${isOwnerRow?'':`<button class="btn-row-del" onclick="removeStaff('${esc(s.email)}')" style="margin-left:8px;font-size:18px;" title="移除">✕</button>`}
@@ -3406,6 +3408,60 @@ function brandsToNames(csv) {
   if (!csv) return '<span style="color:var(--t4)">未綁品牌</span>';
   const ids = String(csv).split(',').map(x => x.trim()).filter(Boolean);
   return ids.map(id => { const b = (DB.brands||[]).find(x => x.id === id); return esc(b ? b.name : id); }).join('、');
+}
+
+// 🏷 v4.06(2026-08-10):編輯「可看品牌」——
+//   舊版只有 ✎(改名)、⚡(配額)、✕(移除),要幫客戶加減品牌只能整個砍掉重加,
+//   而砍掉重加會弄丟他的角色與加入日期。這支只改品牌欄,其他一律不動。
+//   ⚠️ 審核員/管理員不顯示這顆(他們本來就看全部品牌,沒得選)。
+function editStaffBrands(email) {
+  const s = (STAFF || []).find(x => String(x.email).toLowerCase() === String(email).toLowerCase());
+  if (!s) { alert('找不到這個帳號,請先按「重新整理」'); return; }
+  const cur = new Set(String(s.brands || '').split(',').map(x => x.trim()).filter(Boolean));
+  const brands = (DB.brands || []);
+  if (!brands.length) { alert('目前沒有品牌可選'); return; }
+
+  const old = document.getElementById('brandEditMask');
+  if (old) old.remove();
+
+  const mask = document.createElement('div');
+  mask.id = 'brandEditMask';
+  mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  mask.innerHTML = `
+    <div style="background:var(--bg2,#16161d);border:1px solid var(--line,#2e2e3a);border-radius:14px;max-width:560px;width:100%;max-height:80vh;overflow:auto;padding:20px;">
+      <div style="font-size:15px;font-weight:700;color:var(--purple,#cdb4ff);margin-bottom:4px;">🏷 編輯可看品牌</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:14px;">${esc(s.name || '(未設定姓名)')} · ${esc(s.email)}</div>
+      <div id="brandEditList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+        ${brands.map(b => `
+          <label class="brand-chk" style="cursor:pointer;">
+            <input type="checkbox" value="${esc(b.id)}" ${cur.has(b.id) ? 'checked' : ''}>
+            ${esc((b.icon ? b.icon + ' ' : '') + b.name)}
+          </label>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button id="brandEditCancel" style="padding:8px 16px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--t3);cursor:pointer;font-size:13px;">取消</button>
+        <button id="brandEditSave" style="padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#7C6DFA,#FA6D9B);color:#fff;font-weight:700;cursor:pointer;font-size:13px;">儲存</button>
+      </div>
+    </div>`;
+  document.body.appendChild(mask);
+
+  const close = () => mask.remove();
+  mask.onclick = (e) => { if (e.target === mask) close(); };
+  document.getElementById('brandEditCancel').onclick = close;
+
+  document.getElementById('brandEditSave').onclick = async () => {
+    const picked = [...mask.querySelectorAll('#brandEditList input:checked')].map(c => c.value);
+    if (!picked.length && !confirm('沒有勾選任何品牌 —— 這個帳號登入後會看不到任何品牌,確定?')) return;
+    close();
+    showLoading('儲存中...');
+    try {
+      const j = await workerWrite('updateWhitelist',
+        { email: ADMIN_USER_EMAIL, targetEmail: email, brands: picked.join(',') });
+      if (j && j.ok) { setStatus('✅ 已更新可看品牌', 'ok'); loadStaff(); }
+      else alert('❌ 失敗:' + ((j && j.error) || '連線問題,再試一次'));
+    } catch (e) { alert('❌ 連線失敗,請重試'); }
+    hideLoading();
+  };
 }
 
 // ⚡ v4.03(2026-08-09):一鍵送員工點數 —— 設「每月配額」,不用再開 Console。
