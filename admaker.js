@@ -1657,6 +1657,16 @@ function buildPosterPrompt() {
     if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
     if (ctx.brand) prompt += `- Brand signature (small, at corner or footer): "${ctx.brand}"\n`;
     prompt += `Typography must be crisp, readable, and integrated naturally into the layout.\n\n`;
+  } else {
+    // 🩹 2026-08-11 純素材模式(CLEAN PLATE):主標與副標都留空 = 客戶有美編,要自己上字。
+    //   ⚠️ 不能只是「不寫文字要求」就算了 —— 這支 prompt 通篇在講「advertising poster」,
+    //      模型會自作主張補上假標題、假標語、亂碼中文。必須明確要求「不准有任何文字」,
+    //      而且要主動預留放字的留白,美編拿到才是真正能用的底圖。
+    prompt += `=== TEXT TO RENDER ===\n`;
+    prompt += `Render NO text of any kind. Do not add any headline, subheadline, tagline, slogan, caption, price tag, badge, sticker, watermark or decorative lettering anywhere in the image. Do not invent brand names or Chinese characters.\n`;
+    prompt += `This is a CLEAN PLATE: a finished background/product composition that a human graphic designer will open in Photoshop and set the typography on afterwards.\n`;
+    prompt += `Therefore: deliberately reserve a large calm area of negative space where a headline would normally sit (upper third, or one clean vertical side), keep that area visually quiet — even tone, no busy texture, no competing detail — so type can be placed on it later with good contrast.\n`;
+    prompt += `The ONLY text permitted is text that is physically printed on the product packaging itself, which must be preserved exactly.\n\n`;
   }
 
   prompt += `=== ART DIRECTOR CRAFT (INTENT — must NOT override the chosen style above) ===
@@ -1721,26 +1731,14 @@ async function generateGptPoster() {
   const imgSrc = photo.canvasRes || photo.full || photo.hiRes || photo.src || photo.thumb;
   if (!imgSrc) { setPrStatus('⚠️ 商品照尚未載入', 'var(--red)'); return; }
 
+  // 🩹 2026-08-11:主標不再是必填。
+  //   原因(美編實際回饋):AI 生圖沒有「指定字型」參數,中文逐字重畫 → 字型/排版每次都在抽,
+  //   專業美編寧可拿「完全沒有文字的乾淨素材」進 Photoshop 自己排。
+  //   舊行為:沒填主標就紅框擋下 → 等於逼有美編的客戶去填一個他們根本不要的東西。
+  //   新行為:留空 = 純素材模式(見 buildPrompt 的 CLEAN PLATE 分支),直接放行。
   const hEl = document.getElementById('gptHeadline');
   const headline = hEl?.value?.trim();
-  if (!headline) {
-    // 🆕 2026-08-09 必填強化:原本只有一行小字提示,手機上根本看不到。
-    //   現在:紅框 + 自動捲到欄位 + 聚焦,開始打字紅框才消。
-    setPrStatus('⚠️ 請先填「主標(大字)」才能生成', 'var(--red)');
-    if (hEl) {
-      hEl.style.border = '1.5px solid #ff4d6d';
-      hEl.style.boxShadow = '0 0 0 3px rgba(255,77,109,0.25)';
-      hEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(function(){ hEl.focus(); }, 350);
-      hEl.addEventListener('input', function clearWarn(){
-        hEl.style.border = ''; hEl.style.boxShadow = '';
-        hEl.removeEventListener('input', clearWarn);
-      });
-    }
-    document.getElementById('prApplyBtn').disabled = false;
-    document.getElementById('prApplyBtn').textContent = '套用 AI 效果';
-    return;
-  }
+  if (hEl) { hEl.style.border = ''; hEl.style.boxShadow = ''; }
 
   const brandId = window.S?.brandId || '';
   const reqid = String(Date.now());
