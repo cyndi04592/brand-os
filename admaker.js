@@ -1622,10 +1622,25 @@ function buildPosterPrompt() {
   //         「Primary brand color / Secondary palette」兩行濾掉,並改叫 AI 自己配色,
   //         但字體、攝影風格、氛圍、構圖習慣、AVOID 全部保留 —— 換色不換品牌個性。
   const _lockColor = (document.getElementById('lockBrandColor')?.checked !== false);
+  // 🩹 2026-08-11 品牌署名 / Logo 開關:
+  //   病灶:同品牌連生六張,每張都是同一顆圓形 logo + 同一條綠色頁腳 + 同一行品牌名。
+  //   Logo 與頁腳其實來自「兩個地方」,只拔一個沒用:
+  //     ① DNA 的 `- Decorative elements:`(寫著「白底綠色圓形 CHIAO FU 標」)
+  //     ② DNA 的 `- Composition habit:`(寫著「底部整條綠色色帶當頁腳、放白色圓標」)
+  //     ③ 另外還有一行 `Brand name to display (small signature)`
+  //   關掉時三個一起拔,再補一句明確禁令,才會真的乾淨。
+  //   附帶效果:拔掉 composition habit 之後構圖不再被綁死,同品牌的圖會自然拉開差異。
+  const _showMark = (document.getElementById('showBrandMark')?.checked !== false);
+
   let _dna = brandPack.dna || '';
   if (!_lockColor) {
     _dna = _dna.split('\n')
       .filter(function (l) { return !/^\s*-\s*(Primary brand color|Secondary palette)\s*:/i.test(l); })
+      .join('\n');
+  }
+  if (!_showMark) {
+    _dna = _dna.split('\n')
+      .filter(function (l) { return !/^\s*-\s*(Decorative elements|Composition habit)\s*:/i.test(l); })
       .join('\n');
   }
 
@@ -1634,7 +1649,11 @@ function buildPosterPrompt() {
   if (!_lockColor) {
     prompt += `COLOR FREEDOM (brand colour lock is OFF): do not restrict yourself to the brand's usual colour palette. Choose a fresh, well-considered colour scheme that suits the selected design style, the context/season and the product's own packaging colours. Keep everything else from the brand DNA — typography habits, photography style, mood, decorative language, composition habits and the AVOID list — only the colour palette is free.\n`;
   }
-  if (ctx.brand) prompt += `Brand name to display (small signature): "${ctx.brand}"${ctx.subBrand ? ' · ' + ctx.subBrand : ''}\n`;
+  if (_showMark) {
+    if (ctx.brand) prompt += `Brand name to display (small signature): "${ctx.brand}"${ctx.subBrand ? ' · ' + ctx.subBrand : ''}\n`;
+  } else {
+    prompt += `NO BRANDING (brand signature is OFF): do NOT render any brand logo, brand mark, emblem, circular badge, brand name, company name, signature line, footer colour band, corner tag or watermark anywhere in the image. Do not invent a logo either. The ONLY branding permitted is whatever is physically printed on the product packaging itself, which must be preserved exactly. Compose the layout freely without reserving space for a logo or a footer band.\n`;
+  }
   if (ctx.adStyle) prompt += `Additional brand direction note: ${ctx.adStyle}\n`;
   prompt += '\n';
 
@@ -1685,6 +1704,28 @@ function buildPosterPrompt() {
     prompt += `Therefore: deliberately reserve a large calm area of negative space where a headline would normally sit (upper third, or one clean vertical side), keep that area visually quiet — even tone, no busy texture, no competing detail — so type can be placed on it later with good contrast.\n`;
     prompt += `The ONLY text permitted is text that is physically printed on the product packaging itself, which must be preserved exactly.\n\n`;
   }
+
+  // 🩹 2026-08-11 破解「同品牌每張都長一樣」:
+  //   病灶:品牌包 DNA 把構圖習慣寫死 → 巧福連生六張,標題位置、留白比例、頁腳全部一模一樣。
+  //   修法:每次生成隨機挑一個「構圖傾向」。這只動鏡位與版面配置,
+  //   不碰品牌顏色、字體、氛圍與 AVOID 清單 —— 還是同一個品牌,只是不再像複製貼上。
+  //   ⚠️ 刻意寫成「在選定版式之內變化」,才不會跟客戶選的①排版打架。
+  const _COMPOSITION_VARIATIONS = [
+    'Place the product slightly off-centre to the right, leaving a tall calm column of empty space on the left.',
+    'Compose low: the product sits in the lower third with generous airy space above it.',
+    'Move in close: the product fills roughly 70% of the frame, cropped confidently, minimal surrounding decoration.',
+    'Pull back: shoot the product from a distance so the surrounding environment carries most of the frame, editorial and unhurried.',
+    'Use a top-down flat-lay view looking straight down at the product on a surface.',
+    'Place the product on a diagonal axis with a slightly tilted camera for quiet dynamism.',
+    'Shoot from a low angle looking slightly up at the product so it reads as substantial and premium.',
+    'Frame an extreme close-up on one telling detail of the product, with the rest falling into soft focus.',
+    'Split the frame: product occupying one clean half, an uninterrupted flat area of colour or surface in the other half.',
+    'Layer the shot with an out-of-focus object in the foreground so the viewer feels present in the scene.',
+  ];
+  const _cv = _COMPOSITION_VARIATIONS[Math.floor(Math.random() * _COMPOSITION_VARIATIONS.length)];
+  prompt += `=== COMPOSITION VARIATION (applies to THIS render only, within the chosen layout above) ===\n`;
+  prompt += _cv + '\n';
+  prompt += `Vary the typographic treatment too — the size, weight and placement of the text should not repeat the most obvious arrangement every time — while staying faithful to the brand's typography style.\n\n`;
 
   prompt += `=== ART DIRECTOR CRAFT (INTENT — must NOT override the chosen style above) ===
 ${DESIGNER_POLISH}
