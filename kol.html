@@ -4871,13 +4871,28 @@ function preGenConfirm(opts) {
       : '';
     // 🆕 語音未綁定警告:預設是「日女聲(Morioki)」,台灣品牌講中文配日語 = 災難。
     //    用紅字而非黃字,因為那不是「稍微不理想」,是整支聽起來完全不對。
+    // 🩹 2026-08-11:無臉模式沒有人、沒有口播,下面兩個警告完全不適用。
+    //   舊行為:客戶開無臉,卻被嚇「尚未綁定口播語音!」「商品偏多節奏會很趕」——
+    //   一個是它根本不會講話,一個是拿口播秒數去除商品件數,對無臉毫無意義。
+    //   看到滿滿紅字只會不敢按。改成給它專屬的一句話說明。
+    var _faceless = !!(document.getElementById('faceless-toggle') &&
+                       document.getElementById('faceless-toggle').classList.contains('on'));
+    if (_faceless) {
+      var _n = (S.seedanceProductUrls || []).length;
+      warnHtml = '<div style="margin-top:6px;padding:10px 12px;border:1px solid rgba(124,109,250,.45);background:rgba(124,109,250,.10);border-radius:10px;font-size:13px;line-height:1.7;">'
+        + '<b>無臉模式</b> — 這支影片只會拍到商品與手/腳,<b>不會有人、不會有口播</b>,所以不需要選 KOL、不需要語音。'
+        + '<br><span style="color:var(--text-dim)">參考商品照 ' + _n + ' 張'
+        + (_n < 2 ? '(建議 2 張以上,成功率較高)' : '')
+        + '</span></div>';
+    }
+
     var voiceHtml = '';
-    if (!S.selectedVoice || !S.selectedVoice.id) {
+    if (!_faceless && (!S.selectedVoice || !S.selectedVoice.id)) {
       voiceHtml = '<div style="margin-top:6px;padding:10px 12px;border:1px solid rgba(250,80,80,.55);background:rgba(250,80,80,.10);border-radius:10px;color:#ff5a5a;font-size:13px;line-height:1.6;font-weight:700;">⚠️ 尚未綁定口播語音!<br><span style="font-weight:400;color:#ff8a8a;">將使用預設「' + DEFAULT_VOICE_NAME + '」。若這支是中文口播,聽起來會完全不對。建議先到上方「口播語音」選一個 —— 選過一次就會綁在這位 KOL 身上,之後不用再選。</span></div>';
     }
     var _p = pacePerItem(opts.itemCount, opts.duration);
     var paceHtml = '';
-    if (_p.level !== 'ok') {
+    if (!_faceless && _p.level !== 'ok') {
       var _s = _p.sec.toFixed(1).replace(/\.0$/, '');
       var _red = _p.level === 'red';
       paceHtml = '<div style="margin-top:6px;padding:10px 12px;border:1px solid ' + (_red ? 'rgba(250,80,80,.55)' : 'rgba(255,169,77,.55)') + ';background:' + (_red ? 'rgba(250,80,80,.10)' : 'rgba(255,169,77,.10)') + ';border-radius:10px;color:' + (_red ? '#ff5a5a' : '#ffa94d') + ';font-size:13px;line-height:1.6;font-weight:700;">' + (_red ? '🔴 商品偏多,節奏會很趕' : '🟡 商品稍多,節奏偏擠') + '<br><span style="font-weight:400;color:' + (_red ? '#ff8a8a' : '#ffd9a0') + ';">' + opts.itemCount + ' 件 ÷ ' + (parseInt(opts.duration) || 0) + ' 秒 ≈ 每件約 ' + _s + ' 秒。' + (_red ? '口播會被砍短或講太快、商品也容易一閃而過,建議拉長秒數或減少件數。' : '可以接受,但拉長秒數口播會更從容。') + '</span></div>';
@@ -4892,7 +4907,7 @@ function preGenConfirm(opts) {
         '</div>' +
         '<div class="persona-modal-foot">' +
           '<button class="pgc-cancel" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;">取消</button>' +
-          '<button class="pgc-go" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#0a0a0f;font-weight:700;cursor:pointer;">' + ((opts.pending || voiceHtml) ? '仍要生成' : '開始生成') + '</button>' +
+          '<button class="pgc-go" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#0a0a0f;font-weight:700;cursor:pointer;">' + ((!_faceless && (opts.pending || voiceHtml)) ? '仍要生成' : '開始生成') + '</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(wrap);
