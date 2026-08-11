@@ -130,7 +130,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .kol-card-v2.selected .kol-avatar-v2{box-shadow:0 0 0 2px var(--bg),0 0 0 4px rgba(124,109,250,.5);}
 .kol-info-v2{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
 .kol-name-v2{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
-.kol-meta-v2{font-size:10.5px;color:var(--text-dim);font-family:'Syne',sans-serif;letter-spacing:.02em;display:flex;align-items:center;gap:6px;}
+.kol-meta-v2{font-size:10.5px;color:var(--text-dim);font-family:'Syne',sans-serif;letter-spacing:.02em;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+/* 🩹 2026-08-11:人設書填了沒,在 KOL 卡片就看得到,不用點到 STEP3 才發現 */
+.kol-persona-chip{font-size:9.5px;padding:2px 6px;border-radius:999px;cursor:pointer;font-weight:700;white-space:nowrap;transition:filter .15s;}
+.kol-persona-chip:hover{filter:brightness(1.25);}
+.kol-persona-chip.empty{background:rgba(255,107,107,.16);color:#ff6b6b;}
+.kol-persona-chip.partial{background:rgba(255,169,77,.16);color:#ffa94d;}
 .kol-meta-v2 .status-dot{width:5px;height:5px;border-radius:50%;background:var(--accent3);box-shadow:0 0 6px rgba(109,250,194,.6);}
 .kol-meta-v2 .status-dot.pending{background:#ffa94d;box-shadow:0 0 6px rgba(255,169,77,.6);}
 .kol-del-v2{width:26px;height:26px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--text-dim);cursor:pointer;opacity:0;transition:all .2s;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;}
@@ -2850,6 +2855,7 @@ async function loadKolList(brandId, force) {
     name: g.persona.persona_name,
     image_url: g.image_url,
     look_count: g.look_count,
+    persona: g.persona,          // 🩹 2026-08-11:卡片要判斷人設書填了沒
   })).join('');
 
   listEl.innerHTML = html;
@@ -2888,6 +2894,19 @@ function renderKolCardV2(g) {
 
   const avatarStyle = hasImage ? '' : `style="background:${bgColor}"`;
 
+  // 🩹 2026-08-11 人設書指引:
+  //   以前人設有沒有填,要一路點到 STEP3 才發現 —— 客戶等於白做了前面兩步。
+  //   現在在 KOL 卡片上直接標,而且點徽章就直接開人設編輯器,不用自己找路。
+  const _p = g.persona || {};
+  const _filled = ['background', 'personality', 'speaking_style']
+    .filter(k => String(_p[k] || '').trim()).length;
+  let personaChip = '';
+  if (_filled === 0) {
+    personaChip = `<span class="kol-persona-chip empty" data-persona-id="${escapeHtml(_p.persona_id || '')}" title="這位 KOL 還沒有人設書,講話會很平。點我去填">📖 人設未填</span>`;
+  } else if (_filled < 3) {
+    personaChip = `<span class="kol-persona-chip partial" data-persona-id="${escapeHtml(_p.persona_id || '')}" title="人設書只填了 ${_filled}/3 項。點我去補">📖 人設待補 ${_filled}/3</span>`;
+  }
+
   return `
     <div class="kol-card-v2" data-kol-id="${escapeHtml(g.id)}">
       <div class="kol-avatar-v2" ${avatarStyle}>${avatarInner}</div>
@@ -2896,6 +2915,7 @@ function renderKolCardV2(g) {
         <div class="kol-meta-v2">
           <span class="status-dot"></span>
           <span>${lookChip || '已綁定'}</span>
+          ${personaChip}
         </div>
       </div>
     </div>
@@ -2903,6 +2923,16 @@ function renderKolCardV2(g) {
 }
 
 function handleKolListClick(e) {
+  // 🩹 2026-08-11:點「人設未填 / 人設待補」徽章 → 直接開人設編輯器,不用先選 KOL 再翻到 STEP3
+  const chip = e.target.closest('.kol-persona-chip');
+  if (chip) {
+    e.stopPropagation();
+    const card = chip.closest('.kol-card-v2');
+    const kol = card && window._kolCache?.[card.dataset.kolId];
+    if (kol) selectKol(kol);                       // 先選起來,存檔才知道存給誰
+    openPersonaEditor(chip.dataset.personaId || '');
+    return;
+  }
   const card = e.target.closest('.kol-card-v2');
   if (!card) return;
   const kolId = card.dataset.kolId;
@@ -5573,8 +5603,11 @@ function setProductModeOverride(val) {
   if (document.getElementById('ep-custom-scene-thumb')) renderEpisodeCustomScene();
 }
 // ─── 人設書編輯 Modal ────────────────────────────
-function openPersonaEditor() {
-  const p = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
+function openPersonaEditor(personaIdArg) {
+  // 🩹 2026-08-11:可以直接指定要編誰(KOL 卡片上的「人設未填」徽章會帶 id 進來)
+  const _wantId = personaIdArg || systemSelectedPersonaId;
+  if (personaIdArg) systemSelectedPersonaId = personaIdArg;   // 存檔要靠這個變數認人
+  const p = S.personas.find(x => x.persona_id === _wantId);
   if (!p) { toast('請先選 KOL', 'warn'); return; }
 
   document.getElementById('persona-editor-name').textContent = p.persona_name;
