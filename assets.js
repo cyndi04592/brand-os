@@ -425,12 +425,18 @@ function selectAsset(type, i) {
   if (type === 'photo') window.S.selPhoto = window.S.selPhoto === i ? null : i;
   else                  window.S.selVideo = window.S.selVideo === i ? null : i;
   renderAssets();
-  // 🆕 選到照片就背景偷抓原圖(暖機);原圖一到自動重畫預覽 → 從縮圖變清晰
+  // 選到照片就背景暖機,抓好自動重畫預覽 → 從縮圖變清晰
+  // 🩹 2026-08-11 預覽變慢的真兇:這裡原本呼叫 ensureFullRes(photo)「不帶 thumb」,
+  //   等於每點一張就把「完整原圖」轉 base64 拉回瀏覽器(乾淨原圖動輒數 MB,base64 再脹 1.4 倍)。
+  //   而那份 photo.full 全站沒有任何地方真的用到 —— 預覽與合成讀的都是 canvasRes(s1600),
+  //   photo.full 只排在 `canvasRes || full || ...` 的後備位,但前一行早就把 canvasRes 抓好了,永遠輪不到。
+  //   這是之前「改抓 s1600 治 QUIC 斷線」那次改版的遺留物:主線改小圖了,這支預抓沒跟著改。
+  //   修法:改抓 s1600(跟預覽/合成同一份)→ 一次請求解決,體積剩零頭,還省一次來回。
   if (type === 'photo' && window.S.selPhoto !== null) {
     const sel = window.S.selPhoto;
-    // 防 LAG:記憶體永遠只留正在用的這一張原圖,其餘還原成縮圖
-    window.S.photos.forEach((p, idx) => { if (idx !== sel) p.full = ''; });
-    ensureFullRes(window.S.photos[sel]).then(() => {
+    // 防 LAG:記憶體只留正在用的這一張,其餘的大圖一律釋放
+    window.S.photos.forEach((p, idx) => { if (idx !== sel) { p.full = ''; p.canvasRes = ''; } });
+    ensureFullRes(window.S.photos[sel], true).then(() => {
       if (typeof renderAdCanvas === 'function') renderAdCanvas();
     });
   }
