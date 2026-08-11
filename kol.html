@@ -1582,7 +1582,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
       <div class="persona-modal-foot">
         <button class="btn btn-ghost btn-sm" onclick="closePersonaEditor()">取消</button>
-        <button class="btn btn-primary" id="pe-save-btn" onclick="savePersonaFromEditor()">儲存到 GAS</button>
+        <button class="btn btn-primary" id="pe-save-btn" onclick="savePersonaFromEditor()">儲存</button>
       </div>
     </div>
   </div>
@@ -5691,17 +5691,22 @@ async function savePersonaFromEditor() {
     if (!res.ok) throw new Error(res.error || '儲存失敗');
 
     // 更新本地 personas 狀態
+    // 🩹 2026-08-11:改用 Object.assign「原地更新」,不要換掉整個物件。
+    //   病灶:KOL 卡片的快取(S._kolListCache / window._kolCache)握的是「原本那個 persona 物件的參照」,
+    //         整個換掉之後快取還指著舊物件 → 人設明明存好了,卡片上的「📖 人設未填」還掛著不走。
     const idx = S.personas.findIndex(x => x.persona_id === p.persona_id);
-    if (idx >= 0) S.personas[idx] = updated;
+    if (idx >= 0) Object.assign(S.personas[idx], updated);
 
     toast('✅ 人設已儲存', 'success');
     closePersonaEditor();
     renderSystemKolSwitcher();
     renderSystemPersonaCard();
+    // 🩹 2026-08-11:重畫 KOL 形象庫,讓「人設未填 / 待補 N/3」徽章即時更新(走快取,不會重打 HeyGen)
+    try { await loadKolList(S.currentBrandId); } catch (e) {}
   } catch (e) {
     toast('儲存失敗:' + e.message, 'error');
   } finally {
-    btn.disabled = false; btn.innerHTML = '儲存到 GAS';
+    btn.disabled = false; btn.innerHTML = '儲存';   // 🩹 2026-08-11:前台不露後端(商業鐵律),原本寫「儲存到 GAS」
   }
 }
 
@@ -6439,6 +6444,31 @@ async function regenerateOneSocial(platform) {
   await generateSocialPosts({ persona, product, situation, sceneId, movementId, tone });
 }
 
+// 🩹 2026-08-11:AI 生成人設書期間,把整張人設書表單反灰鎖住。
+//   病灶:以前只鎖「AI 生成」那顆鈕,欄位跟「儲存」都還能按 →
+//         客戶邊等邊打字,10 秒後 AI 回來把欄位整個蓋掉,打的字全沒了;
+//         更糟的是先按儲存,存進去的是空白人設。
+//   「取消」不鎖,客戶隨時可以退出。
+const _PE_FIELDS = ['pe-background', 'pe-personality', 'pe-speaking-style', 'pe-role-relationship',
+                    'pe-catchphrases', 'pe-taboo-words', 'pe-signature-topics', 'pe-forbidden-topics'];
+function _setPersonaEditorBusy(on) {
+  _PE_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = !!on;
+    el.style.opacity = on ? '.4' : '';
+    el.style.cursor  = on ? 'not-allowed' : '';
+  });
+  const sb = document.getElementById('pe-save-btn');
+  if (sb) {
+    sb.disabled = !!on;
+    sb.style.opacity = on ? '.4' : '';
+    sb.style.cursor  = on ? 'not-allowed' : '';
+    if (on) { if (sb.dataset._t == null) sb.dataset._t = sb.innerHTML; sb.innerHTML = '⏳ AI 生成中,請稍候'; }
+    else if (sb.dataset._t != null) { sb.innerHTML = sb.dataset._t; delete sb.dataset._t; }
+  }
+}
+
 // v5.9: AI 生成 KOL 人設書
 async function aiGeneratePersona() {
   const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
@@ -6454,6 +6484,7 @@ async function aiGeneratePersona() {
     b.disabled = true;
     b.innerHTML = '⏳ AI 生成中…(約 10–20 秒)';
   });
+  _setPersonaEditorBusy(true);   // 🩹 2026-08-11:欄位 + 儲存鈕一起反灰,怕客戶亂點
   // 取得 KOL 肖像 URL
   let kolImageUrl = '';
   if (persona.talking_photo_id) {
@@ -6529,6 +6560,7 @@ async function aiGeneratePersona() {
       b.disabled = false;
       if (b.dataset._txt != null) { b.innerHTML = b.dataset._txt; delete b.dataset._txt; }
     });
+    _setPersonaEditorBusy(false);   // 🩹 2026-08-11:不管成功失敗都要解鎖,不然表單永遠卡住
   }
 }
 
