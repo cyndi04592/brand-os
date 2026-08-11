@@ -893,15 +893,38 @@ function openBitsShop() {
   const grid = document.getElementById('bitsShopGrid');
   if (window.showSpaceLoader) { showSpaceLoader(grid, '正在準備你的補給包'); var _sl0 = grid.querySelector('.bsSpaceLoader'); if (_sl0) _sl0.style.gridColumn = '1/-1'; }
   else grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.5);padding:30px;">載入中…</div>';
-  const _email = localStorage.getItem('bs_sso_email') || '';
-  // 🆕 補給包=訂閱會員專屬加購;沒有效訂閱(monthlyBits<=0)就擋下,導去訂閱方案(防止用最低禮包繞過月費)
+  // 🩹 2026-08-11 ①:email 兩邊都讀。
+  //   病灶:只讀 localStorage,但登入流程有些路徑只寫 sessionStorage
+  //   → email 是空的 → 查無此人 → 被誤判成「沒訂閱」上鎖。
+  const _email = (localStorage.getItem('bs_sso_email') || sessionStorage.getItem('bs_email') || '').trim();
+
+  if (!_email) {
+    grid.innerHTML = _shopNotice('🔑', '讀不到你的登入身分',
+      '請重新整理頁面;若還是不行,請登出後重新登入。<br><span style="color:rgba(255,255,255,0.4)">(這不是訂閱問題)</span>', true);
+    return;
+  }
+
+  // 🩹 2026-08-11 ②:拿掉「查不到就退回打 GAS」這條備援。
+  //   病灶:bits 這張表早就交棒 D1(列在 D1_OWNED),GAS 那本是已退休的舊帳本。
+  //   Worker 一抖就退回去查舊帳本 → 查到 0 配額 → 有效訂閱戶被誤鎖。
+  //   跟今天早上「橘子」那個是同一個病根:程式碼還在讀退休的試算表。
+  //   新做法:只走 Worker → D1;真的查不到就「說實話」,不要謊稱人家沒訂閱。
   authCachedGet('getBits', { email: _email })
-    .then(b => b || fetch(`${GAS_URL}?action=getBits&password=${GAS_PASSWORD}&email=${encodeURIComponent(_email)}`).then(r => r.json()))
     .then(b => {
-      // 🆕 改看「訂閱是否有效(subActive,後端用 subEnd 判到期)」;
-      //    若 GAS 尚未更新(subActive=undefined)→ 退回看 monthlyBits,避免誤擋有效訂閱者
-      const hasSub = b && b.ok && (b.subActive === true || (b.subActive === undefined && Number(b.monthlyBits) > 0));
-      if (!hasSub) {
+      if (!b || b.ok !== true) {
+        // 🩹 2026-08-11 ③:查詢失敗 ≠ 沒訂閱。以前這裡直接顯示「你沒有有效訂閱方案」,
+        //   是系統在對客戶說謊,而且會讓人以為要再付一次錢。
+        grid.innerHTML = _shopNotice('📡', '暫時讀不到你的方案資料',
+          '這不是訂閱問題 —— 是連線或系統忙碌。<br>請稍等幾秒後重新整理再試一次。', true);
+        return;
+      }
+      if (b.exists === false) {
+        grid.innerHTML = _shopNotice('🔍', '查不到這個帳號的點數資料',
+          '帳號:' + _email + '<br>請聯絡管理員確認帳號設定。<br><span style="color:rgba(255,255,255,0.4)">(這不是訂閱問題)</span>', true);
+        return;
+      }
+      // subActive:後端用 subEnd 判到期;員工授權(無到期日+有月配額)也算有效
+      if (b.subActive !== true) {
         grid.innerHTML =
           '<div style="grid-column:1/-1;text-align:center;padding:34px 16px;">'
           + '<div style="font-size:34px;margin-bottom:10px;">🔒</div>'
@@ -911,7 +934,7 @@ function openBitsShop() {
           + '</div>';
         return;
       }
-      // 🆕 訂閱資格通過後:有本地快取就秒開,背景再更新;沒快取才照舊抓
+      // 訂閱資格通過:有本地快取就秒開,背景再更新
       var _tp = null; try { _tp = JSON.parse(localStorage.getItem('bs_topup_packs') || 'null'); } catch(e){}
       if (_tp && _tp.packs) {
         _shopPacks = _tp.packs; _shopBank = _tp.bank; _shopHoliday = _tp.holiday || null;
@@ -920,7 +943,21 @@ function openBitsShop() {
         _loadTopupPacks(grid);
       }
     })
-    .catch(() => { _loadTopupPacks(grid); });  // 查訂閱失敗→保守放行(網路抖動不誤擋付費客戶);伺服端購買流程仍應再驗
+    .catch(function (e) {
+      grid.innerHTML = _shopNotice('📡', '暫時讀不到你的方案資料',
+        '這不是訂閱問題 —— 是連線中斷。<br>請重新整理再試一次。', true);
+      console.warn('openBitsShop getBits 失敗:', e);
+    });
+}
+
+// 🩹 2026-08-11:商城的訊息卡(讓「查不到」跟「沒訂閱」長得不一樣,不再混為一談)
+function _shopNotice(icon, title, desc, withReload) {
+  return '<div style="grid-column:1/-1;text-align:center;padding:34px 16px;">'
+    + '<div style="font-size:34px;margin-bottom:10px;">' + icon + '</div>'
+    + '<div style="font-size:17px;font-weight:900;color:#fff;margin-bottom:8px;">' + title + '</div>'
+    + '<div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.85;margin-bottom:22px;">' + desc + '</div>'
+    + (withReload ? '<button onclick="location.reload()" style="padding:12px 26px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#fff;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;">重新整理</button>' : '')
+    + '</div>';
 }
 function closeBitsShop() {
   if (_shopTimer) { clearInterval(_shopTimer); _shopTimer = null; }
@@ -1310,9 +1347,31 @@ function showSubOrderInfo(o) {
     checkPendingPay();
     setTimeout(function () { syncUserEmail(); checkPendingPay(); }, 1800);
     setTimeout(function () { syncUserEmail(); checkPendingPay(); }, 4000);
-    // 從 KOL 的 帶 ?openBits=1 進來 → 自動開儲值補給包視窗(不再停在首頁)
+    // 從 KOL 的 💎 帶 ?openBits=1 進來 → 自動開儲值補給包視窗(不再停在首頁)
+    // 🩹 2026-08-11:原本寫死「350 毫秒後就開」。
+    //   病灶:從 KOL 跳過來時,index 這邊還在跑登入還原 / 初始化,
+    //   350ms 時登入遮罩(#loginOverlay)還蓋在上面 → 商城視窗其實開了,但被蓋住,
+    //   客戶看到的就是「按了 💎 什麼都沒發生」。員工帳號跳頁比較慢,更容易踩到。
+    //   修法:改成輪詢等「登入遮罩收掉 + 有 email + 函式就緒」才開,最多等 30 秒。
     if (new URLSearchParams(location.search).get('openBits') === '1') {
-      setTimeout(function () { try { openBitsShop(); } catch (e) {} }, 350);
+      var _obTries = 0;
+      var _obTimer = setInterval(function () {
+        _obTries++;
+        var gate = document.getElementById('loginOverlay');
+        var gateHidden = !gate || gate.style.display === 'none' || getComputedStyle(gate).display === 'none';
+        var initGate = document.getElementById('initOverlay');
+        var initHidden = !initGate || initGate.style.display === 'none' || getComputedStyle(initGate).display === 'none';
+        var hasEmail = !!(localStorage.getItem('bs_sso_email') || '');
+        var ready = gateHidden && initHidden && hasEmail
+                 && typeof openBitsShop === 'function'
+                 && document.getElementById('bitsShopModal');
+        if (ready) {
+          clearInterval(_obTimer);
+          try { openBitsShop(); } catch (e) { console.warn('openBits 自動開啟失敗:', e); }
+          return;
+        }
+        if (_obTries > 60) { clearInterval(_obTimer); console.warn('openBits:等不到登入完成,放棄自動開啟'); }
+      }, 500);
     }
   });
 })();
