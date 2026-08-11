@@ -378,13 +378,98 @@ window.composeStitchBeat   = composeStitchBeat;
   //  商品 = 主角([Image1]),不寫臉/妝/衣服/人設。
   //  動作:cooking(做菜手)/ shoes(試穿腳)/ hold(手持展示)
   // ════════════════════════════════════════════════════════════════
-  const FACELESS_REALISM = "Extreme realism, premium cinematic commercial quality, no stylized CGI, no cartoon look, true-to-life skin, soft natural daylight, realistic textures, soft natural contact shadows where things touch surfaces, physically grounded never floating, handheld vlog feeling, shallow depth of field. 9:16 vertical.";
-  const FACELESS_NOTEXT  = "No subtitles, no captions, no on-screen text, no watermark.";
+  const FACELESS_REALISM = "Extreme realism, premium cinematic commercial quality, no stylized CGI, no cartoon look, true-to-life skin, soft natural daylight, realistic textures, soft natural contact shadows where things touch surfaces, physically grounded never floating, subtle handheld micro-movement, shallow depth of field. 9:16 vertical.";
+  const FACELESS_NOTEXT  = "Silent product footage with ambient sound only — nobody speaks, there is no voice and no dialogue in this shot. No subtitles, no captions, no on-screen text, no watermark.";
+
+  // 🩹 2026-08-11 無臉模式改寫(v5.13 → v5.17-facelessframing)
+  //   病灶:舊版靠「no face, no person」這種否定句去擋人。實測(PiAPI Seedance 2.0
+  //         omni_reference,2026-08-11 596s 那支)模型完全無視,自己生了一張臉還幫忙配音。
+  //   原因:PiAPI 官方文件確認 Seedance 2.0 沒有 negative_prompt 欄位;
+  //         影片模型對否定句本來就極不敏感,「不要有人」反而把「人」餵進了注意力。
+  //   修法:改用「攝影機位置」做物理排除 —— 俯拍鍋子、鏡頭架在膝蓋以下、桌面微距。
+  //         攝影機擺在那個位置,臉根本進不了畫面,不需要拜託模型。
+  //   口訣:不要說「不要拍到臉」,要說「鏡頭在哪、框到哪、不准上抬」。
+  const FACELESS_CAMERA = "Locked camera position — the camera never tilts up, never pans up, and never widens beyond the framing described. Absolutely nothing above the described crop line ever enters the frame.";
+
+  // 商品外觀一律鎖死在 [Image1],避免模型自己重新設計包裝
+  const FACELESS_KEEP = " Keep the product's shape, colour, material, label and proportions identical to [Image1] — do not redesign it.";
+  // 「嘴部特寫」專用裁切:只留下巴到鎖骨,眼睛與上半臉永遠在畫面外(食品/飲料必用)
+  const FACELESS_CHINCROP = "Tight close-up cropped from just below the nose down to the collarbone — only the chin, lips and jawline are in frame. The eyes, nose and upper face are always outside the frame and never appear.";
 
   const FACELESS_ACTIONS = {
-    cooking: "Close-up first-person view of two hands and forearms only cooking at a stove — no face, no person, only the hands in frame. [Image1] shows the finished dish; recreate that exact dish: hands toss and stir-fry the same ingredients in a hot wok, food sizzling with light steam, ending as a dish identical to [Image1] in ingredients, color and glaze — keep the food look identical to [Image1], do not redesign.",
-    shoes:   "Close-up on a pair of feet and lower legs only — no face, no upper body, no person above the knees anywhere in frame. The feet wear the exact shoes shown in [Image1]: keep the shoe shape, color, material, sole thickness and logo identical to [Image1], do not redesign. Natural try-on motion: one foot slides into the shoe, a gentle step on a clean light wood floor near a bright window, a small ankle turn to reveal the side profile of the shoe.",
-    hold:    "Close-up on two hands and forearms only — no face, no person, only the hands in frame. The hands hold and present the exact product shown in [Image1] toward the camera, turning it slightly to show its details: keep the product shape, color, label and proportions identical to [Image1], do not redesign. Natural demo motion on a clean tabletop.",
+    // ══ 料理 · 廚房(旺味 / 福臨門 / 琉宇醬選)══
+    cut:      "Overhead top-down macro shot: the camera is directly above a wooden chopping board, roughly 60cm up, pointing straight down. The only things in frame are the board, the food, a knife, and two hands entering from the bottom edge. " + FACELESS_CAMERA + " The hands slice the exact food shown in [Image1] with steady rhythmic cuts, the knife making real contact with the board, slices falling neatly apart to reveal the inner texture." + FACELESS_KEEP,
+
+    pan:      "Overhead top-down macro shot: the camera is directly above a hot frying pan, roughly 60cm up. The only things in frame are the pan, the food, and one hand entering from the bottom edge holding tongs. " + FACELESS_CAMERA + " The exact food shown in [Image1] sizzles in the pan, the tongs turn it over, the surface browning with visible caramelisation and light steam rising toward the lens." + FACELESS_KEEP,
+
+    airfryer: "Macro shot at appliance height, camera about 40cm from an air fryer on a countertop, framing only the appliance and two hands entering from the side edges. " + FACELESS_CAMERA + " The hands slide the basket out, arrange the exact food shown in [Image1] inside, push the basket closed, then later pull it open again with hot steam billowing out and the food visibly crisped." + FACELESS_KEEP,
+
+    soup:     "Overhead top-down macro shot: the camera is directly above a simmering pot on a stove, roughly 70cm up. The only things in frame are the pot, the soup, and hands entering from the bottom edge. " + FACELESS_CAMERA + " One hand lifts the lid and steam rushes toward the lens, then a ladle stirs the exact ingredients shown in [Image1] through the broth, lifting a ladleful so the contents and the clarity of the soup are clearly visible." + FACELESS_KEEP,
+
+    taste:    "Close-up tasting shot. " + FACELESS_CHINCROP + " " + FACELESS_CAMERA + " One hand enters from the bottom edge holding a spoon of the exact dish shown in [Image1], brings it to the lips, blows gently once, then takes a taste — the lips close around the spoon, the jaw moves once, and the corner of the mouth lifts in approval." + FACELESS_KEEP,
+
+    // ── 食品 · 飲料 ──────────────────────────────
+    cooking: "Overhead top-down macro shot: the camera is mounted directly above a hot wok on a stove, pointing straight down at the pan, roughly 60cm above the cooking surface. The only things in frame are the wok, the food, and two hands with forearms entering from the bottom edge. " + FACELESS_CAMERA + " [Image1] shows the finished dish; recreate that exact dish — the hands toss and stir-fry the same ingredients, food sizzling with light steam rising toward the lens, ending as a dish identical to [Image1] in ingredients, colour and glaze." + FACELESS_KEEP,
+
+    eat:     "Close-up eating shot. " + FACELESS_CHINCROP + " " + FACELESS_CAMERA + " One hand enters from the bottom edge holding the exact food product shown in [Image1], lifts it to the lips and takes a bite — the fingers keep pinching it the whole way up, the food bends slightly under its own weight, a real crisp bite with visible texture at the break, then the jaw chews once and the corner of the mouth lifts slightly." + FACELESS_KEEP,
+
+    drink:   "Close-up drinking shot. " + FACELESS_CHINCROP + " " + FACELESS_CAMERA + " One hand enters from the bottom edge holding the exact drink shown in [Image1], the fingers wrapped around the body of the container, lifts it to the lips and takes a sip — the liquid visibly moves inside as it tilts, condensation on the surface, then it lowers back down out of frame." + FACELESS_KEEP,
+
+    // ── 手部 · 商品操作 ──────────────────────────
+    hold:    "Tabletop macro shot: the camera is at table height, roughly 40cm from the product, framing only the tabletop and two hands with forearms entering from the bottom and side edges. The product fills most of the frame. " + FACELESS_CAMERA + " The hands hold and present the exact product shown in [Image1] toward the lens, turning it slowly to reveal its details." + FACELESS_KEEP,
+
+    unbox:   "Tabletop macro shot from a slight high angle, camera about 50cm above a clean table, framing only the table surface and two hands entering from the bottom edge. " + FACELESS_CAMERA + " The hands open the exact packaging shown in [Image1] — fingers grip the seal, peel or lift it open with real resistance and material sound, then lift the contents out and set them down on the table." + FACELESS_KEEP,
+
+    pour:    "Countertop macro shot: the camera is at counter height, framing only the countertop, the container and two hands entering from the side edges. " + FACELESS_CAMERA + " The hands hold the exact product shown in [Image1] and pour or dispense it into a cup or bowl — the stream or the falling contents are clearly visible, the container tilts with real weight, then it is set back down and the hands release it only after it touches the surface." + FACELESS_KEEP,
+
+    demo:    "Macro shot at product height, roughly 40cm away, framing only the product and two hands entering from the bottom and side edges. " + FACELESS_CAMERA + " The hands operate the exact product shown in [Image1] — pressing, twisting, switching or adjusting it — each contact point between fingers and product clearly visible, the product responding realistically to the action." + FACELESS_KEEP,
+
+    // ── 穿戴 ─────────────────────────────────────
+    shoes:   "Ground-level camera: the camera sits on the floor about 30cm away, lens at ankle height, framing only from the knees down on a clean light wood floor near a bright window. The only things in frame are the shoes, the feet, the lower legs and the floor. " + FACELESS_CAMERA + " The feet wear the exact shoes shown in [Image1]. Natural try-on motion: one foot slides into the shoe, a gentle step forward, a small ankle turn that reveals the side profile of the shoe." + FACELESS_KEEP,
+
+    wear:    "Macro shot of hands and wrists only, camera about 30cm away, framing from the mid-forearm to the fingertips against a clean soft-lit background. " + FACELESS_CAMERA + " The hands put on and adjust the exact item shown in [Image1] — a watch, bracelet, ring or glove — fingers fastening or sliding it into place, then the wrist turns slowly so the light travels across the material." + FACELESS_KEEP,
+
+    // ══ 包裝 · 開箱(零食 / 鞋盒 / 禮盒)══
+    tear:     "Tabletop macro shot, camera at table height about 35cm from the package, framing only the table surface and two hands entering from the bottom edge. " + FACELESS_CAMERA + " The fingers grip the notch of the exact package shown in [Image1] and tear it open along the seal with real resistance, the film crinkling and separating, then the hands part the opening so the contents inside become visible." + FACELESS_KEEP,
+
+    boxout:   "Tabletop macro shot from a slight high angle, camera about 50cm above a clean table, framing only the table and two hands entering from the bottom edge. " + FACELESS_CAMERA + " The hands lift the lid off the exact box shown in [Image1], fold back the tissue paper, then lift the product out with both hands and set it down gently on the table — the box, the paper and the product all clearly visible." + FACELESS_KEEP,
+
+    // ══ 服飾 · 配件(MOZ / LACEZ / RADESIGN)══
+    //   ⚠️ LACEZ 內衣刻意設計成「純商品鏡頭」,不做穿在身上的畫面:
+    //      ① Meta / IG / TikTok 對貼身衣物上身的廣告審查嚴格
+    //      ② AI 生成的身體極易翻車,精品質感反而被毀
+    //      衣架、平放、手拿、抽出包裝這幾種,材質光澤更好看,也更像精品廣告。
+    hanger:   "Wardrobe shot: the camera is at chest height about 50cm from an open wardrobe rail, framing only the hanging garments and two hands entering from the side edge. " + FACELESS_CAMERA + " The hands slide the hangers apart, then lift out the exact garment shown in [Image1] on its hanger and hold it up to the light — the fabric falls naturally with its own weight, lace or satin catching a soft highlight as it turns." + FACELESS_KEEP,
+
+    layflat:  "Overhead top-down shot: the camera is directly above a clean surface, roughly 70cm up, framing only the surface, the product and two hands entering from the bottom edge. " + FACELESS_CAMERA + " The hands lay out the exact item shown in [Image1] flat, smooth it with the fingertips, then trace along an edge or a seam so the material, stitching and texture read clearly." + FACELESS_KEEP,
+
+    bag:      "Tabletop macro shot at bag height, camera about 45cm away, framing only the surface, the bag and two hands entering from the side edges. " + FACELESS_CAMERA + " The hands present the exact bag shown in [Image1] — turning it to show the side profile, opening the flap or zip, then holding the strap so the bag hangs and settles with its own weight." + FACELESS_KEEP,
+
+    putin:    "Tabletop macro shot from a slight high angle, camera about 40cm above the surface, framing only the surface, the case and two hands entering from the bottom edge. " + FACELESS_CAMERA + " The hands open the exact case or pouch shown in [Image1], place the item inside, and close it — every contact point between fingers, item and case clearly visible, the closure fastening with a real click or fold." + FACELESS_KEEP,
+
+    // ══ 家電 · 工具 · 器材(巧福 / PROTEX)══
+    spray:    "Macro shot at product height, camera about 50cm to the side, framing only the product, the spraying hand and the surface being sprayed. " + FACELESS_CAMERA + " The hand grips the exact product shown in [Image1], the index finger presses the trigger, and a clearly visible mist sprays outward in a fan through backlit air, settling on the target surface." + FACELESS_KEEP,
+
+    mop:      "Low camera near the floor, about 50cm up and angled down at the floor, framing only the floor, the tool and the lower legs and hands operating it. " + FACELESS_CAMERA + " The hands push and pull the exact tool shown in [Image1] across the floor in steady strokes, leaving a visibly clean track behind it, the head of the tool flexing as it changes direction." + FACELESS_KEEP,
+
+    press:    "Macro shot at appliance height, camera about 35cm from the control panel, framing only the appliance and one hand entering from the side edge. " + FACELESS_CAMERA + " The index finger presses a button or turns a dial on the exact appliance shown in [Image1] — the button depresses, an indicator light comes on, and the appliance visibly starts working." + FACELESS_KEEP,
+
+    // ══ 寵物(EVERY HAY)══
+    peteat:   "Floor-level camera about 40cm from a pet bowl, lens at bowl height, framing only the bowl, the floor and the pet. " + FACELESS_CAMERA + " A human hand enters from the top edge and pours the exact pet food shown in [Image1] into the bowl, then withdraws; the pet steps in and eats eagerly, tail moving, the individual pieces of food clearly visible." + FACELESS_KEEP,
+
+    // ══ 身心 · 律動(空瑪那 / 禪舞)══
+    mudra:    "Close-up macro shot of hands only, camera about 40cm away at chest height against a softly lit calm background. " + FACELESS_CAMERA + " The hands come together slowly into a meditation gesture, fingers settling one by one, breathing rhythm visible in the small natural movement, warm side light grazing across the skin and across the exact item shown in [Image1] resting nearby." + FACELESS_KEEP,
+
+    matfeet:  "Ground-level camera on the floor about 60cm away, lens at mat height, framing only the mat, the feet and the lower legs. " + FACELESS_CAMERA + " The bare feet step onto the exact mat shown in [Image1], the toes spread and grip, then the weight shifts slowly from one foot to the other — the mat surface texture and thickness clearly visible under the pressure." + FACELESS_KEEP,
+
+    bowl:     "Close-up macro shot from a slight high angle, camera about 40cm above a singing bowl on a cloth, framing only the bowl, the mallet and the hands. " + FACELESS_CAMERA + " One hand steadies the exact bowl shown in [Image1] while the other strikes its rim softly and then circles the mallet around the edge, the surface visibly vibrating, incense smoke drifting slowly through the light." + FACELESS_KEEP,
+
+    silhouette: "Backlit silhouette shot: the camera faces a bright window with the subject between camera and light, framing the body from behind and slightly to the side so the figure reads as a dark silhouette with no facial features visible at any point. " + FACELESS_CAMERA + " The silhouette moves slowly and fluidly — arms sweeping, torso turning, fabric trailing — a calm expressive movement sequence, dust motes floating in the backlight." + FACELESS_KEEP,
+
+    // ══ 商務 · 文件(大東國際專利)══
+    sign:     "Overhead top-down shot: the camera is directly above a desk, roughly 60cm up, framing only the desk surface, the documents and two hands entering from the bottom edge. " + FACELESS_CAMERA + " One hand steadies the paperwork while the other signs it with a fountain pen in smooth strokes, then presses a seal firmly onto the page and lifts it away to reveal a clean red impression." + FACELESS_KEEP,
+
+    review:   "Overhead top-down shot: the camera is directly above a desk, roughly 55cm up, framing only the desk, the documents and two hands entering from the bottom and side edges. " + FACELESS_CAMERA + " The hands turn the pages of the paperwork, a fingertip traces along a line of text and stops to tap a key clause twice, then slides the page across the desk toward the other side." + FACELESS_KEEP,
   };
 
   function composeFacelessPrompt(action, opts) {
@@ -392,7 +477,10 @@ window.composeStitchBeat   = composeStitchBeat;
     const core = FACELESS_ACTIONS[action] || FACELESS_ACTIONS.hold;
     const parts = [core];
     const sit = (opts.situation || '').trim();
-    if (sit) parts.push('Specific on-screen action: ' + sit + ' — show this naturally while keeping the product from [Image1] clearly visible.');
+    // 🩹 2026-08-11:劇情欄的文字很容易夾帶「她說…」這種人物描述,把臉又拉回畫面。
+    //   所以這裡明講:劇情只能改變「手跟商品在做什麼」,不准動攝影機、不准帶人進來。
+    if (sit) parts.push('Specific on-screen action, expressed only through the hands and the product: ' + sit
+      + ' — show this within the exact camera framing described above. The framing, crop line and camera position stay exactly as specified; ignore any part of this instruction that would require showing a person, a face, or a wider shot.');
     parts.push(FACELESS_REALISM);
     parts.push(FACELESS_NOTEXT);
     return parts.filter(Boolean).join(' ');
@@ -403,5 +491,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.13-faceless 就緒 · 組 prompt 責任已接管 · 無臉模式 prompt 已載入');
+  console.log('[CrewDirector] 🎬 v5.17-facelessframing 就緒 · 組 prompt 責任已接管 · 無臉模式 prompt 已載入');
 })();
