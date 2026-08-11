@@ -113,6 +113,22 @@
     return { action, speechLine };
   }
 
+  // ════════════════════════════════════════════════════════════════
+  //  🤝 公版「接觸鏈」· v5.17(2026-08-11)
+  //  病灶:商品會「特異功能飄進嘴巴」—— 海苔、飲料、口紅、鞋,任何品類都會。
+  //  真因:舊寫法是 `physically grounded never floating`,又是一句「否定句」。
+  //        跟「no face, no person」擋不住人臉一模一樣 —— 影片模型對否定句幾乎無效,
+  //        你叫它「不要飄」,它讀到的重點反而是「飄」。
+  //  修法:改成「正面描述接觸點」。每一格畫面都告訴模型「東西在哪隻手指之間」,
+  //        它就沒有機會讓東西用滑的。
+  //  ⚠️ 這四條講的是「物理」,不是某個商品 —— 飲料、口紅、鞋、家電、零食全部通用,
+  //     所以放在總導演這裡當公版,9 個品牌與未來新品牌自動繼承,不用逐一補。
+  const CONTACT_CHAIN =
+    'whenever the product is picked up or used, always show the exact contact points: name which hand and which fingers hold it and where on the product they grip it; ' +
+    'the object reacts to real gravity and material — soft things bend under their own weight, liquid visibly shifts inside a container, heavy things make the wrist dip; ' +
+    'movement is continuous and never teleports — the product travels visibly from the surface, into the hand, then to its destination, staying in contact with the fingers the whole way; ' +
+    'when it is put down, its base touches the surface first and only then do the fingers release it';
+
   function composePrompt(brandId, sceneId, locationId, movementId, duration, opts) {
     opts = opts || {};
 
@@ -172,6 +188,7 @@
     pushIfNonEmpty(parts, CrewMembers.makeup?.contribute(ctx));
     // 🔦 全域臉光保險:不管場景多硬,臉光一律柔,擋烤肉紋(2026-06 確認硬光是兇手)
     parts.push('keep the light on her face soft and even regardless of the scene, no harsh overhead glare or hot specular highlights on the skin');
+    parts.push(CONTACT_CHAIN);   // 🤝 2026-08-11 公版接觸鏈:單鏡頭/接片這條路以前完全沒有,商品最容易在這裡飄
 
     // 🎬 ⑤ 攝影師接回單鏡頭路徑:運鏡(單支才有 movementId)+ REALISM_BASE + SCENE_REALISM
     //   ⚠️ 根因:這條原本只在 15 秒多鏡頭加,單鏡頭(接片強制走這條)整包漏掉
@@ -349,8 +366,9 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   // ③ 打光(doc 說影響最大)
   if (ctx.scene?.light) front.push(ctx.scene.light);
   front.push('keep the light on her face soft and even, no harsh overhead glare or hot specular highlights on the skin');
-  // ④ 接地真實(不浮空)
+  // ④ 接地真實 + 🤝 公版接觸鏈(2026-08-11:光靠 never floating 這句否定句擋不住,商品照樣飄)
   front.push('soft natural contact shadows where her hands and the product touch surfaces, physically grounded never floating');
+  front.push(CONTACT_CHAIN);
 
   const tail = [];
   // ⑤ 商品(大小+形狀鎖+正面朝鏡頭)
@@ -481,6 +499,7 @@ window.composeStitchBeat   = composeStitchBeat;
     //   所以這裡明講:劇情只能改變「手跟商品在做什麼」,不准動攝影機、不准帶人進來。
     if (sit) parts.push('Specific on-screen action, expressed only through the hands and the product: ' + sit
       + ' — show this within the exact camera framing described above. The framing, crop line and camera position stay exactly as specified; ignore any part of this instruction that would require showing a person, a face, or a wider shot.');
+    parts.push(CONTACT_CHAIN);   // 🤝 無臉模式主角就是商品,接觸鏈更不能少
     parts.push(FACELESS_REALISM);
     parts.push(FACELESS_NOTEXT);
     return parts.filter(Boolean).join(' ');
