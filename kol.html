@@ -2785,6 +2785,12 @@ async function loadPersonas(brandId, force) {
     S.personas = [];
   }
   S._personasLoading = false;  // 🆕 C: 載入結束,空狀態才顯示「還沒有 KOL」
+
+  // 🩹 2026-08-11 競速修補:Drive 照片是「並行提前發」的(見 switchBrand),
+  //   常常比 personas 早回來 → renderDriveGallery 當下 S.personas 還是空的,
+  //   每個角色都會被誤標成「尚未建立角色」(米禾明明綁好了也一樣)。
+  //   人設到齊後補畫一次,標示才會回正。
+  try { if (S.drivePhotos && document.getElementById('drive-gallery-wrap')) renderDriveGallery(); } catch (e) {}
 }
 
 // ─── 載入 KOL 形象庫 ──────────────────────────────────────
@@ -3183,11 +3189,15 @@ function renderPersonaSection(p) {
   //   但 KOL 角色還沒建立的(例:橘子),也被標成「待綁定」——
   //   客戶照著點下去只會拿到「找不到 persona 資料」,永遠綁不起來。
   //   現在分三態,直接告訴客戶下一步該做什麼。
+  //   ⚠️ 人設還在載入中就不准下判斷 —— 否則已綁定的角色會被誤標成「尚未建立角色」。
+  const _loading = (S._personasLoading === true) || !Array.isArray(S.personas) || S.personas.length === 0;
   const statusChip = isBound
     ? `<span class="status bound">已綁定 · ${personaData.talking_photo_id.slice(0,8)}</span>`
     : (personaData
         ? `<span class="status unbound">待綁定 · 選照片後按下方綠鈕</span>`
-        : `<span class="status unbound" style="background:rgba(255,107,107,.15);color:#ff6b6b">尚未建立角色</span>`);
+        : (_loading
+            ? `<span class="status unbound" style="opacity:.6">讀取人設中…</span>`
+            : `<span class="status unbound" style="background:rgba(255,107,107,.15);color:#ff6b6b">尚未建立角色</span>`));
 
   const photosHtml = p.photos.length > 0
     ? `<div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
@@ -3260,6 +3270,13 @@ function updatePersonaBindButtons() {
     //   舊行為要客戶「再手動建一次同名角色」—— 客戶剛剛明明就建過了,這很荒謬。
     //   新行為:選了照片就讓他一鍵「建立角色 + 綁定」,系統自己把 D1 那筆補上。
     if (!pd) {                                   // Drive 有資料夾、但 D1 沒這個角色
+      // ⚠️ 人設還沒載完就先鎖住 —— 這時候 S.personas 是空的,誤按會把「已存在的角色」再建一次(重複列)。
+      if (S._personasLoading === true || !Array.isArray(S.personas) || S.personas.length === 0) {
+        btn.textContent = '讀取人設中…';
+        btn.disabled = true;
+        btn.classList.remove('btn-success'); btn.classList.add('btn-ghost');
+        return;
+      }
       btn.classList.remove('btn-ghost'); btn.classList.add('btn-success');
       if (n === 0) {
         btn.textContent = '↑ 選照片即可一鍵建立角色';
@@ -3345,6 +3362,11 @@ async function confirmDrivePhotos(personaArg) {
   // 🩹 2026-08-11:D1 沒這個角色 → 系統自己補建,不再叫客戶「再建一次」。
   //   客戶在「AI 生成 KOL 角色」建過了,只是那筆寫進了已退休的試算表(GAS→D1 接縫)。
   if (!personaData) {
+    // ⚠️ 最後一道防線:人設沒載完不准補建,否則會建出重複角色
+    if (S._personasLoading === true || !Array.isArray(S.personas) || S.personas.length === 0) {
+      toast('人設還在載入中,請等一下再按(避免建出重複角色)', 'warn');
+      return;
+    }
     try {
       toast(`正在幫「${persona}」補建 KOL 角色…`, 'info');
       const cr = await gasPost('saveKolPersona', {
