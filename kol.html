@@ -3379,6 +3379,22 @@ async function confirmDrivePhotos(personaArg) {
     });
     if (!res.ok) throw new Error(res.error);
 
+    // 🩹 2026-08-11 最後一塊拼圖(GAS→D1 接縫二號):
+    //   GAS 的 createKolLookFromDrive 建完 HeyGen Group 後,是這樣寫回去的:
+    //       if (persona) saveKolPersona({ data: {...persona, talking_photo_id: groupId} })
+    //   而它的 persona 是用 getKolPersonas('') 去「舊試算表」撈的。
+    //   → 角色只存在 D1 時撈不到 → persona=null → talking_photo_id 根本沒被寫進任何地方。
+    //   結果:HeyGen 群組真的建好了,系統卻不知道,畫面又跳回「未綁定」。
+    //   修法:Group ID 由前台自己寫回 D1(saveKolPersona 走 D1_WRITERS),不依賴 GAS。
+    const _gid = res.group_id || res.talking_photo_id || '';
+    if (_gid && String(personaData.talking_photo_id || '').trim() !== _gid) {
+      try {
+        await gasPost('saveKolPersona', { data: { ...personaData, talking_photo_id: _gid } });
+      } catch (e) {
+        toast('⚠️ Avatar 已建立,但綁定記錄寫入失敗,請按「全部重新整理」再試:' + e.message, 'error');
+      }
+    }
+
     const action = res.action;
     toast(action === 'created_group' ? `✅ 已建立 Avatar Group,使用 ${fileIds.length} 張照片` : `✅ 已加入 ${res.total_added || fileIds.length} 個 Look`, 'success');
 
