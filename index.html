@@ -478,7 +478,11 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
 
           <!-- ① 版式骨架 -->
           <div style="margin-bottom:11px;">
-            <div style="font-size:9px;color:#C9B8E8;font-weight:700;letter-spacing:2px;margin-bottom:6px;">① 排版</div>
+            <!-- 🩹 2026-08-11:分區標題原本 9px,跟按鈕文字幾乎一樣大,客戶看不出這是「第幾步」。放大成真標題。 -->
+            <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid rgba(124,109,250,0.22);">
+              <span style="width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));flex:none;"></span>
+              <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">① 排版</span>
+            </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
               <button class="layout-btn" data-layout="magazine_cover" onclick="setLayout(this,'magazine_cover')">雜誌封面</button>
               <button class="layout-btn" data-layout="spec_breakdown" onclick="setLayout(this,'spec_breakdown')">規格分解</button>
@@ -490,7 +494,11 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
 
           <!-- ② 設計風格 -->
           <div style="margin-bottom:11px;">
-            <div style="font-size:9px;color:#C9B8E8;font-weight:700;letter-spacing:2px;margin-bottom:6px;">② 設計風格 <span style="font-weight:400;color:var(--t3);font-size:8px;">(可不選)</span></div>
+            <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid rgba(124,109,250,0.22);">
+              <span style="width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));flex:none;"></span>
+              <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">② 設計風格</span>
+              <span style="font-size:9px;color:var(--t3);font-weight:400;">(可不選)</span>
+            </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
               <button class="flavor-btn on" data-flavor="none" onclick="setFlavor(this,'none')">— 不調味 —</button>
               <button class="flavor-btn" data-flavor="japan_kinfolk" onclick="setFlavor(this,'japan_kinfolk')">日系雅致</button>
@@ -541,7 +549,11 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
 
           <!-- ③ 情境 -->
           <div style="margin-bottom:11px;">
-            <div style="font-size:9px;color:#C9B8E8;font-weight:700;letter-spacing:2px;margin-bottom:6px;">③ 情境 <span style="font-weight:400;color:var(--t3);font-size:8px;">(可不選)</span></div>
+            <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid rgba(124,109,250,0.22);">
+              <span style="width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));flex:none;"></span>
+              <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">③ 情境</span>
+              <span style="font-size:9px;color:var(--t3);font-weight:400;">(可不選)</span>
+            </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
               <button class="context-btn on" data-context="none" onclick="setContext(this,'none')">— 無 —</button>
               <button class="context-btn" data-context="summer" onclick="setContext(this,'summer')">夏日</button>
@@ -589,14 +601,34 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
             <textarea id="gptStyleDesc" rows="2" placeholder="想多加什麼自己打,系統會自動疊在版式+品牌包之上..." style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:10px;margin-top:4px;box-sizing:border-box;resize:vertical;line-height:1.5;"></textarea>
           </div>
 
-          <div style="margin-bottom:7px;">
-            <div class="sel-lbl">主標 (大字·必填)</div>
-            <input type="text" id="gptHeadline" placeholder="例: 那個夏天的風 · 依然還在" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
-          </div>
+          <!-- 🩹 2026-08-11:主標從「必填」改「可不填」,並把主標+副標框成同一組。
+               原因(美編實際回饋):AI 生圖沒有「指定字型」這個參數,中文是逐字重畫,
+               字型/字重/位置全是抽的 → 專業美編寧可拿乾淨素材進 PS 自己排。
+               兩欄都留空時,admaker.js 會改送「不准出現任何文字 + 預留放字的留白」。 -->
+          <div style="margin-top:11px;">
+            <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid rgba(124,109,250,0.22);">
+              <span style="width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));flex:none;"></span>
+              <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">④ 文字</span>
+              <span style="font-size:9px;color:var(--t3);font-weight:400;">(可不填)</span>
+            </div>
 
-          <div style="margin-bottom:7px;">
-            <div class="sel-lbl">副標 (小字·可略 · AI 畫小字易糊,建議留空)</div>
-            <input type="text" id="gptSubHeadline" placeholder="例: 一台在家,一台隨身" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
+            <div style="border:1px solid rgba(255,255,255,0.10);border-radius:9px;padding:9px 10px 10px;background:rgba(255,255,255,0.02);">
+              <div style="margin-bottom:7px;">
+                <div class="sel-lbl">主標 (大字)</div>
+                <input type="text" id="gptHeadline" placeholder="例: 那個夏天的風 · 依然還在" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
+              </div>
+
+              <div>
+                <div class="sel-lbl">副標 (小字 · AI 畫小字易糊,建議留空)</div>
+                <input type="text" id="gptSubHeadline" placeholder="例: 一台在家,一台隨身" style="width:100%;padding:7px 9px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:11px;margin-top:4px;box-sizing:border-box;">
+              </div>
+
+              <div style="margin-top:9px;padding:8px 9px;border-radius:7px;background:rgba(80,200,160,0.07);border:1px solid rgba(80,200,160,0.28);font-size:9.5px;line-height:1.8;color:var(--t2);">
+                <b style="color:#6FD6B0;">有美編?兩欄都留空</b><br>
+                系統會生一張<b>完全沒有文字</b>的乾淨素材,並在該放標題的位置預留大片留白,你們拿進 Photoshop 自己上字。<br>
+                <span style="color:var(--t3);">AI 無法指定字型,中文是逐字重畫 —— 字型與排版每次都不一樣。要精準控制版面,自己上字才穩。</span>
+              </div>
+            </div>
           </div>
 
           <div style="font-size:9px;color:var(--t3);line-height:1.75;padding:7px 9px;background:rgba(124,109,250,0.05);border-radius:7px;border:1px solid rgba(124,109,250,0.18);margin-top:7px;">
