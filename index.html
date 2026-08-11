@@ -631,6 +631,19 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
             </div>
           </div>
 
+          <!-- 🩹 2026-08-11 品牌色開關:品牌包把主色寫死,同一品牌生一百張都同一個顏色。
+               關掉只放開「配色」,字體/攝影風格/氛圍/構圖習慣全部保留。 -->
+          <label for="lockBrandColor" style="display:flex;align-items:center;gap:9px;margin-top:11px;padding:9px 10px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.10);cursor:pointer;">
+            <input type="checkbox" id="lockBrandColor" checked style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex:none;">
+            <span style="flex:1;">
+              <span style="font-size:10.5px;color:var(--t1);font-weight:700;">🎨 鎖定品牌色</span>
+              <span style="display:block;font-size:9px;color:var(--t3);line-height:1.7;margin-top:2px;">
+                打勾 = 照品牌 DNA 的主色配(同品牌看起來一致)。<br>
+                <b style="color:#6FD6B0;">取消打勾 = 讓 AI 自由配色</b> —— 字體、攝影風格、氛圍、構圖習慣照舊,只有顏色放開。同一個品牌就不會每張都同一個顏色。
+              </span>
+            </span>
+          </label>
+
           <div style="font-size:9px;color:var(--t3);line-height:1.75;padding:7px 9px;background:rgba(124,109,250,0.05);border-radius:7px;border:1px solid rgba(124,109,250,0.18);margin-top:7px;">
             <b style="color:#C9B8E8;">v10.2 品牌包系統</b><br>
             · <b>左側選品牌</b>會自動套對應 DNA<br>
