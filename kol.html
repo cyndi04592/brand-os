@@ -1382,9 +1382,57 @@ document.addEventListener('DOMContentLoaded', function(){
             </div>
             <div id="faceless-action-row" style="display:none;margin-top:6px">
               <select id="faceless-action" style="width:100%;padding:8px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border)">
-                <option value="cooking">做菜(只有手)</option>
-                <option value="shoes">試穿鞋(只有腳)</option>
-                <option value="hold">手持展示(只有手)</option>
+                <!-- 🩹 2026-08-11:預設不再是「做菜」。
+                     病灶:第一個選項就是預設值 → 客戶打開無臉沒去動它,
+                     賣海苔的變成「手在鍋子裡炒海苔」、賣鞋的也變做菜。
+                     改成空選項強迫選,並依商品類型分組讓客戶好挑。 -->
+                <option value="">— 請選擇要拍什麼動作 —</option>
+                <optgroup label="🍜 料理 · 廚房">
+                  <option value="cut">切菜(砧板俯拍)</option>
+                  <option value="cooking">炒菜下鍋(炒鍋)</option>
+                  <option value="pan">煎(平底鍋 · 夾翻面)</option>
+                  <option value="airfryer">氣炸鍋(放進去 / 拉出來)</option>
+                  <option value="soup">煲湯 · 燉湯(掀蓋 / 舀湯)</option>
+                  <option value="taste">嘗味道(湯匙到嘴 · 不露臉)</option>
+                </optgroup>
+                <optgroup label="🍫 吃 · 喝">
+                  <option value="eat">吃東西(手拿到嘴 · 不露臉)</option>
+                  <option value="drink">喝飲料(手拿到嘴 · 不露臉)</option>
+                  <option value="peteat">寵物吃飼料(地板視角)</option>
+                </optgroup>
+                <optgroup label="📦 包裝 · 開箱">
+                  <option value="tear">撕開包裝(零食袋 / 封膜)</option>
+                  <option value="unbox">開箱拆封(掀開 / 取出)</option>
+                  <option value="boxout">從盒子取出(鞋盒 / 禮盒)</option>
+                </optgroup>
+                <optgroup label="✋ 手部 · 商品操作">
+                  <option value="hold">手持展示(轉一圈看細節)</option>
+                  <option value="pour">倒出來 / 沖泡</option>
+                  <option value="demo">操作示範(按 / 轉 / 調整)</option>
+                  <option value="putin">放進收納(眼鏡放進眼鏡盒)</option>
+                </optgroup>
+                <optgroup label="👗 服飾 · 配件">
+                  <option value="hanger">從衣架取下(衣櫃視角)</option>
+                  <option value="layflat">平放展示(俯拍看材質)</option>
+                  <option value="bag">包包展示(側面 / 開合 / 提起)</option>
+                  <option value="shoes">試穿鞋(只有腳)</option>
+                  <option value="wear">手部穿戴(錶 / 手環 / 戒指)</option>
+                </optgroup>
+                <optgroup label="🔧 家電 · 工具 · 器材">
+                  <option value="press">按開關 / 轉旋鈕(家電面板)</option>
+                  <option value="mop">拖地 / 地板清潔</option>
+                  <option value="spray">噴霧噴射展示</option>
+                </optgroup>
+                <optgroup label="🧘 身心 · 律動">
+                  <option value="mudra">冥想手勢(雙手特寫)</option>
+                  <option value="matfeet">瑜珈墊上(只有腳)</option>
+                  <option value="bowl">頌缽敲擊(缽 + 手)</option>
+                  <option value="silhouette">舞動剪影(逆光 · 無五官)</option>
+                </optgroup>
+                <optgroup label="📄 商務 · 文件">
+                  <option value="sign">簽署 / 用印(桌面俯拍)</option>
+                  <option value="review">翻閱文件 / 指出條款</option>
+                </optgroup>
               </select>
               <!-- 🩹 2026-08-11 無臉模式說明卡:客戶打開後完全不知道規則變了
                    (不用選 KOL、分鏡會被忽略、生成鈕改看商品照)。不講的話
@@ -4479,6 +4527,11 @@ function openStoryboardForCine() {
       S.cineStoryboard = null;    // 🆕 解鎖時清掉
       S.cineStoryboardPending = true;   // 重新編輯 = 又變未確認
       lockCineZone(false);
+      // 🩹 2026-08-11:時長鎖有「兩套」機制 —— lockCineZone(加 class)跟
+      //   _lockDurationGroups(直接設 pointerEvents)。這裡以前只解了前者,
+      //   後者全檔找不到任何 false 呼叫 → 客戶只要開過一次分鏡產生器,
+      //   時長按鈕就永遠點不動,只能重新整理網頁。RA 2026-08-11 踩到:選不到 15 秒。
+      _lockDurationGroups(false);
       toast('已解鎖,可重新調整設定', 'success');
     },
   });
@@ -4925,6 +4978,16 @@ function toggleFaceless() {
   const on = t.classList.contains('on');
   const row = document.getElementById('faceless-action-row');
   if (row) row.style.display = on ? 'block' : 'none';
+
+  // 🩹 2026-08-11:無臉模式不讀分鏡 → 分鏡留下的「時長鎖」對它毫無意義,
+  //   只會讓客戶點不到 15 秒。打開無臉就把時長鎖全部放開(兩套機制都解)。
+  if (on) {
+    try {
+      _lockDurationGroups(false);
+      const _dur = document.querySelector('[data-group="duration"]');
+      if (_dur) _dur.classList.remove('cine-dur-locked');
+    } catch (e) {}
+  }
   // 🩹 2026-08-11:按鈕該不該亮,統一交給 updateSeedanceSubmitButton() 判斷。
   //   以前在這裡自己設 disabled,結果被那支函式蓋掉(它不知道無臉模式存在)。
   //   規則只寫在一個地方,才不會兩邊打架。
@@ -4945,7 +5008,9 @@ async function createFacelessVideo() {
   const _allProducts = orderedProductUrls();
   const heroUrl = _allProducts[0];
   if (!heroUrl) { toast('無臉模式需要至少一張商品照(放進商品槽)', 'error'); return; }
-  const action = document.getElementById('faceless-action')?.value || 'cooking';
+  // 🩹 2026-08-11:動作沒選就擋下來(以前沒選會自動變「做菜」,零食被拿去炒)
+  const action = document.getElementById('faceless-action')?.value || '';
+  if (!action) { toast('請先選「要拍什麼動作」—— 吃東西 / 手持展示 / 試穿鞋…', 'error'); return; }
   const situation = document.getElementById('cine-situation')?.value?.trim() || '';
   const prompt = window.composeFacelessPrompt ? window.composeFacelessPrompt(action, { situation }) : '';
   if (!prompt) { toast('組無臉 prompt 失敗,請確認 crew-director 已更新到 v5.13-faceless', 'error'); return; }
@@ -4992,7 +5057,16 @@ async function createFacelessVideo() {
   try {
     const res = await api('seedance_submit', payload);
     if (!res.ok) throw new Error(res.error);
-    const labels = { cooking: '做菜', shoes: '試穿鞋', hold: '手持展示' };
+    const labels = {
+      cut: '切菜', cooking: '炒菜', pan: '煎', airfryer: '氣炸鍋', soup: '煲湯', taste: '嘗味道',
+      eat: '吃東西', drink: '喝飲料', peteat: '寵物進食',
+      tear: '撕包裝', unbox: '開箱', boxout: '盒中取出',
+      hold: '手持展示', pour: '倒出來', demo: '操作示範', putin: '放進收納',
+      hanger: '衣架取下', layflat: '平放展示', bag: '包包展示', shoes: '試穿鞋', wear: '手部穿戴',
+      press: '按開關', mop: '拖地', spray: '噴霧展示',
+      mudra: '冥想手勢', matfeet: '瑜珈墊', bowl: '頌缽', silhouette: '舞動剪影',
+      sign: '簽署用印', review: '翻閱文件',
+    };
     const task = {
       requestId: res.requestId, endpoint: res.endpoint,
       responseUrl: res.responseUrl, statusUrl: res.statusUrl,
