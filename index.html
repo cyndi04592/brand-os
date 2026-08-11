@@ -671,6 +671,26 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
             </span>
           </label>
 
+          <!-- 🩹 2026-08-11 品牌署名 / Logo 開關:同品牌連生六張,每張都有同一顆圓標+同一條頁腳。
+               關掉時會一併拔掉 DNA 裡的「裝飾元素」「構圖習慣」兩行(logo 與頁腳寫在那裡),
+               再補明確禁令,才會真的乾淨;構圖也順勢鬆綁,每張才不會像複製貼上。 -->
+          <label for="showBrandMark" class="sw-row">
+            <span class="sw-box">
+              <input type="checkbox" id="showBrandMark" checked>
+              <span class="sw-track"></span>
+              <span class="sw-txt sw-on">ON</span>
+              <span class="sw-txt sw-off">OFF</span>
+              <span class="sw-knob"></span>
+            </span>
+            <span style="flex:1;">
+              <span style="font-size:11px;color:var(--t1);font-weight:800;letter-spacing:.5px;">🏷 品牌署名 / Logo</span>
+              <span style="display:block;font-size:9px;color:var(--t3);line-height:1.75;margin-top:3px;">
+                <b style="color:#C9B8E8;">ON</b> = 圖上會有品牌名、圓形標、底部色帶。<br>
+                <b style="color:#6FD6B0;">OFF = 純廣告圖</b> —— 不放任何 logo、品牌名與頁腳色帶,構圖也一併鬆綁,每張差異更大。商品包裝上原本印的字照樣保留。
+              </span>
+            </span>
+          </label>
+
           <div style="font-size:9px;color:var(--t3);line-height:1.75;padding:7px 9px;background:rgba(124,109,250,0.05);border-radius:7px;border:1px solid rgba(124,109,250,0.18);margin-top:7px;">
             <b style="color:#C9B8E8;">v10.2 品牌包系統</b><br>
             · <b>左側選品牌</b>會自動套對應 DNA<br>
