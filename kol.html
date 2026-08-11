@@ -4922,10 +4922,18 @@ async function createFacelessVideo() {
     tier: S.seedanceParams.tier,
     brandId: S.currentBrandId,
     kolName: '無臉_' + action,
-    // 🆕 補 provider:Worker v3.54 靠這個參數分流到 PiAPI(less-restriction,唯一吃真人臉的路)。
-    //    先前這三處單段路徑沒帶 → Worker 走預設 fal → 又晴的臉被 fal 肖像過濾器 422 擋掉。
-    //    (kol-stitch.js 接片路徑本來就有帶,所以只有單段會失敗)
-    provider: (window.KOL_PROVIDER || 'piapi'),
+    // 🩹 2026-08-11 無臉模式改回 fal(RA 指出的關鍵):
+    //   歷史:v3.54 為了讓「真人臉」能過,把三處單段路徑統一補上 provider:'piapi'
+    //         (fal 的肖像過濾器會 422 擋掉又晴的臉)。無臉模式是其中一處,被順手拖下水。
+    //   問題:無臉模式「根本沒有臉」→ 不需要 PiAPI 的 less-restriction,
+    //         fal 的肖像過濾器也擋不到它。等於為了一個它沒有的問題搬家。
+    //   代價:PiAPI 走 mode:'omni_reference'(主體參考),模型會自己補一個人進畫面 ——
+    //         2026-08-11 實測那支 596s 成功片,生出一張沒人認識的臉還自己配了音。
+    //         而 PiAPI 官方文件確認 Seedance 2.0 沒有 negative_prompt,
+    //         「no face / no person」這種否定句對影片模型幾乎無效。
+    //   證據:RA 之前那支漂亮的試穿鞋無臉影片,就是還沒補 provider 之前、走 fal 做出來的。
+    //   → 無臉模式一律走 fal,不吃 window.KOL_PROVIDER 的全域設定。
+    provider: 'fal',
   };
   if (S.seedanceSeedLocked) {
     const seedVal = (document.getElementById('seed-value')?.value || '').trim();
