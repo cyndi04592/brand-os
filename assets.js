@@ -11,6 +11,17 @@ const _assetCache = {};
 const _ASSET_LS_PREFIX = 'bs_assets_';
 const _ASSET_LS_TTL = 10 * 60 * 1000; // 10 分鐘
 
+// 🩹 2026-08-11 切品牌競速防護(RA 實測:選巧福卻跑出旺味的香腸照)
+//   病灶:fetchFromWorker / fetchFromDriveAPI / fetchFromGAS 都是直接 push 進
+//   全域的 window.S.photos / videos,而且「完全不檢查現在是哪個品牌」。
+//   → 從旺味切到巧福時,旺味那筆還在路上;巧福先清空陣列、開始抓,
+//     旺味的回應晚幾百毫秒回來,就 push 進巧福的清單裡。
+//   → 更慘的是接著 _saveAssetCacheLS 把「混到的清單」存進 localStorage,
+//     10 分鐘內怎麼重整都還是錯的,客戶只會覺得系統在亂給素材。
+//   修法:每次發動抓取就給一個流水號;回應回來時流水號對不上 = 已經切走了,整包丟掉。
+let _assetReqSeq = 0;
+function _assetReqStale(reqId) { return reqId !== undefined && reqId !== _assetReqSeq; }
+
 function _slimAsset(p) {
   return {
     driveId: p.driveId, name: p.name, thumb: p.thumb || '',
@@ -73,19 +84,22 @@ async function autoFetchAssets(brandId) {
   window.S.selVideo = null;
 
   setDriveStatus('busy');
+  const _req = ++_assetReqSeq;   // 🩹 2026-08-11:這一輪的流水號
   const photoInput = document.getElementById('inPhotoFolder');
   const videoInput = document.getElementById('inVideoFolder');
 
   const promises = [];
   if (f.photo && photoInput) {
     photoInput.value = f.photo;
-    promises.push(fetchFromDriveAPI(f.photo, 'photo', window._driveToken));
+    promises.push(fetchFromDriveAPI(f.photo, 'photo', window._driveToken, _req));
   }
   if (f.video && videoInput) {
     videoInput.value = f.video;
-    promises.push(fetchFromDriveAPI(f.video, 'video', window._driveToken));
+    promises.push(fetchFromDriveAPI(f.video, 'video', window._driveToken, _req));
   }
   await Promise.all(promises);
+  // 🩹 抓完才發現已經切走 → 不准寫進快取,也不准重畫(否則會把別的品牌的清單存成這個品牌的)
+  if (_assetReqStale(_req)) return;
 
   _assetCache[brandId] = {
     loaded: true,
@@ -117,6 +131,7 @@ async function autoFetchAssetsWorker(brandId) {
   window.S.selPhoto = null;
   window.S.selVideo = null;
   setDriveStatus('busy');
+  const _req = ++_assetReqSeq;   // 🩹 2026-08-11:這一輪的流水號
 
   const photoInput = document.getElementById('inPhotoFolder');
   const videoInput = document.getElementById('inVideoFolder');
@@ -124,13 +139,15 @@ async function autoFetchAssetsWorker(brandId) {
   const promises = [];
   if (f.photo) {
     if (photoInput) photoInput.value = f.photo;
-    promises.push(fetchFromWorker(f.photo, 'photo'));  // 🆕 Worker 直讀 Drive(Service Account+重試),不走 GAS 抽風
+    promises.push(fetchFromWorker(f.photo, 'photo', _req));  // 🆕 Worker 直讀 Drive(Service Account+重試),不走 GAS 抽風
   }
   if (f.video) {
     if (videoInput) videoInput.value = f.video;
-    promises.push(fetchFromWorker(f.video, 'video'));  // 🆕 同上,走 Worker
+    promises.push(fetchFromWorker(f.video, 'video', _req));  // 🆕 同上,走 Worker
   }
   await Promise.all(promises);
+  // 🩹 抓完才發現已經切走 → 不准寫進快取,也不准重畫
+  if (_assetReqStale(_req)) return;
 
   _assetCache[brandId] = {
     loaded: true,
@@ -167,7 +184,7 @@ async function _retryFetchJson(makeReq, label, tries) {
 }
 
 // ★ 透過 Cloudflare Worker 抓 Drive 檔案
-async function fetchFromWorker(folderId, type) {
+async function fetchFromWorker(folderId, type, reqId) {
   if (!folderId) return;
   try {
     const data = await _retryFetchJson(() => fetch(CF_WORKER_URL, {
@@ -181,6 +198,8 @@ async function fetchFromWorker(folderId, type) {
       })
     }), 'drive_files');
     if (!data.ok) { console.warn('Worker Drive error:', data.error); return; }
+    // 🩹 回應回來時已經切到別的品牌 → 整包丟掉,絕不 push(否則會污染新品牌的素材庫)
+    if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return; }
 
     (data.files || []).forEach(f => {
       const arr = type === 'photo' ? window.S.photos : window.S.videos;
@@ -200,13 +219,14 @@ async function fetchFromWorker(folderId, type) {
 }
 
 // ★ 透過 GAS（owner 帳號）抓 Drive 檔案 —— 不靠服務帳號金鑰，最穩（跟 KOL 同一條路）
-async function fetchFromGAS(folderId, type) {
+async function fetchFromGAS(folderId, type, reqId) {
   if (!folderId) return;
   try {
     const url = `${GAS_URL}?action=listBrandAssets&password=${GAS_PASSWORD}&folderId=${encodeURIComponent(folderId)}&type=${type === 'photo' ? 'photo' : 'video'}`;
     const resp = await fetch(url);
     const data = await resp.json();
     if (!data.ok) { console.warn('GAS Drive error:', data.error); return; }
+    if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return; }   // 🩹 2026-08-11 競速防護
 
     (data.files || []).forEach(f => {
       const arr = type === 'photo' ? window.S.photos : window.S.videos;
@@ -244,12 +264,14 @@ async function fetchDriveAssets(type) {
   const folderId = parseDriveId(raw);
   if (!raw) { alert('請先貼上 Drive 資料夾連結'); return; }
   setDriveStatus('busy');
-  if (window._driveToken && folderId) await fetchFromDriveAPI(folderId, type, window._driveToken);
+  const _req = ++_assetReqSeq;   // 🩹 2026-08-11:單獨抓某一類也算新的一輪
+  if (window._driveToken && folderId) await fetchFromDriveAPI(folderId, type, window._driveToken, _req);
   renderAssets();
   setDriveStatus('ok');
 }
 
 async function fetchBoth() {
+  ++_assetReqSeq;   // 🩹 2026-08-11:手動重抓 = 新的一輪,先讓所有在路上的舊回應失效
   const bid = window.S.brandId;
   if (bid) { delete _assetCache[bid]; _clearAssetCacheLS(bid); } // 🆕 WIN1：手動重抓連本地一起清
   window.S.photos = [];
@@ -289,7 +311,7 @@ async function fetchBoth() {
 }
 
 // ══ Drive API 實際抓取（原本 Google OAuth 流程，不動）══
-async function fetchFromDriveAPI(folderId, type, token) {
+async function fetchFromDriveAPI(folderId, type, token, reqId) {
   const mimeFilter = type === 'photo' ? "mimeType contains 'image/'" : "mimeType contains 'video/'";
   const q = encodeURIComponent(`'${folderId}' in parents and (${mimeFilter}) and trashed=false`);
   try {
@@ -313,6 +335,7 @@ async function fetchFromDriveAPI(folderId, type, token) {
     }
 
     const d = await r.json();
+    if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return; }   // 🩹 2026-08-11 競速防護
     if (d.files) {
       d.files.forEach(f => {
         const arr = type === 'photo' ? window.S.photos : window.S.videos;
