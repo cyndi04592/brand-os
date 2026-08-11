@@ -3222,10 +3222,22 @@ function updatePersonaBindButtons() {
     const clearBtn = btn.parentElement.querySelector('.persona-clear-btn');
     if (clearBtn) clearBtn.style.display = n > 0 ? '' : 'none';
 
-    if (!pd) {                                   // Drive 有資料夾、但沒建 KOL 角色
-      btn.textContent = '⚠️ 先建立 KOL 角色';
-      btn.disabled = true;
-      btn.classList.remove('btn-success'); btn.classList.add('btn-ghost');
+    // 🩹 2026-08-11 孤兒角色一鍵修復:
+    //   病灶(GAS→D1 搬遷留下的接縫):AI 生圖時是 GAS 的 saveAiKolPhotoToDrive 幫忙補建 persona,
+    //   但它呼叫的是 GAS 自己的 saveKolPersona → 寫進「已退休的試算表」;
+    //   而前台 getKolPersonas 早就改讀 D1(kol_personas 已列入 D1_OWNED,同步是空操作)。
+    //   結果:照片生出來了、Drive 資料夾也在,角色卻在前台永遠不存在。
+    //   舊行為要客戶「再手動建一次同名角色」—— 客戶剛剛明明就建過了,這很荒謬。
+    //   新行為:選了照片就讓他一鍵「建立角色 + 綁定」,系統自己把 D1 那筆補上。
+    if (!pd) {                                   // Drive 有資料夾、但 D1 沒這個角色
+      btn.classList.remove('btn-ghost'); btn.classList.add('btn-success');
+      if (n === 0) {
+        btn.textContent = '↑ 選照片即可一鍵建立角色';
+        btn.disabled = true;
+      } else {
+        btn.textContent = `✨ 建立角色並綁定(${n} 張)`;
+        btn.disabled = false;
+      }
       return;
     }
     btn.classList.remove('btn-ghost'); btn.classList.add('btn-success');
@@ -3298,10 +3310,29 @@ async function confirmDrivePhotos(personaArg) {
   const fileIds = S.selectedDrivePhotos[persona] || [];
   if (!persona || fileIds.length === 0) { toast('請先點選這位角色的照片', 'warn'); return; }
 
-  const personaData = S.personas.find(x => x.persona_name === persona);
+  let personaData = S.personas.find(x => x.persona_name === persona);
+
+  // 🩹 2026-08-11:D1 沒這個角色 → 系統自己補建,不再叫客戶「再建一次」。
+  //   客戶在「AI 生成 KOL 角色」建過了,只是那筆寫進了已退休的試算表(GAS→D1 接縫)。
   if (!personaData) {
-    toast(`「${persona}」在 Drive 有資料夾,但還沒建立 KOL 角色。\n請先用下方「AI 生成 KOL 角色」建立同名角色,再回來綁定。`, 'error');
-    return;
+    try {
+      toast(`正在幫「${persona}」補建 KOL 角色…`, 'info');
+      const cr = await gasPost('saveKolPersona', {
+        data: {
+          persona_name: persona,
+          brand_id: S.currentBrandId,
+          persona_type: 'independent',
+        },
+      });
+      if (!cr || !cr.ok) throw new Error((cr && cr.error) || '建立角色失敗');
+      await loadPersonas(S.currentBrandId, true);          // 強制重抓,略過快取
+      personaData = S.personas.find(x => x.persona_name === persona);
+      if (!personaData) throw new Error('角色已建立,但讀不回來,請按「全部重新整理」再試一次');
+      toast(`✅ 已建立角色「${persona}」`, 'success');
+    } catch (e) {
+      toast('補建角色失敗:' + e.message, 'error');
+      return;
+    }
   }
 
   // 🩹 2026-08-11:改成鎖「這位角色自己那顆鈕」,不再動全站橫幅那顆
