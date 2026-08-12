@@ -1353,6 +1353,169 @@ async function renderAdCanvasWithPR() {
   }
 
   drawOverlay(ctx, title, getAccentColor());
+
+  // 🏷 2026-08-11:AI 絕不畫 logo,由我們自己把「真的 logo 檔」疊上去(像素級精準)
+  await compositeBrandLogo(ctx);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   🏷 品牌 Logo 疊圖 · v1(2026-08-11)
+   為什麼不讓 AI 畫:AI 是「重新想像」不是「複製貼上」,logo 的字會歪、
+   比例會跑、圓標會變形。這不是調 prompt 能解決的,是模型本質。
+   所以:AI 只生沒有任何品牌標示的乾淨廣告圖,logo 由畫布疊上去。
+
+   自動判斷完全是數學,不是 AI,同一張圖跑一百次結果一樣:
+     ① 量四個角落各自的「平均亮度」與「亮度變化幅度」
+     ② 變化幅度小 = 那裡是乾淨背景(沒有商品、沒有雜訊)→ 優先選它
+     ③ 亮度亮 → 用黑 logo;亮度暗 → 用白 logo
+     ④ 四個角都很花 → 在 logo 後面墊一層很淡的柔光底,保證看得見
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const LOGO_SIZES  = { small: 0.10, normal: 0.14, large: 0.18 };  // 佔畫面寬度
+const LOGO_MARGIN = 0.045;                                        // 離邊比例
+
+// Logo 來源解析,支援三種放法(之後 Drive「🏷 LOGO」→ R2 管線接好會自動填 window.BRAND_LOGOS):
+//   A. { white, black } —— 兩個版本,最準,設計師調過的版本原樣使用
+//   B. { mono }         —— 只給一個「單色去背 PNG」,程式自己轉黑/白(多數品牌用這個就夠)
+//   C. { color }        —— 彩色 logo 原檔,原樣貼上不變色,必要時自動加柔光底保證看得見
+// 先測可以用 localStorage 手動指定:
+//   localStorage.setItem('bs_logo_ww', JSON.stringify({ mono: 'https://…/logo.png' }))
+function getBrandLogoUrls(brandId) {
+  brandId = brandId || window.S?.brandId || '';
+  if (!brandId) return null;
+  const _ok = function (j) { return j && (j.white || j.black || j.mono || j.color); };
+  try {
+    const ls = localStorage.getItem('bs_logo_' + brandId);
+    if (ls) { const j = JSON.parse(ls); if (_ok(j)) return j; }
+  } catch (e) {}
+  const reg = (window.BRAND_LOGOS || {})[brandId];
+  if (_ok(reg)) return reg;
+  const brand = (window.BRANDS || []).find(function (b) { return b.id === brandId; });
+  if (brand && _ok({ white: brand.logoWhite, black: brand.logoBlack, mono: brand.logoMono, color: brand.logoColor })) {
+    return { white: brand.logoWhite, black: brand.logoBlack, mono: brand.logoMono, color: brand.logoColor };
+  }
+  return null;
+}
+
+// 🎨 把「去背 PNG 的形狀」重新填成指定顏色。
+//   原理:透明 PNG 的形狀資訊藏在 alpha 通道裡。先把圖畫進離螢幕畫布,
+//   再用 source-in 疊一層純色 —— 只有「原本不透明的地方」會被上色,形狀完全保留。
+//   所以客戶只要給一個單色去背檔,白底就填黑、暗底就填白,不用準備兩個版本。
+function _recolorLogo(img, cssColor) {
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth || img.width;
+  c.height = img.naturalHeight || img.height;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = cssColor;
+  g.fillRect(0, 0, c.width, c.height);
+  return c;   // canvas 可以直接當 drawImage 的來源
+}
+
+// 量一塊區域的「平均亮度」與「亮度變化幅度(標準差)」
+function _measureRegion(ctx, x, y, w, h) {
+  const d = ctx.getImageData(Math.max(0, x | 0), Math.max(0, y | 0), Math.max(1, w | 0), Math.max(1, h | 0)).data;
+  let sum = 0, sumSq = 0, n = 0;
+  // 每 4 個像素取一個就夠準,省效能
+  for (let i = 0; i < d.length; i += 16) {
+    const lum = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+    sum += lum; sumSq += lum * lum; n++;
+  }
+  if (!n) return { mean: 128, sd: 999 };
+  const mean = sum / n;
+  return { mean: mean, sd: Math.sqrt(Math.max(0, sumSq / n - mean * mean)) };
+}
+
+// 四個角落挑一個最乾淨的
+function pickLogoSpot(ctx, boxW, boxH, margin) {
+  const W = AM.w, H = AM.h;
+  const spots = [
+    { key: 'br', x: W - margin - boxW, y: H - margin - boxH },
+    { key: 'bl', x: margin,            y: H - margin - boxH },
+    { key: 'tr', x: W - margin - boxW, y: margin },
+    { key: 'tl', x: margin,            y: margin },
+  ];
+  let best = null;
+  for (const sp of spots) {
+    let m;
+    try { m = _measureRegion(ctx, sp.x, sp.y, boxW, boxH); }
+    catch (e) { return { x: spots[0].x, y: spots[0].y, useWhite: true, scrim: true, why: 'canvas 被跨網域污染,量不到 → 用預設右下+白 logo+柔光底' }; }
+    // sd 越小越乾淨。右下是廣告慣例,給它一點優先權(sd 打 9 折)
+    const score = m.sd * (sp.key === 'br' ? 0.9 : 1);
+    if (!best || score < best.score) best = { x: sp.x, y: sp.y, key: sp.key, mean: m.mean, sd: m.sd, score: score };
+  }
+  return {
+    x: best.x, y: best.y, key: best.key,
+    useWhite: best.mean < 140,      // 背景偏暗 → 白 logo;偏亮 → 黑 logo
+    scrim: best.sd > 34,            // 那塊區域太花 → 墊一層柔光底
+    why: best.key + ' · 亮度 ' + best.mean.toFixed(0) + ' · 雜亂度 ' + best.sd.toFixed(0),
+  };
+}
+
+async function compositeBrandLogo(ctx) {
+  try {
+    // 品牌署名關掉 → 什麼都不放
+    if (document.getElementById('showBrandMark')?.checked === false) return;
+    const urls = getBrandLogoUrls();
+    if (!urls) return;                      // 這個品牌還沒放 logo → 安靜跳過,不影響生圖
+
+    const sizeKey = document.getElementById('logoSize')?.value || 'normal';
+    const boxW    = Math.round(AM.w * (LOGO_SIZES[sizeKey] || LOGO_SIZES.normal));
+    const margin  = Math.round(AM.w * LOGO_MARGIN);
+
+    // 先用「方形」估一塊區域來量,實際高度等圖載入後再算
+    const spot = pickLogoSpot(ctx, boxW, boxW, margin);
+
+    // 模式判斷:兩版 > 單色自動轉色 > 彩色原檔
+    const hasPair = !!(urls.white && urls.black);
+    let src, mode;
+    if (hasPair)          { src = spot.useWhite ? urls.white : urls.black; mode = 'pair'; }
+    else if (urls.mono)   { src = urls.mono;  mode = 'mono';  }
+    else if (urls.color)  { src = urls.color; mode = 'color'; }
+    else                  { src = urls.white || urls.black; mode = 'mono'; }  // 只給一個 → 當單色處理
+    if (!src) return;
+
+    const img = await new Promise(function (res, rej) {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';         // 疊完還要能下載,不能污染畫布
+      im.onload = function () { res(im); };
+      im.onerror = function () { rej(new Error('logo 載入失敗')); };
+      im.src = src;
+    });
+
+    const ratio = (img.naturalHeight || 1) / (img.naturalWidth || 1);
+    const boxH  = Math.round(boxW * ratio);
+    // 高度算出來後,把 y 座標依上/下重新對齊
+    const y = (spot.key === 'tl' || spot.key === 'tr') ? margin : (AM.h - margin - boxH);
+
+    // 單色模式 → 依背景明暗把形狀填成白或黑;彩色模式 → 原樣貼,但保險起見一律加柔光底
+    const paintSrc = (mode === 'mono')
+      ? _recolorLogo(img, spot.useWhite ? '#ffffff' : '#111111')
+      : img;
+    const needScrim = spot.scrim || (mode === 'color');
+
+    if (needScrim) {
+      // 那塊區域太花 → 墊一層很淡的柔光底(白 logo 墊暗底、黑 logo 墊亮底)
+      const pad = Math.round(boxW * 0.16);
+      const g = ctx.createRadialGradient(
+        spot.x + boxW / 2, y + boxH / 2, Math.min(boxW, boxH) * 0.2,
+        spot.x + boxW / 2, y + boxH / 2, Math.max(boxW, boxH) * 0.85 + pad);
+      const base = spot.useWhite ? '0,0,0' : '255,255,255';
+      g.addColorStop(0, 'rgba(' + base + ',0.34)');
+      g.addColorStop(1, 'rgba(' + base + ',0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(spot.x - pad, y - pad, boxW + pad * 2, boxH + pad * 2);
+    }
+
+    ctx.globalAlpha = 0.92;                 // 稍微透一點,不會像貼紙硬蓋上去
+    ctx.drawImage(paintSrc, spot.x, y, boxW, boxH);
+    ctx.globalAlpha = 1;
+    const _modeTxt = { pair: '兩版擇一', mono: '單色自動轉' + (spot.useWhite ? '白' : '黑'), color: '彩色原檔' }[mode];
+    console.log('[logo] ' + _modeTxt + ' · ' + spot.why + (needScrim ? ' · 已加柔光底' : ''));
+  } catch (e) {
+    console.warn('[logo] 疊圖略過(不影響廣告圖):', e.message);
+  }
 }
 
 function getAccentColor() {
