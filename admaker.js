@@ -1431,14 +1431,82 @@ async function loadBrandLogos(brandId, force) {
   return _logoFetching[brandId];
 }
 
+// ✂️ 2026-08-11:自動裁掉 logo 四周的透明空白。
+//   為什麼要做:客戶匯出的 logo 常常是 1200×400 的大畫布、logo 只佔左邊一小塊,
+//   其餘全透明。若照整張圖的比例縮放,疊上去會變超小又偏一邊 ——
+//   而且這種事沒辦法叫客戶自己處理(他們只會覺得「我明明有丟啊」)。
+//   裁掉之後,不管來源是長條、正方、直式,疊出來的視覺大小都一致。
+//   ⚠️ 門檻設 alpha > 8:陰影、柔邊這些半透明像素算「有內容」,會一起保留,
+//      不會把設計師刻意做的陰影裁掉。
+function _trimTransparent(img) {
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  if (!w || !h) return null;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0);
+  let d;
+  try { d = g.getImageData(0, 0, w, h).data; } catch (e) { return null; }
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (d[(y * w + x) * 4 + 3] > 8) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return null;                       // 整張全透明 → 不裁
+  const tw = maxX - minX + 1, th = maxY - minY + 1;
+  if (tw >= w * 0.98 && th >= h * 0.98) return null;   // 本來就沒空白 → 不用裁
+  const out = document.createElement('canvas');
+  out.width = tw; out.height = th;
+  out.getContext('2d').drawImage(c, minX, minY, tw, th, 0, 0, tw, th);
+  console.log('[logo] 自動裁掉透明邊:' + w + '×' + h + ' → ' + tw + '×' + th);
+  return out;
+}
+
+// 🔍 2026-08-11:自動判斷這個 logo 是「單色」還是「彩色」。
+//   為什麼要自動:客戶只會聽懂「丟一個去背 PNG 進去」,不可能要求他們
+//   準備白版黑版、或在檔名寫 color。所以顏色判斷不能靠檔名,要程式自己看。
+//   做法:縮到 64px 取樣,只看不透明的像素,算每個像素的「彩度」(RGB 最大減最小)。
+//     ・九成以上像素彩度很低 → 單色 logo → 可以安全地重新上色(白底填黑、暗底填白)
+//     ・否則 → 彩色 logo(例如綠底白字的圓標)→ 原樣貼上,重新上色會毀了設計
+function _isMonochromeLogo(img) {
+  try {
+    const N = 64;
+    const c = document.createElement('canvas');
+    c.width = N; c.height = N;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, N, N);
+    const d = g.getImageData(0, 0, N, N).data;
+    let opaque = 0, lowSat = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 128) continue;                 // 透明處不算
+      opaque++;
+      const mx = Math.max(d[i], d[i + 1], d[i + 2]);
+      const mn = Math.min(d[i], d[i + 1], d[i + 2]);
+      if (mx - mn < 40) lowSat++;                   // 彩度低 = 接近黑白灰
+    }
+    if (opaque < 20) return true;                   // 幾乎全透明 → 當單色處理最安全
+    const ratio = lowSat / opaque;
+    console.log('[logo] 單色偵測:不透明像素 ' + opaque + ' · 低彩度佔比 ' + (ratio * 100).toFixed(0) + '%');
+    return ratio >= 0.9;
+  } catch (e) {
+    return false;   // 量不到 → 保守當彩色,原樣貼上(不會毀掉設計)
+  }
+}
+
 // 🎨 把「去背 PNG 的形狀」重新填成指定顏色。
 //   原理:透明 PNG 的形狀資訊藏在 alpha 通道裡。先把圖畫進離螢幕畫布,
 //   再用 source-in 疊一層純色 —— 只有「原本不透明的地方」會被上色,形狀完全保留。
 //   所以客戶只要給一個單色去背檔,白底就填黑、暗底就填白,不用準備兩個版本。
 function _recolorLogo(img, cssColor) {
   const c = document.createElement('canvas');
-  c.width = img.naturalWidth || img.width;
-  c.height = img.naturalHeight || img.height;
+  c.width = img.width || img.naturalWidth;         // 支援 Image 與 canvas 兩種來源
+  c.height = img.height || img.naturalHeight;
   const g = c.getContext('2d');
   g.drawImage(img, 0, 0);
   g.globalCompositeOperation = 'source-in';
@@ -1502,13 +1570,10 @@ async function compositeBrandLogo(ctx) {
     // 先用「方形」估一塊區域來量,實際高度等圖載入後再算
     const spot = pickLogoSpot(ctx, boxW, boxW, margin);
 
-    // 模式判斷:兩版 > 單色自動轉色 > 彩色原檔
+    // 來源:有分白/黑兩版就照背景挑;否則就用那唯一一個檔(客戶通常只丟一個)
     const hasPair = !!(urls.white && urls.black);
-    let src, mode;
-    if (hasPair)          { src = spot.useWhite ? urls.white : urls.black; mode = 'pair'; }
-    else if (urls.mono)   { src = urls.mono;  mode = 'mono';  }
-    else if (urls.color)  { src = urls.color; mode = 'color'; }
-    else                  { src = urls.white || urls.black; mode = 'mono'; }  // 只給一個 → 當單色處理
+    const src = hasPair ? (spot.useWhite ? urls.white : urls.black)
+                        : (urls.mono || urls.color || urls.white || urls.black);
     if (!src) return;
 
     const img = await new Promise(function (res, rej) {
@@ -1519,15 +1584,22 @@ async function compositeBrandLogo(ctx) {
       im.src = src;
     });
 
-    const ratio = (img.naturalHeight || 1) / (img.naturalWidth || 1);
+    // ✂️ 先裁掉透明邊,之後的比例、單色偵測、繪製都用裁過的版本
+    const trimmed = _trimTransparent(img) || img;
+    const tW = trimmed.width || trimmed.naturalWidth || 1;
+    const tH = trimmed.height || trimmed.naturalHeight || 1;
+    const ratio = tH / tW;
     const boxH  = Math.round(boxW * ratio);
     // 高度算出來後,把 y 座標依上/下重新對齊
     const y = (spot.key === 'tl' || spot.key === 'tr') ? margin : (AM.h - margin - boxH);
 
-    // 單色模式 → 依背景明暗把形狀填成白或黑;彩色模式 → 原樣貼,但保險起見一律加柔光底
+    // 🔍 模式改成「看圖說話」,不看檔名:
+    //   兩版都給 → 直接用設計師調好的版本,不動它
+    //   只給一個 → 程式自己判斷單色還是彩色,再決定要不要重新上色
+    const mode = hasPair ? 'pair' : (_isMonochromeLogo(trimmed) ? 'mono' : 'color');
     const paintSrc = (mode === 'mono')
-      ? _recolorLogo(img, spot.useWhite ? '#ffffff' : '#111111')
-      : img;
+      ? _recolorLogo(trimmed, spot.useWhite ? '#ffffff' : '#111111')
+      : trimmed;
     const needScrim = spot.scrim || (mode === 'color');
 
     if (needScrim) {
@@ -1546,7 +1618,7 @@ async function compositeBrandLogo(ctx) {
     ctx.globalAlpha = 0.92;                 // 稍微透一點,不會像貼紙硬蓋上去
     ctx.drawImage(paintSrc, spot.x, y, boxW, boxH);
     ctx.globalAlpha = 1;
-    const _modeTxt = { pair: '兩版擇一', mono: '單色自動轉' + (spot.useWhite ? '白' : '黑'), color: '彩色原檔' }[mode];
+    const _modeTxt = { pair: '兩版擇一', mono: '單色 → 自動轉' + (spot.useWhite ? '白' : '黑'), color: '彩色 → 原樣貼上' }[mode];
     console.log('[logo] ' + _modeTxt + ' · ' + spot.why + (needScrim ? ' · 已加柔光底' : ''));
   } catch (e) {
     console.warn('[logo] 疊圖略過(不影響廣告圖):', e.message);
