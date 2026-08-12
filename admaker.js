@@ -2203,6 +2203,11 @@ async function renderGptPosterCanvas() {
   const w = img.width * scale;
   const h = img.height * scale;
   ctx.drawImage(img, Math.round((AM.w - w) / 2), Math.round((AM.h - h) / 2), w, h);
+
+  // 🏷 2026-08-11:懶人廣告圖走的是這條路,不是 renderAdCanvasWithPR。
+  //   第一次接 logo 時掛錯地方 → 圖生出來了、Console 卻連一行 [logo] 都沒有。
+  //   兩條渲染路徑都要掛,不然換個入口就失效。
+  await compositeBrandLogo(ctx);
 }
 
 async function posterToVideo() {
