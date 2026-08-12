@@ -1397,6 +1397,31 @@ function getBrandLogoUrls(brandId) {
   return null;
 }
 
+// 🏷 v4.11:向 Worker 要這個品牌的 logo(Drive「🏷 LOGO」→ R2),抓過就記在記憶體。
+//   安靜失敗:抓不到就當作沒有 logo,絕不影響生圖。
+window.BRAND_LOGOS = window.BRAND_LOGOS || {};
+const _logoFetching = {};
+async function loadBrandLogos(brandId, force) {
+  brandId = brandId || window.S?.brandId || '';
+  if (!brandId) return null;
+  if (!force && window.BRAND_LOGOS[brandId] !== undefined) return window.BRAND_LOGOS[brandId];
+  if (_logoFetching[brandId]) return _logoFetching[brandId];
+  _logoFetching[brandId] = (async function () {
+    try {
+      const r = await callWorker({ action: 'brand_logo', brandId: brandId, force: !!force });
+      window.BRAND_LOGOS[brandId] = (r && r.ok && r.logos) ? r.logos : null;
+      if (r && r.folderUrl) window.BRAND_LOGO_FOLDER = r.folderUrl;
+      console.log('[logo] 品牌 ' + brandId + ' → ' + (window.BRAND_LOGOS[brandId] ? Object.keys(window.BRAND_LOGOS[brandId]).join('/') : '尚未放 logo'));
+    } catch (e) {
+      window.BRAND_LOGOS[brandId] = null;
+      console.warn('[logo] 讀取失敗(不影響生圖):', e.message);
+    }
+    delete _logoFetching[brandId];
+    return window.BRAND_LOGOS[brandId];
+  })();
+  return _logoFetching[brandId];
+}
+
 // 🎨 把「去背 PNG 的形狀」重新填成指定顏色。
 //   原理:透明 PNG 的形狀資訊藏在 alpha 通道裡。先把圖畫進離螢幕畫布,
 //   再用 source-in 疊一層純色 —— 只有「原本不透明的地方」會被上色,形狀完全保留。
@@ -1457,6 +1482,7 @@ async function compositeBrandLogo(ctx) {
   try {
     // 品牌署名關掉 → 什麼都不放
     if (document.getElementById('showBrandMark')?.checked === false) return;
+    await loadBrandLogos();                 // 🏷 v4.11:第一次用到才去抓,抓過就快取
     const urls = getBrandLogoUrls();
     if (!urls) return;                      // 這個品牌還沒放 logo → 安靜跳過,不影響生圖
 
