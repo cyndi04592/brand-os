@@ -1564,8 +1564,10 @@ async function compositeBrandLogo(ctx) {
     if (!urls) return;                      // 這個品牌還沒放 logo → 安靜跳過,不影響生圖
 
     const sizeKey = document.getElementById('logoSize')?.value || 'normal';
-    const boxW    = Math.round(AM.w * (LOGO_SIZES[sizeKey] || LOGO_SIZES.normal));
+    const basePct = LOGO_SIZES[sizeKey] || LOGO_SIZES.normal;
     const margin  = Math.round(AM.w * LOGO_MARGIN);
+    // boxW 先用基礎百分比;真正的寬度會在裁圖後依長寬比補償(見下方 _boxW)
+    const boxW    = Math.round(AM.w * basePct);
 
     // 先用「方形」估一塊區域來量,實際高度等圖載入後再算
     const spot = pickLogoSpot(ctx, boxW, boxW, margin);
@@ -1589,7 +1591,19 @@ async function compositeBrandLogo(ctx) {
     const tW = trimmed.width || trimmed.naturalWidth || 1;
     const tH = trimmed.height || trimmed.naturalHeight || 1;
     const ratio = tH / tW;
-    const boxH  = Math.round(boxW * ratio);
+
+    // 🩹 2026-08-11 寬形 logo 顯小修正(RA 實測 332×123 的巧福 logo):
+    //   原本是「寬度 = 畫面 14%」。正方形 logo 這樣剛好,但扁長的 logo
+    //   寬 151px、高只有 56px,視覺上小一號。
+    //   改成用「幾何平均」當基準:讓 √(寬×高) 等於目標尺寸,
+    //   等於用「面積感」而不是「寬度」來衡量 —— 扁的自動放寬、瘦高的自動收窄,
+    //   不同形狀的 logo 疊出來視覺份量才一致。
+    //   上限鎖 34% 畫面寬,避免極端扁長的 logo 橫貫整張圖。
+    const _boxW = Math.min(
+      Math.round(AM.w * 0.34),
+      Math.round(AM.w * basePct / Math.sqrt(Math.max(0.05, ratio)))
+    );
+    const boxH  = Math.round(_boxW * ratio);
     // 高度算出來後,把 y 座標依上/下重新對齊
     const y = (spot.key === 'tl' || spot.key === 'tr') ? margin : (AM.h - margin - boxH);
 
@@ -1604,22 +1618,26 @@ async function compositeBrandLogo(ctx) {
 
     if (needScrim) {
       // 那塊區域太花 → 墊一層很淡的柔光底(白 logo 墊暗底、黑 logo 墊亮底)
-      const pad = Math.round(boxW * 0.16);
+      const pad = Math.round(_boxW * 0.16);
+      const _gx = ((spot.key === 'tr' || spot.key === 'br') ? (AM.w - margin - _boxW) : margin) + _boxW / 2;
       const g = ctx.createRadialGradient(
-        spot.x + boxW / 2, y + boxH / 2, Math.min(boxW, boxH) * 0.2,
-        spot.x + boxW / 2, y + boxH / 2, Math.max(boxW, boxH) * 0.85 + pad);
+        _gx, y + boxH / 2, Math.min(_boxW, boxH) * 0.2,
+        _gx, y + boxH / 2, Math.max(_boxW, boxH) * 0.85 + pad);
       const base = spot.useWhite ? '0,0,0' : '255,255,255';
       g.addColorStop(0, 'rgba(' + base + ',0.34)');
       g.addColorStop(1, 'rgba(' + base + ',0)');
       ctx.fillStyle = g;
-      ctx.fillRect(spot.x - pad, y - pad, boxW + pad * 2, boxH + pad * 2);
+      const _sx = (spot.key === 'tr' || spot.key === 'br') ? (AM.w - margin - _boxW) : margin;
+      ctx.fillRect(_sx - pad, y - pad, _boxW + pad * 2, boxH + pad * 2);
     }
 
     ctx.globalAlpha = 0.92;                 // 稍微透一點,不會像貼紙硬蓋上去
-    ctx.drawImage(paintSrc, spot.x, y, boxW, boxH);
+    // 角落是用 boxW(方形估算)量的;實際寬度變成 _boxW,所以右側/下側要重新對齊邊界
+    const _x = (spot.key === 'tr' || spot.key === 'br') ? (AM.w - margin - _boxW) : margin;
+    ctx.drawImage(paintSrc, _x, y, _boxW, boxH);
     ctx.globalAlpha = 1;
     const _modeTxt = { pair: '兩版擇一', mono: '單色 → 自動轉' + (spot.useWhite ? '白' : '黑'), color: '彩色 → 原樣貼上' }[mode];
-    console.log('[logo] ' + _modeTxt + ' · ' + spot.why + (needScrim ? ' · 已加柔光底' : ''));
+    console.log('[logo] ' + _modeTxt + ' · ' + spot.why + ' · 尺寸 ' + _boxW + '×' + boxH + (needScrim ? ' · 已加柔光底' : ''));
   } catch (e) {
     console.warn('[logo] 疊圖略過(不影響廣告圖):', e.message);
   }
@@ -1955,7 +1973,8 @@ function buildPosterPrompt() {
     const _pal = _PALETTES[Math.floor(Math.random() * _PALETTES.length)];
     prompt += `=== COLOUR DIRECTION (this OVERRIDES every colour implied above) ===\n`;
     prompt += `Build this image around the following colour palette: ${_pal}.\n`;
-    prompt += `Apply it to the background, the surfaces, the props, the lighting temperature and any graphic elements. This palette is the primary colour decision for this render and takes priority over any colour suggested by the brand mood, scene or photography-style descriptions above — treat those as describing atmosphere and setting only.\n`;
+    prompt += `Apply it to EVERYTHING you control: the background, the surfaces, the props, the lighting temperature, any graphic elements, and — importantly — the colour of ALL typography (headline, subheadline, any caption or label). The headline and subheadline must be coloured from this palette, NOT from the brand's usual colours.\n`;
+    prompt += `This palette is the primary colour decision for this render and takes priority over any colour suggested by the brand mood, scene or photography-style descriptions above — treat those as describing atmosphere and setting only.\n`;
     prompt += `The product itself keeps its own real colours exactly. Everything else from the brand DNA still applies — photography style, mood, decorative language and the AVOID list.\n\n`;
   }
   // ⚠️ 一律送出禁令 —— 不論品牌署名開關的狀態。開關只決定「我們要不要疊真 logo」,
