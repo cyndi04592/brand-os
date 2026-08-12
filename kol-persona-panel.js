@@ -545,7 +545,9 @@ function buildFormHTML() {
 // ─── 載入資料 ──────────────────────────────────────────────
 async function loadBrands() {
   try {
-    const res = await gasGet('getBrandOS');
+    // ⚠️ getBrandOS 一定要帶 email —— 後端靠它做品牌隔離(沒帶 = 回空清單,
+    //   而且 ok:true 不報錯)。這支原本沒帶,品牌下拉本來就會是空的。
+    const res = await gasGet('getBrandOS', { email: localStorage.getItem('bs_sso_email') || '' });
     if (!res.ok) throw new Error(res.error || '品牌載入失敗');
     State.brands = res.data?.brands || [];
     renderBrandSelect();
@@ -920,13 +922,52 @@ function getCurrentPersonaName() {
 }
 
 // ─── API 呼叫 ──────────────────────────────────────────────
+//  🚚 2026-08-13:讀寫都改走 Worker(照抄 kol.html 的兩張白名單寫法)
+//
+//  為什麼一定要搬:kol.html 早在 2026-08-04 / 08-05 就把這四支動作切到
+//    Worker(D1 是正本),但這支面板漏接、一直還在直撥 GAS ——
+//    同一份人設有兩條路可以寫。從這裡改人設會寫進 GAS Sheets,
+//    kol.html 卻是讀 D1,客戶端看到的是舊資料,而且【不會報錯】。
+//    這種靜默不一致比 404 難查太多。
+//
+//  ⚠️ 讀取走 gas_cached(Worker → D1_READERS),寫入走 gas_write
+//     (Worker → D1_WRITERS,寫 D1 正本後背景補寫 GAS 當備份)。
+//  ⚠️ Worker 連不上 → 自動落回原本的 GAS 路徑,面板不會整片開天窗。
+//  ⚠️ 寫入類永遠不准進 GAS_CACHED_READS(會造成重複建立)。
+// ═══════════════════════════════════════════════════════════════
+const GAS_CACHED_READS = {
+  getBrandOS: 1, getKolPersonas: 1,
+};
+const WRITE_VIA_WORKER = {
+  saveKolPersona: 1, deleteKolPersona: 1,
+};
+
 async function gasGet(action, params = {}) {
+  if (GAS_CACHED_READS[action]) {
+    try {
+      const r = await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'gas_cached', password: PASSWORD, gasAction: action, gasParams: params }),
+      });
+      const out = await r.json();
+      if (out && out.ok !== false) return out;   // fresh / miss / stale 都是可用資料
+    } catch (_) { /* Worker 連不上 → 落回原路 */ }
+  }
   const qs = new URLSearchParams({ action, password: PASSWORD, ...params }).toString();
   const resp = await fetch(`${GAS_URL}?${qs}`, { method: 'GET' });
   return resp.json();
 }
 
 async function gasPost(action, extra = {}) {
+  if (WRITE_VIA_WORKER[action]) {
+    const r = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'gas_write', password: PASSWORD, gasAction: action, payload: extra }),
+    });
+    return r.json();
+  }
   const resp = await fetch(GAS_URL, {
     method: 'POST',
     body: JSON.stringify({ action, password: PASSWORD, ...extra }),
