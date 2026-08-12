@@ -1408,7 +1408,16 @@ async function loadBrandLogos(brandId, force) {
   if (_logoFetching[brandId]) return _logoFetching[brandId];
   _logoFetching[brandId] = (async function () {
     try {
-      const r = await callWorker({ action: 'brand_logo', brandId: brandId, force: !!force });
+      // ⚠️ 這裡不能用 callWorker —— 它打的是 CF_WORKER_URL(photoroom-proxy,廣告圖那台)。
+      //   brand_logo 住在 kol-proxy(素材/Drive/R2 那台),要打 KOL_WORKER_URL。
+      //   2026-08-11 踩過:整批品牌回「未知的 action: brand_logo」就是打錯台。
+      const _wurl = (typeof KOL_WORKER_URL !== 'undefined' && KOL_WORKER_URL)
+        ? KOL_WORKER_URL : 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+      const r = await (await fetch(_wurl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'brand_logo', password: GAS_PASSWORD, brandId: brandId, force: !!force })
+      })).json();
       window.BRAND_LOGOS[brandId] = (r && r.ok && r.logos) ? r.logos : null;
       if (r && r.folderUrl) window.BRAND_LOGO_FOLDER = r.folderUrl;
       console.log('[logo] 品牌 ' + brandId + ' → ' + (window.BRAND_LOGOS[brandId] ? Object.keys(window.BRAND_LOGOS[brandId]).join('/') : '尚未放 logo'));
