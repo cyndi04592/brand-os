@@ -2081,6 +2081,18 @@ function buildPosterPrompt() {
     if (headline) prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
     if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
     if (ctx.brand) prompt += `- Brand signature (small, at corner or footer): "${ctx.brand}"\n`;
+    // 🩹 2026-08-12 數字/價格排版規範:
+    //   病灶:整段 TEXT TO RENDER 只交代「繁體中文要漂亮」,對阿拉伯數字一個字都沒說 →
+    //     中文標題走 DNA 的毛筆/明朝體規範,數字則由模型隨手抓一個西文襯線體塞進去,
+    //     兩種字族硬湊在一起(例:濃墨毛筆「年節大禮包」配細襯線「1990」)。
+    //   寫法照 RA 的原則:給模型算得出來的正面規則(同字族/同字重/同基線/倍數上限),
+    //     不寫「數字不要醜」這種它算不出來的否定句。
+    prompt += `NUMERAL & PRICE TYPOGRAPHY (applies to any digits, prices, percentages or dates in the text above):\n`;
+    prompt += `- Set numerals in the SAME type family and the SAME weight as the Chinese headline they belong to: if the headline is brush-calligraphic or Mincho/Serif, use a heavy serif numeral whose stroke contrast matches it; if the headline is bold Sans, use a matching bold Sans numeral.\n`;
+    prompt += `- Treat a price and its Chinese qualifier as ONE typographic unit (e.g. the qualifier and the number together): shared baseline, consistent letter-spacing, and a size ratio no greater than 1.4x between them.\n`;
+    prompt += `- Set qualifier words and currency marks (最低 / 起 / NT$ / %) smaller, and optically align them to the cap-height of the numerals.\n`;
+    prompt += `- Give numerals the same colour and material finish as the headline (gold-foil headline means gold-foil numerals), so they read as one designed system.\n`;
+    prompt += `- Reserve clean quiet space around the price so it reads instantly at thumbnail size.\n`;
     prompt += `Typography must be crisp, readable, and integrated naturally into the layout.\n\n`;
   } else {
     // 🩹 2026-08-11 純素材模式(CLEAN PLATE):主標與副標都留空 = 客戶有美編,要自己上字。
