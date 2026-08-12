@@ -146,6 +146,28 @@
     }).then(r => r.json());
   }
 
+  // ★ B1 · 2026-08-13:讀取也改走 Worker(gas_cached → D1_READERS)。
+  //   為什麼:待付款狀態的正本早就在 D1(Worker 有 _d1PendingPayment),
+  //   這裡卻還在讀 GAS Sheets —— 客戶用綠界付完款、D1 已清掉待付款,
+  //   GAS 那張舊表卻還留著,於是方案頁繼續掛「你有一筆待付款」的橫幅。
+  //   Worker 對 getPendingPayment 只快取 5 秒,即時性足夠。
+  //   ⚠️ Worker 連不上時自動落回原本的 GAS 路徑,不會讓頁面開天窗。
+  function _wRead(gasAction, params) {
+    return fetch(KOL_WORKER_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'gas_cached', password: GAS_PASSWORD, gasAction, gasParams: params || {} })
+    })
+      .then(r => r.json())
+      .then(out => {
+        if (out && out.ok === false) throw new Error(out.error || 'worker_fail');
+        return out;
+      })
+      .catch(() => {
+        const qs = new URLSearchParams(Object.assign({ action: gasAction, password: GAS_PASSWORD }, params || {})).toString();
+        return fetch(GAS_URL + '?' + qs).then(r => r.json());
+      });
+  }
+
   function buyPlanEcpay(k) {
     const email = localStorage.getItem('bs_sso_email') || '';
     if (!email) { alert('請先登入再購買'); return; }
@@ -259,8 +281,7 @@
     renderPage();                 // 🆕 先立刻畫:方案卡片資料全在本地,不必等 GAS → 秒出內容
     if (!email) return;
     // 背景查待付款,有才補橫幅+預選(不擋畫面)
-    fetch(`${GAS_URL}?action=getPendingPayment&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`)
-      .then(r => r.json())
+    _wRead('getPendingPayment', { email })
       .then(j => {
         if (j && j.ok && j.pending && j.desiredPlan) {
           _pendingPlan = j.desiredPlan;
