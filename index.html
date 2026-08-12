@@ -691,6 +691,22 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
             </span>
           </label>
 
+          <!-- 🏷 2026-08-11 Logo 大小:AI 不畫 logo,由系統把真檔案疊上去,所以尺寸能精準控制。
+               只給三檔 —— 無段調整只會讓客戶選到不好看的比例。 -->
+          <div id="logoSizeRow" style="margin-top:8px;padding:9px 11px;border-radius:9px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:10px;color:var(--t2);font-weight:700;white-space:nowrap;">Logo 大小</span>
+              <select id="logoSize" style="flex:1;padding:6px 8px;border-radius:6px;background:var(--bg4);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:'Noto Sans TC';font-size:10.5px;">
+                <option value="small">小 · 佔畫面 10%</option>
+                <option value="normal" selected>標準 · 佔畫面 14%(建議)</option>
+                <option value="large">大 · 佔畫面 18%</option>
+              </select>
+            </div>
+            <div style="font-size:9px;color:var(--t3);line-height:1.7;margin-top:6px;">
+              系統會自動量四個角落,挑<b>最乾淨的位置</b>,並依背景明暗自動選<b>白色或黑色 logo</b>。純計算,不是 AI 判斷,不會每次都不一樣。
+            </div>
+          </div>
+
           <div style="font-size:9px;color:var(--t3);line-height:1.75;padding:7px 9px;background:rgba(124,109,250,0.05);border-radius:7px;border:1px solid rgba(124,109,250,0.18);margin-top:7px;">
             <b style="color:#C9B8E8;">v10.2 品牌包系統</b><br>
             · <b>左側選品牌</b>會自動套對應 DNA<br>
