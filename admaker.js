@@ -1921,7 +1921,14 @@ function buildPosterPrompt() {
   prompt += `=== BRAND STYLE PACK (AMBIENCE ONLY — does NOT define product look) ===\n`;
   prompt += _dna + '\n';
   if (!_lockColor) {
-    prompt += `COLOR FREEDOM (brand colour lock is OFF): do not restrict yourself to the brand's usual colour palette. Choose a fresh, well-considered colour scheme that suits the selected design style, the context/season and the product's own packaging colours. Keep everything else from the brand DNA — typography habits, photography style, mood, decorative language, composition habits and the AVOID list — only the colour palette is free.\n`;
+    // 🩹 2026-08-11 加強:光是「不限制品牌色」不夠 —— DNA 裡的 mood / scenes /
+    //   photography style 本身就在暗示顏色(例如「昭和台灣懷舊」「暖色自然日光」
+    //   必然導向米色暖調),模型照著那些線索又走回同一片顏色。
+    //   所以要明講:上面那些只描述「氛圍與場地」,不是配色指定,而且要「刻意選不一樣的」。
+    prompt += `=== COLOUR FREEDOM (this OVERRIDES every colour hint above) ===\n`;
+    prompt += `The brand's fixed palette has been deliberately removed for this render. Actively choose a FRESH colour scheme that is clearly different from what this brand normally uses.\n`;
+    prompt += `Important: the mood, scene and photography-style lines above describe atmosphere and setting ONLY — do NOT read them as colour instructions, and do not default to the colour family they imply. Treat colour as a free creative decision driven by the selected design style, the season/context, and the product's own packaging colours.\n`;
+    prompt += `Everything else from the brand DNA still applies — typography habits, photography style, mood, decorative language and the AVOID list. Only the colour palette is free.\n\n`;
   }
   // ⚠️ 一律送出禁令 —— 不論品牌署名開關的狀態。開關只決定「我們要不要疊真 logo」,
   //   不決定「AI 要不要畫」。AI 永遠不畫,這條不給例外。
