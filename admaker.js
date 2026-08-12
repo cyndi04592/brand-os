@@ -1918,6 +1918,16 @@ function buildPosterPrompt() {
     .filter(function (l) { return !/^\s*-\s*(Decorative elements|Composition habit)\s*:/i.test(l); })
     .join('\n');
 
+  // 🩹 2026-08-11 純素材模式的漏洞:主標副標留空時我叫它「不准有文字」,
+  //   但 DNA 的「Typography: 明朝體標題…」還在,等於同時給了一份字體規範 →
+  //   模型讀到「這裡要有標題」,照樣寫上去。沒有字就沒有字體可言,整行拔掉。
+  const _noText = !headline && !subHeadline;
+  if (_noText) {
+    _dna = _dna.split('\n')
+      .filter(function (l) { return !/^\s*-\s*Typography\s*:/i.test(l); })
+      .join('\n');
+  }
+
   prompt += `=== BRAND STYLE PACK (AMBIENCE ONLY — does NOT define product look) ===\n`;
   prompt += _dna + '\n';
   if (!_lockColor) {
@@ -1925,10 +1935,28 @@ function buildPosterPrompt() {
     //   photography style 本身就在暗示顏色(例如「昭和台灣懷舊」「暖色自然日光」
     //   必然導向米色暖調),模型照著那些線索又走回同一片顏色。
     //   所以要明講:上面那些只描述「氛圍與場地」,不是配色指定,而且要「刻意選不一樣的」。
-    prompt += `=== COLOUR FREEDOM (this OVERRIDES every colour hint above) ===\n`;
-    prompt += `The brand's fixed palette has been deliberately removed for this render. Actively choose a FRESH colour scheme that is clearly different from what this brand normally uses.\n`;
-    prompt += `Important: the mood, scene and photography-style lines above describe atmosphere and setting ONLY — do NOT read them as colour instructions, and do not default to the colour family they imply. Treat colour as a free creative decision driven by the selected design style, the season/context, and the product's own packaging colours.\n`;
-    prompt += `Everything else from the brand DNA still applies — typography habits, photography style, mood, decorative language and the AVOID list. Only the colour palette is free.\n\n`;
+    // 🩹 2026-08-11 第二次修:第一版寫「不要用品牌色、不要照氛圍走」——
+    //   又是否定句,實測完全無效(生出來還是同一片米色暖調)。
+    //   跟今天早上無臉模式「no face」擋不住人臉一模一樣的錯誤。
+    //   改成正面指定:每次隨機給一組「具體的配色方向」,直接告訴它要什麼顏色,
+    //   而不是拜託它不要什麼顏色。模型對「做這個」的服從度遠高於「不要那個」。
+    const _PALETTES = [
+      'cool slate blue, soft ivory and brushed steel grey',
+      'deep plum, dusty blush pink and warm mid grey',
+      'charcoal black, electric tangerine and off-white',
+      'midnight navy, champagne gold and fog grey',
+      'sage green, clay pink and bone white',
+      'burgundy wine, soft cream and antique brass',
+      'deep teal, warm sand and crisp white',
+      'near-monochrome greyscale with a single vivid accent colour',
+      'warm black, amber glow and smoke grey',
+      'powder blue, pale lemon and chalk white',
+    ];
+    const _pal = _PALETTES[Math.floor(Math.random() * _PALETTES.length)];
+    prompt += `=== COLOUR DIRECTION (this OVERRIDES every colour implied above) ===\n`;
+    prompt += `Build this image around the following colour palette: ${_pal}.\n`;
+    prompt += `Apply it to the background, the surfaces, the props, the lighting temperature and any graphic elements. This palette is the primary colour decision for this render and takes priority over any colour suggested by the brand mood, scene or photography-style descriptions above — treat those as describing atmosphere and setting only.\n`;
+    prompt += `The product itself keeps its own real colours exactly. Everything else from the brand DNA still applies — photography style, mood, decorative language and the AVOID list.\n\n`;
   }
   // ⚠️ 一律送出禁令 —— 不論品牌署名開關的狀態。開關只決定「我們要不要疊真 logo」,
   //   不決定「AI 要不要畫」。AI 永遠不畫,這條不給例外。
@@ -1950,7 +1978,19 @@ function buildPosterPrompt() {
 
   prompt += `=== LAYOUT FRAMEWORK ===\n`;
   prompt += `Layout type: ${layout.label}\n`;
-  prompt += layout.composition + '\n\n';
+  // 🩹 2026-08-11:版式模板本身就寫著「上方放大標題、下方放副標」——
+  //   純素材模式一定要把這些句子濾掉,否則等於一邊禁止、一邊指示,模型只會照指示做。
+  //   濾掉的是「提到 headline / title / subtitle / caption / text 的整句」,
+  //   其餘構圖描述(留白、比例、視角)全部保留。
+  let _layoutComp = layout.composition || '';
+  if (_noText) {
+    _layoutComp = _layoutComp
+      .split(/(?<=[.;])\s+/)
+      .filter(function (sent) { return !/\b(headline|sub-?title|subhead|caption|typograph|display title|lettering|text)\b/i.test(sent); })
+      .join(' ')
+      .trim();
+  }
+  prompt += _layoutComp + '\n\n';
 
   if (flavor.flavor) {
     prompt += `=== REGIONAL FLAVOR (OVERRIDES brand pack scene hints) ===\n`;
