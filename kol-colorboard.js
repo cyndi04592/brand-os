@@ -65,22 +65,48 @@
     ) || null;
   }
 
-  // ── 讀 brand_packs(公開 GET·session 快取)──
-  //   getBrandPacks 是無密碼 GET;複用 window.KAI 的 GAS_URL/PASSWORD,不重複寫死金鑰。
+  // ── 讀 brand_packs(Worker → D1·session 快取)──
+  //  🚚 2026-08-13:改走 Worker gas_cached,不再直打 GAS。
+  //
+  //  病灶:brand_packs 早就列進 D1_OWNED(D1 是正本、GAS 那張表已退休),
+  //    但 Worker 一直沒有 getBrandPacks 這支讀取器 → 前端只能問 GAS → 404。
+  //    症狀是「後台改品牌包不會生效」+ console 每次載入噴紅字,
+  //    而且因為失敗會退回 JS 內建的預設值,看起來「還能用」,所以拖了很久沒人修。
+  //  Worker v4.14 補上讀取器,這裡改道即可。
+  //
+  //  ⚠️ Worker 連不上 → 自動落回原本的 GAS 路徑(至少行為不會比現在差)。
   async function loadBrandPacks() {
     if (Array.isArray(window._brandPacksCache)) return window._brandPacksCache;
     const KAI = window.KAI || {};
+    const pwd = KAI.PASSWORD || 'raby2026';
+    const workerUrl = KAI.WORKER_URL || 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+
+    // ① 先問 Worker(D1 正本)
+    try {
+      const res = await fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'gas_cached', password: pwd, gasAction: 'getBrandPacks', gasParams: {} }),
+      }).then(r => r.json());
+      if (res && res.ok !== false && Array.isArray(res.packs)) {
+        window._brandPacksCache = res.packs;   // 同 session 不重打
+        return res.packs;
+      }
+    } catch (e) {
+      console.warn('[KolColorboard] Worker 讀 brand_packs 失敗,改問 GAS:', e.message);
+    }
+
+    // ② 落回原路
     const gasUrl = KAI.GAS_URL;
     if (!gasUrl) {
       console.warn('[KolColorboard] 找不到 GAS_URL(window.KAI 未就緒)→ 略過 look');
       return [];
     }
-    const pwd = KAI.PASSWORD || 'raby2026';
     const qs = new URLSearchParams({ action: 'getBrandPacks', password: pwd }).toString();
     try {
       const res = await fetch(gasUrl + '?' + qs).then(r => r.json());
       const packs = (res && Array.isArray(res.packs)) ? res.packs : [];
-      window._brandPacksCache = packs;   // 同 session 不重打
+      window._brandPacksCache = packs;
       return packs;
     } catch (e) {
       console.warn('[KolColorboard] 讀 brand_packs 失敗(略過 look):', e.message);
