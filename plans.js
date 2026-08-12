@@ -131,38 +131,13 @@
       '</div>';
   }
 
-  // ★ 2026-08-08:訂閱建單改走 Worker(D1 正本),不再直打 GAS。
-  //   為什麼:訂單正本早就在 D1,但這裡還在寫 GAS Sheets ——
-  //   而綠界回呼(confirmSubOrder)是去 D1 找那張單,永遠 not_found,
-  //   客戶付了三萬五卻不會開通。index.html 的儲值在 v3.95 已經改過,
-  //   plans.html 漏掉沒跟上,這裡補齊。
-  //   ⚠️ 不能用 CF_WORKER_URL —— 那支是 photoroom-proxy(綠界導向參數專用),
-  //     沒有 gas_write。訂單/點數/D1 全部在 kol-proxy。
-  const KOL_WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
-  function _wWrite(gasAction, payload) {
-    return fetch(KOL_WORKER_URL, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'gas_write', password: GAS_PASSWORD, gasAction, payload })
-    }).then(r => r.json());
-  }
-  // ★ 2026-08-12 讀取也走 Worker(gas_cached → 命中 D1 直接回答,不碰 GAS)。
-  //   為什麼:GAS 整個 Google 帳號同時只能跑 30 個執行,是硬上限。
-  //     這頁是「客戶正要付錢」的畫面,人一多時最不能塞 —— 而 GAS 塞車不報錯,
-  //     只是轉圈圈轉到逾時。Worker 端 getPendingPayment 已有 D1 原生讀取器
-  //     (_d1PendingPayment),kol.html 早就走這條,plans.html 漏接。
-  function _wRead(gasAction, gasParams) {
-    return fetch(KOL_WORKER_URL, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'gas_cached', password: GAS_PASSWORD, gasAction, gasParams: gasParams || {} })
-    }).then(r => r.json());
-  }
-
   function buyPlanEcpay(k) {
     const email = localStorage.getItem('bs_sso_email') || '';
     if (!email) { alert('請先登入再購買'); return; }
     const root = document.getElementById('planRoot');
     if (window.showSpaceLoader) showSpaceLoader(root, '正在建立付款'); else root.innerHTML = '<div style="text-align:center;padding:60px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
-    _wWrite('createSubOrder', { email, plan: k, cycle: _cyc, method: 'ecpay' })
+    fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_cyc}&method=ecpay`)
+      .then(r => r.json())
       .then(j => {
         if (!j.ok) { alert('下單失敗:' + (j.error || '')); renderPage(); return; }
         return fetch(CF_WORKER_URL, {
@@ -198,7 +173,8 @@
     const monthPrice = (p.promo > 0) ? p.promo : p.price;
     const amount = yr ? (p.price * 12) : monthPrice;
     if (!confirm(`確認訂閱「${p.name} 方案 · ${yr ? '年繳' : '月繳'}」?\n\n每月 ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${yr ? '（年）' : '（月）'}（未稅）\n\n下單後依匯款資訊轉帳,我們對帳後為你開通。`)) return;
-    _wWrite('createSubOrder', { email, plan: k, cycle: _cyc })
+    fetch(`${GAS_URL}?action=createSubOrder&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}&plan=${k}&cycle=${_cyc}`)
+      .then(r => r.json())
       .then(j => { if (!j.ok) { alert('下單失敗:' + (j.error || '')); return; } showSubOrderInfo(j); })
       .catch(() => alert('連線錯誤,請重試'));
   }
@@ -270,7 +246,8 @@
     renderPage();                 // 🆕 先立刻畫:方案卡片資料全在本地,不必等 GAS → 秒出內容
     if (!email) return;
     // 背景查待付款,有才補橫幅+預選(不擋畫面)
-    _wRead('getPendingPayment', { email: email })
+    fetch(`${GAS_URL}?action=getPendingPayment&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`)
+      .then(r => r.json())
       .then(j => {
         if (j && j.ok && j.pending && j.desiredPlan) {
           _pendingPlan = j.desiredPlan;
