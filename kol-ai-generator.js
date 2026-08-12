@@ -1485,7 +1485,33 @@ async function gasGet(action, params = {}) {
   return gasFetch(() => fetch(GAS_URL + '?' + qs), action);
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  🚚 2026-08-12 寫入改走 Worker(照抄 kol.html 的 WRITE_VIA_WORKER 寫法)
+//
+//  為什麼一定要搬:GAS 整個 Google 帳號同時只能跑 30 個執行,是硬上限。
+//    ensurePersonaFolder 是「每建一個 KOL 就觸發一次」的高頻動作,
+//    人一多就會跟生影片、生圖搶那 30 個名額 —— 而且塞車時不報錯,
+//    只是轉圈圈轉到逾時,客戶會以為系統壞了。Worker 沒有這個限制。
+//
+//  ⚠️ kol.html 的 WRITE_VIA_WORKER 早在 2026-08-06 就把 ensurePersonaFolder
+//     切過去了,但這支檔案漏接,一直還在直撥 GAS —— 同一個動作兩條路。
+//
+//  ⚠️ 讀取類永遠不准列進來(那是 GAS_CACHED_READS 的事)。
+//     寫入類也不准放進快取,會造成重複建立。
+// ═══════════════════════════════════════════════════════════════
+const WRITE_VIA_WORKER = {
+  ensurePersonaFolder: 1,          // Drive 建 KOL 資料夾(kol.html 同步)
+};
+
 async function gasPost(action, extra = {}) {
+  if (WRITE_VIA_WORKER[action]) {
+    const r = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: PASSWORD, action: 'gas_write', gasAction: action, payload: extra }),
+    });
+    return r.json();
+  }
   return gasFetch(() => fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
