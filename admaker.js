@@ -1908,21 +1908,26 @@ function buildPosterPrompt() {
       .filter(function (l) { return !/^\s*-\s*(Primary brand color|Secondary palette)\s*:/i.test(l); })
       .join('\n');
   }
-  if (!_showMark) {
-    _dna = _dna.split('\n')
-      .filter(function (l) { return !/^\s*-\s*(Decorative elements|Composition habit)\s*:/i.test(l); })
-      .join('\n');
-  }
+  // 🏷 2026-08-11 第三步:AI 從此「永遠不畫」任何品牌標示,不管開關開或關。
+  //   理由:AI 是重新想像不是複製貼上,畫出來的 logo 一定會歪。
+  //   真 logo 由畫布疊上去(compositeBrandLogo),像素級精準。
+  //   所以這兩行 DNA(裝飾元素、構圖習慣)裡寫死的「圓形標 + 底部色帶」一律拔掉,
+  //   免得 AI 畫一個假 logo,我們再疊一個真的上去 → 一張圖兩個標。
+  //   構圖的多樣性由下面的 COMPOSITION VARIATION 補上,不會變單調。
+  _dna = _dna.split('\n')
+    .filter(function (l) { return !/^\s*-\s*(Decorative elements|Composition habit)\s*:/i.test(l); })
+    .join('\n');
 
   prompt += `=== BRAND STYLE PACK (AMBIENCE ONLY — does NOT define product look) ===\n`;
   prompt += _dna + '\n';
   if (!_lockColor) {
     prompt += `COLOR FREEDOM (brand colour lock is OFF): do not restrict yourself to the brand's usual colour palette. Choose a fresh, well-considered colour scheme that suits the selected design style, the context/season and the product's own packaging colours. Keep everything else from the brand DNA — typography habits, photography style, mood, decorative language, composition habits and the AVOID list — only the colour palette is free.\n`;
   }
+  // ⚠️ 一律送出禁令 —— 不論品牌署名開關的狀態。開關只決定「我們要不要疊真 logo」,
+  //   不決定「AI 要不要畫」。AI 永遠不畫,這條不給例外。
+  prompt += `NO BRANDING: do NOT render any brand logo, brand mark, emblem, circular badge, brand name, company name, signature line, footer colour band, corner tag or watermark anywhere in the image. Do not invent a logo either. The ONLY branding permitted is whatever is physically printed on the product packaging itself, which must be preserved exactly. Compose the layout freely without reserving space for a logo or a footer band.\n`;
   if (_showMark) {
-    if (ctx.brand) prompt += `Brand name to display (small signature): "${ctx.brand}"${ctx.subBrand ? ' · ' + ctx.subBrand : ''}\n`;
-  } else {
-    prompt += `NO BRANDING (brand signature is OFF): do NOT render any brand logo, brand mark, emblem, circular badge, brand name, company name, signature line, footer colour band, corner tag or watermark anywhere in the image. Do not invent a logo either. The ONLY branding permitted is whatever is physically printed on the product packaging itself, which must be preserved exactly. Compose the layout freely without reserving space for a logo or a footer band.\n`;
+    prompt += `Leave one corner of the frame visually calm and uncluttered — a small brand mark will be placed there afterwards by the design system.\n`;
   }
   if (ctx.adStyle) prompt += `Additional brand direction note: ${ctx.adStyle}\n`;
   prompt += '\n';
