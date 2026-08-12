@@ -2080,7 +2080,12 @@ function buildPosterPrompt() {
     prompt += `Render the following Traditional Chinese text with pixel-perfect typography (correct glyphs, proper spacing, professional editorial layout). Match the typography hierarchy specified in the brand DNA above.\n`;
     if (headline) prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
     if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
-    if (ctx.brand) prompt += `- Brand signature (small, at corner or footer): "${ctx.brand}"\n`;
+    // 🩹 2026-08-12 移除「角落品牌署名」:
+    //   病灶:上面第 2030 行的 NO BRANDING 已經無例外禁止任何品牌名 / 署名 / 浮水印,
+    //     這裡卻又specifically 叫它在角落寫品牌名 —— 同一份 prompt 前後矛盾,
+    //     而且這句排在後面又更具體,模型聽後面的 → 右下角固定長出「旺 味 米 香 腸」,
+    //     看起來像浮水印。禁令留著,這句拿掉,整份 prompt 才是同一個意思。
+    //   ⚠️ 品牌識別一律由前端 canvas 疊真 logo 處理,不交給 AI 畫(同 Logo 疊圖原則)。
     // 🩹 2026-08-12 數字/價格排版規範:
     //   病灶:整段 TEXT TO RENDER 只交代「繁體中文要漂亮」,對阿拉伯數字一個字都沒說 →
     //     中文標題走 DNA 的毛筆/明朝體規範,數字則由模型隨手抓一個西文襯線體塞進去,
