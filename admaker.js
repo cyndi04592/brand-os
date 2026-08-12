@@ -581,6 +581,54 @@ const CONTEXT_THEMES = {
   double11: {
     label: '1️⃣1️⃣ 雙11',
     context: 'Double 11 shopping-festival context: high-energy e-commerce sale mood, vivid red and magenta, large "11.11" numerals, countdown and price-slash badges, bold urgent call-to-action — loud but clean composition.'
+  },
+
+  // ★ 2026-08-12 節慶檔期擴充第二批(index.html 的按鈕早就有了,這裡是漏掉的定義)
+  //   ⚠️ key 必須與 index.html 的 data-context / setContext(this,'xxx') 完全一致,
+  //      查不到 key 時 buildPosterPrompt 會靜靜退回 none —— 客戶按了沒反應而且不報錯。
+  valentines: {
+    label: '情人節',
+    context: "Valentine's Day context: romantic soft blush and rose tones, candlelight or warm window glow, a pair of something (two glasses, two hands) to suggest togetherness, scattered petals or a satin ribbon, intimate close atmosphere — keep it tasteful and refined, NOT loud or kitschy."
+  },
+  zhongyuan_pudu: {
+    label: '中元普渡',
+    context: 'Zhongyuan Ghost Festival (中元普渡) offering context: traditional Taiwanese offering-table setting, red table cloth, stacked cartons and abundant bulk packages suggesting generous bulk-buy volume, warm temple-lantern light, incense smoke haze in the far background bokeh, respectful traditional folk atmosphere — keep it tasteful and orderly, NOT loud or kitschy.'
+  },
+  mid_autumn: {
+    label: '中秋節',
+    context: 'Mid-Autumn Festival context: warm evening outdoor gathering mood, large soft full moon in the night sky bokeh, warm amber lantern glow, a pomelo or mooncake as a quiet supporting prop, wooden table and gentle grill warmth — keep it tasteful and restrained, NOT loud or kitschy.'
+  },
+  national_day: {
+    label: '國慶日',
+    context: 'National Day celebration context: festive national-holiday mood, crisp blue white and red accent tones, fireworks bokeh in the night sky, celebratory but composed atmosphere, clean modern civic feel — keep it tasteful and dignified, NOT loud or kitschy.'
+  },
+  halloween: {
+    label: '萬聖節',
+    context: 'Halloween context: playful mischievous mood, deep purple and burnt orange palette, a small pumpkin and candle glow as props, subtle spider-web or bat silhouette in the background bokeh, warm low-key lighting — playful and stylish, NOT gory, NOT loud or kitschy.'
+  },
+  black_friday: {
+    label: '黑色星期五',
+    context: 'Black Friday context: high-contrast matte black background, bold white or neon sale typography, minimal props, sharp directional spotlight on the product, percentage-off badge, strong urgency — dramatic and premium, NOT cluttered or kitschy.'
+  },
+  double12: {
+    label: '雙12',
+    context: 'Double 12 shopping-festival context: year-end e-commerce restock mood, warm orange and gold energy, large "12.12" numerals, last-chance and price-slash badges, abundant stacked-inventory feel — punchy but structured, NOT messy or kitschy.'
+  },
+  christmas: {
+    label: '聖誕節',
+    context: 'Christmas context: cosy winter celebration mood, pine sprig and warm fairy-light bokeh, deep green red and gold accents, knit and wool textures, warm tungsten indoor light, a wrapped gift as a quiet supporting prop — warm and refined, NOT loud or kitschy.'
+  },
+  nye_countdown: {
+    label: '跨年倒數',
+    context: 'New Year countdown context: midnight celebration mood, deep navy night with city skyline bokeh, fireworks light streaks, champagne-gold highlights, countdown numerals as a graphic accent, cool-to-warm contrast — energetic and elegant, NOT loud or kitschy.'
+  },
+  weiya: {
+    label: '尾牙',
+    context: 'Weiya year-end company banquet context: generous celebratory feast mood, round banquet table setting, warm red and gold tones, abundant hearty portions, lucky-draw and reward energy in the background bokeh, convivial gathering warmth — abundant but composed, NOT loud or kitschy.'
+  },
+  brand_anniversary: {
+    label: '品牌周年慶',
+    context: 'Brand anniversary context: premium celebration mood, an anniversary ribbon or seal badge as a graphic accent, champagne gold and deep brand-toned palette, restrained confetti or light-ray highlight, product presented as the hero on a pedestal-like surface — celebratory and premium, NOT loud or kitschy.'
   }
 };
 
