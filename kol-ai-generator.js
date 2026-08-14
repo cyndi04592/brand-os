@@ -1501,6 +1501,10 @@ async function gasGet(action, params = {}) {
 // ═══════════════════════════════════════════════════════════════
 const WRITE_VIA_WORKER = {
   ensurePersonaFolder: 1,          // Drive 建 KOL 資料夾(kol.html 同步)
+  // 🚚 2026-08-13:一鍵存 Drive 也切過來(Worker v4.14 補上這支寫入器)。
+  //   ⚠️ Worker 端已把它列進 NO_GAS_MIRROR —— 若讓它照常回寫 GAS,
+  //      GAS 會把同一張圖再存一次到同一個資料夾(跟 saveAiImage 同款地雷)。
+  saveAiKolPhotoToDrive: 1,
 };
 
 async function gasPost(action, extra = {}) {
@@ -1523,7 +1527,9 @@ async function gasPost(action, extra = {}) {
 // ── 同步載入 brands(給 folder hint 顯示品牌中文名)──
 (async function preloadBrands() {
   try {
-    const res = await gasGet('getBrandOS');
+    // ⚠️ getBrandOS 一定要帶 email —— 後端靠它做品牌隔離,沒帶會回空清單
+    //   而且 ok:true 不報錯(所以「品牌中文名顯示不出來」一直查不到原因)。
+    const res = await gasGet('getBrandOS', { email: localStorage.getItem('bs_sso_email') || '' });
     S.brands = res.data?.brands || [];
     updateFolderHint();
   } catch (e) {
