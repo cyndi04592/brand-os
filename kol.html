@@ -949,7 +949,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="page-header">
     <div>
       <h1>KOL 數字人工作室</h1>
-      <p id="page-subtitle">管理品牌的 KOL 形象庫,從 Google Drive 讀取照片一鍵建立 Avatar Group</p>
+      <p id="page-subtitle">管理品牌的 KOL 形象庫,從 Google Drive 選照片,一鍵建立 KOL 角色</p>
     </div>
     <button class="btn btn-ghost btn-sm" onclick="refreshAll()">重新載入</button>
   </div>
@@ -975,7 +975,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
       <div class="drive-section" id="drive-section">
         <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent2)"></div>Drive 照片庫</div>
-        <div class="drive-hint">品牌主放的照片會出現在這裡。選照片後可建立/追加 Avatar Group。</div>
+        <div class="drive-hint">品牌主放的照片會出現在這裡。選好照片後,可以建立角色或加入新角度。</div>
         <div id="drive-gallery-wrap">
           <div class="kol-empty">載入中…</div>
         </div>
@@ -2597,7 +2597,7 @@ function switchMode(mode) {
 
   // 副標題更新
   const subtitles = {
-    talking: '管理品牌的 KOL 形象庫,從 Google Drive 讀取照片一鍵建立 Avatar Group',
+    talking: '管理品牌的 KOL 形象庫,從 Google Drive 選照片,一鍵建立 KOL 角色',
     cinematic: '單支電影鏡頭拍攝 — 選 KOL 形象 + 商品照 + 場景 → 生成電影感短影音',
     system: 'KOL 自動經營社群 — 自動規劃內容主題、排程發文',
   };
@@ -3262,7 +3262,7 @@ function renderPersonaSection(p) {
   const statusChip = isBound
     ? `<span class="status bound">已綁定 · ${personaData.talking_photo_id.slice(0,8)}</span>`
     : (personaData
-        ? `<span class="status unbound">待綁定 · 選照片後按下方綠鈕</span>`
+        ? `<span class="status unbound">還沒建立 · 選好照片按綠色按鈕</span>`
         : (_loading
             ? `<span class="status unbound" style="opacity:.6">讀取人設中…</span>`
             : `<span class="status unbound" style="background:rgba(255,107,107,.15);color:#ff6b6b">尚未建立角色</span>`));
@@ -3357,10 +3357,10 @@ function updatePersonaBindButtons() {
     }
     btn.classList.remove('btn-ghost'); btn.classList.add('btn-success');
     if (n === 0) {
-      btn.textContent = bound ? '➕ 選照片可追加 Look' : '↑ 先選照片再綁定';
+      btn.textContent = bound ? '➕ 加入其他角度的照片 (建議要加)' : '↑ 請先選照片';
       btn.disabled = true;
     } else {
-      btn.textContent = bound ? `➕ 加入 ${n} 張 Look` : `建立 Avatar Group(${n} 張)`;
+      btn.textContent = bound ? `➕ 加入這 ${n} 張照片` : `✓ 用這 ${n} 張建立角色`;
       btn.disabled = false;
     }
   });
@@ -3486,10 +3486,16 @@ async function confirmDrivePhotos(personaArg) {
     }
 
     const action = res.action;
-    toast(action === 'created_group' ? `✅ 已建立 Avatar Group,使用 ${fileIds.length} 張照片` : `✅ 已加入 ${res.total_added || fileIds.length} 個 Look`, 'success');
+    toast(action === 'created_group' ? `✅ 角色已建立,使用 ${fileIds.length} 張照片` : `✅ 已加入 ${res.total_added || fileIds.length} 個 Look`, 'success');
 
     clearDriveSelection();
-    await loadPersonas(S.currentBrandId);
+    // 🩹 2026-08-14:一定要帶 true 強制重抓。
+    //   病灶:人設清單有 20 秒快取,建完立刻重抓會拿到「建立前」的舊資料 →
+    //   新角色不出現在形象庫、狀態還停在「還沒建立」。
+    //   客戶看不到變化 → 以為失敗 → 再按一次 → HeyGen 又建一個群組,
+    //   而且那是要付費的。上面第 3448 行補建角色時早就帶了 true,
+    //   偏偏最關鍵的這一行漏了。
+    await loadPersonas(S.currentBrandId, true);
     await Promise.all([loadKolList(S.currentBrandId, true), loadDrivePhotos(S.currentBrandId, true)]);  // 🆕 A: 建/綁 KOL 後強制重抓(略過快取),新 KOL 才會出現
   } catch (e) {
     toast('失敗:' + e.message, 'error');
