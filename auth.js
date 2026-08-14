@@ -1,6 +1,16 @@
 // ══════════════════════════════════════════
 //  auth.js — Google登入、Drive授權、白名單、登出
 // ══════════════════════════════════════════
+//  🔐 2026-08-14 P0 資安·第 4 步:登入改成「跟 Worker 換身分證」
+//   舊做法的兩個問題:
+//    ① 帳密明碼寫在這個檔裡,而這個 repo 是公開的 → 誰都看得到
+//    ② 「你是誰」由瀏覽器自己說了算(sessionStorage 填什麼就是誰),
+//       後端無從查證 → 改一行就能冒充任何人
+//   新做法:帳號密碼交給 Worker 驗(密碼雜湊存在 D1),Google token 也交給
+//   Worker 向 Google 查證,驗過才發一張有簽章的 token 回來。
+//   這個檔只負責「收好那張證」,證的內容改不動也偽造不出來。
+//   ⚠️ 這一版 Worker 還沒開始強制查驗 → 就算證沒帶好,功能一切照舊。
+//     真正上鎖在下一步,所以這一版可以放心上。
 
 let tokenClient = null;
 let _userEmail = null;
@@ -37,14 +47,30 @@ function initGoogleAuth() {
       if (_isInitializing) return;
       _isInitializing = true;
       try {
-        // 用 email-scope token 只讀一次 email,不留作 Drive token
-        const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: 'Bearer ' + resp.access_token }
-        });
-        const info = await r.json();
-        _userEmail = info.email || '';
+        // 🔐 改把 Google 的 token 交給 Worker 驗:Worker 會向 Google 查證這張票
+        //   ①是不是發給我們這個應用程式的(擋別人家網站的 token 拿來換身分)
+        //   ②屬於哪個 email,再查白名單,通過才簽一張我們自己的身分證回來。
+        //   Worker 異常時自動退回舊路(瀏覽器自己讀 email + checkWhitelist),
+        //   登入不會整條壞掉;只有「明確被拒絕」才擋人。
+        let ok = false;
+        const a = await _authGoogleLogin(resp.access_token);
+        if (a && a.ok && a.token) {
+          _saveAuthToken(a.token);
+          _userEmail = String(a.email || '').toLowerCase();
+          ok = true;
+        } else if (a && a.denied) {
+          _userEmail = String(a.email || '') || _userEmail || '';
+          ok = false;
+        } else {
+          // 退路:Worker 沒回應/沒設定 → 沿用原本流程,行為與改版前一致
+          const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: 'Bearer ' + resp.access_token }
+          });
+          const info = await r.json();
+          _userEmail = info.email || '';
+          ok = await checkWhitelist(_userEmail);
+        }
         sessionStorage.setItem('bs_email', _userEmail);
-        const ok = await checkWhitelist(_userEmail);
         if (ok) {
           // ★ Google 登入改走 Worker Drive 模式(零 Drive 權限、零警告)
           window._driveToken = null;
@@ -78,11 +104,11 @@ function initGoogleAuth() {
   });
 }
 
-// ══ 帳密登入（★ 新增）══
-// 帳密對照表：帳號 → 對應顯示名稱
-const _PWD_ACCOUNTS = {
-  'test': { pass: 'Abc12345', name: 'Fook Lam Moon' },
-};
+// ══ 帳密登入 ══
+// 🔐 原本這裡有一張「帳號 → 密碼」對照表,明碼寫死在公開 repo 裡。
+//   已整張移除:帳號現在存在 D1 的 app_users,密碼只存雜湊(加獨立的鹽),
+//   驗證在 Worker 端做。要新增帳號請用 auth_user_upsert(需 ADMIN_KEY),
+//   不要再把任何密碼寫回這個檔案。
 
 function showPasswordLogin() {
   const overlay = document.getElementById('loginOverlay');
@@ -119,15 +145,30 @@ async function doPwdLogin() {
   const errEl = document.getElementById('pwdErr');
   if (!user || !pass) { if(errEl) errEl.textContent = '請輸入帳號和密碼'; return; }
 
-  const account = _PWD_ACCOUNTS[user];
-  if (!account || account.pass !== pass) {
-    if(errEl) errEl.textContent = '❌ 帳號或密碼錯誤';
+  // 🔐 密碼一律送去 Worker 驗,前端不知道也不該知道正確答案是什麼
+  if (errEl) errEl.textContent = '驗證中…';
+  let out = null;
+  try {
+    const r = await fetch(AUTH_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: GAS_PASSWORD, action: 'auth_pwd_login', user, pass }),
+    });
+    out = await r.json();
+  } catch (e) {
+    if (errEl) errEl.textContent = '❌ 連線失敗,請重試';
+    return;
+  }
+  if (!out || !out.ok || !out.token) {
+    if (errEl) errEl.textContent = '❌ ' + ((out && out.error) || '帳號或密碼錯誤');
     return;
   }
 
   // 驗證成功
   if(errEl) errEl.textContent = '';
-  _userEmail = user + '@brandos.internal';
+  _saveAuthToken(out.token);
+  const account = { name: out.name || '' };
+  _userEmail = String(out.email || '').toLowerCase();
   window._workerDriveMode = true; // ★ 走 Worker Drive 模式
   window._driveToken = null;       // 不用 Google token
   sessionStorage.setItem('bs_worker_mode', '1');
@@ -223,6 +264,54 @@ async function authCachedGet(gasAction, params, timeoutMs) {
   } catch (e) { clearTimeout(timer); return null; }
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  🔐 身分證(session token)工具箱
+//   token 由 Worker 用只有它知道的鑰匙簽章,內容是 email + 角色 + 到期時間。
+//   我們這邊只負責「收好、帶著、登出時丟掉」,不解讀也不信任內容
+//   —— 真正的判讀永遠在 Worker 那一端。
+//   存 localStorage:關掉分頁再開不用重登(跟既有的「記住登入」同步)。
+//   ⚠️ key 用 bs_auth_token,不要跟舊的 bs_token(Google Drive token)搞混。
+// ═══════════════════════════════════════════════════════════════
+const AUTH_TOKEN_KEY = 'bs_auth_token';
+
+function _saveAuthToken(token) {
+  if (!token) return;
+  try { localStorage.setItem(AUTH_TOKEN_KEY, token); } catch (e) {}
+  try { sessionStorage.setItem(AUTH_TOKEN_KEY, token); } catch (e) {}
+}
+function _clearAuthToken() {
+  try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) {}
+  try { sessionStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) {}
+}
+// 給其他檔案取用(kol.html 的全域攔截器之後會用這支把證夾帶進每個請求)
+window._bsAuthToken = function () {
+  try { return sessionStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY) || ''; }
+  catch (e) { return ''; }
+};
+
+// Google 登入:把 access_token 交給 Worker 換身分證
+//   回 { ok:true, token, email }      → 換到了
+//   回 { denied:true, error, email }  → Worker 明確說「這個帳號沒權限」→ 該擋
+//   回 null                            → Worker 連不上/沒設定 → 呼叫端走舊路
+async function _authGoogleLogin(accessToken) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const r = await fetch(AUTH_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: GAS_PASSWORD, action: 'auth_google_login', access_token: accessToken }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const out = await r.json();
+    if (out && out.ok && out.token) return out;
+    // 403 = 驗過了但不在白名單 → 這是「明確拒絕」,不能靠退路放行
+    if (r.status === 403) return { denied: true, error: (out && out.error) || '此帳號無使用權限', email: (out && out.email) || '' };
+    return null;
+  } catch (e) { return null; }
+}
+
 // ══ 白名單檢查 ══
 async function checkWhitelist(email) {
   if (!email) return false;
@@ -267,6 +356,7 @@ function doLogout() {
   sessionStorage.removeItem('bs_token');
   sessionStorage.removeItem('bs_email');
   sessionStorage.removeItem('bs_worker_mode');
+  _clearAuthToken();   // 🔐 身分證一併作廢,不然登出後那張證還能用
   try { localStorage.removeItem('bs_sso_token'); localStorage.removeItem('bs_sso_email'); } catch(e){}
   try { localStorage.removeItem('bs_email'); localStorage.removeItem('bs_worker_mode'); } catch(e){}   // 🔒 一併清掉「記住登入」
   // 🆕 根治「切帳號品牌不見、要按 F5」:登出時把所有帳號的品牌樹快取(bs_brandos_*)一併清掉
@@ -321,6 +411,11 @@ function _restoreSession() {
     if (em && wm === '1') {
       sessionStorage.setItem('bs_email', em);
       sessionStorage.setItem('bs_worker_mode', '1');
+      // 🔐 身分證也一起還原(localStorage 有、這個分頁沒有 → 補回來)
+      try {
+        const tk = localStorage.getItem(AUTH_TOKEN_KEY) || '';
+        if (tk && !sessionStorage.getItem(AUTH_TOKEN_KEY)) sessionStorage.setItem(AUTH_TOKEN_KEY, tk);
+      } catch (e) {}
       console.log('[login] 已還原上次登入:' + em);
     }
   } catch (e) {}
