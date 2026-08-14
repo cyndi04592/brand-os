@@ -3357,23 +3357,93 @@ function updatePersonaBindButtons() {
     }
     btn.classList.remove('btn-ghost'); btn.classList.add('btn-success');
     if (n === 0) {
-      // ⚠️ 這個狀態下按鈕是【停用】的(下一行 disabled = true),文案只是提示。
-      //   所以句子一定要帶「選照片」這個動作 —— 2026-08-14 一度改成
-      //   「加入其他角度的照片」,讀起來像一顆可以按的鈕,客戶點了沒反應以為壞掉。
-      //   要先在上方點選照片,這顆才會亮成「➕ 加入這 N 張照片」。
-      btn.textContent = bound ? '↑ 選照片可加入其他角度 (建議要加)' : '↑ 請先選照片';
-      btn.disabled = true;
+      // 🩹 2026-08-14 第二版:已綁定但沒勾照片時,這顆【不再是死的提示】。
+      //   病灶:產生多角度照片其實要做三件事 ——
+      //     ① 在上面勾一張正臉 → ② 捲到最下面的「多角度人物表」→ ③ 按「讀取上面的正臉」
+      //   三個動作分散在畫面兩端,客戶不可能自己串起來,
+      //   於是每個角色都只有一張正臉,多角度形同虛設。
+      //   現在這顆直接把三件事一鍵做完(見 goCharacterSheet)。
+      //   ⚠️ 未綁定時仍然停用 —— 那時候該做的是先建角色,不是先做多角度。
+      if (bound) {
+        btn.textContent = '🎬 產生多角度照片 (建議要加)';
+        btn.disabled = false;
+        btn.dataset.mode = 'sheet';          // 給點擊分流用
+      } else {
+        btn.textContent = '↑ 請先選照片';
+        btn.disabled = true;
+        delete btn.dataset.mode;
+      }
     } else {
       btn.textContent = bound ? `➕ 加入這 ${n} 張照片` : `✓ 用這 ${n} 張建立角色`;
       btn.disabled = false;
+      delete btn.dataset.mode;   // ⚠️ 一定要清,否則勾了照片還是會跳去人物表
+
     }
   });
+}
+
+// 🎬 2026-08-14:一鍵把「產生多角度照片」該做的三件事做完。
+//
+//   原本客戶要自己:① 在上面勾一張正臉 → ② 捲到畫面最下面找「多角度人物表」
+//                   → ③ 按「讀取上面的正臉」。三個動作分散在畫面兩端,
+//   沒有人會自己串起來,所以每個角色都只有一張正臉。
+//
+//   這支代勞:自動挑正臉 → 自動勾選 → 捲過去 → 自動觸發讀取。
+//   客戶只要按「② 生成 3/4 + 側臉」就好。
+//
+//   ⚠️ 挑圖優先序:先挑「已處理」區(那裡放的是乾淨參考照,最適合當正臉),
+//      沒有才退回一般照片區。都沒有 → 明講要先放照片,不要靜靜沒反應。
+function goCharacterSheet(personaName) {
+  const group = document.querySelector('.drive-persona-group[data-persona="' + String(personaName).replace(/"/g, '\\"') + '"]');
+  if (!group) { toast('找不到這個角色的照片區,請按「重新載入」再試', 'warn'); return; }
+
+  // ① 選一張正臉:優先用「已處理」區(第二個 gallery),沒有才用第一個
+  const galleries = group.querySelectorAll('.drive-gallery');
+  const pool = (galleries.length > 1 ? galleries[galleries.length - 1] : galleries[0]);
+  const photo = pool ? pool.querySelector('.drive-photo') : null;
+  if (!photo) {
+    toast('這個角色還沒有照片,請先在 Drive 資料夾放一張正臉', 'warn');
+    return;
+  }
+
+  // ② 幫他勾起來(人物表就是抓 .drive-photo.selected)
+  const fileId = photo.dataset.fileId;
+  S.selectedPersonaForDrive = personaName;
+  if (!S.selectedDrivePhotos[personaName]) S.selectedDrivePhotos[personaName] = [];
+  if (S.selectedDrivePhotos[personaName].indexOf(fileId) < 0) {
+    S.selectedDrivePhotos[personaName].push(fileId);
+  }
+  photo.classList.add('selected');
+
+  // ③ 捲到人物表面板
+  const box = document.getElementById('cs-box');
+  if (!box) {
+    toast('多角度人物表還在載入,請等一下再按', 'warn');
+    updateDriveActionBar();
+    return;
+  }
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // ④ 幫他按下「① 讀取上面的正臉」(面板裡的第一顆按鈕)
+  //    延遲一點點,等捲動與勾選的畫面更新都落地再觸發,避免抓到舊狀態。
+  setTimeout(function () {
+    const loadBtn = box.querySelector('button');
+    if (loadBtn) loadBtn.click();
+    toast('已帶入正臉,接著按「② 生成 3/4 + 側臉」', 'success');
+  }, 350);
+
+  updateDriveActionBar();
 }
 
 function handleDriveGalleryClick(e) {
   // 🩹 2026-08-11:先接「每個角色自己那顆鈕」,再接照片點選
   const bindBtn = e.target.closest('.persona-bind-btn');
-  if (bindBtn) { if (!bindBtn.disabled) confirmDrivePhotos(bindBtn.dataset.persona); return; }
+  if (bindBtn) {
+    if (bindBtn.disabled) return;
+    if (bindBtn.dataset.mode === 'sheet') { goCharacterSheet(bindBtn.dataset.persona); return; }
+    confirmDrivePhotos(bindBtn.dataset.persona);
+    return;
+  }
   const clearBtn = e.target.closest('.persona-clear-btn');
   if (clearBtn) { clearDriveSelection(); return; }
 
