@@ -3357,7 +3357,11 @@ function updatePersonaBindButtons() {
     }
     btn.classList.remove('btn-ghost'); btn.classList.add('btn-success');
     if (n === 0) {
-      btn.textContent = bound ? '➕ 加入其他角度的照片 (建議要加)' : '↑ 請先選照片';
+      // ⚠️ 這個狀態下按鈕是【停用】的(下一行 disabled = true),文案只是提示。
+      //   所以句子一定要帶「選照片」這個動作 —— 2026-08-14 一度改成
+      //   「加入其他角度的照片」,讀起來像一顆可以按的鈕,客戶點了沒反應以為壞掉。
+      //   要先在上方點選照片,這顆才會亮成「➕ 加入這 N 張照片」。
+      btn.textContent = bound ? '↑ 選照片可加入其他角度 (建議要加)' : '↑ 請先選照片';
       btn.disabled = true;
     } else {
       btn.textContent = bound ? `➕ 加入這 ${n} 張照片` : `✓ 用這 ${n} 張建立角色`;
