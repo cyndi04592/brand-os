@@ -65,8 +65,16 @@ function registerBrandPackColors(packs) {
     registered++;
   }
   if (registered > 0) {
+    window.__CMAP_PACKS_READY = true;
     console.log(`[CMAP] ✅ 從 brand_packs 動態註冊了 ${registered} 個品牌專屬色:`,
       Object.keys(CMAP).filter(k => k.startsWith('brand_')));
+    // 🩹 2026-08-14:顏色是晚到的,晚到就要重畫。
+    //   不重畫的話,側邊欄第一次已經拿 fallback 的金色畫完了,
+    //   之後畫面不會自己更新 → 品牌色永遠是金色,而且看不出哪裡錯。
+    //   包 try:重繪函式還沒定義(載入順序)也不能拖垮註冊流程。
+    try { if (typeof renderNavBrands === 'function') renderNavBrands(); } catch (_) {}
+    try { if (typeof renderBrandTree === 'function') renderBrandTree(); } catch (_) {}
+    try { if (typeof updateCtx === 'function') updateCtx(); } catch (_) {}
   }
   return registered;
 }
@@ -76,8 +84,14 @@ function registerBrandPackColors(packs) {
 function getColor(key) {
   if (!key) return CMAP.gold;
   if (CMAP[key]) return CMAP[key];
-  // 不在 CMAP 裡 → 警告 + fallback
-  console.warn(`[CMAP] 找不到顏色 key: "${key}",fallback 到 gold。請檢查 GAS brands.navColor 或 brand_packs.pack_key 是否對得上`);
+  // 🩹 2026-08-14:brand_xxx 開頭 + 品牌色「還沒註冊完」→ 安靜 fallback。
+  //   紅字原本是為了抓「navColor 打錯字」而加的,立意正確,
+  //   但它連「顏色還在路上」也一起罵 —— 品牌色是 async 抓回來的,
+  //   側邊欄第一次渲染時必定還沒到,於是每次開站都噴一輪假警報,
+  //   久了就沒人相信這行字了。等註冊完成後才恢復告警,真打錯字才叫。
+  if (!(String(key).startsWith('brand_') && !window.__CMAP_PACKS_READY)) {
+    console.warn(`[CMAP] 找不到顏色 key: "${key}",fallback 到 gold。請檢查 brands.navColor 或 brand_packs.pack_key 是否對得上`);
+  }
   return CMAP.gold;
 }
 // ★ 根治 CMAP 時序問題:config.js 載入時自己先 fetch brand_packs 註冊 CMAP
@@ -86,10 +100,17 @@ function getColor(key) {
 //   這段讓 CMAP 一開始就齊全,不依賴任何其他檔的 init 流程
 (async function autoRegisterBrandPackColors() {
   try {
-    const resp = await fetch(CF_WORKER_URL, {
+    // 🚚 2026-08-14:改向 kol-proxy 要 brand_packs(D1 正本)。
+    //   舊路是 photoroom-proxy → GAS 的 brand_packs 分頁。那張分頁還在、
+    //   還會回 9 筆,但它是「後台已經不再寫入」的舊資料 ——
+    //   於是後台改品牌色 → D1 變了、畫面沒變,而且完全不報錯。
+    //   這種「有回應但是舊的」比 404 難查太多,404 至少會叫。
+    const _bpUrl = (typeof KOL_WORKER_URL !== 'undefined' && KOL_WORKER_URL)
+      ? KOL_WORKER_URL : 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+    const resp = await fetch(_bpUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'gas_brand_packs_fetch', password: GAS_PASSWORD }),
+      body: JSON.stringify({ action: 'gas_cached', password: GAS_PASSWORD, gasAction: 'getBrandPacks', gasParams: {} }),
     });
     const data = await resp.json();
     if (data && data.ok && Array.isArray(data.packs) && data.packs.length > 0) {
