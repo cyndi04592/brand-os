@@ -663,14 +663,29 @@ async function fetchAndMergeBrandPacksFromGAS() {
   if (_BRAND_PACKS_GAS_LOADED || _BRAND_PACKS_GAS_LOADING) return;
   _BRAND_PACKS_GAS_LOADING = true;
   try {
-    const resp = await fetch(CF_WORKER_URL, {
+    // 🚚 2026-08-13:改直接向 kol-proxy 要 brand_packs(D1 正本)。
+    //
+    //  舊路繞了一大圈:admaker → photoroom-proxy(gas_brand_packs_fetch)
+    //                 → GAS getBrandPacks → GAS 的 brand_packs 分頁。
+    //  但那張分頁早就退休、正本搬到 D1 了 → 整條鏈回空 →
+    //  程式碼很客氣地「維持內建預設」→ 於是後台改品牌包永遠不生效,
+    //  而且畫面看起來一切正常,只有 console 一行黃字。這是最難查的那種。
+    //
+    //  ⚠️ 不改 photoroom-proxy 去打 kol-proxy:同帳號的 Worker 之間
+    //     用公開網址互打會撞 Cloudflare 1042,要另外設 Service Binding。
+    //     由瀏覽器直接打 kol-proxy 沒這問題,零設定、少一跳、更快。
+    //  ⚠️ 這裡打的是 KOL_WORKER_URL,不是 CF_WORKER_URL(廣告圖那台)。
+    //     2026-08-11 的 brand_logo 就是打錯台才回「未知的 action」。
+    const _bpUrl = (typeof KOL_WORKER_URL !== 'undefined' && KOL_WORKER_URL)
+      ? KOL_WORKER_URL : 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+    const resp = await fetch(_bpUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'gas_brand_packs_fetch', password: GAS_PASSWORD }),
+      body: JSON.stringify({ action: 'gas_cached', password: GAS_PASSWORD, gasAction: 'getBrandPacks', gasParams: {} }),
     });
     const data = await resp.json();
     if (!data.ok) {
-      console.warn('[v10.5] GAS brand packs 載入失敗:', data.error, '— 維持使用內建預設');
+      console.warn('[brand_packs] 載入失敗:', data.error, '— 維持使用內建預設');
       return;
     }
     if (!Array.isArray(data.packs) || data.packs.length === 0) {
