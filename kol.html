@@ -2357,6 +2357,15 @@ const WRITE_VIA_WORKER = {
   //   而這兩支每建一個 KOL、每切一次品牌就觸發,最容易跟生影片搶名額。
   //   Worker 沒有這個限制。
   ensurePersonaFolder: 1, ensureProductFolder: 1,
+  // 第6批(2026-08-14):從 Drive 建立 / 擴充 HeyGen Avatar Group。
+  //   搬的理由不只是脫離 GAS,是它在 GAS 上【本來就壞著】:
+  //   GAS 版查角色查的是舊試算表,角色只存在 D1 時查不到 →
+  //   建好的 group_id 沒被寫回去 → 畫面跳回「未綁定」→
+  //   客戶再按一次 → HeyGen 又多一個群組(而且要花錢)。
+  //   下面第 3470 行那段「前台自己寫回 group_id」就是為了擋這個而加的補丁;
+  //   Worker 版直接查 D1 並自己寫回,那段補丁從此只是保險,不會衝突
+  //   (值相同時本來就會跳過,值不同時寫入是冪等的 UPDATE)。
+  createKolLookFromDrive: 1,
 };
 
 async function gasPost(action, extra = {}) {
