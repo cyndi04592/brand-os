@@ -2843,7 +2843,17 @@ async function onBrandChange() {
 // ─── 載入 personas ────────────────────────────────────────
 async function loadPersonas(brandId, force) {
   S._personaCache = S._personaCache || {};
-  if (!force && S._personaCache[brandId]) { S.personas = S._personaCache[brandId]; S._personasLoading = false; return; }  // 🆕 快取命中=秒開,不重抓
+  // 🩹 2026-08-14:快取命中也要補畫一次。
+  //   病灶:下面第 2861 行有「人設到齊後補畫 Drive 區」的修補,
+  //   但這一行快取命中時【直接 return】,那段補畫根本走不到 →
+  //   切品牌切回來時,每顆鈕都卡在「讀取人設中…」再也不會變,
+  //   除非整頁重新整理。客戶會以為系統當掉。
+  if (!force && S._personaCache[brandId]) {
+    S.personas = S._personaCache[brandId];
+    S._personasLoading = false;
+    try { if (S.drivePhotos && document.getElementById('drive-gallery-wrap')) renderDriveGallery(); } catch (e) {}
+    return;
+  }
   try {
     const res = await gasGet('getKolPersonas', { brandId });
     S.personas = res.personas || [];
