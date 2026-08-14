@@ -797,9 +797,11 @@ function buildPanelHTML() {
         <button class="kai-btn-gen" id="kai-btn-gen">
           生成 AI KOL
         </button>
-        <span class="kai-cost">
-          預估 <span class="num" id="kai-cost-num">$0.18</span>
-        </span>
+        <!-- 🚫 2026-08-14:拿掉美金預估。這是我們付給上游的【進價】,
+             不是客戶的價格 —— 讓客戶看到等於公開成本結構,
+             而且跟他實際被扣的點數是兩套數字,只會造成誤會。
+             版位保留(空的 span),之後要改成「消耗點數」直接填這裡即可。 -->
+        <span class="kai-cost" id="kai-cost-num"></span>
       </div>
 
       <div class="kai-results" id="kai-results" style="display:none">
@@ -1137,10 +1139,12 @@ function renderPromptPreview() {
 }
 
 function updateCostEstimate() {
-  const num = parseInt(document.getElementById('kai-num')?.value || '3');
-  const cost = (num * COST_PER_IMAGE_USD).toFixed(2);
+  // 🚫 2026-08-14:不再對客戶顯示美金成本(那是進價,不是售價)。
+  //   函式保留不刪 —— 它有兩個呼叫點(初始化 + 張數改變),
+  //   直接刪掉會噴 ReferenceError 讓整個面板掛掉。
+  //   之後要顯示「消耗點數」時,改這裡就好,呼叫點不用動。
   const el = document.getElementById('kai-cost-num');
-  if (el) el.textContent = '$' + cost;
+  if (el) el.textContent = '';
 }
 
 // ── Seed 鎖定 ──────────────────────────────────────────────
