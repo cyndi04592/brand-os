@@ -2273,7 +2273,10 @@ async function loadSubOrders() {
     const j = await r.json();
     if (!j.ok) { box.innerHTML = '<div class="empty-state"><p>載入失敗</p></div>'; return; }
     if (!j.orders || !j.orders.length) { box.innerHTML = '<div class="empty-state"><p>目前沒有訂閱訂單</p></div>'; return; }
-    let html = '<table><thead><tr><th>訂單編號</th><th>Email</th><th>方案</th><th>週期</th><th>金額</th><th>月配額</th><th>方式</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
+    // 🩹 2026-08-14:加「後五碼」欄。客戶在方案頁回報的匯款帳號後五碼存在 note,
+    //   以前後台看不到 → 收到一筆三萬只能自己翻銀行明細比金額(同金額兩張就對不出來)。
+    //   位置放在「方式」後面:manual(銀行轉帳)才需要對帳,兩欄擺一起一眼看完。
+    let html = '<table><thead><tr><th>訂單編號</th><th>Email</th><th>方案</th><th>週期</th><th>金額</th><th>月配額</th><th>方式</th><th>後五碼</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
     j.orders.forEach(o => {
       const cycleLabel = o.cycle==='year' ? '年繳' : '月繳';
       const st = o.status==='pending' ? '<span style="color:#ffb84d;font-weight:700">● 待確認</span>'
@@ -2286,7 +2289,16 @@ async function loadSubOrders() {
       } else if (o.status==='paid' && o.paidAt) {
         act = '<span style="font-size:11px;color:var(--t3)">'+new Date(o.paidAt).toLocaleString('zh-TW')+'</span>';
       }
-      html += `<tr><td style="font-family:monospace;font-size:11px">${o.orderId}</td><td style="font-size:12px">${o.email}</td><td>${o.planName||o.planKey||'—'}</td><td style="font-size:12px;color:var(--t3)">${cycleLabel}</td><td>NT$${Number(o.amount).toLocaleString()}</td><td>${Number(o.monthlyBits||0).toLocaleString()}</td><td style="font-size:11px;color:var(--t3)">${o.method||'—'}</td><td>${st}</td><td>${act}</td></tr>`;
+      // 後五碼:有填=綠色等寬字(好對照銀行明細);
+      //   銀行轉帳但還沒回報=紅字「未回報」,一眼看出哪幾張要追;
+      //   刷卡(ecpay)自動對帳,不需要這欄 → 顯示 —,不要製造假的待辦。
+      const _n5 = String(o.note || '').trim();
+      const last5Cell = _n5
+        ? `<td style="font-family:monospace;font-size:13px;color:#6dfac2;font-weight:700">${_n5}</td>`
+        : (o.method === 'manual' && o.status === 'pending'
+            ? '<td style="font-size:11px;color:#ff6d9b">未回報</td>'
+            : '<td style="color:var(--t3)">—</td>');
+      html += `<tr><td style="font-family:monospace;font-size:11px">${o.orderId}</td><td style="font-size:12px">${o.email}</td><td>${o.planName||o.planKey||'—'}</td><td style="font-size:12px;color:var(--t3)">${cycleLabel}</td><td>NT$${Number(o.amount).toLocaleString()}</td><td>${Number(o.monthlyBits||0).toLocaleString()}</td><td style="font-size:11px;color:var(--t3)">${o.method||'—'}</td>${last5Cell}<td>${st}</td><td>${act}</td></tr>`;
     });
     html += '</tbody></table>';
     box.innerHTML = html;
