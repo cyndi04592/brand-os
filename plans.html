@@ -253,8 +253,11 @@
     const v = (el.value || '').replace(/\D/g, '').slice(-5);
     if (v.length < 5) { msg.textContent = '請輸入正確的後 5 碼(5 位數字)'; msg.style.color = '#ff9d9d'; return; }
     msg.textContent = '回報中…'; msg.style.color = 'rgba(255,255,255,0.5)';
-    fetch(`${GAS_URL}?action=reportTransferLast5&password=${GAS_PASSWORD}&orderId=${encodeURIComponent(orderId)}&last5=${v}`)
-      .then(r => r.json())
+    // 🚚 2026-08-13:改走 Worker(訂單正本在 D1)。
+    //   舊路寫進 GAS 一張獨立的「匯款回報」分頁,而訂單本體在 D1 ——
+    //   等於後台看訂單、對帳看另一張表,兩邊要人工湊。
+    //   現在直接寫進該張訂單的 note 欄,後台訂單列表就看得到。
+    _wWrite('reportTransferLast5', { orderId, last5: v })
       .then(j => {
         if (j.ok) { msg.textContent = '✅ 已收到後五碼,我們會盡快對帳開通'; msg.style.color = '#8effc0'; el.disabled = true; }
         else { msg.textContent = '回報失敗:' + (j.error || ''); msg.style.color = '#ff9d9d'; }
@@ -267,7 +270,10 @@
     const m = /[?&]paid=([^&]+)/.exec(location.search);
     if (m) {
       const email = localStorage.getItem('bs_sso_email') || '';
-      if (email) { fetch(`${GAS_URL}?action=clearPendingPayment&password=${GAS_PASSWORD}&email=${encodeURIComponent(email)}`).catch(() => {}); }
+      // 🚚 2026-08-13:改走 Worker —— 待付款名單正本在 D1,
+      //   清在 GAS 沒用,方案頁會一直掛著「你有一筆待付款」的橫幅,
+      //   客戶最容易誤會成重複扣款。
+      if (email) { _wWrite('clearPendingPayment', { email }).catch(() => {}); }
       setTimeout(function () {
         alert('✅ 付款完成!方案點數會在幾秒內自動配發。\n\n訂單編號:' + decodeURIComponent(m[1]));
       }, 300);
