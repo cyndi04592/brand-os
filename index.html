@@ -1164,8 +1164,11 @@ function reportLast5(orderId) {
   const v = (inp.value || '').replace(/\D/g, '').slice(-5);
   if (v.length < 3) { msg.style.color = '#ff8cae'; msg.textContent = '請填轉出帳號後 5 碼'; return; }
   msg.style.color = 'rgba(255,255,255,0.6)'; msg.textContent = '送出中…';
-  fetch(`${GAS_URL}?action=reportPayerLast5&password=${GAS_PASSWORD}&orderId=${encodeURIComponent(orderId)}&last5=${encodeURIComponent(v)}`)
-    .then(r => r.json())
+  // 🚚 2026-08-13:改走 Worker(儲值訂單正本在 D1)。
+  //   同一頁的 createTopupOrder 早就走 _wWrite 了,只有這支還在直撥 GAS ——
+  //   等於「下單寫 D1、回報後五碼寫 Google 試算表」,你對帳要開兩個地方看。
+  //   現在後五碼直接寫進該張訂單的 note 欄,後台儲值單列表就看得到。
+  _wWrite('reportPayerLast5', { orderId, last5: v })
     .then(j => {
       if (j.ok) { msg.style.color = '#6dfac2'; msg.textContent = '\u2705 \u5df2\u6536\u5230\u5f8c\u4e94\u78bc(' + j.last5 + '),\u5c0d\u5e33\u5f8c\u81ea\u52d5\u5165\u5e33'; inp.disabled = true; }
       else { msg.style.color = '#ff8cae'; msg.textContent = '\u9001\u51fa\u5931\u6557:' + (j.message || j.error || ''); }
