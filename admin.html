@@ -1935,7 +1935,34 @@ if (!_adminKey()) { try { window._setAdminKey(); } catch (e) {} }
 
 (function () {
   const _origFetch = window.fetch.bind(window);
+
+  // 🔐 2026-08-14 P0·5b:身分證(session token)。登入時由 Worker 簽發,存在
+  //   同網域的 localStorage,所以後台這頁讀得到。這裡負責把它夾帶進每一個
+  //   打 kol-proxy 的請求。
+  //   為什麼要:PASSWORD 那把是公開的(隨網頁下發),只能證明「從我們網站來」;
+  //   而「我是管理員」目前是靠請求裡自己填的 email —— 後端無從查證,填誰就是誰。
+  //   token 由 Worker 簽章,改內容就對不上章,才是真的身分。
+  //   ⚠️ Worker 這一版還沒開始查驗 → 只是多送一個沒人看的欄位,零風險。
+  window._bsAuthToken = function () {
+    try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; }
+    catch (e) { return ''; }
+  };
+
   window.fetch = function (input, init) {
+    // 🔐 夾帶身分證:所有打 kol-proxy 的 POST(不論從哪支函式發出)
+    try {
+      const _ku = (typeof input === 'string') ? input : ((input && input.url) || '');
+      if (_ku.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1
+          && init && String(init.method || '').toUpperCase() === 'POST'
+          && typeof init.body === 'string') {
+        const _o = JSON.parse(init.body);
+        if (_o && typeof _o === 'object' && !_o.token) {
+          const _tk = window._bsAuthToken();
+          if (_tk) { _o.token = _tk; init = Object.assign({}, init, { body: JSON.stringify(_o) }); }
+        }
+      }
+    } catch (_) { /* 夾帶失敗絕不擋請求 */ }
+
     try {
       const url = (typeof input === 'string') ? input : ((input && input.url) || '');
       if (url.indexOf('script.google.com') !== -1) {
@@ -1999,10 +2026,15 @@ if (!_adminKey()) { try { window._setAdminKey(); } catch (e) {} }
       });
     } catch (_) {}
     params._ts = Date.now();                                       // 後台要看最新的,強制繞過快取
+    // ⚠️ 這個 init 是交給 _origFetch 直送的(繞過上面的 window.fetch 攔截器),
+    //   所以身分證要在這裡自己補上,不能指望攔截器。
+    const _payload = { action: 'gas_cached', password: PASSWORD, gasAction: act, gasParams: params };
+    const _tk = window._bsAuthToken ? window._bsAuthToken() : '';
+    if (_tk) _payload.token = _tk;
     return {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'gas_cached', password: PASSWORD, gasAction: act, gasParams: params })
+      body: JSON.stringify(_payload)
     };
   }
 
