@@ -1836,10 +1836,25 @@ const _LOG_KIND = {
           && _u.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1) {
         const _o = JSON.parse(init.body);
         if (_o && _o.password && _o.action) {
+          let _patched = false;
           if (!_o.email) {
             _o.email = localStorage.getItem('bs_sso_email') || '';
-            init = Object.assign({}, init, { body: JSON.stringify(_o) });
+            _patched = true;
           }
+          // 🔐 2026-08-14 P0·5a:每個請求夾帶身分證(session token)。
+          //   為什麼要:password 那把是公開的(隨網頁下發給每位訪客),
+          //   只能證明「從我們網站來」;email 又是這裡自己填的,後端無從查證。
+          //   token 由 Worker 簽章,改內容就對不上章 → 才是真的身分。
+          //   ⚠️ 這一版 Worker 還沒開始查驗,多送一個沒人看的欄位而已 → 零風險。
+          //     等 Worker 上鎖後,email 會改由 token 決定,這裡送的只是備援。
+          if (!_o.token) {
+            const _tk = (function () {
+              try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; }
+              catch (e) { return ''; }
+            })();
+            if (_tk) { _o.token = _tk; _patched = true; }
+          }
+          if (_patched) init = Object.assign({}, init, { body: JSON.stringify(_o) });
           if (_BILLED_KOL.indexOf(_o.action) !== -1) { _billed = true; _body = _o; }
           // 🛡 只有白名單裡的唯讀/查詢動作才進重試圈(扣點類永遠只送一次)
           if (_RETRY_SAFE_KOL.indexOf(_o.action) !== -1) {
