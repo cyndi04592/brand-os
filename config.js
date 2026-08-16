@@ -324,3 +324,46 @@ function buildDataFromSheets(data) {
     subs: Object.values(prodByBrand[b.id] || {})
   }));
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  🔐 2026-08-14 P0·6a:身分證(session token)全域夾帶
+//  ─────────────────────────────────────────────────────────────
+//  為什麼放在 config.js:
+//   index.html / plans.html / monitor.html 這三頁都載入本檔,而且都在
+//   最前面 → 一個檔就能覆蓋三頁,不用逐頁改。
+//   (kol.html 與 admin.html 各自有攔截器,已在 5a / 5b 處理。)
+//
+//  做什麼:所有打 kol-proxy 的 POST,自動補上 token 欄位。
+//   GAS_PASSWORD 那把是公開的(隨網頁下發給每位訪客),只能證明
+//   「從我們網站來」;而請求裡的 email 是前端自己填的,後端無從查證。
+//   token 由 Worker 簽章,改內容就對不上章 —— 那才是真的身分。
+//
+//  ⚠️ 沒有 token 時(還沒登入)什麼都不做,原樣送出 —— 登入畫面本身
+//   要能運作,不能把人鎖在門外。
+// ═══════════════════════════════════════════════════════════════
+(function () {
+  if (window.__bsTokenShim) return;          // 防重複掛載(頁面若同時載兩次)
+  window.__bsTokenShim = true;
+
+  window._bsAuthToken = function () {
+    try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; }
+    catch (e) { return ''; }
+  };
+
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    try {
+      const url = (typeof input === 'string') ? input : ((input && input.url) || '');
+      if (url.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1
+          && init && String(init.method || '').toUpperCase() === 'POST'
+          && typeof init.body === 'string') {
+        const o = JSON.parse(init.body);
+        if (o && typeof o === 'object' && !o.token) {
+          const tk = window._bsAuthToken();
+          if (tk) { o.token = tk; init = Object.assign({}, init, { body: JSON.stringify(o) }); }
+        }
+      }
+    } catch (e) { /* 夾帶失敗絕不擋請求 */ }
+    return _origFetch(input, init);
+  };
+})();
