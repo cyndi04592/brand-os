@@ -2264,7 +2264,7 @@ async function loadTopup() {
     const j = await r.json();
     if (!j.ok) { box.innerHTML = '<div class="empty-state"><p>載入失敗</p></div>'; return; }
     if (!j.orders || !j.orders.length) { box.innerHTML = '<div class="empty-state"><p>目前沒有訂單</p></div>'; return; }
-    let html = '<table><thead><tr><th>訂單編號</th><th>Email</th><th>包</th><th>金額</th><th>Bits</th><th>方式</th><th>後五碼</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>訂單編號</th><th>Email</th><th>包</th><th>金額</th><th>Bits</th><th>方式</th><th>後五碼</th><th>發票</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
     j.orders.forEach(o => {
       const st = o.status==='pending' ? '<span style="color:#ffb84d;font-weight:700">● 待確認</span>'
                : o.status==='paid'    ? '<span style="color:#6dfac2;font-weight:700">✓ 已入帳</span>'
@@ -2272,11 +2272,39 @@ async function loadTopup() {
       const act = o.status==='pending'
         ? `<button class="btn-add-staff" style="padding:6px 12px;font-size:12px" onclick="confirmTopup('${o.orderId}','${o.email}')">✓ 確認入帳</button>`
         : (o.paidAt ? ('<span style="font-size:11px;color:var(--t3)">'+new Date(o.paidAt).toLocaleString('zh-TW')+'</span>') : '—');
-      html += `<tr><td style="font-family:monospace;font-size:11px">${o.orderId}</td><td style="font-size:12px">${o.email}</td><td>${o.packName}</td><td>NT$${Number(o.amount).toLocaleString()}</td><td>${Number(o.bits).toLocaleString()}</td><td style="font-size:11px;color:var(--t3)">${o.method}</td><td style="font-family:monospace;font-size:13px;color:#ffce6b;font-weight:700">${o.note||'—'}</td><td>${st}</td><td>${act}</td></tr>`;
+      html += `<tr><td style="font-family:monospace;font-size:11px">${o.orderId}</td><td style="font-size:12px">${o.email}</td><td>${o.packName}</td><td>NT$${Number(o.amount).toLocaleString()}</td><td>${Number(o.bits).toLocaleString()}</td><td style="font-size:11px;color:var(--t3)">${o.method}</td><td style="font-family:monospace;font-size:13px;color:#ffce6b;font-weight:700">${o.note||'—'}</td>${_invCell(o)}<td>${st}</td><td>${act}</td></tr>`;
     });
     html += '</tbody></table>';
     box.innerHTML = html;
   } catch (e) { box.innerHTML = '<div class="empty-state"><p>載入錯誤</p></div>'; }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  🧾 2026-08-17:訂單清單的「發票」欄
+//   為什麼一定要顯示:銀行轉帳的單是人工按「確認開通」的,
+//   如果看不到客戶要打統編,你不會知道有這回事 —— 而發票一旦開立
+//   就改不動,只能作廢重開(人工作業)。
+//   顯示邏輯:
+//     已開立 → 綠色發票號碼(可直接拿去綠界後台查)
+//     要統編 → 橘色統編 + 抬頭(最需要被看見的一種)
+//     其他   → 灰色小字說明客戶選了什麼
+// ═══════════════════════════════════════════════════════════
+function _invCell(o) {
+  const no = String(o.invoiceNo || '').trim();
+  if (no) {
+    return '<td style="font-family:monospace;font-size:12px;color:#6dfac2;font-weight:700">' + no
+         + (o.invTaxId ? '<div style="font-size:10px;color:#ffce6b;font-weight:400">統編 ' + o.invTaxId + '</div>' : '')
+         + '</td>';
+  }
+  const t = String(o.invType || '').trim();
+  if (t === 'company') {
+    return '<td style="font-size:11px;color:#ffce6b;font-weight:700">統編 ' + String(o.invTaxId || '')
+         + '<div style="font-size:10px;color:var(--t3);font-weight:400">' + String(o.invTitle || '') + '</div></td>';
+  }
+  if (t === 'mobile') return '<td style="font-size:11px;color:var(--t3)">手機條碼<div style="font-family:monospace;font-size:10px">' + String(o.invCarrier || '') + '</div></td>';
+  if (t === 'donate') return '<td style="font-size:11px;color:var(--t3)">捐贈 ' + String(o.invLove || '') + '</td>';
+  if (t === 'email')  return '<td style="font-size:11px;color:var(--t3)">寄 Email</td>';
+  return '<td style="color:var(--t3)">—</td>';
 }
 
 async function confirmTopup(orderId, email) {
@@ -2308,7 +2336,7 @@ async function loadSubOrders() {
     // 🩹 2026-08-14:加「後五碼」欄。客戶在方案頁回報的匯款帳號後五碼存在 note,
     //   以前後台看不到 → 收到一筆三萬只能自己翻銀行明細比金額(同金額兩張就對不出來)。
     //   位置放在「方式」後面:manual(銀行轉帳)才需要對帳,兩欄擺一起一眼看完。
-    let html = '<table><thead><tr><th>訂單編號</th><th>Email</th><th>方案</th><th>週期</th><th>金額</th><th>月配額</th><th>方式</th><th>後五碼</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>訂單編號</th><th>Email</th><th>方案</th><th>週期</th><th>金額</th><th>月配額</th><th>方式</th><th>後五碼</th><th>發票</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
     j.orders.forEach(o => {
       const cycleLabel = o.cycle==='year' ? '年繳' : '月繳';
       const st = o.status==='pending' ? '<span style="color:#ffb84d;font-weight:700">● 待確認</span>'
@@ -2316,7 +2344,7 @@ async function loadSubOrders() {
                :                        '<span style="color:var(--t3)">已取消</span>';
       let act = '—';
       if (o.status==='pending') {
-        act = `<button class="btn-add-staff" style="padding:6px 12px;font-size:12px" onclick="confirmSubOrder('${o.orderId}','${o.email}')">✓ 確認開通</button>`
+        act = `<button class="btn-add-staff" style="padding:6px 12px;font-size:12px" onclick="confirmSubOrder('${o.orderId}','${o.email}','${String(o.invType||'')==='company' ? ('統編 '+(o.invTaxId||'')+' / '+(o.invTitle||'')) : ''}')">✓ 確認開通</button>`
             + ` <button class="btn-refresh" style="padding:6px 10px;font-size:12px;color:#ff6d9b" onclick="cancelSubOrder('${o.orderId}')">✕ 取消</button>`;
       } else if (o.status==='paid' && o.paidAt) {
         act = '<span style="font-size:11px;color:var(--t3)">'+new Date(o.paidAt).toLocaleString('zh-TW')+'</span>';
@@ -2330,15 +2358,18 @@ async function loadSubOrders() {
         : (o.method === 'manual' && o.status === 'pending'
             ? '<td style="font-size:11px;color:#ff6d9b">未回報</td>'
             : '<td style="color:var(--t3)">—</td>');
-      html += `<tr><td style="font-family:monospace;font-size:11px">${o.orderId}</td><td style="font-size:12px">${o.email}</td><td>${o.planName||o.planKey||'—'}</td><td style="font-size:12px;color:var(--t3)">${cycleLabel}</td><td>NT$${Number(o.amount).toLocaleString()}</td><td>${Number(o.monthlyBits||0).toLocaleString()}</td><td style="font-size:11px;color:var(--t3)">${o.method||'—'}</td>${last5Cell}<td>${st}</td><td>${act}</td></tr>`;
+      html += `<tr><td style="font-family:monospace;font-size:11px">${o.orderId}</td><td style="font-size:12px">${o.email}</td><td>${o.planName||o.planKey||'—'}</td><td style="font-size:12px;color:var(--t3)">${cycleLabel}</td><td>NT$${Number(o.amount).toLocaleString()}</td><td>${Number(o.monthlyBits||0).toLocaleString()}</td><td style="font-size:11px;color:var(--t3)">${o.method||'—'}</td>${last5Cell}${_invCell(o)}<td>${st}</td><td>${act}</td></tr>`;
     });
     html += '</tbody></table>';
     box.innerHTML = html;
   } catch (e) { box.innerHTML = '<div class="empty-state"><p>載入錯誤</p></div>'; }
 }
 
-async function confirmSubOrder(orderId, email) {
-  if (!confirm('確認此訂閱單「銀行已實際收到款項」?\n開通後不可復原。\n\n' + orderId)) return;
+async function confirmSubOrder(orderId, email, invNote) {
+  // 🧾 客戶要打統編的話,在確認視窗一起提醒 —— 開通後就會自動開票,
+  //   統編錯了只能作廢重開,所以要在按下去之前看到。
+  const extra = invNote ? ('\n\n🧾 此單客戶指定:' + invNote) : '';
+  if (!confirm('確認此訂閱單「銀行已實際收到款項」?\n開通後不可復原。\n\n' + orderId + extra)) return;
   try {
     // 🔀 v3.94:改走 Worker(D1 正本)
     const j = await workerWrite('confirmSubOrder', { email: ADMIN_USER_EMAIL, orderId });
