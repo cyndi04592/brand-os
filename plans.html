@@ -130,6 +130,7 @@
         '<button onclick="buyPlanManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">🏦 銀行轉帳（人工開通）</button>' +
         '<button onclick="renderPage()" style="' + bs + 'background:transparent;color:rgba(255,255,255,0.45);font-weight:500;margin-top:14px;">← 返回方案</button>' +
       '</div>';
+    _invSwitch();   // 畫完立刻把預設選項(Email)的卡片點亮
   }
 
   // ★ 2026-08-08:訂閱建單改走 Worker(D1 正本),不再直打 GAS。
@@ -179,22 +180,33 @@
   //     選錯組合會直接開立失敗,所以這裡用單選,不讓客戶自由組合。
   // ═══════════════════════════════════════════════════════════
   function _invoiceFormHtml() {
-    const box = 'width:100%;padding:11px 12px;border-radius:9px;border:1px solid rgba(255,255,255,0.18);background:rgba(0,0,0,0.3);color:#fff;font-size:14px;margin-top:8px;box-sizing:border-box;';
+    const box = 'width:100%;padding:12px 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.35);color:#fff;font-size:14px;margin-top:9px;box-sizing:border-box;';
+    // 卡片式選項:選中的會亮邊+底色,一眼看得出目前選了什麼。
+    // ⚠️ 舊版用一排灰色小圓點,企業客戶掃過去容易整區跳過 →
+    //   結果拿到沒統編的發票來要求重開,那是人工作業。
+    const opt = (val, title, sub) =>
+      '<label id="invOpt_' + val + '" onclick="_invSwitch()" style="' +
+        'display:flex;align-items:flex-start;gap:10px;padding:12px 13px;margin-bottom:8px;' +
+        'border-radius:11px;cursor:pointer;transition:all .15s;' +
+        'border:1.5px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);">' +
+        '<input type="radio" name="invType" value="' + val + '"' + (val === 'email' ? ' checked' : '') +
+          ' style="margin-top:2px;accent-color:#7c6cff;width:16px;height:16px;flex:none;">' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:14px;font-weight:700;color:#fff;line-height:1.4;">' + title + '</div>' +
+          (sub ? '<div style="font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:2px;line-height:1.5;">' + sub + '</div>' : '') +
+        '</div>' +
+      '</label>';
     return '' +
-      '<div style="text-align:left;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 16px;margin-bottom:16px;">' +
-        '<div style="font-size:12.5px;font-weight:800;color:#fff;margin-bottom:10px;">🧾 電子發票</div>' +
-        '<label style="display:block;font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:7px;cursor:pointer;">' +
-          '<input type="radio" name="invType" value="email" checked onchange="_invSwitch()" style="margin-right:7px;">寄到我的 Email(推薦,免填)' +
-        '</label>' +
-        '<label style="display:block;font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:7px;cursor:pointer;">' +
-          '<input type="radio" name="invType" value="company" onchange="_invSwitch()" style="margin-right:7px;">公司報帳,要打統一編號' +
-        '</label>' +
-        '<label style="display:block;font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:7px;cursor:pointer;">' +
-          '<input type="radio" name="invType" value="mobile" onchange="_invSwitch()" style="margin-right:7px;">存到手機條碼載具' +
-        '</label>' +
-        '<label style="display:block;font-size:13px;color:rgba(255,255,255,0.8);cursor:pointer;">' +
-          '<input type="radio" name="invType" value="donate" onchange="_invSwitch()" style="margin-right:7px;">捐贈發票' +
-        '</label>' +
+      '<div style="text-align:left;background:rgba(124,108,255,0.06);border:1px solid rgba(124,108,255,0.3);border-radius:14px;padding:16px 16px 14px;margin-bottom:16px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+          '<div style="width:3px;height:16px;border-radius:2px;background:linear-gradient(180deg,#7c6cff,#ff7ac3);"></div>' +
+          '<div style="font-size:15px;font-weight:900;color:#fff;">電子發票</div>' +
+        '</div>' +
+        '<div style="font-size:11.5px;color:rgba(255,255,255,0.5);margin:0 0 12px 11px;line-height:1.6;">公司要報帳的話,請選第二項填統編</div>' +
+        opt('email',   '寄到我的 Email',  '推薦 · 什麼都不用填,發票直接寄到信箱') +
+        opt('company', '公司報帳,要打統一編號', '需填統編與公司抬頭') +
+        opt('mobile',  '存到手機條碼載具', '需填 / 開頭的 8 碼手機條碼') +
+        opt('donate',  '捐贈發票',        '捐給公益團體,不另寄發票') +
         '<div id="invCompany" style="display:none;">' +
           '<input id="invTaxId" maxlength="8" inputmode="numeric" placeholder="統一編號(8 碼數字)" style="' + box + 'font-family:monospace;letter-spacing:2px;">' +
           '<input id="invTitle" maxlength="60" placeholder="公司抬頭" style="' + box + '">' +
@@ -205,23 +217,37 @@
         '<div id="invDonate" style="display:none;">' +
           '<input id="invLove" maxlength="7" inputmode="numeric" placeholder="愛心碼(3-7 碼數字,留空為 168001)" style="' + box + 'font-family:monospace;letter-spacing:2px;">' +
         '</div>' +
-        '<div id="invErr" style="font-size:11.5px;color:#ff9d9d;margin-top:8px;line-height:1.6;"></div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;line-height:1.7;">發票於付款完成後自動開立並通知您。開立後統編與載具無法變更。</div>' +
+        '<div id="invErr" style="font-size:12px;color:#ff9d9d;margin-top:9px;line-height:1.6;font-weight:700;"></div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,0.38);margin-top:10px;line-height:1.7;">發票於付款完成後自動開立並通知您。開立後統編與載具無法變更。</div>' +
       '</div>' +
-      '<div style="text-align:left;background:rgba(255,190,90,0.06);border:1px solid rgba(255,190,90,0.25);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:rgba(255,255,255,0.7);line-height:1.8;">' +
+      '<div style="text-align:left;background:rgba(255,190,90,0.08);border:1px solid rgba(255,190,90,0.35);border-radius:14px;padding:13px 15px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,0.78);line-height:1.85;">' +
+        '<b style="color:#ffce6b;font-size:12.5px;">⚠️ 購買前請確認</b><br>' +
         '本服務為數位內容服務,開通後即可立即使用,<b style="color:#ffce6b;">恕不提供中途退訂或退款</b>。<br>' +
         '若對服務內容尚有疑慮,建議先購買「月繳方案」試用,確認符合需求後再升級年繳。' +
       '</div>';
   }
 
+  //  切換時同步三件事:展開對應欄位、亮起選中的卡片、清掉舊錯誤訊息。
+  //  ⚠️ radio 的 checked 由瀏覽器處理,但「卡片外觀」要自己畫 ——
+  //    漏了這段就會變成「選了但看不出來」,客戶會反覆點。
   function _invSwitch() {
-    const v = _invPicked();
-    const show = (id, on) => { const e = document.getElementById(id); if (e) e.style.display = on ? 'block' : 'none'; };
-    show('invCompany', v === 'company');
-    show('invMobile',  v === 'mobile');
-    show('invDonate',  v === 'donate');
-    const err = document.getElementById('invErr'); if (err) err.textContent = '';
+    setTimeout(function () {
+      const v = _invPicked();
+      ['email', 'company', 'mobile', 'donate'].forEach(function (k) {
+        const el = document.getElementById('invOpt_' + k);
+        if (!el) return;
+        const on = (k === v);
+        el.style.border = on ? '1.5px solid #7c6cff' : '1.5px solid rgba(255,255,255,0.12)';
+        el.style.background = on ? 'rgba(124,108,255,0.14)' : 'rgba(255,255,255,0.03)';
+      });
+      const show = (id, on) => { const e = document.getElementById(id); if (e) e.style.display = on ? 'block' : 'none'; };
+      show('invCompany', v === 'company');
+      show('invMobile',  v === 'mobile');
+      show('invDonate',  v === 'donate');
+      const err = document.getElementById('invErr'); if (err) err.textContent = '';
+    }, 0);
   }
+
   function _invPicked() {
     const el = document.querySelector('input[name="invType"]:checked');
     return el ? el.value : 'email';
