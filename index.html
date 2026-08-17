@@ -1078,11 +1078,113 @@ function buyPack(k) {
     '<div style="grid-column:1/-1;text-align:center;">' +
       '<div style="font-size:17px;font-weight:900;color:#fff;">' + p.name + '</div>' +
       '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin:4px 0 20px;">' + p.bits.toLocaleString() + ' Bits ／ NT$' + p.price.toLocaleString() + '</div>' +
+      _invoiceFormHtml() +
       '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
       '<button onclick="buyPackEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">線上刷卡 / ATM（即時入帳）</button>' +
       '<button onclick="buyPackManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">銀行轉帳（人工對帳）</button>' +
       '<button onclick="renderShopGrid()" style="' + bs + 'background:transparent;color:rgba(255,255,255,0.45);font-weight:500;margin-top:14px;">← 返回</button>' +
     '</div>';
+  _invSwitch();   // 畫完立刻把預設選項(Email)的卡片點亮
+}
+
+// ═══════════════════════════════════════════════════════════
+//  🧾 2026-08-17:電子發票資料(統編 / 載具 / 捐贈)
+//   與 plans.html 同一套設計。加值包也要 —— 企業客戶買點數同樣要報帳。
+//   ⚠️ 四選一互斥:綠界規定統編與捐贈不能並存、載具與列印組合也有限制,
+//     選錯組合會整張開立失敗 → 用單選,不讓客戶自由排列。
+//   ⚠️ 發票一旦開立就改不動(只能作廢重開,是人工作業),所以在結帳前收。
+// ═══════════════════════════════════════════════════════════
+function _invoiceFormHtml() {
+  const box = 'width:100%;padding:12px 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.35);color:#fff;font-size:14px;margin-top:9px;box-sizing:border-box;';
+  const opt = (val, title, sub) =>
+    '<label id="invOpt_' + val + '" onclick="_invSwitch()" style="' +
+      'display:flex;align-items:flex-start;gap:10px;padding:12px 13px;margin-bottom:8px;' +
+      'border-radius:11px;cursor:pointer;transition:all .15s;' +
+      'border:1.5px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);">' +
+      '<input type="radio" name="invType" value="' + val + '"' + (val === 'email' ? ' checked' : '') +
+        ' style="margin-top:2px;accent-color:#7c6cff;width:16px;height:16px;flex:none;">' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:14px;font-weight:700;color:#fff;line-height:1.4;">' + title + '</div>' +
+        (sub ? '<div style="font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:2px;line-height:1.5;">' + sub + '</div>' : '') +
+      '</div>' +
+    '</label>';
+  return '' +
+    '<div style="text-align:left;background:rgba(124,108,255,0.06);border:1px solid rgba(124,108,255,0.3);border-radius:14px;padding:16px 16px 14px;margin-bottom:16px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+        '<div style="width:3px;height:16px;border-radius:2px;background:linear-gradient(180deg,#7c6cff,#ff7ac3);"></div>' +
+        '<div style="font-size:15px;font-weight:900;color:#fff;">電子發票</div>' +
+      '</div>' +
+      '<div style="font-size:11.5px;color:rgba(255,255,255,0.5);margin:0 0 12px 11px;line-height:1.6;">公司要報帳的話,請選第二項填統編</div>' +
+      opt('email',   '寄到我的 Email',  '推薦 · 什麼都不用填,發票直接寄到信箱') +
+      opt('company', '公司報帳,要打統一編號', '需填統編與公司抬頭') +
+      opt('mobile',  '存到手機條碼載具', '需填 / 開頭的 8 碼手機條碼') +
+      opt('donate',  '捐贈發票',        '捐給公益團體,不另寄發票') +
+      '<div id="invCompany" style="display:none;">' +
+        '<input id="invTaxId" maxlength="8" inputmode="numeric" placeholder="統一編號(8 碼數字)" style="' + box + 'font-family:monospace;letter-spacing:2px;">' +
+        '<input id="invTitle" maxlength="60" placeholder="公司抬頭" style="' + box + '">' +
+      '</div>' +
+      '<div id="invMobile" style="display:none;">' +
+        '<input id="invCarrier" maxlength="8" placeholder="手機條碼(/ 開頭共 8 碼)" style="' + box + 'font-family:monospace;letter-spacing:2px;">' +
+      '</div>' +
+      '<div id="invDonate" style="display:none;">' +
+        '<input id="invLove" maxlength="7" inputmode="numeric" placeholder="愛心碼(3-7 碼數字,留空為 168001)" style="' + box + 'font-family:monospace;letter-spacing:2px;">' +
+      '</div>' +
+      '<div id="invErr" style="font-size:12px;color:#ff9d9d;margin-top:9px;line-height:1.6;font-weight:700;"></div>' +
+      '<div style="font-size:11px;color:rgba(255,255,255,0.38);margin-top:10px;line-height:1.7;">發票於付款完成後自動開立並通知您。開立後統編與載具無法變更。</div>' +
+    '</div>' +
+    '<div style="text-align:left;background:rgba(255,190,90,0.08);border:1px solid rgba(255,190,90,0.35);border-radius:14px;padding:13px 15px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,0.78);line-height:1.85;">' +
+      '<b style="color:#ffce6b;font-size:12.5px;">⚠️ 購買前請確認</b><br>' +
+      '補給包點數<b style="color:#ffce6b;">永久保留、不會過期</b>,但屬數位商品,<b style="color:#ffce6b;">售出後恕不退款</b>。' +
+    '</div>';
+}
+
+function _invSwitch() {
+  setTimeout(function () {
+    const v = _invPicked();
+    ['email', 'company', 'mobile', 'donate'].forEach(function (k) {
+      const el = document.getElementById('invOpt_' + k);
+      if (!el) return;
+      const on = (k === v);
+      el.style.border = on ? '1.5px solid #7c6cff' : '1.5px solid rgba(255,255,255,0.12)';
+      el.style.background = on ? 'rgba(124,108,255,0.14)' : 'rgba(255,255,255,0.03)';
+    });
+    const show = (id, on) => { const e = document.getElementById(id); if (e) e.style.display = on ? 'block' : 'none'; };
+    show('invCompany', v === 'company');
+    show('invMobile',  v === 'mobile');
+    show('invDonate',  v === 'donate');
+    const err = document.getElementById('invErr'); if (err) err.textContent = '';
+  }, 0);
+}
+function _invPicked() {
+  const el = document.querySelector('input[name="invType"]:checked');
+  return el ? el.value : 'email';
+}
+//  只做格式檢查(長度、字元),有效性由綠界驗 ——
+//  擋在前面是為了少開一張失敗的發票,不是取代綠界的檢核。
+function _invCollect() {
+  const v = _invPicked();
+  const err = document.getElementById('invErr');
+  const fail = (m) => { if (err) err.textContent = '⚠️ ' + m; return { ok: false }; };
+  if (err) err.textContent = '';
+  if (v === 'company') {
+    const id = String(((document.getElementById('invTaxId') || {}).value || '')).replace(/\D/g, '');
+    const tt = String(((document.getElementById('invTitle') || {}).value || '')).trim();
+    if (id.length !== 8) return fail('統一編號要 8 碼數字');
+    if (!tt) return fail('請填公司抬頭');
+    return { ok: true, data: { invType: 'company', taxId: id, title: tt } };
+  }
+  if (v === 'mobile') {
+    const c = String(((document.getElementById('invCarrier') || {}).value || '')).trim().toUpperCase();
+    if (!/^\/[0-9A-Z+\-.]{7}$/.test(c)) return fail('手機條碼格式錯誤(斜線開頭,共 8 碼)');
+    return { ok: true, data: { invType: 'mobile', carrier: c } };
+  }
+  if (v === 'donate') {
+    let love = String(((document.getElementById('invLove') || {}).value || '')).replace(/\D/g, '');
+    if (!love) love = '168001';
+    if (love.length < 3 || love.length > 7) return fail('愛心碼為 3-7 碼數字');
+    return { ok: true, data: { invType: 'donate', loveCode: love } };
+  }
+  return { ok: true, data: { invType: 'email' } };
 }
 
 // ★ v3.95:建單改走 Worker(D1 正本),不再直打 GAS。
@@ -1105,7 +1207,9 @@ function buyPackEcpay(k) {  const email = localStorage.getItem('bs_sso_email') |
   const grid = document.getElementById('bitsShopGrid');
   if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
   // 1) 建單(method=ecpay)
-  _wWrite('createTopupOrder', { email, pack: k, method: 'ecpay' })
+  const _inv = _invCollect();
+  if (!_inv.ok) return;   // 格式沒過:停在原畫面,錯誤訊息已顯示在表單裡
+  _wWrite('createTopupOrder', Object.assign({ email, pack: k, method: 'ecpay' }, _inv.data))
     .then(j => {
       if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); renderShopGrid(); return; }
       // 2) 跟 Worker 要 ECPay 導向參數
@@ -1152,8 +1256,10 @@ function buyPackManual(k) {
   const email = localStorage.getItem('bs_sso_email') || '';
   if (!email) { alert('請先登入再購買'); return; }
   const p = _shopPacks[k]; if (!p) return;
+  const _inv = _invCollect();
+  if (!_inv.ok) return;
   if (!confirm(`確認下單「${p.name}」?\n\n${p.bits.toLocaleString()} Bits ／ NT$${p.price.toLocaleString()}\n\n下單後依匯款資訊轉帳,我們對帳後為你入點。`)) return;
-  _wWrite('createTopupOrder', { email, pack: k, method: 'manual' })
+  _wWrite('createTopupOrder', Object.assign({ email, pack: k, method: 'manual' }, _inv.data))
     .then(j => { if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); return; } showOrderInfo(j); })
     .catch(() => alert('連線錯誤,請重試'));
 }
