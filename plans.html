@@ -62,7 +62,7 @@
         '<button class="' + (!yr ? 'on' : '') + '" onclick="setCyc(\'month\')">月繳</button>' +
         '<button class="' + (yr ? 'on' : '') + '" onclick="setCyc(\'year\')">年繳 <span class="save">送1個月</span></button>' +
       '</div>';
-    const note = '<div class="bos-foot">所有方案功能 100% 全開、沒有閹割;分級只在每月產能與算力檔次。<br>所有價格未稅,另計 5% 營業稅 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留</div>';
+    const note = '<div class="bos-foot">所有方案功能 100% 全開、沒有閹割;分級只在每月產能與算力檔次。<br>標示價格為含稅價 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留<br>付款完成後自動開立電子發票(由創捷國際貿易股份有限公司開立)</div>';
     const legalEN = '<div style="text-align:center;font-size:11.5px;color:rgba(255,206,107,.62);letter-spacing:.5px;margin-top:12px;font-weight:600;">Proprietary patent-pending technology — filed under PCT (WIPO), Taiwan IPO &amp; CNIPA.</div>';
     const _ssoEmail = localStorage.getItem('bs_sso_email') || '';
     const accountLinks = _ssoEmail
@@ -123,7 +123,8 @@
       '<div style="text-align:center;max-width:450px;margin:0 auto;padding:20px 0;">' +
         '<div style="font-size:20px;font-weight:900;color:#fff;">' + p.name + ' 方案 · ' + cycleText + '</div>' +
         '<div style="font-size:14px;color:rgba(255,255,255,0.6);margin:8px 0 4px;">每月 ' + p.bits.toLocaleString() + ' 點 ／ NT$' + amount.toLocaleString() + (yr ? '（年）' : '（月）') + '</div>' +
-        '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:20px;">未稅,另計 5% 營業稅</div>' +
+        '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:20px;">含稅價</div>' +
+        _invoiceFormHtml() +
         '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
         '<button onclick="buyPlanEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">💳 線上刷卡 / ATM（即時開通）</button>' +
         '<button onclick="buyPlanManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">🏦 銀行轉帳（人工開通）</button>' +
@@ -168,12 +169,101 @@
       });
   }
 
+  // ═══════════════════════════════════════════════════════════
+  //  🧾 2026-08-17:電子發票資料(統編 / 載具 / 捐贈)
+  //   為什麼要在結帳前收:發票一旦開立,統編與載具就改不動了,
+  //   要更正只能作廢重開 —— 那是人工作業,違背「零手動」的原則。
+  //   預設「寄到我的 Email」= 客戶什麼都不用填(綠界電子發票載具),
+  //   要報帳的企業客戶才展開填統編。
+  //   ⚠️ 四選一互斥:綠界規定統編與捐贈不能並存、載具與列印組合也有限制,
+  //     選錯組合會直接開立失敗,所以這裡用單選,不讓客戶自由組合。
+  // ═══════════════════════════════════════════════════════════
+  function _invoiceFormHtml() {
+    const box = 'width:100%;padding:11px 12px;border-radius:9px;border:1px solid rgba(255,255,255,0.18);background:rgba(0,0,0,0.3);color:#fff;font-size:14px;margin-top:8px;box-sizing:border-box;';
+    return '' +
+      '<div style="text-align:left;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 16px;margin-bottom:16px;">' +
+        '<div style="font-size:12.5px;font-weight:800;color:#fff;margin-bottom:10px;">🧾 電子發票</div>' +
+        '<label style="display:block;font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:7px;cursor:pointer;">' +
+          '<input type="radio" name="invType" value="email" checked onchange="_invSwitch()" style="margin-right:7px;">寄到我的 Email(推薦,免填)' +
+        '</label>' +
+        '<label style="display:block;font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:7px;cursor:pointer;">' +
+          '<input type="radio" name="invType" value="company" onchange="_invSwitch()" style="margin-right:7px;">公司報帳,要打統一編號' +
+        '</label>' +
+        '<label style="display:block;font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:7px;cursor:pointer;">' +
+          '<input type="radio" name="invType" value="mobile" onchange="_invSwitch()" style="margin-right:7px;">存到手機條碼載具' +
+        '</label>' +
+        '<label style="display:block;font-size:13px;color:rgba(255,255,255,0.8);cursor:pointer;">' +
+          '<input type="radio" name="invType" value="donate" onchange="_invSwitch()" style="margin-right:7px;">捐贈發票' +
+        '</label>' +
+        '<div id="invCompany" style="display:none;">' +
+          '<input id="invTaxId" maxlength="8" inputmode="numeric" placeholder="統一編號(8 碼數字)" style="' + box + 'font-family:monospace;letter-spacing:2px;">' +
+          '<input id="invTitle" maxlength="60" placeholder="公司抬頭" style="' + box + '">' +
+        '</div>' +
+        '<div id="invMobile" style="display:none;">' +
+          '<input id="invCarrier" maxlength="8" placeholder="手機條碼(/ 開頭共 8 碼)" style="' + box + 'font-family:monospace;letter-spacing:2px;">' +
+        '</div>' +
+        '<div id="invDonate" style="display:none;">' +
+          '<input id="invLove" maxlength="7" inputmode="numeric" placeholder="愛心碼(3-7 碼數字,留空為 168001)" style="' + box + 'font-family:monospace;letter-spacing:2px;">' +
+        '</div>' +
+        '<div id="invErr" style="font-size:11.5px;color:#ff9d9d;margin-top:8px;line-height:1.6;"></div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;line-height:1.7;">發票於付款完成後自動開立並通知您。開立後統編與載具無法變更。</div>' +
+      '</div>' +
+      '<div style="text-align:left;background:rgba(255,190,90,0.06);border:1px solid rgba(255,190,90,0.25);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:rgba(255,255,255,0.7);line-height:1.8;">' +
+        '本服務為數位內容服務,開通後即可立即使用,<b style="color:#ffce6b;">恕不提供中途退訂或退款</b>。<br>' +
+        '若對服務內容尚有疑慮,建議先購買「月繳方案」試用,確認符合需求後再升級年繳。' +
+      '</div>';
+  }
+
+  function _invSwitch() {
+    const v = _invPicked();
+    const show = (id, on) => { const e = document.getElementById(id); if (e) e.style.display = on ? 'block' : 'none'; };
+    show('invCompany', v === 'company');
+    show('invMobile',  v === 'mobile');
+    show('invDonate',  v === 'donate');
+    const err = document.getElementById('invErr'); if (err) err.textContent = '';
+  }
+  function _invPicked() {
+    const el = document.querySelector('input[name="invType"]:checked');
+    return el ? el.value : 'email';
+  }
+  //  回傳 { ok, data } —— data 就是要一起送給 Worker 的發票欄位。
+  //  ⚠️ 這裡只做格式檢查(長度、字元),有效性由綠界驗。
+  //    擋在前面是為了少開一張失敗的發票,不是取代綠界的檢核。
+  function _invCollect() {
+    const v = _invPicked();
+    const err = document.getElementById('invErr');
+    const fail = (m) => { if (err) err.textContent = '⚠️ ' + m; return { ok: false }; };
+    if (err) err.textContent = '';
+    if (v === 'company') {
+      const id = (document.getElementById('invTaxId') || {}).value || '';
+      const tt = ((document.getElementById('invTitle') || {}).value || '').trim();
+      const idn = String(id).replace(/\D/g, '');
+      if (idn.length !== 8) return fail('統一編號要 8 碼數字');
+      if (!tt) return fail('請填公司抬頭');
+      return { ok: true, data: { invType: 'company', taxId: idn, title: tt } };
+    }
+    if (v === 'mobile') {
+      const c = String(((document.getElementById('invCarrier') || {}).value || '')).trim().toUpperCase();
+      if (!/^\/[0-9A-Z+\-.]{7}$/.test(c)) return fail('手機條碼格式錯誤(斜線開頭,共 8 碼)');
+      return { ok: true, data: { invType: 'mobile', carrier: c } };
+    }
+    if (v === 'donate') {
+      let love = String(((document.getElementById('invLove') || {}).value || '')).replace(/\D/g, '');
+      if (!love) love = '168001';
+      if (love.length < 3 || love.length > 7) return fail('愛心碼為 3-7 碼數字');
+      return { ok: true, data: { invType: 'donate', loveCode: love } };
+    }
+    return { ok: true, data: { invType: 'email' } };
+  }
+
   function buyPlanEcpay(k) {
     const email = localStorage.getItem('bs_sso_email') || '';
     if (!email) { alert('請先登入再購買'); return; }
     const root = document.getElementById('planRoot');
     if (window.showSpaceLoader) showSpaceLoader(root, '正在建立付款'); else root.innerHTML = '<div style="text-align:center;padding:60px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
-    _wWrite('createSubOrder', { email, plan: k, cycle: _cyc, method: 'ecpay' })
+    const _inv = _invCollect();
+    if (!_inv.ok) return;   // 格式沒過:停在原畫面,錯誤訊息已顯示在表單裡
+    _wWrite('createSubOrder', Object.assign({ email, plan: k, cycle: _cyc, method: 'ecpay' }, _inv.data))
       .then(j => {
         if (!j.ok) { alert('下單失敗:' + (j.error || '')); renderPage(); return; }
         return fetch(CF_WORKER_URL, {
@@ -205,11 +295,13 @@
     const email = localStorage.getItem('bs_sso_email') || '';
     if (!email) { alert('請先登入再購買'); return; }
     const p = findBrandosPlan(k); if (!p) return;
+    const _inv = _invCollect();
+    if (!_inv.ok) return;
     const yr = (_cyc === 'year');
     const monthPrice = (p.promo > 0) ? p.promo : p.price;
     const amount = yr ? (p.price * 12) : monthPrice;
-    if (!confirm(`確認訂閱「${p.name} 方案 · ${yr ? '年繳' : '月繳'}」?\n\n每月 ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${yr ? '（年）' : '（月）'}（未稅）\n\n下單後依匯款資訊轉帳,我們對帳後為你開通。`)) return;
-    _wWrite('createSubOrder', { email, plan: k, cycle: _cyc })
+    if (!confirm(`確認訂閱「${p.name} 方案 · ${yr ? '年繳' : '月繳'}」?\n\n每月 ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${yr ? '（年）' : '（月）'}（含稅）\n\n下單後依匯款資訊轉帳,我們對帳後為你開通。`)) return;
+    _wWrite('createSubOrder', Object.assign({ email, plan: k, cycle: _cyc }, _inv.data))
       .then(j => { if (!j.ok) { alert('下單失敗:' + (j.error || '')); return; } showSubOrderInfo(j); })
       .catch(() => alert('連線錯誤,請重試'));
   }
@@ -228,7 +320,7 @@
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">訂單編號</span><b style="font-family:monospace">${o.orderId}</b></div>
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">方案</span><b>${o.planName} · ${cycleText}</b></div>
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">每月配點</span><b>${Number(o.monthlyBits).toLocaleString()} 點</b></div>
-          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">應付金額</span><b style="color:#ffce6b">NT$${Number(o.amount).toLocaleString()}（未稅）</b></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">應付金額</span><b style="color:#ffce6b">NT$${Number(o.amount).toLocaleString()}（含稅）</b></div>
           <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">銀行</span><b>${b.bankName || ''} ${b.bankCode || ''}</b></div>
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">帳號</span><b style="font-family:monospace">${b.account || ''}</b></div>
