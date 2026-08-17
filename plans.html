@@ -353,16 +353,39 @@
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">戶名</span><b>${b.accountName || ''}</b></div>
         </div>
         <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:12px;line-height:1.7;">※ 匯款時請於備註填「訂單編號」方便對帳。對帳開通後,方案點數會立即配發。</div>
-        <div style="margin-top:14px;background:rgba(124,108,255,0.08);border:1px solid rgba(124,108,255,0.3);border-radius:12px;padding:14px 16px;">
-          <div style="font-size:12.5px;font-weight:800;color:#fff;margin-bottom:8px;">🏦 匯款完成後,回報您的帳號後五碼</div>
+        <div id="last5Box" style="margin-top:14px;background:rgba(124,108,255,0.12);border:1.5px solid rgba(124,108,255,0.55);border-radius:12px;padding:14px 16px;box-shadow:0 0 0 3px rgba(124,108,255,0.08);">
+          <div style="font-size:12.5px;font-weight:800;color:#fff;margin-bottom:8px;">
+            🏦 匯款完成後,回報您的帳號後五碼
+            <span style="display:inline-block;margin-left:6px;padding:2px 7px;border-radius:20px;background:rgba(255,190,90,0.18);border:1px solid rgba(255,190,90,0.45);color:#ffce6b;font-size:10px;font-weight:800;vertical-align:middle;">建議填寫</span>
+          </div>
           <div style="display:flex;gap:8px;">
             <input id="last5Input" maxlength="5" inputmode="numeric" placeholder="帳號後 5 碼" style="flex:1;padding:10px 12px;border-radius:9px;border:1px solid rgba(255,255,255,0.18);background:rgba(0,0,0,0.3);color:#fff;font-family:monospace;font-size:14px;letter-spacing:2px;">
             <button onclick="reportLast5('${o.orderId}')" style="padding:10px 18px;border:none;border-radius:9px;background:linear-gradient(135deg,#7c6cff,#ff7ac3);color:#fff;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap;">回報</button>
           </div>
           <div id="last5Msg" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:7px;line-height:1.6;">填了我們對帳更快、點數開通更即時。</div>
         </div>
-        <button onclick="renderPage()" style="width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#ffb347,#ff8c42);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">完成 · 回方案</button>
+        <button onclick="finishSubOrder()" style="width:100%;margin-top:16px;padding:13px;border:1px solid rgba(255,255,255,0.18);border-radius:12px;background:transparent;color:rgba(255,255,255,0.55);font-size:14px;font-weight:700;cursor:pointer;">完成 · 回方案</button>
       </div>`;
+  }
+
+  // 🏦 2026-08-17:離開這頁前,如果後五碼還沒填,提醒一次。
+  //   為什麼不用 disabled 硬擋:客戶看到這頁時「通常還沒去匯款」(要先開網銀),
+  //   硬擋會把還沒匯款的人卡在這裡 → 反而變客訴。
+  //   所以只提醒,而且訊息要說清楚「訂單已保留」,讓他敢離開。
+  //   ⚠️ 已經回報過就直接放行,不要重複煩人(_last5Done 由 reportLast5 設定)。
+  function finishSubOrder() {
+    const el = document.getElementById('last5Input');
+    const filled = el && String(el.value || '').trim().length > 0;
+    if (!filled && !window._last5Done) {
+      const go = confirm(
+        '還沒填匯款帳號後五碼喔。\n\n' +
+        '訂單已為您保留,還沒匯款也沒關係 —— 匯款後回到這頁填後五碼,' +
+        '我們對帳會快很多,點數開通也更即時。\n\n' +
+        '要現在離開嗎?'
+      );
+      if (!go) { try { el && el.focus(); } catch (e) {} return; }
+    }
+    renderPage();
   }
 
   function reportLast5(orderId) {
@@ -377,7 +400,15 @@
     //   現在直接寫進該張訂單的 note 欄,後台訂單列表就看得到。
     _wWrite('reportTransferLast5', { orderId, last5: v })
       .then(j => {
-        if (j.ok) { msg.textContent = '✅ 已收到後五碼,我們會盡快對帳開通'; msg.style.color = '#8effc0'; el.disabled = true; }
+        if (j.ok) {
+          msg.textContent = '✅ 已收到後五碼,我們會盡快對帳開通'; msg.style.color = '#8effc0'; el.disabled = true;
+          window._last5Done = true;   // 已回報 → 離開時不再提醒
+          // 任務完成,把視覺重點還給「完成」按鈕
+          try {
+            const box = document.getElementById('last5Box');
+            if (box) { box.style.border = '1px solid rgba(110,255,190,0.35)'; box.style.background = 'rgba(110,255,190,0.06)'; box.style.boxShadow = 'none'; }
+          } catch (e) {}
+        }
         else { msg.textContent = '回報失敗:' + (j.error || ''); msg.style.color = '#ff9d9d'; }
       })
       .catch(() => { msg.textContent = '連線錯誤,請重試'; msg.style.color = '#ff9d9d'; });
