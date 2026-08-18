@@ -960,13 +960,27 @@ function startProgress(totalMs) {
   const prPct  = document.getElementById('prPct');
   if (prBar) prBar.style.display = 'block';
   let pctVal = 0;
-  const msgs = ['上傳中...','生成場景...','光影融合...','最終輸出...'];
+  let tailIdx = 0;
+  // ⏱ 2026-08-18:末段體驗修正。
+  //   舊行為:到 90% 直接 return —— 進度條不動、百分比不動、連文字都停住,
+  //   客戶看到的就是「卡死」。而實際出圖要 3 分鐘,末段停留最久,
+  //   剛好是最焦慮、最容易讓人關掉分頁的那一段。
+  //   新行為:90% 後改成極慢爬升(封頂 99%),文字輪播「渲染中/即將完成」,
+  //   讓客戶知道還在跑。★ 永遠不到 100% —— 100% 只有真的拿到圖才給。
+  const msgs = ['上傳商品照...', '生成場景...', '光影融合...', '構圖排版...'];
+  const tail = ['最後渲染中...', '即將完成,請稍候...', '正在輸出高解析圖...', '快好了,別關視窗...'];
   const interval = setInterval(() => {
-    if (pctVal >= 90) return;
-    pctVal = Math.min(90, pctVal + (pctVal < 30 ? 2 : pctVal < 60 ? 1 : 0.4));
+    if (pctVal < 90) {
+      pctVal = Math.min(90, pctVal + (pctVal < 30 ? 2.2 : pctVal < 60 ? 1.4 : 0.8));
+      setPrStatus(msgs[Math.min(Math.floor(pctVal / 25), msgs.length - 1)], 'var(--t3)');
+    } else {
+      // 末段:每一拍只加 0.15%,從 90 爬到 99 約需 60 拍 —— 慢到看得出在動,又不會太早滿
+      pctVal = Math.min(99, pctVal + 0.15);
+      if (Math.round(pctVal * 100) % 100 < 15) tailIdx++;   // 每爬約 1% 換一句
+      setPrStatus(tail[tailIdx % tail.length], 'var(--accent2)');
+    }
     if (prFill) prFill.style.width = pctVal + '%';
     if (prPct) prPct.textContent = Math.round(pctVal) + '%';
-    setPrStatus(msgs[Math.min(Math.floor(pctVal/25), msgs.length-1)], 'var(--t3)');
   }, totalMs / 100);
   return interval;
 }
@@ -1158,8 +1172,19 @@ async function applyPhotoroomBg() {
   const btn = document.getElementById('prApplyBtn');
 
   if (PR_MODE === 'gpt_poster') {
+    // 🪜 2026-08-18:三步檢查必須在「按鈕變成生成中」之前做。
+    //   踩過的坑:舊寫法先把按鈕設成 disabled +「生成中」,才進 generateGptPoster()
+    //   檢查;一旦被擋下來 return,沒有人把按鈕還原 → 永遠卡在「生成中」,
+    //   客戶只能重新整理。原本就有的「請先選照片」等檢查也有同樣問題。
+    //   規則:任何會 return 的檢查,都要排在改變 UI 狀態之前。
+    if (!_posterStepsReady()) return;
     btn.disabled = true; btn.textContent = '⏳ AI 廣告圖生成中...';
-    await generateGptPoster();
+    try {
+      await generateGptPoster();
+    } finally {
+      // 保險:不論成功失敗,按鈕一定回復可按(finishProgress 也會做,這裡是雙保險)
+      if (btn.disabled) { btn.disabled = false; btn.textContent = '套用 AI 效果'; }
+    }
     return;
   }
 
@@ -1926,6 +1951,22 @@ function _syncSteps() {
   show('contextGrid', 'contextLock', !!SELECTED_LAYOUT && !!SELECTED_FLAVOR);
 }
 
+// 🪜 三步都必須客戶自己選過才給生成。
+//   「不調味」「無」也算選 —— 重點是他有意識地按下去,而不是系統偷偷幫他決定。
+//   缺哪一步就捲到那一步,訊息直接寫「怎麼補」,不是只說「你沒選」。
+//   ⚠️ 一定要在按鈕變成「生成中」之前呼叫(見 applyPhotoroomBg 的註解)。
+function _posterStepsReady() {
+  const miss =
+    !SELECTED_LAYOUT  ? { sel: '.layout-btn',  msg: '請先在「① 排版」選一種版型' } :
+    !SELECTED_FLAVOR  ? { sel: '.flavor-btn',  msg: '請選「② 設計風格」,不想調味就按「— 不調味 —」' } :
+    !SELECTED_CONTEXT ? { sel: '.context-btn', msg: '請選「③ 情境」,沒有特殊檔期就按「— 無 —」' } : null;
+  if (!miss) return true;
+  setPrStatus(miss.msg, '#ff9d9d');
+  try { document.querySelector(miss.sel)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+  alert(miss.msg);
+  return false;
+}
+
 function setLayout(btn, layoutKey) {
   document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
@@ -2244,22 +2285,6 @@ async function generateGptPoster() {
   const hEl = document.getElementById('gptHeadline');
   const headline = hEl?.value?.trim();
   if (hEl) { hEl.style.border = ''; hEl.style.boxShadow = ''; }
-
-  // 🪜 2026-08-18:沒選排版就擋下來(客戶決定 B 案)。
-  //   程式本身有 fallback 不會壞,但「沒選也能生」等於預設值又偷偷幫他決定了,
-  //   跟把主導權交還客戶的初衷相反。
-  // 🪜 三步都必須客戶自己選過。「不調味」「無」也算選 —— 重點是他有意識地按下去,
-  //   而不是系統偷偷幫他決定。缺哪一步就捲到那一步,並講清楚怎麼補。
-  const _missing =
-    !SELECTED_LAYOUT  ? { sel: '.layout-btn',  msg: '請先在「① 排版」選一種版型' } :
-    !SELECTED_FLAVOR  ? { sel: '.flavor-btn',  msg: '請選「② 設計風格」,不想調味就按「— 不調味 —」' } :
-    !SELECTED_CONTEXT ? { sel: '.context-btn', msg: '請選「③ 情境」,沒有特殊檔期就按「— 無 —」' } : null;
-  if (_missing) {
-    alert(_missing.msg);
-    setPrStatus(_missing.msg, '#ff9d9d');
-    try { document.querySelector(_missing.sel)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
-    return;
-  }
 
   const brandId = window.S?.brandId || '';
   const reqid = String(Date.now());
