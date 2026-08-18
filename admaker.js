@@ -396,10 +396,141 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add Taiwanese nostalgia flavor: 1980s magazine paper grain, terrazzo floor, vintage Taiwanese tile patterns, faded poster colors (mustard, teal, brick), floral patterned fabric backgrounds, warm afternoon light through wooden venetian blinds.'
   },
 
-  // ══ 2026-08-18:刪除「2026 設計風格(25)」與「標竿品牌風格(7)」共 32 個選項 ══
-  //   理由:選項太多反而讓客戶不知道怎麼選,而且標竿品牌那組直接寫出
-  //   UNIQLO / 無印良品 / 三宅一生等他牌名稱,拿來當自家廣告的風格描述
-  //   有商標與品牌識別上的疑慮。風土調味保留原本那組就夠用。
+  // ══ v11 新增:2026 設計風格 (25) ══
+  bauhaus: {
+    label: '🔴 包浩斯',
+    flavor: 'Add Bauhaus design flavor: bold geometric blocks, circles and triangles in primary red/blue/yellow, strict grid-based composition, clean negative space, modernist sans-serif typography, flat color planes, balanced structural layout.'
+  },
+  chrome_futurism: {
+    label: '鍍鉻未來',
+    flavor: 'Add chrome futurism flavor: reflective liquid-metal chrome surfaces, silver and dark backdrop, high-contrast studio lighting, sci-fi luxury sheen, sleek modern typography, glossy premium product feel.'
+  },
+  neo_minimal: {
+    label: '溫暖新極簡',
+    flavor: 'Add warm neo-minimalism flavor: single hero subject in generous negative space, soft natural daylight, restrained palette with one warm accent, quiet-luxury calm, subtle paper or fabric texture, refined modern composition.'
+  },
+  architectural_min: {
+    label: '建築極簡',
+    flavor: 'Add architectural minimalism flavor: clean concrete and stone surfaces, sharp directional sunlight casting deep crisp shadows, monochrome or warm-grey palette, strong spatial geometry, precise lines, calm premium structure.'
+  },
+  experimental_type: {
+    label: '實驗字體',
+    flavor: 'Add experimental typography flavor: oversized distorted and overlapping headline text as the main visual, layered ink/spray/glitch textures, broken asymmetric grid, bold graphic tension, contemporary design-studio energy.'
+  },
+  cinematic_light: {
+    label: '光影電影感',
+    flavor: 'Add cinematic light flavor: a single dramatic beam of light on the subject, dark moody negative space around it, deep atmospheric shadows, film-poster tension, emotional minimal staging.'
+  },
+  gradient_glow: {
+    label: '漸層光暈',
+    flavor: 'Add gradient glow flavor: smooth vibrant gradient field (pink to blue to orange to purple), soft glowing abstract spheres, clean tech-minimal layout, futuristic typography, polished digital sheen.'
+  },
+  blurry_floral: {
+    label: '模糊花卉',
+    flavor: 'Add blurry floral flavor: soft-focus flowers melting into a dreamy grainy gradient, ethereal pastel haze, atmosphere over detail, delicate luminous mood, fine grain texture overlay.'
+  },
+  geometric_abstract: {
+    label: '幾何抽象',
+    flavor: 'Add geometric abstract flavor: circles, rectangles and lines in confident asymmetric composition, bold flat color accents, strong visual rhythm, controlled modern graphic structure.'
+  },
+  mono_contrast: {
+    label: '黑白高對比',
+    flavor: 'Add black-and-white high-contrast flavor: stark monochrome palette, torn-paper texture, bold condensed typography, dramatic light/dark separation, raw gritty editorial impact.'
+  },
+  natural_shadow: {
+    label: '自然光影',
+    flavor: 'Add natural light-and-shadow flavor: soft sunlight casting leaf or window shadows across a warm neutral wall, quiet lifestyle calm, subtle texture, refined minimal editorial tone.'
+  },
+  luxury_texture: {
+    label: '輕奢質感',
+    flavor: 'Add luxury-texture flavor: black and gold palette, premium material surfaces (marble, brushed metal, velvet), single dramatic spotlight, refined high-end beauty-campaign elegance.'
+  },
+  hand_doodle: {
+    label: '手繪塗鴉',
+    flavor: 'Add hand-drawn doodle flavor: sketchy black pen lines, playful handwritten text, raw paper texture, casual imperfect strokes, youthful energetic charm.'
+  },
+  collage_art: {
+    label: '拼貼藝術',
+    flavor: 'Add collage-art flavor: torn paper layers, mixed photo fragments, rough cut-and-paste textures, editorial vintage-modern hybrid, expressive layered contrast.'
+  },
+  line_art: {
+    label: '〰️ 線描極簡',
+    flavor: 'Add line-art minimal flavor: single continuous-line drawing or delicate abstract linework, neutral background, elegant negative space, calm gallery-poster refinement.'
+  },
+  pop_art: {
+    label: '普普藝術',
+    flavor: 'Add pop-art flavor: comic-style illustration, halftone dots, bold primary colors, playful retro energy, high-contrast graphic punch, iconic commercial pop look.'
+  },
+  acid_neon: {
+    label: '🟢 螢光科技',
+    flavor: 'Add acid neon flavor: fluorescent green and electric color clashes, surreal glossy 3D form, cyber-inspired composition, bold glow effects, edgy experimental energy.'
+  },
+  ink_zen: {
+    label: '水墨禪意',
+    flavor: 'Add ink-wash zen flavor: black sumi ink mountain or abstract stroke, rice-paper texture, calm minimal composition, poetic negative space, meditative East-Asian tone.'
+  },
+  chaos_pkg: {
+    label: '混沌極繁',
+    flavor: 'Add chaos / maximalist packaging flavor: loud clashing colors, playful display fonts, hand-drawn illustration and sticker elements, dense cut-and-paste layout, confident over-the-top personality.'
+  },
+  kinetic_3d: {
+    label: '立體動態',
+    flavor: 'Add 3D kinetic flavor: oversized sculptural 3D forms (giant spheres, twisted ribbons, liquid metal shapes), surreal depth, energetic motion feel, futuristic dimensional layout.'
+  },
+  scattered_layout: {
+    label: '散布佈局',
+    flavor: 'Add scattered-layout flavor: elements freely placed across the frame like a discovery map, playful non-linear arrangement, looks random but carefully balanced, experimental editorial feel.'
+  },
+  candid_film: {
+    label: '真實膠卷',
+    flavor: 'Add candid film-roll flavor: natural unretouched lighting, slightly imperfect snapshot framing, warm film-grain texture, real spontaneous everyday moment, anti-polished authenticity.'
+  },
+  trinket: {
+    label: '收藏品式',
+    flavor: 'Add trinket-collection flavor: objects arranged and numbered like museum specimens, neat grid of small items, nostalgic cataloguing charm, playful curated collector mood.'
+  },
+  blueprint: {
+    label: '藍圖風格',
+    flavor: 'Add blueprint flavor: object rendered as a precise white technical line-drawing on deep blue, engineering schematic labels and measurement lines, rigorous structural tech-aesthetic.'
+  },
+  surveillance: {
+    label: '監控美學',
+    flavor: 'Add surveillance-aesthetic flavor: machine-vision overlays, face-tracking frames, infrared/thermal color mapping, timestamped data grids, cold futuristic monitoring tone.'
+  },
+  future_medieval: {
+    label: '未來中世紀',
+    flavor: 'Add future-medieval flavor: mystical gothic symbols and blackletter type fused with digital patterns and AI-generated ornament, ornate layered florals, both ancient and futuristic ritual mood.'
+  },
+
+  // ══ v11 新增:標竿品牌風格 (7) ══
+  brand_3coins: {
+    label: '3COINS',
+    flavor: 'Add 3COINS lifestyle flavor: bright airy Japanese variety-goods styling, soft fresh pastel palette, casual handwritten captions, neatly arranged everyday small items as a friendly life proposal.'
+  },
+  brand_uniqlo: {
+    label: '🔴 UNIQLO',
+    flavor: 'Add UNIQLO LifeWear flavor: clean minimal grid layout, product front-and-center on plain white, restrained palette with red/black accents, functional honest simplicity, large crisp product photography.'
+  },
+  brand_muji: {
+    label: '無印良品',
+    flavor: 'Add MUJI flavor: ultra-minimal no-brand calm, off-white and natural-wood tones, generous empty space, no decoration, soft even natural light, quiet honest materials.'
+  },
+  brand_beams: {
+    label: 'BEAMS',
+    flavor: 'Add BEAMS select-shop flavor: Japanese street-meets-refined styling, lively accent-color blocking, editorial collage energy, curated fashion-forward mix, confident youthful tone.'
+  },
+  brand_issey: {
+    label: '三宅一生',
+    flavor: 'Add Issey Miyake flavor: pleated sculptural structure, avant-garde minimalism, bold single-color planes, material and form experimentation, architectural fashion sophistication.'
+  },
+  brand_snowpeak: {
+    label: 'Snow Peak',
+    flavor: 'Add Snow Peak outdoor flavor: refined nature aesthetic, muted grey-green and earth tones, metal and raw-wood textures, calm functional craftsmanship, quiet premium outdoor mood.'
+  },
+  brand_plusd: {
+    label: '+d',
+    flavor: 'Add +d (h concept) flavor: playful Japanese everyday-object design, warm humorous kawaii spirit, simple clean form, single hero object on soft uplifting background, friendly product-still styling.'
+  }
 };
 
 
@@ -516,9 +647,16 @@ let TEXT_FONT  = 'bold';
 let CANVAS_TAINTED = false;
 let LAST_BLOB_SIZE = 0;
 
-let SELECTED_LAYOUT  = 'minimal_poster';
-let SELECTED_FLAVOR  = 'none';
-let SELECTED_CONTEXT = 'none';
+// 🪜 2026-08-18:預設「不選」。
+//   舊行為:①排版預先選好「極簡海報」、②設計風格預先選好「不調味」,
+//   畫面上兩顆是亮的 → 客戶認為「我已經選好了」,但漸進展開要等他「點一下」
+//   才會觸發,結果卡在原地不知道為什麼下一區不出來。
+//   新行為:一律不預選,客戶自己點 → 點了才展開下一區。主導權交回客戶手上。
+//   ⚠️ 空字串代表「還沒選」,底下 900/1000 附近的重繪要照這個判斷,
+//     不能無條件把按鈕點亮,否則切換品牌時預設又會亮回來。
+let SELECTED_LAYOUT  = '';
+let SELECTED_FLAVOR  = '';
+let SELECTED_CONTEXT = 'none';   // ③ 是最後一關,不需要展開誰,維持預設「無」
 let SELECTED_INSPIRATION = null;
 let LAST_POSTER_URL = null;
 
@@ -666,9 +804,11 @@ function openAdMaker(idx) {
   if (gpt) gpt.style.display = 'block';       // 🆕 直接展開懶人模式的設定區
   // 懶人模式的預設選取狀態(照抄 setPrMode 的 gpt_poster 分支)
   if (typeof updateBrandPackBadge === 'function') updateBrandPackBadge();
-  document.querySelector(`.layout-btn[data-layout="${SELECTED_LAYOUT}"]`)?.classList.add('on');
-  document.querySelector(`.flavor-btn[data-flavor="${SELECTED_FLAVOR}"]`)?.classList.add('on');
-  document.querySelector(`.context-btn[data-context="${SELECTED_CONTEXT}"]`)?.classList.add('on');
+  // 🪜 只在「客戶真的選過」時才點亮;空字串=還沒選,保持全暗
+  if (SELECTED_LAYOUT) document.querySelector(`.layout-btn[data-layout="${SELECTED_LAYOUT}"]`)?.classList.add('on');
+  if (SELECTED_FLAVOR) document.querySelector(`.flavor-btn[data-flavor="${SELECTED_FLAVOR}"]`)?.classList.add('on');
+  if (SELECTED_CONTEXT) document.querySelector(`.context-btn[data-context="${SELECTED_CONTEXT}"]`)?.classList.add('on');
+  _syncSteps();
 
   let initialTitle = '';
   if (idx === -1 || idx == null || !window.S.scripts?.[idx]) {
@@ -769,9 +909,10 @@ function setPrMode(btn, mode) {
   }
   if (mode === 'gpt_poster') {
     updateBrandPackBadge();
-    document.querySelector(`.layout-btn[data-layout="${SELECTED_LAYOUT}"]`)?.classList.add('on');
-    document.querySelector(`.flavor-btn[data-flavor="${SELECTED_FLAVOR}"]`)?.classList.add('on');
-    document.querySelector(`.context-btn[data-context="${SELECTED_CONTEXT}"]`)?.classList.add('on');
+    if (SELECTED_LAYOUT) document.querySelector(`.layout-btn[data-layout="${SELECTED_LAYOUT}"]`)?.classList.add('on');
+    if (SELECTED_FLAVOR) document.querySelector(`.flavor-btn[data-flavor="${SELECTED_FLAVOR}"]`)?.classList.add('on');
+    if (SELECTED_CONTEXT) document.querySelector(`.context-btn[data-context="${SELECTED_CONTEXT}"]`)?.classList.add('on');
+    _syncSteps();
   }
 }
 
@@ -1772,28 +1913,24 @@ function setInspiration(btn, key) {
   }
 }
 
-// 🪜 2026-08-18:三段式漸進展開。
-//   問題:一次攤開 ①排版 + ②設計風格 + ③情境 共 50 幾顆按鈕,客戶第一眼就當機,
-//   不知道從哪選、也不知道哪些是必選。
-//   做法:②③ 先收起來,選完前一步才展開。收起時標題仍看得見,並寫明
-//   「先選 ① 排版」——照鐵律:不能只是禁用,要告訴客戶怎麼解鎖。
-function _unlockStep(gridId, lockId) {
-  const g = document.getElementById(gridId);
-  const l = document.getElementById(lockId);
-  if (g && g.style.display === 'none') {
-    g.style.display = 'grid';
-    // 展開時輕微淡入,讓客戶注意到「多出東西了」
-    g.style.opacity = '0';
-    setTimeout(function () { g.style.transition = 'opacity .25s'; g.style.opacity = '1'; }, 10);
-  }
-  if (l) l.style.display = 'none';
+// 🪜 依「選到哪一步」決定 ②③ 要不要展開。
+//   收起時標題仍看得見,並寫明怎麼解鎖 —— 不能只是藏起來讓客戶猜。
+function _syncSteps() {
+  const show = (gridId, lockId, on) => {
+    const g = document.getElementById(gridId);
+    const l = document.getElementById(lockId);
+    if (g) g.style.display = on ? 'grid' : 'none';
+    if (l) l.style.display = on ? 'none' : 'block';
+  };
+  show('flavorGrid',  'flavorLock',  !!SELECTED_LAYOUT);
+  show('contextGrid', 'contextLock', !!SELECTED_LAYOUT && !!SELECTED_FLAVOR);
 }
 
 function setLayout(btn, layoutKey) {
   document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   SELECTED_LAYOUT = layoutKey;
-  _unlockStep('flavorGrid', 'flavorLock');   // 🪜 選完①才展開②
+  _syncSteps();
   console.log('[v10.2] 版式選擇:', layoutKey, LAYOUT_TEMPLATES[layoutKey]?.label);
 }
 
@@ -1801,7 +1938,7 @@ function setFlavor(btn, flavorKey) {
   document.querySelectorAll('.flavor-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   SELECTED_FLAVOR = flavorKey;
-  _unlockStep('contextGrid', 'contextLock');   // 🪜 選完②才展開③(選「無」也算選)
+  _syncSteps();
   console.log('[v10.2] 風土調味:', flavorKey, REGIONAL_FLAVORS[flavorKey]?.label);
 }
 
@@ -2106,6 +2243,15 @@ async function generateGptPoster() {
   const hEl = document.getElementById('gptHeadline');
   const headline = hEl?.value?.trim();
   if (hEl) { hEl.style.border = ''; hEl.style.boxShadow = ''; }
+
+  // 🪜 2026-08-18:沒選排版就擋下來(客戶決定 B 案)。
+  //   程式本身有 fallback 不會壞,但「沒選也能生」等於預設值又偷偷幫他決定了,
+  //   跟把主導權交還客戶的初衷相反。
+  if (!SELECTED_LAYOUT) {
+    setPrStatus('請先在「① 排版」選一種版型', '#ff9d9d');
+    try { document.querySelector('.layout-btn')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+    return;
+  }
 
   const brandId = window.S?.brandId || '';
   const reqid = String(Date.now());
