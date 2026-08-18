@@ -27,10 +27,10 @@ const BRANDOS_PLANS = {
       grade:'標準雜誌級', comp:'標準運算佇列', bits:70000,  price:35000, promo:30000,
       imgs:290,  vids:72,  kol:'1 隻日更 / 3 隻週更 / 12 隻月更' },
     { key:'growth', name:'成長', who:'穩定出圖的品牌', rep:'一個 15 人內容部',
-      grade:'雜誌級 + 進階修圖', comp:'優先運算佇列', bits:100000, price:50000, promo:0,
+      grade:'雜誌級 + 進階修圖', comp:'優先運算佇列', bits:125000, price:50000, promo:0,
       imgs:416,  vids:104, kol:'2 隻日更 / 5 隻週更 / 18 隻月更' },
     { key:'pro',    name:'專業', who:'高頻投放 · 多商品線', rep:'一間 25 人製作公司',
-      grade:'高階雜誌級 + 商品保真', comp:'高速運算佇列', bits:160000, price:80000, promo:0,
+      grade:'高階雜誌級 + 商品保真', comp:'高速運算佇列', bits:185000, price:80000, promo:0,
       imgs:666,  vids:166, kol:'3 隻日更 / 8 隻週更 / 30 隻月更', hot:true },
   ],
   ent: [
@@ -273,7 +273,12 @@ function renderBrandosPlanCards(group, cycle, opts) {
       + '<div class="bos-spec">'
         + '<div class="r"><span class="k">算圖等級</span><span class="vv grade">' + p.grade + '</span></div>'
         + '<div class="r"><span class="k">運算檔次</span><span class="vv">' + p.comp + '</span></div>'
-        + '<div class="r"><span class="k">每月產能</span><span class="vv">約 <b class="num">' + fmt(p.imgs) + '</b> 張圖 · <b class="num">' + fmt(p.vids) + '</b> 支片</span></div>'
+        // 🔢 2026-08-18:分隔號從「·」改成「或」。
+        //   原本「290 張圖 · 72 支片」中間一個點,看起來像「兩個都給」,
+        //   但這兩個數字其實是各自單獨算的(配點全拿去生圖 / 全拿去生片),
+        //   加起來會超出配點。改成「或」才是真的,數字一個都不用動。
+        //   並標明計價基準 —— 影片點數依秒數計,不講清楚客戶算不出來。
+        + '<div class="r"><span class="k">每月產能</span><span class="vv">約 <b class="num">' + fmt(p.imgs) + '</b> 張圖 <span style="opacity:.5">或</span> <b class="num">' + fmt(p.vids) + '</b> 支片<div style="font-size:10.5px;opacity:.45;margin-top:3px;font-weight:400;letter-spacing:.3px">720P · 15 秒短影音計</div></span></div>'
         + '<div class="r"><span class="k">KOL數字人</span><span class="vv">' + p.kol + '</span></div>'
       + '</div>'
       + '<div class="bos-meta">'
