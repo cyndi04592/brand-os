@@ -318,7 +318,7 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
   <div style="max-width:1080px;margin:20px auto;padding:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
 
     <!-- 左側控制 -->
-    <div style="width:300px;flex-shrink:0;background:var(--bg2);border-radius:16px;border:1px solid rgba(124,109,250,0.25);padding:18px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 56px);overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,0.6);">
+    <div style="width:340px;max-width:100%;flex-shrink:0;background:var(--bg2);border-radius:16px;border:1px solid rgba(124,109,250,0.25);padding:18px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 56px);overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,0.6);">
       <div style="display:flex;align-items:center;flex-shrink:0;padding-bottom:4px;border-bottom:1px solid rgba(124,109,250,0.15);">
         <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;">廣告圖產生器</span>
       </div>
@@ -456,12 +456,12 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
             </div>
             <select id="layoutSel" onchange="onSelLayout(this.value)" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid rgba(124,109,250,0.35);background:rgba(20,16,38,0.9);color:#E8DCFF;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23b9a8ee' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;">
                 <option value="">請選擇…</option>
+                <option value="minimal_poster">極簡海報型(最百搭)</option>
                 <optgroup label="經典版式">
                 <option value="magazine_cover">雜誌封面型</option>
                 <option value="spec_breakdown">規格分解型</option>
                 <option value="scene_lifestyle">情境寫真型</option>
                 <option value="dramatic_splash">戲劇飛濺型</option>
-                <option value="minimal_poster">極簡海報型(最百搭)</option>
                 </optgroup>
                 <optgroup label="新增版式">
                 <option value="before_after">前後對比型</option>
@@ -484,7 +484,7 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
             <div id="flavorGrid" style="display:none;">
               <select id="flavorSel" onchange="onSelFlavor(this.value)" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid rgba(124,109,250,0.35);background:rgba(20,16,38,0.9);color:#E8DCFF;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23b9a8ee' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;">
                 <option value="">請選擇…</option>
-                <option value="none" style="color:#6dfac2;font-weight:900;">無(不調味)</option>
+                <option value="none" style="color:#6dfac2;font-weight:900;">無(不指定設計風格)</option>
                 <optgroup label="日系品牌">
                 <option value="jp_beams_ivy">BEAMS 學院休閒</option>
                 <option value="jp_nikoand_life">Niko and 生活雜貨</option>
@@ -583,7 +583,7 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">③ 情境</span>
               <span style="font-size:9px;color:#ff9d9d;font-weight:700;">必選</span>
             </div>
-            <div id="contextLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先選「② 設計風格」(不想調味就選「無」),這區才會出現</div>
+            <div id="contextLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先選「② 設計風格」(不想指定就選「無」),這區才會出現</div>
             <div id="contextGrid" style="display:none;">
               <select id="contextSel" onchange="onSelContext(this.value)" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid rgba(124,109,250,0.35);background:rgba(20,16,38,0.9);color:#E8DCFF;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23b9a8ee' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;">
                 <option value="">請選擇…</option>
