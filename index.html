@@ -315,10 +315,10 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
 <!-- ══ AD Maker 彈窗 ══ -->
 <div id="adMakerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:999;overflow-y:auto;">
   <button onclick="closeAdMaker()" style="position:fixed;top:16px;right:20px;z-index:1001;background:rgba(28,28,31,0.95);border:2px solid var(--accent);color:var(--accent);font-size:20px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;line-height:1;transition:all 0.2s;" onmouseover="this.style.background='var(--accent)';this.style.color='#fff'" onmouseout="this.style.background='rgba(28,28,31,0.95)';this.style.color='var(--accent)'">✕</button>
-  <div style="max-width:1180px;margin:20px auto;padding:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:nowrap;" id="adMakerRow">
+  <div style="max-width:1080px;margin:20px auto;padding:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
 
     <!-- 左側控制 -->
-    <div style="width:340px;max-width:100%;flex-shrink:0;background:var(--bg2);border-radius:16px;border:1px solid rgba(124,109,250,0.25);padding:18px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 56px);overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,0.6);">
+    <div style="width:300px;flex-shrink:0;background:var(--bg2);border-radius:16px;border:1px solid rgba(124,109,250,0.25);padding:18px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 56px);overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,0.6);">
       <div style="display:flex;align-items:center;flex-shrink:0;padding-bottom:4px;border-bottom:1px solid rgba(124,109,250,0.15);">
         <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;">廣告圖產生器</span>
       </div>
@@ -786,23 +786,13 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
     </div>
 
     <!-- 右側 Canvas 預覽 -->
-    <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:10px;position:sticky;top:20px;">
+    <div style="flex:1;min-width:280px;display:flex;flex-direction:column;align-items:center;gap:10px;">
       <div style="font-size:9px;font-weight:700;letter-spacing:2.5px;color:var(--t3);" id="previewLabel">預覽 1080×1080</div>
       <canvas id="adCanvas" style="border-radius:12px;width:100%;max-width:560px;height:auto;box-shadow:0 16px 60px rgba(0,0,0,0.7);display:block;"></canvas>
     </div>
 
   </div>
 </div><!-- end adMakerModal -->
-<style>
-/* 🖥 2026-08-18:廣告圖面板版面。
-   舊寫法用 flex-wrap:wrap 讓它「自己決定」要不要換行,結果在筆電上
-   常常把右側預覽推到左欄下面 —— 右邊明明還有一大片空白。
-   改成:桌機一律並排(nowrap),只有 900px 以下才刻意堆疊。 */
-@media (max-width: 900px) {
-  #adMakerRow { flex-wrap: wrap !important; }
-  #adMakerRow > div:first-child { width: 100% !important; }
-}
-</style>
 
 <!-- ══ Footer ══ -->
 <footer class="brand-footer">
