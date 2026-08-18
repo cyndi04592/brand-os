@@ -5840,7 +5840,8 @@ function orderedProductUrls() {
 }
 
 // ═══ 🆕 v3.1 商品呈現方式(mode 選擇器)· STEP2 / STEP3 共用同一資料源 ═══
-const PRODUCT_MODE_NEW = ['held', 'worn', 'hero', 'demo', 'digital'];
+// 🆕 v3.2:服務型四模式(service/equip/screen/pro)。見 kol-product.js 檔頭說明。
+const PRODUCT_MODE_NEW = ['held', 'worn', 'hero', 'demo', 'digital', 'service', 'equip', 'screen', 'pro'];
 function applyProductModeOverride(prod) {
   if (!prod) return prod;
   const ov = (S.productModeOverride || {})[prod.prodName || prod.name];
@@ -5858,8 +5859,12 @@ const PRODUCT_MODE_OPTS = [
     { v: 'hero',     label: '主角大物(家具 / 家電 / 大型品)' },
     { v: 'demo',     label: '操作示範(噴霧 / 上妝 / 烹調 / 安裝)' },
   ] },
-  { grp: '體驗・服務', opts: [
-    { v: 'digital',  label: '數位 / 服務(軟體 / 課程 / 體驗)' },
+  { grp: '服務・成果', opts: [
+    { v: 'service',  label: '服務成果(美睫 / 美甲 / 美髮 / 醫美 / 健身)' },
+    { v: 'equip',    label: '設備製程(CNC / 半導體 / 工廠加工)' },
+    { v: 'screen',   label: '螢幕成果(軟體 / 網站 / 廣告代操 / 後台)' },
+    { v: 'pro',      label: '專業服務(律師 / 醫生 / 顧問 / 事務所)' },
+    { v: 'digital',  label: '其他數位服務(課程 / 體驗 / 訂閱)' },
   ] },
 ];
 function renderProductModePicker(mountId) {
@@ -5874,7 +5879,7 @@ function renderProductModePicker(mountId) {
   el.innerHTML =
     `<div style="font-size:12px;font-weight:600;margin-bottom:5px;opacity:.85">商品呈現方式 <span style="font-weight:400;opacity:.55">· 你賣的是「東西」還是「體驗」?</span></div>`
     + `<select onchange="setProductModeOverride(this.value)" style="width:100%;box-sizing:border-box;padding:7px 9px;border-radius:8px;background:#161616;color:#eee;border:1.5px solid #333;font-size:13px">${optHtml}</select>`
-    + `<div style="font-size:11px;opacity:.5;margin-top:5px;line-height:1.55">賣「真實的房子 / 案場 / 裝潢 / 水電 / 軟體 / 課程」→ 選 <b>數位・服務</b>(AI 畫不出你那一個,靠口播＋真實素材)。<br>看得到的實體 → 照它怎麼出現:拿著=手持、有包裝袋盒=包裝、一盤完成的菜=盛盤、穿身上=穿戴、落地大件(家具家電)=主角大物、<b>重點是操作/安裝/示範</b>=操作示範。</div>`;
+    + `<div style="font-size:11px;opacity:.5;margin-top:5px;line-height:1.55"><b style="color:#ffce6b">沒有實體商品可以拍?</b> 選「服務・成果」那組 —— AI 會被禁止憑空生出商品盒(接完的睫毛不該變成一盒假睫毛)。<br>做完的樣子=<b>服務成果</b>、機台與加工件=<b>設備製程</b>、螢幕畫面=<b>螢幕成果</b>(截圖要自己提供,AI 不會亂畫介面)、靠專業說話=<b>專業服務</b>。<br>看得到的實體 → 照它怎麼出現:拿著=手持、有包裝袋盒=包裝、一盤完成的菜=盛盤、穿身上=穿戴、落地大件(家具家電)=主角大物、<b>重點是操作/安裝/示範</b>=操作示範。</div>`;
 }
 function setProductModeOverride(val) {
   const prod = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
