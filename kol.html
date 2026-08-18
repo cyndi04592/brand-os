@@ -1831,9 +1831,13 @@ const _LOG_KIND = {
     let _retrySafe = false, _retryLabel = '';
     try {
       const _u = (typeof input === 'string') ? input : (input && input.url) || '';
+      // 🔐 2026-08-18:兩支 Worker 都要夾帶身分證。
+      //   原本只認 kol-proxy → 打 photoroom-proxy 的請求全都沒帶證,
+      //   photoroom 上鎖後那些功能會整片失效。先讓前端一律帶著。
       if (init && String(init.method || '').toUpperCase() === 'POST'
           && typeof init.body === 'string'
-          && _u.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1) {
+          && (_u.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1
+              || _u.indexOf('photoroom-proxy.calm-sunset-6b66.workers.dev') !== -1)) {
         const _o = JSON.parse(init.body);
         if (_o && _o.password && _o.action) {
           let _patched = false;
