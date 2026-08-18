@@ -710,27 +710,27 @@ const CONTEXT_THEMES = {
   // ══ 2026-08-18 新增:日本代購 / 保健品專用情境 ══
   jp_direct: {
     label: '日本直送',
-    context: 'Japan direct-shipping context: parcel and shipping-box elements, airmail and customs-tag details, freshly-arrived-from-Japan feeling, clean trustworthy presentation of imported goods.'
+    context: 'Japan direct-shipping context: clean bright neutral daylight, crisp orderly presentation with generous white space, a sense of just-arrived freshness and careful handling. Convey trust and authenticity through cleanliness and order, NOT through added boxes, parcels, tags or flags. The product stays the only hero.'
   },
   jp_drugstore_haul: {
     label: '藥妝掃貨',
-    context: 'Japanese drugstore haul context: multiple products arranged together as a shopping haul, bright store-shelf lighting, price-tag and pop-label energy, abundant must-buy selection feeling.'
+    context: 'Japanese drugstore context: bright even shadow-free lighting like a clean retail interior, crisp white base with one fresh accent colour, tidy upright alignment. Convey abundance through neat repetition and clarity, NOT by adding shelves, price tags, pop signage or extra unrelated products.'
   },
   duty_free: {
     label: '免稅店',
-    context: 'Duty-free shop context: airport terminal glass and polished surfaces, travel-retail display lighting, boarding-pass and luggage cues, premium yet accessible traveller mood.'
+    context: 'Duty-free context: polished reflective surface under the product, cool clean architectural light, calm premium travel-retail restraint. Convey the travel feeling through material and light only, NOT by adding luggage, boarding passes, aircraft or terminal scenery.'
   },
   limited_stock: {
     label: '限量現貨',
-    context: 'Limited-stock context: scarcity emphasis, small remaining quantity presentation, countdown and last-chance urgency, spotlight on the few remaining items.'
+    context: 'Limited-stock context: single tightly-framed hero with dramatic focused spotlight and deep falloff, plenty of dark negative space around it. Convey scarcity through isolation and lighting tension, NOT by adding countdown numbers, badges, stickers or text callouts.'
   },
   daily_supplement: {
     label: '每日保養',
-    context: 'Daily supplement routine context: morning table setting with water glass, calm consistent daily-habit mood, clean healthy lifestyle cues, soft natural morning light.'
+    context: 'Daily-routine context: soft early-morning side light with long gentle shadows, calm uncluttered surface, quiet unhurried everyday stillness. Convey habit and wellbeing through light and emptiness, NOT by adding glasses of water, pills, calendars or lifestyle props.'
   },
   gift_choice: {
     label: '送禮首選',
-    context: 'Gifting context: elegant wrapping and ribbon cues, giving-hands or presentation angle, thoughtful premium gift mood, warm celebratory lighting.'
+    context: 'Gifting context: slightly elevated presentation angle, warm soft light with a gentle glow, refined tactile surfaces and generous framing. Convey preciousness through lighting and composition, NOT by adding ribbons, wrapping paper, gift boxes or hands.'
   },
 
   summer: {
@@ -2158,7 +2158,7 @@ function onSelContext(v) { SELECTED_CONTEXT = v || ''; _syncSteps();
 function _posterStepsReady() {
   const miss =
     !SELECTED_LAYOUT  ? { sel: '#layoutSel',  msg: '請先在「① 排版」選一種版型' } :
-    !SELECTED_FLAVOR  ? { sel: '#flavorSel',  msg: '請選「② 設計風格」,不想調味就選「無」' } :
+    !SELECTED_FLAVOR  ? { sel: '#flavorSel',  msg: '請選「② 設計風格」,不想指定就選「無」' } :
     !SELECTED_CONTEXT ? { sel: '#contextSel', msg: '請選「③ 情境」,沒有特殊檔期就選「無」' } : null;
   if (!miss) return true;
   setPrStatus(miss.msg, '#ff9d9d');
