@@ -1135,7 +1135,7 @@ function setPrMode(btn, mode) {
     SELECTED_INSPIRATION = null;
     document.querySelectorAll('.insp-btn').forEach(b => b.classList.remove('on'));
     // 🪜 下拉版:離開廣告圖模式時把三步清空,回來時是乾淨狀態(客戶重新自己選)
-    SELECTED_LAYOUT = ''; SELECTED_FLAVOR = ''; SELECTED_CONTEXT = '';
+    SELECTED_PRODTYPE = ''; SELECTED_LAYOUT = ''; SELECTED_FLAVOR = ''; SELECTED_CONTEXT = '';
     _syncSteps();
   }
   if (mode === 'gpt_poster') {
@@ -2175,10 +2175,12 @@ function _syncSteps() {
     if (g) g.style.display = on ? 'block' : 'none';
     if (l) l.style.display = on ? 'none' : 'block';
   };
-  show('flavorGrid',  'flavorLock',  !!SELECTED_LAYOUT);
-  show('contextGrid', 'contextLock', !!SELECTED_LAYOUT && !!SELECTED_FLAVOR);
+  show('layoutGrid',  'layoutLock',  !!SELECTED_PRODTYPE);
+  show('flavorGrid',  'flavorLock',  !!SELECTED_PRODTYPE && !!SELECTED_LAYOUT);
+  show('contextGrid', 'contextLock', !!SELECTED_PRODTYPE && !!SELECTED_LAYOUT && !!SELECTED_FLAVOR);
   // 下拉的值也同步回畫面(切換品牌重繪後仍保持客戶的選擇)
   const set = (id, v) => { const e = document.getElementById(id); if (e && e.value !== v) e.value = v || ''; };
+  set('prodTypeSel', SELECTED_PRODTYPE);
   set('layoutSel', SELECTED_LAYOUT);
   set('flavorSel', SELECTED_FLAVOR);
   set('contextSel', SELECTED_CONTEXT);
@@ -2201,6 +2203,7 @@ function onSelContext(v) { SELECTED_CONTEXT = v || ''; _syncSteps();
 //   ⚠️ 一定要在按鈕變成「生成中」之前呼叫(見 applyPhotoroomBg 的註解)。
 function _posterStepsReady() {
   const miss =
+    !SELECTED_PRODTYPE ? { sel: '#prodTypeSel', msg: '請先選「⓪ 我要拍的是什麼?」—— 沒有實體商品可拍的行業,請選下方那組' } :
     !SELECTED_LAYOUT  ? { sel: '#layoutSel',  msg: '請先在「① 排版」選一種版型' } :
     !SELECTED_FLAVOR  ? { sel: '#flavorSel',  msg: '請選「② 設計風格」,不想指定就選「無」' } :
     !SELECTED_CONTEXT ? { sel: '#contextSel', msg: '請選「③ 情境」,沒有特殊檔期就選「無」' } : null;
@@ -2212,6 +2215,62 @@ function _posterStepsReady() {
 }
 
 // 舊的按鈕版介面已移除,這三支保留成薄殼 —— 萬一還有別處在呼叫不會炸。
+// ══════════════════════════════════════════════════════════════
+//  🆕 2026-08-18:商品型態(⓪)。與 KOL 的 productMode 同一套語彙。
+//   病灶:原本的 prompt 開頭寫死「The product is the hero」,等於預設
+//   畫面中央一定有一個實體商品。給它一張美睫成果照,它找不到「商品」,
+//   就自己發明一盒假睫毛還印上品牌名(HH美學工作室實測);給律師事務所
+//   則直接生出空白圖。
+//   解法:依型態換掉那段開頭,服務型一律寫死「禁止憑空生出商品」。
+//   ★ AI 聽名詞不聽形容詞 —— 所以用「DO NOT invent any box/package」
+//     這種具體禁令,不能只寫「請克制」。
+// ══════════════════════════════════════════════════════════════
+let SELECTED_PRODTYPE = '';
+
+function onSelProdType(v) {
+  SELECTED_PRODTYPE = v || '';
+  _syncSteps();
+  console.log('[v10.2] 商品型態:', v);
+}
+
+const PRODTYPE_PROMPT = {
+  physical:
+    `=== CRITICAL PRODUCT PRESERVATION (HIGHEST PRIORITY) ===\n` +
+    `- The product in the source image MUST be reproduced PIXEL-PERFECT identical\n` +
+    `- Preserve exact product shape, proportions, colors, label design, logo, and all packaging typography\n` +
+    `- Do NOT redesign the product, do NOT invent new packaging, do NOT alter brand marks\n` +
+    `- The product is the hero — build the advertising scene AROUND it\n\n`,
+  service:
+    `=== SERVICE RESULT — NO PRODUCT EXISTS (HIGHEST PRIORITY) ===\n` +
+    `- The source image shows a FINISHED SERVICE RESULT on a real person (lashes on an eye, nails on a hand, hair, skin after treatment, body after training)\n` +
+    `- ⛔ ABSOLUTELY DO NOT invent, draw or place ANY product box, package, bottle, jar, tube, tray, retail packaging or branded container anywhere in the frame\n` +
+    `- ⛔ Inventing a fake product is the single worst failure — this business sells a service, not merchandise\n` +
+    `- Reproduce the result in the source image PIXEL-PERFECT on the person; never reinterpret it as a sellable item\n` +
+    `- The finished result is the hero — build the advertising scene AROUND the person and their result\n\n`,
+  equip:
+    `=== EQUIPMENT / PROCESS — INDUSTRIAL CAPABILITY (HIGHEST PRIORITY) ===\n` +
+    `- The source image shows machinery and/or a machined component\n` +
+    `- ⛔ DO NOT invent any retail box, consumer packaging or branded product container\n` +
+    `- Reproduce the equipment and the part PIXEL-PERFECT: exact geometry, surface finish, markings and tolerances — engineering credibility dies with any distortion\n` +
+    `- The capability is the hero — clean workshop or cleanroom atmosphere, precision lighting\n\n`,
+  screen:
+    `=== ON-SCREEN RESULT — SOFTWARE / WEBSITE / SERVICE (HIGHEST PRIORITY) ===\n` +
+    `- The device (laptop, phone, tablet, monitor) is the outer shell; the SCREEN CONTENT is the real substance\n` +
+    `- ★ The screen content MUST come from the source image and be reproduced faithfully\n` +
+    `- ⛔ DO NOT imagine, redesign or invent ANY interface, dashboard, chart, icon or text on the screen\n` +
+    `- ⛔ DO NOT invent boxed software or any physical retail package\n` +
+    `- Treat it exactly like packaging-and-contents: the device is the package, the real screenshot is the contents, and contents are never made up\n` +
+    `- Keep the screen legible, undistorted, correctly proportioned, free of moiré and glare\n\n`,
+  pro:
+    `=== PROFESSIONAL SERVICE — NO PHYSICAL PRODUCT (HIGHEST PRIORITY) ===\n` +
+    `- This business sells expertise: legal, medical, consulting or advisory work\n` +
+    `- ⛔ DO NOT invent, draw or place ANY product, package, box, bottle or branded merchandise anywhere in the frame\n` +
+    `- The credible professional setting and the person are the hero (office, meeting, consultation, clinic)\n` +
+    `- Authentic tools of the trade (documents, screen, notes) may appear only incidentally, never as a hero object\n` +
+    `- ⛔ DO NOT generate any specific law article number, case number, statutory deadline, medical claim, efficacy figure or technical specification — professional accuracy is the client's responsibility, invented details create liability\n` +
+    `- Lighting clean and trustworthy; posture conveys competence and calm authority, not sales energy\n\n`,
+};
+
 function setLayout(btn, layoutKey) { onSelLayout(layoutKey); }
 
 function setFlavor(btn, flavorKey) { onSelFlavor(flavorKey); }
@@ -2262,11 +2321,8 @@ function buildPosterPrompt() {
 
   let prompt = '';
 
-  prompt += `=== CRITICAL PRODUCT PRESERVATION (HIGHEST PRIORITY) ===\n`;
-  prompt += `- The product in the source image MUST be reproduced PIXEL-PERFECT identical\n`;
-  prompt += `- Preserve exact product shape, proportions, colors, label design, logo, and all packaging typography\n`;
-  prompt += `- Do NOT redesign the product, do NOT invent new packaging, do NOT alter brand marks\n`;
-  prompt += `- The product is the hero — build the advertising scene AROUND it\n\n`;
+  // 🆕 依商品型態換開頭。沒選(舊行為)→ physical,輸出與改版前一字不變。
+  prompt += (PRODTYPE_PROMPT[SELECTED_PRODTYPE] || PRODTYPE_PROMPT.physical);
 
   // 🩹 2026-08-11 品牌色開關:
   //   病灶:品牌包的 DNA 把主色寫死(巧福 = deep forest green #3D5A3F),
