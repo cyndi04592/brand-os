@@ -17,6 +17,8 @@
      - 所有 ID hook(#brandTree / #prodList / #scriptsOut ...)
      - 所有 JS 動畫名稱(@keyframes pulse / sp / up / hlNew ...)
      - admaker 三層按鈕(layout-btn / flavor-btn / context-btn)
+       ⚠️ 2026-08-18:字級從 10~10.5px 放大到 12~12.5px。
+          原本在筆電(1440px 寬)上小到看不清楚,而這三區是客戶每次生圖都要用的。
 
    v9.0 / v10.2 註解保留(向下相容)
    ══════════════════════════════════════════════════════════════ */
@@ -1168,7 +1170,7 @@ body.need-brand .left {
   border: 1.5px solid rgba(124,109,250,0.30);
   color: #C9B8E8;
   font-family: 'Noto Sans TC';
-  font-size: 10.5px;
+  font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
   line-height: 1.3;
@@ -1202,7 +1204,7 @@ body.need-brand .left {
   border: 1.5px solid rgba(109,250,194,0.25);
   color: #8FE8C8;
   font-family: 'Noto Sans TC';
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   line-height: 1.3;
@@ -1234,7 +1236,7 @@ body.need-brand .left {
   border: 1.5px solid rgba(250,109,155,0.25);
   color: #FFA8C8;
   font-family: 'Noto Sans TC';
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   line-height: 1.3;
@@ -2969,4 +2971,43 @@ details[open] > summary::before { transform: rotate(90deg); }
 
   /* 關閉鈕縮小一點,別壓到預覽 */
   #adMakerModal > button { top: 10px !important; right: 12px !important; width: 38px !important; height: 38px !important; }
+}
+
+
+/* ══ 2026-08-18:廣告圖三步驟下拉(取代原本的按鈕牆)══
+   風格已擴到 74 種、情境 28 種,按鈕牆在筆電上是一整片牆要滑很久,
+   字也小到看不清。下拉不管幾百種都只有一行,還能用 optgroup 分組。
+   ⚠️ 三顆刻意染成薄荷綠並加粗:②③ 的「無」與 ① 的「極簡海報型」。
+     ②③ 的「無」——客戶常以為不選也可以,顏色是在告訴他:選無也是一種選擇。
+     ①的「極簡海報型」——不是預設值(預設值會讓客戶跳過思考),而是
+     「不知道選什麼就選它」的安全牌,用顏色替客戶指路。 */
+#layoutSel, #flavorSel, #contextSel {
+  outline: none;
+  transition: border-color .18s, box-shadow .18s;
+}
+#layoutSel:hover, #flavorSel:hover, #contextSel:hover {
+  border-color: rgba(124,109,250,0.65);
+}
+#layoutSel:focus, #flavorSel:focus, #contextSel:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124,109,250,0.16);
+}
+#layoutSel option, #flavorSel option, #contextSel option {
+  background: #16122c;
+  color: #E8DCFF;
+  padding: 8px;
+  font-weight: 600;
+}
+#flavorSel option[value="none"], #contextSel option[value="none"],
+#layoutSel option[value="minimal_poster"] {
+  color: #6dfac2;
+  font-weight: 900;
+}
+#layoutSel optgroup, #flavorSel optgroup, #contextSel optgroup {
+  background: #0f0c20;
+  color: #9d8fd6;
+  font-size: 11px;
+  font-weight: 900;
+  font-style: normal;
+  letter-spacing: 1px;
 }
