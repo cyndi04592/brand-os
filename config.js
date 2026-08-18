@@ -354,7 +354,12 @@ function buildDataFromSheets(data) {
   window.fetch = function (input, init) {
     try {
       const url = (typeof input === 'string') ? input : ((input && input.url) || '');
-      if (url.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1
+      // 🔐 2026-08-18:兩支 Worker 都要夾帶身分證。
+      //   原本只認 kol-proxy → 打 photoroom-proxy 的請求(廣告圖 240 點、
+      //   試穿 120 點、影片 960 點)全都沒帶證。photoroom 上鎖後那些功能會全掛,
+      //   所以先讓前端一律帶著。
+      if ((url.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1
+           || url.indexOf('photoroom-proxy.calm-sunset-6b66.workers.dev') !== -1)
           && init && String(init.method || '').toUpperCase() === 'POST'
           && typeof init.body === 'string') {
         const o = JSON.parse(init.body);
