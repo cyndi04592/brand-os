@@ -1,4 +1,15 @@
-// kol-product.js · v2.1 · 道具師(Prop / Product Director)
+// kol-product.js · v3.2 · 道具師(Prop / Product Director)
+// 🆕 v3.2 服務型商品四模式(2026-08-18)
+//   問題:系統原本假設「畫面中央一定有一個實體商品」。給它一張美睫成果照,
+//   它找不到「商品」,就自己發明一盒假睫毛還印上品牌名;給它律師事務所,
+//   連編都編不出來,直接空白。實測踩過(HH美學工作室 → AI 生出不存在的假睫毛盒)。
+//   解法:沿用既有的 productMode 機制加四種,每一種都寫死「禁止捏造實體商品」。
+//     service  服務成果(美睫/美甲/美髮/醫美/健身)→ 拍「做完的樣子」,不是產品
+//     equip    設備製程(CNC/半導體/工廠)      → 拍機台與加工件
+//     screen   螢幕成果(軟體/網站/廣告代操)     → 裝置外觀=包裝、真實截圖=內容物
+//     pro      專業服務(律師/醫生/顧問)        → 拍人與專業情境,零實體
+//   ★ screen 沿用海苔的「外包裝+內容物」邏輯:螢幕內容必須用客戶給的真實截圖,
+//     絕不讓 AI 自己想像畫面內容(跟「不准自己想像海苔長怎樣」同一條規矩)。
 // 依 productType 驅動「鎖定句」,克制不搶主體 KOL。
 //   packaged 包裝商品(海苔/香腸)→ [Image2]外包裝 + [Image3]內容物(showContents)
 //   dish     餐點料理(福臨門)   → [Image2]成品菜+盤,狀態鎖:已上桌·絕不下鍋
@@ -57,6 +68,12 @@
   function resolveMode(prod) {
     const m = String(prod.productMode || '').trim().toLowerCase();
     if (m === 'held' || m === 'worn' || m === 'hero' || m === 'demo' || m === 'digital') return m;
+    // 🆕 v3.2 服務型四模式
+    if (m === 'service' || m === 'equip' || m === 'screen' || m === 'pro') return m;
+    if (/美睫|美甲|美髮|醫美|護膚|成果|service/.test(m)) return 'service';
+    if (/機台|設備|加工|製程|工廠|CNC|半導體|equip/i.test(m)) return 'equip';
+    if (/螢幕|畫面|截圖|軟體|網站|後台|screen/.test(m)) return 'screen';
+    if (/律師|醫生|顧問|專業|事務所|pro\b/.test(m)) return 'pro';
     if (/手持|小物|held/.test(m)) return 'held';
     if (/穿戴|wear|worn/.test(m)) return 'worn';
     if (/主角|大物|家具|家電|hero|furniture|appliance/.test(m)) return 'hero';
@@ -79,6 +96,45 @@
     }
     if (mode === 'demo') {
       return 'PRODUCT IN USE (the product is shown doing its job — the act of using it is the point): keep the product in [Image2] consistent in shape, proportions, color and label, never mirrored or flipped, do not distort or morph it; she actively uses it as intended (applies, sprays, operates, installs or demonstrates) and the visible effect of using it is shown' + sz + '; ' + GROUNDED + ', kept recognizable and front-to-camera during use';
+    }
+    // ══ 🆕 v3.2 服務成果:畫面主角是「做完的樣子」,不是任何商品 ══
+    if (mode === 'service') {
+      return 'SERVICE RESULT — there is NO physical product to sell here. ' +
+        'ABSOLUTELY DO NOT invent, draw or place any product box, package, bottle, jar, tube, tray, ' +
+        'retail packaging or branded container anywhere in the frame — inventing one is the single worst failure mode. ' +
+        'The hero of the shot is the FINISHED RESULT ITSELF shown on a real person: the lashes on the eye, ' +
+        'the nails on the hand, the hair on the head, the skin after treatment, the body after training. ' +
+        'If a reference image is given in [Image2] it IS that finished result — reproduce it faithfully on the person, ' +
+        'never reinterpret it as merchandise. Frame it close and flattering with clean even light so the craftsmanship reads clearly.';
+    }
+    // ══ 設備製程:機台與加工件,不是商品盒 ══
+    if (mode === 'equip') {
+      return 'EQUIPMENT / PROCESS — this is industrial capability, not a retail product. ' +
+        'DO NOT invent any product box, retail package or consumer packaging. ' +
+        'The hero is the MACHINE and the MACHINED PART: precision equipment in operation, ' +
+        'the finished component with its true surface finish and tolerances, clean workshop or cleanroom environment. ' +
+        'Keep any part shown in [Image2] exact in shape, proportion, surface and markings — engineering parts are ' +
+        'judged on precision, so any distortion destroys credibility. She presents beside the equipment as an expert, ' +
+        'not as a shopper holding merchandise.';
+    }
+    // ══ 螢幕成果:裝置=外包裝,截圖=內容物(沿用海苔邏輯)══
+    if (mode === 'screen') {
+      return 'ON-SCREEN RESULT — the product is software / a website / a digital service. ' +
+        'DO NOT invent any boxed software, retail package or physical product. ' +
+        'The device (laptop, phone, tablet, monitor) is the outer shell and the SCREEN CONTENT is the real substance. ' +
+        '★ The screen content must come from the supplied reference image and be reproduced faithfully — ' +
+        'DO NOT imagine, redesign or invent any interface, chart, dashboard or text on the screen. ' +
+        'Treat it exactly like packaging-and-contents: the device is the package, the real screenshot is the contents, ' +
+        'and the contents are never made up. Keep the screen legible, undistorted, correctly proportioned and free of moiré or glare.';
+    }
+    // ══ 專業服務:人與情境,零實體 ══
+    if (mode === 'pro') {
+      return 'PROFESSIONAL SERVICE — there is no physical product at all. ' +
+        'DO NOT invent, draw or place any product, package, box, bottle or branded merchandise anywhere. ' +
+        'The subject IS the offering: her expertise, presence and setting carry the message. ' +
+        'Place her in a credible professional environment (office, meeting, consultation, courtroom-adjacent, clinic) ' +
+        'with authentic tools of that trade only where natural (documents, screen, notes) and never as a hero object. ' +
+        'Lighting is clean and trustworthy; posture and framing convey competence and calm authority rather than sales energy.';
     }
     if (mode === 'digital') {
       return 'NO PHYSICAL PRODUCT — this is a digital product or service: she does NOT hold any physical item and no fake package is invented. She presents it through a device she is using (laptop, phone or tablet) or through the visible real-world outcome and experience it delivers, talking naturally to camera about its value; if a logo or screen is given in [Image2] it appears on the device screen, kept clean, correct and undistorted';
