@@ -472,8 +472,8 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add urban-intellectual Japanese flavor: muted sophisticated palette, French-Japanese hybrid styling, matte fabrics and clean lines, quiet confident adult elegance, soft overcast city light.'
   },
   jp_moussy_denim: {
-    label: 'Moussy 丹寧率性',
-    flavor: 'Add denim-forward Japanese flavor: raw indigo and washed denim textures, monochrome black-white-blue palette, cool edgy attitude, hard directional light with strong shadows, effortless rock-casual mood.'
+    label: 'Moussy 東京街頭',
+    flavor: 'Add Tokyo street-fashion flavor: Japanese street-culture attitude, mix of fitted and oversized proportions, cool confident edge balanced with elegance, urban asphalt and night-signage tones, hard directional light with strong shadows.'
   },
   jp_snidel_romance: {
     label: 'Snidel 浪漫少女',
@@ -484,56 +484,80 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add Japanese vintage-mix flavor: thrift-store layered styling, faded retro colors, Y2K accessories, playful clashing patterns, casual snapshot framing, affordable youthful street energy.'
   },
   jp_clane_mode: {
-    label: 'CLANE 建築剪裁',
-    flavor: 'Add architectural-mode Japanese flavor: sculptural structured silhouettes, monochrome and stone palette, sharp geometric shadow, gallery-like empty backdrop, mature avant-garde restraint.'
+    label: 'CLANE 優雅力量',
+    flavor: 'Add elegant-strength Japanese flavor: precise tailored fit, quiet powerful poise, high-quality natural fabric texture, restrained neutral palette, clean soft studio light — sophistication for a working woman who wants independence, not loudness.'
   },
   jp_coen_natural: {
-    label: 'coen 自然棉麻',
-    flavor: 'Add natural-casual Japanese flavor: cotton and linen texture close-ups, sun-washed neutral palette, outdoor daylight and light breeze feeling, unfussy comfortable family-friendly styling.'
+    label: 'coen 輕鬆百搭',
+    flavor: 'Add easy-everyday Japanese flavor: relaxed unpretentious styling, honest simple materials, bright even daylight, friendly approachable mood — good design that feels effortless and within reach, never precious.'
   },
   jp_bp_deconstruct: {
-    label: '前衛解構',
-    flavor: 'Add deconstructed avant-garde Japanese flavor: asymmetric cuts and unexpected seams, experimental proportion, raw exposed construction details, stark neutral backdrop, conceptual fashion-editorial tension.'
+    label: 'Beautiful People 藝術工藝',
+    flavor: 'Add artisanal art-piece flavor: exquisite craftsmanship detail, unusual fabric surface and unexpected silhouette shaped by technique, gallery-quiet backdrop, each item presented as a work of art with individual character.'
   },
 
   // ══ 韓系:漢南洞 / 梨泰院選品店一帶的視覺 ══
-  kr_hannam_select: {
-    label: '漢南洞選品店',
-    flavor: 'Add Hannam-dong select-shop flavor: raw concrete and pale oak interior, sparse museum-like product placement, single dramatic spotlight, muted stone palette, refined curated quietness.'
+  kr_glowny_basic: {
+    label: 'GLOWNY 光感基本款',
+    flavor: 'Add Korean light-and-basics flavor: white-tee-and-denim simplicity elevated by light itself, soft natural daylight catching edges and creating a gentle glow, American-casual ease with delicate finishing, warm neutral base — beauty from light rather than decoration.'
   },
-  kr_itaewon_vintage: {
-    label: '梨泰院復古',
-    flavor: 'Add Itaewon vintage flavor: eclectic retro furniture, warm amber lighting, mixed-era props and posters, lived-in textured walls, relaxed bohemian city-cool mood.'
+  kr_marge_leather: {
+    label: 'MARGE 皮革日常',
+    flavor: 'Add Korean everyday-leather flavor: smooth supple leather grain in warm camel/cream/charcoal tones, relaxed slouchy shapes rather than rigid structure, soft indoor light, understated wearable luxury priced for daily use.'
   },
-  kr_gallery_cafe: {
-    label: '藝廊咖啡',
-    flavor: 'Add Korean gallery-cafe flavor: white gallery walls with generous empty space, one artwork-like focal object, soft north-facing daylight, ceramic and matte-paper textures, calm intellectual serenity.'
+  kr_emis_street: {
+    label: 'EMIS 街頭玩味',
+    flavor: 'Add Korean playful-street flavor: bold clean logo graphics, cheeky youthful attitude, saturated primary accents on neutral base, casual snapshot framing, city-street energy that stays friendly rather than aggressive.'
   },
-  kr_soft_pastel: {
-    label: '韓系柔粉',
-    flavor: 'Add Korean soft-pastel flavor: baby pink lilac and mint palette, airy high-key lighting, rounded soft props, gentle dreamy sweetness, light fluffy weightless feeling.'
+  kr_balletcore: {
+    label: 'Balletcore 英倫少女',
+    flavor: 'Add balletcore flavor: British heritage aesthetic softened with girlish romance, matte pastel and cream palette (butter, oat, mint, pale pink), functional-yet-pretty detailing, soft overcast daylight, retro-elegant charm.'
   },
 
   // ══ 插畫 / 平面設計風(省掉美編自己畫插畫的時間)══
-  illust_flat_editorial: {
-    label: '扁平編輯插畫',
-    flavor: 'Add flat editorial illustration flavor: simplified vector-like shapes, limited 3-4 color palette, bold outlines, magazine-spot-illustration composition, product integrated into the illustrated scene.'
+  illust_flat_editorial_light: {
+    label: '扁平編輯插畫 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw flat vector-style illustration with simplified geometric shapes, bold clean outlines and a limited 3-4 colour palette, magazine spot-illustration character. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
   },
-  illust_riso_print: {
-    label: '孔版印刷感',
-    flavor: 'Add risograph print flavor: two-color overprint with visible misregistration, grainy ink texture, fluorescent pink and blue inks, paper fiber showing through, zine-like handmade charm.'
+  illust_flat_editorial_half: {
+    label: '扁平編輯插畫 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using flat vector-style illustration with simplified geometric shapes, bold clean outlines and a limited 3-4 colour palette, magazine spot-illustration character. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
   },
-  illust_woodblock: {
-    label: '版畫民藝',
-    flavor: 'Add folk woodblock-print flavor: carved-line texture, flat traditional pigments, decorative border motifs, craft-fair poster feeling, cultural heritage warmth.'
+  illust_riso_print_light: {
+    label: '孔版印刷感 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw risograph-style illustration with two-colour overprint, visible misregistration, grainy ink texture and fluorescent pink/blue inks on paper fibre. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
   },
-  illust_watercolor: {
-    label: '水彩手繪',
-    flavor: 'Add hand-painted watercolor flavor: soft bleeding pigment edges, visible paper grain, translucent layered washes, delicate hand-drawn linework, gentle artisanal warmth.'
+  illust_riso_print_half: {
+    label: '孔版印刷感 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using risograph-style illustration with two-colour overprint, visible misregistration, grainy ink texture and fluorescent pink/blue inks on paper fibre. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
   },
-  illust_expo_graphic: {
-    label: '文博展會風',
-    flavor: 'Add cultural-expo graphic flavor: strong geometric shape blocking, culturally-rooted motifs reinterpreted in modern flat graphics, confident typographic hierarchy, exhibition-poster energy, limited high-impact palette.'
+  illust_woodblock_light: {
+    label: '版畫民藝 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw folk woodblock-print illustration with carved-line texture, flat traditional pigments and decorative border motifs. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+  },
+  illust_woodblock_half: {
+    label: '版畫民藝 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using folk woodblock-print illustration with carved-line texture, flat traditional pigments and decorative border motifs. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+  },
+  illust_watercolor_light: {
+    label: '水彩手繪 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw hand-painted watercolour illustration with soft bleeding pigment edges, translucent layered washes and delicate ink linework on visible paper grain. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+  },
+  illust_watercolor_half: {
+    label: '水彩手繪 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using hand-painted watercolour illustration with soft bleeding pigment edges, translucent layered washes and delicate ink linework on visible paper grain. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+  },
+  illust_healing_char_light: {
+    label: '療癒角色插畫 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw warm rounded healing-character illustration with friendly soft forms, gentle candy palette and affectionate hand-made charm. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+  },
+  illust_healing_char_half: {
+    label: '療癒角色插畫 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using warm rounded healing-character illustration with friendly soft forms, gentle candy palette and affectionate hand-made charm. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+  },
+  illust_craft_ceramic: {
+    label: '職人手作陶感',
+    flavor: 'Add artisan-ceramic flavor: matte unglazed clay texture with visible maker marks, earthy off-white and clay-brown palette, botanical and rural-memory motifs, quiet natural daylight, the warmth of something shaped by hand.'
   },
 
   showa_retro: {
@@ -610,29 +634,49 @@ const REGIONAL_FLAVORS = {
     label: '輕奢質感',
     flavor: 'Add luxury-texture flavor: black and gold palette, premium material surfaces (marble, brushed metal, velvet), single dramatic spotlight, refined high-end beauty-campaign elegance.'
   },
-  hand_doodle: {
-    label: '手繪塗鴉',
-    flavor: 'Add hand-drawn doodle flavor: sketchy black pen lines, playful handwritten text, raw paper texture, casual imperfect strokes, youthful energetic charm.'
+  hand_doodle_light: {
+    label: '手繪塗鴉 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw loose hand-drawn doodle illustration with wobbly marker lines, arrows, stars and casual scribbled annotations. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
   },
-  collage_art: {
-    label: '拼貼藝術',
-    flavor: 'Add collage-art flavor: torn paper layers, mixed photo fragments, rough cut-and-paste textures, editorial vintage-modern hybrid, expressive layered contrast.'
+  hand_doodle_half: {
+    label: '手繪塗鴉 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using loose hand-drawn doodle illustration with wobbly marker lines, arrows, stars and casual scribbled annotations. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
   },
-  line_art: {
-    label: '線描極簡',
-    flavor: 'Add line-art minimal flavor: single continuous-line drawing or delicate abstract linework, neutral background, elegant negative space, calm gallery-poster refinement.'
+  collage_art_light: {
+    label: '拼貼藝術 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw paper-collage illustration with torn edges, layered cut-out shapes, tape marks and mixed printed textures. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
   },
-  pop_art: {
-    label: '普普藝術',
-    flavor: 'Add pop-art flavor: comic-style illustration, halftone dots, bold primary colors, playful retro energy, high-contrast graphic punch, iconic commercial pop look.'
+  collage_art_half: {
+    label: '拼貼藝術 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using paper-collage illustration with torn edges, layered cut-out shapes, tape marks and mixed printed textures. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+  },
+  line_art_light: {
+    label: '線描極簡 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw single-weight continuous line-art illustration, minimal contour drawing with no fill, elegant and sparse. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+  },
+  line_art_half: {
+    label: '線描極簡 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using single-weight continuous line-art illustration, minimal contour drawing with no fill, elegant and sparse. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+  },
+  pop_art_light: {
+    label: '普普藝術 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw pop-art illustration with halftone dot texture, bold primary colours, thick comic outlines and speech-bubble shapes. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+  },
+  pop_art_half: {
+    label: '普普藝術 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using pop-art illustration with halftone dot texture, bold primary colours, thick comic outlines and speech-bubble shapes. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
   },
   acid_neon: {
     label: '螢光科技',
     flavor: 'Add acid neon flavor: fluorescent green and electric color clashes, surreal glossy 3D form, cyber-inspired composition, bold glow effects, edgy experimental energy.'
   },
-  ink_zen: {
-    label: '水墨禪意',
-    flavor: 'Add ink-wash zen flavor: black sumi ink mountain or abstract stroke, rice-paper texture, calm minimal composition, poetic negative space, meditative East-Asian tone.'
+  ink_zen_light: {
+    label: '水墨禪意 · 點綴',
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw sumi-e ink illustration with expressive wet brush strokes, ink wash gradients and generous empty space. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+  },
+  ink_zen_half: {
+    label: '水墨禪意 · 半版',
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using sumi-e ink illustration with expressive wet brush strokes, ink wash gradients and generous empty space. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
   },
   chaos_pkg: {
     label: '混沌極繁',
