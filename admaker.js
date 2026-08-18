@@ -233,6 +233,33 @@ Reference aesthetic: Pinterest food photography hero shots, premium beverage com
   },
 
   // 5. 極簡海報型 (圖 6 Creamy Layer / 巧福串圖-05 大字版)
+  // ══ 2026-08-18 新增排版 ══
+  before_after: {
+    label: '前後對比型',
+    desc: '左右或上下分割,呈現使用前後差異',
+    prompt: 'SPLIT COMPARISON LAYOUT: divide the canvas into two clean halves (left/right or top/bottom) with a crisp dividing line. Same framing and lighting on both sides so the difference reads instantly. Small label zones for BEFORE / AFTER text. Product or subject centered within each half.'
+  },
+  grid_showcase: {
+    label: '多格展示型',
+    desc: '2x2 或 3x3 方格,一次呈現多角度或多品項',
+    prompt: 'GRID SHOWCASE LAYOUT: even modular grid (2x2 or 3x3) with consistent gutters. Each cell holds one clean shot of the product from a different angle or one item of the set. Uniform background and lighting across all cells. Thin caption strip under the grid.'
+  },
+  big_statement: {
+    label: '大字宣言型',
+    desc: '超大標語佔畫面一半,商品退為配角',
+    prompt: 'BIG STATEMENT LAYOUT: oversized typographic headline occupying roughly half the canvas, product placed small and deliberate in the remaining space. High contrast between type block and image area. Bold confident poster energy, generous negative space.'
+  },
+  checklist_info: {
+    label: '重點條列型',
+    desc: '商品在側,右側條列賣點,像資訊圖',
+    prompt: 'CHECKLIST INFO LAYOUT: product anchored on one side, the other side reserved for a vertical stack of 3-5 short benefit lines with small icon or bullet markers. Clean aligned baseline grid, infographic clarity, plenty of breathing room.'
+  },
+  hand_hold: {
+    label: '手持實拍型',
+    desc: '手拿著商品,貼近真實使用感',
+    prompt: 'HAND-HELD LAYOUT: a hand holding or presenting the product at natural angle, shallow depth of field, authentic user-generated-content feeling, casual everyday background slightly blurred, warm natural light.'
+  },
+
   minimal_poster: {
     label: '極簡海報型',
     desc: '商品大特寫+大字標題+極簡裝飾',
@@ -360,17 +387,155 @@ let BRAND_STYLE_PACKS = {
 // ═══════════════════════════════════════════════════════════════════════
 const REGIONAL_FLAVORS = {
   none: {
-    label: '— 不加調味 —',
+    label: '無',
     flavor: ''
   },
   japan_kinfolk: {
-    label: '🇯🇵 日系雅致',
+    label: '日系雅致',
     flavor: 'Add Japanese editorial flavor: muted earth tones, washi paper texture overlay, vertical Mincho serif feel, lots of negative space, single dried branch or ceramic vase prop in background bokeh, contemplative wabi-sabi atmosphere.'
   },
   korea_oliveyoung: {
-    label: '🇰🇷 韓系乾淨',
+    label: '韓系乾淨',
     flavor: 'Add Korean beauty brand flavor: soft pastel ivory and dusty pink palette, very high-key bright exposure, glossy clean surfaces, holographic micro sparkles, dreamy soft-focus highlights, OliveYoung / Innisfree campaign vibe.'
   },
+  // ══ 2026-08-18 新增:日系衍生(參考日本潮牌與零售場景)══
+  jp_harajuku_street: {
+    label: '裏原宿街頭',
+    flavor: 'Add Ura-Harajuku street flavor: bold graphic prints and camo patterns, playful rebellious energy, sticker-like layered graphics, saturated pop colors on concrete or shutter backdrops, youthful Tokyo streetwear attitude.'
+  },
+  jp_vintage_craft: {
+    label: '美式復古工藝',
+    flavor: 'Add Japanese-Americana vintage flavor: varsity and workwear textures, retro embroidered patches, faded washed colors, honest handcrafted stitching detail, warm nostalgic tungsten light, 1970s catalogue mood.'
+  },
+  jp_workwear_hard: {
+    label: '硬派工裝',
+    flavor: 'Add hard-edged Japanese workwear flavor: military and motorcycle influence, rugged matte fabrics, utilitarian metal hardware, dark olive and black palette, strong directional light, gritty confident masculinity.'
+  },
+  jp_art_graffiti: {
+    label: '藝術塗鴉',
+    flavor: 'Add Japanese art-graffiti flavor: hand-drawn doodle overlays, paint splatter and brush strokes, gallery-meets-street collage, expressive irregular linework, artwork-as-product presentation.'
+  },
+  jp_graphic_tee: {
+    label: '童趣插畫',
+    flavor: 'Add Japanese graphic-illustration flavor: cheerful flat illustration, friendly character-like shapes, primary playful palette, generous white space, light-hearted everyday storytelling.'
+  },
+  jp_drugstore: {
+    label: '藥妝明亮',
+    flavor: 'Add Japanese drugstore flavor: bright even fluorescent-clean lighting, crisp white and fresh accent colors, tidy dense shelf arrangement, trustworthy clinical cleanliness, clear informative labeling mood.'
+  },
+  jp_konbini: {
+    label: '便利店日常',
+    flavor: 'Add Japanese convenience-store flavor: cool bright interior light, neat grid shelving, everyday approachable packaging feel, blue-white and fresh-green accents, effortless daily-life convenience mood.'
+  },
+
+  // ══ 2026-08-18 新增:韓系衍生 ══
+  kr_seoul_studio: {
+    label: '首爾工作室',
+    flavor: 'Add Seoul studio flavor: minimal concrete and warm-wood interior, soft diffused window light, restrained beige and grey palette, calm curated styling, quiet modern Korean creative-studio mood.'
+  },
+  kr_cream_tone: {
+    label: '韓系奶油調',
+    flavor: 'Add Korean cream-tone flavor: soft milky beige and ivory palette, gentle low-contrast lighting, smooth matte surfaces, cozy tender femininity, subtle warm shadow gradients.'
+  },
+  kr_glass_skin: {
+    label: '玻璃肌光感',
+    flavor: 'Add K-beauty glass-skin flavor: dewy luminous highlights, wet-glow reflections, clean translucent surfaces, pastel and pearl tones, fresh hydrated radiance.'
+  },
+  kr_myeongdong: {
+    label: '明洞街頭',
+    flavor: 'Add Myeongdong street flavor: lively neon signage bokeh, night city energy, bold contrasting colors, busy shopping-street atmosphere, youthful trendy urban vibe.'
+  },
+  kr_leather_minimal: {
+    label: '韓系皮革極簡',
+    flavor: 'Add Korean minimal-leather flavor: smooth premium leather grain, structured clean silhouettes, muted camel and charcoal palette, single hero object on seamless backdrop, understated luxury.'
+  },
+  kr_idol_pop: {
+    label: '偶像應援風',
+    flavor: 'Add K-pop fandom flavor: vivid saturated color blocking, holographic and glitter accents, stage-light beams, playful sticker and star graphics, high-energy celebratory mood.'
+  },
+
+  // ══ 2026-08-18 新增:日本女裝品牌衍生(客戶認得品牌名,比抽象形容詞好選)══
+  jp_beams_ivy: {
+    label: 'BEAMS 學院休閒',
+    flavor: 'Add BEAMS-style Japanese-Ivy flavor: American preppy casual filtered through Japanese refinement, soft comfortable fabrics, navy/white/camel palette, relaxed tailored silhouettes, clean daylight, effortless weekday-to-weekend ease.'
+  },
+  jp_nikoand_life: {
+    label: 'Niko and 生活雜貨',
+    flavor: 'Add Japanese lifestyle-store flavor: natural wood and iron fixtures, potted greenery, mixed vintage-and-new props, earthy linen textures, warm ambient store lighting, cozy curated everyday-living mood.'
+  },
+  jp_lowrys_sweet: {
+    label: 'Lowrys 柔甜日常',
+    flavor: 'Add sweet-daily Japanese flavor: soft pastel and warm earth tones, gentle diffused light, cozy knit and cotton textures, girlish approachable styling, calm cheerful everyday atmosphere.'
+  },
+  jp_journal_urban: {
+    label: 'Journal 都會知性',
+    flavor: 'Add urban-intellectual Japanese flavor: muted sophisticated palette, French-Japanese hybrid styling, matte fabrics and clean lines, quiet confident adult elegance, soft overcast city light.'
+  },
+  jp_moussy_denim: {
+    label: 'Moussy 丹寧率性',
+    flavor: 'Add denim-forward Japanese flavor: raw indigo and washed denim textures, monochrome black-white-blue palette, cool edgy attitude, hard directional light with strong shadows, effortless rock-casual mood.'
+  },
+  jp_snidel_romance: {
+    label: 'Snidel 浪漫少女',
+    flavor: 'Add romantic-feminine Japanese flavor: delicate lace and ruffle textures, blush pink and cream palette, dreamy soft-focus glow, floral and ribbon accents, tender girlish elegance.'
+  },
+  jp_wego_vintage: {
+    label: 'WEGO 古著混搭',
+    flavor: 'Add Japanese vintage-mix flavor: thrift-store layered styling, faded retro colors, Y2K accessories, playful clashing patterns, casual snapshot framing, affordable youthful street energy.'
+  },
+  jp_clane_mode: {
+    label: 'CLANE 建築剪裁',
+    flavor: 'Add architectural-mode Japanese flavor: sculptural structured silhouettes, monochrome and stone palette, sharp geometric shadow, gallery-like empty backdrop, mature avant-garde restraint.'
+  },
+  jp_coen_natural: {
+    label: 'coen 自然棉麻',
+    flavor: 'Add natural-casual Japanese flavor: cotton and linen texture close-ups, sun-washed neutral palette, outdoor daylight and light breeze feeling, unfussy comfortable family-friendly styling.'
+  },
+  jp_bp_deconstruct: {
+    label: '前衛解構',
+    flavor: 'Add deconstructed avant-garde Japanese flavor: asymmetric cuts and unexpected seams, experimental proportion, raw exposed construction details, stark neutral backdrop, conceptual fashion-editorial tension.'
+  },
+
+  // ══ 韓系:漢南洞 / 梨泰院選品店一帶的視覺 ══
+  kr_hannam_select: {
+    label: '漢南洞選品店',
+    flavor: 'Add Hannam-dong select-shop flavor: raw concrete and pale oak interior, sparse museum-like product placement, single dramatic spotlight, muted stone palette, refined curated quietness.'
+  },
+  kr_itaewon_vintage: {
+    label: '梨泰院復古',
+    flavor: 'Add Itaewon vintage flavor: eclectic retro furniture, warm amber lighting, mixed-era props and posters, lived-in textured walls, relaxed bohemian city-cool mood.'
+  },
+  kr_gallery_cafe: {
+    label: '藝廊咖啡',
+    flavor: 'Add Korean gallery-cafe flavor: white gallery walls with generous empty space, one artwork-like focal object, soft north-facing daylight, ceramic and matte-paper textures, calm intellectual serenity.'
+  },
+  kr_soft_pastel: {
+    label: '韓系柔粉',
+    flavor: 'Add Korean soft-pastel flavor: baby pink lilac and mint palette, airy high-key lighting, rounded soft props, gentle dreamy sweetness, light fluffy weightless feeling.'
+  },
+
+  // ══ 插畫 / 平面設計風(省掉美編自己畫插畫的時間)══
+  illust_flat_editorial: {
+    label: '扁平編輯插畫',
+    flavor: 'Add flat editorial illustration flavor: simplified vector-like shapes, limited 3-4 color palette, bold outlines, magazine-spot-illustration composition, product integrated into the illustrated scene.'
+  },
+  illust_riso_print: {
+    label: '孔版印刷感',
+    flavor: 'Add risograph print flavor: two-color overprint with visible misregistration, grainy ink texture, fluorescent pink and blue inks, paper fiber showing through, zine-like handmade charm.'
+  },
+  illust_woodblock: {
+    label: '版畫民藝',
+    flavor: 'Add folk woodblock-print flavor: carved-line texture, flat traditional pigments, decorative border motifs, craft-fair poster feeling, cultural heritage warmth.'
+  },
+  illust_watercolor: {
+    label: '水彩手繪',
+    flavor: 'Add hand-painted watercolor flavor: soft bleeding pigment edges, visible paper grain, translucent layered washes, delicate hand-drawn linework, gentle artisanal warmth.'
+  },
+  illust_expo_graphic: {
+    label: '文博展會風',
+    flavor: 'Add cultural-expo graphic flavor: strong geometric shape blocking, culturally-rooted motifs reinterpreted in modern flat graphics, confident typographic hierarchy, exhibition-poster energy, limited high-impact palette.'
+  },
+
   showa_retro: {
     label: '昭和復古',
     flavor: 'Add 1970s Showa-era retro flavor: slight Kodachrome film grain, faded warm highlights, terrazzo floor or vintage wallpaper background, retro objects like turntables, rotary phones, glass bottles as props, sepia-amber color cast, soft vignetting at edges.'
@@ -388,17 +553,17 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add 2026 ugly-cute trend flavor: hand-drawn squiggly lines, intentionally awkward emoji-like decorations, mixed mismatched fonts, scrapbook-style pasted elements, casual snapshot energy, NewJeans-cover aesthetic.'
   },
   euro_editorial: {
-    label: '🇪🇺 歐美雜誌',
+    label: '歐美雜誌',
     flavor: 'Add European editorial flavor: high contrast film tones, sharp Serif headlines (Playfair / Didot), confident large typography, minimalist graphic elements, Vogue / The Gentlewoman magazine sophistication.'
   },
   taiwan_nostalgia: {
-    label: '🇹🇼 台式懷舊',
+    label: '台式懷舊',
     flavor: 'Add Taiwanese nostalgia flavor: 1980s magazine paper grain, terrazzo floor, vintage Taiwanese tile patterns, faded poster colors (mustard, teal, brick), floral patterned fabric backgrounds, warm afternoon light through wooden venetian blinds.'
   },
 
   // ══ v11 新增:2026 設計風格 (25) ══
   bauhaus: {
-    label: '🔴 包浩斯',
+    label: '包浩斯',
     flavor: 'Add Bauhaus design flavor: bold geometric blocks, circles and triangles in primary red/blue/yellow, strict grid-based composition, clean negative space, modernist sans-serif typography, flat color planes, balanced structural layout.'
   },
   chrome_futurism: {
@@ -454,7 +619,7 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add collage-art flavor: torn paper layers, mixed photo fragments, rough cut-and-paste textures, editorial vintage-modern hybrid, expressive layered contrast.'
   },
   line_art: {
-    label: '〰️ 線描極簡',
+    label: '線描極簡',
     flavor: 'Add line-art minimal flavor: single continuous-line drawing or delicate abstract linework, neutral background, elegant negative space, calm gallery-poster refinement.'
   },
   pop_art: {
@@ -462,7 +627,7 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add pop-art flavor: comic-style illustration, halftone dots, bold primary colors, playful retro energy, high-contrast graphic punch, iconic commercial pop look.'
   },
   acid_neon: {
-    label: '🟢 螢光科技',
+    label: '螢光科技',
     flavor: 'Add acid neon flavor: fluorescent green and electric color clashes, surreal glossy 3D form, cyber-inspired composition, bold glow effects, edgy experimental energy.'
   },
   ink_zen: {
@@ -508,7 +673,7 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add 3COINS lifestyle flavor: bright airy Japanese variety-goods styling, soft fresh pastel palette, casual handwritten captions, neatly arranged everyday small items as a friendly life proposal.'
   },
   brand_uniqlo: {
-    label: '🔴 UNIQLO',
+    label: 'UNIQLO',
     flavor: 'Add UNIQLO LifeWear flavor: clean minimal grid layout, product front-and-center on plain white, restrained palette with red/black accents, functional honest simplicity, large crisp product photography.'
   },
   brand_muji: {
@@ -542,6 +707,32 @@ const CONTEXT_THEMES = {
     label: '— 無 —',
     context: ''
   },
+  // ══ 2026-08-18 新增:日本代購 / 保健品專用情境 ══
+  jp_direct: {
+    label: '日本直送',
+    context: 'Japan direct-shipping context: parcel and shipping-box elements, airmail and customs-tag details, freshly-arrived-from-Japan feeling, clean trustworthy presentation of imported goods.'
+  },
+  jp_drugstore_haul: {
+    label: '藥妝掃貨',
+    context: 'Japanese drugstore haul context: multiple products arranged together as a shopping haul, bright store-shelf lighting, price-tag and pop-label energy, abundant must-buy selection feeling.'
+  },
+  duty_free: {
+    label: '免稅店',
+    context: 'Duty-free shop context: airport terminal glass and polished surfaces, travel-retail display lighting, boarding-pass and luggage cues, premium yet accessible traveller mood.'
+  },
+  limited_stock: {
+    label: '限量現貨',
+    context: 'Limited-stock context: scarcity emphasis, small remaining quantity presentation, countdown and last-chance urgency, spotlight on the few remaining items.'
+  },
+  daily_supplement: {
+    label: '每日保養',
+    context: 'Daily supplement routine context: morning table setting with water glass, calm consistent daily-habit mood, clean healthy lifestyle cues, soft natural morning light.'
+  },
+  gift_choice: {
+    label: '送禮首選',
+    context: 'Gifting context: elegant wrapping and ribbon cues, giving-hands or presentation angle, thoughtful premium gift mood, warm celebratory lighting.'
+  },
+
   summer: {
     label: '夏日',
     context: 'Summer season context: hot bright daylight, refreshing cool elements, outdoor or near-window setting, light fabric and glass textures.'
@@ -579,7 +770,7 @@ const CONTEXT_THEMES = {
     context: 'Year-end mega sale context: bold festive red and gold sale energy, a clear "年終特賣 / YEAR-END SALE" badge, percentage-off price tags, abundant celebratory atmosphere with strong urgency — keep it punchy but still structured, not messy.'
   },
   double11: {
-    label: '1️⃣1️⃣ 雙11',
+    label: '雙11',
     context: 'Double 11 shopping-festival context: high-energy e-commerce sale mood, vivid red and magenta, large "11.11" numerals, countdown and price-slash badges, bold urgent call-to-action — loud but clean composition.'
   },
 
@@ -804,11 +995,7 @@ function openAdMaker(idx) {
   if (gpt) gpt.style.display = 'block';       // 🆕 直接展開懶人模式的設定區
   // 懶人模式的預設選取狀態(照抄 setPrMode 的 gpt_poster 分支)
   if (typeof updateBrandPackBadge === 'function') updateBrandPackBadge();
-  // 🪜 只在「客戶真的選過」時才點亮;空字串=還沒選,保持全暗
-  if (SELECTED_LAYOUT) document.querySelector(`.layout-btn[data-layout="${SELECTED_LAYOUT}"]`)?.classList.add('on');
-  if (SELECTED_FLAVOR) document.querySelector(`.flavor-btn[data-flavor="${SELECTED_FLAVOR}"]`)?.classList.add('on');
-  if (SELECTED_CONTEXT) document.querySelector(`.context-btn[data-context="${SELECTED_CONTEXT}"]`)?.classList.add('on');
-  _syncSteps();
+  _syncSteps();   // 🪜 下拉版:值與展開狀態一次同步
 
   let initialTitle = '';
   if (idx === -1 || idx == null || !window.S.scripts?.[idx]) {
@@ -903,16 +1090,13 @@ function setPrMode(btn, mode) {
   if (mode !== 'gpt_poster') {
     SELECTED_INSPIRATION = null;
     document.querySelectorAll('.insp-btn').forEach(b => b.classList.remove('on'));
-    document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('on'));
-    document.querySelectorAll('.flavor-btn').forEach(b => b.classList.remove('on'));
-    document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('on'));
+    // 🪜 下拉版:離開廣告圖模式時把三步清空,回來時是乾淨狀態(客戶重新自己選)
+    SELECTED_LAYOUT = ''; SELECTED_FLAVOR = ''; SELECTED_CONTEXT = '';
+    _syncSteps();
   }
   if (mode === 'gpt_poster') {
     updateBrandPackBadge();
-    if (SELECTED_LAYOUT) document.querySelector(`.layout-btn[data-layout="${SELECTED_LAYOUT}"]`)?.classList.add('on');
-    if (SELECTED_FLAVOR) document.querySelector(`.flavor-btn[data-flavor="${SELECTED_FLAVOR}"]`)?.classList.add('on');
-    if (SELECTED_CONTEXT) document.querySelector(`.context-btn[data-context="${SELECTED_CONTEXT}"]`)?.classList.add('on');
-    _syncSteps();
+    _syncSteps();   // 🪜 下拉版:值與展開狀態一次同步
   }
 }
 
@@ -1944,12 +2128,28 @@ function _syncSteps() {
   const show = (gridId, lockId, on) => {
     const g = document.getElementById(gridId);
     const l = document.getElementById(lockId);
-    if (g) g.style.display = on ? 'grid' : 'none';
+    if (g) g.style.display = on ? 'block' : 'none';
     if (l) l.style.display = on ? 'none' : 'block';
   };
   show('flavorGrid',  'flavorLock',  !!SELECTED_LAYOUT);
   show('contextGrid', 'contextLock', !!SELECTED_LAYOUT && !!SELECTED_FLAVOR);
+  // 下拉的值也同步回畫面(切換品牌重繪後仍保持客戶的選擇)
+  const set = (id, v) => { const e = document.getElementById(id); if (e && e.value !== v) e.value = v || ''; };
+  set('layoutSel', SELECTED_LAYOUT);
+  set('flavorSel', SELECTED_FLAVOR);
+  set('contextSel', SELECTED_CONTEXT);
 }
+
+// ══ 2026-08-18:三區從按鈕牆改成分組下拉 ══
+//   原因:設計風格已經 74 種、情境 28 種,按鈕牆在筆電上是一整片牆,
+//   要滑很久而且字小。下拉不管幾百種都只有一行,還能用 optgroup 分組
+//   (日系品牌 / 韓系 / 插畫手繪 / 標竿品牌…),客戶反而更好找。
+function onSelLayout(v)  { SELECTED_LAYOUT  = v || ''; _syncSteps();
+  console.log('[v10.2] 版式選擇:', v, LAYOUT_TEMPLATES[v]?.label); }
+function onSelFlavor(v)  { SELECTED_FLAVOR  = v || ''; _syncSteps();
+  console.log('[v10.2] 風土調味:', v, REGIONAL_FLAVORS[v]?.label); }
+function onSelContext(v) { SELECTED_CONTEXT = v || ''; _syncSteps();
+  console.log('[v10.2] 情境主題:', v, CONTEXT_THEMES[v]?.label); }
 
 // 🪜 三步都必須客戶自己選過才給生成。
 //   「不調味」「無」也算選 —— 重點是他有意識地按下去,而不是系統偷偷幫他決定。
@@ -1957,9 +2157,9 @@ function _syncSteps() {
 //   ⚠️ 一定要在按鈕變成「生成中」之前呼叫(見 applyPhotoroomBg 的註解)。
 function _posterStepsReady() {
   const miss =
-    !SELECTED_LAYOUT  ? { sel: '.layout-btn',  msg: '請先在「① 排版」選一種版型' } :
-    !SELECTED_FLAVOR  ? { sel: '.flavor-btn',  msg: '請選「② 設計風格」,不想調味就按「— 不調味 —」' } :
-    !SELECTED_CONTEXT ? { sel: '.context-btn', msg: '請選「③ 情境」,沒有特殊檔期就按「— 無 —」' } : null;
+    !SELECTED_LAYOUT  ? { sel: '#layoutSel',  msg: '請先在「① 排版」選一種版型' } :
+    !SELECTED_FLAVOR  ? { sel: '#flavorSel',  msg: '請選「② 設計風格」,不想調味就選「無」' } :
+    !SELECTED_CONTEXT ? { sel: '#contextSel', msg: '請選「③ 情境」,沒有特殊檔期就選「無」' } : null;
   if (!miss) return true;
   setPrStatus(miss.msg, '#ff9d9d');
   try { document.querySelector(miss.sel)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
@@ -1967,27 +2167,18 @@ function _posterStepsReady() {
   return false;
 }
 
-function setLayout(btn, layoutKey) {
-  document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  SELECTED_LAYOUT = layoutKey;
-  _syncSteps();
-  console.log('[v10.2] 版式選擇:', layoutKey, LAYOUT_TEMPLATES[layoutKey]?.label);
-}
+// 舊的按鈕版介面已移除,這三支保留成薄殼 —— 萬一還有別處在呼叫不會炸。
+function setLayout(btn, layoutKey) { onSelLayout(layoutKey); }
 
-function setFlavor(btn, flavorKey) {
-  document.querySelectorAll('.flavor-btn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
+function setFlavor(btn, flavorKey) { onSelFlavor(flavorKey); }
+function _setFlavorLegacy(btn, flavorKey) {
   SELECTED_FLAVOR = flavorKey;
-  _syncSteps();
   console.log('[v10.2] 風土調味:', flavorKey, REGIONAL_FLAVORS[flavorKey]?.label);
 }
 
-function setContext(btn, contextKey) {
-  document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
+function setContext(btn, contextKey) { onSelContext(contextKey); }
+function _setContextLegacy(btn, contextKey) {
   SELECTED_CONTEXT = contextKey;
-  _syncSteps();
   console.log('[v10.2] 情境主題:', contextKey, CONTEXT_THEMES[contextKey]?.label);
 }
 
