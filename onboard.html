@@ -916,6 +916,7 @@ const GOOG_CLIENT_ID = '513919357376-g34jg6d1bqkj6pg8t27nsdrj3vd93d3e.apps.googl
 const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 const ROOT_FOLDER_ID = '14LlXgAzqds62VZuIBAdEDhoFt15b1t1b';
 let tokenClient=null,userEmail='',currentStep=1,generatedSoul='';
+let guestToken='';   // 🎫 訪客證(登入後由 Worker 簽發)
 
 // ── 選方案步(意向,送審後才開通,不在此收款)。卡片重用 plans.js ──
 let desiredPlan='', _pickGroup='small', _pickCycle='month';
@@ -1177,7 +1178,7 @@ async function doGenerate(){
   const phoneCode=document.getElementById('f_phoneCode').value;
   const prompt=`你是一位頂尖的品牌策略師,請根據以下資料生成一份完整的「品牌靈魂書」。\n\n【品牌基本資訊】\n品牌名稱:${v('f_name')}\n官網:${v('f_website')}\nFacebook:${v('f_fb')}  Instagram:${v('f_ig')}\n小紅書:${v('f_xiaohongshu')}  抖音:${v('f_douyin')}\n微信公眾號:${v('f_wechat')}  其他:${v('f_social_other')}\n聯絡:${v('f_contact')} ${phoneCode} ${v('f_phone')}\n\n【品牌故事】\n創立原因:${v('f_story')}\n核心價值:${v('f_values')}\n競爭對手:${v('f_competitors')}\n競爭優勢:${v('f_pros')}\n目前挑戰:${v('f_cons')}\n補充:${v('f_misc')}\n\n【商品/服務】\n類別:${v('f_category')}\n主力商品:${v('f_products')}\n銷售平台:${getPlatforms()}\n售價:${v('f_price')}\n目標客群:${v('f_audience')}\n\n【品牌風格】\n視覺風格:${v('f_style')}\n品牌主色:${selectedColorHex}\n參考品牌:${v('f_ref')}\n\n請用繁體中文生成品牌靈魂書,包含:\n1. 品牌定位宣言(一句話)\n2. 品牌靈魂(3-5句)\n3. 目標受眾畫像(詳細,含痛點)\n4. 廣告文案風格指南\n5. 核心廣告主張(3個方向)\n6. 建議Hashtag(10個,含中英文)\n7. 競爭差異化重點`;
   try{
-    const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:'raby2026',prompt,max_tokens:2000})});
+    const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:'raby2026',prompt,max_tokens:2000,token:guestToken,email:userEmail})});
     const data=await res.json();generatedSoul=data.text||'生成失敗,請重試';
   }catch(e){generatedSoul='⚠️ 生成失敗:'+e.message;}
   clearInterval(interval);document.getElementById('genBarFill').style.width='100%';
@@ -1236,8 +1237,29 @@ function initGoogleAuth(){
   tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOG_CLIENT_ID,scope:'https://www.googleapis.com/auth/userinfo.email',
     callback:async(resp)=>{
       if(!resp.access_token)return;
-      const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
-      const info=await r.json();userEmail=info.email||'';
+      // 🎫 2026-08-18:登入後跟 Worker 換一張「訪客證」。
+      //   為什麼要:本頁的「生成品牌靈魂書」會呼叫 AI(真的花錢),而這支
+      //   以前完全沒有身分驗證 —— 任何人拿公開密碼就能無限呼叫。
+      //   訪客證只證明「你是一個真的 Google 帳號」,不給任何權限、
+      //   不能花點數、2 小時到期,填問卷綽綽有餘。
+      //   ⚠️ 換不到證也不擋人 —— 招攬漏斗壞掉比沒帶證更嚴重,
+      //     真正的把關在 Worker 端。
+      let info={};
+      try{
+        const _g=await fetch('https://kol-proxy.calm-sunset-6b66.workers.dev',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({password:GAS_PASSWORD,action:'auth_guest_google',access_token:resp.access_token})});
+        const _gj=await _g.json();
+        if(_gj&&_gj.ok&&_gj.token){
+          guestToken=_gj.token;
+          info={email:_gj.email||''};
+        }
+      }catch(e){}
+      if(!info.email){
+        const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
+        info=await r.json();
+      }
+      userEmail=info.email||'';
       document.getElementById('loginOverlay').style.display='none';document.getElementById('navEmail').textContent=userEmail;
       const ownerEmailEl=document.getElementById('ownerContactEmail');
       if(ownerEmailEl)ownerEmailEl.textContent=userEmail;
