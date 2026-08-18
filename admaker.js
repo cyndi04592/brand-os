@@ -396,141 +396,10 @@ const REGIONAL_FLAVORS = {
     flavor: 'Add Taiwanese nostalgia flavor: 1980s magazine paper grain, terrazzo floor, vintage Taiwanese tile patterns, faded poster colors (mustard, teal, brick), floral patterned fabric backgrounds, warm afternoon light through wooden venetian blinds.'
   },
 
-  // ══ v11 新增:2026 設計風格 (25) ══
-  bauhaus: {
-    label: '🔴 包浩斯',
-    flavor: 'Add Bauhaus design flavor: bold geometric blocks, circles and triangles in primary red/blue/yellow, strict grid-based composition, clean negative space, modernist sans-serif typography, flat color planes, balanced structural layout.'
-  },
-  chrome_futurism: {
-    label: '鍍鉻未來',
-    flavor: 'Add chrome futurism flavor: reflective liquid-metal chrome surfaces, silver and dark backdrop, high-contrast studio lighting, sci-fi luxury sheen, sleek modern typography, glossy premium product feel.'
-  },
-  neo_minimal: {
-    label: '溫暖新極簡',
-    flavor: 'Add warm neo-minimalism flavor: single hero subject in generous negative space, soft natural daylight, restrained palette with one warm accent, quiet-luxury calm, subtle paper or fabric texture, refined modern composition.'
-  },
-  architectural_min: {
-    label: '建築極簡',
-    flavor: 'Add architectural minimalism flavor: clean concrete and stone surfaces, sharp directional sunlight casting deep crisp shadows, monochrome or warm-grey palette, strong spatial geometry, precise lines, calm premium structure.'
-  },
-  experimental_type: {
-    label: '實驗字體',
-    flavor: 'Add experimental typography flavor: oversized distorted and overlapping headline text as the main visual, layered ink/spray/glitch textures, broken asymmetric grid, bold graphic tension, contemporary design-studio energy.'
-  },
-  cinematic_light: {
-    label: '光影電影感',
-    flavor: 'Add cinematic light flavor: a single dramatic beam of light on the subject, dark moody negative space around it, deep atmospheric shadows, film-poster tension, emotional minimal staging.'
-  },
-  gradient_glow: {
-    label: '漸層光暈',
-    flavor: 'Add gradient glow flavor: smooth vibrant gradient field (pink to blue to orange to purple), soft glowing abstract spheres, clean tech-minimal layout, futuristic typography, polished digital sheen.'
-  },
-  blurry_floral: {
-    label: '模糊花卉',
-    flavor: 'Add blurry floral flavor: soft-focus flowers melting into a dreamy grainy gradient, ethereal pastel haze, atmosphere over detail, delicate luminous mood, fine grain texture overlay.'
-  },
-  geometric_abstract: {
-    label: '幾何抽象',
-    flavor: 'Add geometric abstract flavor: circles, rectangles and lines in confident asymmetric composition, bold flat color accents, strong visual rhythm, controlled modern graphic structure.'
-  },
-  mono_contrast: {
-    label: '黑白高對比',
-    flavor: 'Add black-and-white high-contrast flavor: stark monochrome palette, torn-paper texture, bold condensed typography, dramatic light/dark separation, raw gritty editorial impact.'
-  },
-  natural_shadow: {
-    label: '自然光影',
-    flavor: 'Add natural light-and-shadow flavor: soft sunlight casting leaf or window shadows across a warm neutral wall, quiet lifestyle calm, subtle texture, refined minimal editorial tone.'
-  },
-  luxury_texture: {
-    label: '輕奢質感',
-    flavor: 'Add luxury-texture flavor: black and gold palette, premium material surfaces (marble, brushed metal, velvet), single dramatic spotlight, refined high-end beauty-campaign elegance.'
-  },
-  hand_doodle: {
-    label: '手繪塗鴉',
-    flavor: 'Add hand-drawn doodle flavor: sketchy black pen lines, playful handwritten text, raw paper texture, casual imperfect strokes, youthful energetic charm.'
-  },
-  collage_art: {
-    label: '拼貼藝術',
-    flavor: 'Add collage-art flavor: torn paper layers, mixed photo fragments, rough cut-and-paste textures, editorial vintage-modern hybrid, expressive layered contrast.'
-  },
-  line_art: {
-    label: '〰️ 線描極簡',
-    flavor: 'Add line-art minimal flavor: single continuous-line drawing or delicate abstract linework, neutral background, elegant negative space, calm gallery-poster refinement.'
-  },
-  pop_art: {
-    label: '普普藝術',
-    flavor: 'Add pop-art flavor: comic-style illustration, halftone dots, bold primary colors, playful retro energy, high-contrast graphic punch, iconic commercial pop look.'
-  },
-  acid_neon: {
-    label: '🟢 螢光科技',
-    flavor: 'Add acid neon flavor: fluorescent green and electric color clashes, surreal glossy 3D form, cyber-inspired composition, bold glow effects, edgy experimental energy.'
-  },
-  ink_zen: {
-    label: '水墨禪意',
-    flavor: 'Add ink-wash zen flavor: black sumi ink mountain or abstract stroke, rice-paper texture, calm minimal composition, poetic negative space, meditative East-Asian tone.'
-  },
-  chaos_pkg: {
-    label: '混沌極繁',
-    flavor: 'Add chaos / maximalist packaging flavor: loud clashing colors, playful display fonts, hand-drawn illustration and sticker elements, dense cut-and-paste layout, confident over-the-top personality.'
-  },
-  kinetic_3d: {
-    label: '立體動態',
-    flavor: 'Add 3D kinetic flavor: oversized sculptural 3D forms (giant spheres, twisted ribbons, liquid metal shapes), surreal depth, energetic motion feel, futuristic dimensional layout.'
-  },
-  scattered_layout: {
-    label: '散布佈局',
-    flavor: 'Add scattered-layout flavor: elements freely placed across the frame like a discovery map, playful non-linear arrangement, looks random but carefully balanced, experimental editorial feel.'
-  },
-  candid_film: {
-    label: '真實膠卷',
-    flavor: 'Add candid film-roll flavor: natural unretouched lighting, slightly imperfect snapshot framing, warm film-grain texture, real spontaneous everyday moment, anti-polished authenticity.'
-  },
-  trinket: {
-    label: '收藏品式',
-    flavor: 'Add trinket-collection flavor: objects arranged and numbered like museum specimens, neat grid of small items, nostalgic cataloguing charm, playful curated collector mood.'
-  },
-  blueprint: {
-    label: '藍圖風格',
-    flavor: 'Add blueprint flavor: object rendered as a precise white technical line-drawing on deep blue, engineering schematic labels and measurement lines, rigorous structural tech-aesthetic.'
-  },
-  surveillance: {
-    label: '監控美學',
-    flavor: 'Add surveillance-aesthetic flavor: machine-vision overlays, face-tracking frames, infrared/thermal color mapping, timestamped data grids, cold futuristic monitoring tone.'
-  },
-  future_medieval: {
-    label: '未來中世紀',
-    flavor: 'Add future-medieval flavor: mystical gothic symbols and blackletter type fused with digital patterns and AI-generated ornament, ornate layered florals, both ancient and futuristic ritual mood.'
-  },
-
-  // ══ v11 新增:標竿品牌風格 (7) ══
-  brand_3coins: {
-    label: '3COINS',
-    flavor: 'Add 3COINS lifestyle flavor: bright airy Japanese variety-goods styling, soft fresh pastel palette, casual handwritten captions, neatly arranged everyday small items as a friendly life proposal.'
-  },
-  brand_uniqlo: {
-    label: '🔴 UNIQLO',
-    flavor: 'Add UNIQLO LifeWear flavor: clean minimal grid layout, product front-and-center on plain white, restrained palette with red/black accents, functional honest simplicity, large crisp product photography.'
-  },
-  brand_muji: {
-    label: '無印良品',
-    flavor: 'Add MUJI flavor: ultra-minimal no-brand calm, off-white and natural-wood tones, generous empty space, no decoration, soft even natural light, quiet honest materials.'
-  },
-  brand_beams: {
-    label: 'BEAMS',
-    flavor: 'Add BEAMS select-shop flavor: Japanese street-meets-refined styling, lively accent-color blocking, editorial collage energy, curated fashion-forward mix, confident youthful tone.'
-  },
-  brand_issey: {
-    label: '三宅一生',
-    flavor: 'Add Issey Miyake flavor: pleated sculptural structure, avant-garde minimalism, bold single-color planes, material and form experimentation, architectural fashion sophistication.'
-  },
-  brand_snowpeak: {
-    label: 'Snow Peak',
-    flavor: 'Add Snow Peak outdoor flavor: refined nature aesthetic, muted grey-green and earth tones, metal and raw-wood textures, calm functional craftsmanship, quiet premium outdoor mood.'
-  },
-  brand_plusd: {
-    label: '+d',
-    flavor: 'Add +d (h concept) flavor: playful Japanese everyday-object design, warm humorous kawaii spirit, simple clean form, single hero object on soft uplifting background, friendly product-still styling.'
-  }
+  // ══ 2026-08-18:刪除「2026 設計風格(25)」與「標竿品牌風格(7)」共 32 個選項 ══
+  //   理由:選項太多反而讓客戶不知道怎麼選,而且標竿品牌那組直接寫出
+  //   UNIQLO / 無印良品 / 三宅一生等他牌名稱,拿來當自家廣告的風格描述
+  //   有商標與品牌識別上的疑慮。風土調味保留原本那組就夠用。
 };
 
 
@@ -1903,10 +1772,28 @@ function setInspiration(btn, key) {
   }
 }
 
+// 🪜 2026-08-18:三段式漸進展開。
+//   問題:一次攤開 ①排版 + ②設計風格 + ③情境 共 50 幾顆按鈕,客戶第一眼就當機,
+//   不知道從哪選、也不知道哪些是必選。
+//   做法:②③ 先收起來,選完前一步才展開。收起時標題仍看得見,並寫明
+//   「先選 ① 排版」——照鐵律:不能只是禁用,要告訴客戶怎麼解鎖。
+function _unlockStep(gridId, lockId) {
+  const g = document.getElementById(gridId);
+  const l = document.getElementById(lockId);
+  if (g && g.style.display === 'none') {
+    g.style.display = 'grid';
+    // 展開時輕微淡入,讓客戶注意到「多出東西了」
+    g.style.opacity = '0';
+    setTimeout(function () { g.style.transition = 'opacity .25s'; g.style.opacity = '1'; }, 10);
+  }
+  if (l) l.style.display = 'none';
+}
+
 function setLayout(btn, layoutKey) {
   document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   SELECTED_LAYOUT = layoutKey;
+  _unlockStep('flavorGrid', 'flavorLock');   // 🪜 選完①才展開②
   console.log('[v10.2] 版式選擇:', layoutKey, LAYOUT_TEMPLATES[layoutKey]?.label);
 }
 
@@ -1914,6 +1801,7 @@ function setFlavor(btn, flavorKey) {
   document.querySelectorAll('.flavor-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   SELECTED_FLAVOR = flavorKey;
+  _unlockStep('contextGrid', 'contextLock');   // 🪜 選完②才展開③(選「無」也算選)
   console.log('[v10.2] 風土調味:', flavorKey, REGIONAL_FLAVORS[flavorKey]?.label);
 }
 
