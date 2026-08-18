@@ -237,27 +237,27 @@ Reference aesthetic: Pinterest food photography hero shots, premium beverage com
   before_after: {
     label: '前後對比型',
     desc: '左右或上下分割,呈現使用前後差異',
-    prompt: 'SPLIT COMPARISON LAYOUT: divide the canvas into two clean halves (left/right or top/bottom) with a crisp dividing line. Same framing and lighting on both sides so the difference reads instantly. Small label zones for BEFORE / AFTER text. Product or subject centered within each half.'
+    composition: 'SPLIT COMPARISON LAYOUT: divide the canvas into two clean halves (left/right or top/bottom) with a crisp dividing line. Same framing and lighting on both sides so the difference reads instantly. Small label zones for BEFORE / AFTER text. Product or subject centered within each half.'
   },
   grid_showcase: {
     label: '多格展示型',
     desc: '2x2 或 3x3 方格,一次呈現多角度或多品項',
-    prompt: 'GRID SHOWCASE LAYOUT: even modular grid (2x2 or 3x3) with consistent gutters. Each cell holds one clean shot of the product from a different angle or one item of the set. Uniform background and lighting across all cells. Thin caption strip under the grid.'
+    composition: 'GRID SHOWCASE LAYOUT: even modular grid (2x2 or 3x3) with consistent gutters. Each cell holds one clean shot of the product from a different angle or one item of the set. Uniform background and lighting across all cells. Thin caption strip under the grid.'
   },
   big_statement: {
     label: '大字宣言型',
     desc: '超大標語佔畫面一半,商品退為配角',
-    prompt: 'BIG STATEMENT LAYOUT: oversized typographic headline occupying roughly half the canvas, product placed small and deliberate in the remaining space. High contrast between type block and image area. Bold confident poster energy, generous negative space.'
+    composition: 'BIG STATEMENT LAYOUT: oversized typographic headline occupying roughly half the canvas, product placed small and deliberate in the remaining space. High contrast between type block and image area. Bold confident poster energy, generous negative space.'
   },
   checklist_info: {
     label: '重點條列型',
     desc: '商品在側,右側條列賣點,像資訊圖',
-    prompt: 'CHECKLIST INFO LAYOUT: product anchored on one side, the other side reserved for a vertical stack of 3-5 short benefit lines with small icon or bullet markers. Clean aligned baseline grid, infographic clarity, plenty of breathing room.'
+    composition: 'CHECKLIST INFO LAYOUT: product anchored on one side, the other side reserved for a vertical stack of 3-5 short benefit lines with small icon or bullet markers. Clean aligned baseline grid, infographic clarity, plenty of breathing room.'
   },
   hand_hold: {
     label: '手持實拍型',
     desc: '手拿著商品,貼近真實使用感',
-    prompt: 'HAND-HELD LAYOUT: a hand holding or presenting the product at natural angle, shallow depth of field, authentic user-generated-content feeling, casual everyday background slightly blurred, warm natural light.'
+    composition: 'HAND-HELD LAYOUT: a hand holding or presenting the product at natural angle, shallow depth of field, authentic user-generated-content feeling, casual everyday background slightly blurred, warm natural light.'
   },
 
   minimal_poster: {
@@ -2439,7 +2439,8 @@ const BEAUTY_LAYOUTS = {
 - The technician is mid-work: hands with tweezers/brush/tool close to the client
 - Client reclining on a treatment bed, eyes closed, relaxed
 - Ring light or soft overhead lamp visible in frame as part of the environment
-- Studio surroundings partly visible: trolley, clean towels, small plants
+- Studio surroundings only suggested through shallow depth of field — softly blurred, never itemised
+- ⛔ Do NOT populate the background with a checklist of props; whatever appears must be plausibly part of THIS studio and must stay out of focus
 - Feels observed and unposed, like a behind-the-scenes frame
 - ★ This layout intentionally does NOT showcase the result — it sells trust and craft${BEAUTY_BASE}`
   },
@@ -2448,7 +2449,8 @@ const BEAUTY_LAYOUTS = {
     desc: '完妝人像 + 花/道具,時尚寫真',
     composition: `Fashion-editorial portrait where the service result is worn by a styled model:
 - Half or three-quarter body portrait, styled hair and complete makeup
-- Soft organic props: dried flowers, sheer fabric, ceramic, natural stone
+- Styling supported by soft natural materials and organic textures, chosen sparingly — at most one supporting element, never a styled arrangement
+- ⛔ Do NOT assemble a prop collection; a cluttered flat-lay of decorative objects breaks the editorial mood
 - Editorial lighting with gentle falloff, shallow depth of field
 - Poised magazine-portrait mood, elegant rather than commercial${BEAUTY_BASE}`
   },
@@ -2511,7 +2513,7 @@ const MEDICAL_LAYOUTS = {
 - No people, or staff in the far background out of focus${MEDICAL_BASE}`
   },
   med_team: {
-    label: '團隊合照型',
+    label: '醫療團隊型',
     desc: '醫療團隊合影,建立規模與信任',
     composition: `Medical team group portrait:
 - 3-8 staff members arranged in a natural balanced group, clinic interior behind
@@ -2672,7 +2674,7 @@ const PRO_LAYOUTS = {
 - Space reserved beside or below the figure for name and title typography${PRO_BASE}`
   },
   pr_team: {
-    label: '團隊合照型',
+    label: '事務所團隊型',
     desc: '事務所 / 診所團隊合影',
     composition: `Firm team portrait:
 - 3-8 professionals in a balanced arrangement, office interior behind
@@ -2981,7 +2983,10 @@ function buildPosterPrompt() {
   //   純素材模式一定要把這些句子濾掉,否則等於一邊禁止、一邊指示,模型只會照指示做。
   //   濾掉的是「提到 headline / title / subtitle / caption / text 的整句」,
   //   其餘構圖描述(留白、比例、視角)全部保留。
-  let _layoutComp = layout.composition || '';
+  // 🩹 2026-08-19:五個版式(前後對比/多格展示/大字宣言/重點條列/手持實拍)
+  //   欄位誤寫成 prompt,而這裡只讀 composition —— 等於選了那些版型
+  //   卻完全沒有版面指示,生出來跟極簡海報一樣。欄位已統一,這裡留 fallback 防呆。
+  let _layoutComp = layout.composition || layout.prompt || '';
   if (_noText) {
     _layoutComp = _layoutComp
       .split(/(?<=[.;])\s+/)
