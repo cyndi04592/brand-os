@@ -1952,7 +1952,11 @@ if (!_adminKey()) { try { window._setAdminKey(); } catch (e) {} }
     // 🔐 夾帶身分證:所有打 kol-proxy 的 POST(不論從哪支函式發出)
     try {
       const _ku = (typeof input === 'string') ? input : ((input && input.url) || '');
-      if (_ku.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1
+      // 🔐 2026-08-18:兩支 Worker 都要夾帶身分證。
+      //   原本只認 kol-proxy → 打 photoroom-proxy 的請求全都沒帶證,
+      //   photoroom 上鎖後後台會整片失效。先讓前端一律帶著。
+      if ((_ku.indexOf('kol-proxy.calm-sunset-6b66.workers.dev') !== -1
+           || _ku.indexOf('photoroom-proxy.calm-sunset-6b66.workers.dev') !== -1)
           && init && String(init.method || '').toUpperCase() === 'POST'
           && typeof init.body === 'string') {
         const _o = JSON.parse(init.body);
