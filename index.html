@@ -448,12 +448,33 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
 
           <!-- ① 版式骨架 -->
           <div style="margin-bottom:11px;">
+            <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid rgba(124,109,250,0.22);">
+              <span style="width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));flex:none;"></span>
+              <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">⓪ 我要拍的是什麼?</span>
+              <span style="font-size:9px;color:#ff9d9d;font-weight:700;">必選</span>
+            </div>
+            <select id="prodTypeSel" onchange="onSelProdType(this.value)" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid rgba(124,109,250,0.35);background:rgba(20,16,38,0.9);color:#E8DCFF;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">
+              <option value="">請選擇…</option>
+              <option value="physical" style="color:#6dfac2;font-weight:900;">商品實拍 — 食品 / 家電 / 服飾 / 包款</option>
+              <optgroup label="沒有實體商品可拍">
+              <option value="service">服務成果 — 美睫 / 美甲 / 美髮 / 醫美 / 健身</option>
+              <option value="equip">機台與加工件 — 精密加工 / 半導體 / 產線設備</option>
+              <option value="screen">螢幕畫面 — 網站 / 系統後台 / App 介面</option>
+              <option value="pro">專業形象 — 律師 / 醫師 / 顧問 / 事務所</option>
+              </optgroup>
+            </select>
+            <div style="font-size:10.5px;color:var(--t3);margin-top:6px;line-height:1.65;">服務業<b style="color:#ffce6b">選對類型</b>,AI 就不會憑空生出你沒在賣的商品。</div>
+          </div>
+
+          <div style="margin-bottom:11px;">
             <!-- 🩹 2026-08-11:分區標題原本 9px,跟按鈕文字幾乎一樣大,客戶看不出這是「第幾步」。放大成真標題。 -->
             <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid rgba(124,109,250,0.22);">
               <span style="width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));flex:none;"></span>
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">① 排版</span>
               <span style="font-size:9px;color:#ff9d9d;font-weight:700;">必選</span>
             </div>
+            <div id="layoutLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先選「⓪ 我要拍的是什麼?」,這區才會出現</div>
+            <div id="layoutGrid" style="display:none;">
             <select id="layoutSel" onchange="onSelLayout(this.value)" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid rgba(124,109,250,0.35);background:rgba(20,16,38,0.9);color:#E8DCFF;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23b9a8ee' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;">
                 <option value="">請選擇…</option>
                 <option value="minimal_poster">極簡海報型(最百搭)</option>
@@ -471,6 +492,7 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
                 <option value="hand_hold">手持實拍型</option>
                 </optgroup>
               </select>
+            </div>
           </div>
 
           <!-- ② 設計風格 -->
