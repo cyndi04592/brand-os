@@ -2175,6 +2175,11 @@ function _syncSteps() {
     if (g) g.style.display = on ? 'block' : 'none';
     if (l) l.style.display = on ? 'none' : 'block';
   };
+  // 🆕 2026-08-19:⓪ 與 ① 的選項改由 JS 依資料表渲染,index.html 不再寫死。
+  //   ① 的清單依 ⓪ 切換 —— 美業看到的七種版型,跟商品實拍的十種完全不同。
+  _renderProdTypeOptions();
+  _renderLayoutOptions();
+  _renderContextOptions();
   show('layoutGrid',  'layoutLock',  !!SELECTED_PRODTYPE);
   show('flavorGrid',  'flavorLock',  !!SELECTED_PRODTYPE && !!SELECTED_LAYOUT);
   show('contextGrid', 'contextLock', !!SELECTED_PRODTYPE && !!SELECTED_LAYOUT && !!SELECTED_FLAVOR);
@@ -2228,9 +2233,107 @@ function _posterStepsReady() {
 let SELECTED_PRODTYPE = '';
 
 function onSelProdType(v) {
+  const prev = SELECTED_PRODTYPE;
   SELECTED_PRODTYPE = v || '';
+  // ⚠️ 換了型態,舊的版型選擇一定要清掉。
+  //   不清的話會發生「帶著商品實拍的版型跑美業的 prompt」——
+  //   畫面看起來正常,生出來的圖卻是錯的版型,最難查。
+  //   情境同理:醫美擋掉的促銷檔期,若客戶先前選過就會偷渡進去。
+  if (prev !== SELECTED_PRODTYPE) {
+    SELECTED_LAYOUT = '';
+    // 用「切換後」的封鎖清單來判斷 —— 這行必須在 SELECTED_PRODTYPE
+    // 已經更新之後執行,否則會拿舊型態的規則去濾新型態的情境。
+    const _blk = CONTEXT_BLOCKED_BY_PRODTYPE[SELECTED_PRODTYPE] || [];
+    if (SELECTED_CONTEXT && _blk.includes(SELECTED_CONTEXT)) SELECTED_CONTEXT = '';
+  }
   _syncSteps();
-  console.log('[v10.2] 商品型態:', v);
+  console.log('[v10.2] 商品型態:', v, '· 可選版型',
+    (LAYOUT_BY_PRODTYPE[v] || []).reduce((n, g) => n + g.keys.length, 0));
+}
+
+// ── 選單渲染 ────────────────────────────────────────────────
+//   ★ 為什麼要 JS 渲染而不是寫死在 index.html?
+//     因為 ① 的清單必須依 ⓪ 切換,寫死就只能有一份。
+//     順帶好處:以後新增版型只要改上面的資料表,不用碰 HTML。
+
+function _fillSelect(el, keep, groups, dict, placeholder) {
+  if (!el) return;
+  el.innerHTML = '';
+  const ph = document.createElement('option');
+  ph.value = ''; ph.textContent = placeholder;
+  el.appendChild(ph);
+  groups.forEach(g => {
+    const target = g.group
+      ? el.appendChild(Object.assign(document.createElement('optgroup'), { label: g.group }))
+      : el;
+    g.keys.forEach(k => {
+      const d = dict[k]; if (!d) return;
+      const o = document.createElement('option');
+      o.value = k;
+      o.textContent = d.label || k;
+      if (d.desc) o.title = d.desc;
+      target.appendChild(o);
+    });
+  });
+  el.value = keep || '';
+}
+
+function _renderProdTypeOptions() {
+  const el = document.getElementById('prodTypeSel');
+  if (!el || el.dataset.rendered === '1') return;
+  el.innerHTML = '';
+  el.appendChild(Object.assign(document.createElement('option'),
+    { value: '', textContent: '請選擇…' }));
+  let grp = null;
+  PRODTYPE_OPTIONS.forEach(o => {
+    if (o.group) {
+      grp = document.createElement('optgroup');
+      grp.label = o.group;
+      el.appendChild(grp);
+      return;
+    }
+    const opt = document.createElement('option');
+    opt.value = o.value;
+    opt.textContent = o.label;
+    if (o.highlight) { opt.style.color = '#6dfac2'; opt.style.fontWeight = '900'; }
+    (o.highlight ? el : (grp || el)).appendChild(opt);
+  });
+  el.dataset.rendered = '1';
+  el.value = SELECTED_PRODTYPE || '';
+}
+
+function _renderLayoutOptions() {
+  const el = document.getElementById('layoutSel');
+  if (!el) return;
+  const pt = SELECTED_PRODTYPE || 'physical';
+  if (el.dataset.pt === pt) { el.value = SELECTED_LAYOUT || ''; return; }
+  _fillSelect(el, SELECTED_LAYOUT,
+    LAYOUT_BY_PRODTYPE[pt] || LAYOUT_BY_PRODTYPE.physical,
+    LAYOUT_TEMPLATES, '請選擇…');
+  el.dataset.pt = pt;
+}
+
+// 醫美不能出現促銷檔期(醫療法 §61),所以 ③ 要依型態濾掉那幾個。
+function _isContextBlocked(key) {
+  const blocked = CONTEXT_BLOCKED_BY_PRODTYPE[SELECTED_PRODTYPE];
+  return !!(blocked && key && blocked.includes(key));
+}
+
+function _renderContextOptions() {
+  const el = document.getElementById('contextSel');
+  if (!el) return;
+  const blocked = CONTEXT_BLOCKED_BY_PRODTYPE[SELECTED_PRODTYPE] || [];
+  const sig = (SELECTED_PRODTYPE || '-') + ':' + el.querySelectorAll('option').length;
+  if (el.dataset.sig === sig) { el.value = SELECTED_CONTEXT || ''; return; }
+  // ⚠️ 每次型態變動都要把「全部」option 重跑一遍 ——
+  //   只設 hidden 不還原的話,從醫美切回商品實拍,那些檔期會永遠消失。
+  Array.from(el.querySelectorAll('option')).forEach(o => {
+    const hide = blocked.includes(o.value);
+    o.hidden = hide;
+    o.disabled = hide;
+  });
+  el.dataset.sig = sig;
+  el.value = SELECTED_CONTEXT || '';
 }
 
 const PRODTYPE_PROMPT = {
@@ -2240,27 +2343,45 @@ const PRODTYPE_PROMPT = {
     `- Preserve exact product shape, proportions, colors, label design, logo, and all packaging typography\n` +
     `- Do NOT redesign the product, do NOT invent new packaging, do NOT alter brand marks\n` +
     `- The product is the hero — build the advertising scene AROUND it\n\n`,
-  service:
+
+  beauty:
     `=== SERVICE RESULT — NO PRODUCT EXISTS (HIGHEST PRIORITY) ===\n` +
-    `- The source image shows a FINISHED SERVICE RESULT on a real person (lashes on an eye, nails on a hand, hair, skin after treatment, body after training)\n` +
+    `- The source image shows a FINISHED SERVICE RESULT on a real person (lashes on an eye, nails on a hand, hair, brows, skin)\n` +
     `- ⛔ ABSOLUTELY DO NOT invent, draw or place ANY product box, package, bottle, jar, tube, tray, retail packaging or branded container anywhere in the frame\n` +
     `- ⛔ Inventing a fake product is the single worst failure — this business sells a service, not merchandise\n` +
     `- Reproduce the result in the source image PIXEL-PERFECT on the person; never reinterpret it as a sellable item\n` +
-    `- The finished result is the hero — build the advertising scene AROUND the person and their result\n\n`,
+    `- The finished result is the hero — build the advertising scene AROUND the person and their result\n` +
+    `- Keep skin real: pores, fine hairs and natural texture preserved, never airbrushed into a mannequin\n\n`,
+
+  medical:
+    `=== CLINIC / MEDICAL AESTHETIC — TRUST OVER RESULT (HIGHEST PRIORITY) ===\n` +
+    `- This is a licensed medical facility. The subject is the clinic, its team, its environment or an informational message\n` +
+    `- ⛔ DO NOT invent, draw or place ANY product box, package, ampoule, syringe branding, bottle or retail container\n` +
+    `- ⛔ DO NOT construct a before/after comparison in any form — regulation forbids it on social platforms\n` +
+    `- ⛔ DO NOT invent medical devices, treatment brand names, or clinical-looking charts with fabricated data\n` +
+    `- People shown must look natural and un-retouched; do not beautify a face in a way that implies a promised outcome\n` +
+    `- Credibility and calm are the hero — clean clinical environment, honest even lighting\n\n`,
+
   equip:
     `=== EQUIPMENT / PROCESS — INDUSTRIAL CAPABILITY (HIGHEST PRIORITY) ===\n` +
     `- The source image shows machinery and/or a machined component\n` +
     `- ⛔ DO NOT invent any retail box, consumer packaging or branded product container\n` +
     `- Reproduce the equipment and the part PIXEL-PERFECT: exact geometry, surface finish, markings and tolerances — engineering credibility dies with any distortion\n` +
-    `- The capability is the hero — clean workshop or cleanroom atmosphere, precision lighting\n\n`,
+    `- ⛔ DO NOT invent specification numbers, tolerance figures, certification marks or standards logos\n` +
+    `- B2B buyers are evaluating capability, not admiring an object: the frame should answer "what can this make, and how precisely"\n` +
+    `- The capability is the hero — clean workshop or cleanroom atmosphere, precision lighting, cool industrial palette\n\n`,
+
   screen:
     `=== ON-SCREEN RESULT — SOFTWARE / WEBSITE / SERVICE (HIGHEST PRIORITY) ===\n` +
     `- The device (laptop, phone, tablet, monitor) is the outer shell; the SCREEN CONTENT is the real substance\n` +
     `- ★ The screen content MUST come from the source image and be reproduced faithfully\n` +
     `- ⛔ DO NOT imagine, redesign or invent ANY interface, dashboard, chart, icon or text on the screen\n` +
     `- ⛔ DO NOT invent boxed software or any physical retail package\n` +
+    `- ⛔ DO NOT build fanned multi-device arrangements, floating screens, light rays or lens-flare composites — these are dated and hurt credibility\n` +
     `- Treat it exactly like packaging-and-contents: the device is the package, the real screenshot is the contents, and contents are never made up\n` +
-    `- Keep the screen legible, undistorted, correctly proportioned, free of moiré and glare\n\n`,
+    `- Keep the screen legible, undistorted, correctly proportioned, free of moiré and glare\n` +
+    `- One device, one screenshot, one clear idea per frame\n\n`,
+
   pro:
     `=== PROFESSIONAL SERVICE — NO PHYSICAL PRODUCT (HIGHEST PRIORITY) ===\n` +
     `- This business sells expertise: legal, medical, consulting or advisory work\n` +
@@ -2270,6 +2391,436 @@ const PRODTYPE_PROMPT = {
     `- ⛔ DO NOT generate any specific law article number, case number, statutory deadline, medical claim, efficacy figure or technical specification — professional accuracy is the client's responsibility, invented details create liability\n` +
     `- Lighting clean and trustworthy; posture conveys competence and calm authority, not sales energy\n\n`,
 };
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// 🆕 2026-08-19:⓪ 商品型態 → ① 排版 的行業版型
+//
+//   為什麼要有這一段?
+//   原本 ① 排版只有 10 種,是照「有一個實體商品可以拍」設計的。
+//   但美業(美睫/美甲)的 IG 實例顯示,他們的版型完全是另一套 ——
+//   而且「施作現場」這種根本不是成果照,卻是信任感最大來源。
+//   機台 / 螢幕 / 專業形象 三種也各有各的慣例,不能共用同一份清單。
+//
+//   ★ 鐵律:版型清單依 ⓪ 切換,不是全部混在一起讓客戶自己找。
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── 美業(非醫療):美睫 / 美甲 / 美髮 / 紋繡 / SPA ────────────────────
+//   三條共通鐵律(七張真實 IG 實例歸納,寫進每一個 composition):
+//     ① 零商品 —— 沒有任何一張出現產品盒
+//     ② 暖裸色系 —— 奶油/裸粉/米白/暖棕/木質,沒有飽和色
+//     ③ 臉部真實 —— 不磨皮成假人,毛孔睫毛細節保留
+const BEAUTY_BASE = `\n- Warm nude palette ONLY: cream, nude pink, off-white, warm brown, natural wood. NO saturated colors, NO neon, NO primary red/blue/green\n- Skin must stay real: keep pores, fine hairs, natural texture. NOT airbrushed into a mannequin\n- ZERO merchandise in frame: no box, no bottle, no tube, no jar, no retail packaging, no branded container`;
+
+const BEAUTY_LAYOUTS = {
+  result_closeup: {
+    label: '成果特寫型',
+    desc: '眼睛/指甲滿版,乾淨無場景',
+    composition: `Extreme close-up of the finished service result, filling 80-90% of the frame:
+- The treated area (eye with lashes, hand with nails, hair, skin) is the entire subject
+- Plain seamless backdrop in a warm nude tone, no scene, no props, no furniture
+- Soft diffused frontal light, minimal shadow, macro-lens clarity on texture detail
+- Composition is calm and clinical-clean without feeling medical${BEAUTY_BASE}`
+  },
+  multi_angle_grid: {
+    label: '多格對照型',
+    desc: '同部位多角度直式堆疊 + 底部小字署名',
+    composition: `Vertical stacked grid of the SAME treated area from 2-4 different angles:
+- Equal-height horizontal bands stacked top to bottom, thin light gutters between
+- Each band shows the same result from a different angle or distance
+- Bottom strip: small delicate signature text (studio name / artist name), tiny type, generous margin
+- Consistent lighting and color across every band so they read as one set${BEAUTY_BASE}`
+  },
+  in_session: {
+    label: '施作現場型',
+    desc: '師傅工作中、環形燈、客人躺著 —— 信任感來源',
+    composition: `Documentary shot of the service being PERFORMED, not the finished result:
+- The technician is mid-work: hands with tweezers/brush/tool close to the client
+- Client reclining on a treatment bed, eyes closed, relaxed
+- Ring light or soft overhead lamp visible in frame as part of the environment
+- Studio surroundings partly visible: trolley, clean towels, small plants
+- Feels observed and unposed, like a behind-the-scenes frame
+- ★ This layout intentionally does NOT showcase the result — it sells trust and craft${BEAUTY_BASE}`
+  },
+  model_editorial: {
+    label: '模特情境型',
+    desc: '完妝人像 + 花/道具,時尚寫真',
+    composition: `Fashion-editorial portrait where the service result is worn by a styled model:
+- Half or three-quarter body portrait, styled hair and complete makeup
+- Soft organic props: dried flowers, sheer fabric, ceramic, natural stone
+- Editorial lighting with gentle falloff, shallow depth of field
+- Poised magazine-portrait mood, elegant rather than commercial${BEAUTY_BASE}`
+  },
+  mirror_selfie: {
+    label: '自拍風型',
+    desc: '客人鏡子自拍,刻意不精緻',
+    composition: `Casual client-style mirror selfie, deliberately unpolished:
+- Phone visible in hand or reflected in the mirror
+- Slightly imperfect framing and a natural handheld tilt
+- Ordinary indoor lighting, no studio setup, mild everyday grain
+- Feels like a real customer posting to their own story, NOT a brand campaign
+- ⛔ Do NOT over-retouch or add professional lighting — the roughness is the point${BEAUTY_BASE}`
+  },
+  question_headline: {
+    label: '問句大字型',
+    desc: '一半色塊放標題(「接睫毛後真的不能碰水嗎?」)',
+    composition: `Split composition, knowledge/FAQ post format:
+- One half (left or top) is a solid warm nude color block holding a large question headline in Traditional Chinese
+- The other half is the photo of the treated area or the studio
+- Headline is the dominant visual element, generous letter spacing, clear hierarchy
+- Optional small sub-line under the headline, and a tiny studio signature in a corner
+- ★ The flat color block is intentional design, NOT empty unfinished space${BEAUTY_BASE}`
+  },
+  booking_info: {
+    label: '預約資訊型',
+    desc: '價目 / 本月空檔 / 預約方式',
+    composition: `Information card layout for booking conversion:
+- Clean structured text block: service items, session length, price range, available slots
+- Neat aligned rows or a simple list, comfortable line spacing, easy to read on a phone
+- Small supporting photo of the studio or a result occupying a minor corner area
+- Bottom: booking channel line (LINE / DM / phone) rendered as small clean text
+- Layout is calm and readable — an information card, not a discount flyer${BEAUTY_BASE}`
+  },
+};
+
+// ── 醫美 / 診所 ──────────────────────────────────────────────────────
+//   ⚠️ 受醫療法約束,與上面美業(化粧品法)完全不同:
+//     · 前後對比照不得用於 FB/IG/LINE/Dcard(僅官網衛教可,有條件)
+//     · 不得出現優惠、折扣、抽獎、贈送、分期(醫療法 61 條)
+//   所以醫美沒有「成果對比」類版型,改以團隊 / 環境 / 衛教建立信任。
+const MEDICAL_BASE = `\n- Calm clinical palette: white, warm grey, soft beige, muted sage. Clean and reassuring, never flashy\n- ⛔ NO price, NO discount, NO percentage off, NO gift, NO countdown, NO promotional badge or sticker anywhere\n- ⛔ NO before/after split, NO comparison arrow, NO result-guarantee visual language\n- Lighting even and honest; no dramatic beauty retouching that implies a guaranteed outcome`;
+
+const MEDICAL_LAYOUTS = {
+  med_doctor_portrait: {
+    label: '醫師形象型',
+    desc: '醫師個人形象照,白袍 / 診間背景',
+    composition: `Professional physician portrait:
+- Doctor in clean medical attire, upper body, calm confident posture
+- Background is the real clinic environment softly out of focus, or a plain neutral wall
+- Even trustworthy lighting, natural expression, direct or slight-angle gaze
+- Space reserved for name and specialty as small clean typography${MEDICAL_BASE}`
+  },
+  med_facility: {
+    label: '診所環境型',
+    desc: '診間 / 儀器 / 候診區實景',
+    composition: `Clinic interior showcase:
+- Wide or mid shot of a real treatment room, consultation room or waiting area
+- Equipment present but understated, clean surfaces, orderly arrangement
+- Natural or soft even lighting, sense of hygiene and calm
+- No people, or staff in the far background out of focus${MEDICAL_BASE}`
+  },
+  med_team: {
+    label: '團隊合照型',
+    desc: '醫療團隊合影,建立規模與信任',
+    composition: `Medical team group portrait:
+- 3-8 staff members arranged in a natural balanced group, clinic interior behind
+- Uniform or coordinated attire, relaxed professional expressions
+- Even lighting across all faces, no single dominant hero figure
+- Lower area left clear for clinic name typography${MEDICAL_BASE}`
+  },
+  med_education: {
+    label: '衛教說明型',
+    desc: '知識性大字 + 說明,不談療效',
+    composition: `Health-education information post:
+- Large clear headline in Traditional Chinese occupying the upper third, stated as neutral information or a question
+- Body area with 2-4 short explanatory lines in clean readable type
+- Supporting visual is abstract or environmental (clinic detail, soft gradient, simple diagram shape), NOT a treated body part
+- ⛔ Do NOT render any efficacy claim, success rate, number of cases or guarantee wording${MEDICAL_BASE}`
+  },
+  med_consult: {
+    label: '諮詢情境型',
+    desc: '醫師與客人對談,強調術前評估',
+    composition: `Consultation scene:
+- Doctor and client seated across a desk in conversation, mid-shot
+- Documents, tablet or model on the desk as incidental props
+- Warm even indoor lighting, both figures relaxed and engaged
+- Emphasis on communication and assessment, not on any procedure${MEDICAL_BASE}`
+  },
+};
+
+// ── 機台與加工件 ────────────────────────────────────────────────────
+//   B2B 買家看的是技術可信度,不是漂亮。
+//   最常見的死法是「網站只是線上型錄」—— 只有規格沒有應用場景與實績。
+const EQUIP_BASE = `\n- Cool industrial palette: cool white, silver, graphite, steel blue. NO warm lifestyle tones, NO cozy domestic feel\n- Surfaces must read as measurable and precise: crisp edges, accurate geometry, honest material finish\n- ⛔ NO retail box, NO consumer packaging, NO branded merchandise container`;
+
+const EQUIP_LAYOUTS = {
+  eq_machine_full: {
+    label: '機台全貌型',
+    desc: '乾淨背景、完整機身,型錄主圖',
+    composition: `Full machine catalog shot:
+- The complete machine centered, shown three-quarter or straight-on, entire body within frame
+- Seamless clean backdrop, cool neutral tone, subtle floor shadow for grounding
+- Even industrial lighting revealing panel lines, controls and structure without glare
+- Generous margin around the machine so it can be cropped for catalog use${EQUIP_BASE}`
+  },
+  eq_part_macro: {
+    label: '加工件特寫型',
+    desc: '成品零件的表面 / 精度細節 —— 實力證明',
+    composition: `Macro shot of the machined component:
+- Extreme close-up on the finished part: surface finish, tool marks, chamfers, threads, tolerance detail
+- Raking directional light to reveal micro-texture and machining quality
+- Dark or cool neutral background so the metal separates cleanly
+- ★ This layout is the proof of capability — detail fidelity matters more than composition beauty${EQUIP_BASE}`
+  },
+  eq_application: {
+    label: '應用場景型',
+    desc: '這台機器用在哪個產業',
+    composition: `Application context layout:
+- The equipment or the part shown within its end-use industry setting (aerospace, medical device, automotive, electronics)
+- Environmental context visible: assembly area, inspection bench, production line
+- Wide or mid shot establishing where this capability fits in a supply chain
+- Space reserved for a short application caption in clean sans-serif type${EQUIP_BASE}`
+  },
+  eq_factory_floor: {
+    label: '產線現場型',
+    desc: '廠房實景、機台在運轉',
+    composition: `Factory floor documentary shot:
+- Real production environment: rows of machines, overhead lighting, operator at a distance
+- Sense of scale and operational capacity, slight atmospheric depth
+- Honest industrial lighting, no staged glamour
+- Conveys manufacturing capacity and organization${EQUIP_BASE}`
+  },
+  eq_spec_hero: {
+    label: '規格數字型',
+    desc: '精度 / 行程 / 轉速當視覺主體',
+    composition: `Specification-led layout:
+- One or two key technical figures rendered very large as the dominant visual (e.g. tolerance, spindle speed, travel range)
+- The machine or part appears smaller as supporting imagery beside or behind the numbers
+- Thin precise typography, technical grid alignment, generous negative space
+- Small unit labels and a short spec row along the bottom${EQUIP_BASE}`
+  },
+  eq_exhibition: {
+    label: '展場形象型',
+    desc: '展會攤位風格,適合 DM 與名片背板',
+    composition: `Trade-show presentation layout:
+- The machine presented as a booth hero with a clean backdrop wall behind
+- Directional spotlighting from above and side, slight dramatic contrast
+- Upper or side area reserved for company name and product series typography
+- Polished and confident, still strictly industrial in palette${EQUIP_BASE}`
+  },
+};
+
+// ── 螢幕畫面 ────────────────────────────────────────────────────────
+//   2026 共識:主視覺就是真實產品截圖,不是插畫、不是形象照。
+//   多裝置扇形排列、飄浮螢幕加光線 = 2015 年得獎、2026 年殺轉換率。
+//   ★ 我們的任務是「把客戶的真截圖放進漂亮外框」,不是生一張假介面。
+const SCREEN_BASE = `\n- ★ The screen content comes from the source image and MUST be reproduced faithfully — never imagined, redesigned or invented\n- Keep the screen legible, undistorted, correctly proportioned, free of moiré and glare\n- ⛔ NO fanned multi-device arrangements, NO floating screens with light rays, NO 2015-era marketing composites\n- ⛔ NO boxed software, NO physical retail package`;
+
+const SCREEN_LAYOUTS = {
+  sc_browser_hero: {
+    label: '瀏覽器主圖型',
+    desc: '單一大截圖放瀏覽器外框(最百搭)',
+    composition: `Single hero screenshot in a browser frame:
+- One clean modern browser window, centered, occupying most of the frame
+- Show the canvas / main working area, minimize visible chrome
+- Flat or subtle gradient background, tone matched to the interface's dominant color
+- ⛔ No annotations, no callout arrows, no marketing copy drawn onto the screenshot itself${SCREEN_BASE}`
+  },
+  sc_laptop_frame: {
+    label: '筆電外框型',
+    desc: '截圖放 MacBook 外框 + 漸層背景',
+    composition: `Laptop mockup presentation:
+- Modern laptop frame straight-on or very slightly angled, screen filling the display area
+- Traffic-light window buttons top-left with even spacing; dock hidden
+- Clean gradient background, tone matched to the dashboard's dominant color
+- Soft contact shadow beneath the device${SCREEN_BASE}`
+  },
+  sc_phone_angle: {
+    label: '手機傾斜型',
+    desc: '手機外框傾斜 10-15 度,顯得有動態',
+    composition: `Mobile app mockup:
+- Current-generation phone frame rotated 10-15 degrees, never dead-on flat
+- Show the most-used screen of the app, NOT the onboarding or login screen
+- Soft depth shadow, clean background, slight perspective
+- Angled framing implies motion and real use rather than a spec sheet${SCREEN_BASE}`
+  },
+  sc_code_split: {
+    label: '大字 + 截圖型',
+    desc: '工具型產品:小截圖 + 強力標題',
+    composition: `Typographic-led split for utility products:
+- Strong large headline occupying one side of the frame
+- A smaller terminal, console or output screenshot beside it as supporting evidence
+- Monospace detail where appropriate, tight technical alignment
+- ★ Here the screenshot supports the headline — it is not the hero${SCREEN_BASE}`
+  },
+  sc_feature_tile: {
+    label: '功能區塊型',
+    desc: '截圖局部放大 + 一句功能說明',
+    composition: `Feature tile layout:
+- A cropped region of the interface enlarged to highlight one specific feature
+- Short feature title and a single explanatory line placed beside or below
+- Soft rounded container with a light border, generous padding
+- One idea per frame, calm and uncluttered${SCREEN_BASE}`
+  },
+};
+
+// ── 專業形象 ────────────────────────────────────────────────────────
+//   ⚠️ 律師受「律師推展業務規範」約束:
+//     · 廣告應表明律師姓名、事務所名稱、地址、電話
+//     · 不得誇大不實(不得出現勝訴率 / 保證 / 最強之類)
+const PRO_BASE = `\n- Restrained professional palette: charcoal, navy, warm grey, deep wood, cream. No flashy accent colors\n- Lighting clean and trustworthy; posture conveys competence and calm authority, not sales energy\n- ⛔ NO invented law article number, case number, statutory deadline, medical claim, efficacy figure or technical specification\n- ⛔ NO win-rate, NO success percentage, NO "guaranteed", NO "No.1", NO superlative claim of any kind`;
+
+const PRO_LAYOUTS = {
+  pr_portrait: {
+    label: '個人形象型',
+    desc: '正裝人像,辦公室 / 書牆背景',
+    composition: `Professional individual portrait:
+- Upper body, formal attire, composed confident posture
+- Background is the real office, a bookshelf wall, or a plain neutral backdrop softly defocused
+- Even flattering light with gentle modelling, no harsh shadow
+- Space reserved beside or below the figure for name and title typography${PRO_BASE}`
+  },
+  pr_team: {
+    label: '團隊合照型',
+    desc: '事務所 / 診所團隊合影',
+    composition: `Firm team portrait:
+- 3-8 professionals in a balanced arrangement, office interior behind
+- Coordinated formal attire, relaxed but composed expressions
+- Even lighting across every face, no single dominant figure
+- Lower band left clear for the firm name${PRO_BASE}`
+  },
+  pr_office: {
+    label: '空間形象型',
+    desc: '事務所 / 診所空間實景',
+    composition: `Office environment shot:
+- Wide or mid shot of the reception, meeting room or consultation room
+- Orderly surfaces, quality materials, considered furniture
+- Natural window light where possible, calm and substantial atmosphere
+- No people, or a figure small and out of focus in the distance${PRO_BASE}`
+  },
+  pr_namecard: {
+    label: '名片資訊型',
+    desc: '姓名職稱 + 法定聯絡要素(律師必用)',
+    composition: `Name-card style information layout:
+- Portrait or firm mark occupying one side, information block on the other
+- Information block renders, as clean legible text: full name, professional title, firm name, office address, phone number
+- ★ All four elements (name / firm / address / phone) must be present — this is a regulatory requirement for legal advertising in Taiwan
+- Restrained typographic hierarchy, generous margins, business-card discipline${PRO_BASE}`
+  },
+  pr_viewpoint: {
+    label: '專業觀點型',
+    desc: '一句觀點大字 + 人像,不談個案',
+    composition: `Professional viewpoint post:
+- A single short statement or question in large Traditional Chinese type dominating the frame
+- The professional's portrait occupying a smaller side or corner area
+- Solid or subtly textured background block behind the text
+- ⛔ Statement must stay general — no specific case, no client detail, no outcome promise${PRO_BASE}`
+  },
+};
+
+// ── 商品實拍(舊有 10 種,一字未改)──────────────────────────────────
+const PHYSICAL_LAYOUT_KEYS = [
+  'minimal_poster', 'magazine_cover', 'spec_breakdown', 'scene_lifestyle', 'dramatic_splash',
+  'before_after', 'grid_showcase', 'big_statement', 'checklist_info', 'hand_hold',
+];
+
+// ★ 把行業版型併進主表,讓 LAYOUT_TEMPLATES[key] 一律查得到
+Object.assign(LAYOUT_TEMPLATES,
+  BEAUTY_LAYOUTS, MEDICAL_LAYOUTS, EQUIP_LAYOUTS, SCREEN_LAYOUTS, PRO_LAYOUTS);
+
+// ═══════════════════════════════════════════════════════════════════════
+// ⓪ → ① 對照表:選了什麼型態,① 排版就只出現那一組
+//   groups 用來畫 <optgroup>,順序就是畫面順序
+// ═══════════════════════════════════════════════════════════════════════
+const LAYOUT_BY_PRODTYPE = {
+  physical: [
+    { group: '', keys: ['minimal_poster'] },
+    { group: '經典版式', keys: ['magazine_cover', 'spec_breakdown', 'scene_lifestyle', 'dramatic_splash'] },
+    { group: '新增版式', keys: ['before_after', 'grid_showcase', 'big_statement', 'checklist_info', 'hand_hold'] },
+  ],
+  beauty: [
+    { group: '成果呈現', keys: ['result_closeup', 'multi_angle_grid', 'model_editorial'] },
+    { group: '信任感', keys: ['in_session', 'mirror_selfie'] },
+    { group: '文字型', keys: ['question_headline', 'booking_info'] },
+  ],
+  medical: [
+    { group: '信任感', keys: ['med_doctor_portrait', 'med_team', 'med_facility'] },
+    { group: '溝通型', keys: ['med_consult', 'med_education'] },
+  ],
+  equip: [
+    { group: '產品呈現', keys: ['eq_machine_full', 'eq_part_macro', 'eq_spec_hero'] },
+    { group: '實績與場域', keys: ['eq_application', 'eq_factory_floor', 'eq_exhibition'] },
+  ],
+  screen: [
+    { group: '裝置外框', keys: ['sc_browser_hero', 'sc_laptop_frame', 'sc_phone_angle'] },
+    { group: '版面型', keys: ['sc_code_split', 'sc_feature_tile'] },
+  ],
+  pro: [
+    { group: '人物', keys: ['pr_portrait', 'pr_team'] },
+    { group: '空間與資訊', keys: ['pr_office', 'pr_namecard', 'pr_viewpoint'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// ⚖️ 合規守門 —— 這不是加值功能,是不做客戶會被開罰單
+//
+//   美業(化粧品衛生安全管理法 §10):圖+療效暗示就違規,罰 4 萬~500 萬。
+//     即使一個字都沒寫,圖片暗示療效仍違規。
+//     用語:「術前/術後」是醫療用語,一般美容業要寫「施作前/施作後」。
+//   醫美(醫療法):對比照不得用於 FB/IG/LINE/Dcard;
+//     不得提及優惠、折扣、抽獎、贈送、分期(醫療法 §61)。
+//   律師(律師推展業務規範):廣告應表明姓名/事務所/地址/電話;
+//     不得誇大不實之宣傳。
+//
+//   ★ 教訓:AI 聽名詞不聽形容詞。所以這裡一律寫死負面清單,
+//     不寫「請謹慎」「保持得體」這種形容詞。
+// ═══════════════════════════════════════════════════════════════════════
+const COMPLIANCE_RULES = {
+  beauty: {
+    note: '美業廣告受化粧品衛生安全管理法規範,不能出現療效字眼',
+    prompt:
+      `=== REGULATORY COMPLIANCE — TAIWAN COSMETIC ADVERTISING LAW (MANDATORY) ===\n` +
+      `- ⛔ Do NOT render ANY of these words or their Chinese equivalents anywhere in the image:\n` +
+      `  治療 / 療程 / 療法 / 改善 / 根治 / 痊癒 / 排毒 / 調理體質 / 淡斑 / 淡疤 / 緊實 / 拉提 / 提拉 / 撫平皺紋 / 瘦身 / 減重 / 消脂 / 瘦臉 / 永久\n` +
+      `- ⛔ Do NOT write 術前 or 術後 — these are medical terms. Use 施作前 / 施作後 instead\n` +
+      `- ⛔ Do NOT draw acupuncture point diagrams, meridian charts or any body-energy illustration\n` +
+      `- ⛔ Do NOT render weight numbers, measurement comparisons or percentage improvement figures\n` +
+      `- Any text describing the result must state visual impression only (更紅潤 / 更立體 / 更乾淨), never a curative effect\n\n`,
+  },
+  medical: {
+    note: '醫美廣告受醫療法規範,不能出現優惠折扣,也不能做前後對比',
+    prompt:
+      `=== REGULATORY COMPLIANCE — TAIWAN MEDICAL ADVERTISING LAW (MANDATORY) ===\n` +
+      `- ⛔ Do NOT render ANY promotional element: 優惠 / 折扣 / 特價 / 免費 / 贈送 / 抽獎 / 買一送一 / 分期 / 限時 / 團購, no price figure, no percentage-off badge, no countdown\n` +
+      `- ⛔ Do NOT create a before/after comparison of any kind — no split frame, no arrow between two states, no paired result images\n` +
+      `- ⛔ Do NOT render efficacy or guarantee wording: 保證 / 根治 / 無風險 / 100% / 有效率, no success-rate figure, no case count\n` +
+      `- ⛔ Do NOT invent a treatment brand name or device name\n` +
+      `- Tone must be informational and calm, never persuasive sales energy\n\n`,
+  },
+  pro: {
+    note: '律師廣告須載明姓名/事務所/地址/電話,且不得誇大',
+    prompt:
+      `=== REGULATORY COMPLIANCE — TAIWAN PROFESSIONAL SERVICES (MANDATORY) ===\n` +
+      `- ⛔ Do NOT render any superlative or guarantee: 勝訴率 / 保證 / 必勝 / 第一 / 最強 / 最專業 / 包贏\n` +
+      `- ⛔ Do NOT invent a case number, court name, law article number or client identity\n` +
+      `- Any contact information rendered must be plain factual text (name, firm, address, phone), no decorative distortion that makes it unreadable\n\n`,
+  },
+};
+
+// 醫美不得出現的情境(③ 選單要擋掉這幾個 key)
+const CONTEXT_BLOCKED_BY_PRODTYPE = {
+  //   醫療法 §61:醫療機構不得宣傳折扣、贈品、抽獎、優惠付款方式。
+  //   所以所有「促銷 / 檔期 / 送禮 / 開箱 / 限量 / 代購」情境對醫美一律不給選。
+  //   節慶類(中秋 / 聖誕 / 新年 / 情人節)保留 —— 單純問候不涉及招徠。
+  medical: [
+    'promo_sale', 'year_end_sale', 'double11', 'double12', 'black_friday',
+    'brand_anniversary', 'gift_giving', 'gift_choice', 'unboxing',
+    'limited_stock', 'duty_free', 'jp_drugstore_haul', 'jp_direct', 'weiya',
+  ],
+};
+
+// ⓪ 選單本身(索引順序 = 畫面順序)
+const PRODTYPE_OPTIONS = [
+  { value: 'physical', label: '商品實拍 — 食品 / 家電 / 服飾 / 包款', highlight: true },
+  { group: '沒有實體商品可拍' },
+  { value: 'beauty',  label: '美業服務 — 美睫 / 美甲 / 美髮 / 紋繡 / SPA' },
+  { value: 'medical', label: '醫美診所 — 醫美 / 皮膚科 / 牙醫 / 診所' },
+  { value: 'equip',   label: '機台與加工件 — 精密加工 / 半導體 / 產線設備' },
+  { value: 'screen',  label: '螢幕畫面 — 網站 / 系統後台 / App 介面' },
+  { value: 'pro',     label: '專業形象 — 律師 / 醫師 / 顧問 / 事務所' },
+];
+
 
 function setLayout(btn, layoutKey) { onSelLayout(layoutKey); }
 
@@ -2323,6 +2874,14 @@ function buildPosterPrompt() {
 
   // 🆕 依商品型態換開頭。沒選(舊行為)→ physical,輸出與改版前一字不變。
   prompt += (PRODTYPE_PROMPT[SELECTED_PRODTYPE] || PRODTYPE_PROMPT.physical);
+
+  // ⚖️ 2026-08-19 合規守門 —— 緊接在型態之後,優先級僅次於「這是什麼」。
+  //   美業:化粧品衛生安全管理法 §10,療效字眼罰 4 萬~500 萬。
+  //   醫美:醫療法,前後對比不得上社群、不得提優惠折扣。
+  //   律師:律師推展業務規範,不得誇大不實。
+  //   ★ 一律寫死負面清單 —— AI 聽名詞不聽形容詞。
+  const _comp = COMPLIANCE_RULES[SELECTED_PRODTYPE];
+  if (_comp) prompt += _comp.prompt;
 
   // 🩹 2026-08-11 品牌色開關:
   //   病灶:品牌包的 DNA 把主色寫死(巧福 = deep forest green #3D5A3F),
