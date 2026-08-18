@@ -656,7 +656,7 @@ let LAST_BLOB_SIZE = 0;
 //     不能無條件把按鈕點亮,否則切換品牌時預設又會亮回來。
 let SELECTED_LAYOUT  = '';
 let SELECTED_FLAVOR  = '';
-let SELECTED_CONTEXT = 'none';   // ③ 是最後一關,不需要展開誰,維持預設「無」
+let SELECTED_CONTEXT = '';       // ③ 也不預選 ——「選無」本身就是一種選擇,要客戶自己按
 let SELECTED_INSPIRATION = null;
 let LAST_POSTER_URL = null;
 
@@ -1946,6 +1946,7 @@ function setContext(btn, contextKey) {
   document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   SELECTED_CONTEXT = contextKey;
+  _syncSteps();
   console.log('[v10.2] 情境主題:', contextKey, CONTEXT_THEMES[contextKey]?.label);
 }
 
@@ -2247,9 +2248,16 @@ async function generateGptPoster() {
   // 🪜 2026-08-18:沒選排版就擋下來(客戶決定 B 案)。
   //   程式本身有 fallback 不會壞,但「沒選也能生」等於預設值又偷偷幫他決定了,
   //   跟把主導權交還客戶的初衷相反。
-  if (!SELECTED_LAYOUT) {
-    setPrStatus('請先在「① 排版」選一種版型', '#ff9d9d');
-    try { document.querySelector('.layout-btn')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+  // 🪜 三步都必須客戶自己選過。「不調味」「無」也算選 —— 重點是他有意識地按下去,
+  //   而不是系統偷偷幫他決定。缺哪一步就捲到那一步,並講清楚怎麼補。
+  const _missing =
+    !SELECTED_LAYOUT  ? { sel: '.layout-btn',  msg: '請先在「① 排版」選一種版型' } :
+    !SELECTED_FLAVOR  ? { sel: '.flavor-btn',  msg: '請選「② 設計風格」,不想調味就按「— 不調味 —」' } :
+    !SELECTED_CONTEXT ? { sel: '.context-btn', msg: '請選「③ 情境」,沒有特殊檔期就按「— 無 —」' } : null;
+  if (_missing) {
+    alert(_missing.msg);
+    setPrStatus(_missing.msg, '#ff9d9d');
+    try { document.querySelector(_missing.sel)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
     return;
   }
 
@@ -2257,7 +2265,9 @@ async function generateGptPoster() {
   const reqid = String(Date.now());
 
   const t0 = Date.now();   // 🆕 量真實出圖時間
-  const interval = startProgress(150000);   // 🆕 貼近真實出圖時間(約 2-2.5 分),進度條更順、不會早早卡 90%
+  // ⏱ 2026-08-18:實測出圖 184 秒,原本抓 150 秒 → 進度條會早早卡在 90% 不動,
+  //   客戶以為當掉。改抓 220 秒,寧可跑完前條就滿,也不要卡住讓人以為壞了。
+  const interval = startProgress(220000);
   try {
     updateBrandPackBadge();
 
@@ -2270,7 +2280,7 @@ async function generateGptPoster() {
     const prompt = buildPosterPrompt();
     console.log('[v11.2] 懶人廣告圖 prompt 長度:', prompt.length, '字元 · reqid:', reqid);
 
-    setPrStatus('廣告圖生成中(品牌包+版式合成,約 60-90 秒)...', 'var(--t3)');
+    setPrStatus('廣告圖生成中(品牌包+版式合成,約 2-4 分鐘)...', 'var(--t3)');
     const submitData = await callWorker({
       action: 'gpt_poster_edit_submit',
       prompt,
