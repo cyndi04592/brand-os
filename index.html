@@ -488,7 +488,7 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
               <button class="layout-btn" data-layout="spec_breakdown" onclick="setLayout(this,'spec_breakdown')">規格分解</button>
               <button class="layout-btn" data-layout="scene_lifestyle" onclick="setLayout(this,'scene_lifestyle')">情境寫真</button>
               <button class="layout-btn" data-layout="dramatic_splash" onclick="setLayout(this,'dramatic_splash')">戲劇飛濺</button>
-              <button class="layout-btn on" data-layout="minimal_poster" onclick="setLayout(this,'minimal_poster')" style="grid-column:1/-1;">極簡海報(預設)</button>
+              <button class="layout-btn" data-layout="minimal_poster" onclick="setLayout(this,'minimal_poster')" style="grid-column:1/-1;">極簡海報(最百搭)</button>
             </div>
           </div>
 
@@ -499,9 +499,9 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">② 設計風格</span>
               <span style="font-size:9px;color:var(--t3);font-weight:400;">(可不選)</span>
             </div>
-            <div id="flavorLock" style="font-size:11px;color:var(--t3);padding:9px 11px;border:1px dashed rgba(124,109,250,0.28);border-radius:9px;line-height:1.6;">👆 先選 ① 排版,這區才會展開</div>
+            <div id="flavorLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先在「① 排版」選一種版型,這區才會展開</div>
             <div id="flavorGrid" style="display:none;grid-template-columns:1fr 1fr;gap:5px;">
-              <button class="flavor-btn on" data-flavor="none" onclick="setFlavor(this,'none')">— 不調味 —</button>
+              <button class="flavor-btn" data-flavor="none" onclick="setFlavor(this,'none')">— 不調味 —</button>
               <button class="flavor-btn" data-flavor="japan_kinfolk" onclick="setFlavor(this,'japan_kinfolk')">日系雅致</button>
               <button class="flavor-btn" data-flavor="korea_oliveyoung" onclick="setFlavor(this,'korea_oliveyoung')">韓系乾淨</button>
               <button class="flavor-btn" data-flavor="showa_retro" onclick="setFlavor(this,'showa_retro')">昭和復古</button>
@@ -510,8 +510,39 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
               <button class="flavor-btn" data-flavor="ugly_cute_2026" onclick="setFlavor(this,'ugly_cute_2026')">2026 醜萌</button>
               <button class="flavor-btn" data-flavor="euro_editorial" onclick="setFlavor(this,'euro_editorial')">歐美雜誌</button>
               <button class="flavor-btn" data-flavor="taiwan_nostalgia" onclick="setFlavor(this,'taiwan_nostalgia')">台式懷舊</button>
-              <div style="grid-column:1/-1;font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1px;margin:5px 0 1px;opacity:0.7;">— 2026 設計風格 —</div>
-              <div style="grid-column:1/-1;font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1px;margin:5px 0 1px;opacity:0.7;">— 標竿品牌 —</div>
+              <button class="flavor-btn" data-flavor="bauhaus" onclick="setFlavor(this,'bauhaus')">包浩斯</button>
+              <button class="flavor-btn" data-flavor="chrome_futurism" onclick="setFlavor(this,'chrome_futurism')">鍍鉻未來</button>
+              <button class="flavor-btn" data-flavor="neo_minimal" onclick="setFlavor(this,'neo_minimal')">溫暖新極簡</button>
+              <button class="flavor-btn" data-flavor="architectural_min" onclick="setFlavor(this,'architectural_min')">建築極簡</button>
+              <button class="flavor-btn" data-flavor="experimental_type" onclick="setFlavor(this,'experimental_type')">實驗字體</button>
+              <button class="flavor-btn" data-flavor="cinematic_light" onclick="setFlavor(this,'cinematic_light')">光影電影感</button>
+              <button class="flavor-btn" data-flavor="gradient_glow" onclick="setFlavor(this,'gradient_glow')">漸層光暈</button>
+              <button class="flavor-btn" data-flavor="blurry_floral" onclick="setFlavor(this,'blurry_floral')">模糊花卉</button>
+              <button class="flavor-btn" data-flavor="geometric_abstract" onclick="setFlavor(this,'geometric_abstract')">幾何抽象</button>
+              <button class="flavor-btn" data-flavor="mono_contrast" onclick="setFlavor(this,'mono_contrast')">黑白高對比</button>
+              <button class="flavor-btn" data-flavor="natural_shadow" onclick="setFlavor(this,'natural_shadow')">自然光影</button>
+              <button class="flavor-btn" data-flavor="luxury_texture" onclick="setFlavor(this,'luxury_texture')">輕奢質感</button>
+              <button class="flavor-btn" data-flavor="hand_doodle" onclick="setFlavor(this,'hand_doodle')">手繪塗鴉</button>
+              <button class="flavor-btn" data-flavor="collage_art" onclick="setFlavor(this,'collage_art')">拼貼藝術</button>
+              <button class="flavor-btn" data-flavor="line_art" onclick="setFlavor(this,'line_art')">線描極簡</button>
+              <button class="flavor-btn" data-flavor="pop_art" onclick="setFlavor(this,'pop_art')">普普藝術</button>
+              <button class="flavor-btn" data-flavor="acid_neon" onclick="setFlavor(this,'acid_neon')">螢光科技</button>
+              <button class="flavor-btn" data-flavor="ink_zen" onclick="setFlavor(this,'ink_zen')">水墨禪意</button>
+              <button class="flavor-btn" data-flavor="chaos_pkg" onclick="setFlavor(this,'chaos_pkg')">混沌極繁</button>
+              <button class="flavor-btn" data-flavor="kinetic_3d" onclick="setFlavor(this,'kinetic_3d')">立體動態</button>
+              <button class="flavor-btn" data-flavor="scattered_layout" onclick="setFlavor(this,'scattered_layout')">散布佈局</button>
+              <button class="flavor-btn" data-flavor="candid_film" onclick="setFlavor(this,'candid_film')">真實膠卷</button>
+              <button class="flavor-btn" data-flavor="trinket" onclick="setFlavor(this,'trinket')">收藏品式</button>
+              <button class="flavor-btn" data-flavor="blueprint" onclick="setFlavor(this,'blueprint')">藍圖風格</button>
+              <button class="flavor-btn" data-flavor="surveillance" onclick="setFlavor(this,'surveillance')">監控美學</button>
+              <button class="flavor-btn" data-flavor="future_medieval" onclick="setFlavor(this,'future_medieval')">未來中世紀</button>
+              <button class="flavor-btn" data-flavor="brand_3coins" onclick="setFlavor(this,'brand_3coins')">3COINS</button>
+              <button class="flavor-btn" data-flavor="brand_uniqlo" onclick="setFlavor(this,'brand_uniqlo')">UNIQLO</button>
+              <button class="flavor-btn" data-flavor="brand_muji" onclick="setFlavor(this,'brand_muji')">無印良品</button>
+              <button class="flavor-btn" data-flavor="brand_beams" onclick="setFlavor(this,'brand_beams')">BEAMS</button>
+              <button class="flavor-btn" data-flavor="brand_issey" onclick="setFlavor(this,'brand_issey')">三宅一生</button>
+              <button class="flavor-btn" data-flavor="brand_snowpeak" onclick="setFlavor(this,'brand_snowpeak')">Snow Peak</button>
+              <button class="flavor-btn" data-flavor="brand_plusd" onclick="setFlavor(this,'brand_plusd')">+d</button>
             </div>
           </div>
 
@@ -522,7 +553,7 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">③ 情境</span>
               <span style="font-size:9px;color:var(--t3);font-weight:400;">(可不選)</span>
             </div>
-            <div id="contextLock" style="font-size:11px;color:var(--t3);padding:9px 11px;border:1px dashed rgba(124,109,250,0.28);border-radius:9px;line-height:1.6;">👆 先選 ② 設計風格(不想挑就按「— 無 —」),這區才會展開</div>
+            <div id="contextLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先選「② 設計風格」(不想調味就按「— 不調味 —」),這區才會展開</div>
             <div id="contextGrid" style="display:none;grid-template-columns:1fr 1fr;gap:5px;">
               <button class="context-btn on" data-context="none" onclick="setContext(this,'none')">— 無 —</button>
               <button class="context-btn" data-context="summer" onclick="setContext(this,'summer')">夏日</button>
