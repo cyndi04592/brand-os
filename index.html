@@ -133,40 +133,10 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
   if (e.target.closest('a,button')) document.body.classList.remove('nav-open');
 });
 
-/* 🆕 2026-08-09 手機:廣告圖產生器「排版/設計風格/情境」按鈕牆 → 下拉選單
-   (RA:風格後續會擴到 400-500 種,按鈕牆撐不住;下拉怎麼長都是一顆)
-   分隔標籤(— 2026 設計風格 — 等)自動變下拉裡的分組標題。桌機維持按鈕牆。 */
-if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', function(){
-  ['layout-btn','flavor-btn','context-btn'].forEach(function(cls){
-    var btns = document.querySelectorAll('.' + cls);
-    if (!btns.length) return;
-    var grid = btns[0].parentElement;
-    var sel = document.createElement('select');
-    sel.style.cssText = "width:100%;margin:2px 0 4px;padding:11px 12px;border-radius:8px;" +
-      "background:var(--bg3);border:1px solid rgba(124,109,250,0.35);color:var(--t1);" +
-      "font-size:13px;font-weight:600;font-family:'Noto Sans TC';outline:none;";
-    var group = sel;
-    Array.prototype.forEach.call(grid.children, function(el){
-      if (el.tagName === 'BUTTON') {
-        var o = document.createElement('option');
-        o.textContent = el.textContent.trim();
-        o._btn = el;
-        if (el.classList.contains('on')) o.selected = true;
-        group.appendChild(o);
-      } else {
-        group = document.createElement('optgroup');
-        group.label = el.textContent.trim();
-        sel.appendChild(group);
-      }
-    });
-    sel.addEventListener('change', function(){
-      var o = sel.options[sel.selectedIndex];
-      if (o && o._btn) o._btn.click();
-    });
-    grid.parentElement.insertBefore(sel, grid);
-    grid.style.display = 'none';
-  });
-});
+/* 🗑 2026-08-18:移除「手機版把按鈕牆轉成下拉」那段。
+   原因:桌機版現在本身就是下拉(選項已超過 100 個,按鈕牆在筆電上要滑很久,
+   而且字小到看不清)。轉換程式失去存在意義,留著只會在找不到 .layout-btn 時
+   悄悄失效,變成看不見的死碼。 */
 </script>
 
 <!-- ══ Vision Banner + 大標題 ══ -->
@@ -484,13 +454,23 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">① 排版</span>
               <span style="font-size:9px;color:#ff9d9d;font-weight:700;">必選</span>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
-              <button class="layout-btn" data-layout="magazine_cover" onclick="setLayout(this,'magazine_cover')">雜誌封面</button>
-              <button class="layout-btn" data-layout="spec_breakdown" onclick="setLayout(this,'spec_breakdown')">規格分解</button>
-              <button class="layout-btn" data-layout="scene_lifestyle" onclick="setLayout(this,'scene_lifestyle')">情境寫真</button>
-              <button class="layout-btn" data-layout="dramatic_splash" onclick="setLayout(this,'dramatic_splash')">戲劇飛濺</button>
-              <button class="layout-btn" data-layout="minimal_poster" onclick="setLayout(this,'minimal_poster')" style="grid-column:1/-1;">極簡海報(最百搭)</button>
-            </div>
+            <select id="layoutSel" onchange="onSelLayout(this.value)" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid rgba(124,109,250,0.35);background:rgba(20,16,38,0.9);color:#E8DCFF;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23b9a8ee' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;">
+                <option value="">請選擇…</option>
+                <optgroup label="經典版式">
+                <option value="magazine_cover">雜誌封面型</option>
+                <option value="spec_breakdown">規格分解型</option>
+                <option value="scene_lifestyle">情境寫真型</option>
+                <option value="dramatic_splash">戲劇飛濺型</option>
+                <option value="minimal_poster">極簡海報型(最百搭)</option>
+                </optgroup>
+                <optgroup label="新增版式">
+                <option value="before_after">前後對比型</option>
+                <option value="grid_showcase">多格展示型</option>
+                <option value="big_statement">大字宣言型</option>
+                <option value="checklist_info">重點條列型</option>
+                <option value="hand_hold">手持實拍型</option>
+                </optgroup>
+              </select>
           </div>
 
           <!-- ② 設計風格 -->
@@ -500,51 +480,100 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">② 設計風格</span>
               <span style="font-size:9px;color:#ff9d9d;font-weight:700;">必選</span>
             </div>
-            <div id="flavorLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先在「① 排版」選一種版型,這區才會展開</div>
-            <div id="flavorGrid" style="display:none;grid-template-columns:1fr 1fr;gap:5px;">
-              <button class="flavor-btn" data-flavor="none" onclick="setFlavor(this,'none')">— 不調味 —</button>
-              <button class="flavor-btn" data-flavor="japan_kinfolk" onclick="setFlavor(this,'japan_kinfolk')">日系雅致</button>
-              <button class="flavor-btn" data-flavor="korea_oliveyoung" onclick="setFlavor(this,'korea_oliveyoung')">韓系乾淨</button>
-              <button class="flavor-btn" data-flavor="showa_retro" onclick="setFlavor(this,'showa_retro')">昭和復古</button>
-              <button class="flavor-btn" data-flavor="retro_future_y2k" onclick="setFlavor(this,'retro_future_y2k')">復古未來 Y2K</button>
-              <button class="flavor-btn" data-flavor="bold_clash_2026" onclick="setFlavor(this,'bold_clash_2026')">2026 撞色</button>
-              <button class="flavor-btn" data-flavor="ugly_cute_2026" onclick="setFlavor(this,'ugly_cute_2026')">2026 醜萌</button>
-              <button class="flavor-btn" data-flavor="euro_editorial" onclick="setFlavor(this,'euro_editorial')">歐美雜誌</button>
-              <button class="flavor-btn" data-flavor="taiwan_nostalgia" onclick="setFlavor(this,'taiwan_nostalgia')">台式懷舊</button>
-              <button class="flavor-btn" data-flavor="bauhaus" onclick="setFlavor(this,'bauhaus')">包浩斯</button>
-              <button class="flavor-btn" data-flavor="chrome_futurism" onclick="setFlavor(this,'chrome_futurism')">鍍鉻未來</button>
-              <button class="flavor-btn" data-flavor="neo_minimal" onclick="setFlavor(this,'neo_minimal')">溫暖新極簡</button>
-              <button class="flavor-btn" data-flavor="architectural_min" onclick="setFlavor(this,'architectural_min')">建築極簡</button>
-              <button class="flavor-btn" data-flavor="experimental_type" onclick="setFlavor(this,'experimental_type')">實驗字體</button>
-              <button class="flavor-btn" data-flavor="cinematic_light" onclick="setFlavor(this,'cinematic_light')">光影電影感</button>
-              <button class="flavor-btn" data-flavor="gradient_glow" onclick="setFlavor(this,'gradient_glow')">漸層光暈</button>
-              <button class="flavor-btn" data-flavor="blurry_floral" onclick="setFlavor(this,'blurry_floral')">模糊花卉</button>
-              <button class="flavor-btn" data-flavor="geometric_abstract" onclick="setFlavor(this,'geometric_abstract')">幾何抽象</button>
-              <button class="flavor-btn" data-flavor="mono_contrast" onclick="setFlavor(this,'mono_contrast')">黑白高對比</button>
-              <button class="flavor-btn" data-flavor="natural_shadow" onclick="setFlavor(this,'natural_shadow')">自然光影</button>
-              <button class="flavor-btn" data-flavor="luxury_texture" onclick="setFlavor(this,'luxury_texture')">輕奢質感</button>
-              <button class="flavor-btn" data-flavor="hand_doodle" onclick="setFlavor(this,'hand_doodle')">手繪塗鴉</button>
-              <button class="flavor-btn" data-flavor="collage_art" onclick="setFlavor(this,'collage_art')">拼貼藝術</button>
-              <button class="flavor-btn" data-flavor="line_art" onclick="setFlavor(this,'line_art')">線描極簡</button>
-              <button class="flavor-btn" data-flavor="pop_art" onclick="setFlavor(this,'pop_art')">普普藝術</button>
-              <button class="flavor-btn" data-flavor="acid_neon" onclick="setFlavor(this,'acid_neon')">螢光科技</button>
-              <button class="flavor-btn" data-flavor="ink_zen" onclick="setFlavor(this,'ink_zen')">水墨禪意</button>
-              <button class="flavor-btn" data-flavor="chaos_pkg" onclick="setFlavor(this,'chaos_pkg')">混沌極繁</button>
-              <button class="flavor-btn" data-flavor="kinetic_3d" onclick="setFlavor(this,'kinetic_3d')">立體動態</button>
-              <button class="flavor-btn" data-flavor="scattered_layout" onclick="setFlavor(this,'scattered_layout')">散布佈局</button>
-              <button class="flavor-btn" data-flavor="candid_film" onclick="setFlavor(this,'candid_film')">真實膠卷</button>
-              <button class="flavor-btn" data-flavor="trinket" onclick="setFlavor(this,'trinket')">收藏品式</button>
-              <button class="flavor-btn" data-flavor="blueprint" onclick="setFlavor(this,'blueprint')">藍圖風格</button>
-              <button class="flavor-btn" data-flavor="surveillance" onclick="setFlavor(this,'surveillance')">監控美學</button>
-              <button class="flavor-btn" data-flavor="future_medieval" onclick="setFlavor(this,'future_medieval')">未來中世紀</button>
-              <button class="flavor-btn" data-flavor="brand_3coins" onclick="setFlavor(this,'brand_3coins')">3COINS</button>
-              <button class="flavor-btn" data-flavor="brand_uniqlo" onclick="setFlavor(this,'brand_uniqlo')">UNIQLO</button>
-              <button class="flavor-btn" data-flavor="brand_muji" onclick="setFlavor(this,'brand_muji')">無印良品</button>
-              <button class="flavor-btn" data-flavor="brand_beams" onclick="setFlavor(this,'brand_beams')">BEAMS</button>
-              <button class="flavor-btn" data-flavor="brand_issey" onclick="setFlavor(this,'brand_issey')">三宅一生</button>
-              <button class="flavor-btn" data-flavor="brand_snowpeak" onclick="setFlavor(this,'brand_snowpeak')">Snow Peak</button>
-              <button class="flavor-btn" data-flavor="brand_plusd" onclick="setFlavor(this,'brand_plusd')">+d</button>
-            </div>
+            <div id="flavorLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先在「① 排版」選一種版型,這區才會出現</div>
+            <div id="flavorGrid" style="display:none;">
+              <select id="flavorSel" onchange="onSelFlavor(this.value)" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid rgba(124,109,250,0.35);background:rgba(20,16,38,0.9);color:#E8DCFF;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23b9a8ee' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;">
+                <option value="">請選擇…</option>
+                <option value="none" style="color:#6dfac2;font-weight:900;">無(不調味)</option>
+                <optgroup label="日系品牌">
+                <option value="jp_beams_ivy">BEAMS 學院休閒</option>
+                <option value="jp_nikoand_life">Niko and 生活雜貨</option>
+                <option value="jp_lowrys_sweet">Lowrys 柔甜日常</option>
+                <option value="jp_journal_urban">Journal 都會知性</option>
+                <option value="jp_moussy_denim">Moussy 丹寧率性</option>
+                <option value="jp_snidel_romance">Snidel 浪漫少女</option>
+                <option value="jp_wego_vintage">WEGO 古著混搭</option>
+                <option value="jp_clane_mode">CLANE 建築剪裁</option>
+                <option value="jp_coen_natural">coen 自然棉麻</option>
+                <option value="jp_bp_deconstruct">前衛解構</option>
+                </optgroup>
+                <optgroup label="日系風格">
+                <option value="japan_kinfolk">日系雅致</option>
+                <option value="showa_retro">昭和復古</option>
+                <option value="jp_harajuku_street">裏原宿街頭</option>
+                <option value="jp_vintage_craft">美式復古工藝</option>
+                <option value="jp_workwear_hard">硬派工裝</option>
+                <option value="jp_art_graffiti">藝術塗鴉</option>
+                <option value="jp_graphic_tee">童趣插畫</option>
+                <option value="jp_drugstore">藥妝明亮</option>
+                <option value="jp_konbini">便利店日常</option>
+                </optgroup>
+                <optgroup label="韓系">
+                <option value="korea_oliveyoung">韓系乾淨</option>
+                <option value="kr_hannam_select">漢南洞選品店</option>
+                <option value="kr_itaewon_vintage">梨泰院復古</option>
+                <option value="kr_gallery_cafe">藝廊咖啡</option>
+                <option value="kr_soft_pastel">韓系柔粉</option>
+                <option value="kr_seoul_studio">首爾工作室</option>
+                <option value="kr_cream_tone">韓系奶油調</option>
+                <option value="kr_glass_skin">玻璃肌光感</option>
+                <option value="kr_myeongdong">明洞街頭</option>
+                <option value="kr_leather_minimal">韓系皮革極簡</option>
+                <option value="kr_idol_pop">偶像應援風</option>
+                </optgroup>
+                <optgroup label="插畫手繪">
+                <option value="illust_flat_editorial">扁平編輯插畫</option>
+                <option value="illust_riso_print">孔版印刷感</option>
+                <option value="illust_woodblock">版畫民藝</option>
+                <option value="illust_watercolor">水彩手繪</option>
+                <option value="illust_expo_graphic">文博展會風</option>
+                <option value="hand_doodle">手繪塗鴉</option>
+                <option value="collage_art">拼貼藝術</option>
+                <option value="line_art">線描極簡</option>
+                <option value="pop_art">普普藝術</option>
+                <option value="ink_zen">水墨禪意</option>
+                </optgroup>
+                <optgroup label="標竿品牌">
+                <option value="brand_3coins">3COINS</option>
+                <option value="brand_uniqlo">UNIQLO</option>
+                <option value="brand_muji">無印良品</option>
+                <option value="brand_beams">BEAMS</option>
+                <option value="brand_issey">三宅一生</option>
+                <option value="brand_snowpeak">Snow Peak</option>
+                <option value="brand_plusd">+d</option>
+                </optgroup>
+                <optgroup label="2026 設計風格">
+                <option value="bauhaus">包浩斯</option>
+                <option value="chrome_futurism">鍍鉻未來</option>
+                <option value="neo_minimal">溫暖新極簡</option>
+                <option value="architectural_min">建築極簡</option>
+                <option value="experimental_type">實驗字體</option>
+                <option value="cinematic_light">光影電影感</option>
+                <option value="gradient_glow">漸層光暈</option>
+                <option value="blurry_floral">模糊花卉</option>
+                <option value="geometric_abstract">幾何抽象</option>
+                <option value="mono_contrast">黑白高對比</option>
+                <option value="natural_shadow">自然光影</option>
+                <option value="luxury_texture">輕奢質感</option>
+                <option value="acid_neon">螢光科技</option>
+                <option value="chaos_pkg">混沌極繁</option>
+                <option value="kinetic_3d">立體動態</option>
+                <option value="scattered_layout">散布佈局</option>
+                <option value="candid_film">真實膠卷</option>
+                <option value="trinket">收藏品式</option>
+                <option value="blueprint">藍圖風格</option>
+                <option value="surveillance">監控美學</option>
+                <option value="future_medieval">未來中世紀</option>
+                <option value="retro_future_y2k">復古未來 Y2K</option>
+                <option value="bold_clash_2026">2026 大膽撞色</option>
+                <option value="ugly_cute_2026">2026 醜萌</option>
+                </optgroup>
+                <optgroup label="其他">
+                <option value="euro_editorial">歐美雜誌</option>
+                <option value="taiwan_nostalgia">台式懷舊</option>
+                </optgroup>
+              </select>
+            
           </div>
 
           <!-- ③ 情境 -->
@@ -554,32 +583,48 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">③ 情境</span>
               <span style="font-size:9px;color:#ff9d9d;font-weight:700;">必選</span>
             </div>
-            <div id="contextLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先選「② 設計風格」(不想調味就按「— 不調味 —」),這區才會展開</div>
-            <div id="contextGrid" style="display:none;grid-template-columns:1fr 1fr;gap:5px;">
-              <button class="context-btn" data-context="none" onclick="setContext(this,'none')">— 無 —</button>
-              <button class="context-btn" data-context="summer" onclick="setContext(this,'summer')">夏日</button>
-              <button class="context-btn" data-context="winter_cozy" onclick="setContext(this,'winter_cozy')">冬日溫暖</button>
-              <button class="context-btn" data-context="festive_cny" onclick="setContext(this,'festive_cny')">農曆新年</button>
-              <button class="context-btn" data-context="back_to_school" onclick="setContext(this,'back_to_school')">開學前哨站</button>
-              <button class="context-btn" data-context="unboxing" onclick="setContext(this,'unboxing')">開箱時刻</button>
-              <button class="context-btn" data-context="daily_use" onclick="setContext(this,'daily_use')">日常使用</button>
-              <button class="context-btn" data-context="promo_sale" onclick="setContext(this,'promo_sale')">限時促銷</button>
-              <button class="context-btn" data-context="year_end_sale" onclick="setContext(this,'year_end_sale')">年終特賣</button>
-              <button class="context-btn" data-context="double11" onclick="setContext(this,'double11')">雙11</button>
-              <!-- ★ 2026-08-09 節慶檔期擴充:客戶點一點就有節慶圖,不用打字(admaker.js CONTEXT_THEMES 同步新增) -->
-              <button class="context-btn" data-context="valentines" onclick="setContext(this,'valentines')">情人節</button>
-              <button class="context-btn" data-context="zhongyuan_pudu" onclick="setContext(this,'zhongyuan_pudu')">中元普渡</button>
-              <button class="context-btn" data-context="mid_autumn" onclick="setContext(this,'mid_autumn')">中秋節</button>
-              <button class="context-btn" data-context="national_day" onclick="setContext(this,'national_day')">國慶日</button>
-              <button class="context-btn" data-context="halloween" onclick="setContext(this,'halloween')">萬聖節</button>
-              <button class="context-btn" data-context="black_friday" onclick="setContext(this,'black_friday')">黑色星期五</button>
-              <button class="context-btn" data-context="double12" onclick="setContext(this,'double12')">雙12</button>
-              <button class="context-btn" data-context="christmas" onclick="setContext(this,'christmas')">聖誕節</button>
-              <button class="context-btn" data-context="nye_countdown" onclick="setContext(this,'nye_countdown')">跨年倒數</button>
-              <button class="context-btn" data-context="weiya" onclick="setContext(this,'weiya')">尾牙</button>
-              <button class="context-btn" data-context="brand_anniversary" onclick="setContext(this,'brand_anniversary')">品牌周年慶</button>
-              <button class="context-btn" data-context="gift_giving" onclick="setContext(this,'gift_giving')" style="grid-column:1/-1;">送禮場合</button>
-            </div>
+            <div id="contextLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先選「② 設計風格」(不想調味就選「無」),這區才會出現</div>
+            <div id="contextGrid" style="display:none;">
+              <select id="contextSel" onchange="onSelContext(this.value)" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid rgba(124,109,250,0.35);background:rgba(20,16,38,0.9);color:#E8DCFF;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23b9a8ee' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;">
+                <option value="">請選擇…</option>
+                <option value="none" style="color:#6dfac2;font-weight:900;">無(不指定情境)</option>
+                <optgroup label="代購 · 保健">
+                <option value="jp_direct">日本直送</option>
+                <option value="jp_drugstore_haul">藥妝掃貨</option>
+                <option value="duty_free">免稅店</option>
+                <option value="limited_stock">限量現貨</option>
+                <option value="daily_supplement">每日保養</option>
+                <option value="gift_choice">送禮首選</option>
+                </optgroup>
+                <optgroup label="季節 · 日常">
+                <option value="summer">夏日</option>
+                <option value="winter_cozy">冬日溫暖</option>
+                <option value="back_to_school">開學季</option>
+                <option value="daily_use">日常使用</option>
+                <option value="unboxing">開箱時刻</option>
+                </optgroup>
+                <optgroup label="節慶">
+                <option value="festive_cny">農曆新年</option>
+                <option value="valentines">情人節</option>
+                <option value="zhongyuan_pudu">中元普渡</option>
+                <option value="mid_autumn">中秋節</option>
+                <option value="national_day">國慶日</option>
+                <option value="halloween">萬聖節</option>
+                <option value="christmas">聖誕節</option>
+                <option value="nye_countdown">跨年倒數</option>
+                <option value="weiya">尾牙</option>
+                </optgroup>
+                <optgroup label="促銷檔期">
+                <option value="promo_sale">限時促銷</option>
+                <option value="year_end_sale">年終特賣</option>
+                <option value="double11">雙11</option>
+                <option value="double12">雙12</option>
+                <option value="black_friday">黑色星期五</option>
+                <option value="brand_anniversary">品牌周年慶</option>
+                <option value="gift_giving">送禮場合</option>
+                </optgroup>
+              </select>
+            
           </div>
 
           <!-- 折疊區: 8 鍵舊靈感 (備援) -->
