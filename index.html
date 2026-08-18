@@ -482,6 +482,7 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
             <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid rgba(124,109,250,0.22);">
               <span style="width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));flex:none;"></span>
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">① 排版</span>
+              <span style="font-size:9px;color:#ff9d9d;font-weight:700;">必選</span>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
               <button class="layout-btn" data-layout="magazine_cover" onclick="setLayout(this,'magazine_cover')">雜誌封面</button>
@@ -497,7 +498,7 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
             <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid rgba(124,109,250,0.22);">
               <span style="width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));flex:none;"></span>
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">② 設計風格</span>
-              <span style="font-size:9px;color:var(--t3);font-weight:400;">(可不選)</span>
+              <span style="font-size:9px;color:#ff9d9d;font-weight:700;">必選</span>
             </div>
             <div id="flavorLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先在「① 排版」選一種版型,這區才會展開</div>
             <div id="flavorGrid" style="display:none;grid-template-columns:1fr 1fr;gap:5px;">
@@ -551,11 +552,11 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
             <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid rgba(124,109,250,0.22);">
               <span style="width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));flex:none;"></span>
               <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">③ 情境</span>
-              <span style="font-size:9px;color:var(--t3);font-weight:400;">(可不選)</span>
+              <span style="font-size:9px;color:#ff9d9d;font-weight:700;">必選</span>
             </div>
             <div id="contextLock" style="font-size:11px;color:var(--t3);padding:10px 12px;border:1px dashed rgba(124,109,250,0.30);border-radius:9px;line-height:1.6;background:rgba(124,109,250,0.04);">👆 先選「② 設計風格」(不想調味就按「— 不調味 —」),這區才會展開</div>
             <div id="contextGrid" style="display:none;grid-template-columns:1fr 1fr;gap:5px;">
-              <button class="context-btn on" data-context="none" onclick="setContext(this,'none')">— 無 —</button>
+              <button class="context-btn" data-context="none" onclick="setContext(this,'none')">— 無 —</button>
               <button class="context-btn" data-context="summer" onclick="setContext(this,'summer')">夏日</button>
               <button class="context-btn" data-context="winter_cozy" onclick="setContext(this,'winter_cozy')">冬日溫暖</button>
               <button class="context-btn" data-context="festive_cny" onclick="setContext(this,'festive_cny')">農曆新年</button>
@@ -713,7 +714,7 @@ if (window.innerWidth <= 768) document.addEventListener('DOMContentLoaded', func
             · <b>左側選品牌</b>會自動套對應 DNA<br>
             · 排版 × 品牌包 × 設計風格 × 情境 四層合成<br>
             · 商品 100% 保留 · 雜誌級品質<br>
-            · 約 60-90 秒<br>
+            · 約 2-4 分鐘<br>
             · ⚠️ 中文標籤保留率 70-85%
           </div>
         </div>
