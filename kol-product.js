@@ -90,7 +90,43 @@
     if (/主角|大物|家具|家電|hero|furniture|appliance/.test(m)) return 'hero';
     if (/示範|使用|操作|噴|擦|塗|demo|spray|apply/.test(m)) return 'demo';
     if (/數位|服務|軟體|課程|體驗|digital|service|software/.test(m)) return 'digital';
-    return null;
+    // ═══════════════════════════════════════════════════════════
+    //  🆕 v3.5(2026-08-19)自動判斷:沒設 productMode 時,用商品名稱推。
+    //   為什麼要有這段:以前「自動 · 依商品判斷」對服務類等於完全沒判斷 ——
+    //     客戶打「日式接睫」,畫面層回 null → 落到 object 分支 → 被當成一件實體物品,
+    //     AI 很可能就生出一盒假睫毛。那正是這整套型態系統要防的事。
+    //   ★ 分類來源只有一個:kol-compliance.js 的 resolveRule。
+    //     不在這裡另寫關鍵字表 —— 兩份表遲早會走鐘,變成台詞判美業、畫面判一般商品。
+    //   ★ 三個安全閥:
+    //     ① 上面的「明設 productMode」永遠先跑,手動選擇壓過自動判斷
+    //     ② isProductForm:有包裝的實體商品不轉服務型
+    //        (指甲油判成 beauty 是對的,化粧品法要管台詞;但畫面層一轉 service
+    //         就變成「不准畫任何瓶罐」,客戶的指甲油會直接消失)
+    //     ③ 整段包 try:KolCompliance 沒載入也只是回 null 走舊路,不會壞
+    return _autoModeFromName(prod);
+  }
+
+  // 台詞層分類 → 畫面層模式。查不到就 null(海苔、炒菜等舊商品走原本邏輯,輸出一字不變)
+  const RULE_TO_MODE = {
+    beauty: 'service', medical: 'medical', course: 'course',
+    mystic: 'mystic',  travel: 'travel',   wellness: 'wellness',
+    pro: 'pro',        agency: 'agency',
+  };
+  // 這幾種畫面模式會寫死「不准畫任何商品盒/瓶罐」,套錯在有包裝的商品上會讓商品消失
+  const NO_PRODUCT_MODES = { service: 1, medical: 1, course: 1, mystic: 1, travel: 1, pro: 1, agency: 1 };
+
+  function _autoModeFromName(prod) {
+    try {
+      const C = window.KolCompliance;
+      if (!C || typeof C.resolveRule !== 'function') return null;
+      const rule = C.resolveRule(prod);
+      if (!rule) return null;
+      const mode = RULE_TO_MODE[rule];
+      if (!mode) return null;
+      // 安全閥②:看得到包裝的實體商品,絕不套用「無實體商品」那類畫面守則
+      if (NO_PRODUCT_MODES[mode] && typeof C.isProductForm === 'function' && C.isProductForm(prod)) return null;
+      return mode;
+    } catch (e) { return null; }
   }
   function contributeNewMode(prod, mode, scale) {
     const sz = scale ? '; it is ' + scale + ', at that true size' : '';
@@ -263,6 +299,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.4', resolveMode };
-  console.log('[KolProduct] 🎒 v3.4 就緒 · 道具師·模式驅動(10模式:手持/包裝/盛盤/穿戴/主角大物/操作示範/數位服務/醫美/課程/命理/旅遊/養生/專業/行銷代操 · 只有設productMode才走新模式·海苔等舊商品原樣不變) + 物理錨 + 尺度錨臉身體 + 🍽盤子絕不下鍋鎖強化');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.5', resolveMode };
+  console.log('[KolProduct] 🎒 v3.5 就緒 · 道具師·模式驅動(15模式) · 🆕 自動判斷:沒設型態時用商品名推(與合規模組共用同一張分類表) · 有包裝的實體商品不會被誤判成服務 · 海苔等舊商品原樣不變');
 })();
