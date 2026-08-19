@@ -2991,7 +2991,8 @@ const TRAVEL_LAYOUTS = {
     composition: `Accommodation interior:
 - Wide shot of the room or common space as supplied, showing layout and light
 - Tidy and inviting, natural window light where available
-- ⛔ Reproduce the space faithfully: do NOT add furniture, views, balconies or amenities that are not in the source image — accommodation advertising must match what the guest actually receives${TRAVEL_BASE}`
+- ⛔ Reproduce the space faithfully: do NOT add furniture, balconies or amenities that are not in the source image — accommodation advertising must match what the guest actually receives
+- ⛔ ★ Whatever is visible through the window MUST stay exactly as supplied. Do NOT upgrade a car park, wall or alley into a sea view, mountain view or city skyline — a fabricated view is the single most common and most actionable misrepresentation in accommodation advertising${TRAVEL_BASE}`
   },
   transport_move: {
     label: '交通移動型',
