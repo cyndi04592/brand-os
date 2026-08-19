@@ -162,11 +162,46 @@ function _cssColorToHex(name) {
 // 🩹 2026-08-19:挑出「真的能用」的品牌色。
 //   優先順序:能用的 navColor → 色碼欄位(colorHex/color_hex/primaryColor)→ 金色。
 //   ★ 「自訂色」「自訂」「custom」這類是佔位字,不是顏色,一律略過。
+// 🩹 2026-08-19:品牌預設色票表(與 admin.html 的 BRAND_COLOR_PRESETS 同一份)。
+//   病灶:這些配色一直躺在 admin.html 裡(而且是用心配過的 —— 巧福暖橘、
+//   空瑪那靈性紫、福臨門粵式紅),但前端 window.BRANDS 從來沒帶 primaryColor,
+//   所以側邊欄讀不到,全部退回金色。
+//   ★ 優先序:資料庫的 primaryColor(後台改的)> 這張表 > navColor > 金色。
+//     後台改過就以後台為準,沒改過就用這裡的預設,不會互相蓋掉。
+const BRAND_COLOR_PRESETS = {
+  cf:  '#D86E3C',  // 巧福 · 暖橘
+  ww:  '#D9B96B',  // 旺味 · 米香金
+  ly:  '#2C2522',  // 琉宇 · 墨黑
+  ka:  '#4A3A6B',  // 空瑪那 · 靈性紫
+  la:  '#9B7BC9',  // LACEZ · 紫藤
+  moz: '#4A6B8A',  // MOZ · 北歐藍
+  ra:  '#7C6DFA',  // RADESIGN
+  kol_8072:  '#B8302E',  // 香港福臨門 · 粵式紅
+  ever_7011: '#C9B584',  // Every Hay · 草本米
+  // 🆕 後進駐、admin 預設表裡沒有的品牌
+  protex: '#FF6B6B',  // PROTEX · 珊瑚橙(原 navColor=coral)
+  ti:     '#1B2A4A',  // 大東專利 · 夜幕深藍
+  hh:     '#C8B89A',  // HH美學 · MUJI米白
+  ry:     '#6B8F5A',  // 洳意褌舞 · 抹茶綠
+};
+
 const _warnedColors = {};   // 🩹 同一個壞值只警告一次,避免刷版
 const _deadPacks = {};      // 🩹 brand_packs 裡沒填色碼的 pack_key(查得到但沒顏色)
 const _COLOR_PLACEHOLDERS = ['自訂色', '自訂', '自定色', 'custom', 'customcolor', '其他'];
 function _pickBrandColor(b) {
   if (!b) return 'gold';
+  // 後台改過的 primaryColor 最優先(那是客戶/管理員實際設定的)
+  const own = String(b.primaryColor || b.primary_color || b.colorHex || b.color_hex || '').match(/#?[0-9A-Fa-f]{6}/);
+  if (own) return own[0].startsWith('#') ? own[0] : '#' + own[0];
+
+  // 🩹 2026-08-19:'gold' 是「從沒設定過」的系統預設,不是客戶選的顏色。
+  //   若這個品牌在色票表裡有專屬色,應該用專屬色而不是金色 ——
+  //   否則 HH美學、洳意褌舞這種 navColor='gold' 的品牌永遠是金色,
+  //   而它們其實是有指定配色的。
+  if (String(b.navColor || '').trim().toLowerCase() === 'gold'
+      && b.id && BRAND_COLOR_PRESETS[b.id]) {
+    return BRAND_COLOR_PRESETS[b.id];
+  }
   const nav = String(b.navColor || '').trim();
   // 🩹 2026-08-19:brand_xxx 一律直接放行,不做任何判定。
   //   ⚠️ 我上一版在這裡加了「不是有效顏色」的警告,結果把原本正常的
@@ -200,6 +235,9 @@ function _pickBrandColor(b) {
   //   結果每畫一次就噴一條紅字。這裡已經確定救不回來了,
   //   往下傳只會製造噪音,不會讓顏色變對。
   //   ★ 真的填錯字的情況,onboard 那邊已經在源頭擋掉了。
+  // 🩹 救不回來之前,先看預設色票表有沒有這個品牌
+  if (b.id && BRAND_COLOR_PRESETS[b.id]) return BRAND_COLOR_PRESETS[b.id];
+
   // 只有「真的認不得的字」才提示一次,而且不重複同一個值
   if (nav && !isPlaceholder && !_warnedColors[nav]) {
     _warnedColors[nav] = 1;
@@ -498,7 +536,9 @@ function buildDataFromSheets(data) {
     //   onboard 舊版把 f_color 寫死成「自訂色」,色碼另外存在 colorHex,
     //   而畫面讀的是 navColor → 舊客戶(已經註冊完的)品牌色一律變金色。
     //   前端修好只救得了新客戶,這行是救「已經存在資料庫裡」的舊資料。
+    // 🩹 2026-08-19:primaryColor 一定要帶出來,否則後台改了色票前端讀不到。
     id: b.id, name: b.name, icon: '',
+    primaryColor: b.primaryColor || b.primary_color || '',
     navColor: _pickBrandColor(b),   // 🆕 商業化:品牌不再用 emoji 圖示,一律純文字
     soul: b.soul || '', adStyle: b.adStyle || '', hashtags: b.hashtags || '',
     subs: Object.values(prodByBrand[b.id] || {})
