@@ -2414,305 +2414,31 @@ const PRODTYPE_PROMPT = {
 //     ① 零商品 —— 沒有任何一張出現產品盒
 //     ② 暖裸色系 —— 奶油/裸粉/米白/暖棕/木質,沒有飽和色
 //     ③ 臉部真實 —— 不磨皮成假人,毛孔睫毛細節保留
-const BEAUTY_BASE = `\n- Warm nude palette ONLY: cream, nude pink, off-white, warm brown, natural wood. NO saturated colors, NO neon, NO primary red/blue/green\n- Skin must stay real: keep pores, fine hairs, natural texture. NOT airbrushed into a mannequin\n- ZERO merchandise in frame: no box, no bottle, no tube, no jar, no retail packaging, no branded container`;
 
-const BEAUTY_LAYOUTS = {
-  result_closeup: {
-    label: '成果特寫型',
-    desc: '眼睛/指甲滿版,乾淨無場景',
-    composition: `Extreme close-up of the finished service result, filling 80-90% of the frame:
-- The treated area (eye with lashes, hand with nails, hair, skin) is the entire subject
-- Plain seamless backdrop in a warm nude tone, no scene, no props, no furniture
-- Soft diffused frontal light, minimal shadow, macro-lens clarity on texture detail
-- Composition is calm and clinical-clean without feeling medical${BEAUTY_BASE}`
-  },
-  multi_angle_grid: {
-    label: '多格對照型',
-    desc: '同部位多角度直式堆疊 + 底部小字署名',
-    composition: `Vertical stacked grid of the SAME treated area from 2-4 different angles:
-- Equal-height horizontal bands stacked top to bottom, thin light gutters between
-- Each band shows the same result from a different angle or distance
-- Bottom strip: small delicate signature text (studio name / artist name), tiny type, generous margin
-- Consistent lighting and color across every band so they read as one set${BEAUTY_BASE}`
-  },
-  in_session: {
-    label: '施作現場型',
-    desc: '師傅工作中、環形燈、客人躺著 —— 信任感來源',
-    composition: `Documentary shot of the service being PERFORMED, not the finished result:
-- The technician is mid-work: hands with tweezers/brush/tool close to the client
-- Client reclining on a treatment bed, eyes closed, relaxed
-- Ring light or soft overhead lamp visible in frame as part of the environment
-- Studio surroundings only suggested through shallow depth of field — softly blurred, never itemised
-- ⛔ Do NOT populate the background with a checklist of props; whatever appears must be plausibly part of THIS studio and must stay out of focus
-- Feels observed and unposed, like a behind-the-scenes frame
-- ★ This layout intentionally does NOT showcase the result — it sells trust and craft${BEAUTY_BASE}`
-  },
-  model_editorial: {
-    label: '模特情境型',
-    desc: '完妝人像 + 花/道具,時尚寫真',
-    composition: `Fashion-editorial portrait where the service result is worn by a styled model:
-- Half or three-quarter body portrait, styled hair and complete makeup
-- Styling supported by soft natural materials and organic textures, chosen sparingly — at most one supporting element, never a styled arrangement
-- ⛔ Do NOT assemble a prop collection; a cluttered flat-lay of decorative objects breaks the editorial mood
-- Editorial lighting with gentle falloff, shallow depth of field
-- Poised magazine-portrait mood, elegant rather than commercial${BEAUTY_BASE}`
-  },
-  mirror_selfie: {
-    label: '自拍風型',
-    desc: '客人鏡子自拍,刻意不精緻',
-    composition: `Casual client-style mirror selfie, deliberately unpolished:
-- Phone visible in hand or reflected in the mirror
-- Slightly imperfect framing and a natural handheld tilt
-- Ordinary indoor lighting, no studio setup, mild everyday grain
-- Feels like a real customer posting to their own story, NOT a brand campaign
-- ⛔ Do NOT over-retouch or add professional lighting — the roughness is the point${BEAUTY_BASE}`
-  },
-  question_headline: {
-    label: '問句大字型',
-    desc: '一半色塊放標題(「接睫毛後真的不能碰水嗎?」)',
-    composition: `Split composition, knowledge/FAQ post format:
-- One half (left or top) is a solid warm nude color block holding a large question headline in Traditional Chinese
-- The other half is the photo of the treated area or the studio
-- Headline is the dominant visual element, generous letter spacing, clear hierarchy
-- Optional small sub-line under the headline, and a tiny studio signature in a corner
-- ★ The flat color block is intentional design, NOT empty unfinished space${BEAUTY_BASE}`
-  },
-  booking_info: {
-    label: '預約資訊型',
-    desc: '價目 / 本月空檔 / 預約方式',
-    composition: `Information card layout for booking conversion:
-- Clean structured text block: service items, session length, price range, available slots
-- Neat aligned rows or a simple list, comfortable line spacing, easy to read on a phone
-- Small supporting photo of the studio or a result occupying a minor corner area
-- Bottom: booking channel line (LINE / DM / phone) rendered as small clean text
-- Layout is calm and readable — an information card, not a discount flyer${BEAUTY_BASE}`
-  },
-};
 
 // ── 醫美 / 診所 ──────────────────────────────────────────────────────
 //   ⚠️ 受醫療法約束,與上面美業(化粧品法)完全不同:
 //     · 前後對比照不得用於 FB/IG/LINE/Dcard(僅官網衛教可,有條件)
 //     · 不得出現優惠、折扣、抽獎、贈送、分期(醫療法 61 條)
 //   所以醫美沒有「成果對比」類版型,改以團隊 / 環境 / 衛教建立信任。
-const MEDICAL_BASE = `\n- Calm clinical palette: white, warm grey, soft beige, muted sage. Clean and reassuring, never flashy\n- ⛔ NO price, NO discount, NO percentage off, NO gift, NO countdown, NO promotional badge or sticker anywhere\n- ⛔ NO before/after split, NO comparison arrow, NO result-guarantee visual language\n- Lighting even and honest; no dramatic beauty retouching that implies a guaranteed outcome`;
 
-const MEDICAL_LAYOUTS = {
-  med_doctor_portrait: {
-    label: '醫師形象型',
-    desc: '醫師個人形象照,白袍 / 診間背景',
-    composition: `Professional physician portrait:
-- Doctor in clean medical attire, upper body, calm confident posture
-- Background is the real clinic environment softly out of focus, or a plain neutral wall
-- Even trustworthy lighting, natural expression, direct or slight-angle gaze
-- Space reserved for name and specialty as small clean typography${MEDICAL_BASE}`
-  },
-  med_facility: {
-    label: '診所環境型',
-    desc: '診間 / 儀器 / 候診區實景',
-    composition: `Clinic interior showcase:
-- Wide or mid shot of a real treatment room, consultation room or waiting area
-- Equipment present but understated, clean surfaces, orderly arrangement
-- Natural or soft even lighting, sense of hygiene and calm
-- No people, or staff in the far background out of focus${MEDICAL_BASE}`
-  },
-  med_team: {
-    label: '醫療團隊型',
-    desc: '醫療團隊合影,建立規模與信任',
-    composition: `Medical team group portrait:
-- 3-8 staff members arranged in a natural balanced group, clinic interior behind
-- Uniform or coordinated attire, relaxed professional expressions
-- Even lighting across all faces, no single dominant hero figure
-- Lower area left clear for clinic name typography${MEDICAL_BASE}`
-  },
-  med_education: {
-    label: '衛教說明型',
-    desc: '知識性大字 + 說明,不談療效',
-    composition: `Health-education information post:
-- Large clear headline in Traditional Chinese occupying the upper third, stated as neutral information or a question
-- Body area with 2-4 short explanatory lines in clean readable type
-- Supporting visual is abstract or environmental (clinic detail, soft gradient, simple diagram shape), NOT a treated body part
-- ⛔ Do NOT render any efficacy claim, success rate, number of cases or guarantee wording${MEDICAL_BASE}`
-  },
-  med_consult: {
-    label: '諮詢情境型',
-    desc: '醫師與客人對談,強調術前評估',
-    composition: `Consultation scene:
-- Doctor and client seated across a desk in conversation, mid-shot
-- Documents, tablet or model on the desk as incidental props
-- Warm even indoor lighting, both figures relaxed and engaged
-- Emphasis on communication and assessment, not on any procedure${MEDICAL_BASE}`
-  },
-};
 
 // ── 機台與加工件 ────────────────────────────────────────────────────
 //   B2B 買家看的是技術可信度,不是漂亮。
 //   最常見的死法是「網站只是線上型錄」—— 只有規格沒有應用場景與實績。
-const EQUIP_BASE = `\n- Cool industrial palette: cool white, silver, graphite, steel blue. NO warm lifestyle tones, NO cozy domestic feel\n- Surfaces must read as measurable and precise: crisp edges, accurate geometry, honest material finish\n- ⛔ NO retail box, NO consumer packaging, NO branded merchandise container`;
 
-const EQUIP_LAYOUTS = {
-  eq_machine_full: {
-    label: '機台全貌型',
-    desc: '乾淨背景、完整機身,型錄主圖',
-    composition: `Full machine catalog shot:
-- The complete machine centered, shown three-quarter or straight-on, entire body within frame
-- Seamless clean backdrop, cool neutral tone, subtle floor shadow for grounding
-- Even industrial lighting revealing panel lines, controls and structure without glare
-- Generous margin around the machine so it can be cropped for catalog use${EQUIP_BASE}`
-  },
-  eq_part_macro: {
-    label: '加工件特寫型',
-    desc: '成品零件的表面 / 精度細節 —— 實力證明',
-    composition: `Macro shot of the machined component:
-- Extreme close-up on the finished part: surface finish, tool marks, chamfers, threads, tolerance detail
-- Raking directional light to reveal micro-texture and machining quality
-- Dark or cool neutral background so the metal separates cleanly
-- ★ This layout is the proof of capability — detail fidelity matters more than composition beauty${EQUIP_BASE}`
-  },
-  eq_application: {
-    label: '應用場景型',
-    desc: '這台機器用在哪個產業',
-    composition: `Application context layout:
-- The equipment or the part shown within its end-use industry setting (aerospace, medical device, automotive, electronics)
-- Environmental context visible: assembly area, inspection bench, production line
-- Wide or mid shot establishing where this capability fits in a supply chain
-- Space reserved for a short application caption in clean sans-serif type${EQUIP_BASE}`
-  },
-  eq_factory_floor: {
-    label: '產線現場型',
-    desc: '廠房實景、機台在運轉',
-    composition: `Factory floor documentary shot:
-- Real production environment: rows of machines, overhead lighting, operator at a distance
-- Sense of scale and operational capacity, slight atmospheric depth
-- Honest industrial lighting, no staged glamour
-- Conveys manufacturing capacity and organization${EQUIP_BASE}`
-  },
-  eq_spec_hero: {
-    label: '規格數字型',
-    desc: '精度 / 行程 / 轉速當視覺主體',
-    composition: `Specification-led layout:
-- One or two key technical figures rendered very large as the dominant visual (e.g. tolerance, spindle speed, travel range)
-- The machine or part appears smaller as supporting imagery beside or behind the numbers
-- Thin precise typography, technical grid alignment, generous negative space
-- Small unit labels and a short spec row along the bottom${EQUIP_BASE}`
-  },
-  eq_exhibition: {
-    label: '展場形象型',
-    desc: '展會攤位風格,適合 DM 與名片背板',
-    composition: `Trade-show presentation layout:
-- The machine presented as a booth hero with a clean backdrop wall behind
-- Directional spotlighting from above and side, slight dramatic contrast
-- Upper or side area reserved for company name and product series typography
-- Polished and confident, still strictly industrial in palette${EQUIP_BASE}`
-  },
-};
 
 // ── 螢幕畫面 ────────────────────────────────────────────────────────
 //   2026 共識:主視覺就是真實產品截圖,不是插畫、不是形象照。
 //   多裝置扇形排列、飄浮螢幕加光線 = 2015 年得獎、2026 年殺轉換率。
 //   ★ 我們的任務是「把客戶的真截圖放進漂亮外框」,不是生一張假介面。
-const SCREEN_BASE = `\n- ★ The screen content comes from the source image and MUST be reproduced faithfully — never imagined, redesigned or invented\n- Keep the screen legible, undistorted, correctly proportioned, free of moiré and glare\n- ⛔ NO fanned multi-device arrangements, NO floating screens with light rays, NO 2015-era marketing composites\n- ⛔ NO boxed software, NO physical retail package`;
 
-const SCREEN_LAYOUTS = {
-  sc_browser_hero: {
-    label: '瀏覽器主圖型',
-    desc: '單一大截圖放瀏覽器外框(最百搭)',
-    composition: `Single hero screenshot in a browser frame:
-- One clean modern browser window, centered, occupying most of the frame
-- Show the canvas / main working area, minimize visible chrome
-- Flat or subtle gradient background, tone matched to the interface's dominant color
-- ⛔ No annotations, no callout arrows, no marketing copy drawn onto the screenshot itself${SCREEN_BASE}`
-  },
-  sc_laptop_frame: {
-    label: '筆電外框型',
-    desc: '截圖放 MacBook 外框 + 漸層背景',
-    composition: `Laptop mockup presentation:
-- Modern laptop frame straight-on or very slightly angled, screen filling the display area
-- Traffic-light window buttons top-left with even spacing; dock hidden
-- Clean gradient background, tone matched to the dashboard's dominant color
-- Soft contact shadow beneath the device${SCREEN_BASE}`
-  },
-  sc_phone_angle: {
-    label: '手機傾斜型',
-    desc: '手機外框傾斜 10-15 度,顯得有動態',
-    composition: `Mobile app mockup:
-- Current-generation phone frame rotated 10-15 degrees, never dead-on flat
-- Show the most-used screen of the app, NOT the onboarding or login screen
-- Soft depth shadow, clean background, slight perspective
-- Angled framing implies motion and real use rather than a spec sheet${SCREEN_BASE}`
-  },
-  sc_code_split: {
-    label: '大字 + 截圖型',
-    desc: '工具型產品:小截圖 + 強力標題',
-    composition: `Typographic-led split for utility products:
-- Strong large headline occupying one side of the frame
-- A smaller terminal, console or output screenshot beside it as supporting evidence
-- Monospace detail where appropriate, tight technical alignment
-- ★ Here the screenshot supports the headline — it is not the hero${SCREEN_BASE}`
-  },
-  sc_feature_tile: {
-    label: '功能區塊型',
-    desc: '截圖局部放大 + 一句功能說明',
-    composition: `Feature tile layout:
-- A cropped region of the interface enlarged to highlight one specific feature
-- Short feature title and a single explanatory line placed beside or below
-- Soft rounded container with a light border, generous padding
-- One idea per frame, calm and uncluttered${SCREEN_BASE}`
-  },
-};
 
 // ── 專業形象 ────────────────────────────────────────────────────────
 //   ⚠️ 律師受「律師推展業務規範」約束:
 //     · 廣告應表明律師姓名、事務所名稱、地址、電話
 //     · 不得誇大不實(不得出現勝訴率 / 保證 / 最強之類)
-const PRO_BASE = `\n- Restrained professional palette: charcoal, navy, warm grey, deep wood, cream. No flashy accent colors\n- Lighting clean and trustworthy; posture conveys competence and calm authority, not sales energy\n- ⛔ NO invented law article number, case number, statutory deadline, medical claim, efficacy figure or technical specification\n- ⛔ NO win-rate, NO success percentage, NO "guaranteed", NO "No.1", NO superlative claim of any kind`;
 
-const PRO_LAYOUTS = {
-  pr_portrait: {
-    label: '個人形象型',
-    desc: '正裝人像,辦公室 / 書牆背景',
-    composition: `Professional individual portrait:
-- Upper body, formal attire, composed confident posture
-- Background is the real office, a bookshelf wall, or a plain neutral backdrop softly defocused
-- Even flattering light with gentle modelling, no harsh shadow
-- Space reserved beside or below the figure for name and title typography${PRO_BASE}`
-  },
-  pr_team: {
-    label: '事務所團隊型',
-    desc: '事務所 / 診所團隊合影',
-    composition: `Firm team portrait:
-- 3-8 professionals in a balanced arrangement, office interior behind
-- Coordinated formal attire, relaxed but composed expressions
-- Even lighting across every face, no single dominant figure
-- Lower band left clear for the firm name${PRO_BASE}`
-  },
-  pr_office: {
-    label: '空間形象型',
-    desc: '事務所 / 診所空間實景',
-    composition: `Office environment shot:
-- Wide or mid shot of the reception, meeting room or consultation room
-- Orderly surfaces, quality materials, considered furniture
-- Natural window light where possible, calm and substantial atmosphere
-- No people, or a figure small and out of focus in the distance${PRO_BASE}`
-  },
-  pr_namecard: {
-    label: '名片資訊型',
-    desc: '姓名職稱 + 法定聯絡要素(律師必用)',
-    composition: `Name-card style information layout:
-- Portrait or firm mark occupying one side, information block on the other
-- Information block renders, as clean legible text: full name, professional title, firm name, office address, phone number
-- ★ All four elements (name / firm / address / phone) must be present — this is a regulatory requirement for legal advertising in Taiwan
-- Restrained typographic hierarchy, generous margins, business-card discipline${PRO_BASE}`
-  },
-  pr_viewpoint: {
-    label: '專業觀點型',
-    desc: '一句觀點大字 + 人像,不談個案',
-    composition: `Professional viewpoint post:
-- A single short statement or question in large Traditional Chinese type dominating the frame
-- The professional's portrait occupying a smaller side or corner area
-- Solid or subtly textured background block behind the text
-- ⛔ Statement must stay general — no specific case, no client detail, no outcome promise${PRO_BASE}`
-  },
-};
 
 // ── 商品實拍(舊有 10 種,一字未改)──────────────────────────────────
 const PHYSICAL_LAYOUT_KEYS = [
@@ -2721,6 +2447,735 @@ const PHYSICAL_LAYOUT_KEYS = [
 ];
 
 // ★ 把行業版型併進主表,讓 LAYOUT_TEMPLATES[key] 一律查得到
+// ═══════════════════════════════════════════════════════════════════════
+// 🔧 2026-08-19 版型升級 —— 補齊「商品實拍」等級的規格
+//
+//   病灶:第一版的行業版型只寫了「拍什麼」(誰在畫面裡、做什麼),
+//   沒寫「拍多好」。而「商品實拍」那十個從一開始就有九樣東西:
+//     ① 主體佔畫面比例(40-55% 這種具體數字)
+//     ② 留白比例(50%+ / 35-45%)
+//     ③ 文字階層與各自位置(大標 / kicker / 副標 / 內文 / 標籤)
+//     ④ 品牌 logo 位置
+//     ⑤ 相機角度(45 度俯角)
+//     ⑥ 光線方向與色溫(左上窗光 4000-5000K)
+//     ⑦ 景深(淺景深 + bokeh)
+//     ⑧ 背景處理
+//     ⑨ Reference aesthetic(對標視覺標竿)
+//   → 少了這九樣,② 設計風格選「無」時整張圖沒有任何攝影指令,
+//     AI 只能給平均值。這就是「只有 30% 功力」的真正原因。
+//
+//   ★ 相機一律沿用既有常數 CAM_DEFAULT / CAM_PORTRAIT / CAM_MACRO,
+//     不另外發明一套,否則會與 ② 設計風格層打架。
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── 美業(非醫療)──────────────────────────────────────────────────
+const BEAUTY_BASE = `
+- Warm nude palette ONLY: cream, nude pink, off-white, warm brown, natural wood. NO saturated colors, NO neon, NO primary red/blue/green
+- Skin must stay real: keep pores, fine hairs, natural texture. NOT airbrushed into a mannequin
+- ZERO merchandise in frame: no box, no bottle, no tube, no jar, no retail packaging, no branded container`;
+
+const BEAUTY_LAYOUTS = {
+  result_closeup: {
+    label: '成果特寫型',
+    desc: '眼睛/指甲滿版,乾淨無場景',
+    composition: `Extreme close-up of the finished service result:
+- Treated area occupies 75-85% of the canvas, placed slightly off-centre on a thirds line
+- Negative space 15-25%, all of it on one side — never a symmetrical border
+- Plain seamless backdrop in a warm nude tone, no scene, no props, no furniture
+- Optional single line of small caption type along the quiet edge; brand signature tiny at one bottom corner
+- Soft diffused frontal light plus a subtle top fill, 4500-5000K, minimal shadow
+- Shallow depth of field so the treated area is critically sharp and the backdrop falls off cleanly
+- ${CAM_MACRO} f/4, macro clarity on lash fibres or nail surface texture
+Reference aesthetic: Aesop product detail photography, Japanese beauty editorial close-ups, Muji catalogue macro${BEAUTY_BASE}`
+  },
+
+  multi_angle_grid: {
+    label: '多格對照型',
+    desc: '同部位多角度直式堆疊 + 底部小字署名',
+    composition: `Vertical stacked grid of the SAME treated area from different angles:
+- 2-4 equal-height horizontal bands, each band 22-30% of canvas height
+- Thin consistent light gutters between bands, 1-2% of canvas width
+- Bottom strip 8-12% of canvas: small delicate signature type (studio or artist name), generous margin, left- or right-aligned never centred
+- Identical soft diffused frontal lighting at 4500-5000K across every band, same white balance and colour treatment so they read as one set
+- Shallow depth in each band with the treated area critically sharp
+- Each band shot at the same distance with only the angle changing
+- ${CAM_MACRO} f/4, consistent exposure across all frames
+Reference aesthetic: Japanese nail salon lookbooks, Kinfolk multi-panel spreads, Muji product angle sheets${BEAUTY_BASE}`
+  },
+
+  in_session: {
+    label: '施作現場型',
+    desc: '師傅工作中、環形燈、客人躺著 —— 信任感來源',
+    composition: `Documentary shot of the service being PERFORMED, not the finished result:
+- Technician and client together occupy 60-70% of the canvas; the working hands sit on a thirds intersection
+- Client reclining, eyes closed, relaxed; technician mid-work with tool in hand
+- Ring light or soft overhead lamp visible in frame as part of the environment, creating a soft catchlight
+- Studio surroundings only suggested through shallow depth of field — softly blurred, never itemised
+- ⛔ Do NOT populate the background with a checklist of props; whatever appears must plausibly belong to THIS studio and must stay out of focus
+- Text, if any, overlaid directly on the image in a quiet low-detail area with a soft dark scrim for legibility — do NOT split the canvas into a colour block
+- Warm 4000-4500K key from the ring light, gentle ambient fill, natural falloff
+- ${CAM_DEFAULT} f/2.8, shallow depth isolating the hands
+- ★ This layout sells trust and craft — it intentionally does NOT showcase the result
+Reference aesthetic: Aesop store documentary photography, Kinfolk artisan features, behind-the-scenes editorial${BEAUTY_BASE}`
+  },
+
+  model_editorial: {
+    label: '模特情境型',
+    desc: '完妝人像 + 質感材質,時尚寫真',
+    composition: `Fashion-editorial portrait wearing the service result:
+- Half or three-quarter body, subject occupying 45-60% of canvas, placed off-centre with the gaze leading into the empty side
+- Negative space 35-45%, reserved for a serif display headline in the upper third and a short caption line beneath
+- Styling supported by soft natural materials and organic textures, chosen sparingly — at most one supporting element, never a styled arrangement
+- ⛔ Do NOT assemble a prop collection; a cluttered flat-lay of decorative objects breaks the editorial mood
+- Editorial side light with gentle falloff, 4500K, soft shadow on the shaded cheek
+- Shallow depth of field, background reading as a soft nude wash
+- ${CAM_PORTRAIT} f/2, creamy separation
+Reference aesthetic: &Premium beauty pages, Aesop campaign portraits, Japanese lifestyle magazine covers${BEAUTY_BASE}`
+  },
+
+  mirror_selfie: {
+    label: '自拍風型',
+    desc: '客人鏡子自拍,刻意不精緻',
+    composition: `Casual client-style mirror selfie, deliberately unpolished:
+- Subject fills 60-75% of the canvas, framing slightly off, natural handheld tilt of 3-8 degrees
+- Phone visible in hand or reflected in the mirror
+- Ordinary indoor lighting at mixed 3000-5000K colour temperature, mild everyday grain — NOT a studio setup
+- ${CAM_DEFAULT} f/2.2, phone-like rendering
+- No reserved text area: any caption sits casually over the image like a story sticker would
+- Deeper focus than an editorial shot, everything reasonably sharp, no creamy bokeh
+- ⛔ Do NOT over-retouch, do NOT add professional lighting, do NOT clean up the background — the roughness is the point
+- Feels like a real customer posting to their own story, NOT a brand campaign
+Reference aesthetic: real Instagram story screenshots, unedited user-generated content${BEAUTY_BASE}`
+  },
+
+  question_headline: {
+    label: '問句大字型',
+    desc: '一半色塊放標題(「接睫毛後真的不能碰水嗎?」)',
+    composition: `Split composition, knowledge/FAQ post format:
+- One half of the canvas (left or top, 45-55%) is a solid warm nude colour block holding a large question headline in Traditional Chinese
+- Headline set in 2-3 lines maximum, generous letter spacing, aligned left or right — never centred
+- Optional small sub-line directly beneath the headline at roughly a third of its size
+- The other half is the photograph of the treated area or the studio, filling its half edge to edge
+- Tiny studio signature in the outer corner of the colour block
+- Photograph lit with soft even diffused light at 4500-5000K so it reads as a calm backdrop rather than competing with the type
+- Moderate depth keeping the photographic half readable throughout
+- ${CAM_MACRO} f/4 on the photographic half
+- ★ The flat colour block is intentional design, NOT empty unfinished space
+Reference aesthetic: Japanese pharmacy educational posters, Muji information signage, editorial FAQ spreads${BEAUTY_BASE}`
+  },
+
+  booking_info: {
+    label: '預約資訊型',
+    desc: '服務項目與預約管道(不編造價格時間)',
+    composition: `Information card layout for booking conversion:
+- Structured text block occupying 55-65% of the canvas: service items in a neat aligned list, comfortable line spacing, phone-readable sizing
+- Supporting photograph of the studio or a result occupying a minor 25-35% area at one corner or along one edge
+- Bottom band 10-15%: booking channel line rendered as small clean text
+- Left-aligned typographic grid, clear hierarchy of three levels only
+- ⛔ Do NOT invent prices, session lengths, available slots or phone numbers — leave those areas as clean readable space for the client to fill
+- Photograph lit evenly with soft diffused daylight at 5000K, low contrast so text stays dominant
+- Deep focus keeping the supporting image fully readable
+- ${CAM_DEFAULT} f/4
+- Layout is calm and readable — an information card, not a discount flyer
+Reference aesthetic: Muji in-store service cards, Japanese clinic information posters${BEAUTY_BASE}`
+  },
+};
+// ── 醫美 / 診所 ──────────────────────────────────────────────────────
+const MEDICAL_BASE = `
+- Calm clinical palette: white, warm grey, soft beige, muted sage. Clean and reassuring, never flashy
+- ⛔ NO price, NO discount, NO percentage off, NO gift, NO countdown, NO promotional badge or sticker anywhere
+- ⛔ NO before/after split, NO comparison arrow, NO result-guarantee visual language
+- Lighting even and honest; no dramatic beauty retouching that implies a guaranteed outcome`;
+
+const MEDICAL_LAYOUTS = {
+  med_doctor_portrait: {
+    label: '醫師形象型',
+    desc: '醫師個人形象照,白袍 / 診間背景',
+    composition: `Professional physician portrait:
+- Doctor occupies 40-55% of canvas, upper body, positioned on a thirds line with the open side ahead of the gaze
+- Negative space 35-45%: name and specialty set in two clean lines in the upper or lower third of that space
+- Background is the real clinic softly out of focus, or a plain neutral wall at 20-30% brightness above mid-grey
+- Even broad key light from 45 degrees with a soft fill, 5000K, no hard shadow on the face
+- Shallow but controlled depth: eyes critically sharp, background a smooth wash
+- ${CAM_PORTRAIT} f/2.8
+Reference aesthetic: Japanese clinic brand photography, corporate annual-report portraiture${MEDICAL_BASE}`
+  },
+
+  med_facility: {
+    label: '診所環境型',
+    desc: '診間 / 儀器 / 候診區實景',
+    composition: `Clinic interior showcase:
+- Wide shot with a single-point or two-point perspective, room filling 85-95% of canvas
+- Horizon line placed at roughly one third, verticals kept perfectly straight
+- Equipment present but understated, surfaces clean, arrangement orderly
+- Reserved quiet area of 15-20% at the top or along one wall for a short caption line
+- Soft even daylight-balanced illumination 5000K, no harsh pools or hotspots
+- Deep focus so the whole room reads sharp
+- ${CAM_DEFAULT} f/8
+Reference aesthetic: Japanese architectural interior photography, minimal clinic brand sites${MEDICAL_BASE}`
+  },
+
+  med_team: {
+    label: '醫療團隊型',
+    desc: '醫療團隊合影,建立規模與信任',
+    composition: `Medical team group portrait:
+- 3-8 staff in a balanced staggered arrangement occupying 55-70% of canvas width, every face fully visible
+- Lower band 15-20% left clear for the clinic name in restrained type
+- Clinic interior behind, softly defocused but still readable as a real place
+- Broad even lighting across all faces, 5000K, no single dominant highlight
+- Moderate depth of field so every person stays sharp
+- ${CAM_DEFAULT} f/5.6
+Reference aesthetic: Japanese hospital brand books, professional firm group portraits${MEDICAL_BASE}`
+  },
+
+  med_consult: {
+    label: '諮詢情境型',
+    desc: '醫師與客人對談,強調術前評估',
+    composition: `Consultation scene:
+- Doctor and client seated across a desk, the pair occupying 60-70% of canvas, shot slightly off-axis rather than square-on
+- Desk surface in the lower third with documents or a tablet as incidental props only
+- Reserved quiet area 20-25% for a short caption
+- Warm even indoor lighting 4500K from a window direction, both faces evenly lit
+- Moderate depth keeping both figures readable, background gently soft
+- ${CAM_DEFAULT} f/4
+- Emphasis on communication and assessment, never on a procedure
+Reference aesthetic: Japanese medical brand photography, calm documentary consultation imagery${MEDICAL_BASE}`
+  },
+
+  med_education: {
+    label: '衛教說明型',
+    desc: '知識性大字 + 說明,不談療效',
+    composition: `Health-education information post:
+- Large clear headline in Traditional Chinese occupying the upper third, 2 lines maximum, left-aligned
+- Body area with 2-4 short explanatory lines at roughly a third of headline size, set in a narrow column
+- Supporting visual is abstract or environmental (clinic detail, soft gradient, simple geometric shape) occupying 30-40% at one side or the lower area — NOT a treated body part
+- Negative space 30-40%, deliberate and even
+- Flat even daylight-balanced illumination at 5000K on any photographic element so type stays dominant
+- Deep focus, everything evenly sharp
+- ${CAM_DEFAULT} f/5.6
+- ⛔ Do NOT render any efficacy claim, success rate, number of cases or guarantee wording
+Reference aesthetic: Japanese public-health posters, Muji information design${MEDICAL_BASE}`
+  },
+};
+
+// ── 課程與體驗 ────────────────────────────────────────────────────────
+const COURSE_BASE = `
+- Natural unforced atmosphere throughout — honest and lived-in, never a staged stock-photo look. Where people appear, they show real effort and real posture, not rehearsed smiles
+- ⛔ Do NOT render any course name, schedule, date, time, price or enrolment figure — these are the client's to fill in, and invented ones mislead students
+- ⛔ Do NOT invent certification logos, association marks or accreditation badges`;
+
+const COURSE_LAYOUTS = {
+  in_class: {
+    label: '上課現場型',
+    desc: '老師帶動作、學員在練 —— 信任感來源',
+    composition: `Documentary shot of a class in progress, FULL-BLEED:
+- The scene fills the entire canvas edge to edge — this is a reportage frame, do NOT split the canvas into a colour block or crop the photo into a floating card
+- Instructor actively teaching, placed on a thirds intersection, occupying 25-35% of frame height
+- Several students visible behind or beside at genuinely different stages of the movement, receding into depth
+- Any headline sits directly ON the image in the calmest low-detail region, with a soft gradient scrim behind it for legibility; keep it clear of the top and bottom 12% so it survives feed cropping
+- Real studio lighting: large window key from one side at 4500-5000K, wooden floor bouncing warm fill, visible falloff into the room
+- ${CAM_DEFAULT} f/2.8, mid-wide framing, shallow enough to separate the instructor from the room
+- ⛔ Do NOT add decorative illustration, botanical line art, drawn motifs or paper textures — this is a photograph, not a poster
+- ★ Sells trust and teaching quality, NOT a perfect final pose
+Reference aesthetic: lululemon and Alo Yoga brand documentary imagery, Kinfolk workshop features${COURSE_BASE}`
+  },
+
+  student_practice: {
+    label: '學員練習型',
+    desc: '單人動作特寫,閉眼不看鏡頭',
+    composition: `Single practitioner in mid-practice:
+- Figure occupies 50-65% of canvas, placed off-centre with the extension of the movement leading into the open space
+- Negative space 30-40% on the leading side, reserved for a short serif headline in the upper third
+- Eyes closed or gaze following the natural direction of the movement; never staring into the lens
+- Clean uncluttered background: plain wall, floor sweep or soft window wash at low contrast
+- Directional soft key from one side at 4500K modelling the body line, gentle rim on the shoulder
+- Shallow depth isolating the figure from the background
+- ${CAM_PORTRAIT} f/2.5
+- NOT the most extreme variation — a well-extended, readable line photographs better
+Reference aesthetic: Alo Yoga campaign stills, Japanese wellness editorial${COURSE_BASE}`
+  },
+
+  outdoor_class: {
+    label: '戶外課程型',
+    desc: '自然環境 / 逆光,適合戶外與體驗活動',
+    composition: `Outdoor practice, FULL-BLEED, using one of two proven compositions:
+- Either: surrounding trees or terrain framing and enclosing the figure, nature acting as a natural border, figure at 20-30% of frame height
+- Or: strong backlight with the figure overlapping the light source, producing a luminous rim and a quiet elevated mood
+- Environment reads clearly; the practitioner remains the unmistakable focal point on a thirds intersection
+- Any text overlaid on the sky or an open low-detail area, clear of the top and bottom 12%
+- Golden-hour or soft-overcast natural daylight 5000-5600K, honest colour, visible atmospheric depth
+- ${CAM_DEFAULT} f/4, wide enough to establish place
+- ⛔ No studio look, no added decorative graphics
+Reference aesthetic: outdoor yoga campaign photography, Patagonia and Snow Peak brand imagery${COURSE_BASE}`
+  },
+
+  group_photo: {
+    label: '團體合照型',
+    desc: '強調人數與氣氛,避免拍起來沒幾個人',
+    composition: `Group portrait of a full class:
+- Shoot from slightly above and fill 70-85% of the canvas with people — the most common failure is a large class that looks sparse
+- Staggered rows or a curved formation so every face is visible, nobody hidden behind another
+- Lower band 12-18% left clear for the studio name in restrained type
+- Relaxed genuine expressions with natural variety of posture, never a rigid line-up
+- Broad even lighting across the entire group 5000K, venue visible behind and readable
+- Moderate depth so every face stays sharp
+- ${CAM_DEFAULT} f/5.6
+Reference aesthetic: Japanese school and workshop commemorative photography${COURSE_BASE}`
+  },
+
+  instructor_intro: {
+    label: '師資介紹型',
+    desc: '老師個人形象,建立專業',
+    composition: `Instructor portrait:
+- Teacher occupies 40-55% of canvas, mid or upper body, on a thirds line
+- Negative space 35-45% reserved: name in a display face on one line, title beneath at a third of that size
+- Teaching environment behind, softly defocused so the person stays dominant
+- Soft window key at 45 degrees, 4500K, gentle fill, natural catchlight in the eyes
+- Shallow depth, background a smooth wash
+- ${CAM_PORTRAIT} f/2.8
+- Confident approachable expression, posture suggesting capability rather than performance
+Reference aesthetic: lululemon ambassador portraits, Japanese studio profile photography${COURSE_BASE}`
+  },
+
+  studio_space: {
+    label: '空間環境型',
+    desc: '教室 / 場地實景,無人',
+    composition: `Empty practice space:
+- Wide interior filling 85-95% of canvas, single-point or two-point perspective, verticals kept straight
+- Nobody in frame, or a single figure far away and out of focus
+- Flooring leading into the room, natural light source visible or implied
+- Reserved quiet area 15-20% along the top or one wall for a short caption
+- Natural window light 5000K, honest colour, no heavy grading, gentle falloff into corners
+- Deep focus so the whole room reads sharp
+- ${CAM_DEFAULT} f/8
+Reference aesthetic: Japanese architectural interiors, Muji store photography, Kinfolk spaces${COURSE_BASE}`
+  },
+};
+// ── 命理與玄學 ────────────────────────────────────────────────────────
+const MYSTIC_BASE = `
+- Muted contemplative palette: deep indigo, warm amber, aged paper tones, brass, dark wood. Light is low, warm and directional
+- ⛔ Do NOT assemble a props collection; whatever appears must plausibly belong to THIS practitioner's own table
+- ⛔ Do NOT render any guarantee or certainty claim: 保證 / 必準 / 百分百 / 一定 / 神準 / 改運 / 化解災厄 / 消業障
+- ⛔ Do NOT render any medical or health-effect wording: 治療 / 改善失眠 / 調整體質 / 化解病氣
+- ⛔ Do NOT depict religious deity statues, temple altars or objects of active worship`;
+
+const MYSTIC_LAYOUTS = {
+  reading_session: {
+    label: '占卜現場型',
+    desc: '諮詢桌面、雙手與牌陣,不露臉',
+    composition: `Over-the-table reading scene, FULL-BLEED:
+- Shot from directly overhead or at a low 30-degree three-quarter angle; the table surface fills 80-90% of canvas
+- Hands and the spread occupy 35-50%, placed on a thirds intersection, faces cropped out of frame entirely
+- Any caption overlaid on an empty region of the cloth, clear of the top and bottom 12%
+- Single warm low-key source from one side at 3000-3500K, falling across the table and dying into shadow at the far edge
+- Shallow depth: the near cards critically sharp, the far edge softly falling away
+- ${CAM_MACRO} f/2.8
+- Intimate and unhurried, the feeling of a private consultation
+Reference aesthetic: Kinfolk still-life features, Japanese craft documentary photography${MYSTIC_BASE}`
+  },
+
+  tool_closeup: {
+    label: '器物特寫型',
+    desc: '牌 / 盤 / 石的質感特寫',
+    composition: `Macro study of the practitioner's own instruments:
+- Object occupies 60-75% of canvas, placed off-centre with negative space falling on one side
+- Extreme close-up on the tools as supplied — card edges, printed surfaces, metal rims, stone facets
+- Dark uncluttered background at 10-20% brightness so the object separates completely
+- Raking light from one side at 3000K revealing texture: paper grain, engraved lines, mineral clarity
+- Very shallow depth, one plane critically sharp and the rest falling into softness
+- ${CAM_MACRO} f/2.8
+- ⛔ Reproduce the objects as supplied; do NOT invent card artwork, symbols, glyphs or inscriptions
+Reference aesthetic: luxury watch macro photography, Aesop material detail shots${MYSTIC_BASE}`
+  },
+
+  master_portrait: {
+    label: '老師形象型',
+    desc: '命理師人像,沉穩不神化',
+    composition: `Practitioner portrait:
+- Subject occupies 40-55% of canvas, seated or standing at the consultation space, on a thirds line
+- Negative space 35-45% reserved for name and discipline in small restrained typography
+- Working environment softly present behind — shelving, table surface, warm lamp — all defocused
+- Gentle low-contrast key from one side at 3500-4000K, soft shadow retained on the shaded cheek
+- Shallow depth, background a warm dark wash
+- ${CAM_PORTRAIT} f/2.8
+- Grounded and credible, never theatrical or supernatural
+Reference aesthetic: Japanese craftsman portrait series, editorial profile photography${MYSTIC_BASE}`
+  },
+
+  mystic_space: {
+    label: '空間氛圍型',
+    desc: '諮詢空間實景,營造安心感',
+    composition: `Consultation room interior:
+- Wide interior filling 85-95% of canvas, verticals straight, one warm light source anchoring the composition
+- No people in frame, arrangement calm and orderly
+- Reserved quiet area 15-20% for a short caption line
+- Low ambient level with a single warm source at 3000K creating gentle pools of illumination and deep quiet corners
+- Deep enough focus that the room reads clearly, with the far corners softening naturally
+- ${CAM_DEFAULT} f/5.6
+- Feels private, safe and unrushed — a place to talk, not a shrine
+Reference aesthetic: Japanese ryokan interior photography, moody architectural stills${MYSTIC_BASE}`
+  },
+
+  mystic_headline: {
+    label: '觀點大字型',
+    desc: '一句話大字 + 氛圍背景',
+    composition: `Statement-led composition:
+- A single short line of large Traditional Chinese type occupying the middle band, 1-2 lines maximum, left- or right-aligned never centred
+- Type occupies 25-35% of canvas height with generous letter spacing
+- Background atmospheric and abstract: soft gradient, textured paper, or out-of-focus warm light at low contrast
+- Negative space 45-55%, deliberate and calm
+- Small practitioner signature at one bottom corner
+- Very soft even illumination at 3500-4000K so nothing competes with the type
+- Deep focus across the background wash
+- ${CAM_DEFAULT} f/4
+- ⛔ The statement must stay reflective — no prediction, no promise, no outcome claim
+Reference aesthetic: Japanese poetry posters, minimal editorial type pages${MYSTIC_BASE}`
+  },
+};
+
+// ── 旅遊與行程 ────────────────────────────────────────────────────────
+const TRAVEL_BASE = `
+- ⛔ Do NOT invent or beautify a destination: the place shown must be the real location supplied, not an idealised version
+- ⛔ Do NOT add landmarks, buildings, mountains or coastline that are not in the source image — travel advertising must match the actual itinerary document
+- ⛔ Do NOT render itinerary details, day counts, prices, departure dates or seat availability
+- Natural daylight and honest colour; avoid oversaturated postcard grading that misrepresents the place`;
+
+const TRAVEL_LAYOUTS = {
+  landmark_hero: {
+    label: '地標主圖型',
+    desc: '真實地標滿版 + 地名(Klook 公式)',
+    composition: `Single destination hero, FULL-BLEED vertical-friendly framing:
+- The real landmark fills 85-95% of canvas, shot at its most recognisable angle, horizon on a thirds line
+- Place name set large and clean in the lower third or upper third, clear of the outer 12% so feed cropping cannot cut it
+- Optional small activity-count or category line beneath the place name at a third of its size
+- Soft gradient scrim behind the type where it sits over detail, so the photograph stays visible through it
+- Golden hour or bright soft daylight 5000-5600K, honest colour, crisp atmospheric depth
+- Deep focus, foreground to horizon sharp
+- ${CAM_DEFAULT} f/8
+- ★ One place, one frame — do not collage multiple destinations together
+Reference aesthetic: Klook and Airbnb destination pages, National Geographic Travel covers${TRAVEL_BASE}`
+  },
+
+  itinerary_grid: {
+    label: '行程多格型',
+    desc: '同一趟行程的幾個地點並列',
+    composition: `Multi-panel layout showing several stops from ONE trip:
+- 2-4 equal panels, thin consistent gutters at 1-2% of canvas width
+- Uniform colour treatment, white balance and contrast across all panels so they read as one journey
+- Small clean label area under or over each panel for the place name, same position and size in every panel
+- Each panel composed with its own subject on a thirds line, shot at a comparable distance
+- Consistent daylight 5000-5600K across panels; if the source images differ, harmonise rather than restyle
+- Deep focus in every panel so each location reads clearly
+- ${CAM_DEFAULT} f/8
+- ⛔ Every panel must come from the supplied images — do not fill an empty panel with an invented view
+Reference aesthetic: Klook itinerary cards, Japanese travel magazine spreads${TRAVEL_BASE}`
+  },
+
+  activity_scene: {
+    label: '體驗現場型',
+    desc: '遊客正在體驗的畫面',
+    composition: `Travellers mid-experience, FULL-BLEED:
+- People occupy 30-45% of canvas, placed on a thirds intersection, actively engaged rather than posing
+- Environment clearly readable behind so the location stays identifiable
+- Candid unposed feeling, natural movement, faces showing genuine reaction
+- Any text overlaid on a calm region with a soft scrim, clear of the outer 12%
+- Natural available daylight 5000-5600K, honest colour, slight motion where it reads as life
+- Moderate depth balancing people and place
+- ${CAM_DEFAULT} f/4
+Reference aesthetic: Airbnb Experiences photography, travel documentary reportage${TRAVEL_BASE}`
+  },
+
+  local_food: {
+    label: '在地美食型',
+    desc: '當地飲食特寫',
+    composition: `Local food close-up:
+- Dish occupies 60-75% of canvas, shot from directly overhead or at a low 20-degree table angle
+- Table surface and immediate surroundings visible enough to suggest the real setting where it is eaten
+- Negative space 20-30% on one side for a short caption line
+- Warm natural window light from one side at 4000-4500K, soft shadow giving the food dimension
+- Shallow depth with the nearest edge of the dish critically sharp
+- ${CAM_MACRO} f/2.8, appetising texture without heavy retouching
+- ⛔ Do NOT invent additional dishes, garnishes or table settings not present in the source
+Reference aesthetic: Japanese food magazine photography, Kinfolk table features${TRAVEL_BASE}`
+  },
+
+  accommodation: {
+    label: '住宿空間型',
+    desc: '飯店 / 民宿房間與空間',
+    composition: `Accommodation interior:
+- Wide interior filling 85-95% of canvas, two-point perspective, verticals kept perfectly straight
+- Bed or main feature anchored on a thirds line, window light source visible where possible
+- Reserved quiet area 15-20% for a short caption
+- Balanced ambient exposure 4500-5000K holding both the room interior and the window without blowing out
+- Deep focus, foreground to back wall sharp
+- ${CAM_DEFAULT} f/8
+- ⛔ Reproduce the space faithfully: do NOT add furniture, balconies or amenities that are not in the source image — accommodation advertising must match what the guest actually receives
+- ⛔ ★ Whatever is visible through the window MUST stay exactly as supplied. Do NOT upgrade a car park, wall or alley into a sea view, mountain view or city skyline — a fabricated view is the single most common and most actionable misrepresentation in accommodation advertising
+Reference aesthetic: Japanese ryokan brand photography, high-end hotel interior stills${TRAVEL_BASE}`
+  },
+
+  transport_move: {
+    label: '交通移動型',
+    desc: '列車 / 車窗 / 移動中的旅途感',
+    composition: `Journey-in-motion frame, FULL-BLEED:
+- Window or platform framing the passing view, the opening occupying 45-60% of canvas
+- Traveller present as a small figure or seen from behind, never dominating — the journey is the subject
+- Any text on the calm interior area, clear of the outer 12%
+- Available daylight through the window 5000-5600K with a darker interior giving natural contrast
+- Shallow depth on the interior with natural motion blur in the passing landscape where it reads as movement
+- ${CAM_DEFAULT} f/4
+Reference aesthetic: Japanese railway campaign photography, travel editorial reportage${TRAVEL_BASE}`
+  },
+};
+// ── 機台與加工件 ──────────────────────────────────────────────────────
+const EQUIP_BASE = `
+- Cool industrial palette: cool white, silver, graphite, steel blue. NO warm lifestyle tones, NO cozy domestic feel
+- Surfaces must read as measurable and precise: crisp edges, accurate geometry, honest material finish
+- ⛔ NO retail box, NO consumer packaging, NO branded product container
+- ⛔ Do NOT invent specification numbers, tolerance figures, certification marks or standards logos`;
+
+const EQUIP_LAYOUTS = {
+  eq_machine_full: {
+    label: '機台全貌型',
+    desc: '乾淨背景、完整機身,型錄主圖',
+    composition: `Full machine catalogue shot:
+- Machine occupies 55-70% of canvas, shown three-quarter, entire body within frame with generous margin for catalogue cropping
+- Seamless cool-neutral backdrop, subtle gradient darker at the base, soft contact shadow grounding the machine
+- Negative space 30-40%, one side reserved for model name and a short spec line
+- Broad even industrial key from upper left plus a fill from the right, 5600K, revealing panel lines and controls without glare
+- Deep focus, front edge to rear panel sharp
+- ${CAM_DEFAULT} f/11
+Reference aesthetic: DMG MORI and Fanuc catalogue photography, industrial equipment brand sites${EQUIP_BASE}`
+  },
+
+  eq_part_macro: {
+    label: '加工件特寫型',
+    desc: '成品零件的表面 / 精度細節 —— 實力證明',
+    composition: `Macro shot of the machined component:
+- Part occupies 65-80% of canvas, angled so the machined surface catches the light along its length
+- Dark cool-neutral background at 10-20% brightness so the metal separates cleanly
+- Negative space 20-30% for a short technical caption
+- Raking directional light at a shallow angle, 5600K, revealing micro-texture: tool marks, chamfers, threads, surface finish
+- Very shallow depth with one critical plane sharp — this is the proof of capability, detail fidelity matters more than composition beauty
+- ${CAM_MACRO} f/4
+Reference aesthetic: precision component catalogue macro, watch movement photography${EQUIP_BASE}`
+  },
+
+  eq_application: {
+    label: '應用場景型',
+    desc: '這台機器用在哪個產業',
+    composition: `Application context layout:
+- Equipment or part shown within its end-use industry setting, subject on a thirds intersection at 30-45% of canvas
+- Environmental context visible: assembly area, inspection bench, production line receding into depth
+- Reserved area 20-25% for a short application caption in clean sans-serif
+- Even industrial ambient 5000-5600K with a directional accent on the subject
+- Moderate depth establishing both subject and context
+- ${CAM_DEFAULT} f/5.6
+Reference aesthetic: Siemens and Bosch industrial application photography${EQUIP_BASE}`
+  },
+
+  eq_factory_floor: {
+    label: '產線現場型',
+    desc: '廠房實景、機台在運轉',
+    composition: `Factory floor documentary shot, FULL-BLEED:
+- Wide view filling 90-100% of canvas, rows of machines receding to create depth and a sense of scale, nearest machine occupying 25-35%
+- Operator visible at a distance as a human-scale reference, never the focal subject
+- Any text overlaid on a calm ceiling or floor region, clear of the outer 12%
+- Honest overhead industrial lighting 5000K with slight atmospheric depth, no staged glamour
+- Deep focus, near machine to far wall sharp
+- ${CAM_DEFAULT} f/8
+Reference aesthetic: industrial documentary photography, manufacturing annual reports${EQUIP_BASE}`
+  },
+
+  eq_spec_hero: {
+    label: '規格數字型',
+    desc: '精度 / 行程 / 轉速當視覺主體',
+    composition: `Specification-led layout:
+- One or two key technical figures rendered very large occupying 30-40% of canvas height, thin precise typography, left-aligned on a technical grid
+- Machine or part appears smaller at 20-30% as supporting imagery beside or behind the numbers
+- Small unit labels beside the figures and a short spec row along the bottom band at 10%
+- Negative space 40-50%, generous and deliberate
+- Flat even studio illumination on the product element 5600K so type stays dominant
+- Deep focus, the product element fully sharp
+- ${CAM_DEFAULT} f/8
+Reference aesthetic: German industrial brochures, Braun and Leica specification pages${EQUIP_BASE}`
+  },
+
+  eq_exhibition: {
+    label: '展場形象型',
+    desc: '展會攤位風格,適合 DM 與名片背板',
+    composition: `Trade-show presentation layout:
+- Machine as booth hero occupying 50-65% of canvas against a clean backdrop wall
+- Upper or side area 25-35% reserved for company name and product series typography
+- Directional spotlighting from above and one side, 5600K, slight dramatic contrast with controlled falloff on the backdrop
+- Moderate depth with the machine fully sharp and the backdrop softly graded
+- ${CAM_DEFAULT} f/8
+- Polished and confident, still strictly industrial in palette
+Reference aesthetic: Hannover Messe booth photography, industrial trade-show brand walls${EQUIP_BASE}`
+  },
+};
+
+// ── 螢幕畫面 ──────────────────────────────────────────────────────────
+const SCREEN_BASE = `
+- ★ The screen content comes from the source image and MUST be reproduced faithfully — never imagined, redesigned or invented
+- Keep the screen legible, undistorted, correctly proportioned, free of moiré and glare
+- ⛔ NO fanned multi-device arrangements, NO floating screens with light rays, NO 2015-era marketing composites
+- ⛔ NO boxed software, NO physical retail package`;
+
+const SCREEN_LAYOUTS = {
+  sc_browser_hero: {
+    label: '瀏覽器主圖型',
+    desc: '單一大截圖放瀏覽器外框(最百搭)',
+    composition: `Single hero screenshot in a browser frame:
+- Browser window occupies 70-85% of canvas, centred or slightly low, showing the canvas / main working area with minimal chrome
+- Flat or subtle gradient background tone-matched to the interface's dominant colour, 15-25% darker than the UI so the window separates
+- Soft diffuse shadow beneath the window giving gentle elevation
+- Negative space 15-30%, upper band optionally reserved for a short headline
+- Even flat illumination at 5600K, no simulated screen glare or reflection
+- Deep focus, the entire screen uniformly sharp edge to edge
+- ${CAM_DEFAULT} f/8, straight-on with no perspective distortion
+- ⛔ No annotations, no callout arrows, no marketing copy drawn onto the screenshot itself
+Reference aesthetic: Stripe and Linear marketing pages, Notion product site${SCREEN_BASE}`
+  },
+
+  sc_laptop_frame: {
+    label: '筆電外框型',
+    desc: '截圖放 MacBook 外框 + 漸層背景',
+    composition: `Laptop mockup presentation:
+- Laptop occupies 60-75% of canvas, straight-on or angled no more than 5 degrees, screen filling the display area
+- Traffic-light window buttons top-left with even spacing; dock hidden
+- Clean gradient background tone-matched to the dashboard's dominant colour
+- Soft contact shadow beneath the device, negative space 25-40% with the upper band available for a headline
+- Even ambient illumination on the device body 5600K, screen rendered bright and clean without glare
+- Deep focus, screen and chassis both fully sharp
+- ${CAM_DEFAULT} f/8
+Reference aesthetic: Apple product page device shots, SaaS landing hero sections${SCREEN_BASE}`
+  },
+
+  sc_phone_angle: {
+    label: '手機傾斜型',
+    desc: '手機外框傾斜 10-15 度,顯得有動態',
+    composition: `Mobile app mockup:
+- Phone occupies 45-60% of canvas, rotated 10-15 degrees, never dead-on flat
+- Shows the most-used screen of the app, NOT the onboarding or login screen
+- Soft depth shadow beneath and behind, clean background with slight gradient
+- Negative space 40-55%, one side reserved for headline and a short supporting line
+- Soft even key with a gentle edge highlight along the device chassis, 5600K
+- Slight depth so the near corner is sharp and the far corner softens marginally
+- ${CAM_DEFAULT} f/5.6
+Reference aesthetic: App Store feature graphics, modern SaaS mobile sections${SCREEN_BASE}`
+  },
+
+  sc_code_split: {
+    label: '大字 + 截圖型',
+    desc: '工具型產品:小截圖 + 強力標題',
+    composition: `Typographic-led split for utility products:
+- Headline occupies one side at 40-50% of canvas, large and left-aligned, 2-3 lines maximum
+- Terminal, console or output screenshot beside it at 30-40%, smaller and clearly supporting
+- Monospace detail where appropriate, tight technical alignment on a strict grid
+- Negative space 20-30%, disciplined and even
+- Flat even illumination at 5600K, dark-mode screenshot rendered with true blacks
+- Deep focus, the screenshot uniformly sharp
+- ${CAM_DEFAULT} f/8
+- ★ The screenshot supports the headline — it is not the hero
+Reference aesthetic: Vercel and Linear developer pages, technical documentation sites${SCREEN_BASE}`
+  },
+
+  sc_feature_tile: {
+    label: '功能區塊型',
+    desc: '截圖局部放大 + 一句功能說明',
+    composition: `Feature tile layout:
+- Cropped region of the interface enlarged to occupy 55-70% of canvas, held in a soft rounded container with a light 1px border
+- Feature title and a single explanatory line beside or below, occupying 15-25%
+- Generous padding inside the container, negative space 20-30% around it
+- Even flat illumination at 5600K, subtle shadow giving the tile slight elevation
+- Deep focus, the cropped interface region fully sharp
+- ${CAM_DEFAULT} f/8
+- One idea per frame, calm and uncluttered
+Reference aesthetic: Notion and Figma feature sections, modern SaaS feature grids${SCREEN_BASE}`
+  },
+};
+
+// ── 專業形象 ──────────────────────────────────────────────────────────
+const PRO_BASE = `
+- Restrained professional palette: charcoal, navy, warm grey, deep wood, cream. No flashy accent colors
+- Lighting clean and trustworthy; posture conveys competence and calm authority, not sales energy
+- ⛔ NO invented law article number, case number, statutory deadline, medical claim, efficacy figure or technical specification
+- ⛔ NO win-rate, NO success percentage, NO "guaranteed", NO "No.1", NO superlative claim of any kind`;
+
+const PRO_LAYOUTS = {
+  pr_portrait: {
+    label: '個人形象型',
+    desc: '正裝人像,辦公室 / 書牆背景',
+    composition: `Professional individual portrait:
+- Subject occupies 40-55% of canvas, upper body, on a thirds line with the open side ahead of the gaze
+- Negative space 35-45% reserved: name on one line, title beneath at a third of that size
+- Background is the real office, a bookshelf wall, or a plain neutral backdrop softly defocused
+- Broad soft key at 45 degrees with a subtle fill, 5000K, gentle modelling and no harsh shadow
+- Shallow depth, eyes critically sharp, background a smooth wash
+- ${CAM_PORTRAIT} f/2.8
+Reference aesthetic: law firm and consultancy brand portraiture, corporate annual reports${PRO_BASE}`
+  },
+
+  pr_team: {
+    label: '事務所團隊型',
+    desc: '事務所 / 診所團隊合影',
+    composition: `Firm team portrait:
+- 3-8 professionals in a balanced staggered arrangement occupying 55-70% of canvas width, every face visible
+- Lower band 15-20% left clear for the firm name in restrained type
+- Office interior behind, softly defocused but readable as a real place
+- Broad even lighting across all faces 5000K, no single dominant figure by light or placement
+- Moderate depth so every person stays sharp
+- ${CAM_DEFAULT} f/5.6
+Reference aesthetic: professional services firm brand photography${PRO_BASE}`
+  },
+
+  pr_office: {
+    label: '空間形象型',
+    desc: '事務所 / 診所空間實景',
+    composition: `Office environment shot:
+- Wide interior filling 85-95% of canvas, two-point perspective, verticals kept straight
+- Reception desk, meeting table or seating anchored on a thirds line
+- Reserved quiet area 15-20% for a short caption line
+- Natural window light where possible 5000K, balanced exposure holding both interior and window
+- Deep focus, foreground to back wall sharp
+- ${CAM_DEFAULT} f/8
+- Orderly surfaces, quality materials, calm and substantial atmosphere
+Reference aesthetic: architectural interior photography for professional firms${PRO_BASE}`
+  },
+
+  pr_namecard: {
+    label: '名片資訊型',
+    desc: '姓名職稱 + 法定聯絡要素(律師必用)',
+    composition: `Name-card style information layout:
+- Portrait or firm mark occupying 35-45% on one side, information block on the other at 40-50%
+- Information block renders as clean legible text: full name, professional title, firm name, office address, phone number, each on its own line in a strict left-aligned stack
+- Three typographic levels only; generous margins of at least 8% on every edge
+- Negative space 15-25%, business-card discipline
+- Even flat illumination at 5000K on any photographic element so the text stays dominant
+- Moderate depth keeping the portrait readable without drawing focus from the text
+- ${CAM_PORTRAIT} f/4
+- ★ All four elements (name / firm / address / phone) must be present — this is a regulatory requirement for legal advertising in Taiwan
+Reference aesthetic: minimal Swiss business stationery, professional firm identity systems${PRO_BASE}`
+  },
+
+  pr_viewpoint: {
+    label: '專業觀點型',
+    desc: '一句觀點大字 + 人像,不談個案',
+    composition: `Professional viewpoint post:
+- A single short statement in large Traditional Chinese type occupying 30-40% of canvas height, left-aligned, 2 lines maximum
+- The professional's portrait occupying a smaller 25-35% side or corner area, gaze directed toward the text
+- Solid or subtly textured background block behind the text at low contrast
+- Negative space 30-40%, calm and deliberate
+- Even soft illumination on the portrait 5000K so it supports rather than competes
+- Shallow depth on the portrait, background block rendered flat
+- ${CAM_PORTRAIT} f/4
+- ⛔ Statement must stay general — no specific case, no client detail, no outcome promise
+Reference aesthetic: professional thought-leadership editorial, business magazine columns${PRO_BASE}`
+  },
+};
+
+
 Object.assign(LAYOUT_TEMPLATES,
   BEAUTY_LAYOUTS, MEDICAL_LAYOUTS, EQUIP_LAYOUTS, SCREEN_LAYOUTS, PRO_LAYOUTS);
 
@@ -2828,181 +3283,19 @@ const CONTEXT_BLOCKED_BY_PRODTYPE = {
 //     · 戶外兩種構圖:樹林包裹人物當畫框 / 逆光讓人與光源重疊產生神聖感
 //     · 團體照最常見的 NG:當天明明幾百人,拍起來卻沒幾個人
 //   ⚠️ 不做「課表資訊型」—— AI 會亂編課程名稱、時間、價格。文字讓客戶自己上。
-const COURSE_BASE = `\n- Natural unforced atmosphere throughout — honest and lived-in, never a staged stock-photo look. Where people appear, they show real effort and real posture, not rehearsed smiles\n- ⛔ Do NOT render any course name, schedule, date, time, price or enrolment figure — these are the client's to fill in, and invented ones mislead students\n- ⛔ Do NOT invent certification logos, association marks or accreditation badges`;
 
-const COURSE_LAYOUTS = {
-  in_class: {
-    label: '上課現場型',
-    desc: '老師帶動作、學員在練 —— 信任感來源',
-    composition: `Documentary shot of a class in progress:
-- Instructor actively teaching: demonstrating, correcting posture, or guiding with hands
-- Several students practising in the same frame, at genuinely different stages of the movement
-- Real studio lighting, wooden floor and practice surfaces reading as an actual room in use
-- Mid or wide shot that shows the relationship between teacher and students
-- ★ This layout sells trust and teaching quality, NOT a perfect final pose${COURSE_BASE}`
-  },
-  student_practice: {
-    label: '學員練習型',
-    desc: '單人動作特寫,閉眼不看鏡頭',
-    composition: `Single practitioner in mid-practice:
-- One person performing a clean, well-extended movement — NOT the most extreme or difficult variation
-- Eyes closed or gaze following the natural direction of the movement; never staring into the lens
-- Body line is the subject: extended limbs, clear silhouette, controlled form
-- Soft directional light modelling the shape of the body against an uncluttered background${COURSE_BASE}`
-  },
-  outdoor_class: {
-    label: '戶外課程型',
-    desc: '自然環境 / 逆光,適合戶外與體驗活動',
-    composition: `Outdoor practice in a natural setting, using one of two proven compositions:
-- Either: surrounding trees or terrain framing and enclosing the figure, nature acting as a natural border
-- Or: strong backlight with the figure overlapping the light source, producing a luminous rim and a quiet, elevated mood
-- Wide enough to establish the environment, with the practitioner clearly the focal point
-- Natural colour, real daylight, no artificial studio look${COURSE_BASE}`
-  },
-  group_photo: {
-    label: '團體合照型',
-    desc: '強調人數與氣氛,避免拍起來沒幾個人',
-    composition: `Group portrait of a full class:
-- Everyone arranged so that every face is visible — staggered rows or a curved formation, nobody hidden behind another
-- ★ Shoot from slightly above and fill the frame with people: the most common failure is a large class that looks sparse
-- Relaxed genuine expressions, natural variety of posture rather than a rigid line-up
-- Even lighting across the whole group, studio or venue visible behind${COURSE_BASE}`
-  },
-  instructor_intro: {
-    label: '師資介紹型',
-    desc: '老師個人形象,建立專業',
-    composition: `Instructor portrait:
-- Teacher alone, mid or upper body, in the studio or teaching environment
-- Confident approachable expression, posture suggesting capability rather than performance
-- Background softly defocused so the person stays dominant
-- Clear area beside or below the figure left open for the instructor's name and title${COURSE_BASE}`
-  },
-  studio_space: {
-    label: '空間環境型',
-    desc: '教室 / 場地實景,無人',
-    composition: `Empty practice space:
-- Wide shot of the studio or classroom: flooring, natural light, mirrors or windows, orderly equipment storage
-- Nobody in frame, or a single figure far away and out of focus
-- Calm, clean, inviting — conveys that this is a well-kept place worth coming to
-- Natural window light preferred; honest colour, no heavy grading${COURSE_BASE}`
-  },
-};
 
 // ── 命理與玄學:塔羅 / 八字 / 紫微 / 風水 / 占卜 ──────────────────────
 //   台灣無專法,但受公平交易法不實廣告管制。
 //   紅線在「保證、必準、改運、化解災厄」這類斷言,以及任何醫療效能暗示。
-const MYSTIC_BASE = `\n- Muted contemplative palette: deep indigo, warm amber, aged paper tones, brass, dark wood. Light is low, warm and directional\n- ⛔ Do NOT assemble a props collection; whatever appears must plausibly belong to THIS practitioner's own table\n- ⛔ Do NOT render any guarantee or certainty claim: 保證 / 必準 / 百分百 / 一定 / 神準 / 改運 / 化解災厄 / 消業障\n- ⛔ Do NOT render any medical or health-effect wording: 治療 / 改善失眠 / 調整體質 / 化解病氣\n- ⛔ Do NOT depict religious deity statues, temple altars or objects of active worship`;
 
-const MYSTIC_LAYOUTS = {
-  reading_session: {
-    label: '占卜現場型',
-    desc: '諮詢桌面、雙手與牌陣,不露臉',
-    composition: `Over-the-table reading scene:
-- Hands laying out or turning cards on a cloth-covered table, seen from above or at a low three-quarter angle
-- Faces cropped out or out of frame — the focus is the act of reading
-- Warm low-key light falling across the table surface, soft shadow depth
-- Intimate and unhurried, the feeling of a private consultation${MYSTIC_BASE}`
-  },
-  tool_closeup: {
-    label: '器物特寫型',
-    desc: '牌 / 盤 / 石的質感特寫',
-    composition: `Macro study of the practitioner's own instruments:
-- Extreme close-up on the tools of the practice as supplied in the source image — card edges, printed surfaces, metal rims, stone facets
-- Raking light revealing texture: paper grain, engraved lines, mineral clarity
-- Dark uncluttered background so the object separates completely
-- ⛔ Reproduce the objects as supplied; do NOT invent card artwork, symbols, glyphs or inscriptions${MYSTIC_BASE}`
-  },
-  master_portrait: {
-    label: '老師形象型',
-    desc: '命理師人像,沉穩不神化',
-    composition: `Practitioner portrait:
-- Seated or standing at the consultation space, calm composed expression, direct or slightly averted gaze
-- Working environment softly present behind — shelving, table surface, warm lamp
-- Gentle low-contrast lighting; grounded and credible, never theatrical or mystical-supernatural
-- Space reserved for name and discipline as small restrained typography${MYSTIC_BASE}`
-  },
-  mystic_space: {
-    label: '空間氛圍型',
-    desc: '諮詢空間實景,營造安心感',
-    composition: `Consultation room interior:
-- The space where readings take place: table, seating, warm lamplight, quiet corners
-- No people in frame, arrangement calm and orderly
-- Low ambient light with one warm source creating gentle pools of illumination
-- Feels private, safe and unrushed — a place to talk, not a shrine${MYSTIC_BASE}`
-  },
-  mystic_headline: {
-    label: '觀點大字型',
-    desc: '一句話大字 + 氛圍背景',
-    composition: `Statement-led composition:
-- A single short line of large Traditional Chinese type dominating the frame, phrased as a question or an observation
-- Background is atmospheric and abstract: soft gradient, textured paper, out-of-focus warm light
-- Generous negative space around the type; restrained elegant hierarchy
-- ⛔ The statement must stay reflective — no prediction, no promise, no outcome claim${MYSTIC_BASE}`
-  },
-};
 
 // ── 旅遊與行程:旅行社 / 導遊 / 一日遊 / 自由行 ────────────────────────
 //   ⚠️ 旅行業管理規則 §30:刊登於網路及其他大眾傳播工具之廣告,
 //     應載明「公司名稱、種類及註冊編號」,且內容須與旅遊文件相符,
 //     不得誇大虛偽不實 —— 這是強制標示,不是選配。
 //   ★ Klook 首頁實測公式:真實地標照 + 地名 + 活動數量,直式 530×707,零合成。
-const TRAVEL_BASE = `\n- ⛔ Do NOT invent or beautify a destination: the place shown must be the real location supplied, not an idealised version\n- ⛔ Do NOT add landmarks, buildings, mountains or coastline that are not in the source image — travel advertising must match the actual itinerary document\n- ⛔ Do NOT render itinerary details, day counts, prices, departure dates or seat availability\n- Natural daylight and honest colour; avoid oversaturated postcard grading that misrepresents the place`;
 
-const TRAVEL_LAYOUTS = {
-  landmark_hero: {
-    label: '地標主圖型',
-    desc: '真實地標滿版 + 地名(Klook 公式)',
-    composition: `Single destination hero, vertical-friendly framing:
-- The real landmark or scenery filling the frame, shot at its most recognisable angle
-- Clean area at the top or bottom reserved for the place name in large clear type
-- Natural light at a flattering time of day, honest colour, crisp depth
-- ★ One place, one frame — do not collage multiple destinations together${TRAVEL_BASE}`
-  },
-  itinerary_grid: {
-    label: '行程多格型',
-    desc: '同一趟行程的幾個地點並列',
-    composition: `Multi-panel layout showing several stops from ONE trip:
-- 2-4 equal panels, each a different real location from the same itinerary
-- Thin consistent gutters, uniform colour treatment across all panels so they read as one journey
-- Small clean label area under or over each panel for the place name
-- ⛔ Every panel must come from the supplied images — do not fill an empty panel with an invented view${TRAVEL_BASE}`
-  },
-  activity_scene: {
-    label: '體驗現場型',
-    desc: '遊客正在體驗的畫面',
-    composition: `Travellers mid-experience:
-- People actively engaged in the activity — walking a street, on the water, at a viewpoint, in a workshop
-- Candid unposed feeling, natural movement, faces showing genuine reaction
-- Environment clearly readable so the location remains identifiable
-- Mid or wide shot balancing people and place${TRAVEL_BASE}`
-  },
-  local_food: {
-    label: '在地美食型',
-    desc: '當地飲食特寫',
-    composition: `Local food close-up:
-- The dish as supplied, shot close and slightly overhead or at a low table angle
-- Table surface and surroundings suggesting the real setting where it is eaten
-- Warm natural light, honest colour, appetising texture without heavy retouching
-- ⛔ Do NOT invent additional dishes, garnishes or table settings not present in the source${TRAVEL_BASE}`
-  },
-  accommodation: {
-    label: '住宿空間型',
-    desc: '飯店 / 民宿房間與空間',
-    composition: `Accommodation interior:
-- Wide shot of the room or common space as supplied, showing layout and light
-- Tidy and inviting, natural window light where available
-- ⛔ Reproduce the space faithfully: do NOT add furniture, balconies or amenities that are not in the source image — accommodation advertising must match what the guest actually receives
-- ⛔ ★ Whatever is visible through the window MUST stay exactly as supplied. Do NOT upgrade a car park, wall or alley into a sea view, mountain view or city skyline — a fabricated view is the single most common and most actionable misrepresentation in accommodation advertising${TRAVEL_BASE}`
-  },
-  transport_move: {
-    label: '交通移動型',
-    desc: '列車 / 車窗 / 移動中的旅途感',
-    composition: `Journey-in-motion frame:
-- Train, coach, ferry or car interior with the passing view, or a platform and departure moment
-- Sense of movement and anticipation, window light, natural motion blur where appropriate
-- Traveller present as a small figure or from behind, keeping the journey as the subject${TRAVEL_BASE}`
-  },
-};
 
 // ── 養生與能量商品:水晶 / 串珠 / 能量手環 / 按摩器材 ──────────────────
 //   ⚠️ 一般寢具(床包 / 涼被 / 四件組)不屬於這一類,走「商品實拍」即可。
