@@ -1005,7 +1005,12 @@ function selectSwatch(hex,name){
   }
   const allHex=extraColors.length>0?extraColors.map(c=>c.hex).join(','):selectedColorHex;
   document.getElementById('f_colorHex').value=allHex;
-  document.getElementById('f_color').value=extraColors.length>0?'自訂色':selectedColorName;
+  // 🩹 2026-08-19:別再存「自訂色」三個字。
+  //   病灶:色碼明明抓到了、也存進 f_colorHex 了,但系統拿去查顏色的是 f_color,
+  //   而這裡寫死「自訂色」—— 三個中文字當然查不到任何顏色,一路 fallback 到金色。
+  //   客戶自己挑的品牌色從系統上線以來就沒有真正生效過。
+  //   ★ 改成直接存第一個色碼,getColor 現在吃得下色碼。
+  document.getElementById('f_color').value=extraColors.length>0?extraColors[0].hex:selectedColorName;
   document.getElementById('selectedDot').style.background=extraColors.length>0?extraColors[0].hex:selectedColorHex;
   document.getElementById('selectedHex').textContent=allHex+' · '+(extraColors.length>0?extraColors.map(c=>c.name).join('+'):selectedColorName);
 }
@@ -1201,7 +1206,11 @@ async function doSubmit(){
     contact:v('f_contact'),phone:phoneCode+' '+v('f_phone'),
     story:v('f_story'),values:v('f_values'),competitors:v('f_competitors'),competitorUrls:v('f_competitorUrls'),pros:v('f_pros'),cons:v('f_cons'),misc:v('f_misc'),
     category:v('f_category'),products:v('f_products'),platforms:getPlatforms(),price:v('f_price'),audience:v('f_audience'),
-    style:v('f_style'),ref:v('f_ref'),color:v('f_color'),colorHex:selectedColorHex,
+    // 🩹 2026-08-19:colorHex 要送「實際選中的」。
+    //   舊寫法一律送 selectedColorHex(公版色),客戶從網址抓來的顏色
+    //   存在 extraColors 裡卻從來沒被送出去,等於白抓一場。
+    style:v('f_style'),ref:v('f_ref'),color:v('f_color'),
+    colorHex:(extraColors.length>0?extraColors[0].hex:selectedColorHex),
     rootFolderId:ROOT_FOLDER_ID,soulBook:generatedSoul,status:'pending',
     desiredPlan:desiredPlan,
     kolType:kolType,
