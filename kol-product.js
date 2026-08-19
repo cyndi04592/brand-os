@@ -115,17 +115,39 @@
   // 這幾種畫面模式會寫死「不准畫任何商品盒/瓶罐」,套錯在有包裝的商品上會讓商品消失
   const NO_PRODUCT_MODES = { service: 1, medical: 1, course: 1, mystic: 1, travel: 1, pro: 1, agency: 1 };
 
+  // 🆕 v3.5b 純畫面型態(網站 / 軟體 / 機台 / 訂閱)——這三種「沒有專屬法規」,
+  //   所以合規模組那張表不會收它們(那張表管的是法規,不是畫面)。
+  //   但它們同樣「沒有實體商品可拍」,漏判的話 AI 會生出盒裝軟體、假機台包裝。
+  //   ⚠️ 鐵律:凡是「有法規要管」的行業,一律交給 kol-compliance.js,不准寫在這裡,
+  //     否則兩張表會走鐘。這裡只補「法規管不到、但畫面會出事」的那幾種。
+  const SCREEN_RE = /官網|網站|網頁|後台|儀表板|軟體|系統平台|線上系統|APP|SaaS/i;
+  const EQUIP_RE  = /機台|設備|CNC|半導體|工廠|加工|製程|產線|模具|射出/i;
+  const DIGI_RE   = /訂閱制|會員制|線上訂閱|月費方案|年費方案/;
+
   function _autoModeFromName(prod) {
     try {
       const C = window.KolCompliance;
-      if (!C || typeof C.resolveRule !== 'function') return null;
-      const rule = C.resolveRule(prod);
-      if (!rule) return null;
-      const mode = RULE_TO_MODE[rule];
-      if (!mode) return null;
-      // 安全閥②:看得到包裝的實體商品,絕不套用「無實體商品」那類畫面守則
-      if (NO_PRODUCT_MODES[mode] && typeof C.isProductForm === 'function' && C.isProductForm(prod)) return null;
-      return mode;
+      const hay = [prod && prod.name, prod && prod.prodName, prod && prod.tag]
+        .filter(Boolean).join(' ');
+      const isProd = (C && typeof C.isProductForm === 'function') ? C.isProductForm(prod) : false;
+
+      // ① 法規行業優先(唯一分類來源:kol-compliance.js)
+      if (C && typeof C.resolveRule === 'function') {
+        const rule = C.resolveRule(prod);
+        const mode = rule ? RULE_TO_MODE[rule] : null;
+        if (mode) {
+          // 安全閥②:看得到包裝的實體商品,絕不套用「無實體商品」那類畫面守則
+          if (NO_PRODUCT_MODES[mode] && isProd) return null;
+          return mode;
+        }
+      }
+
+      // ② 純畫面型態(這三種也都是「沒有實體商品」,有包裝就代表判錯了,不套)
+      if (!hay || isProd) return null;
+      if (SCREEN_RE.test(hay)) return 'screen';
+      if (EQUIP_RE.test(hay))  return 'equip';
+      if (DIGI_RE.test(hay))   return 'digital';
+      return null;
     } catch (e) { return null; }
   }
   function contributeNewMode(prod, mode, scale) {
@@ -300,5 +322,5 @@
   }
 
   window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.5', resolveMode };
-  console.log('[KolProduct] 🎒 v3.5 就緒 · 道具師·模式驅動(15模式) · 🆕 自動判斷:沒設型態時用商品名推(與合規模組共用同一張分類表) · 有包裝的實體商品不會被誤判成服務 · 海苔等舊商品原樣不變');
+  console.log('[KolProduct] 🎒 v3.5 就緒 · 道具師·模式驅動(15模式) · 🆕 自動判斷:法規行業走合規模組同一張表,網站/機台/訂閱另補畫面型態 · 有包裝的實體商品不會被誤判成服務 · 海苔等舊商品原樣不變');
 })();
