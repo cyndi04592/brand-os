@@ -81,10 +81,26 @@
     persona = {}, product = {}, sceneLabel = '',
   }) {
     const joinList = (v) => Array.isArray(v) ? v.join('、') : (v || '');
+
+    // ⚖️ 2026-08-19 合規守門:把行業禁詞併進去。
+    //   影片比靜態圖危險 —— 靜態圖的字由版型控制,KOL 講的台詞是 AI 自己寫的。
+    //   2026-05 南投判例:用 AI 生成水晶手鍊文案宣稱「緩解心臟病、預防高血壓」,
+    //   依藥事法罰 60 萬(業者辯稱不知違法照罰)。KOL 台詞是同一個模式。
+    //   ★ 沿用既有的 kolTabooWords 欄位,不用改 Worker、不用改架構。
+    //   ★ 查不到行業 → 回空字串 → 舊商品行為完全不變。
+    let _compTaboo = '', _compBrief = '';
+    try {
+      if (window.KolCompliance) {
+        _compTaboo = window.KolCompliance.tabooFor(product) || '';
+        _compBrief = window.KolCompliance.briefFor(product) || '';
+      }
+    } catch (e) {}
+    const _taboo = [joinList(persona.taboo_words), _compTaboo].filter(Boolean).join('、');
+
     return {
       durationSec: duration,
       beats: planBeats(duration),
-      outline: outline || '',
+      outline: (outline || '') + _compBrief,
       lockedLines: Array.isArray(lockedLines) ? lockedLines : [],
       kolName: persona.persona_name || persona.name || '',
       kolBackground: persona.background || '',
@@ -92,7 +108,7 @@
       kolSpeakingStyle: persona.speaking_style || '',
       kolNationality: persona.nationality || 'tw',
       kolCatchphrases: joinList(persona.catchphrases),
-      kolTabooWords: joinList(persona.taboo_words),
+      kolTabooWords: _taboo,   // ⚖️ 人設禁語 + 行業合規禁詞
       productName: product.name || '',
       productTag: product.tag || '',
       sceneLabel: sceneLabel || '',
