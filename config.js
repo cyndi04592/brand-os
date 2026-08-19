@@ -149,10 +149,20 @@ function _cssColorToHex(name) {
 // 🩹 2026-08-19:挑出「真的能用」的品牌色。
 //   優先順序:能用的 navColor → 色碼欄位(colorHex/color_hex/primaryColor)→ 金色。
 //   ★ 「自訂色」「自訂」「custom」這類是佔位字,不是顏色,一律略過。
+const _warnedColors = {};   // 🩹 同一個壞值只警告一次,避免刷版
 const _COLOR_PLACEHOLDERS = ['自訂色', '自訂', '自定色', 'custom', 'customcolor', '其他'];
 function _pickBrandColor(b) {
   if (!b) return 'gold';
   const nav = String(b.navColor || '').trim();
+  // 🩹 2026-08-19:brand_xxx 一律直接放行,不做任何判定。
+  //   ⚠️ 我上一版在這裡加了「不是有效顏色」的警告,結果把原本正常的
+  //   brand_chiaofu / brand_ww / brand_ly 全部誤判成壞值 ——
+  //   因為品牌包色是 async 抓回來的,第一次渲染時 CMAP 裡還沒有它們。
+  //   這件事舊註解早就寫過(「顏色是晚到的,晚到就要重畫」),我沒讀進去。
+  //   ★ brand_ 開頭的交給 getColor 自己處理,它已經有「還沒註冊完就安靜
+  //     fallback」的邏輯,重複判定只會製造假警報。
+  if (nav.startsWith('brand_')) return nav;
+
   const isPlaceholder = _COLOR_PLACEHOLDERS.includes(nav.toLowerCase());
   // navColor 本身就能用(預設色名 / brand_xxx / 色碼)就直接用
   if (nav && !isPlaceholder && (
@@ -170,7 +180,9 @@ function _pickBrandColor(b) {
   //   結果每畫一次就噴一條紅字。這裡已經確定救不回來了,
   //   往下傳只會製造噪音,不會讓顏色變對。
   //   ★ 真的填錯字的情況,onboard 那邊已經在源頭擋掉了。
-  if (nav && !isPlaceholder) {
+  // 只有「真的認不得的字」才提示一次,而且不重複同一個值
+  if (nav && !isPlaceholder && !_warnedColors[nav]) {
+    _warnedColors[nav] = 1;
     console.warn('[CMAP] 品牌色「' + nav + '」不是有效顏色,已改用金色。請在後台改填色碼(例 #8B7355)。');
   }
   return 'gold';
