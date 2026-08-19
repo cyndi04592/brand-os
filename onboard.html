@@ -992,8 +992,11 @@ function selectPreset(i){
   document.getElementById('colorResult').style.display='none';
   const p=COLOR_PRESETS[i];selectedColorHex=p.colors[0];selectedColorName=p.name;setColor(p.colors[0],p.name);
 }
-function selectSwatch(hex,name){
-  const el=event.currentTarget;
+function selectSwatch(hex,name,elArg){
+  // 🩹 2026-08-19:元素由呼叫端傳進來,不再靠全域 event.currentTarget
+  //   (那個在 addEventListener 情境下不保證存在)
+  const el=elArg||(typeof event!=='undefined'&&event.currentTarget);
+  if(!el)return;
   if(el.classList.contains('on')){
     el.classList.remove('on');extraColors=extraColors.filter(c=>c.hex!==hex);
     if(extraColors.length===0)setColor(selectedColorHex,selectedColorName);
@@ -1032,19 +1035,36 @@ async function grabColors(){
     const colors=[...new Set(data.colors||[])].slice(0,6);
     if(!colors.length)throw new Error('這個網站抓不到色碼');
 
+    // 🩹 2026-08-19:色名改走 data 屬性,不再拼進 onclick 字串。
+    //   病灶:網站名稱只要含有引號或反斜線,拼出來的 onclick 就是壞掉的 JS,
+    //   點下去整個沒反應 —— 而畫面上色票看起來是正常的,最難查。
+    const _sname = String(data.siteName || '自訂');
     document.getElementById('colorSwatches').innerHTML=colors.map(hex=>
-      `<div class="swatch-item color-swatch-wrap" onclick="selectSwatch('${hex}','${(data.siteName||'自訂').replace(/'/g,"\\'")}色')">
+      `<div class="swatch-item color-swatch-wrap" data-hex="${hex}" data-name="${_sname.replace(/[<>"&]/g,'')}色">
         <div class="color-swatch" style="background:${hex};"></div><span class="color-swatch-hex">${hex}</span>
       </div>`).join('');
+    // 綁事件而不是寫 onclick,徹底避開字串跳脫問題
+    document.querySelectorAll('#colorSwatches .color-swatch-wrap').forEach(function(el){
+      el.addEventListener('click', function(){ selectSwatch(el.dataset.hex, el.dataset.name, el); });
+    });
     extraColors=[];
+    // 🩹 2026-08-19:重抓時把上一輪的選色一起清掉。
+    //   不清的話,客戶抓了第二個網站卻沒點色就送出,帶走的是上一次的顏色。
+    document.getElementById('f_colorHex').value=selectedColorHex;
+    document.getElementById('f_color').value=selectedColorName;
     // 信心度提示:high = 真的從網頁抓到的;low = SPA 空殼,Claude 用品牌知識猜的
     const confLabel=data.confidence==='low'?' (網站為動態載入,以下為 AI 推測色系)':'';
     document.getElementById('colorResultTitle').textContent=`${data.siteName||url} 的色系${confLabel}:`;
     document.getElementById('colorResult').style.display='block';
     document.querySelectorAll('.color-preset').forEach(el=>el.classList.remove('on'));
   }catch(e){
-    // 柔性提示:不講「抓取失敗」這種讓客人覺得壞掉的話
-    alert('這個網站抓不到顏色 🎨\n\n可能原因:網站使用動態載入(SPA)、需要登入、或顏色寫在外部 CSS 檔。\n\n請從下方 12 個預設色系挑一個你喜歡的吧!');
+    // 🩹 2026-08-19:分辨「網站抓不到」和「我們這邊連不上」。
+    //   舊寫法兩種都跳同一句,客戶回報時無法判斷是系統壞了還是網站不支援。
+    console.warn('[colors] 抓色失敗:', e && e.message);
+    const netFail = e instanceof TypeError || /Failed to fetch|NetworkError|timeout/i.test(String(e && e.message));
+    alert(netFail
+      ? '網路連線不太順 📡\n\n剛才沒能連上我們的伺服器,請稍等幾秒再按一次「抓取色系」。\n\n如果一直失敗,也可以先從下方預設色系挑一個。'
+      : '這個網站抓不到顏色 🎨\n\n可能原因:網站使用動態載入(SPA)、需要登入、或顏色寫在外部 CSS 檔。\n\n請從下方 12 個預設色系挑一個你喜歡的吧!');
   }
   btn.disabled=false;btn.innerHTML='🎨 抓取色系';
 }
@@ -1166,7 +1186,13 @@ function buildSummary(){
     if(pp)planLabel=pp.name+' 方案 · '+(_pickCycle==='year'?'年繳':'月繳');
   }
 
-  document.getElementById('summaryBox').innerHTML=`<b style="color:var(--gold)">品牌名稱:</b>${v('f_name')}<br><b style="color:var(--gold)">聯絡人:</b>${v('f_contact')} ${phoneCode} ${v('f_phone')}<br><b style="color:var(--gold)">官網:</b>${v('f_website')||'未填'}<br><b style="color:var(--gold)">商品類別:</b>${v('f_category')}<br><b style="color:var(--gold)">銷售平台:</b>${platforms}<br><b style="color:var(--gold)">目標客群:</b>${v('f_audience')||'未填'}<br><b style="color:var(--gold)">品牌風格:</b>${v('f_style')||'未選'}<br><b style="color:var(--gold)">品牌主色:</b><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${selectedColorHex};vertical-align:middle;margin:0 4px;"></span>${selectedColorHex}<br><b style="color:var(--purple)">🎭 KOL 數字人:</b>${kolLabel}${kolDetail}<br><b style="color:var(--gold)">💎 想要的方案:</b>${planLabel}`;
+  // 🩹 2026-08-19:摘要要顯示客戶真正選的顏色。
+  //   舊寫法顯示 selectedColorHex(公版色),客戶抓了自己的品牌色卻在確認頁
+  //   看到預設橘色,會以為系統沒吃到 —— 這是最容易讓人失去信任的一個畫面。
+  const _sumHex = (extraColors.length>0)
+    ? extraColors.map(function(c){return c.hex;}).join('、')
+    : selectedColorHex;
+  document.getElementById('summaryBox').innerHTML=`<b style="color:var(--gold)">品牌名稱:</b>${v('f_name')}<br><b style="color:var(--gold)">聯絡人:</b>${v('f_contact')} ${phoneCode} ${v('f_phone')}<br><b style="color:var(--gold)">官網:</b>${v('f_website')||'未填'}<br><b style="color:var(--gold)">商品類別:</b>${v('f_category')}<br><b style="color:var(--gold)">銷售平台:</b>${platforms}<br><b style="color:var(--gold)">目標客群:</b>${v('f_audience')||'未填'}<br><b style="color:var(--gold)">品牌風格:</b>${v('f_style')||'未選'}<br><b style="color:var(--gold)">品牌主色:</b><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${_sumHex};vertical-align:middle;margin:0 4px;"></span>${_sumHex}<br><b style="color:var(--purple)">🎭 KOL 數字人:</b>${kolLabel}${kolDetail}<br><b style="color:var(--gold)">💎 想要的方案:</b>${planLabel}`;
 }
 
 function v(id){return document.getElementById(id)?.value?.trim()||'';}
@@ -1181,7 +1207,14 @@ async function doGenerate(){
   let pct=0;
   const interval=setInterval(()=>{pct=Math.min(pct+6,85);document.getElementById('genBarFill').style.width=pct+'%';document.getElementById('genMsg').textContent=msgs[Math.floor(pct/18)]||msgs[4];},400);
   const phoneCode=document.getElementById('f_phoneCode').value;
-  const prompt=`你是一位頂尖的品牌策略師,請根據以下資料生成一份完整的「品牌靈魂書」。\n\n【品牌基本資訊】\n品牌名稱:${v('f_name')}\n官網:${v('f_website')}\nFacebook:${v('f_fb')}  Instagram:${v('f_ig')}\n小紅書:${v('f_xiaohongshu')}  抖音:${v('f_douyin')}\n微信公眾號:${v('f_wechat')}  其他:${v('f_social_other')}\n聯絡:${v('f_contact')} ${phoneCode} ${v('f_phone')}\n\n【品牌故事】\n創立原因:${v('f_story')}\n核心價值:${v('f_values')}\n競爭對手:${v('f_competitors')}\n競爭優勢:${v('f_pros')}\n目前挑戰:${v('f_cons')}\n補充:${v('f_misc')}\n\n【商品/服務】\n類別:${v('f_category')}\n主力商品:${v('f_products')}\n銷售平台:${getPlatforms()}\n售價:${v('f_price')}\n目標客群:${v('f_audience')}\n\n【品牌風格】\n視覺風格:${v('f_style')}\n品牌主色:${selectedColorHex}\n參考品牌:${v('f_ref')}\n\n請用繁體中文生成品牌靈魂書,包含:\n1. 品牌定位宣言(一句話)\n2. 品牌靈魂(3-5句)\n3. 目標受眾畫像(詳細,含痛點)\n4. 廣告文案風格指南\n5. 核心廣告主張(3個方向)\n6. 建議Hashtag(10個,含中英文)\n7. 競爭差異化重點`;
+  // 🩹 2026-08-19:品牌主色要送「客戶真正選的」。
+  //   病灶:這裡寫死 selectedColorHex(預設公版色),客戶從自己官網抓來的
+  //   顏色存在 extraColors 卻沒被送進 prompt —— AI 拿著錯的顏色寫整本靈魂書,
+  //   色彩建議全部偏掉,而且沒有任何地方看得出來。
+  const _brandHex = (extraColors.length>0)
+    ? extraColors.map(function(c){return c.hex;}).join('、')
+    : selectedColorHex;
+  const prompt=`你是一位頂尖的品牌策略師,請根據以下資料生成一份完整的「品牌靈魂書」。\n\n【品牌基本資訊】\n品牌名稱:${v('f_name')}\n官網:${v('f_website')}\nFacebook:${v('f_fb')}  Instagram:${v('f_ig')}\n小紅書:${v('f_xiaohongshu')}  抖音:${v('f_douyin')}\n微信公眾號:${v('f_wechat')}  其他:${v('f_social_other')}\n聯絡:${v('f_contact')} ${phoneCode} ${v('f_phone')}\n\n【品牌故事】\n創立原因:${v('f_story')}\n核心價值:${v('f_values')}\n競爭對手:${v('f_competitors')}\n競爭優勢:${v('f_pros')}\n目前挑戰:${v('f_cons')}\n補充:${v('f_misc')}\n\n【商品/服務】\n類別:${v('f_category')}\n主力商品:${v('f_products')}\n銷售平台:${getPlatforms()}\n售價:${v('f_price')}\n目標客群:${v('f_audience')}\n\n【品牌風格】\n視覺風格:${v('f_style')}\n品牌主色:${_brandHex}\n參考品牌:${v('f_ref')}\n\n請用繁體中文生成品牌靈魂書,包含:\n1. 品牌定位宣言(一句話)\n2. 品牌靈魂(3-5句)\n3. 目標受眾畫像(詳細,含痛點)\n4. 廣告文案風格指南\n5. 核心廣告主張(3個方向)\n6. 建議Hashtag(10個,含中英文)\n7. 競爭差異化重點`;
   try{
     const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:'raby2026',prompt,max_tokens:2000,token:guestToken,email:userEmail})});
     const data=await res.json();generatedSoul=data.text||'生成失敗,請重試';
