@@ -2296,7 +2296,10 @@ function _renderProdTypeOptions() {
     opt.value = o.value;
     opt.textContent = o.label;
     if (o.highlight) { opt.style.color = '#6dfac2'; opt.style.fontWeight = '900'; }
-    (o.highlight ? el : (grp || el)).appendChild(opt);
+    // 🩹 2026-08-19:highlight 只負責「顏色」,不再負責「掛在哪一層」。
+    //   舊寫法把 highlight 的選項強制掛到最上層,分組後會被踢出所屬群組,
+    //   跑到「請選擇…」旁邊,看起來像沒有分類。
+    (grp || el).appendChild(opt);
   });
   el.dataset.rendered = '1';
   el.value = SELECTED_PRODTYPE || '';
@@ -2812,12 +2815,336 @@ const CONTEXT_BLOCKED_BY_PRODTYPE = {
   ],
 };
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// 🆕 2026-08-19 第二批行業:課程 / 玄學 / 旅遊 / 養生能量商品
+//   全部先做行業視覺研究才寫 prompt,不憑推理(equip/screen/pro 第一版的教訓)。
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── 課程與體驗:瑜伽 / 舞蹈 / 健身 / 才藝 / 家教 / 補習班 ──────────────
+//   研究重點(瑜伽攝影專業慣例):
+//     · 不必做最極致最困難的動作 —— 顯示厲害但不見得好看,延伸的版本更能顯現線條
+//     · 「拍照要看鏡頭」是迷思 —— 做瑜伽的人不會盯鏡頭,閉眼微笑更自然
+//     · 戶外兩種構圖:樹林包裹人物當畫框 / 逆光讓人與光源重疊產生神聖感
+//     · 團體照最常見的 NG:當天明明幾百人,拍起來卻沒幾個人
+//   ⚠️ 不做「課表資訊型」—— AI 會亂編課程名稱、時間、價格。文字讓客戶自己上。
+const COURSE_BASE = `\n- Natural unforced atmosphere throughout — honest and lived-in, never a staged stock-photo look. Where people appear, they show real effort and real posture, not rehearsed smiles\n- ⛔ Do NOT render any course name, schedule, date, time, price or enrolment figure — these are the client's to fill in, and invented ones mislead students\n- ⛔ Do NOT invent certification logos, association marks or accreditation badges`;
+
+const COURSE_LAYOUTS = {
+  in_class: {
+    label: '上課現場型',
+    desc: '老師帶動作、學員在練 —— 信任感來源',
+    composition: `Documentary shot of a class in progress:
+- Instructor actively teaching: demonstrating, correcting posture, or guiding with hands
+- Several students practising in the same frame, at genuinely different stages of the movement
+- Real studio lighting, wooden floor and practice surfaces reading as an actual room in use
+- Mid or wide shot that shows the relationship between teacher and students
+- ★ This layout sells trust and teaching quality, NOT a perfect final pose${COURSE_BASE}`
+  },
+  student_practice: {
+    label: '學員練習型',
+    desc: '單人動作特寫,閉眼不看鏡頭',
+    composition: `Single practitioner in mid-practice:
+- One person performing a clean, well-extended movement — NOT the most extreme or difficult variation
+- Eyes closed or gaze following the natural direction of the movement; never staring into the lens
+- Body line is the subject: extended limbs, clear silhouette, controlled form
+- Soft directional light modelling the shape of the body against an uncluttered background${COURSE_BASE}`
+  },
+  outdoor_class: {
+    label: '戶外課程型',
+    desc: '自然環境 / 逆光,適合戶外與體驗活動',
+    composition: `Outdoor practice in a natural setting, using one of two proven compositions:
+- Either: surrounding trees or terrain framing and enclosing the figure, nature acting as a natural border
+- Or: strong backlight with the figure overlapping the light source, producing a luminous rim and a quiet, elevated mood
+- Wide enough to establish the environment, with the practitioner clearly the focal point
+- Natural colour, real daylight, no artificial studio look${COURSE_BASE}`
+  },
+  group_photo: {
+    label: '團體合照型',
+    desc: '強調人數與氣氛,避免拍起來沒幾個人',
+    composition: `Group portrait of a full class:
+- Everyone arranged so that every face is visible — staggered rows or a curved formation, nobody hidden behind another
+- ★ Shoot from slightly above and fill the frame with people: the most common failure is a large class that looks sparse
+- Relaxed genuine expressions, natural variety of posture rather than a rigid line-up
+- Even lighting across the whole group, studio or venue visible behind${COURSE_BASE}`
+  },
+  instructor_intro: {
+    label: '師資介紹型',
+    desc: '老師個人形象,建立專業',
+    composition: `Instructor portrait:
+- Teacher alone, mid or upper body, in the studio or teaching environment
+- Confident approachable expression, posture suggesting capability rather than performance
+- Background softly defocused so the person stays dominant
+- Clear area beside or below the figure left open for the instructor's name and title${COURSE_BASE}`
+  },
+  studio_space: {
+    label: '空間環境型',
+    desc: '教室 / 場地實景,無人',
+    composition: `Empty practice space:
+- Wide shot of the studio or classroom: flooring, natural light, mirrors or windows, orderly equipment storage
+- Nobody in frame, or a single figure far away and out of focus
+- Calm, clean, inviting — conveys that this is a well-kept place worth coming to
+- Natural window light preferred; honest colour, no heavy grading${COURSE_BASE}`
+  },
+};
+
+// ── 命理與玄學:塔羅 / 八字 / 紫微 / 風水 / 占卜 ──────────────────────
+//   台灣無專法,但受公平交易法不實廣告管制。
+//   紅線在「保證、必準、改運、化解災厄」這類斷言,以及任何醫療效能暗示。
+const MYSTIC_BASE = `\n- Muted contemplative palette: deep indigo, warm amber, aged paper tones, brass, dark wood. Light is low, warm and directional\n- ⛔ Do NOT assemble a props collection; whatever appears must plausibly belong to THIS practitioner's own table\n- ⛔ Do NOT render any guarantee or certainty claim: 保證 / 必準 / 百分百 / 一定 / 神準 / 改運 / 化解災厄 / 消業障\n- ⛔ Do NOT render any medical or health-effect wording: 治療 / 改善失眠 / 調整體質 / 化解病氣\n- ⛔ Do NOT depict religious deity statues, temple altars or objects of active worship`;
+
+const MYSTIC_LAYOUTS = {
+  reading_session: {
+    label: '占卜現場型',
+    desc: '諮詢桌面、雙手與牌陣,不露臉',
+    composition: `Over-the-table reading scene:
+- Hands laying out or turning cards on a cloth-covered table, seen from above or at a low three-quarter angle
+- Faces cropped out or out of frame — the focus is the act of reading
+- Warm low-key light falling across the table surface, soft shadow depth
+- Intimate and unhurried, the feeling of a private consultation${MYSTIC_BASE}`
+  },
+  tool_closeup: {
+    label: '器物特寫型',
+    desc: '牌 / 盤 / 石的質感特寫',
+    composition: `Macro study of the practitioner's own instruments:
+- Extreme close-up on the tools of the practice as supplied in the source image — card edges, printed surfaces, metal rims, stone facets
+- Raking light revealing texture: paper grain, engraved lines, mineral clarity
+- Dark uncluttered background so the object separates completely
+- ⛔ Reproduce the objects as supplied; do NOT invent card artwork, symbols, glyphs or inscriptions${MYSTIC_BASE}`
+  },
+  master_portrait: {
+    label: '老師形象型',
+    desc: '命理師人像,沉穩不神化',
+    composition: `Practitioner portrait:
+- Seated or standing at the consultation space, calm composed expression, direct or slightly averted gaze
+- Working environment softly present behind — shelving, table surface, warm lamp
+- Gentle low-contrast lighting; grounded and credible, never theatrical or mystical-supernatural
+- Space reserved for name and discipline as small restrained typography${MYSTIC_BASE}`
+  },
+  mystic_space: {
+    label: '空間氛圍型',
+    desc: '諮詢空間實景,營造安心感',
+    composition: `Consultation room interior:
+- The space where readings take place: table, seating, warm lamplight, quiet corners
+- No people in frame, arrangement calm and orderly
+- Low ambient light with one warm source creating gentle pools of illumination
+- Feels private, safe and unrushed — a place to talk, not a shrine${MYSTIC_BASE}`
+  },
+  mystic_headline: {
+    label: '觀點大字型',
+    desc: '一句話大字 + 氛圍背景',
+    composition: `Statement-led composition:
+- A single short line of large Traditional Chinese type dominating the frame, phrased as a question or an observation
+- Background is atmospheric and abstract: soft gradient, textured paper, out-of-focus warm light
+- Generous negative space around the type; restrained elegant hierarchy
+- ⛔ The statement must stay reflective — no prediction, no promise, no outcome claim${MYSTIC_BASE}`
+  },
+};
+
+// ── 旅遊與行程:旅行社 / 導遊 / 一日遊 / 自由行 ────────────────────────
+//   ⚠️ 旅行業管理規則 §30:刊登於網路及其他大眾傳播工具之廣告,
+//     應載明「公司名稱、種類及註冊編號」,且內容須與旅遊文件相符,
+//     不得誇大虛偽不實 —— 這是強制標示,不是選配。
+//   ★ Klook 首頁實測公式:真實地標照 + 地名 + 活動數量,直式 530×707,零合成。
+const TRAVEL_BASE = `\n- ⛔ Do NOT invent or beautify a destination: the place shown must be the real location supplied, not an idealised version\n- ⛔ Do NOT add landmarks, buildings, mountains or coastline that are not in the source image — travel advertising must match the actual itinerary document\n- ⛔ Do NOT render itinerary details, day counts, prices, departure dates or seat availability\n- Natural daylight and honest colour; avoid oversaturated postcard grading that misrepresents the place`;
+
+const TRAVEL_LAYOUTS = {
+  landmark_hero: {
+    label: '地標主圖型',
+    desc: '真實地標滿版 + 地名(Klook 公式)',
+    composition: `Single destination hero, vertical-friendly framing:
+- The real landmark or scenery filling the frame, shot at its most recognisable angle
+- Clean area at the top or bottom reserved for the place name in large clear type
+- Natural light at a flattering time of day, honest colour, crisp depth
+- ★ One place, one frame — do not collage multiple destinations together${TRAVEL_BASE}`
+  },
+  itinerary_grid: {
+    label: '行程多格型',
+    desc: '同一趟行程的幾個地點並列',
+    composition: `Multi-panel layout showing several stops from ONE trip:
+- 2-4 equal panels, each a different real location from the same itinerary
+- Thin consistent gutters, uniform colour treatment across all panels so they read as one journey
+- Small clean label area under or over each panel for the place name
+- ⛔ Every panel must come from the supplied images — do not fill an empty panel with an invented view${TRAVEL_BASE}`
+  },
+  activity_scene: {
+    label: '體驗現場型',
+    desc: '遊客正在體驗的畫面',
+    composition: `Travellers mid-experience:
+- People actively engaged in the activity — walking a street, on the water, at a viewpoint, in a workshop
+- Candid unposed feeling, natural movement, faces showing genuine reaction
+- Environment clearly readable so the location remains identifiable
+- Mid or wide shot balancing people and place${TRAVEL_BASE}`
+  },
+  local_food: {
+    label: '在地美食型',
+    desc: '當地飲食特寫',
+    composition: `Local food close-up:
+- The dish as supplied, shot close and slightly overhead or at a low table angle
+- Table surface and surroundings suggesting the real setting where it is eaten
+- Warm natural light, honest colour, appetising texture without heavy retouching
+- ⛔ Do NOT invent additional dishes, garnishes or table settings not present in the source${TRAVEL_BASE}`
+  },
+  accommodation: {
+    label: '住宿空間型',
+    desc: '飯店 / 民宿房間與空間',
+    composition: `Accommodation interior:
+- Wide shot of the room or common space as supplied, showing layout and light
+- Tidy and inviting, natural window light where available
+- ⛔ Reproduce the space faithfully: do NOT add furniture, views, balconies or amenities that are not in the source image — accommodation advertising must match what the guest actually receives${TRAVEL_BASE}`
+  },
+  transport_move: {
+    label: '交通移動型',
+    desc: '列車 / 車窗 / 移動中的旅途感',
+    composition: `Journey-in-motion frame:
+- Train, coach, ferry or car interior with the passing view, or a platform and departure moment
+- Sense of movement and anticipation, window light, natural motion blur where appropriate
+- Traveller present as a small figure or from behind, keeping the journey as the subject${TRAVEL_BASE}`
+  },
+};
+
+// ── 養生與能量商品:水晶 / 串珠 / 能量手環 / 按摩器材 ──────────────────
+//   ⚠️ 一般寢具(床包 / 涼被 / 四件組)不屬於這一類,走「商品實拍」即可。
+//     只有主打功效的那種(記憶枕 / 遠紅外線被 / 磁石護腰)才需要走這裡。
+//   🔴 這一類不需要新版型(就是拍商品),但需要最嚴格的禁詞守門。
+//   真實案例(2026-05,南投):網售水晶手鍊,以 AI 生成文案宣稱
+//   「緩解心臟病、預防高血壓、止痛消炎」,依藥事法 §69、§91 裁罰 60 萬元。
+//   業者辯稱不知違法仍照罰。上限 2,500 萬元,商品沒入銷毀。
+//   衛生局同時點名:按摩椅、磁石貼片、舒眠枕、能量手環、足貼 —— 同屬一般商品。
+//   ★ 所以 wellness 沿用「商品實拍」的十種版型,只加合規段。
+
+Object.assign(LAYOUT_TEMPLATES, COURSE_LAYOUTS, MYSTIC_LAYOUTS, TRAVEL_LAYOUTS);
+
+// ── 型態 prompt 開頭(接進 PRODTYPE_PROMPT)────────────────────────────
+Object.assign(PRODTYPE_PROMPT, {
+  course:
+    `=== COURSE / CLASS — THE EXPERIENCE IS THE PRODUCT (HIGHEST PRIORITY) ===\n` +
+    `- This business sells teaching, practice and progress. There is NO physical product to sell\n` +
+    `- ⛔ DO NOT invent, draw or place ANY product box, package, kit, boxed set or retail container anywhere in the frame\n` +
+    `- The people practising and the teaching moment are the hero — build the scene AROUND them\n` +
+    `- Equipment (mats, instruments, desks, weights) may appear only as the natural tools of the practice, never as merchandise\n` +
+    `- Keep bodies and faces real: natural effort, real posture, visible skin texture, no mannequin smoothing\n\n`,
+
+  mystic:
+    `=== DIVINATION / METAPHYSICS — CONSULTATION, NOT PROPHECY (HIGHEST PRIORITY) ===\n` +
+    `- This business sells a consultation session. The subject is the practitioner, the space, or the instruments\n` +
+    `- ⛔ DO NOT invent, draw or place ANY retail product box, package or merchandise container\n` +
+    `- ⛔ DO NOT invent card artwork, chart layouts, glyphs, talisman inscriptions or written characters on any instrument — reproduce only what the source image supplies\n` +
+    `- ⛔ DO NOT depict supernatural effects: glowing auras, floating objects, light beams, spirits or magical particles\n` +
+    `- Tone is calm, grounded and human — a quiet conversation, not a supernatural spectacle\n\n`,
+
+  travel:
+    `=== TRAVEL / ITINERARY — THE PLACE MUST BE REAL (HIGHEST PRIORITY) ===\n` +
+    `- ★ Travel advertising is legally required to match the actual itinerary document. An idealised or invented view is not a style choice, it is a false representation\n` +
+    `- ⛔ DO NOT invent, add, relocate or beautify any landmark, building, mountain, coastline, view or facility\n` +
+    `- ⛔ DO NOT invent boxed travel products or retail packaging\n` +
+    `- Reproduce the supplied location PIXEL-FAITHFUL in structure: the same building, the same skyline, the same room\n` +
+    `- The destination or the experience is the hero — natural daylight, honest colour, no postcard oversaturation\n\n`,
+
+  wellness:
+    `=== WELLNESS / ENERGY GOODS — ORDINARY MERCHANDISE, NOT A REMEDY (HIGHEST PRIORITY) ===\n` +
+    `- The product in the source image MUST be reproduced PIXEL-PERFECT identical: exact shape, bead order, colour, metal fittings, label and packaging typography\n` +
+    `- ★ Legally this is an ordinary consumer product, NOT a medical device and NOT a medicine\n` +
+    `- ⛔ DO NOT depict, imply or illustrate ANY bodily or health effect: no anatomy diagram, no body outline, no organ, no pain-relief symbol, no energy flowing into a person, no before/after wellbeing comparison\n` +
+    `- ⛔ DO NOT render glowing auras, light rays, chakra points, meridian lines or radiating energy emanating from the product\n` +
+    `- The product is the hero as a beautiful object — build the advertising scene AROUND it as jewellery or homeware, never as treatment\n\n`,
+});
+
+// ── 合規守門(接進 COMPLIANCE_RULES)──────────────────────────────────
+Object.assign(COMPLIANCE_RULES, {
+  course: {
+    note: '課程廣告受公平交易法管,體態塑身類禁詞比想像中多',
+    prompt:
+      `=== REGULATORY COMPLIANCE — TAIWAN FAIR TRADE ACT (MANDATORY) ===\n` +
+      `- ⛔ Do NOT render any body-shaping efficacy wording or its Chinese equivalent anywhere in the image:\n` +
+      `  燃燒脂肪 / 燃脂 / 消脂 / 溶脂 / 拔脂 / 雕脂 / 震碎脂肪 / 促進脂肪分解 / 抑制脂肪吸收 / 提高脂肪代謝\n` +
+      `  排毒 / 淋巴代謝 / 淋巴引流 / 調整體質 / 改善體質 / 瘦身 / 塑身 / 瘦小腹 / 瘦大腿 / 增高 / 豐胸\n` +
+      `- ⛔ Do NOT render any result-in-N-days claim: no "30天瘦5公斤", no weight figure, no measurement figure, no body-fat percentage\n` +
+      `- ⛔ Do NOT render any before/after body comparison — testimonial results require disclosed methodology under Fair Trade rules\n` +
+      `- ⛔ Do NOT render 保證 / 一定 / 免運動 / 輕鬆 followed by any outcome\n` +
+      `- Any text may describe the activity itself (課程內容、練習方式), never a promised physical result\n\n`,
+  },
+
+  mystic: {
+    note: '命理廣告受公平交易法管,禁絕對化斷言與任何療效暗示',
+    prompt:
+      `=== REGULATORY COMPLIANCE — TAIWAN FAIR TRADE ACT (MANDATORY) ===\n` +
+      `- ⛔ Do NOT render any certainty or guarantee wording: 保證 / 必準 / 神準 / 百分百 / 100% / 一定會 / 絕對\n` +
+      `- ⛔ Do NOT render any fate-alteration promise: 改運 / 轉運 / 化解災厄 / 消業障 / 解厄 / 招財必應 / 求子必成\n` +
+      `- ⛔ Do NOT render any medical or health claim: 治療 / 改善失眠 / 調理身體 / 化解病氣 / 增強免疫\n` +
+      `- ⛔ Do NOT render statistics of accuracy, number of clients served, or testimonial success rates\n` +
+      `- Any text must stay descriptive of the service offered, never of a guaranteed outcome\n\n`,
+  },
+
+  travel: {
+    note: '旅行業廣告必須載明公司名稱、種類及註冊編號,且須與旅遊文件相符',
+    prompt:
+      `=== REGULATORY COMPLIANCE — TAIWAN TRAVEL INDUSTRY RULES (MANDATORY) ===\n` +
+      `- ★ Taiwanese travel advertising must state the company name, business category and registration number. If the layout renders any company identification, leave a clean legible area for it and keep that text plain and unstyled\n` +
+      `- ⛔ Do NOT invent a registration number, licence number, association membership number or company name\n` +
+      `- ⛔ Do NOT render prices, day counts, departure dates, seat availability or "限時" urgency wording — advertised terms are legally binding and must match the itinerary document\n` +
+      `- ⛔ Do NOT render superlatives about the destination: 保證看到 / 一定遇到 / 必看 / 絕景保證\n` +
+      `- ⛔ Do NOT depict weather, season, crowd level or facility condition differently from the source image\n\n`,
+  },
+
+  wellness: {
+    note: '🔴 水晶/能量商品受藥事法管,宣稱療效最低罰 60 萬(2026 真實案例)',
+    prompt:
+      `=== REGULATORY COMPLIANCE — TAIWAN PHARMACEUTICAL AFFAIRS ACT (MANDATORY, HIGHEST RISK) ===\n` +
+      `★ Real enforcement case, Taiwan 2026: an online seller of crystal bracelets used AI-generated copy\n` +
+      `  claiming relief of heart disease, prevention of high blood pressure and anti-inflammatory pain relief.\n` +
+      `  Fined NT$600,000 — the statutory minimum. Maximum NT$25,000,000, goods confiscated and destroyed.\n` +
+      `  The seller's defence of not knowing it was illegal did not reduce the penalty.\n` +
+      `- ⛔ Do NOT render ANY medical-efficacy wording or its Chinese equivalent anywhere in the image:\n` +
+      `  治療 / 緩解 / 舒緩疼痛 / 止痛 / 消炎 / 預防高血壓 / 改善失眠 / 助眠 / 調整體質 / 增強免疫 / 排毒\n` +
+      `  改善循環 / 舒緩肩頸 / 減輕疲勞 / 護肝 / 顧眼 / 抗老 / 防癌 / 降血糖 / 降血脂\n` +
+      `- ⛔ Do NOT draw any anatomical or physiological illustration: no body outline, no organ, no spine, no joint,\n` +
+      `  no meridian line, no chakra point, no acupuncture diagram, no pain-relief icon, no wave or pulse radiating into a body\n` +
+      `- ⛔ Do NOT depict energy visually: no glowing aura, no light beam, no radiating particles, no colour field emanating from the product\n` +
+      `- ⛔ Do NOT render medical-authority signals: no white coat, no stethoscope, no clinical chart, no certification seal, no "醫師推薦"\n` +
+      `- ✅ Culturally conventional folklore wording is acceptable and is NOT a medical claim:\n` +
+      `  招財 / 招桃花 / 防小人 / 避邪 / 貴人運 / 事業運 / 誕生石 / 幸運石\n` +
+      `- Present the item strictly as jewellery or homeware: material beauty, craftsmanship, styling — never as a remedy\n\n`,
+  },
+});
+
+// ── 旅遊也要擋促銷檔期(廣告條件須與旅遊文件相符,不得片面加碼)──────────
+Object.assign(CONTEXT_BLOCKED_BY_PRODTYPE, {
+  travel: ['promo_sale', 'limited_stock', 'unboxing', 'jp_drugstore_haul', 'duty_free'],
+  mystic: ['promo_sale', 'unboxing', 'jp_drugstore_haul', 'jp_direct', 'duty_free', 'limited_stock'],
+});
+
+// ── ⓪ → ① 對照(新增四類)────────────────────────────────────────────
+Object.assign(LAYOUT_BY_PRODTYPE, {
+  course: [
+    { group: '教學現場', keys: ['in_class', 'instructor_intro', 'group_photo'] },
+    { group: '練習與環境', keys: ['student_practice', 'outdoor_class', 'studio_space'] },
+  ],
+  mystic: [
+    { group: '諮詢現場', keys: ['reading_session', 'tool_closeup'] },
+    { group: '人與空間', keys: ['master_portrait', 'mystic_space', 'mystic_headline'] },
+  ],
+  travel: [
+    { group: '目的地', keys: ['landmark_hero', 'itinerary_grid', 'accommodation'] },
+    { group: '旅途中', keys: ['activity_scene', 'local_food', 'transport_move'] },
+  ],
+  // 養生能量商品就是拍商品,沿用「商品實拍」的十種版型,差別只在合規段
+  wellness: LAYOUT_BY_PRODTYPE.physical,
+});
+
+
 // ⓪ 選單本身(索引順序 = 畫面順序)
 const PRODTYPE_OPTIONS = [
-  { value: 'physical', label: '商品實拍 — 食品 / 家電 / 服飾 / 包款', highlight: true },
-  { group: '沒有實體商品可拍' },
+  { group: '有實體商品可拍' },
+  { value: 'physical', label: '商品實拍 — 食品 / 家電 / 服飾 / 包款 / 家具', highlight: true },
+  { value: 'wellness', label: '養生能量商品 — 水晶 / 串珠 / 能量手環 / 按摩器材' },
+  { group: '服務與體驗' },
   { value: 'beauty',  label: '美業服務 — 美睫 / 美甲 / 美髮 / 紋繡 / SPA' },
   { value: 'medical', label: '醫美診所 — 醫美 / 皮膚科 / 牙醫 / 診所' },
+  { value: 'course',  label: '課程與體驗 — 瑜伽 / 舞蹈 / 健身 / 才藝 / 補習班' },
+  { value: 'mystic',  label: '命理與占卜 — 塔羅 / 八字 / 紫微 / 風水' },
+  { value: 'travel',  label: '旅遊與行程 — 旅行社 / 導遊 / 一日遊 / 自由行' },
+  { group: '專業與技術' },
   { value: 'equip',   label: '機台與加工件 — 精密加工 / 半導體 / 產線設備' },
   { value: 'screen',  label: '螢幕畫面 — 網站 / 系統後台 / App 介面' },
   { value: 'pro',     label: '專業形象 — 律師 / 醫師 / 顧問 / 事務所' },
