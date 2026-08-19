@@ -81,6 +81,40 @@ function registerBrandPackColors(packs) {
 
 // ★ v10.5:getColor 加 warning,不再靜默 fallback 到 gold
 //   防止 GAS 寫了不存在的 navColor 卻看不出來
+// 🩹 2026-08-19:把 CSS 色名換成色碼。
+//   做法:丟給瀏覽器自己解析 —— 認得就回傳 rgb(...),認不得會維持原樣或空字串。
+//   這樣 navy / coral / beige / ivory / teal / salmon … 全部自動支援,
+//   而且不必在程式裡維護一份會寫錯的色表。
+const _cssNameCache = {};
+function _cssColorToHex(name) {
+  const key = String(name || '').trim().toLowerCase();
+  // 只放行「純英文字母」的色名,避免把中文形容詞也丟進去試
+  if (!key || !/^[a-z]+$/.test(key)) return null;
+  if (key in _cssNameCache) return _cssNameCache[key];
+  let hex = null;
+  try {
+    const probe = document.createElement('span');
+    probe.style.color = '';
+    probe.style.color = key;
+    // 瀏覽器不認得的色名會讓賦值失敗,style.color 仍是空字串
+    if (probe.style.color) {
+      document.body ? document.body.appendChild(probe) : null;
+      const rgb = (window.getComputedStyle
+        ? getComputedStyle(probe).color
+        : probe.style.color) || '';
+      if (probe.parentNode) probe.parentNode.removeChild(probe);
+      const m = rgb.match(/(\d{1,3})\D+(\d{1,3})\D+(\d{1,3})/);
+      if (m) {
+        hex = '#' + [m[1], m[2], m[3]]
+          .map(function (n) { return parseInt(n, 10).toString(16).padStart(2, '0'); })
+          .join('');
+      }
+    }
+  } catch (_) { hex = null; }
+  _cssNameCache[key] = hex;
+  return hex;
+}
+
 // 🩹 2026-08-19:挑出「真的能用」的品牌色。
 //   優先順序:能用的 navColor → 色碼欄位(colorHex/color_hex/primaryColor)→ 金色。
 //   ★ 「自訂色」「自訂」「custom」這類是佔位字,不是顏色,一律略過。
@@ -90,7 +124,11 @@ function _pickBrandColor(b) {
   const nav = String(b.navColor || '').trim();
   const isPlaceholder = _COLOR_PLACEHOLDERS.includes(nav.toLowerCase());
   // navColor 本身就能用(預設色名 / brand_xxx / 色碼)就直接用
-  if (nav && !isPlaceholder && (CMAP[nav] || /#?[0-9A-Fa-f]{6}|^rgba?\(/.test(nav))) return nav;
+  if (nav && !isPlaceholder && (
+        CMAP[nav] ||
+        /#?[0-9A-Fa-f]{6}|^rgba?\(/.test(nav) ||
+        _cssColorToHex(nav)          // navy / coral 這類 CSS 色名也算可用
+      )) return nav;
   // 否則去色碼欄位撈(欄位名在不同來源不一致,全都試一遍)
   const hex = b.colorHex || b.color_hex || b.primaryColor || b.primary_color || b.color;
   const m = String(hex || '').match(/#?[0-9A-Fa-f]{6}/);
@@ -127,6 +165,14 @@ function getColor(key) {
   // 字串裡「夾著」色碼也收(例如「米白 #F5F0E8」)
   const embedded = raw.match(/#[0-9A-Fa-f]{6}/);
   if (embedded) { const h = embedded[0]; return { c: h, bg: h + '22' }; }
+
+  // 🩹 2026-08-19:認得 CSS 標準色名(navy / coral / beige / ivory …約 140 個)。
+  //   病灶:系統原本只認六個公版色名,但客戶很自然會打 navy、coral 這種常見色名,
+  //   一打就查不到 → 全部退回金色。實測線上 13 個品牌,PROTEX(coral)與
+  //   大東專利事務所(navy)就是卡在這裡。
+  //   ★ 不自己編色表:交給瀏覽器解析,它本來就認得這一整套,也不會被我寫錯。
+  const named = _cssColorToHex(raw);
+  if (named) return { c: named, bg: named + '22' };
   // 🩹 2026-08-14:brand_xxx 開頭 + 品牌色「還沒註冊完」→ 安靜 fallback。
   //   紅字原本是為了抓「navColor 打錯字」而加的,立意正確,
   //   但它連「顏色還在路上」也一起罵 —— 品牌色是 async 抓回來的,
