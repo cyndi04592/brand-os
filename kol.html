@@ -5815,8 +5815,35 @@ const PRODUCT_ROLE_LABEL = { packaging: '外包裝', contents: '內容物', main
 const PRODUCT_ROLE_ORDER = { packaging: 0, dish: 0, main: 0, contents: 1 };
 // 🆕 商品照上限:Seedance 一次最多 9 張參考圖,預留 1 臉 + 1 場景 + 1 服裝 → 商品最多 6 件(不要用滿,要預留)
 const MAX_PRODUCT_REFS = 6;
+// 🆕 v3.4(2026-08-19)槽位要跟著「商品呈現方式」走。
+//   踩到的坑:選了「螢幕成果 / 專業服務 / 其他數位服務」,下面的分槽還是寫「外包裝 / 內容物」——
+//   因為舊版 productSlots 只看商品表的 productType,完全沒讀使用者選的 mode。
+//   後果不只是名稱難看:它會暗示客戶「去找一張外包裝照」,而服務業根本沒有外包裝。
+//   ⚠️ 只借用既有的四個 role key(packaging / contents / main / dish),不發明新 key,
+//      因為 role 決定 [Image2] / [Image3] 的排序(contents=Image3,其餘=Image2)。
+const MODE_SLOTS = {
+  service:  [{ role: 'main', label: '成果照 · 做完的樣子' }],
+  equip:    [{ role: 'main', label: '機台 / 設備' }, { role: 'contents', label: '加工件 / 成品' }],
+  screen:   [{ role: 'main', label: '螢幕截圖 · 要自己提供' }],
+  pro:      [{ role: 'main', label: '情境照 · 可不放' }],
+  digital:  [{ role: 'main', label: '情境照 · 可不放' }],
+  agency:   [{ role: 'main', label: '工作情境 · 可不放' }],
+  medical:  [{ role: 'main', label: '環境 / 情境照' }],
+  course:   [{ role: 'main', label: '上課情境' }],
+  mystic:   [{ role: 'main', label: '桌面 / 牌卡' }],
+  travel:   [{ role: 'main', label: '地點照 · 必須是真實地點' }],
+  wellness: [{ role: 'main', label: '商品照' }, { role: 'contents', label: '配戴 / 擺放照' }],
+};
+function currentProductMode(prod) {
+  if (!prod) return '';
+  const key = prod.prodName || prod.name;
+  return String((S.productModeOverride || {})[key] || prod.productMode || '').trim().toLowerCase();
+}
 function productSlots() {
   const prod = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
+  const mode = currentProductMode(prod);
+  if (MODE_SLOTS[mode]) return MODE_SLOTS[mode];       // 服務/法規型 → 用對應的槽名
+  // held / worn / hero / demo 與「自動」→ 照舊看商品表(海苔、炒菜輸出一字不變)
   const type = productTypeOf(prod);
   if (type === 'dish')   return [{ role: 'dish', label: '成品照' }];
   if (type === 'object') return [{ role: 'main', label: '主體' }];
@@ -5841,7 +5868,11 @@ function orderedProductUrls() {
 
 // ═══ 🆕 v3.1 商品呈現方式(mode 選擇器)· STEP2 / STEP3 共用同一資料源 ═══
 // 🆕 v3.2:服務型四模式(service/equip/screen/pro)。見 kol-product.js 檔頭說明。
-const PRODUCT_MODE_NEW = ['held', 'worn', 'hero', 'demo', 'digital', 'service', 'equip', 'screen', 'pro'];
+// 🆕 v3.4(2026-08-19)與廣告圖 ⓪ 九大行業對齊:再加六種。
+//   ⚠️ 這份白名單決定「選了之後走新路還是舊路」——漏放行的值會被當成 productType,
+//      也就是掉回海苔那條舊路,新型態的畫面守則完全不會生效。加型態必改這行。
+const PRODUCT_MODE_NEW = ['held', 'worn', 'hero', 'demo', 'digital', 'service', 'equip', 'screen', 'pro',
+                          'medical', 'course', 'mystic', 'travel', 'wellness', 'agency'];
 function applyProductModeOverride(prod) {
   if (!prod) return prod;
   const ov = (S.productModeOverride || {})[prod.prodName || prod.name];
@@ -5860,11 +5891,20 @@ const PRODUCT_MODE_OPTS = [
     { v: 'demo',     label: '操作示範(噴霧 / 上妝 / 烹調 / 安裝)' },
   ] },
   { grp: '服務・成果', opts: [
-    { v: 'service',  label: '服務成果(美睫 / 美甲 / 美髮 / 醫美 / 健身)' },
+    { v: 'service',  label: '服務成果(美睫 / 美甲 / 美髮 / 健身)' },
     { v: 'equip',    label: '設備製程(CNC / 半導體 / 工廠加工)' },
-    { v: 'screen',   label: '螢幕成果(軟體 / 網站 / 廣告代操 / 後台)' },
-    { v: 'pro',      label: '專業服務(律師 / 醫生 / 顧問 / 事務所)' },
-    { v: 'digital',  label: '其他數位服務(課程 / 體驗 / 訂閱)' },
+    { v: 'screen',   label: '螢幕成果(軟體 / 網站 / 後台畫面)' },
+    { v: 'pro',      label: '專業服務(律師 / 醫生 / 商標專利 / 事務所)' },
+    { v: 'digital',  label: '其他數位服務(訂閱 / 會員)' },
+  ] },
+  // 🆕 v3.4:這六種各自受不同法規管,選對了台詞與畫面才會自動避開紅線
+  { grp: '受法規管的行業', opts: [
+    { v: 'medical',  label: '醫美診所(醫療法 · 禁前後對比與優惠)' },
+    { v: 'course',   label: '課程與體驗(瑜伽 / 舞蹈 / 健身 / 才藝)' },
+    { v: 'mystic',   label: '命理占卜(塔羅 / 八字 / 紫微 / 風水)' },
+    { v: 'travel',   label: '旅遊行程(旅行社 / 一日遊 / 自由行)' },
+    { v: 'wellness', label: '養生能量商品(水晶 / 串珠 / 能量手環)' },
+    { v: 'agency',   label: '行銷代操 / 系統服務(廣告公司 / SaaS)' },
   ] },
 ];
 function renderProductModePicker(mountId) {
