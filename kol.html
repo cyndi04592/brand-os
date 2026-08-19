@@ -7729,6 +7729,9 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
 
 <script src="kol-crew-director.js"></script>
 <script src="kol-brand-soul.js"></script>
+<!-- ⚖️ 2026-08-19 合規守門:必須在 kol-storywriter.js 之前載入
+     (storywriter 打包台詞請求時會讀 window.KolCompliance) -->
+<script src="kol-compliance.js"></script>
 <script src="kol-product.js"></script>
 <script src="kol-environment.js"></script>
 <script src="kol-cinematographer.js"></script>
