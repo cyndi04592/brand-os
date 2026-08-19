@@ -38,6 +38,37 @@ let CMAP = {
   brown:  { c:'#C8A870',       bg:'rgba(200,168,112,0.15)' }
 };
 
+// 🩹 2026-08-19:把 onboard 的 12 個預設色系一起註冊進 CMAP。
+//   病灶(這才是根治點):COLOR_PRESETS 是「我們自己」定義的 12 個色系,
+//   每個都有中文名 + 三個色碼。但 onboard 存進資料庫的是「中文名」
+//   (夜幕深藍 / MUJI米白),而 CMAP 用的是英文 key(navy / muji)——
+//   兩套命名從來沒有對接,系統於是認不得自己給出去的選項。
+//   → 客戶明明是「從我們的色票裡挑一個」,結果一律變成金色。
+//   ★ 這裡把中文名、英文 key、色碼三者一次接起來,色碼直接沿用
+//     onboard.html 的 COLOR_PRESETS,不是我另外猜的。
+const ONBOARD_PRESETS = [
+  { name: '品牌金',      key: 'gold',     hex: '#E8A03A' },
+  { name: '珊瑚橙',      key: 'coral',    hex: '#FF6B6B' },
+  { name: '蒂芬妮藍',    key: 'tiffany',  hex: '#00B5AD' },
+  { name: '愛馬仕橙',    key: 'hermes',   hex: '#E8603A' },
+  { name: '夜幕深藍',    key: 'navy',     hex: '#1B2A4A' },
+  { name: '香奈兒黑',    key: 'chanel',   hex: '#1A1A1A' },
+  { name: '玫瑰粉',      key: 'rose',     hex: '#FF8FAB' },
+  { name: '抹茶綠',      key: 'matcha',   hex: '#6B8F5A' },
+  { name: '薰衣草紫',    key: 'lavender', hex: '#9B7FD4' },
+  { name: 'Apple銀',    key: 'apple',    hex: '#8D8D93' },
+  { name: 'MUJI米白',   key: 'muji',     hex: '#C8B89A' },
+  { name: '中國紅',      key: 'red',      hex: '#C0392B' },
+];
+(function registerOnboardPresets() {
+  ONBOARD_PRESETS.forEach(function (p) {
+    const v = { c: p.hex, bg: p.hex + '22' };
+    // 中文名、英文 key、小寫 key 三種寫法都收,存進去哪一種都查得到
+    if (!CMAP[p.name]) CMAP[p.name] = v;
+    if (!CMAP[p.key]) CMAP[p.key] = v;
+  });
+})();
+
 // ★ v10.5:把 brand_packs 的 primary_color 動態註冊成 CMAP key
 //   呼叫時機:admaker.js 從 GAS 撈完 brand_packs 後立刻註冊
 //   規則:CMAP[`brand_${pack_key}`] = { c: HEX, bg: HEX+'22'(透明度 13%) }
