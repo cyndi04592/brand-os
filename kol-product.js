@@ -70,10 +70,21 @@
     if (m === 'held' || m === 'worn' || m === 'hero' || m === 'demo' || m === 'digital') return m;
     // 🆕 v3.2 服務型四模式
     if (m === 'service' || m === 'equip' || m === 'screen' || m === 'pro') return m;
+    // 🆕 v3.3(2026-08-19)與廣告圖 ⓪ 商品型態對齊,新增五種
+    if (m === 'beauty' || m === 'medical' || m === 'course' ||
+        m === 'mystic' || m === 'travel'  || m === 'wellness') return m;
+    if (/醫美|診所|皮膚科|牙醫|微整|medical/.test(m))                     return 'medical';
+    if (/課程|瑜伽|瑜珈|舞蹈|健身|才藝|補習|家教|師資|course/.test(m))     return 'course';
+    if (/塔羅|八字|紫微|占卜|命理|風水|mystic/.test(m))                   return 'mystic';
+    if (/旅遊|行程|導遊|旅行社|一日遊|自由行|travel/.test(m))              return 'travel';
+    if (/水晶|串珠|能量手環|開運|wellness/.test(m))                       return 'wellness';
     if (/美睫|美甲|美髮|醫美|護膚|成果|service/.test(m)) return 'service';
     if (/機台|設備|加工|製程|工廠|CNC|半導體|equip/i.test(m)) return 'equip';
     if (/螢幕|畫面|截圖|軟體|網站|後台|screen/.test(m)) return 'screen';
-    if (/律師|醫生|顧問|專業|事務所|pro\b/.test(m)) return 'pro';
+    // 🆕 v3.4 行銷代操 / 系統服務(要排在 pro 之前,否則「品牌顧問」被 pro 先攔走)
+    if (m === 'agency') return 'agency';
+    if (/行銷|代操|廣告公司|品牌顧問|社群經營|投放|素材代製|agency/.test(m)) return 'agency';
+    if (/律師|醫生|顧問|專業|事務所|商標|專利|pro\b/.test(m)) return 'pro';
     if (/手持|小物|held/.test(m)) return 'held';
     if (/穿戴|wear|worn/.test(m)) return 'worn';
     if (/主角|大物|家具|家電|hero|furniture|appliance/.test(m)) return 'hero';
@@ -136,6 +147,70 @@
         'with authentic tools of that trade only where natural (documents, screen, notes) and never as a hero object. ' +
         'Lighting is clean and trustworthy; posture and framing convey competence and calm authority rather than sales energy.';
     }
+    // ══ 🆕 v3.4 行銷代操 / 系統服務:工作現場,不是盒裝軟體 ══
+    if (mode === 'agency') {
+      return 'MARKETING SERVICE / PLATFORM — there is NO physical product and NO boxed software. ' +
+        'DO NOT invent, draw or place any product box, retail package, disc, branded merchandise or shrink-wrapped software anywhere. ' +
+        'DO NOT invent any interface, dashboard, chart, graph, metric, number or logo on a screen — ' +
+        'if a screen is visible it must either come from a supplied reference image or stay out of focus and unreadable. ' +
+        'DO NOT render any comparison layout, versus split, ranking, scoreboard or crossed-out competitor — ' +
+        'comparative claims against other agencies or creators are legally restricted. ' +
+        'The subject is the working moment: she reviews material, discusses with a client, or presents calmly at a desk. ' +
+        'Ordinary office or studio light, real workspace clutter, credible and unhurried — advisory tone, never sales-floor energy.';
+    }
+    // ══ 🆕 v3.3 醫美診所:信任感,不是成果對比 ══
+    if (mode === 'medical') {
+      return 'CLINIC / MEDICAL AESTHETIC — she represents a licensed medical facility. ' +
+        'DO NOT invent any product box, package, ampoule, branded syringe or retail container. ' +
+        'DO NOT construct any before/after comparison in the frame — regulation forbids it on social platforms. ' +
+        'The subject is the clinic environment, the team, or a calm informational moment: ' +
+        'clean treatment room, consultation desk, honest even lighting, orderly surfaces. ' +
+        'She appears as a credible professional, not a salesperson. Faces stay natural and un-retouched — ' +
+        'do not beautify anyone in a way that implies a promised outcome.';
+    }
+    // ══ 課程與體驗:教學現場,人是主角 ══
+    if (mode === 'course') {
+      return 'COURSE / CLASS — the experience is the product, there is NO physical item to sell. ' +
+        'DO NOT invent any product box, kit, boxed set or retail container anywhere in the frame. ' +
+        'The hero is the teaching moment and the people practising: she demonstrates, guides or corrects, ' +
+        'with students visibly at different stages around her. ' +
+        'Equipment (mats, instruments, desks, weights) appears only as the natural tools of the practice, never as merchandise. ' +
+        'Keep bodies and faces real — genuine effort and real posture, never a rehearsed stock-photo smile. ' +
+        'Real room lighting, wooden floor or studio surfaces reading as an actual place in use.';
+    }
+    // ══ 命理與占卜:諮詢桌面,不是靈異秀 ══
+    if (mode === 'mystic') {
+      return 'DIVINATION / METAPHYSICS — she offers a consultation session, not a spectacle. ' +
+        'DO NOT invent any retail product box, package or merchandise container. ' +
+        'DO NOT invent card artwork, chart layouts, glyphs or talisman inscriptions — if a reference image is given, ' +
+        'reproduce those objects exactly as supplied. ' +
+        'DO NOT depict supernatural effects: no glowing auras, floating objects, light beams, spirits or magical particles. ' +
+        'The subject is her hands at work on the table, or her calm presence in the consultation space. ' +
+        'Low warm directional light, muted contemplative tones, grounded and human — a quiet conversation, not a ritual.';
+    }
+    // ══ 旅遊與行程:地點必須真實 ══
+    if (mode === 'travel') {
+      return 'TRAVEL / ITINERARY — the place shown must be REAL. ' +
+        'DO NOT invent, add, relocate or beautify any landmark, building, mountain, coastline, view or facility. ' +
+        'DO NOT invent boxed travel products or retail packaging. ' +
+        'If a reference image is given it IS the actual destination — reproduce its structure faithfully: ' +
+        'the same building, the same skyline, the same room. ' +
+        'She appears within the real location as a traveller or guide, the place clearly readable behind her. ' +
+        'Natural daylight and honest colour — avoid oversaturated postcard grading that misrepresents the place.';
+    }
+    // ══ 🔴 養生能量商品:是首飾/居家用品,不是療方 ══
+    if (mode === 'wellness') {
+      const wsz = scale ? '; it is ' + scale + ', at that true size' : '';
+      return 'WELLNESS / ENERGY GOODS — legally an ORDINARY consumer product, NOT a medical device and NOT a medicine. ' +
+        'Keep the product in [Image2] consistent in shape, bead order, colour, metal fittings and any printed text, ' +
+        'never mirrored or flipped, do not distort or morph it' + wsz + '. ' +
+        'DO NOT depict, imply or illustrate ANY bodily or health effect: no anatomy diagram, no body outline, no organ, ' +
+        'no pain-relief symbol, no energy flowing into a person, no before/after wellbeing comparison. ' +
+        'DO NOT render glowing auras, light rays, chakra points, meridian lines or radiating energy from the product. ' +
+        'DO NOT show white coats, stethoscopes, clinical charts or certification seals. ' +
+        'She wears or presents it as beautiful jewellery or homeware — material beauty and craftsmanship, never as a remedy. ' +
+        GROUNDED + '.';
+    }
     if (mode === 'digital') {
       return 'NO PHYSICAL PRODUCT — this is a digital product or service: she does NOT hold any physical item and no fake package is invented. She presents it through a device she is using (laptop, phone or tablet) or through the visible real-world outcome and experience it delivers, talking naturally to camera about its value; if a logo or screen is given in [Image2] it appears on the device screen, kept clean, correct and undistorted';
     }
@@ -188,6 +263,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.1', resolveMode };
-  console.log('[KolProduct] 🎒 v3.1 就緒 · 道具師·模式驅動(7模式:手持/包裝/盛盤/穿戴/主角大物/操作示範/數位服務 · 只有設productMode才走新模式·海苔等舊商品原樣不變) + 物理錨 + 尺度錨臉身體 + 🍽盤子絕不下鍋鎖強化');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.4', resolveMode };
+  console.log('[KolProduct] 🎒 v3.4 就緒 · 道具師·模式驅動(10模式:手持/包裝/盛盤/穿戴/主角大物/操作示範/數位服務/醫美/課程/命理/旅遊/養生/專業/行銷代操 · 只有設productMode才走新模式·海苔等舊商品原樣不變) + 物理錨 + 尺度錨臉身體 + 🍽盤子絕不下鍋鎖強化');
 })();
