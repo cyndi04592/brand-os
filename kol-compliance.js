@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-compliance.js · v1.2 · 合規守門(2026-08-19)
+//  kol-compliance.js · v1.3 · 合規守門(2026-08-19)
 //
 //  為什麼影片比靜態圖更需要這個:
 //    靜態圖上的字由版型控制;KOL 講的是「台詞」—— AI 自己寫、而且會唸出來。
@@ -147,21 +147,41 @@
     // 沒明設 productMode → 用關鍵字推(與 kol-product.js 同一套語彙)
     const hay = [prod.productMode, prod.name, prod.prodName, prod.tag, prod.productType]
       .filter(Boolean).join(' ');
+    // ⚖️ v1.3 關鍵字表(2026-08-19)
+    //   ★ 這張表是「台詞層」與「畫面層」共同的唯一分類來源。
+    //     kol-product.js 的 resolveMode 會回頭呼叫這裡,兩層才不會一個判美業、一個判一般商品。
+    //   ★ 順序有意義,由窄到寬:醫療要排在美容之前(「皮秒雷射」不可以被「美容」先攔走);
+    //     行銷要排在專業服務之前(「品牌顧問」不可以被「顧問」先攔走)。
+    //   ★ v1.2 的破口:認得「美睫」卻不認得「接睫」、認得「醫美」卻不認得「皮秒雷射」,
+    //     結果客戶打真實店名時整套規則等於沒開。這一版把口語與店家常用寫法補進來。
     const guess = (function () {
-      // 🆕 v1.1 化粧品「商品」:指甲油、凝膠、保養品……法律上就是化粧品,
-      //   以前完全認不出來(「指甲油」不含「美甲」二字)→ 零保護。這是真正的破口。
-      if (/指甲油|甲油|光療膠|凝膠指彩|指彩|卸甲|美甲貼/.test(hay))       return 'beauty';
-      if (/保養品|精華|乳液|乳霜|面膜|化粧品|化妝品|防曬|卸妝|洗面/.test(hay)) return 'beauty';
-      if (/洗髮|潤髮|護髮|染髮劑|燙髮劑|口紅|唇膏|粉底|眼影|睫毛膏/.test(hay)) return 'beauty';
-      if (/美睫|美甲|美髮|紋繡|SPA|護膚/.test(hay))            return 'beauty';
-      if (/醫美|診所|皮膚科|牙醫|微整/.test(hay))              return 'medical';
-      if (/課程|瑜伽|瑜珈|舞蹈|健身|才藝|補習|家教|師資/.test(hay)) return 'course';
-      if (/塔羅|八字|紫微|占卜|命理|風水/.test(hay))            return 'mystic';
-      if (/旅遊|行程|導遊|旅行社|一日遊|自由行/.test(hay))       return 'travel';
-      if (/水晶|串珠|能量手環|按摩|經絡|保健/.test(hay))         return 'wellness';
-      // 🆕 v1.1 行銷代操要排在專業服務之前,否則「品牌顧問」會被 pro 先攔走
-      if (/行銷|代操|廣告公司|品牌顧問|社群經營|投放|素材代製|數位轉型/.test(hay)) return 'agency';
-      if (/律師|事務所|會計師|顧問|醫師|商標|專利|記帳/.test(hay))  return 'pro';
+      // ── 化粧品「商品」(法律上就是化粧品,療效字眼一樣違法)──
+      if (/指甲油|甲油|光療膠|凝膠指彩|指彩|卸甲|美甲貼|水晶指甲/.test(hay))    return 'beauty';
+      if (/保養品|精華液?|乳液|乳霜|面膜|化粧品|化妝品|防曬|卸妝|洗面|化妝水|眼霜/.test(hay)) return 'beauty';
+      if (/洗髮|潤髮|護髮|髮膜|染髮劑|燙髮劑|口紅|唇膏|唇釉|粉底|氣墊|眼影|睫毛膏|眉筆/.test(hay)) return 'beauty';
+      // ── 醫療與醫美(要排在美業之前)──
+      if (/醫美|診所|皮膚科|牙醫|植牙|矯正|微整|整形|醫學美容/.test(hay))       return 'medical';
+      //   ⚠️ 不可以放單獨的「拉提」——「皮拉提斯」裡面就有「拉提」二字,
+      //      會讓一堂瑜伽課被判成醫美。音波/電波已經涵蓋真正的拉提療程。
+      if (/皮秒|飛梭|雷射|電波|音波|玻尿酸|肉毒|針劑|埋線|植髮|水光/.test(hay)) return 'medical';
+      // ── 美業服務(店家口語寫法全收)──
+      if (/美睫|接睫|種睫|嫁接睫毛|睫毛翹翹|美甲|光療|做指甲|手足保養/.test(hay)) return 'beauty';
+      if (/美髮|剪髮|染髮|燙髮|洗頭|接髮|頭皮養護|沙龍/.test(hay))            return 'beauty';
+      if (/紋繡|霧眉|飄眉|繡眉|美瞳線|紋唇/.test(hay))                      return 'beauty';
+      if (/做臉|臉部保養|護膚|美容|SPA|指壓|按摩推拿|除毛|熱蠟|身體保養/.test(hay)) return 'beauty';
+      // ── 課程與體驗 ──
+      if (/課程|課表|瑜伽|瑜珈|皮拉提斯|舞蹈|健身|重訓|教練課|才藝|補習|家教|師資|工作坊|講座|訓練營/.test(hay)) return 'course';
+      // ── 命理占卜 ──
+      if (/塔羅|八字|紫微|占卜|命理|風水|問事|論命|擇日|姓名學/.test(hay))     return 'mystic';
+      // ── 旅遊行程 ──
+      if (/旅遊|行程|導遊|旅行社|一日遊|自由行|包車|遊程|跟團|機加酒/.test(hay)) return 'travel';
+      // ── 養生能量商品(實體商品,即使有包裝也照樣受藥事法管)──
+      if (/水晶|串珠|能量手環|能量石|礦石|開運手鍊|磁石|鍺石/.test(hay))       return 'wellness';
+      if (/按摩器|按摩槍|按摩椅|經絡|艾灸|溫熱墊|遠紅外線|磁力貼/.test(hay))   return 'wellness';
+      // ── 行銷代操(要排在專業服務之前)──
+      if (/行銷|代操|廣告公司|廣告代理|品牌顧問|社群經營|廣告投放|素材代製|數位轉型/.test(hay)) return 'agency';
+      // ── 專業服務 ──
+      if (/律師|事務所|會計師|顧問|醫師|商標|專利|記帳|法律諮詢|報稅/.test(hay)) return 'pro';
       return null;
     })();
     if (!guess) return null;
@@ -204,6 +224,6 @@
     return hits;
   }
 
-  window.KolCompliance = { RULES, resolveRule, tabooFor, briefFor, scanLines, isProductForm, version: 'v1.2' };
-  console.log('[KolCompliance] ⚖️ v1.2 就緒 · 8 套行業合規禁詞(美業/醫美/課程/命理/旅遊/養生/專業/行銷顧問) · 化粧品商品可辨識 · 服務規則不誤打實體商品 · 誇飾放行/數字排名擋住');
+  window.KolCompliance = { RULES, resolveRule, tabooFor, briefFor, scanLines, isProductForm, version: 'v1.3' };
+  console.log('[KolCompliance] ⚖️ v1.3 就緒 · 8 套行業合規禁詞 · 關鍵字表擴充(接睫/皮秒雷射/霧眉/按摩槍…) · 台詞層與畫面層共用同一張分類表');
 })();
