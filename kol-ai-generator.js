@@ -31,6 +31,36 @@ const PASSWORD = 'raby2026';
 // v3.16: 改走 Cloudflare proxy 保護 FAL_KEY,不再前端寫死金鑰
 const WORKER_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 
+// ═══════════════════════════════════════════════════════════════
+//  🔐 2026-08-19 自己帶身分證(修 401 NEED_LOGIN)
+//
+//  踩到的坑:kol.html 有一個全域 fetch 攔截器,會自動幫每個送往 Worker 的
+//    請求塞 token + email。但那個攔截器裝在 kol.html 第 1657 行,
+//    而本檔在第 1654 行就被載入了 —— 差三行,順序卻是死的。
+//    本檔在自己執行期間打出去的請求用的是「原生 fetch」,沒人幫忙塞證,
+//    Worker 看不到身分 → 回 401 NEED_LOGIN。
+//    (載入當下 gasGet('getBrandOS') 就中招,Console 一片紅字。)
+//
+//  為什麼不搬 script 順序:kol.html 裡本檔被載入兩次(1654 與 7734),
+//    搬哪一個都要重新驗整條線,而且下一次有人動順序又會壞。
+//    讓它自己帶證,跟載入順序脫鉤,一勞永逸。
+//
+//  ⚠️ 三個打 Worker 的出口都要包:fal_image_submit(花錢類,不帶必被擋)、
+//     gas_cached(讀個人資料)、gas_write(寫入)。日後新增出口記得也包。
+// ═══════════════════════════════════════════════════════════════
+function _authToken() {
+  try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; }
+  catch (e) { return ''; }
+}
+function _withAuth(o) {
+  o = o || {};
+  try {
+    if (!o.token) { const t = _authToken(); if (t) o.token = t; }
+    if (!o.email) { const e = localStorage.getItem('bs_sso_email') || ''; if (e) o.email = e; }
+  } catch (e) { /* 讀不到 storage 就照原樣送,行為跟改造前一樣 */ }
+  return o;
+}
+
 const COST_PER_IMAGE_USD = 0.06;
 
 // ── 狀態 ──────────────────────────────────────────────────
@@ -306,7 +336,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.30] 已載入(+window.KAI 人物表共用 +gasPost)');
+  console.log('[kol-ai-generator v3.31] 已載入(+window.KAI 人物表共用 +gasPost)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1247,11 +1277,11 @@ async function generate() {
     const res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify(_withAuth({
         password: PASSWORD,
         action: 'fal_image_submit',
         ...payload,
-      }),
+      })),
     });
 
     const latency = ((performance.now() - t0) / 1000).toFixed(1);
@@ -1479,7 +1509,7 @@ async function gasGet(action, params = {}) {
       const r = await fetch(WORKER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'gas_cached', password: PASSWORD, gasAction: action, gasParams: params }),
+        body: JSON.stringify(_withAuth({ action: 'gas_cached', password: PASSWORD, gasAction: action, gasParams: params })),
       });
       const out = await r.json();
       if (out && out.ok !== false) return out;   // fresh / miss / stale 都是可用資料
@@ -1516,7 +1546,7 @@ async function gasPost(action, extra = {}) {
     const r = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: PASSWORD, action: 'gas_write', gasAction: action, payload: extra }),
+      body: JSON.stringify(_withAuth({ password: PASSWORD, action: 'gas_write', gasAction: action, payload: extra })),
     });
     return r.json();
   }
