@@ -81,16 +81,65 @@ function registerBrandPackColors(packs) {
 
 // ★ v10.5:getColor 加 warning,不再靜默 fallback 到 gold
 //   防止 GAS 寫了不存在的 navColor 卻看不出來
+// 🩹 2026-08-19:挑出「真的能用」的品牌色。
+//   優先順序:能用的 navColor → 色碼欄位(colorHex/color_hex/primaryColor)→ 金色。
+//   ★ 「自訂色」「自訂」「custom」這類是佔位字,不是顏色,一律略過。
+const _COLOR_PLACEHOLDERS = ['自訂色', '自訂', '自定色', 'custom', 'customcolor', '其他'];
+function _pickBrandColor(b) {
+  if (!b) return 'gold';
+  const nav = String(b.navColor || '').trim();
+  const isPlaceholder = _COLOR_PLACEHOLDERS.includes(nav.toLowerCase());
+  // navColor 本身就能用(預設色名 / brand_xxx / 色碼)就直接用
+  if (nav && !isPlaceholder && (CMAP[nav] || /#?[0-9A-Fa-f]{6}|^rgba?\(/.test(nav))) return nav;
+  // 否則去色碼欄位撈(欄位名在不同來源不一致,全都試一遍)
+  const hex = b.colorHex || b.color_hex || b.primaryColor || b.primary_color || b.color;
+  const m = String(hex || '').match(/#?[0-9A-Fa-f]{6}/);
+  if (m) return m[0].startsWith('#') ? m[0] : '#' + m[0];
+  return nav && !isPlaceholder ? nav : 'gold';
+}
+
 function getColor(key) {
   if (!key) return CMAP.gold;
   if (CMAP[key]) return CMAP[key];
+
+  // 🩹 2026-08-19:直接吃色碼。
+  //   病灶:getColor 原本只認「預設色名」或「已註冊的 brand_xxx」,
+  //   完全不接受色碼 —— 但客戶在後台填的往往就是從網頁吸下來的 HEX,
+  //   或乾脆打「自訂色」「MUJI米白」這種形容詞。
+  //   結果:客戶明明設了顏色,系統卻一路 fallback 到金色,
+  //   而且畫面上看不出哪裡錯,只有 Console 一直噴紅字。
+  //   ★ 這裡把三種常見寫法都收下:#RRGGBB / #RGB / rgb(r,g,b)
+  const raw = String(key).trim();
+  const hex6 = raw.match(/^#?([0-9A-Fa-f]{6})$/);
+  if (hex6) { const h = '#' + hex6[1]; return { c: h, bg: h + '22' }; }
+  const hex3 = raw.match(/^#?([0-9A-Fa-f]{3})$/);
+  if (hex3) {
+    const h = '#' + hex3[1].split('').map(function (x) { return x + x; }).join('');
+    return { c: h, bg: h + '22' };
+  }
+  const rgb = raw.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
+  if (rgb) {
+    const h = '#' + [rgb[1], rgb[2], rgb[3]]
+      .map(function (n) { return Math.min(255, parseInt(n, 10)).toString(16).padStart(2, '0'); })
+      .join('');
+    return { c: h, bg: h + '22' };
+  }
+  // 字串裡「夾著」色碼也收(例如「米白 #F5F0E8」)
+  const embedded = raw.match(/#[0-9A-Fa-f]{6}/);
+  if (embedded) { const h = embedded[0]; return { c: h, bg: h + '22' }; }
   // 🩹 2026-08-14:brand_xxx 開頭 + 品牌色「還沒註冊完」→ 安靜 fallback。
   //   紅字原本是為了抓「navColor 打錯字」而加的,立意正確,
   //   但它連「顏色還在路上」也一起罵 —— 品牌色是 async 抓回來的,
   //   側邊欄第一次渲染時必定還沒到,於是每次開站都噴一輪假警報,
   //   久了就沒人相信這行字了。等註冊完成後才恢復告警,真打錯字才叫。
   if (!(String(key).startsWith('brand_') && !window.__CMAP_PACKS_READY)) {
-    console.warn(`[CMAP] 找不到顏色 key: "${key}",fallback 到 gold。請檢查 brands.navColor 或 brand_packs.pack_key 是否對得上`);
+    // 🩹 2026-08-19:訊息要說得出「怎麼修」,不然看到也不知道要做什麼。
+    console.warn(
+      `[CMAP] 認不得顏色「${key}」,先用金色代替。\n` +
+      `  可接受的寫法:色碼 #8B7355、rgb(139,115,85)、預設色名(gold/red/sky/mint/purple/brown),\n` +
+      `  或已註冊的品牌色 key(brand_xxx)。\n` +
+      `  「自訂色」「MUJI米白」這類形容詞不是顏色,請改填實際色碼。`
+    );
   }
   return CMAP.gold;
 }
@@ -319,7 +368,12 @@ function buildDataFromSheets(data) {
     }
   });
   window.BRANDS = (brands || []).map(b => ({
-    id: b.id, name: b.name, icon: '', navColor: b.navColor || 'gold',   // 🆕 商業化:品牌不再用 emoji 圖示,一律純文字
+    // 🩹 2026-08-19:navColor 若是「自訂色」這類形容詞,改用真正的色碼欄位。
+    //   onboard 舊版把 f_color 寫死成「自訂色」,色碼另外存在 colorHex,
+    //   而畫面讀的是 navColor → 舊客戶(已經註冊完的)品牌色一律變金色。
+    //   前端修好只救得了新客戶,這行是救「已經存在資料庫裡」的舊資料。
+    id: b.id, name: b.name, icon: '',
+    navColor: _pickBrandColor(b),   // 🆕 商業化:品牌不再用 emoji 圖示,一律純文字
     soul: b.soul || '', adStyle: b.adStyle || '', hashtags: b.hashtags || '',
     subs: Object.values(prodByBrand[b.id] || {})
   }));
