@@ -164,7 +164,16 @@ function _pickBrandColor(b) {
   const hex = b.colorHex || b.color_hex || b.primaryColor || b.primary_color || b.color;
   const m = String(hex || '').match(/#?[0-9A-Fa-f]{6}/);
   if (m) return m[0].startsWith('#') ? m[0] : '#' + m[0];
-  return nav && !isPlaceholder ? nav : 'gold';
+  // 🩹 2026-08-19:救不回來就直接回 gold,不要把認不得的字往下傳。
+  //   舊寫法是 `nav && !isPlaceholder ? nav : 'gold'` —— 但「MUJI米白」
+  //   這種中文形容詞不在佔位字清單裡,於是被原樣傳給 getColor,
+  //   結果每畫一次就噴一條紅字。這裡已經確定救不回來了,
+  //   往下傳只會製造噪音,不會讓顏色變對。
+  //   ★ 真的填錯字的情況,onboard 那邊已經在源頭擋掉了。
+  if (nav && !isPlaceholder) {
+    console.warn('[CMAP] 品牌色「' + nav + '」不是有效顏色,已改用金色。請在後台改填色碼(例 #8B7355)。');
+  }
+  return 'gold';
 }
 
 function getColor(key) {
@@ -437,7 +446,15 @@ function buildDataFromSheets(data) {
     if (!prodByBrand[p.brandId]) prodByBrand[p.brandId] = {};
     const key = p.subId;
     if (!prodByBrand[p.brandId][key]) prodByBrand[p.brandId][key] = {
-      id: p.subId, name: p.subName, color: p.subColor || 'gold',
+      // 🩹 2026-08-19:系列色也要過 _pickBrandColor。
+      //   病灶(這才是紅字的真正來源):品牌的 navColor 早就修好了,
+      //   但「商品系列」自己也有一個 color 欄位(subColor),裡面存的
+      //   同樣是「自訂色」「MUJI米白」這種字,而 brands.js 第 23 行
+      //   getColor(sb.color) 每畫一個系列就呼叫一次 ——
+      //   香港福臨門有四個系列,點一次就噴四條紅字。
+      //   ★ 之前只修品牌層、沒修系列層,所以永遠修不乾淨。
+      id: p.subId, name: p.subName,
+      color: _pickBrandColor({ navColor: p.subColor, colorHex: p.subColorHex, primaryColor: p.subPrimaryColor }),
       soul: p.subSoul, adStyle: p.subAdStyle, hashtags: p.subHashtags, prods: []
     };
     if (p.prodId) {
