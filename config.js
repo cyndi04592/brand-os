@@ -84,7 +84,20 @@ function registerBrandPackColors(packs) {
     // 從 primary_color 字串中找出 HEX(可能是純 HEX 或長字串內含 HEX)
     const hexMatch = String(p.primary_color).match(/#[0-9A-Fa-f]{6}/);
     if (!hexMatch) {
-      console.warn(`[CMAP] brand_pack "${p.pack_key}" 的 primary_color 找不到 HEX 色碼`, p.primary_color);
+      // 🩹 2026-08-19:註冊失敗的 pack 要「記下來」,不能只是跳過。
+      //   病灶:舊寫法只 continue,那個 pack_key 就永遠查不到 ——
+      //   但資料裡仍有品牌指向它,於是每次渲染都噴一次「不是有效顏色」。
+      //   ★ 記進 _deadPacks 之後,_pickBrandColor 認得它是「已知的壞 pack」,
+      //     直接給金色、不重複警告,並且訊息說得出「要去哪裡修」。
+      _deadPacks[p.pack_key] = String(p.primary_color || '(空白)');
+      if (!_warnedColors['pack:' + p.pack_key]) {
+        _warnedColors['pack:' + p.pack_key] = 1;
+        console.warn(
+          `[CMAP] brand_packs 的「${p.pack_key}」沒有色碼,這個品牌會顯示金色。\n` +
+          `  目前填的是:${p.primary_color || '(空白)'}\n` +
+          `  請到 brand_packs 把 primary_color 改成色碼(例 #8B7355)。`
+        );
+      }
       continue;
     }
     const hex = hexMatch[0];
@@ -150,6 +163,7 @@ function _cssColorToHex(name) {
 //   優先順序:能用的 navColor → 色碼欄位(colorHex/color_hex/primaryColor)→ 金色。
 //   ★ 「自訂色」「自訂」「custom」這類是佔位字,不是顏色,一律略過。
 const _warnedColors = {};   // 🩹 同一個壞值只警告一次,避免刷版
+const _deadPacks = {};      // 🩹 brand_packs 裡沒填色碼的 pack_key(查得到但沒顏色)
 const _COLOR_PLACEHOLDERS = ['自訂色', '自訂', '自定色', 'custom', 'customcolor', '其他'];
 function _pickBrandColor(b) {
   if (!b) return 'gold';
@@ -162,8 +176,14 @@ function _pickBrandColor(b) {
   //   ★ brand_ 開頭的交給 getColor 自己處理,它已經有「還沒註冊完就安靜
   //     fallback」的邏輯,重複判定只會製造假警報。
   if (nav.startsWith('brand_')) return nav;
+  // 已知是「brand_packs 裡沒色碼」的 pack → 安靜給金色,不重複警告
+  if (_deadPacks[nav]) return 'gold';
 
-  const isPlaceholder = _COLOR_PLACEHOLDERS.includes(nav.toLowerCase());
+  // 🩹 2026-08-19:onboard 抓色時會把「網站名 + 色」存成顏色名
+  //   (例:「MH Selections色」)。那是網站名稱不是顏色,一律當佔位字。
+  //   ★ 判準:結尾是「色」而且前面不是已知的預設色系名 → 就是這種產物。
+  const isSiteNameColor = /色$/.test(nav) && !CMAP[nav];
+  const isPlaceholder = _COLOR_PLACEHOLDERS.includes(nav.toLowerCase()) || isSiteNameColor;
   // navColor 本身就能用(預設色名 / brand_xxx / 色碼)就直接用
   if (nav && !isPlaceholder && (
         CMAP[nav] ||
