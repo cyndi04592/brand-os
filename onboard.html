@@ -990,7 +990,14 @@ function selectPreset(i){
   document.querySelectorAll('.color-preset').forEach(el=>el.classList.remove('on'));
   document.getElementById('preset-'+i).classList.add('on');
   document.getElementById('colorResult').style.display='none';
-  const p=COLOR_PRESETS[i];selectedColorHex=p.colors[0];selectedColorName=p.name;setColor(p.colors[0],p.name);
+  // 🩹 2026-08-19:預設色系也存色碼,不要存中文名。
+  //   病灶:舊寫法把「夜幕深藍」「MUJI米白」這種中文名存進 f_color,
+  //   而讀取端查的是顏色表 —— 系統認不得自己給出去的選項,一律變金色。
+  //   config.js 那邊已經把 12 個預設色註冊進 CMAP(救舊資料),
+  //   這裡則是斷掉源頭:從今以後新客戶存的就是色碼。
+  const p=COLOR_PRESETS[i];selectedColorHex=p.colors[0];selectedColorName=p.name;
+  setColor(p.colors[0], p.colors[0]);
+  document.getElementById('selectedHex').textContent=p.colors[0]+' · '+p.name;
 }
 function selectSwatch(hex,name,elArg){
   // 🩹 2026-08-19:元素由呼叫端傳進來,不再靠全域 event.currentTarget
@@ -1244,6 +1251,24 @@ async function doSubmit(){
     //   存在 extraColors 裡卻從來沒被送出去,等於白抓一場。
     style:v('f_style'),ref:v('f_ref'),color:v('f_color'),
     colorHex:(extraColors.length>0?extraColors[0].hex:selectedColorHex),
+    // 🩹 2026-08-19:把客戶挑的顏色也送進「品牌色票」那三個欄位。
+    //   病灶:系統有兩套顏色 —— navColor(側邊欄用)與
+    //   primaryColor/secondaryColor/accentColor(AI 生圖與文案用)。
+    //   onboard 從來只送前者,所以後台色票永遠停在系統預設的
+    //   #7C6DFA/#FA6D9B/#6DFAC2,四個不同行業的客戶色票長得一模一樣。
+    //   → 客戶認真挑了品牌色,AI 生圖卻一路用預設紫色,而且客戶會直接看到。
+    //   ★ 預設色系本來就有三個色階,抓色也可能抓到多色,一併對應過去。
+    ...(function(){
+      const picked = (extraColors.length>0)
+        ? extraColors.map(function(c){return c.hex;})
+        : (COLOR_PRESETS.find(function(p){return p.name===selectedColorName;})||{}).colors
+          || [selectedColorHex];
+      return {
+        primaryColor:   picked[0] || selectedColorHex,
+        secondaryColor: picked[1] || picked[0] || selectedColorHex,
+        accentColor:    picked[2] || picked[1] || picked[0] || selectedColorHex,
+      };
+    })(),
     rootFolderId:ROOT_FOLDER_ID,soulBook:generatedSoul,status:'pending',
     desiredPlan:desiredPlan,
     kolType:kolType,
