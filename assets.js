@@ -280,7 +280,12 @@ async function fetchDriveAssets(type) {
 }
 
 async function fetchBoth() {
-  ++_assetReqSeq;   // 🩹 2026-08-11:手動重抓 = 新的一輪,先讓所有在路上的舊回應失效
+  // 🩹 2026-08-19:這一輪的編號一定要「接住」並往下傳。
+  //   舊寫法只有 ++ 沒有存,下面兩個 fetchFromDriveAPI 就漏傳了 reqId,
+  //   而 _assetReqStale(undefined) 回傳 false(視為不過期)——
+  //   等於防護整個失效,而且不會報錯,只會安靜地讓髒資料混進來。
+  //   ★ 實際災情:HH美學工作室的素材區出現浟意褌舞的照片。
+  const _req = ++_assetReqSeq;   // 🩹 2026-08-11:手動重抓 = 新的一輪,先讓所有在路上的舊回應失效
   const bid = window.S.brandId;
   if (bid) { delete _assetCache[bid]; _clearAssetCacheLS(bid); } // 🆕 WIN1：手動重抓連本地一起清
   window.S.photos = [];
@@ -308,9 +313,13 @@ async function fetchBoth() {
   const vRaw = document.getElementById('inVideoFolder')?.value?.trim();
 
   const promises = [];
-  if (pRaw) promises.push(fetchFromDriveAPI(parseDriveId(pRaw) || pRaw, 'photo', window._driveToken));
-  if (SHOW_VIDEO_ASSETS && vRaw) promises.push(fetchFromDriveAPI(parseDriveId(vRaw) || vRaw, 'video', window._driveToken));
+  if (pRaw) promises.push(fetchFromDriveAPI(parseDriveId(pRaw) || pRaw, 'photo', window._driveToken, _req));
+  if (SHOW_VIDEO_ASSETS && vRaw) promises.push(fetchFromDriveAPI(parseDriveId(vRaw) || vRaw, 'video', window._driveToken, _req));
   await Promise.all(promises);
+
+  // 🩹 2026-08-19:等到這裡才發現已經換過品牌,就不要把結果寫進快取,
+  //   否則髒資料被存起來,下次切回這個品牌還是錯的(而且更難查)。
+  if (_assetReqStale(_req)) { console.warn('[assets] fetchBoth 完成時已切換品牌,不寫入快取'); return; }
 
   if (bid) {
     _assetCache[bid] = { loaded: true, photos: [...window.S.photos], videos: [...window.S.videos] };
