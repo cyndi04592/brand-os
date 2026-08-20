@@ -3402,13 +3402,38 @@ function renderPersonaSection(p) {
 
   // 🆕 情報A:也顯示「已處理」子資料夾(多角度人物表 / Seedance 乾淨參考照)。
   //    GAS 早就回傳 processed_photos,前台之前沒畫出來 → 存了看不到。
-  const procs = p.processed_photos || [];
+  // 🩹 2026-08-19 這一區看起來像 bug 的兩個原因,一起修:
+  //   ① 沒去重:每按一次「重生」就多存一張 sheet_front,列表就多一張一模一樣的正臉。
+  //      → 同一角度只留「最新」那張,跟 pickAnglePhoto(單一真相)用同一條規則,
+  //        看到的 = 生影片時真正用到的。
+  //   ② 沒標籤:正臉、3/4、側臉、原圖長得像,並排就像重複貼上。
+  //      → 每張標角度。標籤不是美化,是把「看起來壞掉」變成「看得懂」。
+  //   ⚠️ 認不出角度的檔案(去油版、客戶自己上傳的)照樣顯示,不做任何過濾,
+  //      免得把客戶的東西藏起來。
+  const _angleOf = n => /sheet_front/i.test(n) ? 'front'
+                      : /sheet_q34/i.test(n)   ? 'q34'
+                      : /sheet_profile/i.test(n) ? 'profile' : '';
+  const _ANGLE_LABEL = { front: '正臉', q34: '3/4', profile: '側臉' };
+  const _newest = {};
+  const _others = [];
+  (p.processed_photos || []).forEach(ph => {
+    const k = _angleOf(String(ph.name || ''));
+    if (!k) { _others.push(ph); return; }
+    const cur = _newest[k];
+    if (!cur || new Date(ph.created_at || 0) > new Date(cur.created_at || 0)) _newest[k] = ph;
+  });
+  const procs = ['front', 'q34', 'profile']
+    .map(k => _newest[k] ? { ph: _newest[k], label: _ANGLE_LABEL[k] } : null)
+    .filter(Boolean)
+    .concat(_others.map(ph => ({ ph, label: '原圖' })));
+
   const processedHtml = procs.length > 0
     ? `<div style="font-size:11px;color:#9a9aa8;margin:8px 0 4px;">已處理 · 多角度/參考照(${procs.length})</div>
        <div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
-        ${procs.map(ph => `
-          <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}" style="border:1px solid #3a3a4a;">
+        ${procs.map(({ ph, label }) => `
+          <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(label)} · ${escapeHtml(ph.name)}" style="border:1px solid #3a3a4a;">
             <img src="${escapeHtml(ph.thumbnail_url)}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder></div>'" referrerpolicy="no-referrer">
+            <div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.62);color:#fff;font-size:10px;line-height:1.6;text-align:center;pointer-events:none">${escapeHtml(label)}</div>
           </div>
         `).join('')}
       </div>`
