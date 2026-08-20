@@ -3148,7 +3148,14 @@ function syncSelectedKolToCine() {
       destGrid.querySelectorAll('.look-item[data-look-id]').forEach(el => el.remove());
       // 🔧 2026-08-09(RA):STEP1 為了不跟 BASE 重複而藏起來的「正臉」卡,
       //   在這裡(STEP2 沒有 BASE)要重新顯示 → 電影鏡頭牆 = 正臉+3/4+側臉 齊全。
-      destGrid.querySelectorAll('.look-item.angle-front').forEach(el => { el.style.display = ''; });
+      // 🩹 2026-08-19:改成「把剩下的卡全部重新顯示」,不再只挑 .angle-front。
+      //   原因:STEP1 現在會把重複的角度卡整批藏起來(Look ≥ 2 時),
+      //   而這裡是「複製 STEP1 的 HTML」再改 —— 只放行正臉的話,
+      //   3/4 與側臉會帶著 display:none 過來,STEP2 的牆會整個空掉,
+      //   多角度在「真正會用到它的地方」反而不見了。
+      //   上一行已經把所有 HeyGen look(有 data-look-id)刪光,
+      //   所以這裡剩下的必定只有多角度卡,全部放行是安全的。
+      destGrid.querySelectorAll('.look-item').forEach(el => { el.style.display = ''; });
       const _angleCount = destGrid.querySelectorAll('.look-item').length;
       destPicker.style.display = _angleCount ? srcPicker.style.display : 'none';
       if (destHint) destHint.textContent = _angleCount
