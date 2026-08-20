@@ -3215,9 +3215,23 @@ function renderLookPicker() {
   //   STEP2 電影鏡頭複製這面牆後會刪掉 HeyGen 卡(那邊沒有 BASE),
   //   所以 syncSelectedKolToCine 會把正臉卡「重新顯示」→ STEP2 = 正臉+3/4+側臉。
   //   純顯示層:Drive 的 sheet_front 檔案照存不動,生影片時後台照檔名抓角度不受影響。
-  const _hideFront = ((S.availableLooks || []).length >= 1);
+  // 🩹 2026-08-19 造型 Look 重複卡片(老 bug 根治):
+  //   兩層資料畫在同一面牆上 ——
+  //     ① 造型 Look:綁定時送出的 fileIds,由後台建成群組後回傳(可選)
+  //     ② 多角度卡:直接照 Drive 檔名 sheet_front / sheet_q34 / sheet_profile 抓(純顯示)
+  //   多角度那三張「不需要也不應該」被綁進 Look:它們靠檔名生效,跟綁定無關;
+  //   而側臉根本不能當口播造型(口播需要正面臉)。
+  //   ⚠️ 一旦被綁進去,Look 的 name 全部都是角色名(例:四張都叫「子謙」),
+  //     資料上完全無法分辨誰是多角度 → 沒辦法逐張比對去重,只能整批隱藏。
+  //   規則:Look 只有 1 個 → 那就是正臉本人 → 只隱藏「正臉」角度卡(原本的行為);
+  //         Look 有 2 個以上 → 多出來的必然是多角度被綁進去了 → 角度卡整批隱藏,
+  //         畫面回到「一個角色一組 Look」,不再出現一模一樣的第二組。
+  //   ★ 生影片完全不受影響:後台是照 Drive 檔名抓角度,不看這面牆。
+  const _looksN = (S.availableLooks || []).length;
+  const _hideAllAngles = _looksN >= 2;
+  const _hideFront = (_looksN >= 1);
   const anglesHtml = _angles.map(({ ph, label }) => `
-      <div class="look-item ${label === '正臉' ? 'angle-front' : ''}" style="border:1px dashed #6c4cf0;cursor:default;opacity:.9;${(label === '正臉' && _hideFront) ? 'display:none;' : ''}" title="生影片時依鏡頭角度自動使用(來自 Drive)">
+      <div class="look-item ${label === '正臉' ? 'angle-front' : ''}" style="border:1px dashed #6c4cf0;cursor:default;opacity:.9;${(_hideAllAngles || (label === '正臉' && _hideFront)) ? 'display:none;' : ''}" title="生影片時依鏡頭角度自動使用(來自 Drive)">
         <img src="${escapeHtml(ph.thumbnail_url)}" alt="${escapeHtml(ph.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder></div>'">
         <div class="look-tag">${label}</div>
       </div>
@@ -3328,7 +3342,12 @@ function _autoPickAllPhotos() {
       if (pd && String(pd.talking_photo_id || '').trim()) continue;      // 已綁定 → 不動
       if ((S.selectedDrivePhotos[name] || []).length > 0) continue;      // 客戶自己勾過 → 不覆蓋
       if (S.selectedPersonaForDrive && S.selectedPersonaForDrive !== name) continue;
-      const photos = g.querySelectorAll('.drive-photo');
+      // ⚠️ 只勾「原圖區」(第一個 .drive-gallery),不勾「已處理·多角度」那一區。
+      //   原因見下方 renderLookPicker 的長註解:多角度走 Drive 檔名那條路,
+      //   綁進 Look 只會製造重複卡片,而且側臉根本不能拿來當口播造型。
+      const _galleries = g.querySelectorAll('.drive-gallery');
+      const _pool = _galleries.length ? _galleries[0] : g;
+      const photos = _pool.querySelectorAll('.drive-photo');
       if (!photos.length) continue;
       const ids = [];
       photos.forEach(ph => {
@@ -3401,7 +3420,7 @@ function renderPersonaSection(p) {
               data-persona="${escapeHtml(p.persona_name)}" disabled>綁定</button>
       <button class="btn btn-ghost btn-sm persona-clear-btn"
               data-persona="${escapeHtml(p.persona_name)}" style="display:none">清除選取</button>
-      ${isBound ? '' : `<div style="flex:0 0 100%;font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.5">已幫你全選 · 多角度一起綁定,她轉頭時才不會變成另一個人</div>`}
+      ${isBound ? '' : `<div style="flex:0 0 100%;font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.5">已幫你選好 · 多角度會自動生效,不用另外勾</div>`}
     </div>`;
 
   return `
@@ -3596,6 +3615,19 @@ async function confirmDrivePhotos(personaArg) {
   const persona = personaArg || S.selectedPersonaForDrive;
   const fileIds = S.selectedDrivePhotos[persona] || [];
   if (!persona || fileIds.length === 0) { toast('請先點選這位角色的照片', 'warn'); return; }
+
+  // 🩹 2026-08-19 誤觸保護(根治,不是補丁):
+  //   建立角色是「不可逆」的 —— 會建立專屬形象群組、把照片搬進角色資料夾,
+  //   而它只需要點一下、沒有任何確認,按鈕又剛好長在客戶剛剛一直點的位置。
+  //   (2026-08-19 現場:解開 onb-blocked 死結後,同一個位置的按鈕從「點不動」
+  //    變成「一點就執行」,使用者回報沒按卻已經在跑。)
+  //   ★ 一個不可逆的動作,不該只距離使用者一次點擊。
+  //   ⚠️ 文案不得出現任何後台廠商名稱,只講客戶看得懂的結果。
+  if (!confirm(
+    '要用這 ' + fileIds.length + ' 張照片建立「' + persona + '」嗎?\n\n' +
+    '建立後會綁定為這位角色的專屬形象,照片會搬進角色資料夾。\n' +
+    '這個動作無法復原。'
+  )) return;
 
   let personaData = S.personas.find(x => x.persona_name === persona);
 
