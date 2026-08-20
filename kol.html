@@ -163,7 +163,14 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .drive-action-bar{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 /* 🩹 2026-08-11:綁定鈕改成「每個角色自己一顆,就長在他照片正下方」。
    以前全站只有底部一顆共用鈕,客戶看到「待綁定」卻找不到哪裡綁。 */
-.drive-persona-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+.drive-persona-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;position:relative;z-index:5;}
+/* 🩹 2026-08-19 「用這N張建立角色」按不下去(全寬與窄版都中):
+   病灶不是 disabled、也不是事件沒綁 —— 是被下面那塊蓋住了。
+   kol-ai-generator.js 的 .kai-panel 帶 position:relative,而它在 DOM 排序上
+   位於這排按鈕「之後」。兩者 z-index 都是 auto 時,後來者疊在上層,
+   於是點擊被 .kai-panel 吃掉(elementFromPoint 抓到 DIV.panel,按鈕本身 disabled:false)。
+   ⚠️ 不用 pointer-events:none 去關 .kai-panel —— 那塊裡面全是要點的東西(生成鈕、下拉)。
+   正解:把這排按鈕自己墊到上層即可,影響範圍只有這一排。 */
 .drive-persona-actions .persona-bind-btn{flex:1;min-width:140px;}
 .drive-persona-actions .persona-bind-btn:disabled{opacity:.45;cursor:not-allowed;}
 .drive-selected-count{font-size:11px;color:var(--accent);font-weight:600;}
