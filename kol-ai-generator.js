@@ -119,6 +119,46 @@ const AGE_MAP = {
   kid:      'a 7-year-old',
 };
 
+// ═══════════════════════════════════════════════════════════════
+//  🆕 v3.32(2026-08-19)年齡自由選 1–99
+//
+//  舊做法:AGE_MAP 只有 5 檔(7/22/26/31/37),跳空嚴重 ——
+//    想要 28 歲沒有、想要 45 歲更沒有,而美業/醫美/專業服務
+//    很吃「看起來有幾年經驗」這件事,26 跟 31 差很多。
+//
+//  ★ 不可能為 99 個年齡各寫一句提示詞,所以拆成兩層:
+//    ① 數字直接組進句子(a 28-year-old)
+//    ② 老化特徵照「年齡帶」自動補
+//  ★ 第 ② 層是必要的,不是裝飾:模型的訓練資料嚴重偏年輕,
+//    只給數字它會把 50 歲畫成 30 歲。要明講皺紋、白髮、鬆弛,它才會做。
+// ═══════════════════════════════════════════════════════════════
+function ageNum(v) {
+  const n = parseInt(v, 10);
+  return (isFinite(n) && n >= 1 && n <= 99) ? n : null;
+}
+function ageBandTraits(n) {
+  if (n <= 3)  return 'chubby toddler cheeks, very soft baby skin, big curious eyes, fine wispy baby hair';
+  if (n <= 9)  return 'natural healthy child skin, soft round features, bright innocent expression, slightly messy child hair';
+  if (n <= 17) return 'fresh adolescent skin with a few natural blemishes, youthful softening jawline, clean simple hair';
+  if (n <= 25) return 'young firm skin with full collagen, a few natural small blemishes and visible pores, bright clear eyes';
+  if (n <= 34) return 'mature natural adult skin with real texture, faint expression lines starting around the eyes, settled confident features';
+  if (n <= 44) return 'visible fine lines around the eyes and mouth, faint nasolabial folds, slightly less taut jawline, composed grown-up presence, a few grey hairs at the temples';
+  if (n <= 59) return 'clear laugh lines and crow\'s feet, softening jawline with mild skin laxity, uneven mature skin tone with some age spots, noticeably greying hair, warm seasoned presence';
+  return 'deep set wrinkles across forehead and around the eyes, visibly loose crepey skin, age spots on the skin, thinning white or silver hair, gentle dignified elderly presence';
+}
+// ⚠️ 未成年一律強制加保護詞,不看客戶選了什麼服裝或風格。
+//    這條不可以做成開關,也不可以被其他設定覆蓋。
+const MINOR_GUARD = 'fully clothed in modest age-appropriate everyday clothing, wholesome innocent child portrait, ' +
+                    'no makeup, no adult styling, no suggestive posing, no revealing clothing';
+function ageClause(v, gender) {
+  const n = ageNum(v);
+  if (n === null) return null;
+  const noun = (n <= 12) ? (gender === 'male' ? 'boy' : 'girl')
+             : (n <= 17) ? (gender === 'male' ? 'teenage boy' : 'teenage girl')
+             : (gender === 'male' ? 'man' : 'woman');
+  return { n, phrase: 'a ' + n + '-year-old', noun, traits: ageBandTraits(n), minor: n < 18 };
+}
+
 const NATIONALITY_MAP = {
   tw: 'Taiwanese',
   jp: 'Japanese',
@@ -336,7 +376,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.31] 已載入(+window.KAI 人物表共用 +gasPost)');
+  console.log('[kol-ai-generator v3.32] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -724,9 +764,24 @@ function buildPanelHTML() {
           <select class="kai-select kai-param" data-k="gender">${genOpts}</select>
         </div>
         <div class="kai-field">
-          <label class="kai-label">年齡</label>
-          <select class="kai-select kai-param" data-k="age">${ageOpts}</select>
+          <label class="kai-label">年齡 · <span id="kai-age-num" style="color:#6dfac2;font-weight:700">26</span> 歲</label>
+          <input type="range" class="kai-param kai-age-range" data-k="age" min="1" max="99" step="1" value="26"
+                 style="width:100%;accent-color:#7c6dfa;height:22px;cursor:pointer;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#6a6a78;margin-top:-2px">
+            <span>1</span><span>兒童</span><span>青年</span><span>熟齡</span><span>99</span>
+          </div>
         </div>
+      </div>
+
+      <!-- 🆕 v3.32 未成年確認:選到 18 歲以下才出現,沒勾不准生成。
+           童裝、兒童食品、學習用品是正當需求,不該砍掉;
+           但不可逆的兒少風險要有一道摩擦 + 一筆客戶自己的確認紀錄。 -->
+      <div id="kai-minor-box" style="display:none;margin:-4px 0 12px;padding:10px 12px;border:1px solid rgba(255,169,77,.45);background:rgba(255,169,77,.08);border-radius:10px;">
+        <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:12px;line-height:1.6;color:#ffc98a">
+          <input type="checkbox" id="kai-minor-ok" style="margin-top:2px;accent-color:#ffa94d;flex:0 0 auto">
+          <span>我確認這是商品或服務情境的實際需要(例:童裝、兒童食品、學習用品),且不會用於任何不當用途。<br>
+          <span style="color:#c89a5e">系統會自動加上服裝與情境的保護限制。</span></span>
+        </label>
       </div>
 
       <div class="kai-row">
@@ -885,6 +940,28 @@ function bindEvents() {
   document.querySelectorAll('.kai-param').forEach(el => {
     el.addEventListener('change', renderPromptPreview);
   });
+  // 🆕 v3.32 年齡拉桿:拖動時即時更新數字 + 未成年確認框連動。
+  //   ⚠️ range 要聽 'input' 不是 'change' —— 只聽 change 會等到放開滑鼠才更新,
+  //      拖的過程中數字不動,使用者會以為壞掉。
+  const _ageEl = document.querySelector('.kai-age-range');
+  if (_ageEl) {
+    const _syncAge = () => {
+      const n = parseInt(_ageEl.value, 10) || 26;
+      const numEl = document.getElementById('kai-age-num');
+      if (numEl) numEl.textContent = n;
+      const box = document.getElementById('kai-minor-box');
+      if (box) {
+        const wasHidden = box.style.display === 'none';
+        box.style.display = (n < 18) ? '' : 'none';
+        // 從未成年切回成年 → 把勾選清掉,免得下次又偷偷帶著上次的同意
+        if (n >= 18) { const c = document.getElementById('kai-minor-ok'); if (c) c.checked = false; }
+        void wasHidden;
+      }
+      renderPromptPreview();
+    };
+    _ageEl.addEventListener('input', _syncAge);
+    _syncAge();
+  }
   document.getElementById('kai-free-text')?.addEventListener('input', debounce(renderPromptPreview, 400));
   document.getElementById('kai-edit-prompt')?.addEventListener('click', toggleManualPrompt);
 
@@ -1131,10 +1208,12 @@ function buildPrompt() {
   const _brandName = ((_brand && _brand.name) || '').toUpperCase();
   const EDITORIAL_BRANDS = ['LACEZ', 'MOZ'];
   const mode = EDITORIAL_BRANDS.some(n => _brandName.includes(n)) ? 'editorial' : 'candid';
+  // 🆕 v3.32:年齡若是數字(拉桿)→ 走新路;仍是舊 key(young/kid…)→ 完全照舊,不影響既有角色
+  const _age = ageClause(params.age, params.gender);
   let prompt = (BACKBONES[mode] || BACKBONES.candid)
-    .replace('{AGE}', AGE_MAP[params.age] || AGE_MAP.standard)
+    .replace('{AGE}', _age ? _age.phrase : (AGE_MAP[params.age] || AGE_MAP.standard))
     .replace(/\{NATIONALITY\}/g, NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw)
-    .replace('{GENDER}', params.age === 'kid' ? (params.gender === 'male' ? 'boy' : 'girl') : (GENDER_MAP[params.gender] || GENDER_MAP.female))
+    .replace('{GENDER}', _age ? _age.noun : (params.age === 'kid' ? (params.gender === 'male' ? 'boy' : 'girl') : (GENDER_MAP[params.gender] || GENDER_MAP.female)))
     .replace('{PERSONA}', PERSONA_MAP[params.persona] || PERSONA_MAP.girl_next_door)
     .replace('{LIGHTING}', LIGHTING_MAP[params.lighting] || LIGHTING_MAP.window_day)
     .replace('{OUTFIT}', OUTFIT_MAP[params.outfit] || OUTFIT_MAP.beige_knit)
@@ -1157,7 +1236,28 @@ if (params.nationality === 'kr') {
     prompt += ', ' + freeText;
   }
 
+  // 🆕 v3.32 年齡特徵接在最後(自由補充之後)——
+  //   放最後是刻意的:老化特徵必須壓過前面的通用「年輕漂亮」傾向,
+  //   放前面會被後面的形容詞稀釋掉,50 歲又被畫回 30 歲。
+  if (_age) {
+    prompt += ', ' + _age.traits;
+    // ⚠️ 未成年保護詞放「最最後」,任何設定都不能覆蓋它
+    if (_age.minor) prompt += ', ' + MINOR_GUARD;
+  }
+
   return prompt;
+}
+
+// 🆕 v3.32 未成年閘門:未滿 18 且沒勾確認 → 回 false
+function minorGateOk() {
+  try {
+    const el = document.querySelector('.kai-age-range');
+    if (!el) return true;                       // 還是舊下拉 → 不擋(維持既有行為)
+    const n = parseInt(el.value, 10);
+    if (!isFinite(n) || n >= 18) return true;
+    const c = document.getElementById('kai-minor-ok');
+    return !!(c && c.checked);
+  } catch (e) { return true; }                  // 判斷不出來就不擋,避免擋死正常客戶
 }
 
 function renderPromptPreview() {
@@ -1221,6 +1321,14 @@ async function generate() {
   }
   if (!S.currentPersonaName) {
     alert('請先選擇或建立 KOL 角色');
+    return;
+  }
+  // 🆕 v3.32 未成年閘門:沒勾確認就不准生成。
+  //   放在最前面、擋在扣點之前 —— 這是不可逆的兒少風險,不能事後補救。
+  if (!minorGateOk()) {
+    alert('這位角色未滿 18 歲。\n請先勾選上方的確認框,再開始生成。');
+    const _b = document.getElementById('kai-minor-box');
+    if (_b) _b.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
 
