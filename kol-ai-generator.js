@@ -193,6 +193,22 @@ const PERSONA_MAP = {
   salesperson:    'friendly energetic retail salesperson, approachable enthusiastic helpful smile, natural skin with real texture',
   couple_warm:    'warm affectionate partner-next-door vibe, gentle loving gaze and soft tender smile, natural skin with real texture',
   kid_cute:       'an innocent cheerful young child with a bright natural smile, soft round features, natural healthy child skin',
+  // ── 🆕 v3.33 美業與服務業(2026-08-19)──
+  //   共同要求:手一定會入鏡,指甲乾淨修短;神情專注不諂媚;不做誇張手勢。
+  lash_artist:    'focused lash technician with calm steady hands, gentle attentive gaze, short clean unpainted nails, natural skin with visible pores and real texture',
+  nail_artist:    'precise nail artist with well-groomed hands, relaxed creative confidence, tidy short nails on the working hand, natural skin with real texture',
+  hair_stylist:   'stylish hair professional with effortless personal styling, easy approachable confidence, natural skin with visible texture',
+  aesthetic_consultant: 'composed clinic consultant with a reassuring unhurried manner, clean minimal grooming, trustworthy calm gaze, natural skin with subtle real texture',
+  yoga_teacher:   'calm centred yoga instructor with relaxed upright posture, serene unforced smile, bare fresh face, natural skin with visible texture',
+  fitness_coach:  'encouraging personal training coach, fit practical build, direct motivating eye contact, light natural sheen on the skin, real skin texture',
+  tarot_reader:   'contemplative tarot reader with a quiet knowing presence, soft steady gaze, understated jewellery, natural skin with real texture',
+  tour_guide:     'friendly experienced tour guide, weather-tanned outdoor skin, easy welcoming smile, practical unfussy grooming, natural skin texture',
+  ip_attorney:    'meticulous trademark and patent professional, precise composed expression, quietly authoritative, natural skin with visible texture and faint fine lines',
+  // ── 🆕 v3.33 行銷代操與系統服務(芮比自己推 Brand OS 用)──
+  //   ⚠️ 氣質要「一人公司」不是「大公司主管」:專業但不端架子,忙但不慌。
+  marketing_consultant: 'practical marketing consultant with a candid down-to-earth manner, thinking-out-loud expression, smart-casual and unfussy, natural skin with real texture',
+  content_operator:     'hands-on content operator mid-work, focused unposed concentration with a slight tired-but-satisfied look, minimal grooming, natural skin with visible pores and real texture',
+  solo_founder:         'one-person-company founder, self-reliant grounded presence, quietly determined and unpolished, no corporate gloss, natural skin with real texture and faint under-eye shadows',
 };
 
 const LIGHTING_MAP = {
@@ -205,6 +221,14 @@ const LIGHTING_MAP = {
   bright_midday: 'bright natural midday sunlight, vivid energetic outdoor light',
   evening_warm:  'warm evening lamp light, intimate cozy glow',
   moody_side:    'moody low-key directional side lighting, dramatic shadow falloff',
+  // ── 🆕 v3.33 行業佈光 ──
+  //   ⚠️ 全部維持「柔、散、無油光」,不加戲劇性硬光 —— 硬光會在臉上打出高光斑,
+  //      那正是「AI 油臉」的來源(見 kol-cinematographer 的教訓)。
+  salon_soft:    'soft even beauty-salon lighting from a large diffused source, clean shadowless falloff, flattering but not glamorous',
+  clinic_white:  'clean bright clinical lighting, neutral white balance, even and reassuring with no harsh shadows',
+  classroom_day: 'bright natural daylight filling a studio classroom, soft and open with gentle directional falloff',
+  candle_warm:   'low warm candle and lamp light, intimate hushed glow, gentle shadows with no hard specular highlights',
+  office_day:    'plain office daylight from a nearby window, neutral and unglamorous, soft even fill on the face',
 };
 
 const OUTFIT_MAP = {
@@ -226,6 +250,16 @@ const OUTFIT_MAP = {
   blazer:        'a smart professional blazer',
   hoodie:        'a casual cotton hoodie',
   trendy_casual: 'a trendy casual everyday outfit',
+  // ── 🆕 v3.33 行業服裝 ──
+  salon_uniform: 'a clean fitted beauty-salon work tunic in a soft neutral tone',
+  apron:         'a simple canvas work apron over a plain long-sleeve top',
+  yoga_set:      'a fitted matte yoga set in a muted tone, no logos',
+  sportswear:    'functional matte athletic training wear, breathable and unbranded',
+  suit_blouse:   'a crisp tailored blouse with a structured collar, business-formal',
+  cardigan_knit: 'an open knit cardigan over a plain tee, soft and unfussy',
+  guide_casual:  'practical lightweight outdoor casual wear, comfortable for walking all day',
+  oriental_top:  'an understated oriental-style top with a mandarin collar in a deep muted tone',
+  rolled_shirt:  'a plain white shirt with the sleeves rolled to the forearm, worn without a tie',
 };
 
 const SCENE_MAP = {
@@ -248,6 +282,23 @@ const SCENE_MAP = {
   // ── v5.13 戶外場景 ──
   mountain:   'on a mountain trail with misty forest peaks behind, a little wind in the hair, candid hiking snapshot, natural outdoor light',
   campsite:   'at an outdoor campsite with tents and gear scattered around, warm golden hour light, candid relaxed moment',
+  // ── 🆕 v3.33 行業場域(2026-08-19)──
+  //   ⚠️ 全部寫成「她正在那個空間裡工作/生活」,不是「站在背景前面」,
+  //      而且環境物件一律 softly out of focus —— 背景搶戲會壓掉主角的臉。
+  lash_room:    'in a small tidy lash studio beside a treatment bed with a ring light and neat tools softly out of focus, calm clean light, candid working moment',
+  nail_desk:    'at a nail artist work desk with polish bottles and small tools arranged softly out of focus, warm clean light, candid close working moment',
+  aesthetic_room: 'in a quiet aesthetic clinic consultation room, soft neutral tones and a mirror softly out of focus behind, even reassuring light, composed candid moment',
+  meeting_room: 'in a small professional meeting room with a plain table and a wall of files softly out of focus, warm even light, composed candid moment',
+  yoga_room:    'in a bright airy yoga studio with mats and plants softly out of focus, soft natural floor-level light, calm candid moment',
+  tarot_table:  'at a small draped table with cards and a candle softly out of focus, low warm intimate light, quiet contemplative candid moment',
+  scenic_trail: 'on a scenic travel trail with a landmark landscape softly out of focus behind, natural outdoor light, candid travelling moment',
+  classroom:    'at the front of a small teaching room with a board and seats softly out of focus behind, bright natural daylight, candid teaching moment',
+  // ── 🆕 v3.33 一人公司(芮比自己推 Brand OS 用)──
+  //   ⚠️ 不要拍成大公司會議室 —— 故事是「一個人把整條線跑完」,
+  //      空間要小、要有生活痕跡、要看得出真的在工作,不是形象照。
+  solo_desk:    'at a single work desk in a small home studio, notebooks and a coffee cup and a little real clutter softly out of focus, plain daylight from a window, candid mid-work moment',
+  dual_screen:  'in front of a two-monitor workstation in a compact studio room, screens softly out of focus and unreadable, plain office daylight, candid unposed working moment',
+  client_table: 'across a small table from a client, printed material and a laptop between them softly out of focus, warm even indoor light, candid discussion moment',
 };
 
 // 中文顯示對應
@@ -295,6 +346,20 @@ const LABEL = {
     salesperson:    '銷售員',
     couple_warm:    '情侶感',
     kid_cute:       '小朋友',
+    // 🆕 v3.33 美業與服務業
+    lash_artist:          '美睫師',
+    nail_artist:          '美甲師',
+    hair_stylist:         '髮型師',
+    aesthetic_consultant: '醫美諮詢師',
+    yoga_teacher:         '瑜伽老師',
+    fitness_coach:        '健身教練',
+    tarot_reader:         '塔羅師',
+    tour_guide:           '導遊',
+    ip_attorney:          '商標專利師',
+    // 🆕 v3.33 行銷與系統服務
+    marketing_consultant: '行銷顧問',
+    content_operator:     '內容操盤手',
+    solo_founder:         '一人公司創辦人',
   },
   lighting: {
     window_day:  '室內日光',
@@ -306,6 +371,12 @@ const LABEL = {
     bright_midday: '正午陽光',
     evening_warm:  '暖夜燈光',
     moody_side:    '戲劇側光',
+    // 🆕 v3.33 行業佈光
+    salon_soft:    '美容室柔光',
+    clinic_white:  '診間潔淨白光',
+    classroom_day: '教室自然光',
+    candle_warm:   '命理暖燭光',
+    office_day:    '辦公室日光',
   },
   outfit: {
     beige_knit:      '米色針織',
@@ -325,6 +396,16 @@ const LABEL = {
     blazer:          '西裝外套',
     hoodie:          '連帽休閒',
     trendy_casual:   '時髦休閒',
+    // 🆕 v3.33 行業服裝
+    salon_uniform:   '美容師工作服',
+    apron:           '工作圍裙',
+    yoga_set:        '瑜伽服',
+    sportswear:      '運動機能服',
+    suit_blouse:     '套裝襯衫',
+    cardigan_knit:   '針織開襟',
+    guide_casual:    '導遊輕便裝',
+    oriental_top:    '東方風上衣',
+    rolled_shirt:    '白襯衫捲袖',
   },
   scene: {
     apartment:    '簡約公寓',
@@ -345,6 +426,19 @@ const LABEL = {
     street_live:  '街頭連線',
     mall:         '商場店內',
     shoe_store:   '鞋店/賣場',
+    // 🆕 v3.33 行業場域
+    lash_room:      '美睫工作室',
+    nail_desk:      '美甲工作桌',
+    aesthetic_room: '醫美諮詢室',
+    meeting_room:   '事務所會議室',
+    yoga_room:      '瑜伽教室',
+    tarot_table:    '塔羅桌',
+    scenic_trail:   '景點步道',
+    classroom:      '教室講台',
+    // 🆕 v3.33 一人公司
+    solo_desk:      '一人工作室書桌',
+    dual_screen:    '雙螢幕工作區',
+    client_table:   '與客戶討論',
   },
 };
 
@@ -376,7 +470,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.32] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
+  console.log('[kol-ai-generator v3.33] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
