@@ -3299,11 +3299,51 @@ function renderDriveGallery() {
   wrap.innerHTML = rootWarn + sections;
   wrap.removeEventListener('click', handleDriveGalleryClick);
   wrap.addEventListener('click', handleDriveGalleryClick);
+  _autoPickAllPhotos();         // 🆕 2026-08-19:還沒建角色的,預設把全部照片勾起來
   updatePersonaBindButtons();   // 🩹 2026-08-11:畫完就把每顆鈕的文字/狀態設好
   // 🩹 2026-08-19:照片是「現在」才畫進 DOM 的,而封鎖判斷會去數 .drive-photo。
   //   不在這裡重跑一次,updateStepLocks 早在照片出現之前就跑完了 → 還是鎖著,
   //   等於白改。凡是「先判斷、後渲染」的組合都要補這一步。
   if (typeof updateStepLocks === 'function') updateStepLocks();
+}
+
+// 🆕 2026-08-19 預設全勾(懶人化):
+//   建立角色送出的是 fileIds —— 客戶勾幾張就只綁幾張。
+//   客戶不知道多角度是幹嘛的,看到四張只會挑一張「最好看的」,
+//   結果多角度白生,Seedance 一轉頭就變成另一個人,而他只會覺得「你的 AI 很爛」。
+//   ★ 不用提示解決 —— 提示要看、要懂、要照做,三關都可能失敗。
+//     預設全勾:客戶什麼都不做就是對的;真的想少選再自己取消。
+//   規則:① 已綁定的角色不動 ② 客戶自己勾過就不覆蓋(尊重他的選擇)
+//         ③ 每位角色一輩子只自動勾一次(清除選取後不會又自己勾回來)
+//         ④ 一次只處理一位 —— selectedPersonaForDrive 是單一角色鎖,多勾會打架
+function _autoPickAllPhotos() {
+  try {
+    if (!S._autoPicked) S._autoPicked = {};
+    const groups = document.querySelectorAll('.drive-persona-group');
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      const name = g.dataset.persona;
+      if (!name || S._autoPicked[name]) continue;
+      const pd = (S.personas || []).find(x => x.persona_name === name);
+      if (pd && String(pd.talking_photo_id || '').trim()) continue;      // 已綁定 → 不動
+      if ((S.selectedDrivePhotos[name] || []).length > 0) continue;      // 客戶自己勾過 → 不覆蓋
+      if (S.selectedPersonaForDrive && S.selectedPersonaForDrive !== name) continue;
+      const photos = g.querySelectorAll('.drive-photo');
+      if (!photos.length) continue;
+      const ids = [];
+      photos.forEach(ph => {
+        const fid = ph.dataset.fileId;
+        if (!fid) return;
+        ph.classList.add('selected');
+        if (ids.indexOf(fid) < 0) ids.push(fid);
+      });
+      if (!ids.length) continue;
+      S.selectedDrivePhotos[name] = ids;
+      S.selectedPersonaForDrive = name;
+      S._autoPicked[name] = true;
+      break;   // 單一角色鎖,一次只處理一位
+    }
+  } catch (e) { /* 自動勾失敗不影響手動操作 */ }
 }
 
 function renderPersonaSection(p) {
@@ -3361,6 +3401,7 @@ function renderPersonaSection(p) {
               data-persona="${escapeHtml(p.persona_name)}" disabled>綁定</button>
       <button class="btn btn-ghost btn-sm persona-clear-btn"
               data-persona="${escapeHtml(p.persona_name)}" style="display:none">清除選取</button>
+      ${isBound ? '' : `<div style="flex:0 0 100%;font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.5">已幫你全選 · 多角度一起綁定,她轉頭時才不會變成另一個人</div>`}
     </div>`;
 
   return `
