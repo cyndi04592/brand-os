@@ -151,8 +151,29 @@
       });
       var fromGallery = items.length > 0;
 
+      var fromPicked = false;
       if (!fromGallery) {
-        // ② 沒勾選 → 這一輪剛生成的 AI 正臉(原本邏輯)
+        // 🆕 2026-08-19 ②-0 最優先:上面生成器已經按過「✓ 選這張」的那張。
+        //   舊行為:直接把整批 lastImages 全撈出來要你「再點一次」——
+        //   你上面明明按了 #3「已選用」,下面還是跳出三張,等於白選,
+        //   而且很容易點錯一張就拿去生整組多角度(那組會存進 Drive 變成永久的臉)。
+        //   判斷依據:kol-ai-generator 在按下「選這張」時把該張標成 saved=true。
+        var _st0 = K() && K().S;
+        if (_st0 && Array.isArray(_st0.lastImages)) {
+          _st0.lastImages.forEach(function (x) {
+            if (x && x.saved) { push(x.url || x, null, ''); fromPicked = true; }
+          });
+        }
+        if (fromPicked) {
+          // 只有一張已選用 → 直接當正臉,不用再點
+          if (items.length === 1) items[0].autoPick = true;
+          status.textContent = items.length === 1
+            ? '已沿用你上面選的那張,自動取原圖中…'
+            : ('已沿用你上面選的 ' + items.length + ' 張,點一張當正臉:');
+          renderThumbs(items);
+          return;
+        }
+        // ② 沒勾選也沒選過 → 這一輪剛生成的 AI 正臉(原本邏輯)
         var st = K() && K().S;
         if (st && st.lastImages && st.lastImages.length) st.lastImages.forEach(function (x) { push(x.url || x, null, ''); });
         // ③ 再沒有 → 生成器面板裡的 fal / R2 圖(原本邏輯)
@@ -241,7 +262,7 @@
 
       btnUse.disabled = true;
       btnUse.style.background = '#3a3a4a';
-      btnUse.textContent = '💾 存進 Drive 中…(0/3)';
+      btnUse.textContent = '💾 存進 Drive 中…(0/3)';   // 下方 set 固定三張(正臉+3/4+側臉)
 
       var ts = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       var set = [
