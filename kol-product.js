@@ -174,7 +174,20 @@
         'The hero of the shot is the FINISHED RESULT ITSELF shown on a real person: the lashes on the eye, ' +
         'the nails on the hand, the hair on the head, the skin after treatment, the body after training. ' +
         'If a reference image is given in [Image2] it IS that finished result — reproduce it faithfully on the person, ' +
-        'never reinterpret it as merchandise. Frame it close and flattering with clean even light so the craftsmanship reads clearly.';
+        'never reinterpret it as merchandise. ' +
+        // 🆕 v3.6(2026-08-19)左右對稱鎖 —— 現場實測抓到的:
+        //   美睫師習慣拍「單眼特寫」當成果照,客戶就順手挑那張當參考圖。
+        //   模型很聽話,照著只做那一隻眼睛 → 另一隻眼睛沒接睫毛;
+        //   而且兩段分開生成、沒有左右約束,第二段還換到另一邊。
+        //   在美睫/美甲廣告裡這是致命傷,客戶會直接說「你的 AI 很爛」。
+        //   ★ 關鍵觀念:參考圖是「工藝的樣本」,不是「要做在哪裡的地圖」。
+        '★ THE REFERENCE IS A SAMPLE OF THE CRAFT, NOT A MAP OF WHERE TO APPLY IT: ' +
+        'even when the reference shows only ONE eye, ONE hand or ONE side, the finished work must appear ' +
+        'COMPLETE AND SYMMETRICAL on the person — both eyes, both hands, both sides, all done to the same standard. ' +
+        'NEVER leave one side untreated, bare or half-finished. ' +
+        'NEVER swap which side is treated between shots — she is a real person who had the whole service done, ' +
+        'so every shot shows the same complete result. ' +
+        'Frame it close and flattering with clean even light so the craftsmanship reads clearly.';
     }
     // ══ 設備製程:機台與加工件,不是商品盒 ══
     if (mode === 'equip') {
@@ -321,6 +334,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.5', resolveMode };
-  console.log('[KolProduct] 🎒 v3.5 就緒 · 道具師·模式驅動(15模式) · 🆕 自動判斷:法規行業走合規模組同一張表,網站/機台/訂閱另補畫面型態 · 有包裝的實體商品不會被誤判成服務 · 海苔等舊商品原樣不變');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.6', resolveMode };
+  console.log('[KolProduct] 🎒 v3.6 就緒 · 道具師·模式驅動(15模式) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
