@@ -2691,11 +2691,28 @@ function updateStepLocks() {
   // 沒角色 → 左欄「KOL 形象庫」與「Drive 照片庫」整區變暗且不可點。
   //   理由:同事實測會一直去點這兩區問「是點這裡嗎」,新客更找不到路。
   //   沒角色時唯一該能點的只有引導卡 + AI 生成器(生成器是 panel 的最後子元素,不在封鎖範圍)。
-  const _blocked = !!(S.currentBrandId && _noKol);
-  ['kol-gallery-title', 'kol-list', 'drive-section'].forEach(id => {
+  //
+  // 🩹 2026-08-19 雞生蛋死結(根治):
+  //   舊條件「沒角色就封鎖 drive-section」會把 .onb-blocked 蓋到照片與
+  //   「用這N張建立角色」鈕上,而那個 class 帶 pointer-events:none →
+  //   滑鼠直接穿透照片(elementsFromPoint 的堆疊裡連 .drive-photo 都不會出現,
+  //   第 0 層就是 DIV.panel),於是:
+  //     要建角色 → 得點 Drive 照片 → 但沒角色時 Drive 被封鎖 → 永遠建不了第一個角色。
+  //   AI 生成器不在封鎖範圍,所以「生臉/生多角度」全程正常,只有最後綁定那步點不動,
+  //   看起來像「按鈕壞了」——實際上按鈕 disabled:false,程式呼叫 .click() 也會成功
+  //   (pointer-events:none 擋滑鼠,不擋程式化點擊),因此極難察覺。
+  //   ★ 解法:Drive 裡「已經有照片」時放行 —— 那代表客戶正在建第一個角色,
+  //     正是需要點它的時候;Drive 還空的新品牌照舊封鎖,防呆原意完整保留。
+  const _hasDrivePhotos = !!document.querySelector('.drive-photo');
+  const _blocked = !!(S.currentBrandId && _noKol && !_hasDrivePhotos);
+  ['kol-gallery-title', 'kol-list'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('onb-blocked', _blocked);
   });
+  // drive-section 單獨處理:有照片就一定放行(上面的 _blocked 已含此判斷,
+  //   這裡分開寫是為了讓「照片庫可不可點」這條規則一眼看得到,日後不會被誤改)
+  const _driveEl = document.getElementById('drive-section');
+  if (_driveEl) _driveEl.classList.toggle('onb-blocked', _blocked);
 
   // 已經站在被鎖的分頁上 → 靜默退回 STEP 1(不彈 toast,免得切品牌時一直跳)
   if (locked && S.currentMode !== 'talking') switchMode('talking');
@@ -3283,6 +3300,10 @@ function renderDriveGallery() {
   wrap.removeEventListener('click', handleDriveGalleryClick);
   wrap.addEventListener('click', handleDriveGalleryClick);
   updatePersonaBindButtons();   // 🩹 2026-08-11:畫完就把每顆鈕的文字/狀態設好
+  // 🩹 2026-08-19:照片是「現在」才畫進 DOM 的,而封鎖判斷會去數 .drive-photo。
+  //   不在這裡重跑一次,updateStepLocks 早在照片出現之前就跑完了 → 還是鎖著,
+  //   等於白改。凡是「先判斷、後渲染」的組合都要補這一步。
+  if (typeof updateStepLocks === 'function') updateStepLocks();
 }
 
 function renderPersonaSection(p) {
