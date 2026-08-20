@@ -3148,14 +3148,7 @@ function syncSelectedKolToCine() {
       destGrid.querySelectorAll('.look-item[data-look-id]').forEach(el => el.remove());
       // 🔧 2026-08-09(RA):STEP1 為了不跟 BASE 重複而藏起來的「正臉」卡,
       //   在這裡(STEP2 沒有 BASE)要重新顯示 → 電影鏡頭牆 = 正臉+3/4+側臉 齊全。
-      // 🩹 2026-08-19:改成「把剩下的卡全部重新顯示」,不再只挑 .angle-front。
-      //   原因:STEP1 現在會把重複的角度卡整批藏起來(Look ≥ 2 時),
-      //   而這裡是「複製 STEP1 的 HTML」再改 —— 只放行正臉的話,
-      //   3/4 與側臉會帶著 display:none 過來,STEP2 的牆會整個空掉,
-      //   多角度在「真正會用到它的地方」反而不見了。
-      //   上一行已經把所有 HeyGen look(有 data-look-id)刪光,
-      //   所以這裡剩下的必定只有多角度卡,全部放行是安全的。
-      destGrid.querySelectorAll('.look-item').forEach(el => { el.style.display = ''; });
+      destGrid.querySelectorAll('.look-item.angle-front').forEach(el => { el.style.display = ''; });
       const _angleCount = destGrid.querySelectorAll('.look-item').length;
       destPicker.style.display = _angleCount ? srcPicker.style.display : 'none';
       if (destHint) destHint.textContent = _angleCount
@@ -3402,38 +3395,13 @@ function renderPersonaSection(p) {
 
   // 🆕 情報A:也顯示「已處理」子資料夾(多角度人物表 / Seedance 乾淨參考照)。
   //    GAS 早就回傳 processed_photos,前台之前沒畫出來 → 存了看不到。
-  // 🩹 2026-08-19 這一區看起來像 bug 的兩個原因,一起修:
-  //   ① 沒去重:每按一次「重生」就多存一張 sheet_front,列表就多一張一模一樣的正臉。
-  //      → 同一角度只留「最新」那張,跟 pickAnglePhoto(單一真相)用同一條規則,
-  //        看到的 = 生影片時真正用到的。
-  //   ② 沒標籤:正臉、3/4、側臉、原圖長得像,並排就像重複貼上。
-  //      → 每張標角度。標籤不是美化,是把「看起來壞掉」變成「看得懂」。
-  //   ⚠️ 認不出角度的檔案(去油版、客戶自己上傳的)照樣顯示,不做任何過濾,
-  //      免得把客戶的東西藏起來。
-  const _angleOf = n => /sheet_front/i.test(n) ? 'front'
-                      : /sheet_q34/i.test(n)   ? 'q34'
-                      : /sheet_profile/i.test(n) ? 'profile' : '';
-  const _ANGLE_LABEL = { front: '正臉', q34: '3/4', profile: '側臉' };
-  const _newest = {};
-  const _others = [];
-  (p.processed_photos || []).forEach(ph => {
-    const k = _angleOf(String(ph.name || ''));
-    if (!k) { _others.push(ph); return; }
-    const cur = _newest[k];
-    if (!cur || new Date(ph.created_at || 0) > new Date(cur.created_at || 0)) _newest[k] = ph;
-  });
-  const procs = ['front', 'q34', 'profile']
-    .map(k => _newest[k] ? { ph: _newest[k], label: _ANGLE_LABEL[k] } : null)
-    .filter(Boolean)
-    .concat(_others.map(ph => ({ ph, label: '原圖' })));
-
+  const procs = p.processed_photos || [];
   const processedHtml = procs.length > 0
     ? `<div style="font-size:11px;color:#9a9aa8;margin:8px 0 4px;">已處理 · 多角度/參考照(${procs.length})</div>
        <div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
-        ${procs.map(({ ph, label }) => `
-          <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(label)} · ${escapeHtml(ph.name)}" style="border:1px solid #3a3a4a;">
+        ${procs.map(ph => `
+          <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}" style="border:1px solid #3a3a4a;">
             <img src="${escapeHtml(ph.thumbnail_url)}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder></div>'" referrerpolicy="no-referrer">
-            <div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.62);color:#fff;font-size:10px;line-height:1.6;text-align:center;pointer-events:none">${escapeHtml(label)}</div>
           </div>
         `).join('')}
       </div>`
@@ -5048,6 +5016,7 @@ async function createStitchedVideo(beats) {
   const totalSec = plan.reduce((a, s) => a + s.durationSec, 0);
   if (btn) { btn.disabled = true; btn.textContent = '接片生成中…請勿離開'; }
   _P.step(3, '分段接片中…共 ' + plan.length + ' 段 ≈ ' + totalSec + ' 秒,請耐心等候');
+  _stitchProgress.start(box, plan.length);
 
   try {
     const result = await KolStitch.runStitchFlow(plan, {
@@ -5063,10 +5032,10 @@ async function createStitchedVideo(beats) {
       aspectRatio: S.seedanceParams.aspectRatio,
       generateAudio: S.seedanceParams.generateAudio,
       tier: S.seedanceParams.tier,
-      onProgress: (m) => { const d = box && box.firstElementChild; if (d) d.textContent = '▶ ' + m; },
-      onSegmentDone: (idx) => { const d = box && box.firstElementChild; if (d)
-        d.textContent = '✅ 第 ' + (idx + 1) + ' / ' + plan.length + ' 段完成,繼續…'; },
+      onProgress: (m) => _stitchProgress.note(m),
+      onSegmentDone: (idx) => _stitchProgress.segDone(idx),
     });
+    _stitchProgress.stop();
     if (box) box.innerHTML =
       '<video src="' + result.finalUrl + '" controls autoplay loop '
       + 'style="width:100%;border-radius:10px;background:#000;"></video>'
@@ -5075,12 +5044,76 @@ async function createStitchedVideo(beats) {
     toast('接片完成!共 ' + plan.length + ' 段', 'success');
     saveStitchedToDrive(result.finalUrl);   // 🆕 #3: 影片同步存進品牌 Google Drive
   } catch (e) {
+    _stitchProgress.stop();
     if (box) box.innerHTML = '<div style="padding:12px;color:#ff6b6b;font-size:13px;">❌ ' + e.message + '</div>';
     toast('接片失敗:' + e.message, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '生成電影鏡頭'; }
   }
 }
+// ═══════════════════════════════════════════════════════════════
+//  🆕 2026-08-19 接片進度條
+//
+//  病灶:整支要跑 4 分鐘,畫面上只有一句「接片生成中…請勿離開」,
+//    而且底下那行狀態只在「某一段做完」時才更新一次 ——
+//    前三分鐘完全沒有任何動靜,任何人都會以為當掉。
+//    客戶會關掉視窗,但點數已經扣了、後台還在跑,他什麼都拿不到。
+//
+//  ★ 資料本來就有:runStitchFlow 一直在 onProgress 回報文字(排隊中/生成中…),
+//    只是被塞進同一行純文字,看不出來在動。這裡把它變成看得見的進度。
+//
+//  百分比怎麼算(誠實估算,不騙人):
+//    每段佔 (80 / 總段數)%,段內用時間平滑推進但「永遠不會自己走到 100」——
+//    最後 20% 留給接片與上傳。★ 絕不顯示 100% 直到真的拿到影片,
+//    否則客戶看到 100% 卻沒東西,比沒有進度條更糟。
+// ═══════════════════════════════════════════════════════════════
+const _stitchProgress = (function () {
+  let el = null, timer = null, total = 1, done = 0, pct = 0, note = '', t0 = 0;
+
+  function paint() {
+    if (!el) return;
+    const p = Math.min(99, Math.round(pct));
+    const mins = Math.floor((Date.now() - t0) / 60000);
+    const secs = Math.floor(((Date.now() - t0) % 60000) / 1000);
+    el.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">' +
+        '<span style="font-size:13px;font-weight:600;color:#c9c9d4">' + escapeHtml(note || '準備中…') + '</span>' +
+        '<span style="font-size:12px;color:#8a8a99;font-variant-numeric:tabular-nums">' + p + '%</span>' +
+      '</div>' +
+      '<div style="height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;">' +
+        '<div style="height:100%;width:' + p + '%;border-radius:99px;background:linear-gradient(90deg,#6dfac2,#7c6dfa);transition:width .6s ease;"></div>' +
+      '</div>' +
+      '<div style="margin-top:6px;font-size:11px;color:#7a7a88">' +
+        '已完成 ' + done + ' / ' + total + ' 段 · 已等候 ' + mins + ' 分 ' + secs + ' 秒' +
+        '<br>影片在後台繼續產生,關掉視窗會找不到成品,請留在這頁' +
+      '</div>';
+  }
+
+  return {
+    start(box, segCount) {
+      total = Math.max(1, segCount || 1); done = 0; pct = 2; note = '排隊中…'; t0 = Date.now();
+      el = box && box.firstElementChild;
+      if (!el) return;
+      paint();
+      clearInterval(timer);
+      // 段內平滑推進:朝「本段結束時該有的百分比」逼近,越接近越慢,不會超車
+      timer = setInterval(function () {
+        const target = (done + 1) * (80 / total);
+        if (pct < target) pct += Math.max(0.08, (target - pct) * 0.04);
+        paint();
+      }, 1000);
+    },
+    note(m) { note = String(m || ''); paint(); },
+    segDone(idx) {
+      done = Math.min(total, (idx | 0) + 1);
+      pct = Math.max(pct, done * (80 / total));
+      note = done >= total ? '影片接合中…' : ('第 ' + done + ' 段完成,繼續下一段…');
+      paint();
+    },
+    stop() { clearInterval(timer); timer = null; el = null; },
+  };
+})();
+
 // 🆕 臉用乾淨原圖:自動從該 KOL 的 Drive 資料夾抓原圖 → 轉乾淨 R2(走商品照同管線)
 //    任何一步失敗都自動退回原本的 HeyGen 圖,不會讓生成壞掉。全自動、零人工。
 //    🆕 加 localStorage 持久快取:同一個 KOL 算過一次 → 之後免 GAS、免 Worker、刷新也秒回。
