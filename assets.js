@@ -223,9 +223,10 @@ async function fetchFromLibrary(brandId, reqId, force) {
   //    體感會比 Drive 還慢(Drive 那邊前端本來就有 _assetCache)。
   if (!force && _libCache[brandId]) {
     if (_assetReqStale(reqId)) return -1;
-    _libCache[brandId].forEach(function (x) {
-      if (!window.S.photos.find(function (y) { return y.libUrl === x.libUrl; })) window.S.photos.push(x);
-    });
+    // ⚠️ 2026-08-21 修:這裡原本是「往現有清單加」,切品牌時舊的沒清掉
+    //    → 兩個品牌的素材會疊在一起。客戶會看到別家的照片,
+    //    做圖時也可能選錯。改成「只留這個品牌的」。
+    window.S.photos = _libCache[brandId].slice();
     return _libCache[brandId].length;
   }
   try {
@@ -250,6 +251,8 @@ async function fetchFromLibrary(brandId, reqId, force) {
 
     if (!data || !data.ok) { console.warn('[assets] 素材庫讀取失敗,改走 Drive:', data && data.error); return 0; }
     if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return -1; }
+    // 🛡 只留這個品牌的:上一個品牌的殘留清掉,否則兩家素材會混在一起
+    window.S.photos = (window.S.photos || []).filter(function (x) { return x._src !== 'library'; });
 
     // 只收「可以拿來做圖的素材」
     //   ❌ 成品(廣告圖/短影片):不該拿成品當素材
