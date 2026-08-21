@@ -218,14 +218,14 @@ window.KolStitch = (function () {
     const bp = collectBeatProducts(list);   // 🆕 分段綁圖
 
     const carry = continuityFrom
-      ? ('Continuing seamlessly from the previous moment — she has just ' + continuityFrom
+      ? ('Continuing seamlessly from the previous moment — ' + _pron().s + ' has just ' + continuityFrom
          + '. Pick up the action naturally from exactly that point; do NOT restart, reset or re-establish the scene.\n\n')
       : '';
 
     if (shared && shared.front) {
       const prodRule = bp.has
-        ? 'she holds the product referenced in each shot at a consistent real-world size and hand-scale; do not zoom or resize it within a shot; different shots show the specified products; '
-        : 'the product she holds is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ';
+        ? (_pron().s + ' holds the product referenced in each shot at a consistent real-world size and hand-scale; do not zoom or resize it within a shot; different shots show the specified products; ')
+        : (_pron().s + ' holds a product that is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ');
       const _mc = (typeof window !== 'undefined' && window.KOL_MATCHCUT === true);  // 🎬 v6.16 結尾停+硬切(match cut)保險絲,預設關
       const _sg = (typeof window !== 'undefined' && window.KOL_SCENEGRID === true);  // 🗺️ v6.17 場景九宮格保險絲,預設關(標註用)
       const _fa = (typeof window !== 'undefined' && window.KOL_FACEANGLES === true);  // 🎯 v6.18 多角度臉選配保險絲,預設關(每 beat 臉前綴用)
@@ -249,17 +249,17 @@ window.KolStitch = (function () {
         const tb0 = tb, tb1 = (i === n - 1) ? dur : Math.min(dur, tb + bSecB);
         const markerB = (i === 0) ? 'Shot 1' : ((_mc ? 'Match cut to Shot ' : 'Hard cut to Shot ') + (i + 1));
         const _tagB = bp.tagOf(list[i].productUrl);
-        const _prodB = _tagB ? (' She is holding ' + _tagB + ' — this exact product in this shot.') : '';
+        const _prodB = _tagB ? (' ' + _pron().S + ' is holding ' + _tagB + ' — this exact product in this shot.') : '';
         bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': ' + ((_fa && list[i].angle && String(list[i].angle).toLowerCase() !== 'front') ? ('[FACE_' + String(list[i].angle).toUpperCase().replace(/[^A-Z0-9]/g, '') + ']') : '[Image1]') + ' ' + (list[i].prompt || '') + _prodB + '\n';
         tb = tb1;
       }
-      bodyB += '\nThe quoted line is her COMPLETE and ONLY speech per shot — no extra words or improvised prices after it, only ambient sound.';
+      bodyB += '\nThe quoted line is ' + _pron().p + ' COMPLETE and ONLY speech per shot — no extra words or improvised prices after it, only ambient sound.';
       if (shared.tail) bodyB += '\n' + shared.tail;
       return bodyB;
     }
 
     let body = 'candid realistic vertical UGC video.\n'
-      + "Use [Image1] for the woman's face and identity. She is in the exact location of [SCENE_IMG], "
+      + ('Use [Image1] for the ' + _pron().noun + "'s face and identity. " + _pron().S + ' is in the exact location of [SCENE_IMG], ')
       + 'wearing the exact outfit of [OUTFIT_IMG], naturally holding and showing the product.\n\n'
       + carry;
     let t = 0;
@@ -269,13 +269,13 @@ window.KolStitch = (function () {
       const t1 = (i === n - 1) ? dur : Math.min(dur, t + bSec);
       const marker = (i === 0) ? 'Shot 1' : ('Hard cut to Shot ' + (i + 1));
       const _tagA = bp.tagOf(list[i].productUrl);
-      const _prodA = _tagA ? (' She is holding ' + _tagA + ' — this exact product in this shot.') : '';
+      const _prodA = _tagA ? (' ' + _pron().S + ' is holding ' + _tagA + ' — this exact product in this shot.') : '';
       body += '[00:' + pad(t0) + '-00:' + pad(t1) + '] ' + marker
         + ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME background, wearing [OUTFIT_IMG]. '
         + (list[i].prompt || '') + _prodA + '\n';
       t = t1;
     }
-    body += '\nGlobal: the same woman [Image1], the same location [SCENE_IMG], the same background and outfit [OUTFIT_IMG] across all shots; steady camera; do not change her face, the location, the background or the outfit; no different person, no crowd.';
+    body += '\nGlobal: the same ' + _pron().noun + ' [Image1], the same location [SCENE_IMG], the same background and outfit [OUTFIT_IMG] across all shots; steady camera; do not change ' + _pron().p + ' face, the location, the background or the outfit; no different person, no crowd.';
     if (shared && shared.colorLine) body += '\n' + shared.colorLine;
     return body;
   }
@@ -316,6 +316,30 @@ window.KolStitch = (function () {
   //    · 其餘 _sheet_  → 多角度 reference(profile / q34 …)→ 這是解「臉漂移」的關鍵
   //  ⚠️ 只回 file_id,不回 thumbnail_url:listKolPhotos 對「已處理」夾只給 w400 縮圖,
   //     縮圖絕不能餵引擎(鐵律)。file_id → Worker transferDriveToR2 才拿得到乾淨原圖。
+  // ═══════════════════════════════════════════════════════════════
+  //  🚻 2026-08-21 代名詞修正(男性 KOL 的老坑)
+  //   病灶:整份 prompt 的第三人稱寫死 she / her / the woman —— 共 10 處。
+  //     子謙、健一這類男性 KOL,模型會同時收到「這是女性」的文字
+  //     + 「男性臉」的照片,指令自相矛盾 → 臉部處理不穩(鬥雞眼、
+  //     五官飄移),而且句子後半的細節指令(shifting gaze 視線流轉)
+  //     也跟著被稀釋掉。
+  //   修法:改成依 KOL 性別動態產生代名詞。
+  //     gender 欄位 kol_personas 本來就有,取用路徑照抄 nationality 那條。
+  //   ★ 預設仍是女性 —— 現有 KOL 多為女性,取不到值時行為與改版前一致,
+  //     不會讓既有影片變樣。
+  // ═══════════════════════════════════════════════════════════════
+  function _pron() {
+    let g = '';
+    try {
+      g = String((window.S && window.S.selectedKol && window.S.selectedKol.persona
+                  && window.S.selectedKol.persona.gender) || '').toLowerCase();
+    } catch (e) { g = ''; }
+    const male = /^(m|male|男|man)/.test(g);
+    return male
+      ? { s: 'he',  S: 'He',  o: 'him', p: 'his', noun: 'man' }
+      : { s: 'she', S: 'She', o: 'her', p: 'her', noun: 'woman' };
+  }
+
   const _sheetCache = {};
   async function resolveKolSheet(brandId, kolName) {
     if (!brandId || !kolName) throw new Error('resolveKolSheet 缺少 brandId 或 kolName');
@@ -469,7 +493,7 @@ window.KolStitch = (function () {
           _look = _look.slice(0, _capLen).replace(/\S*$/, '').trim();   // 切到最後一個完整字,不砍半字
           console.log('[KolStitch] 🎨 look 過長,截到 ' + _look.length + ' 字(避 1700 牆)');
         }
-        if (_look) _lookFront = _look + ' Soft diffused natural light, matte skin with no oily specular sheen, keep her skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
+        if (_look) _lookFront = _look + ' Soft diffused natural light, matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
       } catch (_) {}
     }
     // look 當 front:兩路都吃 opts.shared.front(Seedance 完整敘述路 & piapi lean 路)
@@ -482,7 +506,7 @@ window.KolStitch = (function () {
     //   ⚠️ v6.15:front 現在就是 look(或沒 look 時的 generic);lean 重組直接沿用 _lookFront,不再帶 colorLine。
     if ((opts.provider || 'piapi') === 'piapi' && opts.shared && opts.shared.front) {
       const _leanFront = _lookFront
-        || 'Realistic vertical UGC video. Soft diffused natural light, matte skin with no oily specular sheen, keep her skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No on-screen text or subtitles, no background music.';
+        || 'Realistic vertical UGC video. Soft diffused natural light, matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No on-screen text or subtitles, no background music.';
       prompt = buildMultiShotPrompt(beats, totalSec, { front: _leanFront }, opts.continuityFrom);
     }
 
@@ -495,9 +519,9 @@ window.KolStitch = (function () {
       const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
       if ((opts.provider || 'piapi') === 'piapi') {
         // 🩳 v6.10 PiAPI 超短語音行(省字避開 prompt 上限;鐵律照留:只講台詞/台灣腔/對嘴/沒台詞不講話/不定格)
-        prompt += '\nVoice & lip-sync: she speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still; still moving on the last frame.';
+        prompt += '\nVoice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still; still moving on the last frame.';
       } else {
-        prompt += '\nVoice & body: she speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) she stays silent, mouth still, only ambient sound. She is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
+        prompt += '\nVoice & body: ' + _pron().s + ' speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) ' + _pron().s + ' stays silent, mouth still, only ambient sound. ' + _pron().S + ' is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
       }
     }
 
@@ -795,7 +819,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
