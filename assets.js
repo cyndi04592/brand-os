@@ -520,7 +520,7 @@ function assetItemHtml(f, i, type, sel) {
     <div class="ai-thumb">${thumb}</div>
     <div class="ai-info">
       <div class="ai-name">${f.name}</div>
-      <div class="ai-meta">Drive 素材</div>
+      <div class="ai-meta">品牌素材</div>
     </div>
     <span class="ai-check">✓</span>
   </div>`;
