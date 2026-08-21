@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   我的素材庫 v1.2(2026-08-21)
+   我的素材庫 v1.3(2026-08-21)
    職責(單一):列出客戶自己品牌的素材,可預覽、可下載。
    ⚠️ 視覺一律沿用 kol.html 的設計系統(變數、字體、漸層、圓角)——
       不自創配色。v1.0 自己編了一套,已作廢。
@@ -141,6 +141,26 @@ function fmtDate(ts){
 }
 function isVideo(u){ return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(String(u||'')); }
 
+/* ═══════════════════════════════════════════════════════════════
+   🖼 縮圖:列表只載小圖,點開才給原圖
+   為什麼要有:原本每一格都直接載原圖(產品規格圖動輒好幾 MB),
+     十幾張同時下載 → 切換卡到像壞掉。Google 雲端之所以順,
+     就是因為它列表給的是縮圖、點開才給原檔 —— 這裡把那層補上。
+   做法:同網域下加一段轉換路徑,當場縮小,原檔完全不動、不用重搬。
+     ⚠️ 路徑一定要用「相對」寫法(/尺寸/檔案路徑),
+        後面再接一個完整網址會回 9404。
+   ⚠️ 只對自家網域生效;其他來源原樣回傳,不會壞掉。
+   ═══════════════════════════════════════════════════════════════ */
+const CDN_HOST = 'cdn.raby.com.tw';
+function thumbUrl(u, w){
+  try{
+    const url = new URL(u);
+    if(url.hostname !== CDN_HOST) return u;              // 非自家來源 → 原樣
+    if(url.pathname.indexOf('/cdn-cgi/') === 0) return u; // 已經是轉換過的 → 不重複包
+    return url.origin + '/cdn-cgi/image/width=' + (w||400) + ',quality=80,format=auto' + url.pathname;
+  }catch(e){ return u; }
+}
+
 async function api(action, extra){
   const r = await fetch(WORKER, {
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -229,7 +249,7 @@ function renderGrid(){
     const nm  = it.name || (vid ? '影片' : '圖片');
     const th  = vid
       ? '<video src="'+esc(it.url)+'#t=0.5" preload="metadata" muted playsinline></video><div class="play">▶</div>'
-      : '<img src="'+esc(it.url)+'" loading="lazy" alt="">';
+      : '<img src="'+esc(thumbUrl(it.url,400))+'" loading="lazy" decoding="async" alt="">';
     return '<div class="card" data-i="'+i+'">'
       +   '<div class="thumb">'+th+'<div class="badge">'+esc(it.category||'')+'</div></div>'
       +   '<div class="meta"><div class="nm">'+esc(nm)+'</div><div class="dt">'+fmtDate(it.ts)+'</div></div>'
@@ -252,7 +272,7 @@ function openLb(it){
   const vid = isVideo(it.url);
   $('lbIn').innerHTML =
     (vid ? '<video src="'+esc(it.url)+'" controls autoplay playsinline></video>'
-         : '<img src="'+esc(it.url)+'" alt="">')
+         : '<img src="'+esc(thumbUrl(it.url,1400))+'" alt="">')
     + '<div class="lb-bar"><a class="dl" href="'+esc(it.url)+'" download target="_blank" rel="noopener">下載</a></div>';
   $('lb').classList.add('on');
 }
