@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   我的素材庫 v1.1(2026-08-21)
+   我的素材庫 v1.2(2026-08-21)
    職責(單一):列出客戶自己品牌的素材,可預覽、可下載。
    ⚠️ 視覺一律沿用 kol.html 的設計系統(變數、字體、漸層、圓角)——
       不自創配色。v1.0 自己編了一套,已作廢。
@@ -160,8 +160,10 @@ async function loadBrands(){
     return;
   }
   try{
-    const res = await api('getBrandOS', {});
-    const list = (res && res.ok && res.data && res.data.brands) ? res.data.brands : [];
+    // ⚠️ getBrandOS 是 GAS 的動作,不是 Worker 的 ——
+    //    直接送會回「未知 action」。要用 gas_cached 包一層(照抄 kol.html gasGet)。
+    const res = await api('gas_cached', { gasAction:'getBrandOS', gasParams:{ email: myEmail() } });
+    const list = (res && res.ok !== false && res.data && res.data.brands) ? res.data.brands : [];
     S.brands = list;
     if(!list.length){
       sel.innerHTML = '<option value="">沒有可用品牌</option>';
