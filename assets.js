@@ -8,7 +8,10 @@ const _assetCache = {};
 // ══ 🆕 WIN1 持久快取（localStorage）：刷新後切品牌也秒開 ══
 //    只存「清單文字」(檔名/driveId/縮圖網址)，絕不存 full/canvasRes 原圖(MB 級)
 //    10 分鐘 TTL；「重新抓取」按鈕會連這層一起清
-const _ASSET_LS_PREFIX = 'bs_assets_';
+// ⚠️ 2026-08-21 前綴改版 → 舊的本地快取自動失效。
+//   不改的話,瀏覽器裡存著昨天的 Drive 清單,新程式根本不會被執行到
+//   —— 今天就踩到:改完部署了,畫面完全沒變、Console 一行都沒印。
+const _ASSET_LS_PREFIX = 'bs_assets_lib1_';
 const _ASSET_LS_TTL = 10 * 60 * 1000; // 10 分鐘
 
 // 🩹 2026-08-11 切品牌競速防護(RA 實測:選巧福卻跑出旺味的香腸照)
@@ -97,8 +100,14 @@ async function autoFetchAssets(brandId) {
   const photoInput = document.getElementById('inPhotoFolder');
   const videoInput = document.getElementById('inVideoFolder');
 
+  // 🆕 先問自家素材庫 —— 這是另一條載入路徑(Google OAuth 模式),
+  //    只改 Worker 那支會漏掉一半的客戶。
+  const _libCount = await fetchFromLibrary(brandId, _req);
+  if (_libCount === -1) return;
+  if (_libCount > 0) console.log('[assets] 📚 素材庫供圖 ' + _libCount + ' 張(未經 Google)');
+
   const promises = [];
-  if (f.photo && photoInput) {
+  if (f.photo && photoInput && _libCount <= 0) {
     photoInput.value = f.photo;
     promises.push(fetchFromDriveAPI(f.photo, 'photo', window._driveToken, _req));
   }
