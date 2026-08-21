@@ -3720,11 +3720,19 @@ async function confirmDrivePhotos(personaArg) {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span> 處理中…'; }
 
   try {
+    // 🆕 2026-08-21:同時帶「素材庫網址」——
+    //   建立 KOL 一直只吃 Drive 檔案編號,所以客戶非有 Drive 資料夾不可,
+    //   Google 那條線永遠拆不掉。Worker v4.42 起兩種都收:
+    //     · fileIds   → Drive 舊路(照片來自 Drive 相簿時)
+    //     · imageUrls → 素材庫(照片來自客戶自己上傳時,沒有 Drive 編號)
+    //   ⚠️ 勾選的照片若沒有 fileId(素材庫來源),就改帶它的網址。
+    const _libUrls = (S._pickedLibUrls || []).filter(Boolean);
     const res = await gasPost('createKolLookFromDrive', {
       personaId: personaData.persona_id,
       personaName: personaData.persona_name,
       brandId: S.currentBrandId,
       fileIds,
+      imageUrls: _libUrls,
     });
     if (!res.ok) throw new Error(res.error);
 
