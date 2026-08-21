@@ -3341,7 +3341,15 @@ async function loadDrivePhotos(brandId, force) {
     // ═══════════════════════════════════════════════════════════
     let res = null;
     try {
-      const lib = await api('list_kol_photos_lib', { brandId });
+      // ⚡ 快取:切品牌回來不重打。上一版把新查詢插在快取判斷「之後」,
+      //    等於每次切品牌都重打一次後端 —— 體感比 Drive 還慢。
+      S._libKolCache = S._libKolCache || {};
+      if (!force && S._libKolCache[brandId]) {
+        res = S._libKolCache[brandId];
+        console.log('[KOL] 📚 素材庫(快取)');
+      }
+      const lib = res || await api('list_kol_photos_lib', { brandId });
+      if (!res && lib && lib.ok && !lib.empty) S._libKolCache[brandId] = lib;
       if (lib && lib.ok && !lib.empty && (lib.personas || []).length) {
         res = lib;
         const _n = (lib.personas || []).reduce(function (a, p) { return a + (p.photos || []).length; }, 0);
