@@ -208,7 +208,17 @@ async function _retryFetchJson(makeReq, label, tries) {
 //   ★ 回傳形狀跟 Drive 那條完全一致 —— 後面的渲染、選圖、生圖一行都不用改。
 //   🗑 等 Drive 全面退場後,連同 fetchFromWorker / fetchFromGAS 一起移除。
 // ═══════════════════════════════════════════════════════════════
-async function fetchFromLibrary(brandId, reqId) {
+const _libCache = {};   // brandId → 照片陣列(切回來秒開,不重打後端)
+async function fetchFromLibrary(brandId, reqId, force) {
+  // ⚡ 命中快取就直接用 —— 沒有這層,每切一次品牌就重打一次後端,
+  //    體感會比 Drive 還慢(Drive 那邊前端本來就有 _assetCache)。
+  if (!force && _libCache[brandId]) {
+    if (_assetReqStale(reqId)) return -1;
+    _libCache[brandId].forEach(function (x) {
+      if (!window.S.photos.find(function (y) { return y.libUrl === x.libUrl; })) window.S.photos.push(x);
+    });
+    return _libCache[brandId].length;
+  }
   try {
     const KOL_URL = (typeof KOL_WORKER_URL !== 'undefined' && KOL_WORKER_URL)
       ? KOL_WORKER_URL : 'https://kol-proxy.calm-sunset-6b66.workers.dev';
@@ -232,9 +242,13 @@ async function fetchFromLibrary(brandId, reqId) {
     if (!data || !data.ok) { console.warn('[assets] 素材庫讀取失敗,改走 Drive:', data && data.error); return 0; }
     if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return -1; }
 
-    // 只收「客戶自己的照片素材」—— 成品(廣告圖/短影片)不該出現在做圖的選圖區
-    const OK_CATS = ['照片素材', '商品/服務照', '商品照', 'LOGO'];
+    // 只收「可以拿來做圖的素材」
+    //   ❌ 成品(廣告圖/短影片):不該拿成品當素材
+    //   ❌ LOGO:那是疊圖用的,不是背景素材(2026-08-21 RA 指正)
+    //   ❌ KOL:人物照走 KOL 工作室那條線
+    const OK_CATS = ['照片素材', '商品/服務照', '商品照'];
     let n = 0;
+    const _fresh = [];
     (data.items || []).forEach(function (it) {
       if (OK_CATS.indexOf(it.category) === -1) return;
       if (!it.url) return;
@@ -243,7 +257,7 @@ async function fetchFromLibrary(brandId, reqId) {
       const thumb = /cdn\.raby\.com\.tw/.test(it.url)
         ? it.url.replace(/^(https:\/\/cdn\.raby\.com\.tw)(\/.*)$/, '$1/cdn-cgi/image/width=400,quality=80,format=auto$2')
         : it.url;
-      window.S.photos.push({
+      const _row = {
         driveId: it.drive_id || null,
         libUrl:  it.url,
         name:    it.name || '',
@@ -253,9 +267,12 @@ async function fetchFromLibrary(brandId, reqId) {
         src:     thumb,
         type:    'photo',
         _src:    'library'
-      });
+      };
+      window.S.photos.push(_row);
+      _fresh.push(_row);
       n++;
     });
+    _libCache[brandId] = _fresh;
     return n;
   } catch (e) {
     console.warn('[assets] 素材庫讀取錯誤,改走 Drive:', e.message);
