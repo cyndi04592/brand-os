@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   我的素材庫 v1.6(2026-08-21)
+   我的素材庫 v1.7(2026-08-21)
    職責(單一):列出客戶自己品牌的素材,可預覽、可下載。
    ⚠️ 視覺一律沿用 kol.html 的設計系統(變數、字體、漸層、圓角)——
       不自創配色。v1.0 自己編了一套,已作廢。
@@ -58,6 +58,18 @@ a{color:inherit;text-decoration:none;}
 .badge.gold{background:linear-gradient(135deg,rgba(201,162,39,.9),rgba(232,199,102,.9));border-color:transparent;color:#1a1408;font-weight:700;}
 .card.gold{border-color:rgba(201,162,39,.28);}
 .card.gold:hover{border-color:rgba(201,162,39,.65);box-shadow:0 8px 28px rgba(201,162,39,.22);}
+/* ⬆️ 上傳 */
+.up-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;border:none;transition:.2s;white-space:nowrap;}
+.up-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,109,250,.35);}
+.up-panel{max-width:1100px;margin:14px auto 0;padding:0 24px;display:none;}
+.up-panel.on{display:block;}
+.up-box{background:var(--surface);border:1px dashed rgba(124,109,250,.4);border-radius:var(--radius);padding:22px;text-align:center;transition:.2s;}
+.up-box.drag{border-color:var(--accent);background:rgba(124,109,250,.07);}
+.up-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:14px;}
+.up-hint{font-size:13px;color:var(--text-dim);margin-top:10px;}
+.up-list{margin-top:14px;display:flex;flex-direction:column;gap:6px;text-align:left;}
+.up-item{font-size:12.5px;color:var(--text-mid);display:flex;gap:8px;align-items:center;}
+.up-item .st{font-size:13px;}
 .tabs2{width:100%;display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;padding-left:2px;}
 .tab.t2{font-size:12.5px;padding:6px 13px;background:transparent;}
 .tab.t2.on{background:rgba(124,109,250,.18);border-color:rgba(124,109,250,.5);color:var(--accent);font-weight:600;}
@@ -110,6 +122,7 @@ a{color:inherit;text-decoration:none;}
   <div class="topbar-title">我的素材庫</div>
   <div style="flex:1"></div>
   <a class="nav-btn pri" href="index.html">← 回主系統</a>
+  <button class="up-btn" id="upToggle">＋ 上傳素材</button>
   <button class="nav-btn" id="reloadBtn">重新整理</button>
   <div class="topbar-badge">LIBRARY</div>
 </div>
@@ -122,6 +135,22 @@ a{color:inherit;text-decoration:none;}
     </div>
     <div class="head-sp"></div>
     <select id="brandSel" class="sel"><option value="">載入中…</option></select>
+  </div></div>
+
+  <div class="up-panel" id="upPanel"><div class="up-box" id="upBox">
+    <div class="up-row">
+      <span style="font-size:13px;color:var(--text-mid)">放到</span>
+      <select id="upCat" class="sel" style="min-width:150px">
+        <option value="照片素材">照片素材</option>
+        <option value="商品照">商品照</option>
+        <option value="LOGO">LOGO</option>
+        <option value="KOL">KOL</option>
+      </select>
+      <input id="upKol" class="sel" style="min-width:150px;display:none" placeholder="這是誰的照片?">
+      <button class="up-btn" id="upPick">選擇檔案</button>
+    </div>
+    <div class="up-hint">也可以直接把圖片拖進這個框 · 單檔 25MB 以內</div>
+    <div class="up-list" id="upList"></div>
   </div></div>
 
   <div class="tabs" id="tabs"></div>
@@ -399,6 +428,79 @@ function openLb(it){
 function closeLb(){
   $('lb').classList.remove('on');
   $('lbIn').innerHTML = '';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ⬆️ 上傳(v1.7)—— 切斷 Google 雲端的第一刀
+   以前東西只能從 Google 雲端進來,所以 Drive 永遠拆不掉。
+   現在檔案直接進自家倉庫,傳完立刻出現在牆上。
+   ⚠️ 一張一張送,不併發 —— 併發會讓 Worker 同時吃好幾個檔,
+     反而容易逾時;而且一張一張才能逐筆回報成敗。
+   ═══════════════════════════════════════════════════════════════ */
+const upFile = document.createElement('input');
+upFile.type = 'file'; upFile.accept = 'image/*'; upFile.multiple = true;
+document.body.appendChild(upFile);
+upFile.style.display = 'none';
+
+$('upToggle').onclick = function(){ $('upPanel').classList.toggle('on'); };
+$('upPick').onclick   = function(){ upFile.click(); };
+$('upCat').onchange   = function(){ $('upKol').style.display = (this.value === 'KOL') ? '' : 'none'; };
+upFile.onchange       = function(){ if(this.files && this.files.length) doUpload(this.files); this.value=''; };
+
+const upBox = $('upBox');
+['dragenter','dragover'].forEach(function(e){
+  upBox.addEventListener(e, function(ev){ ev.preventDefault(); upBox.classList.add('drag'); });
+});
+['dragleave','drop'].forEach(function(e){
+  upBox.addEventListener(e, function(ev){ ev.preventDefault(); upBox.classList.remove('drag'); });
+});
+upBox.addEventListener('drop', function(ev){
+  const fs = ev.dataTransfer && ev.dataTransfer.files;
+  if(fs && fs.length) doUpload(fs);
+});
+
+async function doUpload(files){
+  if(!S.brandId){ alert('請先選擇品牌'); return; }
+  const cat = $('upCat').value;
+  const kol = $('upKol').value.trim();
+  if(cat === 'KOL' && !kol){ alert('請填這是誰的照片'); $('upKol').focus(); return; }
+
+  const list = $('upList');
+  list.innerHTML = '';
+  let ok = 0, bad = 0;
+
+  for(let i = 0; i < files.length; i++){
+    const f = files[i];
+    const row = document.createElement('div');
+    row.className = 'up-item';
+    row.innerHTML = '<span class="st">⏳</span><span>'+esc(f.name)+'</span>';
+    list.appendChild(row);
+    try{
+      const fd = new FormData();
+      fd.append('file', f);
+      fd.append('password', PASSWORD);
+      fd.append('token', authToken());
+      fd.append('brandId', S.brandId);
+      fd.append('category', cat);
+      if(kol) fd.append('kolName', kol);
+      const r = await fetch(WORKER + '/asset_upload', { method:'POST', body: fd });
+      const jn = await r.json();
+      if(jn && jn.ok){ row.querySelector('.st').textContent = '✅'; ok++; }
+      else { row.querySelector('.st').textContent = '❌';
+             row.innerHTML += '<span style="color:var(--text-dim)"> · '+esc(jn&&jn.error||'失敗')+'</span>'; bad++; }
+    }catch(e){
+      row.querySelector('.st').textContent = '❌';
+      row.innerHTML += '<span style="color:var(--text-dim)"> · 連線失敗</span>'; bad++;
+    }
+  }
+
+  const done = document.createElement('div');
+  done.className = 'up-item';
+  done.style.marginTop = '6px';
+  done.innerHTML = '<span class="st">🎉</span><span>完成 · 成功 '+ok+(bad?(' · 失敗 '+bad):'')+'</span>';
+  list.appendChild(done);
+
+  if(ok){ delete CACHE[S.brandId]; await loadAssets(true); }
 }
 
 $('brandSel').onchange = function(){ S.brandId = this.value; S.group='all'; S.cat='all'; S.kol='all'; loadAssets(); };
