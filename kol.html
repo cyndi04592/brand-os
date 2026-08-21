@@ -5078,8 +5078,7 @@ async function createStitchedVideo(beats) {
       shared: _shared || undefined,   // 🆕 B 版才傳(真實度 front/tail);沒有就走 A 版
       confirmed: true,   // 進入點已確認過,kol-stitch 內的窗不重跳
       kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
-      productImageUrls: orderedProductUrls(),
-      sceneImageUrl: S.customSceneUrl || undefined,   // 🆕 有上傳實景就用真照,跳過 AI 生背景
+      ...splitSceneFromProducts(orderedProductUrls(), S.customSceneUrl),   // 🆕 場景型模式:情境照→場景槽
       brandId: S.currentBrandId,
       kolName: S.selectedKol.name,
       mode: 'auto',
@@ -5477,8 +5476,7 @@ async function createSeedanceVideo() {
 
   const payload = {
     kolImageUrl: await resolveKolImageUrl(S.selectedKol.name, lookImage),
-    productImageUrls: orderedProductUrls(),
-    sceneImageUrl: S.customSceneUrl || undefined,   // 🆕 單支也吃上傳實景,跳過 AI 生背景
+    ...splitSceneFromProducts(orderedProductUrls(), S.customSceneUrl),   // 🆕 場景型模式:情境照→場景槽
     prompt,
     resolution: S.seedanceParams.resolution,
     duration: S.seedanceParams.duration,
@@ -6085,6 +6083,43 @@ function setProductRefRole(url, role) { S.productRefRole[url] = role; renderRefL
 function orderedProductUrls() {
   return [...S.seedanceProductUrls].sort((a, b) =>
     (PRODUCT_ROLE_ORDER[S.productRefRole[a]] ?? 0) - (PRODUCT_ROLE_ORDER[S.productRefRole[b]] ?? 0));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🆕 2026-08-21 場景型模式:情境照要進「場景槽」,不是商品槽
+//   踩到的坑(2026-08-21 律師事務所實測抓到):
+//     MODE_SLOTS 裡有六個服務業模式,槽名寫著「情境照 / 環境 / 上課情境 /
+//     地點照·必須是真實地點」,但 role 全部借用 'main' —— 因為當初怕動到
+//     [Image2]/[Image3] 的排序,只改了名字沒改去向。
+//     結果:客戶上傳的真實環境照被當「商品圖」送出,而場景槽因為是空的,
+//     系統就自己 AI 畫一張辦公室蓋上去。
+//     → 客戶照做了、系統沒用到。旅遊那格甚至明寫「必須是真實地點」。
+//   修法(刻意選最小改動):
+//     不新增 role、不動 PRODUCT_ROLE_ORDER、不動 [ImageN] 對應 ——
+//     那些一動,海苔/炒菜/穿戴這些現在好好的全部要重驗。
+//     改成「送出前分流」:場景型模式 → 把第一張照片從商品陣列搬到場景槽。
+//   安全:
+//     · 只有這六個模式會分流,其餘模式一個字都不變
+//     · 客戶若已從「上傳實景」入口給過場景,以那張為準,不覆蓋
+//     · 分流後商品陣列若空了也沒關係 —— 服務業本來就沒有商品可拍
+// ═══════════════════════════════════════════════════════════════════
+const SCENE_FIRST_MODES = ['pro', 'digital', 'agency', 'medical', 'course', 'travel'];
+
+function isSceneFirstMode() {
+  try {
+    const prod = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
+    return SCENE_FIRST_MODES.indexOf(currentProductMode(prod)) !== -1;
+  } catch (e) { return false; }
+}
+
+// 回傳 { productImageUrls, sceneImageUrl } —— 送出前一律走這支
+function splitSceneFromProducts(urls, existingScene) {
+  const list = Array.isArray(urls) ? urls.slice() : [];
+  if (existingScene) return { productImageUrls: list, sceneImageUrl: existingScene };
+  if (!isSceneFirstMode() || !list.length) return { productImageUrls: list, sceneImageUrl: existingScene || undefined };
+  const scene = list.shift();
+  console.log('[場景分流] 🏛 服務型模式 → 情境照改當場景送出:', scene, '· 剩餘商品圖', list.length, '張');
+  return { productImageUrls: list, sceneImageUrl: scene };
 }
 
 // ═══ 🆕 v3.1 商品呈現方式(mode 選擇器)· STEP2 / STEP3 共用同一資料源 ═══
@@ -7675,8 +7710,7 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
 
   const payload = {
     kolImageUrl,
-    productImageUrls,
-    sceneImageUrl: S.episodeCustomSceneUrl || undefined,   // 🆕 STEP3 用自己的實景照(獨立於 STEP2)
+    ...splitSceneFromProducts(productImageUrls, S.episodeCustomSceneUrl),   // 🆕 場景型模式:情境照→場景槽
     prompt,
     resolution: S.episodeParams.resolution,
     duration: S.episodeParams.duration,
@@ -7843,8 +7877,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       shared: _shared || undefined,   // 🆕 B 版才傳;沒有就走 A 版
       confirmed: true,   // 進入點已確認過,kol-stitch 內的窗不重跳
       kolImageUrl,
-      productImageUrls,
-      sceneImageUrl: S.episodeCustomSceneUrl || undefined,   // 🆕 STEP3 接片用自己的實景照
+      ...splitSceneFromProducts(productImageUrls, S.episodeCustomSceneUrl),   // 🆕 場景型模式:情境照→場景槽
       brandId: S.currentBrandId,
       kolName: persona.persona_name,
       mode: 'auto',
