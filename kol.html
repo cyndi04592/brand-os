@@ -956,7 +956,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="page-header">
     <div>
       <h1>KOL 數字人工作室</h1>
-      <p id="page-subtitle">管理品牌的 KOL 形象庫,從 Google Drive 選照片,一鍵建立 KOL 角色</p>
+      <p id="page-subtitle">管理品牌的 KOL 形象庫,從素材庫選照片,一鍵建立 KOL 角色</p>
     </div>
     <button class="btn btn-ghost btn-sm" onclick="refreshAll()">重新載入</button>
   </div>
@@ -2678,7 +2678,7 @@ function switchMode(mode) {
 
   // 副標題更新
   const subtitles = {
-    talking: '管理品牌的 KOL 形象庫,從 Google Drive 選照片,一鍵建立 KOL 角色',
+    talking: '管理品牌的 KOL 形象庫,從素材庫選照片,一鍵建立 KOL 角色',
     cinematic: '單支電影鏡頭拍攝 — 選 KOL 形象 + 商品照 + 場景 → 生成電影感短影音',
     system: 'KOL 自動經營社群 — 自動規劃內容主題、排程發文',
   };
@@ -3329,10 +3329,30 @@ async function loadDrivePhotos(brandId, force) {
     renderDriveGallery();
     return;
   }
-  wrap.innerHTML = '<div class="kol-empty">讀取 Drive 中…</div>';
+  wrap.innerHTML = '<div class="kol-empty">讀取素材中…</div>';
 
   try {
-    const res = await gasGet('listKolPhotos', { brandId });
+    // ═══════════════════════════════════════════════════════════
+    //  🆕 2026-08-21 素材庫優先(跟 Brand OS 選圖區同步拆 Drive)
+    //   兩邊必須一起搬 —— 一邊讀素材庫、一邊讀 Drive,客戶會看到
+    //   兩份不一樣的東西,而且 Drive 永遠拆不掉。
+    //   回傳形狀跟 listKolPhotos 完全一致,所以下面的渲染一行都不用改。
+    //   ★ 素材庫沒東西(還沒搬過、剛建的品牌)→ 自動退回 Drive,不能斷炊。
+    // ═══════════════════════════════════════════════════════════
+    let res = null;
+    try {
+      const lib = await api('list_kol_photos_lib', { brandId });
+      if (lib && lib.ok && !lib.empty && (lib.personas || []).length) {
+        res = lib;
+        const _n = (lib.personas || []).reduce(function (a, p) { return a + (p.photos || []).length; }, 0);
+        console.log('[KOL] 📚 素材庫供圖 ' + _n + ' 張(未經 Google)');
+      } else {
+        console.log('[KOL] 素材庫沒有這個品牌的 KOL 照片 → 退回 Drive');
+      }
+    } catch (e) {
+      console.warn('[KOL] 素材庫讀取失敗 → 退回 Drive:', e.message);
+    }
+    if (!res) res = await gasGet('listKolPhotos', { brandId });
     if (S.currentBrandId !== brandId) return;  // 🆕 #2: 已切走就別覆蓋
     if (!res.ok) {
       wrap.innerHTML = `<div class="kol-empty">❌ ${escapeHtml(res.error || '讀取失敗')}</div>`;
