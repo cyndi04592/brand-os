@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   我的素材庫 v1.9(2026-08-21)
+   我的素材庫 v2.0(2026-08-21)
    職責(單一):列出客戶自己品牌的素材,可預覽、可下載。
    ⚠️ 視覺一律沿用 kol.html 的設計系統(變數、字體、漸層、圓角)——
       不自創配色。v1.0 自己編了一套,已作廢。
@@ -124,13 +124,60 @@ a{color:inherit;text-decoration:none;}
 .dl{display:inline-flex;align-items:center;gap:7px;padding:10px 22px;border-radius:10px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;transition:.2s;}
 .dl:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,109,250,.35);}
 
+/* ═══════════════════════════════════════════════════════════════
+   📱 RWD —— 斷點對齊 kol.html(900/768/640/480/400),
+   不然同一個站在手機上會有兩種行為。v1.9 只做了 768,細節全沒調。
+   ═══════════════════════════════════════════════════════════════ */
+@media(max-width:900px){
+  .head-card{gap:12px;}
+  .srch{max-width:220px;}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));}
+}
 @media(max-width:768px){
-  .topbar{padding:0 14px;gap:10px;}
+  .topbar{padding:0 12px;gap:8px;}
   .topbar-title,.topbar-sep{display:none;}
-  .head,.tabs,.wrap{padding-left:14px;padding-right:14px;}
-  .head-card{padding:16px 18px;}
+  .head,.tabs,.wrap,.up-panel{padding-left:12px;padding-right:12px;}
+  .head-card{padding:15px 16px;flex-direction:column;align-items:stretch;}
+  .head-sp{display:none;}
+  .srch{max-width:none;width:100%;}
   .sel{min-width:0;width:100%;}
   .grid{grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;}
+  .lb{padding:14px;}
+  .lb-in img,.lb-in video{max-height:66vh;}   /* 留位置給下載鈕,不被網址列吃掉 */
+}
+@media(max-width:640px){
+  .head-t{font-size:18px;}
+  .head-s{font-size:12px;}
+  .tab{font-size:12.5px;padding:6px 13px;}
+  .tab.t2,.tab.t3{font-size:11.5px;padding:5px 11px;}
+  .up-row{flex-direction:column;align-items:stretch;gap:8px;}
+  .up-row>span{display:none;}
+  .up-btn{width:100%;justify-content:center;}
+  .kolchip{font-size:12px;padding:4px 12px 4px 4px;}
+  .kolchip img,.kolchip .ini{width:24px;height:24px;font-size:11px;}
+}
+@media(max-width:480px){
+  .topbar{height:52px;}
+  .main{padding-top:52px;}
+  .topbar-logo{font-size:14px;}
+  .topbar-badge{display:none;}          /* 窄螢幕先讓路給功能鈕 */
+  .grid{grid-template-columns:repeat(2,1fr);gap:9px;}
+  .meta{padding:9px 10px 11px;}
+  .meta .nm{font-size:12px;}
+  .meta .dt{font-size:11px;}
+  .badge{font-size:10px;padding:2px 8px;left:7px;top:7px;}
+  .tsep{display:none;}                  /* 分隔線在換行後只會變亂 */
+  .state{padding:48px 16px;}
+}
+@media(max-width:400px){
+  .topbar{gap:6px;padding:0 10px;}
+  .nav-btn,.up-btn{padding:7px 11px;font-size:12px;}
+  .grid{gap:8px;}
+  .tab .n{display:none;}                /* 數字讓位,先讓分類名看得完 */
+}
+/* 手機橫向:燈箱不要被壓扁 */
+@media(max-height:520px) and (orientation:landscape){
+  .lb-in img,.lb-in video{max-height:78vh;}
 }
 </style>
 </head>
