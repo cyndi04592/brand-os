@@ -145,10 +145,15 @@ async function autoFetchAssetsWorker(brandId) {
   const photoInput = document.getElementById('inPhotoFolder');
   const videoInput = document.getElementById('inVideoFolder');
 
+  // 🆕 先問自家素材庫;拿到東西就不必再去 Google 繞一圈
+  const _libCount = await fetchFromLibrary(brandId, _req);
+  if (_libCount === -1) return;                 // 已切走,整包丟掉
+  if (_libCount > 0) console.log('[assets] 📚 素材庫供圖 ' + _libCount + ' 張(未經 Google)');
+
   const promises = [];
-  if (f.photo) {
+  if (f.photo && _libCount <= 0) {
     if (photoInput) photoInput.value = f.photo;
-    promises.push(fetchFromWorker(f.photo, 'photo', _req));  // 🆕 Worker 直讀 Drive(Service Account+重試),不走 GAS 抽風
+    promises.push(fetchFromWorker(f.photo, 'photo', _req));  // 保底:素材庫沒東西才走 Drive
   }
   if (SHOW_VIDEO_ASSETS && f.video) {
     if (videoInput) videoInput.value = f.video;
@@ -190,6 +195,72 @@ async function _retryFetchJson(makeReq, label, tries) {
     }
   }
   throw lastErr;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  🆕 2026-08-21 從自家素材庫讀照片(拆掉 Google Drive 的一環)
+//   為什麼:這一頁的素材一直是「去 Google Drive 要」——
+//     中國/香港客戶打不開、Drive API 有額度上限、一千個客戶會撐不住,
+//     而且同一批照片我們早就搬進自家倉庫了,等於白繞一圈。
+//   ★ 素材庫優先、Drive 保底:
+//     素材庫拿得到就用素材庫;拿不到(還沒搬、剛建的品牌)自動退回 Drive,
+//     客戶不會因為這個改動而看不到素材。
+//   ★ 回傳形狀跟 Drive 那條完全一致 —— 後面的渲染、選圖、生圖一行都不用改。
+//   🗑 等 Drive 全面退場後,連同 fetchFromWorker / fetchFromGAS 一起移除。
+// ═══════════════════════════════════════════════════════════════
+async function fetchFromLibrary(brandId, reqId) {
+  try {
+    const KOL_URL = (typeof KOL_WORKER_URL !== 'undefined' && KOL_WORKER_URL)
+      ? KOL_WORKER_URL : 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+    const tk = (function () {
+      try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; }
+      catch (e) { return ''; }
+    })();
+    const em = (function () {
+      try { return localStorage.getItem('bs_sso_email') || ''; } catch (e) { return ''; }
+    })();
+
+    const data = await _retryFetchJson(() => fetch(KOL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'list_assets', password: GAS_PASSWORD,
+        brandId: brandId, limit: 300, email: em, token: tk
+      })
+    }), 'list_assets');
+
+    if (!data || !data.ok) { console.warn('[assets] 素材庫讀取失敗,改走 Drive:', data && data.error); return 0; }
+    if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return -1; }
+
+    // 只收「客戶自己的照片素材」—— 成品(廣告圖/短影片)不該出現在做圖的選圖區
+    const OK_CATS = ['照片素材', '商品/服務照', '商品照', 'LOGO'];
+    let n = 0;
+    (data.items || []).forEach(function (it) {
+      if (OK_CATS.indexOf(it.category) === -1) return;
+      if (!it.url) return;
+      if (window.S.photos.find(function (x) { return x.libUrl === it.url; })) return;
+      // 縮圖走同網域的即時轉換:列表小圖、生圖用原檔(鐵律:縮圖絕不餵引擎)
+      const thumb = /cdn\.raby\.com\.tw/.test(it.url)
+        ? it.url.replace(/^(https:\/\/cdn\.raby\.com\.tw)(\/.*)$/, '$1/cdn-cgi/image/width=400,quality=80,format=auto$2')
+        : it.url;
+      window.S.photos.push({
+        driveId: it.drive_id || null,
+        libUrl:  it.url,
+        name:    it.name || '',
+        thumb:   thumb,
+        hiRes:   it.url,        // ★ 生圖用原檔,不是縮圖
+        driveUrl: it.url,
+        src:     thumb,
+        type:    'photo',
+        _src:    'library'
+      });
+      n++;
+    });
+    return n;
+  } catch (e) {
+    console.warn('[assets] 素材庫讀取錯誤,改走 Drive:', e.message);
+    return 0;
+  }
 }
 
 // ★ 透過 Cloudflare Worker 抓 Drive 檔案
