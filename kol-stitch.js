@@ -322,6 +322,44 @@ window.KolStitch = (function () {
     const key = brandId + '::' + kolName;
     if (_sheetCache[key]) return _sheetCache[key];
 
+    // ═══════════════════════════════════════════════════════════════
+    //  🆕 2026-08-21 新路:先問自家素材庫(kol_sheet → assets 表)
+    //   舊路的成本:listKolPhotos 對「已處理」夾只給 w400 縮圖,而縮圖
+    //     絕不能餵引擎(鐵律)→ 只能拿 file_id,每生一段就得
+    //     transferDriveToR2 換一次乾淨原圖。同一張又晴的臉,
+    //     生十支影片就從 Google 搬十次。
+    //   新路:assets 存的本來就是 R2 乾淨原圖網址(已驗 1792×2368),
+    //     直接拿來當 imageUrl,零搬運。
+    //   ⚠️ 保底仍在:素材庫沒有這個 KOL 就自動退回 Drive 舊路 ——
+    //     進駐流程目前還會在 Drive 建 KOL 資料夾,新建的 KOL
+    //     可能還沒進 assets,沒保底那個客戶會直接生不出影片。
+    //   🗑 保底何時可拆:等「進駐不再建 Drive 資料夾」+「KOL 照片改走
+    //     素材庫上傳」兩步做完,新 KOL 從第一天就在 assets 裡,
+    //     那時候看 Console 若這行從沒印過,就可以安心移除整段保底。
+    // ═══════════════════════════════════════════════════════════════
+    try {
+      const r = await api('kol_sheet', { brandId: brandId, kolName: kolName });
+      if (r && r.ok && r.faceUrl) {
+        const out2 = {
+          faceUrl:   r.faceUrl,                    // R2 乾淨原圖,不需再搬
+          angleUrls: r.angleUrls || [],
+          faceId:    null, angleIds: [],           // 新路不用 driveId
+          _names:    r._names || {},
+          _src:      'library',
+        };
+        console.log('[KolStitch] 🗂 臉參考表走素材庫:', kolName,
+                    '· 正臉', (r._names && r._names.front) || '',
+                    '· 角度', (r.angleUrls || []).length, '張');
+        _sheetCache[key] = out2;
+        return out2;
+      }
+      console.warn('[KolStitch] ⚠️ 素材庫沒有「' + kolName + '」的參考表(' +
+                   ((r && (r.message || r.error)) || '無回應') + ')→ 退回 Drive 舊路');
+    } catch (e) {
+      console.warn('[KolStitch] ⚠️ 素材庫查詢失敗 → 退回 Drive 舊路:', e.message);
+    }
+
+    // ── 以下為 Drive 舊路(保底,待第④步移除)──
     const d = await api('gas_cached', { gasAction: 'listKolPhotos', gasParams: { brandId: brandId } });
     const p = (d.personas || []).find(function (x) { return x.persona_name === kolName; });
     if (!p) throw new Error('在品牌「' + brandId + '」的相片夾找不到 KOL「' + kolName + '」');
@@ -338,7 +376,9 @@ window.KolStitch = (function () {
     const out = {
       faceId: front.file_id,
       angleIds: angles.map(function (x) { return x.file_id; }),
-      _names: { front: front.name, angles: angles.map(function (x) { return x.name; }) }
+      faceUrl: null, angleUrls: [],               // 舊路沒有現成網址,靠 driveId 搬
+      _names: { front: front.name, angles: angles.map(function (x) { return x.name; }) },
+      _src: 'drive',
     };
     _sheetCache[key] = out;
     return out;
@@ -384,8 +424,14 @@ window.KolStitch = (function () {
       const _bp = collectBeatProducts(beats);
       const _sub = await queuedSubmit(function () {
         return _eng.submitSegment({
-          kolFaceDriveId: _sheet.faceId,          // 正臉(首幀 + Element1)
-          kolAngleDriveIds: _sheet.angleIds,      // 多角度 → reference,鎖臉關鍵
+          // 🆕 走素材庫時直接給 R2 網址(引擎本來就吃 frontal_image_url /
+          //    reference_image_urls);走 Drive 舊路時才給 driveId。
+          //    ⚠️ 兩者不可同時給 —— buildElements 是 driveId 優先,
+          //       同時給等於新路白做。
+          kolFaceDriveId:   _sheet.faceId   || undefined,
+          kolAngleDriveIds: _sheet.faceId ? _sheet.angleIds : undefined,
+          kolImageUrl:      _sheet.faceId ? opts.kolImageUrl : _sheet.faceUrl,
+          kolAngleUrls:     _sheet.faceId ? undefined : (_sheet.angleUrls || []),
           kolImageUrl: opts.kolImageUrl,          // fallback:沒 driveId 時才用
           productImageUrls: _bp.has ? _bp.urls : (Array.isArray(opts.productImageUrls) ? opts.productImageUrls : []),
           outfitImageUrl: opts.outfitImageUrl || undefined,   // MVP 暫不塞 element(資產不過載),保留欄位
@@ -480,10 +526,13 @@ window.KolStitch = (function () {
         });
         if (_wantAngles.length) {
           const _sheet = await resolveKolSheet(opts.brandId, opts.kolName);
+          // 新路沒有 driveId,角度選配器暫時只在舊路生效
+          //   🗑 待第④步:Worker 端 kolFaceDriveIds 支援網址後,這裡一併改掉。
           const _angleMap = {};
           ((_sheet._names && _sheet._names.angles) || []).forEach(function (nm, k) {
             const m = /_sheet_([a-z0-9]+)/i.exec(nm || '');
-            if (m && _sheet.angleIds[k]) _angleMap[m[1].toLowerCase()] = _sheet.angleIds[k];
+            const id = (_sheet.angleIds || [])[k];
+            if (m && id) _angleMap[m[1].toLowerCase()] = id;
           });
           _wantAngles.forEach(function (a) {
             if (_angleMap[a]) _faceDriveIds.push({ driveId: _angleMap[a], angle: a });
@@ -746,7 +795,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  console.log('[KolStitch] 🎬 v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
