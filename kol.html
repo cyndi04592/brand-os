@@ -1833,9 +1833,55 @@ const _LOG_KIND = {
       }).catch(function () {});
     } catch (e) { /* 紀錄永遠不擋生成 */ }
   };
+  // ═══════════════════════════════════════════════════════════════════
+  // 🆕 2026-08-21 影片完成回補(素材庫前置)
+  //   踩到的坑:影片的紀錄只有「頭」沒有「尾」——
+  //     送出生成時寫了一筆(seedance_submit),但那一刻只有任務編號、
+  //     還沒有影片,所以 result_url 是空的;幾分鐘後影片真的生出來時,
+  //     沒有任何人回頭補那筆紀錄。
+  //   後果:素材庫做出來後,影片會是「有一列、但點不開」的空殼,
+  //         比完全沒紀錄更糟(客戶會以為壞了)。
+  //   解法:輪詢拿到 done 的那一刻,再寫一筆「完成」紀錄,帶著成品網址。
+  //   為什麼不是改原本那筆:gen_log 的寫入是 INSERT OR IGNORE(只新增、
+  //     不修改),要改成 UPDATE 得動 Worker —— 而 Worker 編輯器現在打不開。
+  //     新增一筆完成紀錄,前端就能做完,而且完整保留「送出/完成」兩個時間點。
+  //   去重:同一支影片輪詢會問很多次,用 reqId 記在記憶體裡,只寫第一次。
+  // ═══════════════════════════════════════════════════════════════════
+  const _POLL_ACTIONS = ['episode_result', 'fal_poll'];
+  const _videoDoneLogged = {};
+  window._genLogVideoDone = function (reqBody, j) {
+    try {
+      if (!j) return;
+      const url = j.videoUrl || j.video_url || (j.result && (j.result.videoUrl || j.result.video_url));
+      if (!url) return;
+      const st = String(j.status || '').toLowerCase();
+      if (st !== 'done' && st !== 'completed') return;
+      const key = String((reqBody && (reqBody.reqId || reqBody.requestId)) || url);
+      if (_videoDoneLogged[key]) return;
+      _videoDoneLogged[key] = 1;
+      const row = {
+        ts:         new Date().toISOString(),
+        email:      localStorage.getItem('bs_sso_email') || '',
+        brand_id:   (reqBody && reqBody.brandId) || (window.S && window.S.currentBrandId) || '',
+        action:     'video_done',
+        kind:       'video',
+        provider:   (reqBody && reqBody.endpoint) || null,
+        params:     JSON.stringify({ req_id: key, via: (reqBody && reqBody.action) || '' }),
+        ok:         1,
+        result_url: url,
+      };
+      _origFetch(WORKER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: PASSWORD, action: 'gen_log', row: row }),
+      }).then(function () {
+        console.log('[報到] \u2705 影片完成已回補:', url);
+      }).catch(function () {});
+    } catch (e) { /* 紀錄永遠不擋生成 */ }
+  };
   window.fetch = async function (input, init) {
     let _billed = false, _body = null, _logBody = null, _t0 = 0;
-    let _retrySafe = false, _retryLabel = '';
+    let _retrySafe = false, _retryLabel = '', _pollBody = null;
     try {
       const _u = (typeof input === 'string') ? input : (input && input.url) || '';
       // 🔐 2026-08-18:兩支 Worker 都要夾帶身分證。
@@ -1873,6 +1919,7 @@ const _LOG_KIND = {
             _retryLabel = _o.action + (_o.gasAction ? ':' + _o.gasAction : '');
           }
           if (_LOG_KIND[_o.action]) { _logBody = _o; _t0 = Date.now(); }   // 🆕 生成紀錄:記下送出的完整 body
+          if (_POLL_ACTIONS.indexOf(_o.action) !== -1) { _pollBody = _o; }  // 🆕 輪詢:等下要看有沒有生完
         }
       }
     } catch (e) { /* 不是我們的 JSON 請求,原樣放行 */ }
@@ -1891,6 +1938,14 @@ const _LOG_KIND = {
         _resp.clone().json()
           .then(function (j) { window._genLog(_logBody, j, Date.now() - _t0, !!(j && j.ok !== false)); })
           .catch(function () { window._genLog(_logBody, null, Date.now() - _t0, false); });
+      } catch (e) {}
+    }
+    // 🆕 影片完成回補:輪詢回報 done 的那一刻,補一筆帶成品網址的紀錄
+    if (_pollBody) {
+      try {
+        _resp.clone().json()
+          .then(function (j) { window._genLogVideoDone(_pollBody, j); })
+          .catch(function () {});
       } catch (e) {}
     }
     if (_billed) {
