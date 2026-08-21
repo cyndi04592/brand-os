@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   我的素材庫 v1.7(2026-08-21)
+   我的素材庫 v1.9(2026-08-21)
    職責(單一):列出客戶自己品牌的素材,可預覽、可下載。
    ⚠️ 視覺一律沿用 kol.html 的設計系統(變數、字體、漸層、圓角)——
       不自創配色。v1.0 自己編了一套,已作廢。
@@ -51,7 +51,7 @@ a{color:inherit;text-decoration:none;}
 .tab.on{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;font-weight:700;}
 .tab .n{opacity:.7;margin-left:6px;font-size:11.5px;}
 /* 🏆 AI生成完成區 —— 客戶真正要的成品都在這,給它金色,最顯眼 */
-.tab.gold{border-color:rgba(201,162,39,.45);color:#d9b44a;}
+.tab.gold{border-color:rgba(201,162,39,.6);color:#e8c766;background:rgba(201,162,39,.07);}
 .tab.gold:hover{border-color:rgba(201,162,39,.8);color:#e8c766;}
 .tab.gold.on{background:linear-gradient(135deg,#c9a227,#e8c766);border-color:transparent;color:#1a1408;font-weight:800;box-shadow:0 4px 16px rgba(201,162,39,.35);}
 .tab.t2.gold.on{background:rgba(201,162,39,.18);border-color:rgba(201,162,39,.6);color:#e8c766;box-shadow:none;}
@@ -72,6 +72,26 @@ a{color:inherit;text-decoration:none;}
 .up-item .st{font-size:13px;}
 .tabs2{width:100%;display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;padding-left:2px;}
 .tab.t2{font-size:12.5px;padding:6px 13px;background:transparent;}
+.tab.sub{margin-left:12px;}
+.tab.sub .arm{opacity:.4;margin-right:5px;font-size:11px;}
+/* 分組分隔線:靠視覺切開「我的素材 / 成品」,不用點兩層 */
+.tsep{width:1px;align-self:stretch;background:var(--border);margin:2px 6px;}
+/* 🔎 搜尋:客戶要的是「看到」,不是「導航」——打字比翻資料夾快 */
+.srch{position:relative;flex:1;min-width:170px;max-width:280px;}
+.srch input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:30px;padding:8px 34px 8px 15px;color:var(--text);font-size:13px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:.2s;}
+.srch input:focus{border-color:rgba(124,109,250,.55);}
+.srch input::placeholder{color:var(--text-dim);}
+.srch .x{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);cursor:pointer;font-size:16px;display:none;line-height:1;}
+.srch .x.on{display:block;}
+.srch .x:hover{color:var(--text);}
+/* 👤 KOL 用頭像切換,比文字籤直覺 */
+.kolbar{width:100%;display:flex;gap:10px;flex-wrap:wrap;margin-top:11px;align-items:center;}
+.kolchip{display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;border:1px solid var(--border);background:rgba(255,255,255,.03);cursor:pointer;transition:.2s;font-size:12.5px;color:var(--text-dim);}
+.kolchip:hover{color:var(--text);border-color:rgba(124,109,250,.35);}
+.kolchip.on{background:rgba(124,109,250,.16);border-color:rgba(124,109,250,.5);color:var(--text);font-weight:600;}
+.kolchip img{width:28px;height:28px;border-radius:50%;object-fit:cover;display:block;background:var(--surface2);}
+.kolchip .ini{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:12px;font-weight:700;}
+.kolchip .n{opacity:.65;font-size:11px;}
 .tab.t2.on{background:rgba(124,109,250,.18);border-color:rgba(124,109,250,.5);color:var(--accent);font-weight:600;}
 .tab.t3{font-size:12px;padding:5px 12px;background:transparent;border-style:dashed;}
 .tab.t3.on{background:rgba(109,250,194,.12);border-color:rgba(109,250,194,.45);border-style:solid;color:var(--accent3);font-weight:600;}
@@ -134,6 +154,7 @@ a{color:inherit;text-decoration:none;}
       <div class="head-s">這裡收著你所有的成品與素材,隨時可以預覽、下載</div>
     </div>
     <div class="head-sp"></div>
+    <div class="srch"><input id="q" placeholder="搜尋素材…"><span class="x" id="qx">&times;</span></div>
     <select id="brandSel" class="sel"><option value="">載入中…</option></select>
   </div></div>
 
@@ -142,7 +163,7 @@ a{color:inherit;text-decoration:none;}
       <span style="font-size:13px;color:var(--text-mid)">放到</span>
       <select id="upCat" class="sel" style="min-width:150px">
         <option value="照片素材">照片素材</option>
-        <option value="商品照">商品照</option>
+        <option value="商品/服務照">商品/服務照</option>
         <option value="LOGO">LOGO</option>
         <option value="KOL">KOL</option>
       </select>
@@ -168,7 +189,7 @@ const WORKER   = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
 const PASSWORD = 'raby2026';
 const LAST_KEY = 'bs_library_last_brand';
 
-const S = { brands: [], brandId: '', items: [], counts: {}, cat: 'all', group: 'all', kol: 'all', loading: false };
+const S = { brands: [], brandId: '', items: [], counts: {}, cat: 'all', kol: 'all', q: '', loading: false };
 
 /* ═══════════════════════════════════════════════════════════════
    ⚡ 切換順暢度(v1.4)
@@ -231,10 +252,16 @@ async function api(action, extra){
    ⚠️ 這只是「顯示」的分層 —— 資料庫裡還是單一標籤,
      生成流程完全沒讀 assets 表,所以怎麼分都不會影響出片。
    ═══════════════════════════════════════════════════════════════ */
+// ⚠️ 2026-08-21 改名:「商品照」→「商品/服務照」
+//   原因:後面接的是律師 / 美睫 / 美甲 / 瑜珈 / 旅遊 —— 服務業沒有「商品」,
+//   他們放的是成果、環境、案例。一個名字要全行業通用。
+//   ★ 舊資料同步用 SQL 換過標籤,否則會分裂成兩個分類。
 const GROUPS = [
-  { key:'mine', label:'我的素材',      cats:['LOGO','照片素材','商品照','影片素材','KOL'] },
+  { key:'mine', label:'我的素材',      cats:['LOGO','照片素材','商品/服務照','影片素材','KOL'] },
   { key:'ai',   label:'AI生成完成區',  cats:['廣告圖','短影片','腳本分鏡'] },
 ];
+// 子從屬:顯示上「商品/服務照」掛在「照片素材」底下(照 RA 定的資料夾層次)
+const SUB_OF = { '商品/服務照': '照片素材' };
 const CATS = GROUPS.reduce(function(a,g){ return a.concat(g.cats); }, []);
 
 async function loadBrands(){
@@ -304,65 +331,65 @@ function groupCount(g){
   return g.cats.reduce(function(n,c){ return n + (S.counts[c]||0); }, 0);
 }
 function kolNames(){
-  const seen = {}, out = [];
+  const seen = {}, face = {}, out = [];
   S.items.forEach(function(x){
     if(x.category !== 'KOL' || !x.kol_name) return;
     if(!seen[x.kol_name]){ seen[x.kol_name] = 0; out.push(x.kol_name); }
     seen[x.kol_name]++;
+    // 頭像優先挑正臉,挑不到就用第一張
+    if(!face[x.kol_name] || /front|正臉/i.test(String(x.name||''))) face[x.kol_name] = x.url;
   });
-  return out.map(function(n){ return { name:n, n:seen[n] }; });
+  return out.map(function(n){ return { name:n, n:seen[n], face:face[n] }; });
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   籤:一排排完,靠分隔線分組(v1.9)
+   為什麼不做資料夾樹:樹狀是「檔案總管」思維 —— 要先知道東西放哪
+     才找得到。但客戶打開素材庫想的是「上次那支海苔影片呢」,
+     他要的是「看到」不是「導航」。而且樹在手機上會吃掉半個螢幕。
+   → 分類一排看完、搜尋當主力、KOL 用頭像切換。
+   ═══════════════════════════════════════════════════════════════ */
 function renderTabs(){
   const total = S.items.length;
-  const groups = GROUPS.filter(function(g){ return groupCount(g) > 0; });
+  let html = '<button class="tab'+(S.cat==='all'?' on':'')+'" data-c="all">全部<span class="n">'+total+'</span></button>';
 
-  // 第一層:大分區
-  let l1 = '<button class="tab'+(S.group==='all'?' on':'')+'" data-g="all">全部<span class="n">'+total+'</span></button>';
-  l1 += groups.map(function(g){
+  GROUPS.forEach(function(g){
+    const cats = g.cats.filter(function(c){ return (S.counts[c]||0) > 0; });
+    if(!cats.length) return;
+    html += '<div class="tsep"></div>';
     const gd = (g.key === 'ai') ? ' gold' : '';
-    return '<button class="tab'+gd+(S.group===g.key?' on':'')+'" data-g="'+g.key+'">'
-      + esc(g.label) + '<span class="n">' + groupCount(g) + '</span></button>';
-  }).join('');
+    html += cats.map(function(c){
+      const sub = SUB_OF[c] ? ' sub' : '';
+      return '<button class="tab'+gd+sub+(S.cat===c?' on':'')+'" data-c="'+esc(c)+'">'
+        + (sub ? '<span class="arm">└</span>' : '')
+        + esc(c) + '<span class="n">' + (S.counts[c]||0) + '</span></button>';
+    }).join('');
+  });
 
-  // 第二層:選了大分區才出現
-  let l2 = '';
-  if(S.group !== 'all'){
-    const g = GROUPS.filter(function(x){ return x.key === S.group; })[0];
-    const cats = g ? g.cats.filter(function(c){ return (S.counts[c]||0) > 0; }) : [];
-    if(cats.length){
-      const gdAll = (S.group === 'ai') ? ' gold' : '';
-      l2 = '<div class="tabs2"><button class="tab t2'+gdAll+(S.cat==='all'?' on':'')+'" data-c="all">全部</button>'
-        + cats.map(function(c){
-            const gd2 = (S.group === 'ai') ? ' gold' : '';
-            return '<button class="tab t2'+gd2+(S.cat===c?' on':'')+'" data-c="'+esc(c)+'">'
-              + esc(c) + '<span class="n">' + (S.counts[c]||0) + '</span></button>';
-          }).join('') + '</div>';
-    }
-  }
-
-  // 第三層:KOL 底下再分人設
-  let l3 = '';
+  // KOL 頭像列:選到 KOL 才出現,用臉切換比文字直覺
+  let kb = '';
   if(S.cat === 'KOL'){
     const ks = kolNames();
     if(ks.length > 1){
-      l3 = '<div class="tabs2"><button class="tab t3'+(S.kol==='all'?' on':'')+'" data-k="all">全部</button>'
-        + ks.map(function(k){
-            return '<button class="tab t3'+(S.kol===k.name?' on':'')+'" data-k="'+esc(k.name)+'">'
-              + esc(k.name) + '<span class="n">' + k.n + '</span></button>';
-          }).join('') + '</div>';
+      kb = '<div class="kolbar"><div class="kolchip'+(S.kol==='all'?' on':'')+'" data-k="all">'
+         + '<span class="ini">全</span>全部</div>'
+         + ks.map(function(k){
+             const face = k.face
+               ? '<img src="'+esc(thumbUrl(k.face,80))+'" alt="">'
+               : '<span class="ini">'+esc(k.name.slice(0,1))+'</span>';
+             return '<div class="kolchip'+(S.kol===k.name?' on':'')+'" data-k="'+esc(k.name)+'">'
+               + face + esc(k.name) + '<span class="n">'+k.n+'</span></div>';
+           }).join('') + '</div>';
     }
   }
 
-  $('tabs').innerHTML = l1 + l2 + l3;
+  $('tabs').innerHTML = html + kb;
 
   Array.prototype.forEach.call($('tabs').querySelectorAll('.tab'), function(b){
-    b.onclick = function(){
-      if(b.dataset.g !== undefined){ S.group = b.dataset.g; S.cat = 'all'; S.kol = 'all'; }
-      else if(b.dataset.c !== undefined){ S.cat = b.dataset.c; S.kol = 'all'; }
-      else if(b.dataset.k !== undefined){ S.kol = b.dataset.k; }
-      renderTabs(); applyFilter();
-    };
+    b.onclick = function(){ S.cat = b.dataset.c; S.kol = 'all'; renderTabs(); applyFilter(); };
+  });
+  Array.prototype.forEach.call($('tabs').querySelectorAll('.kolchip'), function(b){
+    b.onclick = function(){ S.kol = b.dataset.k; renderTabs(); applyFilter(); };
   });
 }
 
@@ -370,13 +397,13 @@ function renderTabs(){
 function applyFilter(){
   const cards = $('body').querySelectorAll('.card');
   if(!cards.length){ renderGrid(); return; }
-  const g = GROUPS.filter(function(x){ return x.key === S.group; })[0];
+  const kw = (S.q || '').trim().toLowerCase();
   let shown = 0;
   Array.prototype.forEach.call(cards, function(c){
     let ok = true;
-    if(S.group !== 'all' && g) ok = g.cats.indexOf(c.dataset.cat) !== -1;
-    if(ok && S.cat !== 'all')  ok = (c.dataset.cat === S.cat);
-    if(ok && S.kol !== 'all')  ok = (c.dataset.kol === S.kol);
+    if(S.cat !== 'all') ok = (c.dataset.cat === S.cat);
+    if(ok && S.kol !== 'all') ok = (c.dataset.kol === S.kol);
+    if(ok && kw) ok = (c.dataset.s || '').indexOf(kw) !== -1;
     c.style.display = ok ? '' : 'none';
     if(ok) shown++;
   });
@@ -398,7 +425,8 @@ function renderGrid(){
       ? '<video src="'+esc(it.url)+'#t=0.5" preload="metadata" muted playsinline></video><div class="play">▶</div>'
       : '<img src="'+esc(thumbUrl(it.url,400))+'" loading="lazy" decoding="async" alt="">';
     const isAI = GROUPS[1].cats.indexOf(it.category) !== -1;   // 成品 → 金框金標
-    return '<div class="card'+(isAI?' gold':'')+'" data-i="'+i+'" data-cat="'+esc(it.category||'')+'" data-kol="'+esc(it.kol_name||'')+'">'
+    const sidx = ((it.name||'')+' '+(it.category||'')+' '+(it.kol_name||'')+' '+fmtDate(it.ts)).toLowerCase();
+    return '<div class="card'+(isAI?' gold':'')+'" data-i="'+i+'" data-cat="'+esc(it.category||'')+'" data-kol="'+esc(it.kol_name||'')+'" data-s="'+esc(sidx)+'">'
       +   '<div class="thumb">'+th+'<div class="badge'+(isAI?' gold':'')+'">'+esc(it.category||'')+'</div></div>'
       +   '<div class="meta"><div class="nm">'+esc(nm)+'</div><div class="dt">'+fmtDate(it.ts)+'</div></div>'
       + '</div>';
@@ -407,7 +435,7 @@ function renderGrid(){
   Array.prototype.forEach.call($('body').querySelectorAll('.card'), function(c){
     c.onclick = function(){ openLb(list[Number(c.dataset.i)]); };
   });
-  if(S.group !== 'all' || S.cat !== 'all' || S.kol !== 'all') applyFilter();
+  if(S.cat !== 'all' || S.kol !== 'all' || S.q) applyFilter();
 }
 
 function showState(icon, title, sub){
@@ -503,8 +531,14 @@ async function doUpload(files){
   if(ok){ delete CACHE[S.brandId]; await loadAssets(true); }
 }
 
-$('brandSel').onchange = function(){ S.brandId = this.value; S.group='all'; S.cat='all'; S.kol='all'; loadAssets(); };
+$('brandSel').onchange = function(){ S.brandId = this.value; S.cat='all'; S.kol='all'; S.q=''; $('q').value=''; $('qx').classList.remove('on'); loadAssets(); };
 $('reloadBtn').onclick = function(){ loadAssets(true); };   // 強制重抓,跳過快取
+$('q').oninput = function(){
+  S.q = this.value;
+  $('qx').classList.toggle('on', !!this.value);
+  applyFilter();
+};
+$('qx').onclick = function(){ $('q').value=''; S.q=''; this.classList.remove('on'); applyFilter(); };
 $('lbX').onclick = closeLb;
 $('lb').onclick  = function(e){ if(e.target === $('lb')) closeLb(); };
 document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeLb(); });
