@@ -3834,7 +3834,7 @@ async function generateGptPoster() {
     CANVAS_TAINTED = false;
 
     if (winner.from === 'fal') {
-      saveImageToDriveSilently(winner.imageUrl, 'poster', reqid);
+      saveAdImageSilently(winner.imageUrl, 'poster', reqid);
     }
 
     AM.w = 1080;
@@ -3993,9 +3993,13 @@ function showVideoInCanvas(videoUrl) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// ★ 背景靜默存檔
+// ★ 背景靜默存檔(2026-08-22 v4.44:落地點改成自家倉庫,不再經過 Google)
+//   以前:存進 Google 雲端硬碟 → 前端再叫一次把圖搬回自家 → 登記
+//   現在:Worker 一步到位寫進自家倉庫 → 前端只負責登記
+//   ★ 舊名 saveImageToDriveSilently 已改名 —— 名字要說實話,
+//     不然三個月後看到「Drive」會以為還在存 Google。
 // ═══════════════════════════════════════════════════════════════════════
-async function saveImageToDriveSilently(imageUrl, kind, reqId) {
+async function saveAdImageSilently(imageUrl, kind, reqId) {
   try {
     const brandId = window.S?.brandId;
     if (!brandId) { console.warn('[存檔] 無 brandId,跳過'); return; }
@@ -4022,15 +4026,15 @@ async function saveImageToDriveSilently(imageUrl, kind, reqId) {
     });
 
     if (res.ok) {
-      console.log('[存檔] ✅ 已存進 Drive:', res.drive_url);
+      console.log('[存檔] ✅ 已存進雲端倉庫:', res.url || res.drive_url);
       const el = document.getElementById('prStatus');
       if (el && el.textContent.includes('完成')) {
         el.textContent += ' · 已存雲端';
       }
-      // 🆕 廣告圖報到:搬一份進自家倉庫 + 寫進生成登記簿(不 await,絕不擋出圖)
+      // 🆕 廣告圖報到:寫進生成登記簿(不 await,絕不擋出圖)
       registerAdImageSilently(res, kind, finalReqId);
     } else {
-      console.warn('[存檔] ⚠️ Drive 存檔失敗(不影響海報):', res.error);
+      console.warn('[存檔] ⚠️ 雲端存檔失敗(不影響海報):', res.error);
     }
   } catch (e) {
     console.warn('[存檔] ⚠️ 存檔錯誤(不影響海報):', e.message);
@@ -4038,31 +4042,21 @@ async function saveImageToDriveSilently(imageUrl, kind, reqId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// ★ 🆕 2026-08-21 廣告圖報到(素材庫地基)
-//   為什麼要有這段:
-//     廣告圖以前「做完就走」—— 只進 Google Drive,資料庫一筆紀錄都沒有。
-//     所以客戶素材庫改讀 D1 之後,「AI生成完成區」會是空的。
-//   這段做兩件事(都在背景、都吞例外、都不擋出圖):
-//     ① 把剛存進 Drive 的那張圖,再搬一份進自家 R2
-//        → 中國/香港客戶看得到(Drive 在當地打不開)
-//     ② 寫一筆進 gen_log
-//        → 素材庫查得到、admin 查得到
-//   ⚠️ 這兩支 action 都住在 kol-proxy(素材/Drive/R2 那台),
-//      不能用 callWorker(它打的是 photoroom-proxy,廣告圖那台)。
-//      2026-08-11 已經踩過一次「打錯台 → 未知的 action」。
-//   ⚠️ Drive 檔案編號:photoroom-proxy 的回傳沒有 file_id,
-//      但 drive_url / download_url 裡面就有,直接從網址裡取。
+// ★ 廣告圖報到(素材庫地基)
+//   2026-08-21 建立:廣告圖以前「做完就走」,資料庫一筆紀錄都沒有,
+//     所以客戶素材庫改讀資料庫之後,「AI生成完成區」會是空的。
+//   2026-08-22 簡化:原本這裡還要「把圖從 Google 搬回自家倉庫」——
+//     現在 Worker 存檔時就直接寫進自家倉庫了,那段搬運沒有存在意義,拿掉。
+//     連帶拿掉 _driveIdFromUrl():回傳裡已經沒有 Google 編號可挖。
+//   剩下的職責只有一件:寫一筆進生成登記簿(素材庫查得到、後台查得到)。
+//   ⚠️ 這支 action 住在 kol-proxy(素材那台),不能用 callWorker
+//     (它打的是 photoroom-proxy,廣告圖那台)。
+//     2026-08-11 已經踩過一次「打錯台 → 未知的 action」。
+//   ⚠️ 全程吞例外、不 await —— 登記失敗絕不能擋客戶拿圖。
 // ═══════════════════════════════════════════════════════════════════════
 function _kolWorkerUrl() {
   return (typeof KOL_WORKER_URL !== 'undefined' && KOL_WORKER_URL)
     ? KOL_WORKER_URL : 'https://kol-proxy.calm-sunset-6b66.workers.dev';
-}
-
-function _driveIdFromUrl(u) {
-  if (!u) return '';
-  const s = String(u);
-  const m = s.match(/\/d\/([A-Za-z0-9_-]{10,})/) || s.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
-  return m ? m[1] : '';
 }
 
 async function _kolPost(payload) {
@@ -4076,31 +4070,14 @@ async function _kolPost(payload) {
   return await r.json();
 }
 
-async function registerAdImageSilently(driveRes, kind, reqId) {
+async function registerAdImageSilently(saveRes, kind, reqId) {
   try {
     const brandId = window.S?.brandId;
-    if (!brandId || !driveRes || !driveRes.ok) return;
+    if (!brandId || !saveRes || !saveRes.ok) return;
 
-    // ① Drive → 自家 R2(拿不到編號就跳過搬運,登記照做)
-    const driveId = _driveIdFromUrl(driveRes.drive_url) || _driveIdFromUrl(driveRes.download_url);
-    let r2Url = '';
-    if (driveId) {
-      try {
-        const t = await _kolPost({
-          action: 'drive_to_r2',
-          driveFileId: driveId,
-          brandId: brandId,
-          role: 'poster',
-          nameHint: (kind || 'poster')
-        });
-        if (t && t.ok && t.url) r2Url = t.url;
-        else console.warn('[報到] 搬運未成功(仍會登記):', (t && t.error) || '無回應');
-      } catch (e) {
-        console.warn('[報到] 搬運錯誤(仍會登記):', e.message);
-      }
-    }
+    const url = saveRes.url || saveRes.download_url || saveRes.drive_url || '';
+    if (!url) { console.warn('[報到] 沒有成品網址,跳過登記'); return; }
 
-    // ② 寫進生成登記簿
     const brand = window.BRANDS?.find(b => b.id === brandId);
     const prod  = window.S?.prod;
     const g = await _kolPost({
@@ -4116,17 +4093,16 @@ async function registerAdImageSilently(driveRes, kind, reqId) {
         params:     JSON.stringify({
                       brand:      brand?.name || '',
                       product:    prod?.name || '',
-                      request_id: driveRes.request_id || reqId || '',
-                      filename:   driveRes.filename || '',
-                      drive_id:   driveId || ''
+                      request_id: saveRes.request_id || reqId || '',
+                      filename:   saveRes.filename || ''
                     }),
         ok:         1,
-        result_url: r2Url || driveRes.download_url || driveRes.drive_url || ''
+        result_url: url
       }
     });
 
     if (g && g.ok) {
-      console.log('[報到] ✅ 廣告圖已登記' + (r2Url ? '(含自家副本)' : '(僅 Drive 版)'));
+      console.log('[報到] ✅ 廣告圖已登記');
     } else {
       console.warn('[報到] ⚠️ 登記失敗(不影響出圖):', (g && g.error) || '無回應');
     }
