@@ -86,7 +86,7 @@
   <div class="nav-logo-wrap">
     <img src="logo.png" alt="RABY D&C" class="nav-logo-img" onerror="this.src='logo.webp'">
     <span class="nav-brand-text">Brand <span>OS</span></span>
-    <span class="nav-version-tag">v10.5</span>
+    <span class="nav-version-tag">v11.3</span>
   </div>
 
   <div style="flex:1;"></div>
@@ -149,7 +149,7 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
 <div class="vision-wrap">
   <div class="vision-card">
     <div class="vision-col now active" id="vcol1">
-      <div class="vision-stage"><span class="step-num">STEP 01</span> · LIVE <span class="vision-badge live">v10.5</span></div>
+      <div class="vision-stage"><span class="step-num">STEP 01</span> · LIVE <span class="vision-badge live">v11.3</span></div>
       <div class="vision-title">AI 社群文案</div>
       <div class="vision-desc">系統自動爬取品牌官網/社群,學習語氣與調性,套上小編口吻寫文案。可自由選擇目標 TA、短中長三種長度,AI 創意中樞一次生 1-20 組。</div>
     </div>
@@ -299,11 +299,13 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
              只會讓客戶猶豫「這兩顆是不是不一樣?」。留一個入口就好。
              (兩顆呼叫的都是 openAdMakerDirect(),功能完全相同) -->
       </div>
-      <div id="driveWarningBanner" style="display:none;margin-bottom:10px;padding:11px 13px;background:rgba(250,109,155,0.10);border:1.5px solid rgba(250,109,155,0.45);border-radius:10px;text-align:center;">
-        <div class="drive-warning-text" style="font-size:12px;font-weight:900;color:var(--accent2);margin-bottom:5px;letter-spacing:0.5px;">· 尚未連結 Google Drive</div>
-        <div style="font-size:10px;color:rgba(250,109,155,0.7);margin-bottom:9px;letter-spacing:0.3px;">必須先連結才能抓取素材庫</div>
-        <button id="driveLoginBtn" onclick="driveLogin()" style="padding:8px 18px;background:linear-gradient(135deg,var(--accent2),#ff8fb3);border:none;border-radius:8px;color:#fff;font-family:'Noto Sans TC';font-size:11px;font-weight:900;cursor:pointer;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(250,109,155,0.30);">· 立即連結 Drive</button>
-      </div>
+      <!-- 🗑️ 2026-08-22 移除「尚未連結 Google Drive」警告 + 「立即連結 Drive」按鈕。
+           素材從 2026-08-21 起就改讀自家素材庫,這條警告永遠不該再出現;
+           而那顆按鈕按下去只會跳出 Google 授權畫面,授權完什麼也不會發生 ——
+           一顆按了沒反應的按鈕,比沒有按鈕更傷信任。
+           ⚠️ driveWarningBanner 這個 id 別的地方還在 getElementById 找它,
+              所以留一個空的隱藏容器,不要整個拿掉(免得那邊變成 null 報錯)。 -->
+      <div id="driveWarningBanner" style="display:none"></div>
       <input type="hidden" id="inPhotoFolder">
       <input type="hidden" id="inVideoFolder">
       <div style="margin-bottom:5px;">
@@ -847,7 +849,7 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
       <span class="footer-divider">·</span>
       <span class="footer-product">BRAND OS</span>
       <span class="footer-divider">·</span>
-      <span class="footer-version">v10.5 Beta</span>
+      <span class="footer-version">v11.3 Beta</span>
     </div>
     <div class="footer-right">
       <a href="privacy.html" target="_blank" class="footer-link">隱私政策</a>
