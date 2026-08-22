@@ -134,9 +134,12 @@ function showPasswordLogin() {
       <div id="pwdErr" style="font-size:11px;color:#f44336;text-align:center;margin-top:8px;min-height:16px;"></div>
       <!-- 🔑 2026-08-22:忘記密碼。沒有這條的話,每個忘記的客戶都得來找你,
            而且通常發生在他趕著出片的時候。 -->
-      <div style="text-align:center;margin-top:6px;">
+      <div style="text-align:center;margin-top:8px;line-height:1.9;">
         <a href="#" onclick="doForgotPwd();return false;"
            style="font-size:11px;color:var(--t3);text-decoration:underline;">忘記密碼 / 還沒設定密碼?</a>
+        <div style="font-size:10px;color:var(--t3);opacity:.72;margin-top:2px;">
+          用 Google 登入的話不需要密碼
+        </div>
       </div>
     </div>`;
 
@@ -149,7 +152,14 @@ function showPasswordLogin() {
 async function doForgotPwd() {
   const errEl = document.getElementById('pwdErr');
   const pre = document.getElementById('pwdUser')?.value?.trim() || '';
-  const em = (prompt('請輸入您的 Email,我們寄一封設定密碼的信給您:', pre) || '').trim();
+  // ⚠️ 這裡一定要明講「跟 Google 帳號無關」——
+  //   客戶看到「忘記密碼」很容易以為是要重設自己的 Gmail 密碼。
+  //   我們碰不到、也不可能碰到他的 Google 密碼,但他不知道,會怕。
+  const em = (prompt(
+    '設定 Brand OS 登入密碼\n\n'
+    + '這是您在 Brand OS 的專用密碼,\n'
+    + '跟您的 Google / Gmail 帳號完全無關。\n\n'
+    + '請輸入您的 Email,我們會寄一封設定連結給您:', pre) || '').trim();
   if (!em) return;
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) {
     if (errEl) errEl.textContent = '請輸入正確的 Email';
