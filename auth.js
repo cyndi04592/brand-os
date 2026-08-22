@@ -23,14 +23,14 @@ function setDriveStatus(state) {
   const lbl = document.getElementById('driveLabel');
   dot.className = 'drive-dot ' + state;
   if (state === 'ok') {
-    lbl.textContent = 'Drive 已連結';
+    lbl.textContent = '素材已就緒';
     lbl.style.color = 'var(--mint)';
     lbl.classList.remove('drive-warning-text');
   } else if (state === 'busy') {
     lbl.textContent = '載入中…';
     lbl.style.color = 'var(--gold)';
   } else {
-    lbl.textContent = '· 請連結 Drive';
+    lbl.textContent = '· 素材載入失敗';
     lbl.style.color = 'var(--t3)';
   }
 }
@@ -245,7 +245,8 @@ function _onLoginSuccess(email, displayName) {
     const warn = document.getElementById('driveWarningBanner');
     if (warn) warn.style.display = 'none';
     const lbl = document.getElementById('driveLabel');
-    if (lbl) { lbl.classList.remove('drive-warning-text'); lbl.textContent = displayName || 'Drive 已連結'; }
+    // ⚠️ 2026-08-22:客戶看得到的字不再提 Drive —— 素材早就住在自家素材庫了
+    if (lbl) { lbl.classList.remove('drive-warning-text'); lbl.textContent = displayName || '素材已就緒'; }
   } else {
     setDriveStatus('ok');
     const btn = document.getElementById('driveLoginBtn');
@@ -258,7 +259,7 @@ function _onLoginSuccess(email, displayName) {
     const warn = document.getElementById('driveWarningBanner');
     if (warn) warn.style.display = 'none';
     const lbl = document.getElementById('driveLabel');
-    if (lbl) { lbl.classList.remove('drive-warning-text'); lbl.textContent = 'Drive 已連結'; }
+    if (lbl) { lbl.classList.remove('drive-warning-text'); lbl.textContent = '素材已就緒'; }
   }
 
   const logoutBtn = document.getElementById('logoutBtn');
