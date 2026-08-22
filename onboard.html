@@ -11,10 +11,44 @@
   var ua = navigator.userAgent;
   var url = location.href;
   var sep = url.indexOf('?') >= 0 ? '&' : '?';
+  // ═══════════════════════════════════════════════════════════════
+  //  📱 2026-08-22 修「從 LINE 點進來一直亂跳、進不去」
+  //   Google 明文禁止在 App 內建瀏覽器裡做登入(App 有能力偷看你打的密碼),
+  //   所以在 LINE 裡按 Google 登入會被擋 → 畫面跳來跳去 → 客戶以為系統壞了。
+  //   ★ 舊寫法的破綻:加上 openExternalBrowser 參數後就 return 放行 ——
+  //     但那個參數只是「請 LINE 幫忙跳出去」的請求,LINE 不一定照做
+  //     (版本差異、iOS 設定、或客戶是自己複製網址貼上)。
+  //     沒跳成功的人,網址上有參數、人還在 LINE 裡,程式卻當他已經出去了。
+  //   ★ 新寫法:加參數重載一次是「試著跳出去」;如果重載後人還在 LINE,
+  //     就明講擋下來 —— 而且一定要給一條當下走得通的路,
+  //     不能只告訴他「你不行」。Email 驗證碼不經過 Google,在 LINE 裡能用。
+  // ═══════════════════════════════════════════════════════════════
   if (/Line/i.test(ua) || /FBAN|FBAV|FB_IAB/i.test(ua) || /WhatsApp/i.test(ua)) {
     if (url.indexOf('openExternalBrowser') < 0) {
       location.replace(url + sep + 'openExternalBrowser=1');
+      return;
     }
+    // 帶了參數卻還在這裡 = 沒跳成功。擋下來,並指路。
+    var isLine = /Line/i.test(ua);
+    document.addEventListener('DOMContentLoaded', function () {
+      document.body.style.cssText = 'margin:0;padding:0;background:#0A0A0F;';
+      document.body.innerHTML =
+        '<div style="position:fixed;inset:0;background:#0A0A0F;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 28px;text-align:center;font-family:sans-serif;">' +
+          '<div style="font-size:56px;margin-bottom:20px;">🌐</div>' +
+          '<div style="font-size:21px;font-weight:900;color:#7C6DFA;margin-bottom:14px;letter-spacing:2px;">請用瀏覽器開啟</div>' +
+          '<div style="font-size:14.5px;color:#A09890;line-height:2.2;margin-bottom:26px;">' +
+            (isLine ? '點右下角 <strong style="color:#fff;">⋯</strong><br>選擇「用其他瀏覽器開啟」'
+                    : '點右上角選單<br>選擇「在瀏覽器中開啟」') +
+          '</div>' +
+          '<div style="width:100%;max-width:330px;height:1px;background:rgba(255,255,255,.12);margin-bottom:22px;"></div>' +
+          '<div style="font-size:13px;color:#C4B9AC;line-height:2;margin-bottom:14px;">' +
+            '不想換瀏覽器?<br>用 <strong style="color:#5eead4;">Email 驗證碼</strong>也可以直接進入' +
+          '</div>' +
+          '<a href="' + url.split("#")[0] + (url.indexOf("emailonly") < 0 ? (sep === "?" ? "?" : "&") + "emailonly=1" : "") + '" ' +
+            'style="display:inline-block;padding:13px 26px;border-radius:10px;background:linear-gradient(135deg,#7c6dfa,#a78bfa);color:#fff;font-size:14px;font-weight:900;text-decoration:none;letter-spacing:1px;">' +
+            '📧 用 Email 驗證碼進入</a>' +
+        '</div>';
+    });
     return;
   }
   if (/MicroMessenger/i.test(ua) || /Telegram/i.test(ua)) {
@@ -1447,7 +1481,25 @@ function doGoogleLogin(){
   if(tokenClient)tokenClient.requestAccessToken({prompt:'select_account'});
   else setTimeout(()=>{if(tokenClient)tokenClient.requestAccessToken({prompt:'select_account'});},1500);
 }
-window.addEventListener('load',()=>{initColorPresets();setColor('#E8A03A','品牌金');});
+window.addEventListener('load',()=>{
+  initColorPresets();setColor('#E8A03A','品牌金');
+
+  // 📧 2026-08-22:從 LINE 擋頁點「用 Email 驗證碼進入」會帶 emailonly=1。
+  //   那些客戶已經確定用不了 Google 登入,不該再讓他看到那顆按鈕 ——
+  //   看得到卻按不動,只會讓他再撞一次牆。直接展開 Email 那條路。
+  try{
+    if(new URLSearchParams(location.search).get('emailonly')==='1'){
+      const gb=document.getElementById('loginBtn');
+      if(gb) gb.style.display='none';
+      const wrap=document.getElementById('emLoginWrap');
+      if(wrap){
+        const sep=wrap.querySelector('div');           // 「或」那條分隔線
+        if(sep) sep.style.display='none';
+      }
+      if(typeof emShow==='function') emShow();
+    }
+  }catch(e){}
+});
 </script>
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
 </body>
