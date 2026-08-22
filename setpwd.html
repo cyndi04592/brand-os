@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>設定登入密碼 · Brand OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Noto+Sans+TC:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:#0E0E0F;color:#D4C9BC;
+       min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{width:100%;max-width:420px;background:#151517;border:1px solid rgba(255,255,255,.08);
+        border-radius:18px;padding:34px 30px 30px;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+        background:linear-gradient(90deg,#5eead4,#a78bfa,#f472b6)}
+  .logo{font-family:'Syne';font-size:26px;font-weight:800;letter-spacing:2px;
+        background:linear-gradient(135deg,#fff,#a78bfa);-webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;text-align:center;margin-bottom:6px}
+  .sub{font-size:11px;color:#77707a;letter-spacing:2px;text-align:center;margin-bottom:26px}
+  h1{font-size:17px;font-weight:900;color:#fff;margin-bottom:6px}
+  .desc{font-size:13px;color:#9a92a0;line-height:1.7;margin-bottom:20px}
+  .em{font-family:'DM Mono';font-size:13px;color:#5eead4;word-break:break-all}
+  label{display:block;font-size:11px;color:#77707a;letter-spacing:1px;margin:14px 0 6px}
+  input{width:100%;padding:12px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.14);
+        background:rgba(255,255,255,.04);color:#fff;font-size:15px;font-family:inherit}
+  input:focus{outline:none;border-color:#a78bfa}
+  .btn{width:100%;margin-top:18px;padding:13px;border:none;border-radius:9px;cursor:pointer;
+       font-family:inherit;font-size:14px;font-weight:900;letter-spacing:1px;color:#fff;
+       background:linear-gradient(135deg,#7c6dfa,#a78bfa)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.18)}
+  .hint{font-size:11px;color:#77707a;margin-top:8px;line-height:1.6}
+  .err{font-size:12.5px;color:#ff6b6b;margin-top:12px;min-height:18px;line-height:1.6}
+  .ok{text-align:center}
+  .ok .big{font-size:40px;margin-bottom:12px}
+  .state{text-align:center;padding:20px 0;color:#9a92a0;font-size:13px}
+  a{color:#a78bfa}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">BRAND OS</div>
+  <div class="sub">創捷國際貿易</div>
+
+  <!-- ① 載入中 -->
+  <div id="vLoading" class="state">確認連結中…</div>
+
+  <!-- ② 設定密碼 -->
+  <div id="vForm" style="display:none">
+    <h1>設定登入密碼</h1>
+    <div class="desc">
+      設定完成後,即可用下方 Email 加密碼登入。<br>
+      <span class="em" id="showEmail"></span>
+    </div>
+    <label>新密碼(至少 8 碼)</label>
+    <input id="p1" type="password" autocomplete="new-password" placeholder="請輸入密碼">
+    <label>再輸入一次</label>
+    <input id="p2" type="password" autocomplete="new-password" placeholder="再輸入一次確認">
+    <button class="btn" id="goBtn">完成設定</button>
+    <div class="hint">台灣地區也可以直接用 Google 帳號登入,兩種方式都通。</div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <!-- ③ 連結過期 → 自己重寄,不用來找客服 -->
+  <div id="vExpired" style="display:none">
+    <h1>連結已失效</h1>
+    <div class="desc">
+      這條連結已經過期(72 小時)或已經使用過。<br>
+      輸入您的 Email,我們立刻重寄一封。
+    </div>
+    <label>您的 Email</label>
+    <input id="reEm" type="email" autocomplete="email" placeholder="進駐時使用的 Email">
+    <button class="btn" id="reBtn">重新寄送設定信</button>
+    <div class="err" id="reErr"></div>
+  </div>
+
+  <!-- ④ 完成 -->
+  <div id="vDone" style="display:none" class="ok">
+    <div class="big">✅</div>
+    <h1>密碼設定完成</h1>
+    <div class="desc" style="margin-top:10px">正在帶您進入系統…</div>
+    <a href="index.html" style="font-size:13px">如果沒有自動跳轉,請點這裡</a>
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+const PASSWORD = 'raby2026';
+const $ = function(id){ return document.getElementById(id); };
+const TK = new URLSearchParams(location.search).get('t') || '';
+
+async function post(payload){
+  const r = await fetch(WORKER, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({ password: PASSWORD }, payload))
+  });
+  return await r.json();
+}
+function show(v){
+  ['vLoading','vForm','vExpired','vDone'].forEach(function(x){
+    $(x).style.display = (x === v) ? '' : 'none';
+  });
+}
+
+// ── 一進頁面就先問「這張連結還有效嗎」
+//    不先問的話,客戶會填完密碼、按下送出,才被告知連結過期 —— 白做一次工。
+(async function(){
+  if(!TK){ show('vExpired'); return; }
+  try{
+    const r = await post({ action:'auth_setpwd_check', t: TK });
+    if(r && r.ok){
+      $('showEmail').textContent = r.email || '';
+      show('vForm');
+      $('p1').focus();
+    } else {
+      show('vExpired');
+    }
+  }catch(e){ show('vExpired'); }
+})();
+
+$('goBtn').onclick = async function(){
+  const a = $('p1').value, b = $('p2').value;
+  $('err').textContent = '';
+  if(a.length < 8){ $('err').textContent = '密碼至少 8 碼'; return; }
+  if(a !== b){ $('err').textContent = '兩次輸入的密碼不一樣'; return; }
+  this.disabled = true; this.textContent = '設定中…';
+  try{
+    const r = await post({ action:'auth_setpwd_commit', t: TK, pass: a });
+    if(r && r.ok){
+      // 設定完直接帶登入憑證進系統,省掉「再回去登入一次」那一步
+      try{
+        if(r.token){
+          localStorage.setItem('bs_auth_token', r.token);
+          sessionStorage.setItem('bs_auth_token', r.token);
+        }
+        if(r.email) localStorage.setItem('bs_sso_email', r.email);
+      }catch(e){}
+      show('vDone');
+      setTimeout(function(){ location.href = 'index.html'; }, 1600);
+    } else if(r && r.expired){
+      show('vExpired');
+    } else {
+      $('err').textContent = (r && r.error) || '設定失敗,請稍後再試';
+      this.disabled = false; this.textContent = '完成設定';
+    }
+  }catch(e){
+    $('err').textContent = '連線失敗,請稍後再試';
+    this.disabled = false; this.textContent = '完成設定';
+  }
+};
+
+$('reBtn').onclick = async function(){
+  const em = ($('reEm').value || '').trim();
+  $('reErr').textContent = '';
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ $('reErr').textContent = '請輸入正確的 Email'; return; }
+  this.disabled = true; this.textContent = '寄送中…';
+  try{
+    const r = await post({ action:'auth_setpwd_send', email: em });
+    if(r && r.ok){
+      $('reErr').style.color = '#5eead4';
+      $('reErr').textContent = '已寄出,請至信箱查收(記得看垃圾郵件匣)';
+      this.textContent = '已寄送';
+    } else {
+      $('reErr').textContent = (r && r.error) || '寄送失敗,請稍後再試';
+      this.disabled = false; this.textContent = '重新寄送設定信';
+    }
+  }catch(e){
+    $('reErr').textContent = '連線失敗,請稍後再試';
+    this.disabled = false; this.textContent = '重新寄送設定信';
+  }
+};
+</script>
+</body>
+</html>
