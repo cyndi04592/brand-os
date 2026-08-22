@@ -1,9 +1,11 @@
-/* kol-character-sheet.js · v0.6 — 多角度人物表(Kontext 鎖臉轉頭 + 存 Drive)
+/* kol-character-sheet.js · v0.9 — 多角度人物表(Kontext 鎖臉轉頭 + 存進素材庫)
    依賴 window.KAI(kol-ai-generator v3.30+ 提供 WORKER_URL / PASSWORD / S / gasPost / GAS_URL)
    機制:餵「同一張真實正臉」給 flux Kontext,各轉一次角度
         → 編輯真圖、只換角度 → 不磨皮、不換人(非重生成)
    每個角度都餵「原始正臉」,不連續編輯,避免累積飄移。
-   v0.4:「用這組」→ 同 AI KOL 那條管線(saveAiKolPhotoToDrive)把三張存進 Drive 變永久資產;按鈕本身顯示狀態。
+   v0.4:「用這組」→ 同 AI KOL 那條管線把三張存成永久資產;按鈕本身顯示狀態。
+   v0.5(2026-08-22):落地點從 Google 雲端硬碟改成自家倉庫(Worker saveKolPhoto)。
+         三張角度圖會寫進素材庫 category='KOL',KOL 照片庫立刻看得到。
    v0.6(2026-08-09):🔧 修「舊 KOL 只有正面照(存 Drive)→ 讀取不到」——
      ① 讀取來源加上頁面上所有 Drive 相簿縮圖(已處理/形象庫,drive.google.com/thumbnail)
      ② 點 Drive 圖 → 先走 Worker 現成的 drive_to_r2(service account 抓「原始全解析度」
@@ -12,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v0.8-save-persona';
+  var VER = 'v0.9-library';
 
   // 🔧 v0.8:記住「這張正臉是誰的」—— 從形象庫勾選讀進來時,persona 跟著圖走,
   //   存 Drive 不再要求去 AI 生成器另外選 persona(那是舊流程的殘留)。
@@ -57,7 +59,7 @@
     box.id = 'cs-box';
     box.appendChild(el('div', 'font-weight:700;color:#cdb4ff;margin-bottom:4px;', '🎬 多角度人物表 <span style="font-size:11px;color:#888;">Kontext 鎖臉 · ' + VER + '</span>'));
     box.appendChild(el('div', 'font-size:12px;color:#9a9aa8;line-height:1.6;margin-bottom:10px;',
-      '挑一張滿意的<b>正臉</b> → 一鍵用 Kontext「鎖臉轉頭」生 3/4 + 側臉。<br>是<b>編輯真圖換角度</b>、不是重生成 → 不磨皮、不換人。「用這組」會把三張<b>存進 Drive</b>(永久,不怕網址過期)。'));
+      '挑一張滿意的<b>正臉</b> → 一鍵用 Kontext「鎖臉轉頭」生 3/4 + 側臉。<br>是<b>編輯真圖換角度</b>、不是重生成 → 不磨皮、不換人。「用這組」會把三張<b>存進素材庫</b>(永久,不怕網址過期)。'));
 
     var row1 = el('div', 'display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;');
     var btnLoad = el('button', btnCss('#3a3a4a'), '① 讀取上面的正臉');
@@ -80,7 +82,7 @@
     var cards = el('div', 'display:flex;gap:8px;flex-wrap:wrap;');
     box.appendChild(cards);
 
-    var btnUse = el('button', btnCss('#1f9d57', true), '✅ 用這組當人物表(存 Drive)');
+    var btnUse = el('button', btnCss('#1f9d57', true), '✅ 用這組當人物表(存進素材庫)');
     btnUse.style.display = 'none'; btnUse.style.marginTop = '10px';
     box.appendChild(btnUse);
 
@@ -236,7 +238,7 @@
       btnGen.disabled = true; btnGen.style.opacity = .5;
       status.textContent = '🎬 Kontext 鎖臉轉頭中…(約 10–20 秒)';
       cards.innerHTML = ''; btnUse.style.display = 'none';
-      btnUse.disabled = false; btnUse.style.background = '#1f9d57'; btnUse.textContent = '✅ 用這組當人物表(存 Drive)';
+      btnUse.disabled = false; btnUse.style.background = '#1f9d57'; btnUse.textContent = '✅ 用這組當人物表(存進素材庫)';
       RESULTS = { front: FRONT, q34: null, profile: null };
       Promise.all(ANGLES.map(function (a) { return kontext(FRONT, a.prompt).then(function (u) { RESULTS[a.key] = u; }); }))
         .then(function () {
@@ -280,12 +282,12 @@
             drive: saved, ts: Date.now()
           };
           btnUse.style.background = '#0f7a42';
-          btnUse.textContent = '✅ 已存 Drive · 人物表鎖定(' + saved.length + '/3)';
+          btnUse.textContent = '✅ 已存進素材庫 · 人物表鎖定(' + saved.length + '/3)';
           if (typeof window.refreshAll === 'function') { try { window.refreshAll(); } catch (e) {} }
           return;
         }
         var a = set[i];
-        kai.gasPost('saveAiKolPhotoToDrive', {
+        kai.gasPost('saveKolPhoto', {
           brandId: brandId,
           personaName: persona,
           imageUrl: a.url,
@@ -294,11 +296,12 @@
           toProcessed: true,
           metadata: { source: 'flux_kontext', angle: a.angle, generated_at: new Date().toISOString() }
         }).then(function (res) {
-          if (res && res.ok) saved.push({ angle: a.angle, file_id: res.file_id, filename: res.filename });
-          btnUse.textContent = '💾 存進 Drive 中…(' + (i + 1) + '/3)';
+          // ⚠️ 2026-08-22 起已無 Drive 編號(file_id 恆為空字串),改記網址才有意義
+          if (res && res.ok) saved.push({ angle: a.angle, url: res.url || res.drive_url || '', filename: res.filename });
+          btnUse.textContent = '💾 存檔中…(' + (i + 1) + '/3)';
           next(i + 1);
         }).catch(function (e) {
-          btnUse.textContent = '❌ 存 Drive 失敗:' + e.message;
+          btnUse.textContent = '❌ 存檔失敗:' + e.message;
           btnUse.disabled = false; btnUse.style.background = '#1f9d57';
         });
       })(0);
@@ -308,5 +311,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
   else build();
 
-  console.log('[character-sheet] 🎬 ' + VER + ' 就緒(Kontext 鎖臉 + 存 Drive)');
+  console.log('[character-sheet] 🎬 ' + VER + ' 就緒(Kontext 鎖臉 + 存進素材庫)');
 })();
