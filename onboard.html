@@ -551,13 +551,47 @@ body{
   <div class="login-card">
     <div class="login-title">品牌進駐</div>
     <div class="login-sub">BRAND OS · 創捷國際貿易</div>
-    <div class="login-desc">使用 Google 帳號登入<br>開始填寫品牌資料,AI 自動生成品牌靈魂書</div>
+    <div class="login-desc">開始填寫品牌資料,AI 自動生成品牌靈魂書</div>
     <button class="login-btn" id="loginBtn" onclick="doGoogleLogin()">
       <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
       使用 Google 帳號登入
     </button>
     <div class="login-err" id="loginErr"></div>
-    <div class="login-footer">登入後資料將與您的帳號綁定</div>
+
+    <!-- 📧 2026-08-22:給連不到 Google 的人用(中國大陸、香港部分網路)。
+         以前這頁只有一顆 Google 登入 → 那些客戶連「填表申請」都做不到。
+         ★ 為什麼要驗證碼:Google 登入省事,是因為 Google 幫我們證明
+           「這個 email 真的是他的」。自己填就沒人證明了,所以寄一次信驗身分。 -->
+    <div id="emLoginWrap" style="margin-top:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+        <span style="font-size:11px;color:var(--t3)">或</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+      </div>
+
+      <button class="login-btn" id="emToggleBtn" onclick="emShow()"
+              style="background:transparent;border:1px solid rgba(255,255,255,.18)">
+        📧 用 Email 驗證碼進入
+      </button>
+
+      <div id="emBox" style="display:none;margin-top:10px;text-align:left">
+        <input id="emInput" type="email" placeholder="您的 Email" autocomplete="email"
+               style="width:100%;padding:11px 13px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#fff;font-size:14px;box-sizing:border-box">
+        <button class="login-btn" id="emSendBtn" onclick="emSend()" style="margin-top:8px">寄送驗證碼</button>
+
+        <div id="emStep2" style="display:none;margin-top:10px">
+          <input id="emCode" type="text" inputmode="numeric" maxlength="6" placeholder="6 位數驗證碼"
+                 style="width:100%;padding:11px 13px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#fff;font-size:18px;letter-spacing:6px;text-align:center;box-sizing:border-box;font-family:'DM Mono'">
+          <button class="login-btn" id="emVerifyBtn" onclick="emVerify()" style="margin-top:8px">確認進入</button>
+          <div style="font-size:11px;color:var(--t3);margin-top:8px;text-align:center">
+            驗證碼 10 分鐘內有效 · 沒收到請看垃圾郵件匣
+          </div>
+        </div>
+        <div class="login-err" id="emErr"></div>
+      </div>
+    </div>
+
+    <div class="login-footer">登入後資料將與您的 Email 綁定</div>
   </div>
 </div>
 
@@ -737,7 +771,7 @@ body{
     <div class="field"><label>喜歡的品牌或網站風格參考(可貼網址)</label><textarea id="f_ref" rows="3" placeholder="例:Apple 的簡潔感、無印良品的自然風、或直接貼你喜歡的網站網址..."></textarea></div>
     <div class="drive-notice">
       <div class="drive-notice-title">📁 素材資料夾說明</div>
-      <p>送出申請後,系統將自動在 Google Drive 為您建立專屬資料夾:<br><strong style="color:var(--t1)">📁 品牌名稱 / 📷 照片 &amp; 🎬 影片</strong><br>您的資料夾是獨立私人的,不會與其他品牌共用。<br>建立完成後我們會通知您上傳素材。</p>
+      <p>審核通過後,系統會為您開通<strong style="color:var(--t1)">專屬素材庫</strong>:<br>商品照、品牌 Logo、KOL 形象照都放這裡,<br>生成好的廣告圖與短影片也會自動收進來。<br>您的素材庫是獨立私人的,不會與其他品牌共用。</p>
     </div>
     <div class="btn-row"><button class="btn-back" onclick="goStep(3)">← 上一步</button><button class="btn-next" onclick="goStep(45)">下一步 →</button></div>
   </div>
@@ -881,7 +915,7 @@ body{
     <div id="summaryBox" style="background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px;font-size:12px;color:var(--t2);line-height:2;"></div>
     <div class="info-box">
       <div class="info-box-title">⚡ 接下來會發生的事</div>
-      <p>1. 品牌靈魂核分析您的品牌資料(透過雲端安全處理)<br>2. 自動生成「品牌靈魂書」(定位、文案風格、廣告策略)<br>3. 系統自動建立您的專屬 Google Drive 素材資料夾<br>4. 資料送交管理員審核<br>5. 審核通過後,品牌頁籤 + KOL 數字人將自動建立</p>
+      <p>1. 品牌靈魂核分析您的品牌資料(透過雲端安全處理)<br>2. 自動生成「品牌靈魂書」(定位、文案風格、廣告策略)<br>3. 資料送交管理員審核<br>4. 審核通過後,系統開通您的專屬素材庫<br>5. 品牌頁籤 + KOL 數字人將自動建立</p>
     </div>
     <div class="btn-row"><button class="btn-back" onclick="goStep(46)">← 上一步</button><button class="btn-next" id="btnGenerate" onclick="doGenerate()">⚡ 生成品牌靈魂書</button></div>
   </div>
@@ -1326,11 +1360,87 @@ function initGoogleAuth(){
         const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
         info=await r.json();
       }
-      userEmail=info.email||'';
-      document.getElementById('loginOverlay').style.display='none';document.getElementById('navEmail').textContent=userEmail;
-      const ownerEmailEl=document.getElementById('ownerContactEmail');
-      if(ownerEmailEl)ownerEmailEl.textContent=userEmail;
+      _enterOnboard(info.email||'');
     }});
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  🚪 進場(2026-08-22 抽出來共用)
+//   兩條路都會走到這裡:Google 登入、Email 驗證碼。
+//   ★ 抽出來的理由:以前這四行寫在 Google callback 裡面,
+//     多一條登入路就得整段複製 —— 複製出去的那份遲早會少改一行。
+// ═══════════════════════════════════════════════════════════════
+function _enterOnboard(email){
+  userEmail = email || '';
+  document.getElementById('loginOverlay').style.display='none';
+  document.getElementById('navEmail').textContent = userEmail;
+  const ownerEmailEl = document.getElementById('ownerContactEmail');
+  if(ownerEmailEl) ownerEmailEl.textContent = userEmail;
+}
+
+// ── 📧 Email 驗證碼 ────────────────────────────────────────────
+const WORKER_URL_OB = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+
+async function _obPost(payload){
+  const r = await fetch(WORKER_URL_OB, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({ password: GAS_PASSWORD }, payload))
+  });
+  return await r.json();
+}
+
+function emShow(){
+  document.getElementById('emBox').style.display='block';
+  document.getElementById('emToggleBtn').style.display='none';
+  document.getElementById('emInput').focus();
+}
+
+function _emErr(msg){ const e=document.getElementById('emErr'); if(e) e.textContent = msg||''; }
+
+async function emSend(){
+  const em = (document.getElementById('emInput').value||'').trim();
+  const btn = document.getElementById('emSendBtn');
+  _emErr('');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ _emErr('請輸入正確的 Email'); return; }
+  btn.disabled = true; btn.textContent = '寄送中…';
+  try{
+    const r = await _obPost({ action:'auth_email_code_send', email: em });
+    if(r && r.ok){
+      document.getElementById('emStep2').style.display='block';
+      document.getElementById('emCode').focus();
+      btn.textContent = '重新寄送';
+      // 防洗信:後端 60 秒內只寄一次,前端也擋一下,不要讓人狂點
+      setTimeout(function(){ btn.disabled = false; }, 60000);
+    } else {
+      _emErr((r && r.error) || '寄送失敗,請稍後再試');
+      btn.disabled = false; btn.textContent = '寄送驗證碼';
+    }
+  }catch(e){
+    _emErr('連線失敗,請稍後再試');
+    btn.disabled = false; btn.textContent = '寄送驗證碼';
+  }
+}
+
+async function emVerify(){
+  const em = (document.getElementById('emInput').value||'').trim();
+  const cd = (document.getElementById('emCode').value||'').trim();
+  const btn = document.getElementById('emVerifyBtn');
+  _emErr('');
+  if(!cd){ _emErr('請輸入驗證碼'); return; }
+  btn.disabled = true; btn.textContent = '確認中…';
+  try{
+    const r = await _obPost({ action:'auth_email_code_verify', email: em, code: cd });
+    if(r && r.ok && r.token){
+      guestToken = r.token;
+      _enterOnboard(r.email || em);
+    } else {
+      _emErr((r && r.error) || '驗證失敗');
+      btn.disabled = false; btn.textContent = '確認進入';
+    }
+  }catch(e){
+    _emErr('連線失敗,請稍後再試');
+    btn.disabled = false; btn.textContent = '確認進入';
+  }
 }
 function doGoogleLogin(){
   const btn=document.getElementById('loginBtn');btn.disabled=true;btn.innerHTML='<span class="spin" style="border-top-color:#fff"></span> 登入中...';
