@@ -617,8 +617,14 @@ window.KolStitch = (function () {
 
   // ---- 流程控制：半自動 / 全自動共用 ---------------------------------------
   // plan: [{ prompt(這段動作), durationSec?, seed?, kolImageUrl? }, ...]
+  // 🚩 2026-08-22:接片期間舉旗 —— 中途那些 15 秒分段不算成品,不進倉庫、不上素材庫牆。
+  //   為什麼不存分段:存了也沒有取用的路徑,還得再做一個「續接上次失敗」的功能,
+  //   那是另一個坑。接片失敗就重來 —— RA 的決定。
+  //   ⚠️ 一定要在 finally 放旗,不然中途丟例外會讓旗子卡著,
+  //      之後單支影片也不會被存(而且完全沒有錯誤訊息,最難查)。
   async function runStitchFlow(plan, opts) {
     opts = opts || {};
+    window._kolStitchRunning = true;
     const log = opts.onProgress || function () {};
     const kolImg = opts.kolImageUrl || opts.startImageUrl;
     // 🆕 v6.6:同上 — 只有 Seedance 需要 kolImageUrl 當每段錨點;Kling 用 resolveKolSheet 的 driveId。
@@ -816,6 +822,7 @@ window.KolStitch = (function () {
     log('成品存檔到 R2…');
     finalUrl = await toR2(finalUrl, opts.brandId, (opts.kolName || 'stitch') + '-' + segments.length + 'seg');
     log('完成!');
+    window._kolStitchRunning = false;      // 🚩 成品要進倉庫,旗子先放下
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
@@ -827,7 +834,13 @@ window.KolStitch = (function () {
     extractLastFrame,
     generateSegment,
     composeSegments,
-    runStitchFlow,
+    // 🚩 對外一律走這層:不管成功失敗都保證把接片旗子放下。
+    //   直接暴露 runStitchFlow 的話,中途丟例外旗子會卡著 ——
+    //   之後單支影片也不會進倉庫,而且完全沒有錯誤訊息,最難查。
+    runStitchFlow: async function (plan, opts) {
+      try { return await runStitchFlow(plan, opts); }
+      finally { window._kolStitchRunning = false; }
+    },
     pickUrl,
     pollEpisode,
     resolveKolSheet,     // 🆕 v6.5:Console 可單獨驗多角度表(不送 fal、不燒點數)
