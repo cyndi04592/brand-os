@@ -1187,7 +1187,9 @@ function updateFolderHint() {
     return;
   }
   hint.style.display = '';
-  hint.textContent = '將存到:/KOL/' + brandName + '/' + persona + '/';
+  // ⚠️ 2026-08-22:舊文案印的是 Google 雲端硬碟的資料夾路徑。
+  //   照片從 v4.45 起就直接存進自家素材庫了,那條路徑早就不存在。
+  hint.textContent = '將存進素材庫 · KOL · ' + persona;
 }
 
 // ── 新 Persona Modal ──────────────────────────────────────
