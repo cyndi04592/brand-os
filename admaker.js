@@ -3957,7 +3957,7 @@ async function posterToVideo() {
     finishProgress(interval);
     setPrStatus('✅ 影片生成完成!可右鍵下載', 'var(--mint)');
     videoBtn.textContent = '✅ 已生成影片';
-    saveVideoToDriveSilently(result.videoUrl);  // 🆕 影片也背景存進 Drive(照抄海報存檔;不扣點、失敗不影響)
+    saveVideoSilently(result.videoUrl);  // 🆕 影片落地自家倉庫 + 登記素材庫(不扣點、失敗不影響)
     videoBtn.disabled = true;
 
   } catch(e) {
@@ -4111,8 +4111,20 @@ async function registerAdImageSilently(saveRes, kind, reqId) {
   }
 }
 
-// ★ 🆕 影片背景靜默存檔(照抄海報版,走 photoroom-proxy save_ai_video_to_drive → GAS saveVideoToDrive)
-async function saveVideoToDriveSilently(videoUrl) {
+// ═══════════════════════════════════════════════════════════════
+// ★ 影片成品落地(2026-08-22 v4.51:改存自家倉庫)
+//   舊行為:走 photoroom-proxy → GAS saveVideoToDrive → Google 雲端硬碟。
+//   為什麼非改不可 —— 那條路早就是死的:
+//     GAS 單檔 50MB 硬上限,超過直接失敗,而失敗只寫進 Console、
+//     畫面完全不提 → 沒有人知道備份根本沒成功。
+//     (現場:RA 說「我在雲端硬碟根本沒看到影片」。)
+//   而且素材庫的短影片記的是生成平台的暫時網址,會過期 ——
+//   客戶回素材庫想拿舊影片,只會拿到壞連結。
+//   ★ 新行為:一支 action 做完「搬進自家倉庫 + 登記素材庫」,回傳永久網址。
+//   ⚠️ 這支住在 kol-proxy(素材那台),不能用 callWorker(它打 photoroom-proxy)。
+//      2026-08-11 已經踩過「打錯台 → 未知的 action」。
+// ═══════════════════════════════════════════════════════════════
+async function saveVideoSilently(videoUrl) {
   try {
     const brandId = window.S?.brandId;
     if (!brandId) { console.warn('[影片存檔] 無 brandId,跳過'); return; }
@@ -4121,18 +4133,19 @@ async function saveVideoToDriveSilently(videoUrl) {
     }
     const brand = window.BRANDS?.find(b => b.id === brandId);
     const prod  = window.S?.prod;
-    const res = await callWorker({
-      action: 'save_ai_video_to_drive',
-      brandId,
-      videoUrl,
-      nameHint: (brand?.name || '廣告') + '_' + (prod?.name || '影片') + '_' + Date.now(),
+    const res = await _kolPost({
+      action: 'video_done_r2',
+      brandId: brandId,
+      videoUrl: videoUrl,
+      nameHint: (brand?.name || '廣告') + '_' + (prod?.name || '影片'),
+      sourceAction: 'admaker_video',
     });
-    if (res.ok) {
-      console.log('[影片存檔] ✅ 已存進 Drive:', res.drive_url);
+    if (res && res.ok) {
+      console.log('[影片存檔] ✅ 已存進雲端倉庫:', res.url, res.moved ? '' : '(搬檔失敗,先記原網址)');
       const el = document.getElementById('prStatus');
       if (el && el.textContent.includes('完成')) el.textContent += ' · 影片已存雲端';
     } else {
-      console.warn('[影片存檔] ⚠️ Drive 存檔失敗(不影響影片):', res.error);
+      console.warn('[影片存檔] ⚠️ 存檔失敗(不影響影片):', res && res.error);
     }
   } catch (e) {
     console.warn('[影片存檔] ⚠️ 存檔錯誤(不影響影片):', e.message);
