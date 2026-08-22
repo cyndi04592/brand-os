@@ -3434,12 +3434,15 @@ function _autoPickAllPhotos() {
       const _pool = _galleries.length ? _galleries[0] : g;
       const photos = _pool.querySelectorAll('.drive-photo');
       if (!photos.length) continue;
+      // ⚠️ 2026-08-22:這裡以前記的是 fileId —— 素材庫來的照片沒有 Drive 編號,
+      //   四張的 fileId 全是空字串 → 全部被當成同一張 → 只記得 1 筆,
+      //   於是畫面四張打勾、按鈕卻寫「用這 1 張」。改記 photoKey(一定存在)。
       const ids = [];
       photos.forEach(ph => {
-        const fid = ph.dataset.fileId;
-        if (!fid) return;
+        const k = ph.dataset.photoKey;
+        if (!k) return;
         ph.classList.add('selected');
-        if (ids.indexOf(fid) < 0) ids.push(fid);
+        if (ids.indexOf(k) < 0) ids.push(k);
       });
       if (!ids.length) continue;
       S.selectedDrivePhotos[name] = ids;
@@ -3471,7 +3474,7 @@ function renderPersonaSection(p) {
   const photosHtml = p.photos.length > 0
     ? `<div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
         ${p.photos.map(ph => `
-          <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}">
+          <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-url="${escapeHtml(ph.url || '')}" data-photo-key="${escapeHtml(ph.file_id || ph.url || ph.name || '')}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}">
             <img src="${escapeHtml(ph.thumbnail_url)}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder></div>'" referrerpolicy="no-referrer">
           </div>
         `).join('')}
@@ -3485,7 +3488,7 @@ function renderPersonaSection(p) {
     ? `<div style="font-size:11px;color:#9a9aa8;margin:8px 0 4px;">已處理 · 多角度/參考照(${procs.length})</div>
        <div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
         ${procs.map(ph => `
-          <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}" style="border:1px solid #3a3a4a;">
+          <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-url="${escapeHtml(ph.url || '')}" data-photo-key="${escapeHtml(ph.file_id || ph.url || ph.name || '')}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}" style="border:1px solid #3a3a4a;">
             <img src="${escapeHtml(ph.thumbnail_url)}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder></div>'" referrerpolicy="no-referrer">
           </div>
         `).join('')}
@@ -3576,7 +3579,11 @@ function updatePersonaBindButtons() {
         delete btn.dataset.mode;
       }
     } else {
-      btn.textContent = bound ? `➕ 加入這 ${n} 張照片` : `✓ 用這 ${n} 張建立角色`;
+      // 🩹 2026-08-22:不再叫客戶算張數。
+      //   舊文案「用這 4 張建立角色」把內部規則丟給客戶 ——
+      //   客戶會問「到底要選一張還是四張?」,而正確答案是「不用管,整區都是同一個人」。
+      //   ★ 名字跟著這一區浮動,客戶一眼知道自己在建誰。
+      btn.textContent = bound ? `➕ 加入「${persona}」的新角度` : `✅ 確認創建「${persona}」角色`;
       btn.disabled = false;
       delete btn.dataset.mode;   // ⚠️ 一定要清,否則勾了照片還是會跳去人物表
 
@@ -3604,16 +3611,18 @@ function goCharacterSheet(personaName) {
   const pool = (galleries.length > 1 ? galleries[galleries.length - 1] : galleries[0]);
   const photo = pool ? pool.querySelector('.drive-photo') : null;
   if (!photo) {
-    toast('這個角色還沒有照片,請先在 Drive 資料夾放一張正臉', 'warn');
+    toast('這個角色還沒有照片,請先上傳一張正臉', 'warn');
     return;
   }
 
   // ② 幫他勾起來(人物表就是抓 .drive-photo.selected)
-  const fileId = photo.dataset.fileId;
+  //   ⚠️ 2026-08-22:這裡以前記 fileId —— 素材庫來的照片沒有 Drive 編號,
+  //     記進去是空字串,跟別張撞在一起。統一改記 photoKey。
+  const photoKey = photo.dataset.photoKey || photo.dataset.fileId || '';
   S.selectedPersonaForDrive = personaName;
   if (!S.selectedDrivePhotos[personaName]) S.selectedDrivePhotos[personaName] = [];
-  if (S.selectedDrivePhotos[personaName].indexOf(fileId) < 0) {
-    S.selectedDrivePhotos[personaName].push(fileId);
+  if (photoKey && S.selectedDrivePhotos[personaName].indexOf(photoKey) < 0) {
+    S.selectedDrivePhotos[personaName].push(photoKey);
   }
   photo.classList.add('selected');
 
@@ -3651,21 +3660,32 @@ function handleDriveGalleryClick(e) {
 
   const photo = e.target.closest('.drive-photo');
   if (!photo) return;
-  const fileId = photo.dataset.fileId;
+  const photoKey = photo.dataset.photoKey || photo.dataset.fileId;
   const personaName = photo.dataset.persona;
+  if (!photoKey) return;
 
+  // 🩹 2026-08-22:點別位角色的照片 → 自動換過去,不再擋下來罵人。
+  //   舊行為:噴一句「請先完成或清除」然後什麼都不做。客戶每點一次噴一句,
+  //   十幾句疊在畫面上,而且它沒說「清除選取」那顆鈕在哪(在上一區的最下面,
+  //   而且只有選了東西才會出現)—— 等於把客戶關在門外還叫他自己找鑰匙。
+  //   ★ 客戶去點另一個人的照片,意圖很清楚就是「我改選這個」。
+  //     照做就是了 —— 不教客戶做對的事,讓預設就是對的事。
   if (S.selectedPersonaForDrive && S.selectedPersonaForDrive !== personaName) {
-    toast(`目前正在選「${S.selectedPersonaForDrive}」的照片,請先完成或清除`, 'warn');
-    return;
+    const _prev = S.selectedPersonaForDrive;
+    S.selectedDrivePhotos[_prev] = [];
+    document.querySelectorAll('.drive-photo.selected').forEach(p => {
+      if (p.dataset.persona === _prev) p.classList.remove('selected');
+    });
+    S.selectedPersonaForDrive = '';
   }
 
   S.selectedPersonaForDrive = personaName;
   if (!S.selectedDrivePhotos[personaName]) S.selectedDrivePhotos[personaName] = [];
 
   const arr = S.selectedDrivePhotos[personaName];
-  const idx = arr.indexOf(fileId);
+  const idx = arr.indexOf(photoKey);
   if (idx >= 0) { arr.splice(idx, 1); photo.classList.remove('selected'); }
-  else { arr.push(fileId); photo.classList.add('selected'); }
+  else { arr.push(photoKey); photo.classList.add('selected'); }
 
   updateDriveActionBar();
 }
@@ -3696,10 +3716,48 @@ function clearDriveSelection() {
   updateDriveActionBar();
 }
 
+// 🔎 2026-08-22:把「選取的身分證」換回真正的檔案編號 / 網址。
+//   身分證(photoKey)只是用來記「哪幾張被選了」——
+//   真正要送出去的是 Drive 檔案編號(舊路)或素材庫網址(新路)。
+//   ★ 一張照片只會有其中一種:Drive 來的有編號、素材庫來的只有網址。
+//     兩邊都收,才不會逼客戶非得有 Google 資料夾不可。
+//   ★ 沒有任何選取時 → 整區照片全拿。這一區本來就都是同一個人,
+//     客戶沒特別排除就是全都要 —— 不用他先學會「要勾幾張」。
+function _collectPersonaPhotos(persona) {
+  const out = { fileIds: [], imageUrls: [], total: 0 };
+  const group = document.querySelector(
+    '.drive-persona-group[data-persona="' + String(persona).replace(/"/g, '\\"') + '"]');
+  if (!group) return out;
+
+  const picked = S.selectedDrivePhotos[persona] || [];
+  // ⚠️ 只取「原圖區」(第一個 .drive-gallery)。已處理·多角度那區不進 Look,
+  //    理由見 renderLookPicker 長註解:側臉不能當口播造型,綁進去只會多出廢卡片。
+  const galleries = group.querySelectorAll('.drive-gallery');
+  const pool = galleries.length ? galleries[0] : group;
+
+  pool.querySelectorAll('.drive-photo').forEach(function (ph) {
+    const key = ph.dataset.photoKey || ph.dataset.fileId || '';
+    if (picked.length && picked.indexOf(key) < 0) return;   // 有勾選就只拿勾到的
+    const fid = (ph.dataset.fileId || '').trim();
+    const url = (ph.dataset.url || '').trim();
+    if (fid) { if (out.fileIds.indexOf(fid) < 0) out.fileIds.push(fid); out.total++; }
+    else if (url) { if (out.imageUrls.indexOf(url) < 0) out.imageUrls.push(url); out.total++; }
+  });
+  return out;
+}
+
 async function confirmDrivePhotos(personaArg) {
   const persona = personaArg || S.selectedPersonaForDrive;
-  const fileIds = S.selectedDrivePhotos[persona] || [];
-  if (!persona || fileIds.length === 0) { toast('請先點選這位角色的照片', 'warn'); return; }
+  if (!persona) { toast('請先點選這位角色的照片', 'warn'); return; }
+
+  // 🩹 2026-08-22:以前這裡直接把 selectedDrivePhotos 當成 fileIds 送出 ——
+  //   素材庫來的照片沒有 Drive 編號,送出去的是一個空字串,
+  //   而收集素材庫網址的 S._pickedLibUrls 全站根本沒有人寫入(只有讀的那一行)。
+  //   結果:照片明明在,建立角色卻只綁得到 0~1 張。
+  const _picked = _collectPersonaPhotos(persona);
+  const fileIds = _picked.fileIds;
+  const imageUrls = _picked.imageUrls;
+  if (_picked.total === 0) { toast('這位角色還沒有照片可以用', 'warn'); return; }
 
   // 🩹 2026-08-19 誤觸保護(根治,不是補丁):
   //   建立角色是「不可逆」的 —— 會建立專屬形象群組、把照片搬進角色資料夾,
@@ -3709,8 +3767,8 @@ async function confirmDrivePhotos(personaArg) {
   //   ★ 一個不可逆的動作,不該只距離使用者一次點擊。
   //   ⚠️ 文案不得出現任何後台廠商名稱,只講客戶看得懂的結果。
   if (!confirm(
-    '要用這 ' + fileIds.length + ' 張照片建立「' + persona + '」嗎?\n\n' +
-    '建立後會綁定為這位角色的專屬形象,照片會搬進角色資料夾。\n' +
+    '要用這 ' + _picked.total + ' 張照片建立「' + persona + '」嗎?\n\n' +
+    '建立後會綁定為這位角色的專屬形象。\n' +
     '這個動作無法復原。'
   )) return;
 
@@ -3756,13 +3814,12 @@ async function confirmDrivePhotos(personaArg) {
     //     · fileIds   → Drive 舊路(照片來自 Drive 相簿時)
     //     · imageUrls → 素材庫(照片來自客戶自己上傳時,沒有 Drive 編號)
     //   ⚠️ 勾選的照片若沒有 fileId(素材庫來源),就改帶它的網址。
-    const _libUrls = (S._pickedLibUrls || []).filter(Boolean);
     const res = await gasPost('createKolLookFromDrive', {
       personaId: personaData.persona_id,
       personaName: personaData.persona_name,
       brandId: S.currentBrandId,
       fileIds,
-      imageUrls: _libUrls,
+      imageUrls,
     });
     if (!res.ok) throw new Error(res.error);
 
