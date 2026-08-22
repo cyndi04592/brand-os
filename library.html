@@ -534,7 +534,9 @@ const MY_CATS = ['照片素材','商品/服務照','LOGO','KOL'];
 function openLb(it){
   if(!it) return;
   const vid = isVideo(it.url);
-  const canRecat = MY_CATS.indexOf(it.category) !== -1;
+  // 只有客戶自己上傳的(id 前綴 u)且屬於「我的素材」四類才給改。
+  //   系統生成的成品(前綴 g)住在生成登記簿,不是 assets,改了也無處可寫。
+  const canRecat = MY_CATS.indexOf(it.category) !== -1 && /^u/.test(String(it.id || ''));
   $('lbIn').innerHTML =
     (vid ? '<video src="'+esc(it.url)+'" controls autoplay playsinline></video>'
          : '<img src="'+esc(thumbUrl(it.url,1400))+'" alt="">')
@@ -579,7 +581,10 @@ async function _doRecat(it, cat, kol){
   const btn = $('rcGo');
   if(btn){ btn.disabled = true; btn.textContent = '儲存中…'; }
   try{
-    const r = await api('asset_recat', { assetId: it.id, category: cat, kolName: kol });
+    // ⚠️ 素材 id 帶來源前綴:'u42' = 客戶上傳、'g7' = 系統生成(見 list_assets)。
+    //   送給後端前要把前綴剝掉,否則它拿到 'u42' 會解析成 NaN → 「缺少 assetId」。
+    const _rawId = String(it.id || '').replace(/^u/, '');
+    const r = await api('asset_recat', { assetId: _rawId, category: cat, kolName: kol });
     if(r && r.ok){
       closeLb();
       await loadAssets(true);                 // 強制重抓,牆上立刻更新
