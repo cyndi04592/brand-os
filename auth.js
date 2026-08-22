@@ -121,8 +121,8 @@ function showPasswordLogin() {
   form.style.cssText = 'margin-top:16px;';
   form.innerHTML = `
     <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;margin-top:4px;">
-      <div style="font-size:10px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;text-align:center;">帳號密碼登入</div>
-      <input id="pwdUser" type="text" placeholder="帳號" autocomplete="username"
+      <div style="font-size:10px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;text-align:center;">Email 密碼登入</div>
+      <input id="pwdUser" type="text" placeholder="Email" autocomplete="username"
         style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px 12px;color:#e8e0d0;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:8px;font-family:inherit;">
       <input id="pwdPass" type="password" placeholder="密碼" autocomplete="current-password"
         style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px 12px;color:#e8e0d0;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:10px;font-family:inherit;"
@@ -132,11 +132,47 @@ function showPasswordLogin() {
         登入
       </button>
       <div id="pwdErr" style="font-size:11px;color:#f44336;text-align:center;margin-top:8px;min-height:16px;"></div>
+      <!-- 🔑 2026-08-22:忘記密碼。沒有這條的話,每個忘記的客戶都得來找你,
+           而且通常發生在他趕著出片的時候。 -->
+      <div style="text-align:center;margin-top:6px;">
+        <a href="#" onclick="doForgotPwd();return false;"
+           style="font-size:11px;color:var(--t3);text-decoration:underline;">忘記密碼 / 還沒設定密碼?</a>
+      </div>
     </div>`;
 
   // 插入到 loginErr 後面
   const loginErr = overlay.querySelector('#loginErr');
   loginErr.parentNode.insertBefore(form, loginErr.nextSibling);
+}
+
+// 🔑 忘記密碼 / 還沒設定密碼 → 重寄設定信(跟進駐信裡那條同一套)
+async function doForgotPwd() {
+  const errEl = document.getElementById('pwdErr');
+  const pre = document.getElementById('pwdUser')?.value?.trim() || '';
+  const em = (prompt('請輸入您的 Email,我們寄一封設定密碼的信給您:', pre) || '').trim();
+  if (!em) return;
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) {
+    if (errEl) errEl.textContent = '請輸入正確的 Email';
+    return;
+  }
+  if (errEl) { errEl.style.color = '#f44336'; errEl.textContent = '寄送中…'; }
+  try {
+    // ⚠️ 這支住在 kol-proxy(AUTH_WORKER_URL),不是 GAS。
+    //   常數定義在本檔後半段,但 const 在同一個檔案作用域內、
+    //   函式執行時才取值 —— 此時早已定義完成,不會踩到暫時死區。
+    const r = await fetch(AUTH_WORKER_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: GAS_PASSWORD, action: 'auth_setpwd_send', email: em }),
+    });
+    const out = await r.json();
+    if (out && out.ok) {
+      if (errEl) { errEl.style.color = '#5eead4'; errEl.textContent = '已寄出,請至信箱查收(記得看垃圾郵件匣)'; }
+    } else {
+      if (errEl) errEl.textContent = (out && out.error) || '寄送失敗,請稍後再試';
+    }
+  } catch (e) {
+    if (errEl) errEl.textContent = '連線失敗,請稍後再試';
+  }
 }
 
 async function doPwdLogin() {
