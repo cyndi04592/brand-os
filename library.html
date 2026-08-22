@@ -249,6 +249,10 @@ a{color:inherit;text-decoration:none;}
     </div>
     <div class="up-hint">也可以直接把圖片拖進這個框 · 單檔 25MB 以內</div>
     <div class="up-list" id="upList"></div>
+    <div class="up-row" id="upConfirmRow" style="display:none;margin-top:10px">
+      <button class="up-btn" id="upGo">開始上傳</button>
+      <button class="nav-btn" id="upCancel">取消</button>
+    </div>
   </div></div>
 
   <div class="tabs" id="tabs"></div>
@@ -521,14 +525,54 @@ function showState(icon, title, sub){
     + (sub ? '<div class="sub">'+esc(sub)+'</div>' : '') + '</div>';
 }
 
+/* 🗂 2026-08-22 改分類 —— 傳錯了要能自己救。
+   沒有這顆的話,每個傳錯的客戶都得回頭來問,只能由人工進資料庫改。
+   ⚠️ 只有「我的素材」那四類能改;AI 生成的成品不給動 ——
+     讓成品被搬進素材類,只會讓兩邊都錯亂。 */
+const MY_CATS = ['照片素材','商品/服務照','LOGO','KOL'];
+
 function openLb(it){
   if(!it) return;
   const vid = isVideo(it.url);
+  const canRecat = MY_CATS.indexOf(it.category) !== -1;
   $('lbIn').innerHTML =
     (vid ? '<video src="'+esc(it.url)+'" controls autoplay playsinline></video>'
          : '<img src="'+esc(thumbUrl(it.url,1400))+'" alt="">')
-    + '<div class="lb-bar"><a class="dl" href="'+esc(it.url)+'" download target="_blank" rel="noopener">下載</a></div>';
+    + '<div class="lb-bar">'
+    +   (canRecat ? '<button class="nav-btn" id="lbRecat">🗂 改分類(目前:'+esc(it.category)+')</button>' : '')
+    +   '<a class="dl" href="'+esc(it.url)+'" download target="_blank" rel="noopener">下載</a>'
+    + '</div>';
   $('lb').classList.add('on');
+  if(canRecat) $('lbRecat').onclick = function(ev){ ev.stopPropagation(); _askRecat(it); };
+}
+
+async function _askRecat(it){
+  const cur = MY_CATS.indexOf(it.category);
+  const msg = '要把這張改到哪一類?\n\n'
+    + MY_CATS.map(function(c,i){ return (i+1)+'. '+c+(i===cur?'  ← 目前':''); }).join('\n')
+    + '\n\n請輸入 1-4:';
+  const pick = prompt(msg, String(cur+1));
+  if(!pick) return;
+  const idx = parseInt(pick,10) - 1;
+  if(!(idx >= 0 && idx < MY_CATS.length)){ alert('請輸入 1-4'); return; }
+  const cat = MY_CATS[idx];
+  if(cat === it.category){ return; }
+
+  let kol = '';
+  if(cat === 'KOL'){
+    kol = (prompt('這是誰的照片?(KOL 名字)', it.kol_name || '') || '').trim();
+    if(!kol){ alert('KOL 分類要填名字'); return; }
+  }
+
+  try{
+    const r = await api('asset_recat', { assetId: it.id, category: cat, kolName: kol });
+    if(r && r.ok){
+      $('lb').classList.remove('on');
+      await loadAssets(true);                 // 強制重抓,牆上立刻更新
+    } else {
+      alert('改分類失敗:' + ((r && r.error) || '未知錯誤'));
+    }
+  }catch(e){ alert('改分類失敗:' + e.message); }
 }
 function closeLb(){
   $('lb').classList.remove('on');
@@ -547,10 +591,54 @@ upFile.type = 'file'; upFile.accept = 'image/*'; upFile.multiple = true;
 document.body.appendChild(upFile);
 upFile.style.display = 'none';
 
+/* 🛡️ 2026-08-22 兩段式上傳(修「傳錯分類」)
+   病灶:自然的動作是「先選檔案 → 再想放哪」,但介面要求「先選分類 → 再選檔案」,
+     而且選完檔案就立刻開始傳 —— 客戶還沒想到分類,預設值就已經默默生效了。
+     (現場:RA 自己第一次用就把 Logo 傳進了「照片素材」。)
+   ★ 這不是客戶粗心,是介面把「預設值」當成了「客戶的決定」。
+   ★ 修法:選完檔案先停下來,把分類和檔案一起攤在眼前,按了才傳。
+     而且按鈕上直接寫目的地 —— 客戶不用回頭去看選單選了什麼。
+   ⚠️ 不是加一行提示叫客戶「記得選分類」—— 提示要看、要懂、要照做,三關都可能失敗。 */
+let _pending = null;
+
 $('upToggle').onclick = function(){ $('upPanel').classList.toggle('on'); };
 $('upPick').onclick   = function(){ upFile.click(); };
-$('upCat').onchange   = function(){ $('upKol').style.display = (this.value === 'KOL') ? '' : 'none'; };
-upFile.onchange       = function(){ if(this.files && this.files.length) doUpload(this.files); this.value=''; };
+$('upCat').onchange   = function(){
+  $('upKol').style.display = (this.value === 'KOL') ? '' : 'none';
+  _renderPending();                       // 改分類 → 按鈕上的目的地跟著變
+};
+upFile.onchange       = function(){ if(this.files && this.files.length) _stage(this.files); this.value=''; };
+
+function _stage(files){
+  if(!S.brandId){ alert('請先選擇品牌'); return; }
+  _pending = Array.prototype.slice.call(files);
+  _renderPending();
+}
+
+function _renderPending(){
+  const list = $('upList'), row = $('upConfirmRow');
+  if(!_pending || !_pending.length){
+    if(row) row.style.display = 'none';
+    return;
+  }
+  const cat = $('upCat').value;
+  list.innerHTML = _pending.map(function(f){
+    return '<div class="up-item"><span class="st">📄</span><span>'+esc(f.name)+'</span></div>';
+  }).join('');
+  if(row) row.style.display = '';
+  $('upGo').textContent = '⬆️ 上傳 ' + _pending.length + ' 個檔案到「' + cat + '」';
+}
+
+$('upGo').onclick = function(){
+  const f = _pending; _pending = null;
+  $('upConfirmRow').style.display = 'none';
+  if(f && f.length) doUpload(f);
+};
+$('upCancel').onclick = function(){
+  _pending = null;
+  $('upList').innerHTML = '';
+  $('upConfirmRow').style.display = 'none';
+};
 
 const upBox = $('upBox');
 ['dragenter','dragover'].forEach(function(e){
@@ -561,7 +649,7 @@ const upBox = $('upBox');
 });
 upBox.addEventListener('drop', function(ev){
   const fs = ev.dataTransfer && ev.dataTransfer.files;
-  if(fs && fs.length) doUpload(fs);
+  if(fs && fs.length) _stage(fs);          // 拖進來也一樣先停下來確認分類
 });
 
 async function doUpload(files){
