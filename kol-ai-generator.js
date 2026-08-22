@@ -7,7 +7,7 @@
  *   • 反 AI 美學 prompt 自動合成(真人感配方)
  *   • fal.ai Flux 1.1 Pro Ultra 串接(走 Cloudflare proxy,金鑰留後端)
  *   • 3 張結果挑臉 + Seed 鎖定
- *   • 一鍵存 Drive(走新 GAS action saveAiKolPhotoToDrive)
+ *   • 一鍵存進雲端倉庫(2026-08-22 起改走 Worker saveKolPhoto,不再寫 Google)
  *
  *  v3.17 新增:品牌自我校正(ensureBrandSynced)
  *   — 不管先選品牌還先載入面板,都會自己追上「當前品牌」,不再卡「請先選品牌」
@@ -1515,7 +1515,7 @@ async function generate() {
     }
 
     meta.textContent = data.images.length + ' 張 · seed=' + data.seed + ' · ' + latency + 's';
-    showStatus('✅ 生成完成,挑一張點「存 Drive」', 'ok');
+    showStatus('✅ 生成完成,挑一張點「選這張」', 'ok');
 
   } catch (e) {
     console.error('[kai] generate failed:', e);
@@ -1551,7 +1551,7 @@ function renderGallery() {
     `;
   }).join('');
 
-  // 綁定:點圖放大 + 存 Drive
+  // 綁定:點圖放大 + 選用存檔
   gallery.querySelectorAll('[data-act]').forEach(el => {
     el.addEventListener('click', handleImgAction);
   });
@@ -1569,7 +1569,7 @@ async function handleImgAction(e) {
   }
 
   if (act === 'save') {
-    await saveImageToDrive(idx);
+    await saveKolImageToLibrary(idx);
   }
 }
 
@@ -1591,7 +1591,11 @@ function openLightbox(url) {
   box.querySelector('img').src = url;
   box.classList.add('open');
 }
-async function saveImageToDrive(idx) {
+// 2026-08-22 v4.45:落地點從 Google 雲端硬碟改成自家倉庫。
+//   ★ 舊名 saveImageToDrive 已改名 —— 名字要說實話,
+//     不然三個月後看到「Drive」會以為還在存 Google。
+//   ★ 存完會自動寫進素材庫(category='KOL'),KOL 照片庫立刻看得到。
+async function saveKolImageToLibrary(idx) {
   const img = S.lastImages[idx];
   if (!img) return;
   if (img.saved) return;
@@ -1615,7 +1619,7 @@ async function saveImageToDrive(idx) {
   const _outfitText = _outfitSel ? (OUTFIT_MAP[_outfitSel.value] || '') : '';
 
   try {
-    const res = await gasPost('saveAiKolPhotoToDrive', {
+    const res = await gasPost('saveKolPhoto', {
       brandId: S.currentBrandId,
       personaName: S.currentPersonaName,
       imageUrl: img.url,
@@ -1636,7 +1640,7 @@ async function saveImageToDrive(idx) {
     img.driveFileId = res.file_id;
     renderGallery();
 
-    showStatus('✅ 已存入 Drive:' + res.filename + ' — 左欄 Gallery 請點「重新載入」', 'ok');
+    showStatus('✅ 已存進雲端倉庫:' + res.filename + ' — 左欄 Gallery 請點「重新載入」', 'ok');
 
     // 嘗試自動刷新左欄(如果 kol.html 有暴露)
     if (typeof window.refreshAll === 'function') {
@@ -1648,11 +1652,11 @@ async function saveImageToDrive(idx) {
     }
 
   } catch (e) {
-    console.error('[kai] saveToDrive failed:', e);
-    showStatus('❌ 存 Drive 失敗:' + e.message, 'err');
+    console.error('[kai] 存進雲端倉庫失敗:', e);
+    showStatus('❌ 存檔失敗:' + e.message, 'err');
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '存 Drive';
+      btn.innerHTML = '✓ 選這張';
     }
   }
 }
@@ -1740,7 +1744,11 @@ const WRITE_VIA_WORKER = {
   // 🚚 2026-08-13:一鍵存 Drive 也切過來(Worker v4.14 補上這支寫入器)。
   //   ⚠️ Worker 端已把它列進 NO_GAS_MIRROR —— 若讓它照常回寫 GAS,
   //      GAS 會把同一張圖再存一次到同一個資料夾(跟 saveAiImage 同款地雷)。
+  //   🚚 2026-08-22:Worker v4.45 起這支已改寫進自家倉庫,不再碰 Google。
+  //      新名 saveKolPhoto 才是誠實的名字;舊名先留著,
+  //      因為 kol-character-sheet.js 還在用它 —— 那支改完再讓舊名退休。
   saveAiKolPhotoToDrive: 1,
+  saveKolPhoto: 1,
 };
 
 async function gasPost(action, extra = {}) {
