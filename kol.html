@@ -3485,8 +3485,8 @@ function renderPersonaSection(p) {
   //    GAS 早就回傳 processed_photos,前台之前沒畫出來 → 存了看不到。
   const procs = p.processed_photos || [];
   const processedHtml = procs.length > 0
-    ? `<div style="font-size:11px;color:#9a9aa8;margin:8px 0 4px;">已處理 · 多角度/參考照(${procs.length})</div>
-       <div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
+    ? `<div style="font-size:11px;color:#9a9aa8;margin:8px 0 4px;">🎬 多角度參考照(${procs.length})· 系統自動使用,不用挑</div>
+       <div class="drive-gallery" data-zone="processed" style="opacity:.75" data-persona="${escapeHtml(p.persona_name)}">
         ${procs.map(ph => `
           <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-url="${escapeHtml(ph.url || '')}" data-photo-key="${escapeHtml(ph.file_id || ph.url || ph.name || '')}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}" style="border:1px solid #3a3a4a;">
             <img src="${escapeHtml(ph.thumbnail_url)}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder></div>'" referrerpolicy="no-referrer">
@@ -3508,7 +3508,7 @@ function renderPersonaSection(p) {
               data-persona="${escapeHtml(p.persona_name)}" disabled>綁定</button>
       <button class="btn btn-ghost btn-sm persona-clear-btn"
               data-persona="${escapeHtml(p.persona_name)}" style="display:none">清除選取</button>
-      ${isBound ? '' : `<div style="flex:0 0 100%;font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.5">已幫你選好 · 多角度會自動生效,不用另外勾</div>`}
+      ${isBound ? '' : `<div style="flex:0 0 100%;font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.5">已幫你選好正臉 · 多角度會自動生效,不用另外挑</div>`}
     </div>`;
 
   return `
@@ -3660,6 +3660,19 @@ function handleDriveGalleryClick(e) {
 
   const photo = e.target.closest('.drive-photo');
   if (!photo) return;
+
+  // 🛡️ 2026-08-22 防呆:多角度參考照不開放點選。
+  //   兩區照片用途天差地遠 ——
+  //     · 正臉  → 綁口播造型(會動嘴講話)
+  //     · 3/4、側臉 → 影片的角度參考照
+  //   側臉不能當口播造型(沒有人側著臉對鏡頭講話)。以前這裡出過事:
+  //   多角度被綁進造型 → 客戶的造型選單長出一堆廢卡片。
+  //   ★ 客戶不需要懂這條規則 —— 讓他點不到,比寫一行提示叫他別點更可靠。
+  if (photo.closest('.drive-gallery[data-zone="processed"]')) {
+    toast('多角度參考照系統會自動用,不用挑 🎬', 'info');
+    return;
+  }
+
   const photoKey = photo.dataset.photoKey || photo.dataset.fileId;
   const personaName = photo.dataset.persona;
   if (!photoKey) return;
