@@ -3022,6 +3022,27 @@ function renderApply() {
     const statusClass = { pending:'sb-pending', approved:'sb-approved', rejected:'sb-rejected' };
     const cardClass = { pending:'pending', approved:'approved', rejected:'rejected' };
     const date = b.submittedAt ? new Date(b.submittedAt).toLocaleDateString('zh-TW') : '-';
+    // 💭 2026-08-22:顯示「客戶的意向方案」。
+    //   病灶:客戶在進駐問卷選了方案(資料一直有存進 desiredPlan),
+    //     但後台從來沒把它畫出來 —— 審核時看不到客戶心裡的預算,
+    //     等於少掉最關鍵的一個判斷依據,還得另外開資料庫查。
+    //   ⚠️⚠️ 這是「意向」不是「訂單」——
+    //     進駐問卷那一步明白寫著「不會付款、不會綁卡」,
+    //     客戶勾的是「我想要哪個等級」,不代表他已經付錢或已開通。
+    //     所以標籤一定要寫「意向」二字、用中性色 ——
+    //     做成金色徽章的話,半年後回頭看會誤以為這人已經在付這個方案。
+    //   ★ 判斷用途:選旗艦的值得你親自談;選入門的先開通再往上帶;
+    //     沒選的還在觀望,可能要多聊一下。
+    //   ⚠️ KOL 需求也一起顯示:那是要不要幫他建數字人的判斷。
+    //   ⚠️ key 必須對齊 plans.js 的 SUB_PLANS(entry/growth/pro/ent/flag/custom)——
+    //      寫錯的話標籤會直接印出代碼,而且不會報錯,最難發現。
+    const _PLAN_LABEL = { entry:'入門 NT$30,000/月', growth:'成長 NT$50,000/月',
+      pro:'專業 NT$80,000/月', ent:'企業 NT$150,000/月', flag:'旗艦 NT$250,000/月',
+      custom:'客製方案(一對一報價)' };
+    const _plan = b.desiredPlan
+      ? ('意向方案:' + (_PLAN_LABEL[b.desiredPlan] || b.desiredPlan))
+      : '尚未表態(還在觀望)';
+    const _kolWant = (b.kolType && b.kolType !== 'none') ? '🎭 要 KOL 數字人' : '';
     return `<div class="apply-card ${cardClass[b.status]||''}" id="applycard-${esc(b.id)}">
       <div class="apply-card-top">
         <div class="apply-icon">${esc(b.icon||'')}</div>
@@ -3034,6 +3055,14 @@ function renderApply() {
             ${b.platforms?`<div class="apply-info-item"><span>${esc(b.platforms)}</span></div>`:''}
             ${b.audience?`<div class="apply-info-item"><span>${esc(b.audience)}</span></div>`:''}
             ${b.contact?`<div class="apply-info-item"><span>${esc(b.contact)} ${esc(b.phone||'')}</span></div>`:''}
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span title="這是客戶在進駐問卷勾選的預算等級,不是已成立的訂單"
+              style="display:inline-block;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;
+              background:rgba(255,255,255,.05);
+              color:${b.desiredPlan?'var(--t2,#C4B9AC)':'var(--t3)'};
+              border:1px dashed rgba(255,255,255,${b.desiredPlan?'.22':'.12'})">💭 ${esc(_plan)}</span>
+            ${_kolWant?`<span style="display:inline-block;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:900;background:rgba(124,109,250,.16);color:#a78bfa;border:1px solid rgba(124,109,250,.4)">${_kolWant}</span>`:''}
           </div>
         </div>
         <span class="apply-status-badge ${statusClass[b.status]||'sb-pending'}">${statusMap[b.status]||b.status}</span>
