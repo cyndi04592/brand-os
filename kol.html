@@ -3853,7 +3853,11 @@ async function confirmDrivePhotos(personaArg) {
     }
 
     const action = res.action;
-    toast(action === 'created_group' ? `✅ 角色已建立,使用 ${fileIds.length} 張照片` : `✅ 已加入 ${res.total_added || fileIds.length} 個 Look`, 'success');
+    // 🩹 2026-08-22:這裡以前只數 fileIds —— 素材庫來的照片走的是 imageUrls,
+    //   於是明明綁了 1 張,訊息卻說「使用 0 張照片」,客戶會以為失敗了。
+    //   ⚠️ 同一家族的錯:凡是「照片有兩種來源」的地方,數量、判斷、訊息都要一起算。
+    const _usedN = _picked.total || (fileIds.length + imageUrls.length);
+    toast(action === 'created_group' ? `✅ 角色已建立,使用 ${_usedN} 張照片` : `✅ 已加入 ${res.total_added || _usedN} 個 Look`, 'success');
 
     clearDriveSelection();
     // 🩹 2026-08-14:一定要帶 true 強制重抓。
