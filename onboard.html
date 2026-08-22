@@ -985,6 +985,9 @@ const CF_WORKER_URL = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
 const ROOT_FOLDER_ID = '14LlXgAzqds62VZuIBAdEDhoFt15b1t1b';
 let tokenClient=null,userEmail='',currentStep=1,generatedSoul='';
 let guestToken='';   // 🎫 訪客證(登入後由 Worker 簽發)
+// 🚩 2026-08-22:靈魂書有沒有生成失敗。失敗就不准送出 ——
+//   寧可客戶重按一次,也不要讓「生成失敗」四個字變成他的品牌靈魂。
+let soulFailed=false;
 
 // ── 選方案步(意向,送審後才開通,不在此收款)。卡片重用 plans.js ──
 let desiredPlan='', _pickGroup='small', _pickCycle='month';
@@ -1103,7 +1106,14 @@ async function grabColors(){
   try{
     // ★ v11.3:打新 action,Worker 會真的爬網頁、用 regex 撈 hex、Claude 篩 6 個品牌色
     const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'extract_brand_colors',password:'raby2026',url})});
+      // 🩹 2026-08-22:補上訪客證。
+      //   病灶:8/18 後端把 extract_brand_colors 列入「會花錢的動作」,
+      //     沒帶身分一律擋回 NEED_LOGIN。而這支從頭到尾沒帶過 token ——
+      //     隔壁 claude_generate 有帶,只有這支漏了。
+      //   症狀騙人:前端接到失敗只會說「這個網站抓不到顏色」,
+      //     所以看起來像是那個網站不支援,實際上是【每個網站都抓不到】。
+      //   ⚠️ 教訓:後端新增身分檢查時,要把該 action 的所有呼叫端都掃一遍。
+      body:JSON.stringify({action:'extract_brand_colors',password:'raby2026',url,token:guestToken,email:userEmail})});
     const data=await res.json();
     if(!data.ok)throw new Error(data.error||'抓取失敗');
     // 🆕 2026-08-09 去重:Worker 有時回傳重複色碼(紅綠紅綠排三輪很嚇人)
@@ -1136,10 +1146,17 @@ async function grabColors(){
     // 🩹 2026-08-19:分辨「網站抓不到」和「我們這邊連不上」。
     //   舊寫法兩種都跳同一句,客戶回報時無法判斷是系統壞了還是網站不支援。
     console.warn('[colors] 抓色失敗:', e && e.message);
-    const netFail = e instanceof TypeError || /Failed to fetch|NetworkError|timeout/i.test(String(e && e.message));
+    const _msg = String((e && e.message) || '');
+    const netFail = e instanceof TypeError || /Failed to fetch|NetworkError|timeout/i.test(_msg);
+    // 🩹 2026-08-22:多分一類「身分過期」。
+    //   舊寫法把它歸到「網站抓不到顏色」—— 客戶會一直換網址試,
+    //   換幾個都失敗,然後認定這功能是壞的(而它其實只是要重新登入)。
+    const authFail = /重新登入|NEED_LOGIN|請先開通/.test(_msg);
     alert(netFail
       ? '網路連線不太順 📡\n\n剛才沒能連上我們的伺服器,請稍等幾秒再按一次「抓取色系」。\n\n如果一直失敗,也可以先從下方預設色系挑一個。'
-      : '這個網站抓不到顏色 🎨\n\n可能原因:網站使用動態載入(SPA)、需要登入、或顏色寫在外部 CSS 檔。\n\n請從下方 12 個預設色系挑一個你喜歡的吧!');
+      : authFail
+      ? '登入狀態過期了 🔑\n\n請重新整理這一頁、再登入一次就可以繼續。\n\n(已填的資料會需要重填,不好意思)'
+      : '這個網站的顏色藏得比較深,抓不到 🎨\n\n常見於動態載入的網站。\n\n直接從下方 12 個預設色系挑一個吧,之後隨時可以改!');
   }
   btn.disabled=false;btn.innerHTML='🎨 抓取色系';
 }
@@ -1292,13 +1309,42 @@ async function doGenerate(){
   const prompt=`你是一位頂尖的品牌策略師,請根據以下資料生成一份完整的「品牌靈魂書」。\n\n【品牌基本資訊】\n品牌名稱:${v('f_name')}\n官網:${v('f_website')}\nFacebook:${v('f_fb')}  Instagram:${v('f_ig')}\n小紅書:${v('f_xiaohongshu')}  抖音:${v('f_douyin')}\n微信公眾號:${v('f_wechat')}  其他:${v('f_social_other')}\n聯絡:${v('f_contact')} ${phoneCode} ${v('f_phone')}\n\n【品牌故事】\n創立原因:${v('f_story')}\n核心價值:${v('f_values')}\n競爭對手:${v('f_competitors')}\n競爭優勢:${v('f_pros')}\n目前挑戰:${v('f_cons')}\n補充:${v('f_misc')}\n\n【商品/服務】\n類別:${v('f_category')}\n主力商品:${v('f_products')}\n銷售平台:${getPlatforms()}\n售價:${v('f_price')}\n目標客群:${v('f_audience')}\n\n【品牌風格】\n視覺風格:${v('f_style')}\n品牌主色:${_brandHex}\n參考品牌:${v('f_ref')}\n\n請用繁體中文生成品牌靈魂書,包含:\n1. 品牌定位宣言(一句話)\n2. 品牌靈魂(3-5句)\n3. 目標受眾畫像(詳細,含痛點)\n4. 廣告文案風格指南\n5. 核心廣告主張(3個方向)\n6. 建議Hashtag(10個,含中英文)\n7. 競爭差異化重點`;
   try{
     const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:'raby2026',prompt,max_tokens:2000,token:guestToken,email:userEmail})});
-    const data=await res.json();generatedSoul=data.text||'生成失敗,請重試';
-  }catch(e){generatedSoul='⚠️ 生成失敗:'+e.message;}
+    const data=await res.json();
+    // 🩹 2026-08-22:失敗時不要把錯誤訊息當成靈魂書內容。
+    //   舊寫法 data.text || '生成失敗,請重試' —— 那六個字會被一路帶到
+    //   submitBrand,存進資料庫變成該品牌的「品牌靈魂」。
+    //   (Every Hay、Red Hammer Defense 兩個品牌就是這樣來的,
+    //    而且沒有任何地方會發現 —— 因為送出流程一切正常。)
+    //   ★ 現在:失敗就是失敗,soulFailed 立起來,送出鈕會擋。
+    if (data && data.ok !== false && data.text) {
+      generatedSoul = data.text; soulFailed = false;
+    } else {
+      soulFailed = true;
+      const _code = String((data && (data.error || data.code)) || '');
+      generatedSoul = /INSUFFICIENT_BITS/.test(_code)
+        ? '⚠️ 系統忙碌中,請稍後再試一次(錯誤代碼:BITS)'
+        : '⚠️ 生成失敗:' + ((data && data.message) || _code || '請稍後再試一次');
+    }
+  }catch(e){ soulFailed = true; generatedSoul='⚠️ 生成失敗:'+e.message; }
   clearInterval(interval);document.getElementById('genBarFill').style.width='100%';
   await new Promise(r=>setTimeout(r,500));
   document.getElementById('genOverlay').classList.remove('show');
   document.getElementById('sec5').style.display='none';document.getElementById('stepsBar').style.display='none';
   document.getElementById('soulOutput').textContent=generatedSoul;document.getElementById('resultSection').style.display='block';
+  // 生失敗 → 送出鈕改成「重新生成」,不要讓客戶把壞資料送進系統
+  var _sb=document.getElementById('btnSubmit');
+  if(_sb){
+    if(soulFailed){
+      _sb.innerHTML='🔄 重新生成品牌靈魂書';
+      _sb.onclick=function(){ document.getElementById('resultSection').style.display='none';
+                              document.getElementById('sec5').style.display='block';
+                              document.getElementById('stepsBar').style.display='';
+                              doGenerate(); };
+    } else {
+      _sb.innerHTML='📮 正式送出申請';
+      _sb.onclick=doSubmit;
+    }
+  }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
