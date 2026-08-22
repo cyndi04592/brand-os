@@ -200,14 +200,29 @@
         'not as a shopper holding merchandise.';
     }
     // ══ 螢幕成果:裝置=外包裝,截圖=內容物(沿用海苔邏輯)══
+    // 🖥 2026-08-22:分「有給裝置圖」與「只給截圖」兩種寫法。
+    //   舊寫法一律說「device 是外殼」,但裝置槽是選填的 ——
+    //   客戶只丟截圖時,AI 讀到「要有裝置」就自己生一台筆電,
+    //   而那台筆電的螢幕邊框比例常常是歪的(生出來像玩具)。
+    //   ★ 只給截圖 → 明講「畫面可以直接佔滿鏡頭,不必硬塞一台裝置」。
     if (mode === 'screen') {
-      return 'ON-SCREEN RESULT — the product is software / a website / a digital service. ' +
+      //   ⚠️ 這支函式只拿得到 prod,拿不到實際圖片數量。
+      //     用 hasPackaging 當「有沒有給裝置圖」的旗標 —— 語意剛好對得上:
+      //     screen 模式的「外包裝」就是裝置本體(見上方 v3.2 說明)。
+      //     沒填 = 保守假設沒給裝置圖,寫成「不要自己發明機型」比較安全。
+      const hasDevice = isYes(prod && prod.hasPackaging);
+      const base = 'ON-SCREEN RESULT — the product is software / a website / a digital service. ' +
         'DO NOT invent any boxed software, retail package or physical product. ' +
-        'The device (laptop, phone, tablet, monitor) is the outer shell and the SCREEN CONTENT is the real substance. ' +
         '★ The screen content must come from the supplied reference image and be reproduced faithfully — ' +
-        'DO NOT imagine, redesign or invent any interface, chart, dashboard or text on the screen. ' +
-        'Treat it exactly like packaging-and-contents: the device is the package, the real screenshot is the contents, ' +
-        'and the contents are never made up. Keep the screen legible, undistorted, correctly proportioned and free of moiré or glare.';
+        'DO NOT imagine, redesign or invent any interface, chart, dashboard, logo, number or text on the screen. ' +
+        'The screenshot is treated exactly like the contents of a package: never made up. ' +
+        'Keep the screen legible, undistorted, correctly proportioned and free of moiré or glare. ';
+      return base + (hasDevice
+        ? 'The device shown in the reference (laptop, phone, tablet or monitor) is the outer shell and the SCREEN CONTENT is the real substance — ' +
+          'reproduce the device shape faithfully too, with correct bezel proportions.'
+        : 'No device reference was supplied, so DO NOT invent a specific laptop or phone model — ' +
+          'either let the supplied screen image fill the frame directly as a clean digital display, ' +
+          'or show it on a plain, generic, softly out-of-focus device whose exact shape is not emphasised.');
     }
     // ══ 專業服務:人與情境,零實體 ══
     if (mode === 'pro') {
