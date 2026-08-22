@@ -1872,12 +1872,24 @@ const _LOG_KIND = {
         ok:         1,
         result_url: url,
       };
+      // 🎬 2026-08-22 v4.51:不再直接登記輪詢拿到的網址 ——
+      //   那是生成平台的暫時網址,會過期。客戶之後回素材庫想拿舊影片,
+      //   只會拿到壞連結(而且畫面上看起來一切正常,最難發現)。
+      //   改叫 video_done_r2:先搬進自家倉庫,再用永久網址登記。
+      //   ⚠️ 搬檔要時間,但這裡本來就不 await —— 客戶不會多等。
       _origFetch(WORKER, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: PASSWORD, action: 'gen_log', row: row }),
+        body: JSON.stringify({
+          password: PASSWORD, action: 'video_done_r2',
+          brandId: row.brand_id, videoUrl: url,
+          nameHint: (window.S && window.S.selectedKol && window.S.selectedKol.name) || 'KOL',
+          kolName: (window.S && window.S.selectedKol && window.S.selectedKol.name) || '',
+          sourceAction: 'video_done', provider: row.provider || '',
+          email: row.email || '',
+        }),
       }).then(function () {
-        console.log('[報到] \u2705 影片完成已回補:', url);
+        console.log('[報到] \u2705 影片完成已存進雲端倉庫:', url);
       }).catch(function () {});
     } catch (e) { /* 紀錄永遠不擋生成 */ }
   };
@@ -5007,26 +5019,36 @@ function lockCineZone(lock) {
     }
   }
 }
-// 🆕 #3: 接片完成後,把成品也存進該品牌 Google Drive(跟照片一致)
+// 🎬 2026-08-22 v4.51:接片成品落地自家倉庫(不再存 Google 雲端硬碟)
+//   舊行為:查 videoFolderId → 存進品牌的雲端硬碟影片資料夾。
+//   為什麼廢掉:那條路早就是死的 —— 它走 GAS,而 GAS 單檔 50MB 硬上限,
+//     影片超過就失敗,失敗只跳一個小提示,沒有人會發現備份沒成功。
+//     而且查不到 videoFolderId 就直接放棄,新品牌根本不會有備份。
+//   ★ 新行為:搬進自家倉庫 + 登記素材庫,客戶之後在「AI生成完成區」找得到。
 async function saveStitchedToDrive(videoUrl) {
   if (!videoUrl) return;
-  const folderRow = (S.folders || []).find(f => f.brandId === S.currentBrandId);
-  const videoFolderId = folderRow?.videoFolderId || '';
-  if (!videoFolderId) {
-    toast('影片已存 R2;此品牌沒設 Drive 影片資料夾,略過存 Drive', 'warn');
-    return;
-  }
-  toast('正在把影片存進 Google Drive…');
   try {
-   const res = await gasPost('saveVideoToDrive', {
-      videoUrl,
-      videoFolderId,
-      nameHint: (S.selectedKol?.name || 'KOL') + '_接片',
+    // ⚠️ video_done_r2 是 Worker 的直接動作,不是 gas_write 的寫入器 ——
+    //   走 gasPost 會被包成 { action:'gas_write', gasAction:... },Worker 認不得。
+    const _r = await fetch(WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password: PASSWORD,
+        action: 'video_done_r2',
+        brandId: S.currentBrandId,
+        videoUrl: videoUrl,
+        nameHint: (S.selectedKol?.name || 'KOL') + '_接片',
+        kolName: S.selectedKol?.name || '',
+        sourceAction: 'video_done',
+        email: localStorage.getItem('bs_sso_email') || '',
+      }),
     });
-    if (res.ok) toast('✅ 影片也存進品牌 Google Drive 了', 'success');
-    else toast('存 Drive 失敗:' + res.error, 'warn');
+    const res = await _r.json();
+    if (res && res.ok) toast('✅ 影片已存進素材庫', 'success');
+    else toast('影片存檔失敗:' + ((res && res.error) || '未知'), 'warn');
   } catch (e) {
-    toast('存 Drive 失敗:' + e.message, 'warn');
+    toast('影片存檔失敗:' + e.message, 'warn');
   }
 }
 // 🆕 v5.18: 多段分鏡 → 接片長片(beat 數=段數,每段照分鏡自己的秒數)
