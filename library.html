@@ -440,9 +440,11 @@ function renderTabs(){
     html += '<div class="tsep"></div>';
     const gd = (g.key === 'ai') ? ' gold' : '';
     html += cats.map(function(c){
+      // ⚠️ 2026-08-22:拿掉「└」那個層級符號。
+      //   那是開發期間標示從屬關係用的記號,不是給客戶看的東西。
+      //   縮排(sub 這個 class)保留 —— 視覺上的從屬夠了,不必再畫線。
       const sub = SUB_OF[c] ? ' sub' : '';
       return '<button class="tab'+gd+sub+(S.cat===c?' on':'')+'" data-c="'+esc(c)+'">'
-        + (sub ? '<span class="arm">└</span>' : '')
         + esc(c) + '<span class="n">' + (S.counts[c]||0) + '</span></button>';
     }).join('');
   });
