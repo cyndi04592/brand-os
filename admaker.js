@@ -4012,8 +4012,13 @@ async function saveAdImageSilently(imageUrl, kind, reqId) {
     const brand = window.BRANDS?.find(b => b.id === brandId);
     const prod  = window.S?.prod;
 
-    const res = await callWorker({
-      action: 'save_ai_image_to_drive',
+    // 🚚 2026-08-22:改成直打 kol-proxy(素材那台)。
+    //   舊路是 admaker → photoroom-proxy(save_ai_image_to_drive) → kol-proxy,
+    //   中間那一站從 v11.2 起就只是純轉發,不做任何事 ——
+    //   多一站就多一個失敗點、多一次網路來回。
+    //   ⚠️ photoroom-proxy 那支不刪,標記為停用備援(見該檔註解)。
+    const res = await _kolPost({
+      action: 'saveAiImage',
       brandId,
       imageUrl,
       requestId: finalReqId,
