@@ -1861,6 +1861,16 @@ const _LOG_KIND = {
       const key = String((reqBody && (reqBody.reqId || reqBody.requestId)) || url);
       if (_videoDoneLogged[key]) return;
       _videoDoneLogged[key] = 1;
+
+      // 🚩 2026-08-22:接片進行中 → 這是中途的 15 秒分段,不是成品。
+      //   不進倉庫、不上素材庫牆 —— 客戶只該看到接好的那一支。
+      //   ★ 為什麼分段乾脆不存:存了也沒有取用的路徑,還得再做一個
+      //     「續接上次失敗」的功能才用得到 —— 那是另一個坑。接片失敗就重來。
+      //   ⚠️ 成品由 kol-stitch 自己搬 R2 + saveStitchedToDrive 登記,不走這裡。
+      if (window._kolStitchRunning === true) {
+        console.log('[報到] ⏭ 接片分段,不登記(只留成品):', url);
+        return;
+      }
       const row = {
         ts:         new Date().toISOString(),
         email:      localStorage.getItem('bs_sso_email') || '',
