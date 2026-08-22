@@ -6187,7 +6187,14 @@ const MAX_PRODUCT_REFS = 6;
 const MODE_SLOTS = {
   service:  [{ role: 'main', label: '成果照 · 做完的樣子' }],
   equip:    [{ role: 'main', label: '機台 / 設備' }, { role: 'contents', label: '加工件 / 成品' }],
-  screen:   [{ role: 'main', label: '螢幕截圖 · 要自己提供' }],
+  // 🖥 2026-08-22 修「前後端對不上」:道具師(kol-product.js)對 screen 的指令是
+  //   「裝置=外包裝、螢幕內容=內容物」,照抄海苔的包裝+內容物邏輯 ——
+  //   但這裡只開了一個槽,等於後端期待兩張圖、前端只收得下一張。
+  //   後果:客戶傳了兩張截圖,第二張沒有槽可歸 → 排序值 undefined、位置不定;
+  //   而 AI 拿不到裝置圖,就會自己想像一台筆電,或把兩張截圖疊在一起。
+  //   ★ 這條路線就是軟體/網站/代操公司(含 Brand OS 自己)在走的,不能有洞。
+  screen:   [{ role: 'main', label: '裝置外觀 · 筆電/手機(可不放)' },
+             { role: 'contents', label: '螢幕截圖 · 要自己提供' }],
   pro:      [{ role: 'main', label: '情境照 · 可不放' }],
   digital:  [{ role: 'main', label: '情境照 · 可不放' }],
   agency:   [{ role: 'main', label: '工作情境 · 可不放' }],
