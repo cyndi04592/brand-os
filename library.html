@@ -546,34 +546,53 @@ function openLb(it){
   if(canRecat) $('lbRecat').onclick = function(ev){ ev.stopPropagation(); _askRecat(it); };
 }
 
-async function _askRecat(it){
-  const cur = MY_CATS.indexOf(it.category);
-  const msg = '要把這張改到哪一類?\n\n'
-    + MY_CATS.map(function(c,i){ return (i+1)+'. '+c+(i===cur?'  ← 目前':''); }).join('\n')
-    + '\n\n請輸入 1-4:';
-  const pick = prompt(msg, String(cur+1));
-  if(!pick) return;
-  const idx = parseInt(pick,10) - 1;
-  if(!(idx >= 0 && idx < MY_CATS.length)){ alert('請輸入 1-4'); return; }
-  const cat = MY_CATS[idx];
-  if(cat === it.category){ return; }
+/* 🗂 改分類:直接在原地換一列下拉選單,選了就存。
+   ⚠️ 不要用 prompt 叫客戶「輸入 1-4」—— 那是把選單退化成打字,
+     客戶要先讀完清單、記住編號、再打字,三個動作換一次分類。
+     有選單就給選單。 */
+function _askRecat(it){
+  const bar = document.querySelector('#lbIn .lb-bar');
+  if(!bar) return;
+  const opts = MY_CATS.map(function(c){
+    return '<option value="'+esc(c)+'"'+(c===it.category?' selected':'')+'>'+esc(c)+'</option>';
+  }).join('');
+  bar.innerHTML =
+      '<span style="font-size:13px;color:var(--text-mid)">改到</span>'
+    + '<select class="sel" id="rcCat" style="min-width:140px">'+opts+'</select>'
+    + '<input class="sel" id="rcKol" style="min-width:140px;display:none" placeholder="這是誰的照片?" value="'+esc(it.kol_name||'')+'">'
+    + '<button class="up-btn" id="rcGo">儲存</button>'
+    + '<button class="nav-btn" id="rcCancel">取消</button>';
 
-  let kol = '';
-  if(cat === 'KOL'){
-    kol = (prompt('這是誰的照片?(KOL 名字)', it.kol_name || '') || '').trim();
-    if(!kol){ alert('KOL 分類要填名字'); return; }
-  }
+  const sel = $('rcCat'), kolIn = $('rcKol');
+  function syncKol(){ kolIn.style.display = (sel.value === 'KOL') ? '' : 'none'; }
+  syncKol();
+  sel.onchange   = syncKol;
+  sel.onclick    = function(ev){ ev.stopPropagation(); };
+  kolIn.onclick  = function(ev){ ev.stopPropagation(); };
+  $('rcCancel').onclick = function(ev){ ev.stopPropagation(); openLb(it); };
+  $('rcGo').onclick     = function(ev){ ev.stopPropagation(); _doRecat(it, sel.value, kolIn.value.trim()); };
+}
 
+async function _doRecat(it, cat, kol){
+  if(cat === it.category && (cat !== 'KOL' || kol === (it.kol_name||''))){ openLb(it); return; }
+  if(cat === 'KOL' && !kol){ alert('KOL 分類要填名字'); return; }
+  const btn = $('rcGo');
+  if(btn){ btn.disabled = true; btn.textContent = '儲存中…'; }
   try{
     const r = await api('asset_recat', { assetId: it.id, category: cat, kolName: kol });
     if(r && r.ok){
-      $('lb').classList.remove('on');
+      closeLb();
       await loadAssets(true);                 // 強制重抓,牆上立刻更新
     } else {
       alert('改分類失敗:' + ((r && r.error) || '未知錯誤'));
+      if(btn){ btn.disabled = false; btn.textContent = '儲存'; }
     }
-  }catch(e){ alert('改分類失敗:' + e.message); }
+  }catch(e){
+    alert('改分類失敗:' + e.message);
+    if(btn){ btn.disabled = false; btn.textContent = '儲存'; }
+  }
 }
+
 function closeLb(){
   $('lb').classList.remove('on');
   $('lbIn').innerHTML = '';
