@@ -32,6 +32,8 @@
   .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.18)}
   .hint{font-size:11px;color:#77707a;margin-top:8px;line-height:1.6}
   .err{font-size:12.5px;color:#ff6b6b;margin-top:12px;min-height:18px;line-height:1.6}
+  .bar{flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.10);transition:background .2s}
+  .bar.w{background:#ff6b6b}.bar.m{background:#f0b429}.bar.s{background:#5eead4}
   .ok{text-align:center}
   .ok .big{font-size:40px;margin-bottom:12px}
   .state{text-align:center;padding:20px 0;color:#9a92a0;font-size:13px}
@@ -56,6 +58,10 @@
     </div>
     <label>新密碼(至少 8 碼)</label>
     <input id="p1" type="password" autocomplete="new-password" placeholder="請輸入密碼">
+    <div style="display:flex;gap:4px;margin-top:7px">
+      <div class="bar" id="b1"></div><div class="bar" id="b2"></div><div class="bar" id="b3"></div>
+    </div>
+    <div id="pwdTip" style="font-size:11.5px;color:#77707a;margin-top:6px;line-height:1.6;min-height:17px"></div>
     <label>再輸入一次</label>
     <input id="p2" type="password" autocomplete="new-password" placeholder="再輸入一次確認">
     <button class="btn" id="goBtn">完成設定</button>
@@ -120,10 +126,59 @@ function show(v){
   }catch(e){ show('vExpired'); }
 })();
 
+// 🛡️ 即時強度提示。
+//   ⚠️ 前端這套只是「提早告訴客戶」,真正的把關在後端 ——
+//     前端的檢查任何人都能繞過,絕不能當成安全機制。
+//   ★ 規則刻意不要求「大小寫+符號」:那種規則的實際結果是客戶寫
+//     Password1! 然後貼在螢幕上。真正有效的是夠長、不常見、不是自己的信箱。
+const COMMON = ['password','passw0rd','12345678','123456789','1234567890','qwerty',
+  'qwertyui','abc12345','a1234567','iloveyou','admin123','welcome1','letmein',
+  'monkey','dragon','sunshine','princess','football','baseball','trustno1',
+  'asdfghjk','zxcvbnm','11111111','00000000','aaaaaaaa','brandos','raby2026','taiwan123'];
+
+function pwdCheck(p, email){
+  if(!p) return { level:0, msg:'' };
+  if(p.length < 8) return { level:1, msg:'還差 ' + (8 - p.length) + ' 碼' };
+  if(/^(.)\1+$/.test(p)) return { level:1, msg:'不能整串同一個字元' };
+  let inc=true, dec=true;
+  for(let i=1;i<p.length;i++){
+    const d=p.charCodeAt(i)-p.charCodeAt(i-1);
+    if(d!==1) inc=false;
+    if(d!==-1) dec=false;
+  }
+  if(inc||dec) return { level:1, msg:'不能是連續的數字或字母' };
+  const low=p.toLowerCase();
+  for(let i=0;i<COMMON.length;i++){
+    if(low===COMMON[i]||low.indexOf(COMMON[i])===0) return { level:1, msg:'這組密碼太常見' };
+  }
+  const em=String(email||'').toLowerCase();
+  if(em){
+    if(low===em) return { level:1, msg:'不能跟 Email 一樣' };
+    const np=em.split('@')[0];
+    if(np.length>=4 && low.indexOf(np)!==-1) return { level:1, msg:'不能包含您的 Email 帳號名' };
+  }
+  const kinds=(/[a-z]/.test(p)?1:0)+(/[A-Z]/.test(p)?1:0)+(/[0-9]/.test(p)?1:0)+(/[^a-zA-Z0-9]/.test(p)?1:0);
+  if(kinds===1 && p.length<12) return { level:1, msg:'太單純,請混合英文與數字(或加長到 12 碼)' };
+  if(p.length>=12 || kinds>=3) return { level:3, msg:'很安全 ✓' };
+  return { level:2, msg:'可以用,再長一點更好' };
+}
+
+$('p1').addEventListener('input', function(){
+  const r = pwdCheck(this.value, $('showEmail').textContent);
+  const cls = r.level===3?'s':(r.level===2?'m':'w');
+  ['b1','b2','b3'].forEach(function(id,i){
+    $(id).className = 'bar' + (i < r.level ? ' ' + cls : '');
+  });
+  const tip=$('pwdTip');
+  tip.textContent = r.msg;
+  tip.style.color = r.level===3?'#5eead4':(r.level===2?'#f0b429':'#77707a');
+});
+
 $('goBtn').onclick = async function(){
   const a = $('p1').value, b = $('p2').value;
   $('err').textContent = '';
-  if(a.length < 8){ $('err').textContent = '密碼至少 8 碼'; return; }
+  const chk = pwdCheck(a, $('showEmail').textContent);
+  if(chk.level < 2){ $('err').textContent = chk.msg || '密碼強度不足'; return; }
   if(a !== b){ $('err').textContent = '兩次輸入的密碼不一樣'; return; }
   this.disabled = true; this.textContent = '設定中…';
   try{
