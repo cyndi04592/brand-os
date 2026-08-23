@@ -1649,8 +1649,9 @@ document.addEventListener('DOMContentLoaded', function(){
             </div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px;color:var(--text-dim);cursor:pointer" onclick="toggleSeedanceAudio()">
               <div id="seedance-audio-toggle" class="toggle-switch on" style="width:32px;height:18px"></div>
-              <span>生成音效</span>
+              <span>生成聲音(台詞 + 環境音)</span>
             </div>
+            <div style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin-top:3px;padding-left:40px">關閉後影片會完全沒有聲音 —— 連台詞都不會唸</div>
           </div>
         </div>
 
@@ -1660,10 +1661,13 @@ document.addEventListener('DOMContentLoaded', function(){
             <span class="advanced-arrow">▶</span>
             <span class="advanced-title">進階設定</span>
             <span class="chip">細節調整</span>
+            <!-- 🩹 2026-08-23:無臉模式躲在這個摺疊區裡,客戶開了再收起來就完全沒線索,
+                 只會看到「KOL 不見了」。徽章掛在標題列 → 摺疊起來照樣看得到。 -->
+            <span id="faceless-adv-badge" style="display:none;margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(255,107,107,.16);border:1px solid rgba(255,107,107,.55);color:#ff6b6b;font-size:10px;font-weight:800;letter-spacing:.5px">無臉模式 開啟中 · KOL 不出現</span>
           </div>
           <div class="advanced-body">
             <!-- 🆕 無臉模式 v5.13-faceless -->
-            <div class="toggle-row">
+            <div class="toggle-row" id="faceless-row" style="border-radius:10px;transition:background .15s,box-shadow .15s">
               <div class="toggle-info">
                 <div class="toggle-label">無臉模式(只拍商品/手/腳)</div>
                 <div class="toggle-desc">打開後不用選 KOL,直接用商品照當主角 — 做菜、試穿鞋、手持展示</div>
@@ -3180,6 +3184,7 @@ async function onBrandChange() {
   // 🆕 切品牌自動關「無臉模式」(主軸是 KOL,無臉只是偶爾需求)
   const _facelessT = document.getElementById('faceless-toggle');
   if (_facelessT) { _facelessT.classList.remove('on'); const _facelessR = document.getElementById('faceless-action-row'); if (_facelessR) _facelessR.style.display = 'none'; }
+  try { _syncFacelessBadge(); } catch (e) {}   // 🩹 2026-08-23:關掉的同時徽章也要收,否則會留下「開啟中」假訊號
 
   // 重置狀態
   S.personas = [];
@@ -5793,8 +5798,14 @@ function updateSeedanceCostEstimate() {
   if (!el) return;
   const p = S.seedanceParams;
   const seconds = (p.duration === 'auto') ? 10 : parseInt(p.duration);
-  const minutes = p.tier === 'standard' ? 5 : 4;   // 實況:fal 算得快,但 app 偵測有 ~3 分鐘輪詢延遲(待 webhook 根治)
-  el.textContent = `~ ${minutes} 分鐘(${p.resolution} × ${seconds}s)`;
+  // 🩹 2026-08-23 估時修正:以前寫死 4/5 分鐘,完全沒計入段數。
+  //   實測 2 段 = 10 分 19 秒 → 反推「準備 ~60 秒 + 每段 ~280 秒」。
+  //   接片是逐段生成,段數才是主導變數,不是解析度也不是 tier。
+  const segs = (S.cineStoryboard && S.cineStoryboard.length) ? S.cineStoryboard.length : 1;
+  const perSeg = p.tier === 'standard' ? 6 : 5;   // 分鐘 / 段
+  const mid = 1 + segs * perSeg;
+  const segTxt = segs > 1 ? `${segs} 段 × ` : '';
+  el.textContent = `~ ${mid - 1}-${mid + 1} 分鐘(${segTxt}${p.resolution} × ${seconds}s)`;
 }
 
 function copySeedancePrompt() {
@@ -6457,6 +6468,22 @@ function toggleFaceless() {
   //   以前在這裡自己設 disabled,結果被那支函式蓋掉(它不知道無臉模式存在)。
   //   規則只寫在一個地方,才不會兩邊打架。
   updateSeedanceSubmitButton();
+  _syncFacelessBadge();   // 🩹 2026-08-23
+}
+
+// 🩹 2026-08-23:無臉模式的「開著」訊號。
+//   病灶:這個開關住在「進階設定」摺疊區裡,客戶打開後把摺疊區收起來,
+//        畫面上就完全沒有任何線索,只會看到 KOL 整個不見。
+//   規則只寫在這一支,toggleFaceless 與切品牌兩處都呼叫它,避免兩邊漂移。
+function _syncFacelessBadge() {
+  const on = !!document.getElementById('faceless-toggle')?.classList.contains('on');
+  const badge = document.getElementById('faceless-adv-badge');
+  if (badge) badge.style.display = on ? 'inline-block' : 'none';
+  const row = document.getElementById('faceless-row');
+  if (row) {
+    row.style.background = on ? 'rgba(255,107,107,.08)' : '';
+    row.style.boxShadow  = on ? 'inset 0 0 0 1.5px rgba(255,107,107,.5)' : '';
+  }
 }
 
 async function createFacelessVideo() {
@@ -6671,10 +6698,12 @@ async function createSeedanceVideo() {
 async function pollSeedance(task) {
   let count = 0;
   const t = setInterval(async () => {
-    if (++count > 300) {  // 🆕 v4.02:300 × 2s = 10 分鐘(90 秒接片要跑三段生成 + 一次合成,5 分鐘不夠)
+    if (++count > 900) {  // 🩹 2026-08-23:300×2s=10 分鐘,但 2 段接片實測 10 分 19 秒 —— 影片其實生好了,
+                          //   畫面卻先宣告失敗。產品上限 90 秒 = 6 段 ≈ 31 分鐘,故放寬到 900×2s=30 分鐘。
+                          //   (真失敗時 API 會直接回 FAILED,不會拖到這裡,放寬不會讓客戶空等。)
       clearInterval(t);
       task.status = 'FAILED';
-      task.error = 'Timeout (10min)';
+      task.error = '生成時間過長,請稍後再試';   // 🩹 原本是英文 Timeout (10min) → 違反客戶端不露技術名鐵律
       renderSeedanceTasks();
       return;
     }
@@ -7757,8 +7786,9 @@ function renderEpisodeCard() {
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px;color:var(--text-dim);cursor:pointer" onclick="toggleEpisodeAudio()">
             <div id="ep-audio-toggle" class="toggle-switch on" style="width:32px;height:18px"></div>
-            <span>生成音效</span>
+            <span>生成聲音(台詞 + 環境音)</span>
           </div>
+          <div style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin-top:3px;padding-left:40px">關閉後影片會完全沒有聲音 —— 連台詞都不會唸</div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px;color:var(--text-dim);cursor:pointer" onclick="toggleEpisodeSeedLock()">
             <div id="ep-seed-toggle" class="toggle-switch on" style="width:32px;height:18px"></div>
             <span>🔒 鎖定畫面一致性</span>
@@ -8134,10 +8164,12 @@ function renderEpisodeTask(task) {
 async function pollEpisodeTask(task) {
   let count = 0;
   const t = setInterval(async () => {
-    if (++count > 300) {  // 🆕 v4.02:300 × 2s = 10 分鐘(90 秒接片要跑三段生成 + 一次合成,5 分鐘不夠)
+    if (++count > 900) {  // 🩹 2026-08-23:300×2s=10 分鐘,但 2 段接片實測 10 分 19 秒 —— 影片其實生好了,
+                          //   畫面卻先宣告失敗。產品上限 90 秒 = 6 段 ≈ 31 分鐘,故放寬到 900×2s=30 分鐘。
+                          //   (真失敗時 API 會直接回 FAILED,不會拖到這裡,放寬不會讓客戶空等。)
       clearInterval(t);
       task.status = 'FAILED';
-      task.error = 'Timeout (10min)';
+      task.error = '生成時間過長,請稍後再試';   // 🩹 原本是英文 Timeout (10min) → 違反客戶端不露技術名鐵律
       renderEpisodeTask(task);
       return;
     }
@@ -9329,10 +9361,12 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
 async function pollEpisodeTaskV510(task) {
   let count = 0;
   const t = setInterval(async () => {
-    if (++count > 300) {  // 🆕 v4.02:300 × 2s = 10 分鐘(90 秒接片要跑三段生成 + 一次合成,5 分鐘不夠)
+    if (++count > 900) {  // 🩹 2026-08-23:300×2s=10 分鐘,但 2 段接片實測 10 分 19 秒 —— 影片其實生好了,
+                          //   畫面卻先宣告失敗。產品上限 90 秒 = 6 段 ≈ 31 分鐘,故放寬到 900×2s=30 分鐘。
+                          //   (真失敗時 API 會直接回 FAILED,不會拖到這裡,放寬不會讓客戶空等。)
       clearInterval(t);
       task.status = 'FAILED';
-      task.error = 'Timeout (10min)';
+      task.error = '生成時間過長,請稍後再試';   // 🩹 原本是英文 Timeout (10min) → 違反客戶端不露技術名鐵律
       renderEpisodeTask(task);
       if (task.episodeId) apiUpdateEpisodeStatus(task.episodeId, { video_status: 'failed', notes: 'Timeout' });
       return;
