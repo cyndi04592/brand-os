@@ -5424,6 +5424,18 @@ async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
     const _front = pickAnglePhoto(_procs, _ang)                         // 🆕 最新那張(=LOOK 顯示的同一張)
                 || _procs.find(x => /(^|_)front|正臉/i.test(x.name || ''))
                 || _procs[0];
+    // 🩹 2026-08-22:素材庫來的照片沒有 Drive 編號(file_id 是 null),只有 url ——
+    //   這支卻只認 file_id,於是新客戶一律走「備援圖」。
+    //   備援圖是 HeyGen 的 WEBP 縮圖:髒、有壓縮雜訊,餵引擎會放大成烤肉架紋路。
+    //   ★ 素材庫的 url 本來就已經是自家倉庫的乾淨原圖,直接用,不必再搬一次。
+    const _libUrl = _front?.url || p?.photos?.[0]?.url || '';
+    if (_libUrl && /cdn\.raby\.com\.tw/.test(_libUrl)) {
+      console.log('[臉乾淨圖] ✅ 直接用素材庫原圖:', _libUrl);
+      window._kolCleanCache[lsKey] = _libUrl;
+      try { localStorage.setItem(lsKey, _libUrl); } catch (e) {}
+      return _libUrl;
+    }
+
     const fileId = _front?.file_id || p?.photos?.[0]?.file_id;
     if (!fileId) { console.warn('[臉乾淨圖] 找不到', personaName, '的原圖 → 用備援圖'); return fallbackUrl; }
     if (window._kolCleanCache[fileId]) return window._kolCleanCache[fileId];
@@ -7292,11 +7304,24 @@ async function aiGeneratePersona() {
   toast('AI 正在生成人設書…', 'info');
 
   try {
+    // 🩹 2026-08-22:補送「品牌類別」與「KOL 職業」。
+    //   病灶:以前只送品牌名稱 + 靈魂書,AI 只能從名字去猜行業 ——
+    //     品牌剛好叫「芮比廣告行銷」還猜得到,叫「Brand OS」就猜不到了。
+    //     而禁用詞、禁談話題全都要依行業判斷,猜錯就整份人設的合規都錯。
+    //   ⚠️ KOL 職業更關鍵:觀眾會把「醫生人設」說的話當成專業意見 ——
+    //     即使品牌不屬於醫療業,那支影片受的也是醫療法規範。
+    //     而這件事以前從來沒告訴過 AI。
     const res = await api('ai_generate_persona', {
       personaName: persona.persona_name,
       personaType: persona.persona_type || 'independent',
+      // ⚠️ kol_personas 資料表沒有「職業」欄位 —— 職業只是生圖時的參數,沒存下來。
+      //   所以改從既有 background 撈(AI 寫的背景一定會提到職業);
+      //   第一次生成時 background 是空的,那就交給 AI 依品牌行業自行判斷。
+      //   🔴 待辦:kol_personas 應該補一個 persona_style 欄位,這裡才不用用猜的。
+      personaStyle: (persona.background || '').slice(0, 120),
       kolImageUrl: kolImageUrl,
       brandName: brand.name || '',
+      brandCategory: brand.category || '',                          // 品牌行業別
       brandSoul: brand.soul || '',
       brandAdStyle: Array.isArray(brand.adStyle) ? brand.adStyle.join(', ') : (brand.adStyle || ''),
       existingPersonas: existingPersonas,
@@ -8404,5 +8429,4 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
-
 
