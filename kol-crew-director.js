@@ -383,12 +383,18 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   //   第二段黑鍵盤 2 台黑螢幕,桌上東西整組換掉。
   //   觀眾不會逐格比對臉,但「鍵盤突然從白變黑」一眼就看得出來,
   //   像剪錯片 —— 這比臉的細微漂移更傷。
-  //   ★ 寫法刻意用「同一張桌子、同一套東西、同樣位置」的正面陳述,
+  //   ★ 寫法刻意用「同一套東西、同樣位置」的正面陳述,
   //     不用 never change 這種否定句 —— 實測否定句擋不住(見 CONTACT_CHAIN 那條教訓)。
-  //   ★ 字數控制在 ~150 字:1700 牆已經很緊(實測 1690),不能再吃太多。
-  tail.push('the exact same desk setup in every shot — identical monitor count, '
-    + 'identical keyboard and mouse in the same colour and model, '
-    + 'the same objects sitting in the same positions on the desk throughout');
+  //   ★ ⚠️ 絕不點名具體物件(鍵盤、滑鼠、螢幕)。
+  //     RA 2026-08-23:「有時候又不一定是鍵盤滑鼠。」
+  //     那三樣只存在於辦公桌;客戶場景可能是咖啡廳、廚房、賣場、診所、教室。
+  //     明講不存在的東西,模型反而會【把它們生出來】——
+  //     跟「不要想大象」同一個道理,點名即召喚。
+  //     ★ 正解:講「畫面裡本來就有的東西」,由模型自己從場景參考圖認定是哪些。
+  //   ★ 字數控制在 ~130 字:1700 牆已經很緊(實測 1690),不能再吃太多。
+  tail.push('whatever objects appear in the environment stay exactly the same across all shots — '
+    + 'same items, same count, same colours and models, resting in the same places; '
+    + 'the setting is one continuous unchanged space, only the camera angle changes');
 
   // ⑦ 品牌調性 + 無字幕
   pushIfNonEmpty(tail, C.brandSoul?.contribute(ctx));
