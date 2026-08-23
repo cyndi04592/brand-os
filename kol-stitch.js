@@ -692,10 +692,10 @@ window.KolStitch = (function () {
         '\n\n確定用這個分鏡開始生成嗎?'
       );
       if (!_ok) {
-        log('🛑 已取消:分鏡未確認,沒有送出任何生成。');
+        log('已取消,沒有產生任何費用。');
         throw new Error('STORYBOARD_NOT_CONFIRMED');  // 呼叫端 try/catch 接住 → 顯示「已取消」即可
       }
-      log('✅ 分鏡已確認,開始生成。');
+      log('開始製作…');   // 🩹 客戶可見:不提「分鏡確認」這種內部步驟
     }
 
     const total = chunks.length;
@@ -709,7 +709,8 @@ window.KolStitch = (function () {
       : ((chunks[0] && chunks[0].seed != null && chunks[0].seed !== '')
           ? parseInt(chunks[0].seed)
           : Math.floor(Math.random() * 2000000000));
-    log('本支共用 seed:' + stitchSeed);
+    // 🩹 seed 是引擎參數,客戶看到只會困惑 → 留在 console,不進進度條
+    console.log('[KolStitch] 本支共用 seed:' + stitchSeed);
 
     // 服裝參考圖(整支生一次,當 compose 的輸入之一)
     let outfitImageUrl = opts.outfitImageUrl || null;
@@ -719,7 +720,7 @@ window.KolStitch = (function () {
           outfitBrand: (window.S && window.S.selectedOutfitBrand) || '',
           sceneId: (window.S && window.S.selectedSceneId) || '',
         };
-        log('生成服裝參考圖中…(鎖跨段衣服,整支只生一次)');
+        log('正在準備服裝造型…');
         outfitImageUrl = await window.KolWardrobe.generateOutfitRefImage(outfitCtx);
       }
     } catch (e) { outfitImageUrl = null; }
@@ -732,7 +733,7 @@ window.KolStitch = (function () {
     const _dropScene = (typeof window !== 'undefined' && window.KOL_DROP_SCENE === true);
     if (_dropScene) {
       sceneImageUrl = null;
-      log('🔬 診斷:本支跳過場景圖(KOL_DROP_SCENE=on)→ 純驗鎖臉,背景暫不鎖');
+      console.log('[KolStitch] 🔬 診斷:本支跳過場景圖(KOL_DROP_SCENE=on)');
     }
     try {
       if (!_dropScene && !sceneImageUrl && window.KolEnvironment) {
@@ -744,7 +745,7 @@ window.KolStitch = (function () {
         // 🗺️ v6.17 場景九宮格保險絲(預設關):on → 生九宮格(多角度空間庫);失敗或關 → 退回單張場景圖
         const _wantGrid = (typeof window !== 'undefined' && window.KOL_SCENEGRID === true);
         if (_wantGrid && typeof window.KolEnvironment.generateSceneGrid === 'function') {
-          log('生成場景九宮格中…(藍圖→8角度空間庫,整支只生一次)');
+          log('正在準備拍攝場景…');
           sceneImageUrl = await window.KolEnvironment.generateSceneGrid(sceneCtx);
         }
         if (!sceneImageUrl && typeof window.KolEnvironment.generateSceneRefImage === 'function') {
@@ -783,7 +784,7 @@ window.KolStitch = (function () {
     }
     if (!_identityFace) _identityFace = kolImg;   // 最後退路(無角度圖時,行為同 v6.2 全域圖)
     if (_lockFace) {
-      log('🔒 鎖臉:整支統一用同一張臉錨(跨段同一張臉)');
+      log('正在確認人物一致性…');
       console.log('[KolStitch] 🔬 診斷 · 鎖臉錨 [Image1] =', _identityFace,
         '· 是否退回主肖像 kolImg(=可能抓不到的 Drive 圖):', (_identityFace === kolImg));
     }
@@ -829,15 +830,32 @@ window.KolStitch = (function () {
     const segments = await Promise.all(tasks);   // 順序照 plan 保留
 
     if (segments.length === 1) {
-      log('只有一段,免接片。存檔…');
+      log('正在儲存影片…');
       const only = await toR2(segments[0].url, opts.brandId, (opts.kolName || 'stitch') + '-1seg');
       log('完成!');
       return { finalUrl: only, segmentUrls: [segments[0].url] };
     }
 
-    log('全部完成,接片中…');
-    let finalUrl = await composeSegments(segments, opts.brandId, function (n, st) { log(`接片中…(${st})`); });
-    log('成品存檔到 R2…');
+    // 🩹 2026-08-23:合成階段回報真實階段名。
+    //   病灶(現場實測):兩段都生完後,進度條停在 99% 十幾分鐘 ——
+    //   因為合成跑在瀏覽器端(下載兩段 720p → 解碼 → 串接 → 上傳 R2),
+    //   期間沒有任何回饋,動畫空轉到 99% 就停住。
+    //   ★ 畫面上寫著「關掉視窗會找不到成品」,但卡住十幾分鐘,
+    //     任何人都會以為壞了而關掉 —— 那兩段的點數就白花了。
+    //   ★ 這裡把 composeSegments 的階段名轉成客戶看得懂的話,
+    //     並讓 UI 端據此推進最後 20%。
+    const _MERGE_STEP = {
+      download: '正在下載畫面…', decode: '正在處理畫面…',
+      concat: '正在合成影片…', encode: '正在輸出影片…', upload: '正在上傳…',
+    };
+    log('畫面製作完成,正在合成…');
+    let finalUrl = await composeSegments(segments, opts.brandId, function (n, st) {
+      const _k = String(st || '').toLowerCase();
+      let _msg = '';
+      for (const k in _MERGE_STEP) { if (_k.indexOf(k) !== -1) { _msg = _MERGE_STEP[k]; break; } }
+      log(_msg || '正在合成影片…');
+    });
+    log('正在儲存影片…');
     finalUrl = await toR2(finalUrl, opts.brandId, (opts.kolName || 'stitch') + '-' + segments.length + 'seg');
     log('完成!');
     window._kolStitchRunning = false;      // 🚩 成品要進倉庫,旗子先放下
