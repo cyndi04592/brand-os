@@ -507,7 +507,68 @@ window.KolStitch = (function () {
     if ((opts.provider || 'piapi') === 'piapi' && opts.shared && opts.shared.front) {
       const _leanFront = _lookFront
         || 'Realistic vertical UGC video. Soft diffused natural light, matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No on-screen text or subtitles, no background music.';
-      prompt = buildMultiShotPrompt(beats, totalSec, { front: _leanFront }, opts.continuityFrom);
+      // 🩹 2026-08-23 重大修補:tail 必須跟著重組帶回去。
+      //   病灶:這段 lean 重組原本只傳 { front: _leanFront } —— shared.tail 整組被丟掉。
+      //   而 tail 裝的不是冗字,是【鐵律】:
+      //     ① 道具師規則(螢幕成果 / 服務成果 / 盛盤 / 穿戴…整套商品型態守則)
+      //     ② 內衣安全鎖(內衣品牌才有,漏掉會出事)
+      //     ③ 品牌調性
+      //     ④ 無字幕條款
+      //     ⑤ 跨段道具鎖(2026-08-23 新加)
+      //   實測現場:客戶選了「螢幕成果(截圖要自己提供,AI 不會亂畫介面)」,
+      //   影片裡卻把截圖中的商品畫成桌上的實體物 —— 因為那條規則根本沒送出去。
+      //   ★ 註解原意是「長篇 realism 交給參考圖扛」,那說的是 front 的膚質光影冗字;
+      //     作者沒注意到 tail 裡是商品鐵律,不是冗字。
+      //   ★ 保留字數保險:tail 若過長就截,但【永遠不整組丟掉】——
+      //     有一半鐵律,遠好過一條都沒有。
+      //  ⚠️ 不能只是「加回去」:現場實測無 tail 已經 1690 字,tail 本身 ~317 字,
+      //    直接加會變 ~2007 → 撞 PiAPI 1700 牆 → 整支提交失敗。
+      //    所以改成【總量預算】:先組一次量出實際長度,再算 tail 能放多少。
+      // ★★ 截斷紀律:【按規則切,不按字元切】
+      //   RA 2026-08-23:「不能亂切啊 —— 我吃飽了,你不能切成『我吃』,語意根本不一樣。」
+      //   舊寫法 slice(0,n).replace(/[^.;]*$/,'') 是【先砍字元再往回補救】,
+      //   兩個致命缺陷:
+      //     ① 先切成半句才回頭找句號 —— 中間過程就是壞的
+      //     ② 萬一整段只有一個句號,replace 會把【全部】清空 → 一條鐵律都不剩
+      //   正解:tail 本來就是一條一條規則 join('. ') 起來的 →
+      //     拆回陣列 → 依重要性由前往後放 → 放不下的【整條不放】,絕不切半條。
+      //   ★ 順序已由 composeStitchShared 定好:道具師規則第一、內衣安全鎖第二,
+      //     所以由前往後放 = 自動優先保住最重要的鐵律。
+      function fitRules(tailStr, budget) {
+        const rules = String(tailStr || '').split(/\.\s+/).map(function (x) { return x.trim(); })
+          .filter(Boolean);
+        const kept = [];
+        let used = 0;
+        for (let i = 0; i < rules.length; i++) {
+          const cost = rules[i].length + 2;          // +2 = '. ' 分隔
+          if (used + cost > budget) continue;        // 這條放不下 → 整條跳過,不切半句
+          kept.push(rules[i]); used += cost;
+        }
+        return { text: kept.join('. '), kept: kept.length, total: rules.length };
+      }
+
+      const _WALL = 1700, _SAFE = 40;   // 留 40 字緩衝給語音行/口音行後續追加
+      const _rawTail = String((opts.shared && opts.shared.tail) || '');
+      let _useFront = _leanFront;
+      let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront }, opts.continuityFrom);
+      let _budget = _WALL - _SAFE - _probe.length;
+
+      if (_budget < 120) {
+        //  空間太小 → 連 front 都要瘦。front 是膚質光影冗字,參考圖本來就扛得住;
+        //  tail 是商品鐵律,參考圖扛不住 —— 兩者相衝時,先砍 front。
+        console.log('[KolStitch] 🩳 空間不足(' + _budget + ' 字),front 讓位給商品鐵律');
+        _useFront = 'Realistic vertical UGC video. Soft diffused natural light, matte skin, no beauty filter, an ordinary real person.';
+        _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront }, opts.continuityFrom);
+        _budget = _WALL - _SAFE - _probe.length;
+      }
+
+      const _fit = fitRules(_rawTail, Math.max(0, _budget));
+      if (_fit.kept < _fit.total) {
+        console.log('[KolStitch] 🩳 商品鐵律保留 ' + _fit.kept + '/' + _fit.total
+          + ' 條(預算 ' + _budget + ' 字)· 放不下的整條略過,不切半句');
+      }
+      prompt = buildMultiShotPrompt(beats, totalSec,
+        { front: _useFront, tail: _fit.text }, opts.continuityFrom);
     }
 
     // 🔒 口音 + 口型鐵律(v6.4):開語音時,只有「有台詞的鏡頭」才說話+對嘴;
