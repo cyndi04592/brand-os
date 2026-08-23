@@ -1055,7 +1055,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.14 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.15 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1483,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', function(){
           </div>
           <div id="custom-scene-thumb"></div>
           </div>
-          <div class="motion-hint">給了實景照,系統就<b>跳過 AI 生背景、直接用你的真照</b>。記得上面場景卡仍要挑一張(它出文字),賣場就挑「運動賣場特賣」,讓文字跟照片講同一個地方。</div>
+          <div class="motion-hint">給了實景照,系統就<b>跳過 AI 生背景、直接用你的真照</b>,上面的場景卡可以不用挑。<br>想再補一點氛圍描述(光線、時段)才挑一張接近的。</div>
         </div>
 
         <!-- 🆕 v5.1: 地標庫(戶外場景可疊加) -->
@@ -5310,6 +5310,8 @@ async function scnPick(which, url) {
     if (typeof renderCustomScene === 'function') renderCustomScene();
   }
   renderSceneLibrary(which);
+  // 🆕 v7.15:實景照本身就能解鎖生成鈕 → 選/取消都要重算
+  try { if (typeof updateSeedanceSubmitButton === 'function') updateSeedanceSubmitButton(); } catch (e) {}
   toast(next ? '已鎖實景背景 · 生成時直接用這張(跳過 AI 生背景)' : '已取消實景背景', next ? 'ok' : 'warn');
 }
 window.scnPick = scnPick;
@@ -5366,9 +5368,15 @@ async function addCustomScene() {
   S.customSceneUrl = url;
   input.value = '';
   renderCustomScene();
+  try { if (typeof updateSeedanceSubmitButton === 'function') updateSeedanceSubmitButton(); } catch (e) {}
   toast('已鎖實景背景 · 生成時直接用這張(跳過 AI 生背景)', 'ok');
 }
-function removeCustomScene() { S.customSceneUrl = ''; renderCustomScene(); }
+function removeCustomScene() {
+  S.customSceneUrl = '';
+  renderCustomScene();
+  try { if (typeof updateSeedanceSubmitButton === 'function') updateSeedanceSubmitButton(); } catch (e) {}
+  try { renderSceneLibrary('s2'); } catch (e) {}
+}
 function renderCustomScene() {
   const box = document.getElementById('custom-scene-thumb');
   if (!box) return;
@@ -5740,7 +5748,14 @@ function updateSeedanceSubmitButton() {
   { const hint = document.getElementById('faceless-block-hint'); if (hint) hint.style.display = 'none'; }
 
   const hasKol = !!S.selectedKol;
-  const hasScene = !!S.selectedSceneId;  // 🆕 v5.1: 改為檢查是否選了場景
+  // 🆕 v7.15:有自己的實景照 → 場景卡免選。
+  //   病灶:客戶上傳了自家辦公室 / 門市的照片,卻還要去 20 幾張場景卡裡
+  //   猜哪張「最接近」,才按得下生成 —— 那是多餘的一步,而且會猜錯。
+  //   ★ 技術上場景卡本來就被架空了:引擎端 sceneIsStartFrame 會把實景照
+  //     當首幀空間錨(見 kol-engine-kling.js),場景文字自動讓位。
+  //     所以留著這個門檻只是形式上的阻擋,沒有實質作用。
+  //   ★ 實體店家一定用自己的空間 —— 那是他們的資產,不是選填。
+  const hasScene = !!S.selectedSceneId || !!S.customSceneUrl;
   btn.disabled = !(hasKol && hasScene);
 }
 
@@ -7549,7 +7564,7 @@ function renderEpisodeCard() {
         </div>
         <div id="ep-custom-scene-thumb"></div>
         </div>
-        <div class="motion-hint">給了實景照就跳過 AI 生背景、直接用你的真照。上面場景下拉仍要挑一張接近的(賣場挑「運動賣場特賣」)。</div>
+        <div class="motion-hint">給了實景照就跳過 AI 生背景、直接用你的真照,上面的場景下拉可以不用挑。<br>想再補一點氛圍描述(光線、時段)才挑一張接近的。</div>
       </div>
       <div class="ep-field">
         <label>地標(選填,飛東京/香港/巴黎…只在戶外場景生效)</label>
