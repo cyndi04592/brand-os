@@ -249,6 +249,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .brand-switcher{max-width:1100px;margin:0 auto;padding:24px 24px 0;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .brand-switcher-label{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase;}
 .brand-switcher-select{background:linear-gradient(135deg,var(--surface2) 0%,rgba(26,26,36,.6) 100%);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;font-weight:600;font-family:'Noto Sans TC',sans-serif;padding:10px 16px;outline:none;cursor:pointer;min-width:220px;transition:all .2s;}
+
+
 .brand-switcher-select:hover{border-color:rgba(124,109,250,.4);}
 .brand-switcher-select:focus{border-color:var(--accent);}
 .brand-switcher-select option{background:#1a1a24;}
@@ -1055,7 +1057,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.21 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.23 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -3120,6 +3122,11 @@ function updateStepLocks() {
   if (locked && S.currentMode !== 'talking') switchMode('talking');
 }
 window.updateStepLocks = updateStepLocks;
+
+// 🗂 v7.23:手機長下拉挑選層已抽成共用檔 mobile-select.js
+//   原因:index.html 也有同樣問題(flavorSel 86 項、contextSel 29、selAud 22),
+//   兩個頁面各留一份實作遲早漂移 —— 當天已經吃過三次「兩邊各寫一套」的虧。
+//   載入位置見檔案尾端 <script src="mobile-select.js">。
 
 // ─── 載入品牌清單 ──────────────────────────────────────────
 async function loadBrands() {
@@ -9447,6 +9454,7 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
 <script src="kol-storyboard-panel.js"></script>
 <script src="kol-stitch.js"></script>
 <script src="kol-engine-kling.js"></script><!-- 攝影師② Kling(必須在 kol-stitch.js 之後載入) -->
+<script src="mobile-select.js"></script><!-- 手機長下拉挑選層(全站共用·桌機不影響) -->
 <!-- ⛔ v6.4:kol-persona-panel.js 撤回,不再載入。
      v6.3 曾把這支孤兒檔案接上,但那是【錯的判斷】——
      當時只比對了「DOM id 有沒有撞」,沒問「這系統裡是不是已經有
