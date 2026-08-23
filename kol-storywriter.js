@@ -110,13 +110,27 @@
     let _memo = '';
     try {
       const eps = Array.isArray(recentEpisodes) ? recentEpisodes : [];
+      // 🩹 2026-08-23 二修:欄位挑錯了。
+      //   實測(米禾 8/03 那集)發現:
+      //     calendar_topic → 只有從月曆格子點進來才會填,平常是空的(畫面顯示「主題:-」)
+      //     emotion        → 情緒基調下拉預設「不指定」,也是空的
+      //     story_frame    → 只有場景名(「廚房晨光」)
+      //   → 舊寫法組出來只剩四個字的場景名,那不是記憶,是場景。
+      //     AI 只知道「上次在廚房」,不知道上次演了什麼 → 照樣重複橋段。
+      //   ★ 真正裝著劇情的是 scenario(每集必填,就是那一集的故事情境)。
+      //     現在以它為主,前面掛日期/商品/場景當索引。
       const lines = eps.slice(0, 6).map(function (ep) {
         if (!ep) return '';
+        const d = String(ep.calendar_date || '').slice(5, 10).replace('-', '/');   // 2026-08-03 → 08/03
         const t = String(ep.calendar_topic || ep.topic || '').trim();
-        const f = String(ep.story_frame || '').trim().slice(0, 40);
+        const pd = String(ep.product_name || '').trim();
+        const f = String(ep.story_frame || '').trim().slice(0, 20);
         const m = String(ep.emotion || '').trim();
-        const parts = [t, f, m].filter(Boolean);
-        return parts.length ? '・' + parts.join(' / ') : '';
+        // 故事本體:去掉換行、砍到 70 字(6 集 × 約 90 字 ≈ 540 字,遠低於 Worker 端 1200 上限)
+        const sc = String(ep.scenario || '').replace(/\s+/g, ' ').trim().slice(0, 70);
+        const head = [d, t, pd, f, m].filter(Boolean).join(' · ');
+        if (!head && !sc) return '';
+        return '・' + head + (sc ? ' — ' + sc : '');
       }).filter(Boolean);
       if (lines.length) _memo = lines.join('\n');
     } catch (e) {}
@@ -274,5 +288,5 @@
     window.CrewDirector.register('storywriter', window.KolStorywriter);
   }
 
-  console.log('[KolStorywriter] 📖 v5.17 就緒(語速4.2實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集)');
+  console.log('[KolStorywriter] 📖 v5.17 就緒(語速4.2實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
 })();
