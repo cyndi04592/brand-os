@@ -94,7 +94,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 @media(max-width:1320px){.rs-grid{grid-template-columns:300px minmax(0,1fr);}
   .rs-dossier{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}}
 @media(max-width:820px){.rs-grid{grid-template-columns:1fr;padding:0 16px 100px;}
-  .rs-dossier{grid-template-columns:1fr;}}
+  /* 🩹 2026-08-23:單欄時一律撐滿。align-items:start 是 1320 那條為了
+     「兩欄不等高時不要互相拉長」設的,單欄時它反而讓卡片縮成內容寬。 */
+  .rs-dossier{grid-template-columns:1fr;align-items:stretch;}}
 
 /* 名冊格牆 */
 .rs-roster{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
@@ -162,7 +164,18 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .rs-hint{font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:9px;}
 
 /* 右欄檔案 */
-.rs-dossier{display:flex;flex-direction:column;gap:14px;}
+/* 🩹 2026-08-23 手機版縮水修正(RA 手機實測抓到:聲音特質卡只有半個寬)。
+   病灶是【CSS 順序衝突】——
+     第 95 行  @media(max-width:1320px) 把 .rs-dossier 設成 grid 兩欄
+     第 97 行  @media(max-width:820px)  只改 grid-template-columns:1fr
+     但這一行(基本樣式)寫在【斷點後面】,同權重後者贏 → 手機又被切回 flex,
+     820px 那條改 grid 欄位的規則對 flex 完全無效 = 白寫。
+   結果:flex column + align-items:start(被 1320 那條汙染)→ 子元素只有內容寬。
+     人設卡因為裡面有長文字所以撐得開,聲音卡沒有 → 縮成一小條。
+   ★ 修法:補 align-items:stretch,讓子元素無論 flex 或 grid 都撐滿寬度。
+     不動兩個斷點(它們在桌機/平板是對的),只把「寬度該撐滿」這件事講死。 */
+.rs-dossier{display:flex;flex-direction:column;gap:14px;align-items:stretch;}
+.rs-dossier > .panel{width:100%;min-width:0;box-sizing:border-box;}
 .rs-bio{font-size:12px;line-height:1.85;color:var(--text-mid);
   max-height:220px;overflow-y:auto;padding-right:4px;}
 /* 🩹 2026-08-23:標籤放大。
@@ -352,6 +365,23 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .selected-kol-banner img{width:52px;height:52px;border-radius:8px;object-fit:cover;}
 .selected-kol-banner .info strong{font-size:14px;display:block;}
 .selected-kol-banner .info small{font-size:11px;color:var(--text-dim);}
+/* 🩹 2026-08-23 手機版擠壓修正(RA 手機實測:「🔊 信任感·慢/中/適中/平穩」
+   被壓成一直條,每行只有一兩個字)。
+   病灶:這一列是 display:flex 橫排五個東西 —— 頭像 / 文字 / 已選定 / 2 LOOKS / 🔊聲音。
+     桌機 640px 排得下,手機只有 ~330px 可用,flex 只好把每個元素壓到最窄,
+     中文一個字一行,完全讀不了。
+   ★ 修法:手機改成上下兩層 —— 上層「頭像 + 文字」,下層 chip 自己橫排一行。
+     不動桌機(那邊排得下,一行更精簡)。 */
+@media(max-width:640px){
+  .selected-kol-banner{flex-wrap:wrap;gap:10px;padding:12px;}
+  .selected-kol-banner img{width:44px;height:44px;}
+  .selected-kol-banner .info{flex:1 1 auto;min-width:0;}
+  /* chip 們整組換到第二行,橫向排列不再被壓扁 */
+  .selected-kol-banner > .chip,
+  .selected-kol-banner > span.chip{flex:0 0 auto;white-space:nowrap;}
+  .selected-kol-banner::after{content:'';flex-basis:100%;height:0;order:5;}
+  .selected-kol-banner .chip{order:6;font-size:10.5px;padding:4px 9px;line-height:1.5;}
+}
 
 /* Look 選擇器 */
 .look-picker{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
