@@ -1020,7 +1020,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.2 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.3 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -7142,12 +7142,27 @@ async function savePersonaFromEditor() {
     const idx = S.personas.findIndex(x => x.persona_id === p.persona_id);
     if (idx >= 0) Object.assign(S.personas[idx], updated);
 
+    // 🩹 v7.3:S.selectedKol.persona 是【另一個物件的參照】,上面那行更新不到它。
+    //   病灶(2026-08-23 現場):存好聲音特質 → 資料庫確認有值 →
+    //   但右欄「聲音特質」與底部確認列仍寫「尚未設定」。
+    //   因為那兩處讀的是 S.selectedKol.persona,而它握的是 loadKolList 當時
+    //   組出來的舊物件,跟 S.personas[idx] 不是同一個東西。
+    //   ★ 又一次同型病灶:「動作成功了,但畫面沒有自己更新」。
+    //     凡是原地更新某份資料,都要問一句「還有誰握著它的舊副本?」
+    if (S.selectedKol && S.selectedKol.persona
+        && S.selectedKol.persona.persona_id === p.persona_id) {
+      Object.assign(S.selectedKol.persona, updated);
+    }
+
     toast('✅ 人設已儲存', 'success');
     closePersonaEditor();
     renderSystemKolSwitcher();
     renderSystemPersonaCard();
     // 🩹 2026-08-11:重畫 KOL 形象庫,讓「人設未填 / 待補 N/3」徽章即時更新(走快取,不會重打 HeyGen)
     try { await loadKolList(S.currentBrandId); } catch (e) {}
+    // 🩹 v7.3:右欄人設 / 聲音四軸 / 底部確認列一起重畫。
+    //   loadKolList 只重畫左欄名冊,不會碰這三處。
+    try { renderStageAndDossier(); } catch (e) {}
   } catch (e) {
     toast('儲存失敗:' + e.message, 'error');
   } finally {
