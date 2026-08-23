@@ -126,6 +126,8 @@
       persona: ctx?.persona || {},
       product: ctx?.product || {},
       sceneLabel: ctx?.sceneLabel || '',
+      // 🧠 2026-08-23 劇情記憶:ctx.getRecentEpisodes 由 kol.html 掛上(可能沒有 → 空陣列 = 舊行為)
+      recentEpisodes: (typeof ctx?.getRecentEpisodes === 'function') ? (ctx.getRecentEpisodes() || []) : [],
     });
 
     state.busy = true;
@@ -317,5 +319,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v1.6 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 超長擋確認 · 🆕偏短黃字提醒)');
+  console.log('[KolStoryboardPanel] v1.7 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 超長擋確認 · 🆕偏短黃字提醒 · 🧠劇情記憶轉送)');
 })();
