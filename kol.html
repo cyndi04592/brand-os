@@ -1020,7 +1020,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.1 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.2 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1171,7 +1171,14 @@ document.addEventListener('DOMContentLoaded', function(){
                而 2026-08-19 的雞生蛋死結修補(Drive 有照片就放行)也依賴
                封鎖範圍真的蓋在照片上,才有意義。 -->
         <div class="rs-pane drive-section" id="drive-section">
-          <div class="rs-hint">素材庫裡的 KOL 照片會出現在這裡。選好照片後,可以建立角色或加入新角度。</div>
+          <div class="rs-hint" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span id="rs-photo-hint">素材庫裡的 KOL 照片會出現在這裡。選好照片後,可以建立角色或加入新角度。</span>
+            <!-- ⚠️ 這顆開關不能拿掉:預設只看選定角色的照片,但「用這 N 張建立角色」
+                 必須看得到【還沒綁定任何角色】的照片,否則建新角色的路會斷 ——
+                 那是 2026-08-19 雞生蛋死結的變形。兩種需求都要留。 -->
+            <button class="btn btn-ghost btn-sm" id="rs-photo-toggle" type="button"
+              onclick="rsTogglePhotoScope()" style="margin-left:auto">顯示全部照片</button>
+          </div>
           <!-- ★ #drive-gallery-wrap 只是換位置,renderDriveGallery() 一行未動 →
                  綁定鈕長在照片下方、點別位角色照片自動換過去、數 .drive-photo
                  解封鎖、Look 去重 等 8 條 DOM 防呆完全不受影響。 -->
@@ -3113,6 +3120,14 @@ async function onBrandChange() {
   S.selectedLookId = '';
   S.selectedLookName = '';
   S.availableLooks = [];
+  // 🩹 v7.2:切品牌要立刻把舞台清乾淨。
+  //   病灶:這裡只清了 S.selectedKol,沒通知畫面 —— 名冊已換成新品牌的角色,
+  //         中央大圖/右欄人設/底部確認列卻還停在上一個品牌那位。
+  //         真正危險的是底部那顆「用這位角色拍片」:按下去會帶著
+  //         【別的品牌的角色】進 STEP2,而且畫面上看起來完全正常。
+  //   ★ 又一次驗證那條老教訓:任何寫入狀態的動作,都要問「畫面會自己更新嗎?」
+  try { renderStageAndDossier(); } catch (e) {}
+  S.rsPhotoShowAll = false;   // 照片庫的「顯示全部」開關也一併重置
   // 🆕 v5.1: 重置場景/地標
   S.selectedSceneId = '';
   S.customSceneUrl = '';
@@ -3493,6 +3508,13 @@ function renderStageAndDossier() {
 }
 window.renderStageAndDossier = renderStageAndDossier;
 
+// 🆕 v7.2:照片庫範圍切換(只看這位 ↔ 顯示全部)
+function rsTogglePhotoScope() {
+  S.rsPhotoShowAll = !S.rsPhotoShowAll;
+  try { renderDriveGallery(); } catch (e) { console.warn('[RS] 照片庫重畫失敗', e); }
+}
+window.rsTogglePhotoScope = rsTogglePhotoScope;
+
 function bindRsTabs() {
   document.querySelectorAll('.rs-tab').forEach(t => {
     if (t.dataset.bound) return;
@@ -3623,7 +3645,13 @@ function selectKol(g) {
   updateSeedanceSubmitButton();
 
   // 🆕 v7.0:選完角色 → 重畫中央舞台、右欄檔案、底部確認列,並更新名冊高亮。
-  try { renderStageAndDossier(); renderRoster(); } catch (e) { console.warn('[RS] 舞台重畫失敗', e); }
+  // 🩹 v7.2:換人時把照片庫範圍切回「只看這位」並重畫 ——
+  //   不重畫的話,照片庫會停在上一位角色的內容(同一類「畫面不自己更新」)。
+  try {
+    S.rsPhotoShowAll = false;
+    renderStageAndDossier(); renderRoster();
+    if (S.drivePhotos && document.getElementById('drive-gallery-wrap')) renderDriveGallery();
+  } catch (e) { console.warn('[RS] 舞台重畫失敗', e); }
 
   // 🩹 v6.3:選完 KOL 要重跑一次上鎖判斷。
   //   病灶:selectKol 寫了 S.selectedKol,卻沒通知 updateStepLocks →
@@ -3916,7 +3944,34 @@ function renderDriveGallery() {
   const data = S.drivePhotos;
   if (!data) { wrap.innerHTML = '<div class="kol-empty">尚未載入</div>'; return; }
 
-  const personas = data.personas || [];
+  let personas = data.personas || [];
+
+  // 🩹 v7.2:照片庫只顯示【選定角色】的照片。
+  //   病灶:這塊是舊版左欄設計 —— 那時沒有「選定角色」的概念,所以固定
+  //         列出整個品牌所有 KOL 的照片。搬進角色頁籤後就變成
+  //         「我在看昱瑄,底下卻列出又晴、米禾、橘子的照片」,對不上。
+  //   ⚠️ 但不能無條件過濾:「用這 N 張建立角色」必須看得到還沒綁定的照片,
+  //      一律只留選定角色 = 建新角色的路斷掉,那是 2026-08-19
+  //      雞生蛋死結的變形。所以留一顆「顯示全部照片」開關,
+  //      而且【沒選角色時自動顯示全部】。
+  const _selName = S.selectedKol ? String(S.selectedKol.name || '').trim() : '';
+  const _showAll = !!S.rsPhotoShowAll || !_selName;
+  if (!_showAll) {
+    const hit = personas.filter(p => String(p.persona_name || '').trim() === _selName);
+    if (hit.length) personas = hit;   // 對不到就退回全部,寧可多顯示也不要空白
+  }
+  const _tgl = document.getElementById('rs-photo-toggle');
+  if (_tgl) {
+    _tgl.style.display = _selName ? '' : 'none';
+    _tgl.textContent = S.rsPhotoShowAll ? `只看 ${_selName}` : '顯示全部照片';
+  }
+  const _hint = document.getElementById('rs-photo-hint');
+  if (_hint) {
+    _hint.textContent = _showAll
+      ? '這個品牌所有 KOL 的照片。選好照片後,可以建立角色或加入新角度。'
+      : `${_selName} 的照片。選好後可以加入新角度,或按「顯示全部照片」建立其他角色。`;
+  }
+
   let rootWarn = '';
   if (data.root_photos && data.root_photos.length > 0) {
     rootWarn = `<div class="drive-hint" style="background:rgba(255,169,77,.1);border-left-color:#ffa94d;color:#ffa94d">⚠️ 有 ${data.root_photos.length} 張照片還沒指定是誰的,請到素材庫幫它們選一位 KOL</div>`;
