@@ -7763,9 +7763,31 @@ function renderEpisodeCard() {
   const scenes = (typeof getScenesForBrand === 'function')
     ? getScenesForBrand(S.currentBrandId)
     : (SCENE_LIBRARY[S.currentBrandId] || {});
-  const sceneOptions = Object.entries(scenes).map(([id, s]) =>
-    `<option value="${escapeHtml(id)}" ${draft.sceneId === id ? 'selected' : ''}>${escapeHtml(s.label)}</option>`
-  ).join('');
+  // 🩹 2026-08-23:場景下拉補「不指定」選項。
+  //   病灶(RA 現場提出):STEP2 的規則是「有實景照 → 場景卡可以不用挑」,
+  //     因為場景卡會帶進 AI 想像的空間描述,跟客戶的真照片【競圖】。
+  //     但 STEP3 這個是 <select>,一定會停在某個值 ——
+  //     清單裡 20 個全是實際場景,第一個「廚房晨光」就成了預設值。
+  //     客戶鎖了自家辦公室實景照,系統卻同時收到「廚房晨光」四個字。
+  //   ★ 而 STEP3 的守門寫的是 `if (!sceneId && 實景照) sceneId = 'office'` ——
+  //     sceneId 永遠不可能是空的,那條保護從來沒跑到過。
+  //   ★ 這跟無臉模式那個「第一個選項就是預設值」是同一種病(2026-08-11 修過一次)。
+  //   ★ 有實景照時預設落「不指定」;沒實景照時維持原本行為(落第一個場景)。
+  //   ★ 預設落在哪,依「有沒有實景照」決定:
+  //     有實景照 → 落「不指定」(照 RA 的規則:實景照就別讓場景卡來競圖)
+  //     沒實景照 → 維持原本行為,落第一個場景(不改變既有客戶的操作習慣)
+  //     草稿有存值 → 一律照草稿
+  const _hasRealScene = !!(S.episodeCustomSceneUrl || draft.customSceneUrl);
+  const _sceneIds = Object.keys(scenes);
+  let _pick;                                   // 這一次要選中的 value
+  if (draft.sceneId !== undefined && draft.sceneId !== null) _pick = String(draft.sceneId);
+  else if (_hasRealScene) _pick = '';
+  else _pick = _sceneIds[0] || '';
+  const sceneOptions =
+    `<option value="" ${_pick === '' ? 'selected' : ''}>— 不指定場景(用自己的實景照時選這個)—</option>`
+    + Object.entries(scenes).map(([id, s]) =>
+        `<option value="${escapeHtml(id)}" ${_pick === id ? 'selected' : ''}>${escapeHtml(s.label)}</option>`
+      ).join('');
 
   const movementOptions = Object.entries(CAMERA_MOVEMENTS).map(([id, m]) =>
     `<option value="${escapeHtml(id)}" ${draft.movementId === id ? 'selected' : ''}>${escapeHtml(m.label)}</option>`
@@ -9444,20 +9466,19 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
   const totalSec = plan.reduce((a, s) => a + s.durationSec, 0);
   const taskBox = document.getElementById('system-episode-task');
   const startTime = Date.now();
-  // 🆕 每秒更新:看得到「已等 Xs · X/N 段」,不再像當機
-  let lastMsg = '準備中…', doneSeg = 0;   // 🩹 v7.21:不露「段」(客戶不懂那是什麼)
-  const paint = () => {
-    if (!taskBox) return;
-    const sec = Math.round((Date.now() - startTime) / 1000);
-    // 🩹 v7.21:與 STEP2 對齊 —— 不顯示「N/N 段」,改顯示百分比與等候時間。
-    //   「段」是接片引擎的內部單位,客戶看到只會想「為什麼要分段?是不是壞了?」
-    const _pct = Math.min(99, Math.round((doneSeg / Math.max(1, plan.length)) * 80) + (doneSeg >= plan.length ? 15 : 2));
-    taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info">`
-      + `<strong>影片製作中 · ${_pct}%</strong>`
-      + `<div style="font-size:12px;color:#8fd9b8;margin-top:4px">⏱ 已等 ${sec}s · ${escapeHtml(lastMsg)}</div></div></div>`;
-  };
-  paint();
-  const ticker = setInterval(paint, 1000);
+  // ═══════════════════════════════════════════════════════════════
+  //  🩹 2026-08-23:STEP3 進度顯示改用 STEP2 那支共用模組(_stitchProgress)。
+  //   病灶(現場實測):STEP3 自己寫了一套 paint(),百分比公式是
+  //     (已完成段數 / 總段數) × 80 + 2
+  //   → 一段沒跑完就永遠是 2%,而一段要跑五分鐘。
+  //   實測就是「2% 趴了五分鐘 → 突然跳 42%」,客戶會以為當機。
+  //   ★ 而且 STEP2 那支好很多:段內平滑推進、有進度條、有已等候時間、
+  //     有「別關視窗」提醒、合成階段還會換文案。
+  //   ★ 這是第 N 次「兩邊各寫一套」——【共用模組本來就在,直接用】,
+  //     不要再造第二套,不然下次改一邊又漂移。
+  // ═══════════════════════════════════════════════════════════════
+  _P3.step(3, '分段接片中…請耐心等候,不要關閉視窗');
+  _stitchProgress.start(taskBox, plan.length);
   if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'generating', notes: `接片 ${plan.length} 段` }).catch(() => {});
 
   try {
@@ -9480,9 +9501,9 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
           console.log('[進度] 已過濾工程訊息:', t);
           t = '製作中…';
         }
-        lastMsg = t; paint();
+        _stitchProgress.note(t);   // 🩹 2026-08-23:改接共用模組
       },
-      onSegmentDone: (idx) => { doneSeg++; lastMsg = doneSeg >= plan.length ? '正在合成影片…' : '畫面製作中,請稍候…'; paint(); },
+      onSegmentDone: (idx) => _stitchProgress.segDone(idx),   // 🩹 2026-08-23
       outfitCtx: { outfitBrand: chosenOutfitBrand, sceneId: sceneId, persona: persona },   // 🆕 +persona:服裝師抓得到人設
       // 🩹 2026-08-23:sceneCtx 必須帶 sceneImageUrl。
       //   病灶:kol-stitch 內是 `opts.sceneCtx || {...預設...}` —— 有傳就用傳的。
@@ -9495,7 +9516,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
         sceneImageUrl: S.episodeCustomSceneUrl || '',
       },
     });
-    clearInterval(ticker);
+    _stitchProgress.stop();   // 🩹 2026-08-23
     const elapsed = Math.round((Date.now() - startTime) / 1000);
     if (taskBox) taskBox.innerHTML =
       `<div class="seedance-task"><video src="${result.finalUrl}" controls autoplay loop style="width:100%;border-radius:10px;background:#000;"></video>`
@@ -9508,7 +9529,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     if (typeof saveStitchedToDrive === 'function') saveStitchedToDrive(result.finalUrl);
     setTimeout(() => renderSystemQueue(), 500);
   } catch (e) {
-    clearInterval(ticker);
+    _stitchProgress.stop();   // 🩹 2026-08-23
     if (taskBox) taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info"><strong style="color:var(--accent2)">❌ ${escapeHtml(e.message)}</strong></div></div>`;
     toast('接片失敗:' + e.message, 'error');
     if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed', notes: e.message });
