@@ -535,16 +535,28 @@ window.KolStitch = (function () {
       //   ★ 順序已由 composeStitchShared 定好:道具師規則第一、內衣安全鎖第二,
       //     所以由前往後放 = 自動優先保住最重要的鐵律。
       function fitRules(tailStr, budget) {
-        const rules = String(tailStr || '').split(/\.\s+/).map(function (x) { return x.trim(); })
+        //  ⚠️ 切點必須含【分號】,不能只認句號。
+        //    實測:packaged / worn / dish 這三種模式的規則是用「;」串子句的,
+        //    只認句號會把 600 多字當成【不可切的一整塊】→ 預算不足時
+        //    一條都塞不進去 = 那三種模式完全失效。
+        //    而海苔正是 packaged —— 這就是它被畫成桌上實體物的原因之一。
+        const rules = String(tailStr || '')
+          .split(/(?:\.|;)\s+/)
+          .map(function (x) { return x.trim().replace(/[.;]+$/, ''); })
           .filter(Boolean);
         const kept = [];
         let used = 0;
         for (let i = 0; i < rules.length; i++) {
-          const cost = rules[i].length + 2;          // +2 = '. ' 分隔
+          const cost = rules[i].length + 2;          // +2 = '; ' 分隔
+          //  ★ 保底:第一條是道具師規則的主句(定義「這是什麼東西」),
+          //    再長也一定要送 —— 沒有它,後面所有子句都失去主詞。
+          //    例:「keep the packaging in [Image2] consistent…」少了前面那句
+          //    「PROP (a supporting product she is holding…)」,模型不知道在講誰。
+          if (i === 0) { kept.push(rules[i]); used += cost; continue; }
           if (used + cost > budget) continue;        // 這條放不下 → 整條跳過,不切半句
           kept.push(rules[i]); used += cost;
         }
-        return { text: kept.join('. '), kept: kept.length, total: rules.length };
+        return { text: kept.join('; '), kept: kept.length, total: rules.length };
       }
 
       const _WALL = 1700, _SAFE = 40;   // 留 40 字緩衝給語音行/口音行後續追加
@@ -731,9 +743,13 @@ window.KolStitch = (function () {
       return t + ((c.beats || []).reduce(function (a, b) { return a + (b.durationSec || 5); }, 0) || 0);
     }, 0);
     if (_allSec > MAX_TOTAL_SEC) {
-      log('🛑 總長 ' + _allSec + ' 秒,超過上限 ' + MAX_TOTAL_SEC + ' 秒。');
-      throw new Error('影片總長 ' + _allSec + ' 秒,超過單支上限 ' + MAX_TOTAL_SEC
-        + ' 秒。請刪掉幾段分鏡,或拆成兩支影片分開生成。');
+      // ⚠️ 這裡量的是【成品影片的播放長度】(每段分鏡秒數相加),
+      //    不是「生成要跑多久」—— 兩者常被混淆。
+      //    產品定義:單支成品上限 90 秒;更長的內容拆成多支。
+      log('🛑 影片長度 ' + _allSec + ' 秒,超過單支上限 ' + MAX_TOTAL_SEC + ' 秒。');
+      throw new Error('這支影片會有 ' + _allSec + ' 秒,超過單支上限 '
+        + MAX_TOTAL_SEC + ' 秒(播放長度,不是製作時間)。'
+        + '請刪掉幾段分鏡,或拆成兩支影片分開做。');
     }
 
     // 🛡️ v6.4 防呆:分鏡未確認前,先攤開「要生幾段·幾秒·每段開頭」給看,留一次喊停的機會。
