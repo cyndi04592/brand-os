@@ -563,6 +563,27 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .pe-row input,.pe-row textarea{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12.5px;font-family:'Noto Sans TC',sans-serif;padding:8px 10px;outline:none;transition:border-color .2s;line-height:1.6;resize:vertical;}
 .pe-row input:focus,.pe-row textarea:focus{border-color:var(--accent);}
 
+/* 🆕 v6.4:聲音特質控制器(唯一的人設編輯入口,原 kol-persona-panel.js 已退場)
+   設計:標籤【單選】—— 疊多個形容詞會互相打架(「急迫」+「慵懶」送進去
+        模型只會困惑),集中一個方向反而準。滑桿只做 3 段:5 段的中間值
+        在生成結果上分不出差異,客戶拖半天聽起來一樣,比沒有滑桿更傷。
+   ⚠️ 描述詞【一個地區/國家字眼都不能出現】。口音由 natToAccent(nationality)
+      單獨決定,永遠是 Taiwanese Mandarin;在這裡寫進口音字樣會和 accent
+      錨點互相競爭 → 稀釋效果。只寫語速 / 音高 / 力度 / 情緒。 */
+.vs-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.vs-tag{padding:5px 10px;border-radius:999px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-size:11.5px;font-family:'Noto Sans TC',sans-serif;transition:all .15s;user-select:none;white-space:nowrap;}
+.vs-tag:hover{border-color:rgba(124,109,250,.6);color:var(--text);}
+.vs-tag.on{background:rgba(124,109,250,.18);border-color:var(--accent);color:var(--text);font-weight:700;}
+.vs-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin-top:9px;}
+@media(max-width:560px){.vs-grid{grid-template-columns:1fr;}}
+.vs-head{display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;color:var(--text-dim);margin-bottom:4px;}
+.vs-cur{color:var(--accent);font-weight:700;}
+.vs-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.vs-seg button{padding:6px 4px;border-radius:6px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-size:11px;font-family:'Noto Sans TC',sans-serif;transition:all .15s;}
+.vs-seg button:hover{border-color:rgba(124,109,250,.5);}
+.vs-seg button.on{background:rgba(124,109,250,.18);border-color:var(--accent);color:var(--text);font-weight:700;}
+.vs-preview{margin-top:9px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(124,109,250,.07);border:1px solid rgba(124,109,250,.2);font-size:10.5px;color:var(--text-dim);line-height:1.6;word-break:break-word;}
+
 /* 🆕 v5.7: rotation 列可點 */
 .rotation-row{cursor:pointer;transition:all .15s;}
 .rotation-row:hover{border-color:rgba(124,109,250,.4);}
@@ -883,7 +904,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v6.3 · 建角色</div>
+  <div class="topbar-badge" style="margin-left:8px;">v6.4 · 建角色</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1645,7 +1666,24 @@ document.addEventListener('DOMContentLoaded', function(){
         </div>
         <div class="pe-row">
           <label>說話風格(speaking_style)</label>
-          <textarea id="pe-speaking-style" rows="2" placeholder="例:日文腔繁體中文,避開日文漢字,語調輕柔..."></textarea>
+          <textarea id="pe-speaking-style" rows="2" placeholder="例:講話直接不修飾,習慣用短句,偏好破折號思考..."></textarea>
+        </div>
+        <!-- 🆕 v6.4:聲音特質 = 獨立欄位 voice_style,【不覆寫】上面的 speaking_style。
+             病灶(A 方案要解的):AI 建角色時已自動生成一段很好的中文說話風格,
+             若標籤/滑桿直接覆寫同一個框,那段中文會被英文描述詞整段吃掉 ——
+             兩套系統搶同一個欄位 = 打架。
+             正解:兩份並存、各佔各的位置。組提示詞時中文人設在前、
+             英文聲音濾鏡在最後,符合詞序黃金律(錨點在前,抽象風格在尾)。 -->
+        <div class="pe-row">
+          <label>聲音特質(voice_style · 選一個方向)</label>
+          <div class="vs-tags" id="vs-tags"></div>
+          <div class="vs-grid" id="vs-sliders"></div>
+          <div class="vs-preview" id="vs-preview"></div>
+          <input type="hidden" id="pe-voice-style">
+          <div style="font-size:10px;color:var(--text-dim);line-height:1.6;margin-top:5px">
+            影響聲音的<strong>傾向</strong>;實際聲線仍會依角色的年齡與長相自然生成。<br>
+            口音一律台灣中文,不受這裡影響。
+          </div>
         </div>
         <div class="pe-row">
           <label>角色關係(role_relationship)</label>
@@ -6476,6 +6514,118 @@ function setProductModeOverride(val) {
   if (document.getElementById('ep-custom-scene-thumb')) renderEpisodeCustomScene();
 }
 // ─── 人設書編輯 Modal ────────────────────────────
+// ═══ 🆕 v6.4:聲音特質控制器 ═════════════════════════════
+//  資料流:標籤/滑桿 →(組英文描述詞)→ #pe-voice-style(hidden)
+//         → savePersonaFromEditor 併進 payload → D1 kol_personas.voice_style
+//         → KolPersona.contribute() 尾端輸出 "voice quality: ..." 進提示詞
+//  ★ 全程不碰 pe-speaking-style。AI 生成的中文說話風格原封不動。
+const VS_AXES = [
+  { k:'pace',    label:'語速',     opts:[['slow','慢','slow unhurried pace'],['mid','中等','natural conversational pace'],['fast','快','brisk quick pace']] },
+  { k:'pitch',   label:'音高',     opts:[['low','低','low resonant register'],['mid','中等','mid register'],['high','高','bright higher register']] },
+  { k:'power',   label:'力度',     opts:[['soft','輕','soft light delivery'],['mid','適中','even measured delivery'],['strong','強','firm punchy delivery']] },
+  { k:'emotion', label:'情緒張力', opts:[['calm','平穩','restrained steady tone'],['mid','自然','naturally expressive tone'],['high','強烈','highly expressive animated tone']] },
+];
+const VS_TAGS = [
+  { k:'trust',    label:'信任感',   pace:'slow', pitch:'mid',  power:'mid',    emotion:'calm', extra:'grounded and credible, like someone giving honest advice' },
+  { k:'magnetic', label:'磁性沉穩', pace:'slow', pitch:'low',  power:'mid',    emotion:'calm', extra:'warm resonant and settled' },
+  { k:'anchor',   label:'專業播報', pace:'mid',  pitch:'mid',  power:'mid',    emotion:'calm', extra:'crisp clear articulation, composed and authoritative' },
+  { k:'cute',     label:'明亮可愛', pace:'fast', pitch:'high', power:'soft',   emotion:'high', extra:'playful with light upward inflection' },
+  { k:'snappy',   label:'輕快俐落', pace:'fast', pitch:'mid',  power:'mid',    emotion:'mid',  extra:'clean and efficient, no wasted breath' },
+  { k:'tender',   label:'溫柔慢語', pace:'slow', pitch:'mid',  power:'soft',   emotion:'calm', extra:'gentle and soothing, softly rounded consonants' },
+  { k:'urgent',   label:'急迫促銷', pace:'fast', pitch:'mid',  power:'strong', emotion:'high', extra:'urgent push with strong emphasis on key words' },
+  { k:'lazy',     label:'慵懶隨性', pace:'slow', pitch:'low',  power:'soft',   emotion:'mid',  extra:'relaxed and unhurried, slightly trailing endings' },
+  { k:'neighbor', label:'親切鄰家', pace:'mid',  pitch:'mid',  power:'soft',   emotion:'mid',  extra:'easy and familiar, like chatting with a friend' },
+  { k:'healing',  label:'沉靜療癒', pace:'slow', pitch:'low',  power:'soft',   emotion:'calm', extra:'quiet and calming, spacious between phrases' },
+];
+let _vsState = { tag:'', pace:'mid', pitch:'mid', power:'mid', emotion:'mid' };
+let _vsTouched = false;   // 客戶有沒有動過。沒動過就存空字串,不硬塞預設值進資料庫。
+
+function _vsText() {
+  const parts = [];
+  VS_AXES.forEach(ax => {
+    const hit = ax.opts.find(o => o[0] === _vsState[ax.k]);
+    if (hit) parts.push(hit[2]);
+  });
+  if (_vsState.tag) {
+    const t = VS_TAGS.find(x => x.k === _vsState.tag);
+    if (t?.extra) parts.push(t.extra);
+  }
+  return parts.join(', ');
+}
+
+function _vsSync(markTouched) {
+  if (markTouched) _vsTouched = true;
+  document.querySelectorAll('#vs-tags .vs-tag').forEach(el => {
+    el.classList.toggle('on', el.dataset.k === _vsState.tag);
+  });
+  VS_AXES.forEach(ax => {
+    document.querySelectorAll(`#vs-sliders [data-ax="${ax.k}"] button`).forEach(b => {
+      b.classList.toggle('on', b.dataset.v === _vsState[ax.k]);
+    });
+    const hit = ax.opts.find(o => o[0] === _vsState[ax.k]);
+    const lab = document.querySelector(`#vs-sliders [data-axval="${ax.k}"]`);
+    if (lab && hit) lab.textContent = hit[1];
+  });
+  const txt = _vsTouched ? _vsText() : '';
+  const pv = document.getElementById('vs-preview');
+  if (pv) pv.textContent = txt || '尚未設定 — 聲音會依角色的年齡與長相自然生成';
+  const hid = document.getElementById('pe-voice-style');
+  if (hid) hid.value = txt;
+}
+
+function renderVoiceStyle() {
+  const wrap = document.getElementById('vs-tags');
+  if (!wrap || wrap.dataset.built) return;   // 只建一次,避免重複綁事件
+  wrap.dataset.built = '1';
+  wrap.innerHTML = VS_TAGS.map(t => `<div class="vs-tag" data-k="${t.k}">${t.label}</div>`).join('');
+  wrap.querySelectorAll('.vs-tag').forEach(el => {
+    el.addEventListener('click', () => {
+      const k = el.dataset.k;
+      if (_vsState.tag === k) { _vsState.tag = ''; }          // 再點一次 = 取消
+      else {
+        _vsState.tag = k;
+        const t = VS_TAGS.find(x => x.k === k);
+        if (t) { _vsState.pace=t.pace; _vsState.pitch=t.pitch; _vsState.power=t.power; _vsState.emotion=t.emotion; }
+      }
+      _vsSync(true);
+    });
+  });
+  const sl = document.getElementById('vs-sliders');
+  if (!sl) return;
+  sl.innerHTML = VS_AXES.map(ax => `
+    <div>
+      <div class="vs-head"><span>${ax.label}</span><span class="vs-cur" data-axval="${ax.k}"></span></div>
+      <div class="vs-seg" data-ax="${ax.k}">${ax.opts.map(o => `<button type="button" data-v="${o[0]}">${o[1]}</button>`).join('')}</div>
+    </div>`).join('');
+  sl.querySelectorAll('.vs-seg button').forEach(b => {
+    b.addEventListener('click', () => {
+      _vsState[b.parentNode.dataset.ax] = b.dataset.v;
+      _vsState.tag = '';   // 手動微調 → 脫離標籤預設
+      _vsSync(true);
+    });
+  });
+}
+
+// 讀舊資料:比對文字反推是哪個標籤。認不出來就只重置高亮,不覆寫已存的值。
+function loadVoiceStyle(text) {
+  const t = String(text || '').trim();
+  _vsState = { tag:'', pace:'mid', pitch:'mid', power:'mid', emotion:'mid' };
+  _vsTouched = false;
+  if (t) {
+    for (const g of VS_TAGS) {
+      const save = _vsState;
+      _vsState = { tag:g.k, pace:g.pace, pitch:g.pitch, power:g.power, emotion:g.emotion };
+      _vsTouched = true;
+      if (_vsText() === t) { _vsSync(false); return; }
+      _vsState = save; _vsTouched = false;
+    }
+    _vsTouched = true;   // 是自訂內容 → 保留,存檔時不會被清成空字串
+  }
+  _vsSync(false);
+  const hid = document.getElementById('pe-voice-style');
+  if (hid && t) hid.value = t;
+}
+
 function openPersonaEditor(personaIdArg) {
   // 🩹 2026-08-11:可以直接指定要編誰(KOL 卡片上的「人設未填」徽章會帶 id 進來)
   const _wantId = personaIdArg || systemSelectedPersonaId;
@@ -6487,6 +6637,8 @@ function openPersonaEditor(personaIdArg) {
   document.getElementById('pe-background').value = p.background || '';
   document.getElementById('pe-personality').value = p.personality || '';
   document.getElementById('pe-speaking-style').value = p.speaking_style || '';
+  renderVoiceStyle();                      // 🆕 v6.4:建控制器(只建一次)
+  loadVoiceStyle(p.voice_style || '');     //         反推標籤與滑桿位置
   document.getElementById('pe-role-relationship').value = p.role_relationship || '';
   document.getElementById('pe-catchphrases').value = (p.catchphrases || []).join(', ');
   document.getElementById('pe-taboo-words').value = (p.taboo_words || []).join(', ');
@@ -6511,6 +6663,7 @@ async function savePersonaFromEditor() {
     background: document.getElementById('pe-background').value.trim(),
     personality: document.getElementById('pe-personality').value.trim(),
     speaking_style: document.getElementById('pe-speaking-style').value.trim(),
+    voice_style: document.getElementById('pe-voice-style').value.trim(),   // 🆕 v6.4
     role_relationship: document.getElementById('pe-role-relationship').value.trim(),
     catchphrases: parseList(document.getElementById('pe-catchphrases').value),
     taboo_words: parseList(document.getElementById('pe-taboo-words').value),
@@ -8338,13 +8491,17 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
 <script src="kol-storyboard-panel.js"></script>
 <script src="kol-stitch.js"></script>
 <script src="kol-engine-kling.js"></script><!-- 攝影師② Kling(必須在 kol-stitch.js 之後載入) -->
-<!-- 🆕 v6.3:人設面板接線。
-     這支檔案 2026-08-23 之前【從未被任何頁面載入】—— repo 裡零引用,
-     等於寫好了放在那裡沒接電。症狀:人設沒有編輯入口、
-     「AI 生成」按鈕的 v2 升級(吃品牌+人設)從來沒生效過。
-     相容性已比對:25 個 id 全 kpp- 前綴不撞、無 window.* 污染、
-     gas_cached/gas_write 兩個 action 在 Worker 已轉接 D1。 -->
-<script src="kol-persona-panel.js"></script>
+<!-- ⛔ v6.4:kol-persona-panel.js 撤回,不再載入。
+     v6.3 曾把這支孤兒檔案接上,但那是【錯的判斷】——
+     當時只比對了「DOM id 有沒有撞」,沒問「這系統裡是不是已經有
+     做同樣事情的東西」。實際上 kol.html 內建的「人設書編輯器」
+     (openPersonaEditor)才是正宮:它有「AI 幫我寫」、有三個入口
+     (STEP3 編輯鈕 / KOL 卡片「人設未填」徽章 / 人設書空白引導),
+     存檔後還會重畫卡片、清掉徽章。kpp 只有一個入口、沒有 AI 代寫、
+     存完只更新自己。兩個編輯器寫同一批欄位 = 客戶走到哪一個全看
+     他從哪進來,必然不同步。
+     ★ 原則:一個功能一個入口。
+     聲音特質已於 v6.4 搬進上方原生編輯器,檔案本身保留不刪。 -->
 <!-- <script src="kol-stitch-panel.js"></script> --><!-- demo 暫藏接片,demo 後把這行的註解拿掉即可 -->
 <!-- 🆕 進階設定:預設展開 + 一致性 toggle 預設開 -->
 <script>
