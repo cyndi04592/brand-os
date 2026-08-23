@@ -241,6 +241,7 @@ a{color:inherit;text-decoration:none;}
       <select id="upCat" class="sel" style="min-width:150px">
         <option value="照片素材">照片素材</option>
         <option value="商品/服務照">商品/服務照</option>
+        <option value="場景素材">場景素材(門市 / 賣場 / 辦公室)</option>
         <option value="LOGO">LOGO</option>
         <option value="KOL">KOL</option>
       </select>
@@ -338,11 +339,16 @@ async function api(action, extra){
 //   他們放的是成果、環境、案例。一個名字要全行業通用。
 //   ★ 舊資料同步用 SQL 換過標籤,否則會分裂成兩個分類。
 const GROUPS = [
-  { key:'mine', label:'我的素材',      cats:['LOGO','照片素材','商品/服務照','影片素材','KOL'] },
+  { key:'mine', label:'我的素材',      cats:['LOGO','照片素材','商品/服務照','場景素材','影片素材','KOL'] },
   { key:'ai',   label:'AI生成完成區',  cats:['廣告圖','短影片','腳本分鏡'] },
 ];
 // 子從屬:顯示上「商品/服務照」掛在「照片素材」底下(照 RA 定的資料夾層次)
-const SUB_OF = { '商品/服務照': '照片素材' };
+// 🆕 2026-08-23:「場景素材」= 門市 / 賣場 / 辦公室的實景照。
+//   獨立一類的理由:它的用途是【當整支影片的背景,跳過 AI 生場景】,
+//   跟「隨手放的參考照」完全不同。混在「照片素材」裡的話,
+//   影片端的背景挑選器只能把整包列出來,客戶會誤選,
+//   也不知道該上傳什麼才有用。
+const SUB_OF = { '商品/服務照': '照片素材', '場景素材': '照片素材' };
 const CATS = GROUPS.reduce(function(a,g){ return a.concat(g.cats); }, []);
 
 async function loadBrands(){
@@ -531,7 +537,7 @@ function showState(icon, title, sub){
    沒有這顆的話,每個傳錯的客戶都得回頭來問,只能由人工進資料庫改。
    ⚠️ 只有「我的素材」那四類能改;AI 生成的成品不給動 ——
      讓成品被搬進素材類,只會讓兩邊都錯亂。 */
-const MY_CATS = ['照片素材','商品/服務照','LOGO','KOL'];
+const MY_CATS = ['照片素材','商品/服務照','場景素材','LOGO','KOL'];
 
 function openLb(it){
   if(!it) return;
