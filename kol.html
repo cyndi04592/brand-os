@@ -1055,7 +1055,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.19 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.20 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -3564,7 +3564,14 @@ function renderStageAndDossier() {
   }
 
   // 底部確認列
+  // 🩹 v7.20:只在 STEP1 顯示。
+  //   病灶:selectKol 是 STEP1/2/3 共用的,它會呼叫 renderStageAndDossier,
+  //   而這裡無條件 add('show') → 在 STEP2 選角色也會把確認列叫出來。
+  //   switchMode 那邊雖然有收,但「切過去之後才選角色」就會再被加回來。
+  //   ★ 那顆「用這位角色拍片 →」的用途是【把 STEP1 的人導去 STEP2】,
+  //     人已經站在 STEP2 了還出現,等於叫他去他已經在的地方。
   if (bar) {
+    if (S.currentMode !== 'talking') { bar.classList.remove('show'); return; }
     bar.classList.add('show');
     const mini = document.getElementById('rs-ab-mini');
     if (mini) mini.innerHTML = img ? `<img src="${escapeHtml(img)}" alt="">` : '';
@@ -3745,15 +3752,27 @@ function renderSelectedKolBanner(g) {
 
   const lookChip = g.look_count > 1 ? `<span class="chip">${g.look_count} Looks</span>` : '';
 
+  // 🆕 v7.20:聲音特質三步統一顯示。
+  //   病灶:STEP1 底部確認列看得到「信任感 · 慢/中/適中/平穩」,
+  //   但切到 STEP2、STEP3 就完全消失 —— 客戶在真正要生成的那一步,
+  //   反而不知道這支會用什麼聲線。
+  //   ★ 改在這裡是因為 renderSelectedKolBanner 的輸出會被
+  //     syncSelectedKolToCine 整段複製到 STEP2,寫一次三步都有。
+  const _v = rsParseVoice(g.persona && g.persona.voice_style);
+  const voiceChip = _v
+    ? `<span class="chip" style="background:rgba(124,109,250,.16);border-color:var(--accent);color:var(--text)">🔊 ${escapeHtml(_v.tag || '自訂')} · ${RS_AX.map((a, i) => a.o[_v.ax[i]][1]).join('/')}</span>`
+    : '<span class="chip" style="opacity:.55">🔊 聲音未設定</span>';
+
   const html = `
     <div class="selected-kol-banner">
       ${avatarHtml}
       <div class="info">
         <strong>${escapeHtml(g.name)}</strong>
-        <small>talking_photo_id: ${escapeHtml(String(g.id).slice(0, 16))}…</small>
+        <small>${escapeHtml(String((g.persona && g.persona.background) || '').slice(0, 28) || '尚未填寫人設')}</small>
       </div>
       <span class="chip green">已選定</span>
       ${lookChip}
+      ${voiceChip}
     </div>
   `;
 
@@ -6980,10 +6999,18 @@ function renderSystemPersonaCard() {
     return;
   }
 
+  // 🆕 v7.20:STEP3 也顯示聲音特質 —— 三步統一。
+  //   這裡是表格式版面,所以做成一列,不用 chip。
+  const _v3 = rsParseVoice(p.voice_style);
+  const _voiceText = _v3
+    ? (_v3.tag ? _v3.tag + ' · ' : '') + RS_AX.map((a, i) => a.o[_v3.ax[i]][1]).join(' / ')
+    : '';
+
   const rows = [
     { label: '背景', value: p.background },
     { label: '個性', value: p.personality },
     { label: '說話', value: p.speaking_style },
+    { label: '聲音', value: _voiceText },
     { label: '角色', value: p.role_relationship },
     { label: '口頭禪', value: (p.catchphrases || []).join(' · ') },
     { label: '關心', value: (p.signature_topics || []).join('、') },
