@@ -3251,6 +3251,18 @@ function pickAnglePhoto(procs, angle) {
 }
 // ─── Look 選擇器 ──────────────────────────────────────────
 function renderLookPicker() {
+  // 🩹 2026-08-22 老坑根治:多角度卡永遠畫不出來。
+  //   病灶是「兩份資料互相錯過」——
+  //     ① 照片清單載完 → 呼叫這支重畫,但此時客戶還沒點 KOL(selectedKol = null)
+  //     ② 客戶點了 KOL → 也呼叫這支,但此時照片清單可能還沒回來
+  //   兩次都各缺一半,所以永遠湊不齊 → 畫面安靜地少東西、完全不報錯。
+  //   ★ 修法:誰先到都先記著,等兩邊到齊再畫;沒齊就直接跳過這次呼叫。
+  //   ⚠️ 不要用 setTimeout 硬等 —— 那只是把賭注押在網路速度上,慢一點就又壞。
+  if (!S.selectedKol || !S.drivePhotos) {
+    console.log('[LOOK] 資料還沒到齊,先不畫 ·',
+      'KOL:', S.selectedKol ? '✅' : '❌', '照片清單:', S.drivePhotos ? '✅' : '❌');
+    return;
+  }
   const picker = document.getElementById('look-picker');
   const grid = document.getElementById('look-grid');
   const hint = document.getElementById('look-picker-hint');
@@ -3372,6 +3384,12 @@ async function loadDrivePhotos(brandId, force) {
   if (!force && S._drivePhotoCache[brandId]) {  // 🆕 快取命中=秒開,不重抓 Drive
     S.drivePhotos = S._drivePhotoCache[brandId];
     renderDriveGallery();
+    // 🩹 2026-08-22:快取命中這條路漏了重畫 LOOK。
+    //   下面「真的去抓」那條有 renderLookPicker(),這條沒有 ——
+    //   於是第二次進來(快取命中)多角度卡就消失,第一次卻好好的。
+    //   ⚠️ 這是老病:「快取命中 → 跳過重畫」。凡是抓資料有兩條路(快取/實抓),
+    //     兩條路後面要做的事必須一模一樣,少一行就會變成「有時好有時壞」。
+    renderLookPicker();
     return;
   }
   wrap.innerHTML = '<div class="kol-empty">讀取素材中…</div>';
@@ -3414,7 +3432,10 @@ async function loadDrivePhotos(brandId, force) {
     S.drivePhotos = res;
     S._drivePhotoCache[brandId] = res;  // 🆕 抓過就記住
     renderDriveGallery();
-    renderLookPicker();   // 🆕 Drive 照片到了 → 重畫 LOOK,多角度才顯示得出來
+    // 🆕 照片到了 → 重畫 LOOK。
+    //   ⚠️ 若客戶已經先選好 KOL,這一次補畫就是把多角度卡補上去的關鍵;
+    //     若還沒選,renderLookPicker 會自己判斷資料不齊而跳過。
+    renderLookPicker();
   } catch (e) {
     wrap.innerHTML = `<div class="kol-empty">❌ ${escapeHtml(e.message)}</div>`;
   }
