@@ -1055,7 +1055,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.12 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.13 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -5286,9 +5286,22 @@ function _scnCurrent(which) {
   return which === 's3' ? (S.episodeCustomSceneUrl || '') : (S.customSceneUrl || '');
 }
 
-function scnPick(which, url) {
+async function scnPick(which, url) {
   const cur = _scnCurrent(which);
   const next = (cur === url) ? '' : url;   // 再點一次 = 取消
+  // 🩹 v7.13:實景背景也要過尺寸守門員。
+  //   病灶:商品照 2026-08-10 就補了這道(電商長圖高 10000px 會被引擎打回),
+  //   但實景背景【兩條路都沒有】—— 貼網址那條從來沒檢查,
+  //   v7.7 的素材庫挑選我也照著沒加。
+  //   而實景照更容易中招:門市全景是超寬幅、直式招牌是超長圖,
+  //   兩種都會超出「高 300~6000px」的限制。
+  //   不擋的話客戶要等 30 秒才收到一串英文錯誤,還不知道是哪張圖害的。
+  if (next) {
+    try {
+      const _sz = await _checkRefImageSize(next);
+      if (!_sz.ok) { toast(_sz.msg, 'error'); return; }
+    } catch (e) { /* 量不到就放行,不要因為量測失敗擋死正常客戶 */ }
+  }
   if (which === 's3') {
     S.episodeCustomSceneUrl = next;
     if (typeof renderEpisodeCustomScene === 'function') renderEpisodeCustomScene();
@@ -5326,12 +5339,17 @@ async function renderSceneLibrary(which) {
 }
 window.renderSceneLibrary = renderSceneLibrary;
 
-function addCustomScene() {
+async function addCustomScene() {
   const input = document.getElementById('custom-scene-input');
   if (!input) return;
   const url = input.value.trim();
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) { toast('請貼有效的 http(s) 圖片網址', 'error'); return; }
+  // 🩹 v7.13:貼網址這條也要過尺寸守門員(理由同 scnPick)
+  try {
+    const _sz = await _checkRefImageSize(url);
+    if (!_sz.ok) { toast(_sz.msg, 'error'); return; }
+  } catch (e) {}
   S.customSceneUrl = url;
   input.value = '';
   renderCustomScene();
@@ -5350,12 +5368,17 @@ function renderCustomScene() {
 }
 
 // 🆕 STEP3 自己的實景背景上傳(獨立 ID + state,避開雙容器固定 ID 撞車)
-function addEpisodeCustomScene() {
+async function addEpisodeCustomScene() {
   const input = document.getElementById('ep-custom-scene-input');
   if (!input) return;
   const url = input.value.trim();
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) { toast('請貼有效的 http(s) 圖片網址', 'error'); return; }
+  // 🩹 v7.13:STEP3 貼網址同樣補上尺寸守門員
+  try {
+    const _sz = await _checkRefImageSize(url);
+    if (!_sz.ok) { toast(_sz.msg, 'error'); return; }
+  } catch (e) {}
   S.episodeCustomSceneUrl = url;
   input.value = '';
   renderEpisodeCustomScene();
