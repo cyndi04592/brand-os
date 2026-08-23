@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
- *  Brand OS · KOL 人設面板 v1.6
+ *  Brand OS · KOL 人設面板 v1.7
  *
  *  功能：
  *   • 品牌選擇器（URL 帶 ?brand=la 會自動選中）
@@ -462,41 +462,100 @@ function findTopicInput() {
 
 function buildPanelHTML() {
   return `
-    <div class="kpp-panel" id="kpp-panel">
+    <div class="kpp-panel" id="kpp-panel" style="display:none">
       <div class="kpp-head">
-        <span class="kpp-title">🎭 KOL 人設系統</span>
-        <span class="kpp-badge">Phase 1</span>
+        <span class="kpp-title">🎭 <span id="kpp-who">這位 KOL</span> 的人設</span>
+        <button class="kpp-btn" id="kpp-btn-edit" title="編輯人設與聲音特質">✏️ 編輯人設</button>
       </div>
-      <div class="kpp-row">
-        <div class="kpp-field">
-          <label>選擇品牌</label>
-          <select id="kpp-brand-select">
-            <option value="">— 載入中 —</option>
-          </select>
-        </div>
-        <div class="kpp-field">
-          <label>選擇 KOL 人設</label>
-          <select id="kpp-persona-select">
-            <option value="">— 先選品牌 —</option>
-          </select>
-        </div>
-        <div>
-          <button class="kpp-btn" id="kpp-btn-edit" title="編輯或新增 KOL 人設">
-            ✏️ 人設管理
-          </button>
-        </div>
-      </div>
-      <div class="kpp-hint" id="kpp-hint">
-        選品牌與 KOL 人設後，按下方「✨ AI 生成」會套用人設生成腳本。
-      </div>
+      <div class="kpp-hint" id="kpp-hint"></div>
+      <!-- 🗑️ v1.7:自己的「選擇品牌 / 選擇 KOL 人設」兩個下拉已移除。
+           病灶:這支面板當年是為【口播頁】寫的,它假設自己是頁面上唯一的
+                 品牌/人設選擇器。接進建角色頁後,頁面頂端已有「當前品牌」、
+                 右欄已有「目前選定的 KOL」→ 同一件事出現兩次,而且兩套
+                 狀態各走各的、互不同步。客戶會問「我到底該改哪個」。
+           正解:單一事實來源 —— 品牌看 window.S.currentBrandId,
+                 角色看 window.S.selectedKol。沒選角色就整塊隱藏。
+           隱藏的 input 保留在下方,讓既有讀寫邏輯不用改。 -->
+      <input type="hidden" id="kpp-brand-select">
+      <input type="hidden" id="kpp-persona-select">
     </div>
   `;
 }
 
 function bindPanelEvents() {
-  document.getElementById('kpp-brand-select')?.addEventListener('change', onBrandChange);
-  document.getElementById('kpp-persona-select')?.addEventListener('change', onPersonaChange);
   document.getElementById('kpp-btn-edit')?.addEventListener('click', openPersonaModal);
+  startFollowingMainSelection();   // 🆕 v1.7:改跟隨主頁選取
+}
+
+// ─── 🆕 v1.7:跟隨主頁的品牌 / KOL 選取 ─────────────────────
+//  為什麼用輪詢而不是監聽事件:kol.html 的 selectKol() 沒有對外廣播任何
+//  自訂事件,也沒把 hook 掛在 window 上。要嘛去改 kol.html(又動一次
+//  8400 行的檔案、又多一處耦合),要嘛在這裡自己看。選後者 ——
+//  這支檔案壞掉只會影響自己,不會拖累主頁。
+//  400ms 只比對兩個字串,成本可忽略。
+var _kppLastKolId = '__init__';
+
+function _mainSel() {
+  var S = window.S || {};
+  var k = S.selectedKol || null;
+  return {
+    brandId: S.currentBrandId || '',
+    kolId:   k ? (k.id || '') : '',
+    kolName: k ? (k.name || '') : '',
+  };
+}
+
+function syncFromMain() {
+  var m = _mainSel();
+  var panel = document.getElementById('kpp-panel');
+  if (!panel) return;
+
+  // 沒選角色 → 整塊隱藏。避免出現「還沒選人,卻先給你編輯角色的工具」。
+  if (!m.kolId) {
+    panel.style.display = 'none';
+    _kppLastKolId = '';
+    return;
+  }
+  panel.style.display = '';
+  if (m.kolId === _kppLastKolId) return;   // 沒換人就不重跑
+  _kppLastKolId = m.kolId;
+
+  State.currentBrandId = m.brandId;
+  var who = document.getElementById('kpp-who');
+  if (who) who.textContent = m.kolName || '這位 KOL';
+
+  // 依名字比對出對應的 persona(kol.html 與人設表用同一個名字當鍵)
+  loadPersonasFor(m.brandId, m.kolName);
+}
+
+function startFollowingMainSelection() {
+  syncFromMain();
+  setInterval(syncFromMain, 400);
+}
+
+// 依品牌撈人設,再用 KOL 名字對出這一位。
+//   走既有的 gasGet(名字叫 gas 但 Worker 已轉接 D1),不另造一套呼叫。
+async function loadPersonasFor(brandId, kolName) {
+  var hint = document.getElementById('kpp-hint');
+  if (!brandId) return;
+  try {
+    const res = await gasGet('getKolPersonas', { brandId });
+    if (!res || !res.ok) throw new Error((res && res.error) || '人設載入失敗');
+    const list = res.personas || [];
+    State.personas = list;
+    const hit = list.filter(function (p) { return (p.persona_name || '') === kolName; })[0];
+    State.currentPersonaId = hit ? hit.persona_id : '';
+    const sel = document.getElementById('kpp-persona-select');
+    if (sel) sel.value = State.currentPersonaId;
+    if (hint) {
+      hint.innerHTML = hit
+        ? '<span class="kpp-tag">' + (hit.persona_type === 'brand_owner' ? '品牌代言' : '獨立 KOL') + '</span> '
+          + esc(String(hit.background || hit.personality || '').slice(0, 120))
+        : '這位角色還沒建立人設 —— 按「✏️ 編輯人設」補上個性、說話風格與聲音特質。';
+    }
+  } catch (e) {
+    if (hint) hint.textContent = '人設載入失敗:' + (e && e.message ? e.message : e);
+  }
 }
 
 // ─── Modal 注入 ────────────────────────────────────────────
