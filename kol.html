@@ -1020,7 +1020,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.3 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.4 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1350,21 +1350,28 @@ document.addEventListener('DOMContentLoaded', function(){
       <div class="product-ref-section">
         <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent2)"></div>商品照 Reference</div>
 
+        <!-- 🆕 v7.4:分頁順序對調 —— 素材庫是主要來源,手動 URL 降為備援。
+             理由:手動 URL 是當年鞋子特賣會的臨時路,那時還沒有自家素材庫。
+             現在客戶的商品照都在素材庫,預設卻停在「貼網址」,
+             等於要求客戶自己去找一個公開圖床 —— 那是把責任丟回給客戶,
+             違反「不要教客戶做對的事,要讓預設就是對的」。
+             ⚠️ id 一律沿用原名(ref-tab-drive / ref-panel-drive / ...),
+                switchRefTab、_decideRefTab、loadDriveProducts 全部不用改。 -->
         <div class="ref-tabs">
-          <button class="ref-tab active" data-ref-tab="url" onclick="switchRefTab('url')">⌨️ 手動 URL</button>
-          <button class="ref-tab" data-ref-tab="drive" onclick="switchRefTab('drive')" id="ref-tab-drive">從 Drive 選<span class="lock" id="ref-tab-drive-lock">🔒</span></button>
+          <button class="ref-tab active" data-ref-tab="drive" onclick="switchRefTab('drive')" id="ref-tab-drive">🗂 從素材庫選<span class="lock" id="ref-tab-drive-lock" style="display:none">🔒</span></button>
+          <button class="ref-tab" data-ref-tab="url" onclick="switchRefTab('url')">⌨️ 貼網址</button>
         </div>
 
-        <div class="ref-tab-panel active" id="ref-panel-url">
-          <div class="ref-url-input-row">
-            <input type="text" id="ref-url-input" placeholder="貼 imgbb / R2 / 公開圖片 URL" onkeydown="if(event.key==='Enter')addProductUrl()">
-            <button class="btn btn-primary btn-sm" onclick="addProductUrl()">+ 加入</button>
-          </div>
-          </div>
-
-        <div class="ref-tab-panel" id="ref-panel-drive">
+        <div class="ref-tab-panel active" id="ref-panel-drive">
           <div id="drive-product-gallery-wrap">
-            <div class="kol-empty" style="padding:28px 16px;font-size:12px">選品牌後載入 Drive 照片…</div>
+            <div class="kol-empty" style="padding:28px 16px;font-size:12px">選品牌後載入商品照…</div>
+          </div>
+        </div>
+
+        <div class="ref-tab-panel" id="ref-panel-url">
+          <div class="ref-url-input-row">
+            <input type="text" id="ref-url-input" placeholder="貼公開圖片網址(素材庫沒有的才用)" onkeydown="if(event.key==='Enter')addProductUrl()">
+            <button class="btn btn-primary btn-sm" onclick="addProductUrl()">+ 加入</button>
           </div>
         </div>
 
@@ -4719,10 +4726,69 @@ function _decideRefTab(count) {
   }
 }
 
-// 🆕 v5.1: 載入品牌的 Drive 商品照
+// 🆕 v7.4:從自家素材庫撈「商品/服務照」。
+//   回傳 true = 有東西並已渲染;false = 沒有,交給下面的 Drive 舊路徑。
+//   ⚠️ 刻意「不」在這裡報錯:素材庫掛掉時要能安靜退回 Drive,
+//     不能讓一個附加來源的失敗擋住原本可用的路。
+// 只負責【拿資料】,渲染交給呼叫端。
+//   STEP2 與 STEP3 的畫法不同,但資料來源必須是同一份 ——
+//   兩邊各寫一套取數邏輯,遲早會漂移(今天已經吃過這種虧:
+//   STEP2 改好了 STEP3 還是舊的)。
+//   回傳 null = 讀取失敗;回傳 [] = 讀到了但沒有商品照。
+async function _fetchLibraryProducts() {
+  const ck = 'lib_products_' + S.currentBrandId;
+  window._libProductsCache = window._libProductsCache || {};
+  if (window._libProductsCache[ck]) return window._libProductsCache[ck];
+  const res = await api('list_assets', { brandId: S.currentBrandId, limit: 300 });
+  if (!res || !res.ok) return null;
+  // 只留「商品/服務照」,而且要是圖片(素材庫也放影片)
+  const files = (res.items || [])
+    .filter(it => String(it.category || '') === '商品/服務照')
+    .filter(it => it.url && !/\.(mp4|mov|webm|m4v)(\?|$)/i.test(String(it.url)))
+    .map(it => ({
+      // 對齊 renderDriveProducts / renderEpisodeProducts 期待的形狀,
+      // 那兩支渲染函式一行都不用改
+      id: 'lib_' + (it.id || ''),
+      name: it.name || '商品照',
+      mimeType: 'image/jpeg',
+      url: it.url,
+      thumbnailLink: it.url,
+      webContentLink: it.url,
+      __fromLibrary: true,
+    }));
+  window._libProductsCache[ck] = files;
+  return files;
+}
+
+// STEP2 用的薄封裝:讀到就渲染並回 true,沒有就回 false 交給 Drive 舊路徑
+async function _loadProductsFromLibrary(wrap) {
+  try {
+    if (wrap) wrap.innerHTML = '<div class="kol-empty" style="padding:28px 16px;font-size:12px"><span class="spin">⏳</span> 讀取素材庫商品照中…</div>';
+    const files = await _fetchLibraryProducts();
+    if (!files || !files.length) return false;
+    renderDriveProducts(files);
+    return true;
+  } catch (e) {
+    console.warn('[REF] 素材庫商品照讀取失敗,退回 Drive', e);
+    return false;
+  }
+}
+
+// 🆕 v5.1: 載入品牌的商品照(素材庫優先 → Drive 後備)
 async function loadDriveProducts() {
   const wrap = document.getElementById('drive-product-gallery-wrap');
   if (!wrap) return;
+
+  // 🆕 v7.4:素材庫優先。
+  //   病灶(2026-08-23 現場):客戶素材庫裡明明有「商品/服務照」,
+  //   這裡卻顯示「還沒有商品照」並把「從 Drive 選」鎖住 ——
+  //   因為這支函式只認 BRAND_PRODUCT_FOLDERS 的 Drive folderId,
+  //   完全不知道素材庫存在。Google 雲端拆除後新品牌根本沒有 folderId,
+  //   等於這條路對【所有新客戶】都是死的,只剩「手動 URL」。
+  //   ★ 教訓再驗證一次:拆掉一個東西時,要把「依賴它的地方」一起改,
+  //     不然功能不會報錯,只會安靜地永遠不可用。
+  const _libOk = await _loadProductsFromLibrary(wrap);
+  if (_libOk) return;
 
   const folderId = BRAND_PRODUCT_FOLDERS[S.currentBrandId];
   if (!folderId) {
@@ -4783,6 +4849,11 @@ function reloadDriveProducts() {
   if (folderId && window._driveProductsCache) {
     delete window._driveProductsCache['drive_products_' + folderId];
   }
+  // 🆕 v7.4:素材庫快取也要清,否則按「重新抓取」只會重抓 Drive,
+  //   客戶剛上傳到素材庫的照片永遠不會出現。
+  if (window._libProductsCache) {
+    delete window._libProductsCache['lib_products_' + S.currentBrandId];
+  }
   loadDriveProducts();
 }
 
@@ -4792,9 +4863,9 @@ function renderDriveProducts(files) {
   if (!files || files.length === 0) {
     wrap.innerHTML = `
       <div class="ref-drive-locked">
-        <span class="emoji"></span>
-        <strong>資料夾裡沒照片</strong><br>
-        <small>上傳幾張商品照到 Drive 再回來按重試</small>
+        <span class="emoji">📷</span>
+        <strong>這個品牌還沒有商品照</strong><br>
+        <small>到「素材庫」上傳,分類選「商品/服務照」<br>上傳後回來按重試就會出現</small>
         <div class="drive-product-refresh">
           <button class="btn btn-ghost btn-sm" onclick="reloadDriveProducts()">重試</button>
         </div>
@@ -7462,17 +7533,16 @@ function renderEpisodeSlots() {
 // v5.9: Tab 3 商品照選擇器(簡化版 · 僅 Drive + 單一 grid)
 function renderEpisodeProductPickerHTML() {
   const brandId = S.currentBrandId;
-  const folderId = BRAND_PRODUCT_FOLDERS[brandId];
-  if (!folderId) {
-    // 🚪 2026-08-22:同上 —— 不再提「Drive 資料夾」,直接告訴他該去哪。
-    //   ★ 後半句「AI 腦補」的警告要留著:那是真的,而且客戶必須知道。
-    return `<div class="ep-product-locked">📁 這個品牌還沒有商品照<br><small>請到「素材庫」上傳(分類選「商品/服務照」)<br>沒有的話影片照樣生,但商品會是 AI 腦補,不是真實商品</small></div>`;
-  }
+  // 🆕 v7.4:不再因為「沒有 Drive folderId」就直接回空狀態。
+  //   病灶跟 STEP2 完全一樣:客戶素材庫明明有商品照,這裡卻寫「還沒有商品照」。
+  //   Google 雲端拆除後新品牌根本沒有 folderId → 這條路對所有新客戶都是死的。
+  //   改成一律先把容器畫出來,由 loadEpisodeProducts 去決定內容
+  //   (素材庫優先 → Drive 後備 → 都沒有才顯示空狀態)。
   const selected = S.episodeProductUrls || [];
   return `
     <div id="ep-product-picker">
       <div id="ep-product-gallery-wrap">
-        <div class="kol-empty" style="padding:18px 14px;font-size:11.5px"><span class="spin">⏳</span> 讀取 Drive 商品照中…</div>
+        <div class="kol-empty" style="padding:18px 14px;font-size:11.5px"><span class="spin">⏳</span> 讀取商品照中…</div>
       </div>
       <div class="ep-product-footer">
         <span style="font-size:10.5px;color:var(--text-dim)">已選 <span id="ep-product-count">${selected.length}</span>/6 件 · 已預留場景+服裝<span id="ep-pace">${paceHintHtml(selected.length, S.episodeParams && S.episodeParams.duration)}</span></span>
@@ -7492,11 +7562,23 @@ function renderEpisodeProductPickerHTML() {
 async function loadEpisodeProducts() {
   const brandId = S.currentBrandId;
   if (!brandId) return;
-  const folderId = BRAND_PRODUCT_FOLDERS[brandId];
-  if (!folderId) return;
 
   const wrap = document.getElementById('ep-product-gallery-wrap');
   if (!wrap) return;
+
+  // 🆕 v7.4:素材庫優先(與 STEP2 共用同一支取數函式)
+  try {
+    const libFiles = await _fetchLibraryProducts();
+    if (libFiles && libFiles.length) { renderEpisodeProducts(libFiles); return; }
+  } catch (e) { console.warn('[EP] 素材庫商品照讀取失敗,退回 Drive', e); }
+
+  const folderId = BRAND_PRODUCT_FOLDERS[brandId];
+  if (!folderId) {
+    // 素材庫也沒有、Drive 也沒有 → 這時才顯示空狀態。
+    // ★ 「AI 腦補」那句警告要留著:那是真的,客戶必須知道。
+    wrap.innerHTML = `<div class="ep-product-locked">📷 這個品牌還沒有商品照<br><small>請到「素材庫」上傳(分類選「商品/服務照」)<br>沒有的話影片照樣生,但商品會是 AI 腦補,不是真實商品</small></div>`;
+    return;
+  }
 
   const cacheKey = 'drive_products_' + folderId;
   const cache = window._driveProductsCache?.[cacheKey];
@@ -7505,7 +7587,7 @@ async function loadEpisodeProducts() {
     return;
   }
 
-  wrap.innerHTML = '<div class="kol-empty" style="padding:18px 14px;font-size:11.5px"><span class="spin">⏳</span> 讀取 Drive 商品照中…</div>';
+  wrap.innerHTML = '<div class="kol-empty" style="padding:18px 14px;font-size:11.5px"><span class="spin">⏳</span> 讀取商品照中…</div>';
 
   try {
     const res = await api('drive_files', { folderId });
@@ -7533,6 +7615,11 @@ function reloadEpisodeProducts() {
   const folderId = BRAND_PRODUCT_FOLDERS[S.currentBrandId];
   if (folderId && window._driveProductsCache) {
     delete window._driveProductsCache['drive_products_' + folderId];
+  }
+  // 🆕 v7.4:素材庫快取也要清,否則按「重新整理」只重抓 Drive,
+  //   客戶剛上傳到素材庫的照片永遠不會出現。
+  if (window._libProductsCache) {
+    delete window._libProductsCache['lib_products_' + S.currentBrandId];
   }
   loadEpisodeProducts();
 }
