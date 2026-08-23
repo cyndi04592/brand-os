@@ -1055,7 +1055,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.15 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.17 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -5815,8 +5815,13 @@ function openStoryboardForCine() {
       if (typeof updateSeedanceCostEstimate === 'function') updateSeedanceCostEstimate();
       lockCineZone(true);
       const dvLabel = dv === 'auto' ? 'AUTO(台詞較長)' : dv + ' 秒';
-      if (!S.selectedSceneId) {
-        toast(`分鏡已填入,時長自動鎖 ${dvLabel}。⚠️ 還沒選場景,挑一個再按生成`, 'warn');
+      // 🩹 v7.16:v7.15 只改了按鈕解鎖條件,漏了這句提示 ——
+      //   客戶已經鎖了自家實景照,按鈕是亮的,這裡卻還叫他「去選場景」,
+      //   照著做反而多此一舉。判斷條件要跟 updateSeedanceSubmitButton 一致。
+      if (!S.selectedSceneId && !S.customSceneUrl) {
+        toast(`分鏡已填入,時長自動鎖 ${dvLabel}。⚠️ 還沒選場景,挑一個或上傳自家實景照再按生成`, 'warn');
+      } else if (S.customSceneUrl) {
+        toast(`分鏡已填入、時長自動鎖 ${dvLabel}。已鎖你的實景照當背景,按生成即可 `, 'success');
       } else {
         toast(`分鏡已填入、時長依台詞自動鎖 ${dvLabel},其餘可調,按生成即可 `, 'success');
       }
@@ -6019,7 +6024,15 @@ async function createStitchedVideo(beats) {
     toast('接片引擎(KolStitch)未載入', 'error'); return;
   }
   if (!S.selectedKol)     { toast('請先選定 KOL 形象', 'error'); return; }
-  if (!S.selectedSceneId) { toast('請選擇一個場景', 'error'); return; }
+  // 🩹 v7.17:有自家實景照 → 場景卡免選。
+  //   病灶:v7.15 只改了「按鈕能不能按」,這裡函式內部的守門沒改 ——
+  //   客戶鎖好了實景照、按鈕也亮了,一按下去卻被 toast 擋掉,
+  //   而且訊息叫他去選場景,他只會覺得系統壞了。
+  //   ★ 教訓(今天第三次):放寬一個限制時,要把【所有檢查同一件事的地方】
+  //     一起找出來改。只改看得見的那個,剩下的會在按下去那一刻才爆。
+  if (!S.selectedSceneId && !S.customSceneUrl) {
+    toast('請選擇一個場景,或上傳自家實景照', 'error'); return;
+  }
   if (S.seedanceProductUrls.length === 0) {
     if (!confirm('你沒加商品照,影片裡的商品可能不準。要繼續嗎?')) return;
   }
@@ -6067,9 +6080,13 @@ async function createStitchedVideo(beats) {
     if (/3\/4|3-4|斜側|斜角|three.?quarter/i.test(t)) return 'q34';
     return 'front';
   };
+  // 🩹 v7.17:接片路徑同樣要處理「沒選場景卡但有實景照」。
+  //   這條才是分鏡模式真正會走的路(2 段以上自動接片),
+  //   漏掉的話按下去一樣組不出提示詞。
+  const _sceneForStitch = S.selectedSceneId || (S.customSceneUrl ? 'office' : '');
   // B 版精簡敘事(預設·唯一路徑):組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
   const _shared = (typeof composeStitchShared === 'function')
-    ? composeStitchShared(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, '15',
+    ? composeStitchShared(S.currentBrandId, _sceneForStitch, S.selectedLocationId, '15',
         { outfitBrand: S.selectedOutfitBrand, episode: { persona, product: stitchProduct } })
     : null;
   const plan = beats.map((b, i) => {
@@ -6085,7 +6102,7 @@ async function createStitchedVideo(beats) {
       const opts = { outfitBrand: S.selectedOutfitBrand, forceSingleShot: true };
       opts.episode = { situation: sit, product: stitchProduct };
       p = composeSeedancePrompt(
-        S.currentBrandId, S.selectedSceneId, S.selectedLocationId, null, // 分鏡模式:運鏡交給分鏡卡,不再疊加
+        S.currentBrandId, _sceneForStitch, S.selectedLocationId, null, // 分鏡模式:運鏡交給分鏡卡,不再疊加
         String(snapDur(b.seconds)), opts
       );
       if (!p) p = sit;
@@ -6483,7 +6500,15 @@ async function createSeedanceVideo() {
     return createStitchedVideo(S.cineStoryboard);
   }
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
-  if (!S.selectedSceneId) { toast('請選擇一個場景', 'error'); return; }
+  // 🩹 v7.17:有自家實景照 → 場景卡免選。
+  //   病灶:v7.15 只改了「按鈕能不能按」,這裡函式內部的守門沒改 ——
+  //   客戶鎖好了實景照、按鈕也亮了,一按下去卻被 toast 擋掉,
+  //   而且訊息叫他去選場景,他只會覺得系統壞了。
+  //   ★ 教訓(今天第三次):放寬一個限制時,要把【所有檢查同一件事的地方】
+  //     一起找出來改。只改看得見的那個,剩下的會在按下去那一刻才爆。
+  if (!S.selectedSceneId && !S.customSceneUrl) {
+    toast('請選擇一個場景,或上傳自家實景照', 'error'); return;
+  }
   if (S.seedanceProductUrls.length === 0) {
     if (!confirm('你沒加任何商品照,影片裡的商品畫面會沒有對應參考圖(可能效果不佳)。\n\n純展示 KOL 情境(無帶貨)可以繼續,要繼續嗎?')) return;
   }
@@ -6499,7 +6524,14 @@ async function createSeedanceVideo() {
 
   // 🆕 v5.1+5.3: 從場景 + 地標 + 運鏡組 prompt(後端邏輯,使用者看不到)
   const movementForPrompt = S.cineStoryboard ? null : S.selectedMovementId;
-  let prompt = composeSeedancePrompt(S.currentBrandId, S.selectedSceneId, S.selectedLocationId, movementForPrompt, S.seedanceParams.duration, cineOpts);
+  // 🩹 v7.17:沒選場景卡但有實景照 → sceneId 補一個中性值。
+  //   composeSeedancePrompt 需要 sceneId 才組得出提示詞,不能傳空。
+  //   選 'office' 當中性底:它的 env_prompt 是「小而封閉的工作空間、
+  //   單一窗戶自然光、無其他人、無品牌 logo」—— 描述最不搶戲。
+  //   而且實景照會當首幀空間錨(sceneIsStartFrame),
+  //   真正決定畫面的是照片,這段文字只補光線與氛圍。
+  const _sceneForPrompt = S.selectedSceneId || (S.customSceneUrl ? 'office' : '');
+  let prompt = composeSeedancePrompt(S.currentBrandId, _sceneForPrompt, S.selectedLocationId, movementForPrompt, S.seedanceParams.duration, cineOpts);
   if (!prompt) { toast('組 prompt 失敗,場景資料異常', 'error'); return; }
 
   // 🆕 STEP3 鎖臉 —— 由「臉一致性優先」開關控制(預設開;抓不到元素也預設鎖)
