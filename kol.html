@@ -3264,6 +3264,21 @@ function renderLookPicker() {
     .map(([k, label]) => { const ph = pickAnglePhoto(_procs, k); return ph ? { ph, label } : null; })
     .filter(Boolean);
 
+  // 🔎 2026-08-22:多角度卡畫不出來時,這裡是唯一看得到原因的地方。
+  //   三個可能:①照片清單還沒到 ②KOL 名字對不上 ③檔名不含 sheet_front/q34/profile
+  //   ⚠️ 不要只印「沒有多角度」——要印出到底是哪一種,否則每次都要重查一遍。
+  if (_procs.length === 0) {
+    console.log('[LOOK] 多角度卡 0 張 · 原因:',
+      !S.drivePhotos ? '照片清單還沒載入' :
+      !_persona ? ('找不到 KOL「' + _kolName + '」· 清單裡有:' +
+                   (S.drivePhotos.personas || []).map(x => x.persona_name).join('/')) :
+      '這位 KOL 沒有已處理的角度照(processed_photos 是空的)');
+  } else if (_angles.length < _procs.length) {
+    console.log('[LOOK] 有 ' + _procs.length + ' 張角度照,但只認出 ' + _angles.length +
+      ' 張 · 檔名要含 sheet_front / sheet_q34 / sheet_profile · 實際檔名:',
+      _procs.map(x => x.name).join(' | '));
+  }
+
   const haveLooks = S.availableLooks && S.availableLooks.length >= 2;
   if (!haveLooks && _angles.length === 0) { picker.style.display = 'none'; return; }
   picker.style.display = 'block';
@@ -3565,8 +3580,13 @@ function updatePersonaBindButtons() {
     //   舊行為要客戶「再手動建一次同名角色」—— 客戶剛剛明明就建過了,這很荒謬。
     //   新行為:選了照片就讓他一鍵「建立角色 + 綁定」,系統自己把 D1 那筆補上。
     if (!pd) {                                   // Drive 有資料夾、但 D1 沒這個角色
-      // ⚠️ 人設還沒載完就先鎖住 —— 這時候 S.personas 是空的,誤按會把「已存在的角色」再建一次(重複列)。
-      if (S._personasLoading === true || !Array.isArray(S.personas) || S.personas.length === 0) {
+      // ⚠️ 人設還沒載完就先鎖住 —— 誤按會把「已存在的角色」再建一次(重複列)。
+      //   🩹 2026-08-22:原本連「length === 0」也擋 —— 但新品牌的人設清單
+      //     本來就是空的,結果按鈕被設成 disabled 且寫著「讀取人設中…」,
+      //     而它永遠不會載出東西 → 新客戶按到天荒地老都沒反應。
+      //     (現場:RA 用新品牌建「昱瑄」,按兩次沒動靜、點數也沒扣。)
+      //   ★ 真正該擋的只有「正在載入中」;載完了但是空的 = 正常的新品牌,要放行。
+      if (S._personasLoading === true || !Array.isArray(S.personas)) {
         btn.textContent = '讀取人設中…';
         btn.disabled = true;
         btn.classList.remove('btn-success'); btn.classList.add('btn-ghost');
@@ -3813,8 +3833,18 @@ async function confirmDrivePhotos(personaArg) {
   //   客戶在「AI 生成 KOL 角色」建過了,只是那筆寫進了已退休的試算表(GAS→D1 接縫)。
   if (!personaData) {
     // ⚠️ 最後一道防線:人設沒載完不准補建,否則會建出重複角色
-    if (S._personasLoading === true || !Array.isArray(S.personas) || S.personas.length === 0) {
+    //   🩹 2026-08-22:原本連「length === 0」也一起擋 —— 但新品牌的人設清單
+    //     本來就是空的(一個角色都還沒建),等於新客戶永遠按不下去,
+    //     而且只跳一個 toast 就靜靜返回,看起來像「按了沒反應」。
+    //     (現場:RA 用新品牌建「昱瑄」,按兩次都沒動靜,點數也沒扣。)
+    //   ★ 真正該擋的只有「正在載入中」這一種狀態 ——
+    //     載完了但清單是空的,那是正常的新品牌,要放行。
+    if (S._personasLoading === true) {
       toast('人設還在載入中,請等一下再按(避免建出重複角色)', 'warn');
+      return;
+    }
+    if (!Array.isArray(S.personas)) {
+      toast('人設清單還沒準備好,請按「重新載入」再試一次', 'warn');
       return;
     }
     try {
