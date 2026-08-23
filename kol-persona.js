@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-persona.js · v5.12
+//  kol-persona.js · v5.14
 //  
 //  🎭 KOL 本人 — 角色人設模組
 //  
@@ -11,7 +11,7 @@
 //  資料來源:
 //   • GAS kol_personas 表(欄位:background / personality / speaking_style /
 //     role_relationship / catchphrases / taboo_words / signature_topics /
-//     forbidden_topics)
+//     forbidden_topics / voice_style)
 //  
 //  v5.12 狀態:骨架版 — contribute() 已定義,尚未接通到 composePrompt
 //  下一版:把 buildEpisodeOverlay 裡的 persona 段落搬進來
@@ -43,6 +43,17 @@
     if (p.signature_topics?.length) parts.push('topics she typically cares about: ' + p.signature_topics.join(', '));
     if (p.taboo_words?.length) parts.push('MUST AVOID these words/phrases: ' + p.taboo_words.join(', '));
     if (p.forbidden_topics?.length) parts.push('MUST NOT discuss: ' + p.forbidden_topics.join(', '));
+
+    // 🆕 v5.14:聲音特質(voice_style)—— 一定放在【最後】。
+    //   ★ 詞序黃金律:錨點在前、抽象風格濾鏡在尾。
+    //   ⚠️ 絕不能靠近 accent。speechLine 裡的
+    //      「speaks in natural Taiwanese Mandarin」是口音錨點,
+    //      兩個相鄰的聲音描述會互相競爭、稀釋錨點權重 ——
+    //      那是「又晴變中國腔」事故的軟性版本(沒刪除,但削弱)。
+    //      所以聲音特質只在這裡出現一次,而且擺在整串的最尾端。
+    //   voice_style 的內容只寫語速 / 音高 / 力度 / 情緒,
+    //   前端已保證不含任何地區或國家字眼。
+    if (p.voice_style) parts.push('voice quality: ' + p.voice_style);
 
     return parts.join('. ');
   }
@@ -107,6 +118,7 @@
     const fields = [
       'background', 'personality', 'speaking_style', 'role_relationship',
       'catchphrases', 'taboo_words', 'signature_topics', 'forbidden_topics',
+      'voice_style',   // 🆕 v5.14
     ];
     const filled = fields.filter(f => {
       const v = persona[f];
