@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
- *  Brand OS · KOL 人設面板 v1.0
+ *  Brand OS · KOL 人設面板 v1.6
  *
  *  功能：
  *   • 品牌選擇器（URL 帶 ?brand=la 會自動選中）
@@ -251,6 +251,62 @@ function injectCSS() {
     .kpp-form-field input:focus,
     .kpp-form-field textarea:focus,
     .kpp-form-field select:focus { border-color: #7c6dfa; }
+    /* 🆕 v1.6:聲音特質控制器 ───────────────────────────────
+       設計原則:標籤【單選】—— 疊多個形容詞會讓提示詞互相打架
+       (「急迫」+「慵懶」送進去模型只會困惑),集中一個方向反而準。
+       滑桿只做 3 段:5 段的中間值在生成結果上分不出差異,
+       客戶拖半天聽起來一樣,比沒有滑桿更傷信任。 */
+    .kpp-voice-tags {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+    }
+    .kpp-vtag {
+      padding: 6px 11px; border-radius: 999px; cursor: pointer;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.7);
+      font-size: 12px; font-family: 'Noto Sans TC', sans-serif;
+      transition: all .15s; user-select: none; white-space: nowrap;
+    }
+    .kpp-vtag:hover { border-color: rgba(124,109,250,.6); color: #fff; }
+    .kpp-vtag.on {
+      background: rgba(124,109,250,.18);
+      border-color: #7c6dfa; color: #fff; font-weight: 600;
+    }
+    .kpp-slider-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px;
+    }
+    @media (max-width: 680px) {
+      .kpp-slider-grid { grid-template-columns: 1fr; }
+    }
+    .kpp-slider-row { }
+    .kpp-slider-row .kpp-sl-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 11px; color: rgba(255,255,255,0.55); margin-bottom: 4px;
+    }
+    .kpp-slider-row .kpp-sl-val { color: #7c6dfa; font-weight: 700; }
+    .kpp-seg {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 4px;
+    }
+    .kpp-seg button {
+      padding: 7px 4px; border-radius: 7px; cursor: pointer;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.6);
+      font-size: 11.5px; font-family: 'Noto Sans TC', sans-serif;
+      transition: all .15s;
+    }
+    .kpp-seg button:hover { border-color: rgba(124,109,250,.5); }
+    .kpp-seg button.on {
+      background: rgba(124,109,250,.18);
+      border-color: #7c6dfa; color: #fff; font-weight: 600;
+    }
+    .kpp-voice-preview {
+      margin-top: 10px; padding: 9px 11px; border-radius: 8px;
+      background: rgba(124,109,250,.07);
+      border: 1px solid rgba(124,109,250,.2);
+      font-size: 11px; color: rgba(255,255,255,0.55);
+      line-height: 1.6; word-break: break-word;
+    }
     .kpp-type-radio {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -339,11 +395,35 @@ function injectCSS() {
 }
 
 // ─── 面板注入 ──────────────────────────────────────────────
+//  🩹 v1.6 修(2026-08-23):掛載點改以「角色已就緒」卡為第一順位。
+//
+//  病灶:原本第一順位找「影片主題/賣點」輸入框、第二順位找「口播影片設定」
+//        標題區塊 —— 這兩個【都住在 #video-panel 裡面】。
+//        kol.html v6.2 停用口播、把 #video-panel 整塊 display:none 之後,
+//        兩個錨點同時消失 → injectPanel 一路退到 document.body,
+//        或根本產不出面板(實測 Console:面板存在 false)。
+//        現象:人設編輯入口整個不見,而且不會報錯 —— 最難查的那種。
+//
+//  教訓:停用一個區塊之前,不只要問「誰會改它的 display」,
+//        還要問「誰寄生在它裡面」。這次漏的是後者。
+//
+//  新順序:① #kol-ready-card(v6.2 新建,角色選定後恆在)
+//         ② 影片主題/賣點輸入框(舊路徑,往下相容)
+//         ③ 口播影片設定區塊(更舊的路徑,留著不刪)
+//         ④ body(最後防線)
 function injectPanel() {
-  // 找到「影片主題 / 賣點」的輸入框，把面板插在它上面
+  // ① 角色已就緒卡 —— 建角色頁的常駐容器,不隨口播停用而消失
+  const readyCard = document.getElementById('kol-ready-card');
+  if (readyCard) {
+    readyCard.insertAdjacentHTML('beforebegin', buildPanelHTML());
+    bindPanelEvents();
+    return;
+  }
+
+  // ② 找到「影片主題 / 賣點」的輸入框，把面板插在它上面
   const topicInput = findTopicInput();
   if (!topicInput) {
-    // 如果找不到，找「口播影片設定」區塊
+    // ③ 如果找不到，找「口播影片設定」區塊
     const sections = document.querySelectorAll('h3, [class*="title"], [class*="head"]');
     let anchor = null;
     for (const s of sections) {
@@ -442,6 +522,8 @@ function injectModal() {
   `;
   document.body.insertAdjacentHTML('beforeend', html);
 
+  renderVoiceControl();   // 🆕 v1.6:表單進 DOM 後才綁得到,不能提前
+
   document.getElementById('kpp-modal-close')?.addEventListener('click', closePersonaModal);
   document.getElementById('kpp-btn-cancel')?.addEventListener('click', closePersonaModal);
   document.getElementById('kpp-btn-save')?.addEventListener('click', savePersona);
@@ -506,9 +588,16 @@ function buildFormHTML() {
     </div>
 
     <div class="kpp-form-field">
-      <label>說話風格</label>
-      <textarea id="kpp-f-speaking_style" placeholder="例：日文腔的繁體中文，避開日文漢字..."></textarea>
-      <div class="kpp-hint-inline">⚠️ HeyGen 會把日文漢字（本当に、これ）當中文字唸，建議只用純假名語氣詞（欸〜、うん）</div>
+      <label>說話風格 · 聲音特質</label>
+      <div class="kpp-voice-tags" id="kpp-vtags"></div>
+      <div class="kpp-slider-grid" id="kpp-vsliders"></div>
+      <div class="kpp-voice-preview" id="kpp-vpreview"></div>
+      <textarea id="kpp-f-speaking_style" style="margin-top:10px"
+        placeholder="上面選好就會自動填這裡，也可以直接手改"></textarea>
+      <div class="kpp-hint-inline">
+        影響聲音的<strong>傾向</strong>；實際聲線仍會依角色的年齡與長相自然生成。<br>
+        口音一律台灣中文，不受這裡影響。
+      </div>
     </div>
 
     <div class="kpp-form-field">
@@ -680,6 +769,160 @@ function closePersonaModal() {
   document.getElementById('kpp-modal').classList.remove('open');
 }
 
+// ═══ 🆕 v1.6:聲音特質控制器 ═══════════════════════════════
+//  資料流:標籤/滑桿 →(組英文描述詞)→ #kpp-f-speaking_style
+//         → collectForm 照舊讀那個 textarea → persona.speaking_style
+//         → KolPersona.contribute() 產出 "speaking style: ..." 進提示詞
+//  也就是說:不新增欄位、不改 Worker、不動資料庫。線路本來就通,
+//           我們只是把「一個空白框」換成「預設就是對的」。
+//
+//  ⚠️ 鐵律:這裡的描述詞【一個地區/國家字眼都不能出現】。
+//     口音由 natToAccent(nationality) 單獨決定,永遠是 Taiwanese Mandarin。
+//     若在這裡寫進任何口音字樣,會和 accent 錨點互相競爭 → 稀釋效果,
+//     這正是「又晴變中國腔」那次事故的軟性版本。只寫語速/音高/力度/情緒。
+
+var VOICE_AXES = [
+  { k:'pace',   label:'語速', opts:[
+      ['slow',  '慢',   'slow unhurried pace'],
+      ['mid',   '中等', 'natural conversational pace'],
+      ['fast',  '快',   'brisk quick pace'] ] },
+  { k:'pitch',  label:'音高', opts:[
+      ['low',   '低',   'low resonant register'],
+      ['mid',   '中等', 'mid register'],
+      ['high',  '高',   'bright higher register'] ] },
+  { k:'power',  label:'力度', opts:[
+      ['soft',  '輕',   'soft light delivery'],
+      ['mid',   '適中', 'even measured delivery'],
+      ['strong','強',   'firm punchy delivery'] ] },
+  { k:'emotion',label:'情緒張力', opts:[
+      ['calm',  '平穩', 'restrained steady tone'],
+      ['mid',   '自然', 'naturally expressive tone'],
+      ['high',  '強烈', 'highly expressive animated tone'] ] },
+];
+
+//  標籤【單選】。每個標籤 = 一組滑桿預設 + 一句人味的英文補述。
+var VOICE_TAGS = [
+  { k:'trust',   label:'信任感',   pace:'slow',  pitch:'mid',  power:'mid',    emotion:'calm',
+    extra:'grounded and credible, like someone giving honest advice' },
+  { k:'magnetic',label:'磁性沉穩', pace:'slow',  pitch:'low',  power:'mid',    emotion:'calm',
+    extra:'warm resonant and settled' },
+  { k:'anchor',  label:'專業播報', pace:'mid',   pitch:'mid',  power:'mid',    emotion:'calm',
+    extra:'crisp clear articulation, composed and authoritative' },
+  { k:'cute',    label:'明亮可愛', pace:'fast',  pitch:'high', power:'soft',   emotion:'high',
+    extra:'playful with light upward inflection' },
+  { k:'snappy',  label:'輕快俐落', pace:'fast',  pitch:'mid',  power:'mid',    emotion:'mid',
+    extra:'clean and efficient, no wasted breath' },
+  { k:'tender',  label:'溫柔慢語', pace:'slow',  pitch:'mid',  power:'soft',   emotion:'calm',
+    extra:'gentle and soothing, softly rounded consonants' },
+  { k:'urgent',  label:'急迫促銷', pace:'fast',  pitch:'mid',  power:'strong', emotion:'high',
+    extra:'urgent push with strong emphasis on key words' },
+  { k:'lazy',    label:'慵懶隨性', pace:'slow',  pitch:'low',  power:'soft',   emotion:'mid',
+    extra:'relaxed and unhurried, slightly trailing endings' },
+  { k:'neighbor',label:'親切鄰家', pace:'mid',   pitch:'mid',  power:'soft',   emotion:'mid',
+    extra:'easy and familiar, like chatting with a friend' },
+  { k:'healing', label:'沉靜療癒', pace:'slow',  pitch:'low',  power:'soft',   emotion:'calm',
+    extra:'quiet and calming, spacious between phrases' },
+];
+
+var _vState = { tag:'', pace:'mid', pitch:'mid', power:'mid', emotion:'mid' };
+
+function _vBuildText() {
+  var parts = [];
+  VOICE_AXES.forEach(function (ax) {
+    var cur = _vState[ax.k];
+    var hit = ax.opts.filter(function (o) { return o[0] === cur; })[0];
+    if (hit) parts.push(hit[2]);
+  });
+  if (_vState.tag) {
+    var t = VOICE_TAGS.filter(function (x) { return x.k === _vState.tag; })[0];
+    if (t && t.extra) parts.push(t.extra);
+  }
+  return parts.join(', ');
+}
+
+function _vSync(writeTextarea) {
+  // 標籤高亮
+  Array.prototype.forEach.call(document.querySelectorAll('#kpp-vtags .kpp-vtag'), function (el) {
+    el.classList.toggle('on', el.dataset.k === _vState.tag);
+  });
+  // 段選高亮 + 目前值
+  VOICE_AXES.forEach(function (ax) {
+    Array.prototype.forEach.call(
+      document.querySelectorAll('#kpp-vsliders [data-ax="' + ax.k + '"] button'), function (b) {
+        b.classList.toggle('on', b.dataset.v === _vState[ax.k]);
+      });
+    var cur = _vState[ax.k];
+    var hit = ax.opts.filter(function (o) { return o[0] === cur; })[0];
+    var lab = document.querySelector('#kpp-vsliders [data-axval="' + ax.k + '"]');
+    if (lab && hit) lab.textContent = hit[1];
+  });
+  var txt = _vBuildText();
+  var pv = document.getElementById('kpp-vpreview');
+  if (pv) pv.textContent = txt || '尚未設定 — 會依角色年齡與長相自然生成';
+  if (writeTextarea) {
+    var ta = document.getElementById('kpp-f-speaking_style');
+    if (ta) ta.value = txt;
+  }
+}
+
+function renderVoiceControl() {
+  var wrap = document.getElementById('kpp-vtags');
+  if (!wrap) return;
+  wrap.innerHTML = VOICE_TAGS.map(function (t) {
+    return '<div class="kpp-vtag" data-k="' + t.k + '">' + t.label + '</div>';
+  }).join('');
+  Array.prototype.forEach.call(wrap.querySelectorAll('.kpp-vtag'), function (el) {
+    el.addEventListener('click', function () {
+      var k = el.dataset.k;
+      if (_vState.tag === k) { _vState.tag = ''; }      // 再點一次 = 取消
+      else {
+        _vState.tag = k;
+        var t = VOICE_TAGS.filter(function (x) { return x.k === k; })[0];
+        if (t) { _vState.pace=t.pace; _vState.pitch=t.pitch; _vState.power=t.power; _vState.emotion=t.emotion; }
+      }
+      _vSync(true);
+    });
+  });
+
+  var sl = document.getElementById('kpp-vsliders');
+  if (!sl) return;
+  sl.innerHTML = VOICE_AXES.map(function (ax) {
+    return '<div class="kpp-slider-row">' +
+      '<div class="kpp-sl-head"><span>' + ax.label + '</span>' +
+      '<span class="kpp-sl-val" data-axval="' + ax.k + '"></span></div>' +
+      '<div class="kpp-seg" data-ax="' + ax.k + '">' +
+        ax.opts.map(function (o) {
+          return '<button type="button" data-v="' + o[0] + '">' + o[1] + '</button>';
+        }).join('') +
+      '</div></div>';
+  }).join('');
+  Array.prototype.forEach.call(sl.querySelectorAll('.kpp-seg button'), function (b) {
+    b.addEventListener('click', function () {
+      var ax = b.parentNode.dataset.ax;
+      _vState[ax] = b.dataset.v;
+      _vState.tag = '';   // 手動微調 → 脫離標籤預設
+      _vSync(true);
+    });
+  });
+  _vSync(false);
+}
+
+// 讀舊資料時:比對文字反推是哪個標籤;認不出來就只清高亮,不覆蓋客戶手寫的內容
+function _vLoadFrom(text) {
+  _vState = { tag:'', pace:'mid', pitch:'mid', power:'mid', emotion:'mid' };
+  var t = (text || '').trim();
+  if (t) {
+    for (var i = 0; i < VOICE_TAGS.length; i++) {
+      var g = VOICE_TAGS[i];
+      var save = _vState;
+      _vState = { tag:g.k, pace:g.pace, pitch:g.pitch, power:g.power, emotion:g.emotion };
+      if (_vBuildText() === t) { _vSync(false); return; }
+      _vState = save;
+    }
+  }
+  _vSync(false);
+}
+
 function clearForm() {
   document.getElementById('kpp-f-persona_id').value = '';
   document.getElementById('kpp-f-persona_name').value = '';
@@ -689,6 +932,7 @@ function clearForm() {
   document.getElementById('kpp-f-background').value = '';
   document.getElementById('kpp-f-personality').value = '';
   document.getElementById('kpp-f-speaking_style').value = '';
+  _vLoadFrom('');   // 🆕 v1.6:聲音特質一併重置
   document.getElementById('kpp-f-catchphrases').value = '';
   document.getElementById('kpp-f-taboo_words').value = '';
   document.getElementById('kpp-f-signature_topics').value = '';
@@ -709,6 +953,9 @@ function fillForm(persona) {
   document.getElementById('kpp-f-background').value = persona.background || '';
   document.getElementById('kpp-f-personality').value = persona.personality || '';
   document.getElementById('kpp-f-speaking_style').value = persona.speaking_style || '';
+  _vLoadFrom(persona.speaking_style || '');   // 🆕 v1.6:反推標籤與滑桿位置
+  //   ⚠️ 認不出來(客戶手寫或舊資料)就只清高亮,絕不覆寫 textarea ——
+  //      否則一開編輯視窗就把人家寫好的東西洗掉。
   document.getElementById('kpp-f-catchphrases').value = (persona.catchphrases || []).join(' / ');
   document.getElementById('kpp-f-taboo_words').value = (persona.taboo_words || []).join(' / ');
   document.getElementById('kpp-f-signature_topics').value = (persona.signature_topics || []).join(' / ');
