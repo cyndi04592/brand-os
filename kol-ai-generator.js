@@ -301,6 +301,57 @@ const SCENE_MAP = {
   client_table: 'across a small table from a client, printed material and a laptop between them softly out of focus, warm even indoor light, candid discussion moment',
 };
 
+// ═══════════════════════════════════════════════════════════════════
+//  ✨ v3.34 神韻預設 —— 選好人設就自動帶,客戶不用自己想
+//   為什麼要有:「自由補充」原本是一個空白框,提示寫「例:眼神有故事感」。
+//     客戶根本不知道該寫什麼,九成的人會留白 —— 留白的結果是 AI 自由發揮,
+//     同一個人設每次生出來的神韻都不一樣(有時甜美、有時嚴肅)。
+//   ★ 這正是「不教客戶做對的事,讓預設就是對的事」:
+//     他選了「行銷顧問」,系統就知道那該長什麼樣子。
+//   ★ 客戶想改照樣能改 —— 這是預設值,不是鎖死。
+//   ⚠️ 寫英文:自由補充是直接串進英文 prompt 的,中文會讓模型解讀不穩。
+//   ⚠️ 只寫「神韻/眼神/姿態」,不碰服裝場景光線 —— 那些欄位自己有得選,
+//      重複描述會打架(例如這裡寫 warm light、佈光卻選了診間白光)。
+const KAI_VIBE = {
+  professional:         'sharp composed gaze, poised upright posture, quietly authoritative, not overly sweet',
+  nordic_cool:          'calm distant gaze, minimalist restrained posture, cool composed presence',
+  warm_mama:            'caring warm expression, soft unhurried posture, gentle attentive eyes',
+  marketing_consultant: 'composed confident gaze, relaxed but focused posture, the look of someone who has just made a clear point, not overly sweet',
+  content_operator:     'quick alert eyes, hands-on energy, mid-task focus, natural unposed expression',
+  solo_founder:         'grounded self-reliant expression, slight tiredness that reads as real, quietly determined',
+  girl_next_door:       'warm approachable smile, relaxed natural posture, friendly eye contact',
+  pro_woman:            'poised professional bearing, calm direct gaze, subtle confident smile',
+  pro_man:              'steady professional bearing, calm direct gaze, composed posture',
+  nordic_model:         'cool composed expression, elegant restrained posture, distant editorial gaze',
+  sweet_college:        'bright youthful smile, lively relaxed posture, open friendly eyes',
+  edgy_fashion:         'bold assured gaze, strong fashion-forward posture, confident attitude',
+  outdoor_man:          'weathered easy-going expression, relaxed outdoor posture, natural squint',
+  sporty_man:           'energetic open expression, athletic upright posture, healthy vitality',
+  uncle_warm:           'kind crinkled eyes, warm unhurried presence, gentle approachable smile',
+  foodie:               'delighted anticipating expression, leaning-in curiosity, genuine enjoyment',
+  nutritionist:         'reassuring professional warmth, attentive listening posture, clear honest gaze',
+  chef:                 'focused craftsman expression, confident hands, practised composure',
+  doctor:               'calm reassuring authority, attentive eye contact, composed steady posture',
+  lawyer:               'precise composed expression, upright authoritative posture, measured gaze',
+  athlete:              'determined focused expression, strong ready posture, controlled intensity',
+  reporter:             'alert engaged expression, clear articulate posture, direct camera presence',
+  shopper:              'curious browsing expression, relaxed casual posture, natural interest',
+  appliance_guru:       'knowledgeable explaining expression, demonstrative hands, friendly authority',
+  snacker:              'relaxed indulgent expression, casual comfortable posture, easy enjoyment',
+  salesperson:          'warm persuasive presence, open inviting posture, confident friendly gaze',
+  couple_warm:          'affectionate soft expression, relaxed intimate posture, gentle warmth',
+  kid_cute:             'bright innocent expression, playful natural posture, unguarded joy',
+  lash_artist:          'delicate focused expression, steady precise hands, gentle professional care',
+  nail_artist:          'attentive detailed focus, careful steady hands, calm artistry',
+  hair_stylist:         'creative assured expression, expressive hands, stylish confident presence',
+  aesthetic_consultant: 'polished reassuring expression, attentive consulting posture, refined calm',
+  yoga_teacher:         'serene centred expression, balanced grounded posture, quiet presence',
+  fitness_coach:        'motivating energetic expression, strong encouraging posture, positive drive',
+  tarot_reader:         'thoughtful mysterious calm, unhurried deliberate gestures, quiet knowing gaze',
+  tour_guide:           'cheerful welcoming expression, open guiding gesture, easy enthusiasm',
+  ip_attorney:          'meticulous composed expression, precise professional bearing, trustworthy calm',
+};
+
 // 中文顯示對應
 const LABEL = {
   gender: {
@@ -909,9 +960,9 @@ function buildPanelHTML() {
       </div>
 
       <div class="kai-field">
-        <label class="kai-label">自由補充(中文,選填)</label>
+        <label class="kai-label">神韻補充 · <span style="color:#5eead4;font-weight:400">已依人設自動帶入,可直接改</span></label>
         <textarea class="kai-textarea" id="kai-free-text"
-          placeholder="例:眼神有故事感、嘴角微微上揚、戴珍珠耳環"></textarea>
+          placeholder="選好人設後會自動帶入神韻描述"></textarea>
       </div>
 
       <div class="kai-prompt-head">
@@ -1034,6 +1085,27 @@ function bindEvents() {
   document.querySelectorAll('.kai-param').forEach(el => {
     el.addEventListener('change', renderPromptPreview);
   });
+
+  // ✨ v3.34 選好人設 → 自動帶入神韻,客戶不用自己想該寫什麼。
+  //   ⚠️ 只有在「客戶沒有自己改過」時才覆蓋 —— 他打了字就是他的決定,
+  //      切個下拉選單就把他寫的東西洗掉,是很惱人的體驗。
+  const _vibeEl = document.getElementById('kai-free-text');
+  const _personaSel = document.querySelector('.kai-param[data-k="persona"]');
+  if (_vibeEl && _personaSel) {
+    const _applyVibe = function (force) {
+      const v = KAI_VIBE[_personaSel.value] || '';
+      if (!v) return;
+      if (force || !_vibeEl.value.trim() || _vibeEl.dataset.auto === '1') {
+        _vibeEl.value = v;
+        _vibeEl.dataset.auto = '1';
+        renderPromptPreview();
+      }
+    };
+    _personaSel.addEventListener('change', function () { _applyVibe(false); });
+    // 客戶自己動手改 → 從此不再自動覆蓋
+    _vibeEl.addEventListener('input', function () { this.dataset.auto = ''; });
+    _applyVibe(true);          // 面板一開就先帶好預設
+  }
   // 🆕 v3.32 年齡拉桿:拖動時即時更新數字 + 未成年確認框連動。
   //   ⚠️ range 要聽 'input' 不是 'change' —— 只聽 change 會等到放開滑鼠才更新,
   //      拖的過程中數字不動,使用者會以為壞掉。
