@@ -1,325 +1,292 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-storyboard-panel.js · v1.6
-//  分鏡產生器面板 — 大綱 → AI 編修 → 分鏡卡片 → 確認分鏡(鎖定)/ 重新編輯(解鎖)
-//   • open(ctx): { containerId, persona, product, sceneLabel, onConfirm, onEdit }
-//   • 確認分鏡 → ctx.onConfirm(beats, duration)(填劇情+鎖設定,不生成)
-//   • 重新編輯 → ctx.onEdit()(解鎖)
+//  kol-storywriter.js · v5.14
+//
+//  📖 編劇 — 故事弧、情緒基調、分鏡 beat 產生器 + AI 編修前端
+//
+//  職責:
+//   • 管理故事弧(storyArc = theme / tone / productHint)
+//   • 單集故事情境(situation)
+//   • 分鏡 beat 產生器(秒數 → beat 結構)
+//   • 台詞秒數守門
+//   • 🆕 v5.14:AI 編修前端(打包請求 buildExpandRequest / 合併結果 mergeExpandResult)
+//
+//  ⚠️ 本檔只負責「結構、骨架、打包、合併」,全是純函式、不碰網路。
+//     網路(api('storyboard_expand'))發生在 kol.html;最終 prompt 組裝由 crew-director 負責。
 // ════════════════════════════════════════════════════════════════════
 
 (function () {
   'use strict';
 
-  const DURATIONS = [15, 30, 45, 60, 90];
-
-  let rootEl = null;
-  let ctx = null;
-  const state = { duration: 15, outline: '', beats: [], busy: false, confirmed: false };
-  let prodCache = [];   // 🆕 1b 分段綁圖:商品照縮圖清單(每次 renderCards 從 ctx.getProductImages() 重讀)
-
-  // v1.3 修:本面板同時掛在 STEP2(sbp-cine-mount)+ STEP3(sbp-episode-mount)兩個容器,
-  //   固定 ID 在頁面上會「重複」→ document.getElementById 永遠抓到第一個(STEP2)→ STEP3 按 AI 編修
-  //   請求有送、200 有回,但卡片被畫進 STEP2 的隱藏容器,STEP3 看起來「沒反應」。
-  //   解法:面板內部一律「只在當前掛載的 rootEl 裡找元素」,兩個容器各自獨立。
-  function $el(id) { return (rootEl && rootEl.querySelector) ? rootEl.querySelector('#' + id) : document.getElementById(id); }
-
-  const esc = (s) => String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-
-  function ensureStyles() {
-    if (document.getElementById('sbp-styles')) return;
-    const css = `
-.sbp-wrap{font-size:13px;color:var(--text,#e8e8ef)}
-.sbp-head{font-size:15px;font-weight:600;margin-bottom:10px}
-.sbp-head .sbp-sub{font-size:12px;font-weight:400;color:var(--text-dim,#8a8a99);margin-left:8px}
-.sbp-label{display:block;font-size:12px;color:var(--text-dim,#8a8a99);margin:10px 0 4px}
-.sbp-row{display:flex;align-items:center;gap:8px;margin:8px 0}
-.sbp-select,.sbp-textarea{width:100%;background:var(--bg-2,#15151c);color:var(--text,#e8e8ef);
-  border:1px solid var(--border,#2c2c38);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
-.sbp-textarea{resize:vertical;line-height:1.55}
-.sbp-actions{margin-top:10px}
-.sbp-card{background:var(--bg-2,#15151c);border:1px solid var(--border,#2c2c38);
-  border-radius:12px;padding:12px 14px;margin-top:12px}
-.sbp-badge{display:inline-block;font-size:12px;font-weight:500;background:#241f3a;color:#b9aaff;
-  border-radius:7px;padding:3px 10px}
-.sbp-sec{font-size:12px;color:var(--text-dim,#8a8a99);margin-left:8px}
-.sbp-lockbtn{margin-left:auto;font-size:12px;background:transparent;color:var(--text-dim,#8a8a99);
-  border:1px solid var(--border,#2c2c38);border-radius:7px;padding:3px 9px;cursor:pointer}
-.sbp-lockbtn.on{color:#f5c451;border-color:#5a4d1f;background:#221d0c}
-.sbp-cardhead{display:flex;align-items:center;margin-bottom:8px}
-.sbp-mini{font-size:11px;color:var(--text-dim,#8a8a99);margin:8px 0 3px}
-.sbp-fit{font-size:11px;margin-top:4px;color:var(--text-dim,#8a8a99)}
-.sbp-fit.over{color:#ff6b6b}
-.sbp-fit.short{color:#f5c542}
-.sbp-empty{color:var(--text-dim,#8a8a99);font-size:12px;padding:14px 0;text-align:center}
-.sbp-genrow{margin-top:14px;display:flex;align-items:center;gap:10px}
-.sbp-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center}
-.sbp-chip{width:46px;height:46px;object-fit:cover;border-radius:8px;border:2px solid var(--border,#2c2c38);cursor:pointer;opacity:.7;background:#0e0e14}
-.sbp-chip.on{border-color:#b9aaff;opacity:1;box-shadow:0 0 0 2px #241f3a}
-.sbp-chip-clear{font-size:11px;color:var(--text-dim,#8a8a99);border:1px dashed var(--border,#2c2c38);border-radius:7px;padding:3px 8px;cursor:pointer;background:transparent}
-.sbp-note{font-size:11px;color:var(--text-dim,#8a8a99);flex:1}`;
-    const el = document.createElement('style');
-    el.id = 'sbp-styles';
-    el.textContent = css;
-    document.head.appendChild(el);
-  }
-
-  function mount(containerId) {
-    rootEl = document.getElementById(containerId);
-    if (!rootEl) { console.warn('[sbp] 找不到容器', containerId); return; }
-    ensureStyles();
-    render();
-  }
-
-  function open(newCtx) {
-    ctx = newCtx || {};
-    if (ctx.containerId) {
-      rootEl = document.getElementById(ctx.containerId);
-      ensureStyles();
-    }
-    state.beats = [];
-    state.outline = '';
-    state.busy = false;
-    state.confirmed = false;
-    render();
-    rootEl?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-  }
-
-  function syncDom() {
-    state.beats.forEach(b => {
-      const sd = $el('sbp-shot-' + b.index);
-      if (sd) b.shotDesc = sd.value;
-      const dl = $el('sbp-dlg-' + b.index);
-      if (dl) {
-        b.dialogue = dl.value;
-        b.fit = window.KolStorywriter.checkDialogueFit(b.dialogue, b.seconds);
-        b.overflow = !b.fit.fits;
-      }
-    });
-  }
-
-  function collectLocked() {
-    return state.beats
-      .filter(b => b.dialogueLocked && b.dialogue)
-      .map(b => ({ index: b.index, text: b.dialogue }));
-  }
-
-  function unlockIfConfirmed() {
-    if (state.confirmed) {
-      state.confirmed = false;
-      if (typeof ctx?.onEdit === 'function') ctx.onEdit();
-    }
-  }
-
-  async function expand() {
-    if (state.busy) return;
-    if (!window.KolStorywriter) { alert('KolStorywriter 未載入'); return; }
-    if (typeof api !== 'function') { alert('api() 未載入'); return; }
-    unlockIfConfirmed();
-    if (state.beats.length) syncDom();
-
-    const lockedLines = collectLocked();
-    const payload = window.KolStorywriter.buildExpandRequest({
-      duration: state.duration,
-      outline: state.outline,
-      lockedLines,
-      persona: ctx?.persona || {},
-      product: ctx?.product || {},
-      sceneLabel: ctx?.sceneLabel || '',
-      // 🧠 2026-08-23 劇情記憶:ctx.getRecentEpisodes 由 kol.html 掛上(可能沒有 → 空陣列 = 舊行為)
-      //   🩹 改 await:取用器現在會「沒有就自己去撈」,不再依賴使用者先逛過劇情記憶頁。
-      //      舊寫法只讀快取 → 直接進 STEP2 的人永遠沒有記憶,而且安靜地沒有。
-      recentEpisodes: (typeof ctx?.getRecentEpisodes === 'function') ? (await ctx.getRecentEpisodes() || []) : [],
-    });
-
-    state.busy = true;
-    const btn = $el('sbp-expand-btn');
-    if (btn) { btn.disabled = true; btn.textContent = '編修中…'; }
-
-    try {
-      const res = await api('storyboard_expand', payload);
-      if (!res || !res.ok) {
-        alert('AI 編修失敗:' + (res?.error || '未知錯誤'));
-      } else {
-        const skeleton = window.KolStorywriter.planBeats(state.duration);
-        state.beats = window.KolStorywriter.mergeExpandResult(skeleton, res.beats, lockedLines, ctx && ctx.persona && ctx.persona.nationality);
-      }
-    } catch (e) {
-      alert('AI 編修錯誤:' + e.message);
-    }
-
-    state.busy = false;
-    if (btn) { btn.disabled = false; btn.textContent = 'AI 編修成分鏡'; }
-    renderCards();
-  }
-
-  function outlineInput(v) { state.outline = v; }
-  function shotInput(idx, v) { const b = state.beats.find(x => x.index === idx); if (b) b.shotDesc = v; }
-  function dialogueInput(idx, v) {
-    const b = state.beats.find(x => x.index === idx);
-    if (!b) return;
-    b.dialogue = v;
-    b.fit = window.KolStorywriter.checkDialogueFit(v, b.seconds);
-    b.overflow = !b.fit.fits;
-    const fitEl = $el('sbp-fit-' + idx);
-    if (fitEl) {
-      const _si = shortInfo(b);
-      fitEl.textContent = `${b.fit.chars} 字 · 約 ${b.fit.estSec} 秒`
-        + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '')
-        + (_si ? ` 台詞偏短,結尾約空 ${_si.gap} 秒(建議補到約 ${_si.target} 字)` : '');
-      fitEl.className = 'sbp-fit' + (b.overflow ? ' over' : (_si ? ' short' : ''));
-    }
-  }
-  function lock(idx) {
-    syncDom();
-    const b = state.beats.find(x => x.index === idx);
-    if (b) b.dialogueLocked = !b.dialogueLocked;
-    renderCards();
-  }
-  // 🆕 1b 分段綁圖:點縮圖 = 這段配這張商品照;再點一下 = 取消(取消 = 該段回到「整批一起餵」)
-  function pickProduct(beatIdx, pIdx) {
-    syncDom();
-    const b = state.beats.find(x => x.index === beatIdx);
-    const u = prodCache[pIdx];
-    if (!b || !u) return;
-    b.productUrl = (b.productUrl === u) ? '' : u;
-    renderCards();
-  }
-  function clearProduct(beatIdx) {
-    syncDom();
-    const b = state.beats.find(x => x.index === beatIdx);
-    if (b) b.productUrl = '';
-    renderCards();
-  }
-  function durationChange(v) {
-    state.duration = parseInt(v);
-    state.beats = [];
-    unlockIfConfirmed();
-    renderCards();
-  }
-
-  function confirmToggle() {
-    if (!state.beats.length) { alert('請先按「AI 編修」產生分鏡'); return; }
-    if (!state.confirmed) {
-      syncDom();
-      // 🆕 v1.5 防呆:任何一段台詞超長(紅字)就擋下確認,不讓超長台詞進生成(超長=引擎趕戲吃字)
-      const _over = state.beats.filter(b => b.overflow);
-      if (_over.length) {
-        alert('還不能確認唷:第 ' + _over.map(b => b.index + 1).join('、') + ' 段的台詞太長,講不完會被趕戲。\n\n請把該段台詞刪短一點(看卡片下方的字數提示,變回灰色就 OK),或再按一次「AI 編修」重寫。');
-        return;
-      }
-      state.confirmed = true;
-      if (typeof ctx?.onConfirm === 'function') ctx.onConfirm(state.beats, state.duration);
-      else alert('尚未接上確認流程(onConfirm)');
-    } else {
-      state.confirmed = false;
-      if (typeof ctx?.onEdit === 'function') ctx.onEdit();
-    }
-    renderCards();
-  }
-
-  function render() {
-    if (!rootEl) return;
-    rootEl.innerHTML = `
-<div class="sbp-wrap">
-  <div class="sbp-head">分鏡產生器<span class="sbp-sub">大綱 → AI 編修 → 分鏡卡片</span></div>
-  <div class="sbp-row">
-    <label class="sbp-label" style="margin:0">長度</label>
-    <select id="sbp-duration" class="sbp-select" style="width:auto" onchange="KolStoryboardPanel.durationChange(this.value)">
-      ${DURATIONS.map(d => `<option value="${d}" ${d === state.duration ? 'selected' : ''}>${d} 秒 · ${window.KolStorywriter.planBeats(d).length} beat</option>`).join('')}
-    </select>
-  </div>
-  <label class="sbp-label">大綱(可留空,AI 自己想)</label>
-  <textarea id="sbp-outline" class="sbp-textarea" rows="3"
-    placeholder="例:健一在日本富士山的登山步道休息,隨身帶著防熊噴霧,最近日本熊出沒新聞變多..."
-    oninput="KolStoryboardPanel.outlineInput(this.value)">${esc(state.outline)}</textarea>
-  <div class="sbp-actions">
-    <button id="sbp-expand-btn" class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.expand()">AI 編修成分鏡</button>
-  </div>
-  <div id="sbp-cards"></div>
-</div>`;
-    renderCards();
-  }
-
-  // 🆕 v1.6:台詞偏短判斷(對稱防線:紅=太長硬擋,黃=偏短提醒不擋)
-  function shortInfo(b) {
-    if (!b?.fit || b.overflow || !b.seconds) return null;
-    const est = +b.fit.estSec || 0;
-    if (est >= b.seconds - 3) return null;                    // 空窗 3 秒內可接受(留收尾動作)
-    const gap = Math.max(1, Math.round(b.seconds - est - 1)); // 估空秒(扣 1 秒開場呼吸)
-    const target = Math.round(b.seconds * 0.78 * 4.2);        // 建議字數(同 Worker 寧滿勿空公式)
-    return { gap, target };
-  }
-
-  // 🆕 1b:此段商品縮圖列 —— 只有 2 張以上商品照才出現(1 張綁不綁都一樣,不干擾)
-  function productChipsHtml(b) {
-    if (prodCache.length < 2) return '';
-    const chips = prodCache.map((u, i) => {
-      const on = b.productUrl === u;
-      return `<img src="${esc(u)}" class="sbp-chip${on ? ' on' : ''}" title="商品照 ${i + 1}" loading="lazy"
-        onclick="KolStoryboardPanel.pickProduct(${b.index}, ${i})">`;
-    }).join('');
-    const clearBtn = b.productUrl
-      ? `<span class="sbp-chip-clear" onclick="KolStoryboardPanel.clearProduct(${b.index})">✕ 不指定</span>` : '';
-    return `<div class="sbp-mini">此段商品(點選指定 · 不選 = 整批一起餵)</div>
-  <div class="sbp-chips">${chips}${clearBtn}</div>`;
-  }
-
-  function cardHtml(b) {
-    const overCls = b.overflow ? ' over' : '';
-    const fitTxt = b.dialogue
-      ? `${b.fit?.chars ?? 0} 字 · 約 ${b.fit?.estSec ?? 0} 秒` + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '') + (shortInfo(b) ? ` 台詞偏短,結尾約空 ${shortInfo(b).gap} 秒(建議補到約 ${shortInfo(b).target} 字)` : '')
-      : '';
-    return `
-<div class="sbp-card">
-  <div class="sbp-cardhead">
-    <span class="sbp-badge">Beat ${b.index} · ${esc(b.zhLabel)}</span>
-    <span class="sbp-sec">${b.seconds} 秒</span>
-    <button class="sbp-lockbtn${b.dialogueLocked ? ' on' : ''}" onclick="KolStoryboardPanel.lock(${b.index})">
-      ${b.dialogueLocked ? '🔒 已鎖' : '🔓 鎖台詞'}
-    </button>
-  </div>
-  <div class="sbp-mini">鏡頭</div>
-  <textarea id="sbp-shot-${b.index}" class="sbp-textarea" rows="2"
-    oninput="KolStoryboardPanel.shotInput(${b.index}, this.value)">${esc(b.shotDesc)}</textarea>
-  ${productChipsHtml(b)}
-  <div class="sbp-mini">台詞「」</div>
-  <textarea id="sbp-dlg-${b.index}" class="sbp-textarea" rows="2"
-    oninput="KolStoryboardPanel.dialogueInput(${b.index}, this.value)">${esc(b.dialogue)}</textarea>
-  <div id="sbp-fit-${b.index}" class="sbp-fit${overCls}${shortInfo(b) ? ' short' : ''}">${fitTxt}</div>
-</div>`;
-  }
-
-  function renderCards() {
-    const box = $el('sbp-cards');
-    if (!box) return;
-    // 🆕 1b:每次重畫都重讀一次商品照(妳在下面商品區加選後,鎖台詞/點縮圖等任何動作都會刷新這排)
-    prodCache = (typeof ctx?.getProductImages === 'function') ? (ctx.getProductImages() || []).filter(Boolean) : [];
-    if (!state.beats.length) {
-      box.innerHTML = `<div class="sbp-empty">填好大綱、按「AI 編修」,這裡會出現 ${window.KolStorywriter.planBeats(state.duration).length} 張分鏡卡片</div>`;
-      return;
-    }
-    const multi = state.beats.length > 1;
-    const note = state.confirmed
-      ? (multi
-          ? `✅ 已確認 · ${state.beats.length} 段會自動接成 ≈ ${state.duration} 秒長片,挑好設定按生成`
-          : '✅ 分鏡已確認 · 單段,挑好設定按生成')
-      : (multi
-          ? `${state.beats.length} 段分鏡 → 按「確認分鏡」後會自動接成 ≈ ${state.duration} 秒長片`
-          : '確認後會鎖定下面設定');
-    box.innerHTML = state.beats.map(cardHtml).join('') + `
-<div class="sbp-genrow">
-  <span class="sbp-note">${note}</span>
-  <button class="btn ${state.confirmed ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="KolStoryboardPanel.confirmToggle()">${state.confirmed ? '重新編輯(解鎖)' : '✅ 確認分鏡'}</button>
-</div>`;
-  }
-
-  window.KolStoryboardPanel = {
-    mount, open, expand, lock, confirmToggle,
-    durationChange, outlineInput, shotInput, dialogueInput,
-    pickProduct, clearProduct,
-    getBeats: () => state.beats,
+  // ─── 分鏡 beat 模板(秒數 → 起承轉收結構)──────────────
+  //   每段 = 15 秒 = 1 個 beat = Seedance 一次生成
+  const BEAT_ROLES = {
+    hook:   { zh: '起 · 開場勾人',  hint: 'opening hook, establish character and setting, draw attention immediately' },
+    build:  { zh: '承 · 鋪陳',      hint: 'build context, introduce the situation or need naturally' },
+    turn:   { zh: '轉 · 轉折亮點',  hint: 'turning point, the key moment where the product comes into play' },
+    turn2:  { zh: '轉² · 強化',     hint: 'second beat of tension or reinforcement, deepen the moment' },
+    payoff: { zh: '收 · 收尾',      hint: 'payoff, show the satisfying result or resolution' },
+    cta:    { zh: 'CTA · 行動呼籲', hint: 'closing call-to-action or warm sign-off to the viewer' },
   };
 
-  console.log('[KolStoryboardPanel] v1.8 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 超長擋確認 · 🆕偏短黃字提醒 · 🧠劇情記憶轉送·現撈不靠快取)');
+  const DURATION_TEMPLATES = {
+    15: ['hook'],
+    30: ['hook', 'payoff'],
+    45: ['hook', 'build', 'payoff'],
+    60: ['hook', 'build', 'turn', 'payoff'],
+    90: ['hook', 'build', 'turn', 'turn2', 'payoff', 'cta'],
+  };
+
+  const SECONDS_PER_BEAT = 15;
+  const SPEAK_RATE = 4.2; // 2026-07-03 實測校準:欣怡 36字/8秒≈4.5字/秒,取保守4.2(舊值3.5低估→台詞配太少→尾段空窗7秒)
+
+  /**
+   * 依秒數產生 beat 骨架(純函式、無網路)
+   */
+  function planBeats(durationSec) {
+    let roles = DURATION_TEMPLATES[durationSec];
+    if (!roles) {
+      const n = Math.max(1, Math.round(durationSec / SECONDS_PER_BEAT));
+      const base = ['hook', 'build', 'turn', 'turn2', 'payoff', 'cta'];
+      roles = n <= base.length
+        ? base.slice(0, n)
+        : [...base, ...Array(n - base.length).fill('build')];
+    }
+    return roles.map((role, i) => ({
+      index: i + 1,
+      role,
+      zhLabel: BEAT_ROLES[role]?.zh || role,
+      hint: BEAT_ROLES[role]?.hint || '',
+      seconds: SECONDS_PER_BEAT,
+      shotDesc: '',
+      dialogue: '',
+      dialogueLocked: false,
+    }));
+  }
+
+  /**
+   * 台詞秒數守門:這句話塞不塞得進一個 beat?
+   */
+  function checkDialogueFit(text, beatSeconds = SECONDS_PER_BEAT) {
+    const chars = (text || '').replace(/\s/g, '').length;
+    const estSec = +(chars / SPEAK_RATE).toFixed(1);
+    return { chars, estSec, fits: estSec <= beatSeconds * 0.9 };
+  }
+
+  /**
+   * 🆕 打包 AI 編修請求 → 給 api('storyboard_expand') 用的 payload(純函式)
+   * @param {object} inputs - { duration, outline, lockedLines, persona, product, sceneLabel }
+   */
+  function buildExpandRequest({
+    duration, outline, lockedLines,
+    persona = {}, product = {}, sceneLabel = '',
+    recentEpisodes = [],   // 🧠 2026-08-23 劇情記憶
+  }) {
+    const joinList = (v) => Array.isArray(v) ? v.join('、') : (v || '');
+
+    // ⚖️ 2026-08-19 合規守門:把行業禁詞併進去。
+    //   影片比靜態圖危險 —— 靜態圖的字由版型控制,KOL 講的台詞是 AI 自己寫的。
+    //   2026-05 南投判例:用 AI 生成水晶手鍊文案宣稱「緩解心臟病、預防高血壓」,
+    //   依藥事法罰 60 萬(業者辯稱不知違法照罰)。KOL 台詞是同一個模式。
+    //   ★ 沿用既有的 kolTabooWords 欄位,不用改 Worker、不用改架構。
+    //   ★ 查不到行業 → 回空字串 → 舊商品行為完全不變。
+    let _compTaboo = '', _compBrief = '';
+    try {
+      if (window.KolCompliance) {
+        _compTaboo = window.KolCompliance.tabooFor(product) || '';
+        _compBrief = window.KolCompliance.briefFor(product) || '';
+      }
+    } catch (e) {}
+    const _taboo = [joinList(persona.taboo_words), _compTaboo].filter(Boolean).join('、');
+
+    // ═══════════════════════════════════════════════════════════
+    //  🧠 2026-08-23 劇情記憶:讓 KOL 讀自己的日記
+    //   現況(本次修正前):每一集都存進 KOL_Episodes,月曆與記憶列表都讀得到,
+    //     但【生下一集時完全沒有人把它餵回去】—— KOL 有日記卻不會翻開來看。
+    //   ★ 只送「主題 + 故事框 + 情緒」三個欄位的極短摘要,最多 6 集。
+    //     絕不整包丟:episodes 一列有 31 欄(含 prompt_final、reference_images_json),
+    //     整包塞進去會把 token 吃光,而且對「別重複」這件事一點幫助也沒有。
+    //   ★ 空陣列 → 完全不送這個欄位 → 舊行為一字不變。
+    // ═══════════════════════════════════════════════════════════
+    let _memo = '';
+    try {
+      const eps = Array.isArray(recentEpisodes) ? recentEpisodes : [];
+      // 🩹 2026-08-23 二修:欄位挑錯了。
+      //   實測(米禾 8/03 那集)發現:
+      //     calendar_topic → 只有從月曆格子點進來才會填,平常是空的(畫面顯示「主題:-」)
+      //     emotion        → 情緒基調下拉預設「不指定」,也是空的
+      //     story_frame    → 只有場景名(「廚房晨光」)
+      //   → 舊寫法組出來只剩四個字的場景名,那不是記憶,是場景。
+      //     AI 只知道「上次在廚房」,不知道上次演了什麼 → 照樣重複橋段。
+      //   ★ 真正裝著劇情的是 scenario(每集必填,就是那一集的故事情境)。
+      //     現在以它為主,前面掛日期/商品/場景當索引。
+      const lines = eps.slice(0, 6).map(function (ep) {
+        if (!ep) return '';
+        const d = String(ep.calendar_date || '').slice(5, 10).replace('-', '/');   // 2026-08-03 → 08/03
+        const t = String(ep.calendar_topic || ep.topic || '').trim();
+        const pd = String(ep.product_name || '').trim();
+        const f = String(ep.story_frame || '').trim().slice(0, 20);
+        const m = String(ep.emotion || '').trim();
+        // 故事本體:去掉換行、砍到 70 字(6 集 × 約 90 字 ≈ 540 字,遠低於 Worker 端 1200 上限)
+        const sc = String(ep.scenario || '').replace(/\s+/g, ' ').trim().slice(0, 70);
+        const head = [d, t, pd, f, m].filter(Boolean).join(' · ');
+        if (!head && !sc) return '';
+        return '・' + head + (sc ? ' — ' + sc : '');
+      }).filter(Boolean);
+      if (lines.length) _memo = lines.join('\n');
+    } catch (e) {}
+
+    return {
+      recentEpisodes: _memo,   // 🧠 純文字摘要,Worker 端直接貼進提示詞
+      durationSec: duration,
+      beats: planBeats(duration),
+      outline: (outline || '') + _compBrief,
+      lockedLines: Array.isArray(lockedLines) ? lockedLines : [],
+      kolName: persona.persona_name || persona.name || '',
+      kolBackground: persona.background || '',
+      kolPersonality: persona.personality || '',
+      kolSpeakingStyle: persona.speaking_style || '',
+      kolNationality: persona.nationality || 'tw',
+      kolCatchphrases: joinList(persona.catchphrases),
+      kolTabooWords: _taboo,   // ⚖️ 人設禁語 + 行業合規禁詞
+      productName: product.name || '',
+      productTag: product.tag || '',
+      sceneLabel: sceneLabel || '',
+    };
+  }
+
+  // 🆕 發音友善化:台詞送去生語音前,清掉會害引擎念歪的雷(只清發音,不改語意/口氣)
+  //   ⚠️ 看國籍:香港/廣東(講粵語)→ 跳過粵語轉換,保留他的腔;其餘(台灣/大陸/日本講國語)才套。
+  //   ⚠️ 只用在「非鎖定」台詞;使用者手鎖的台詞一字不改。
+  const _CANTO_MAP = [
+    ['呢個','這個'], ['嗰個','那個'], ['咁樣','這樣'], ['乜嘢','什麼'],
+    ['係','是'], ['唔','不'], ['咁','這樣'], ['嘅','的'], ['喺','在'],
+    ['畀','給'], ['乜','什麼'], ['冇','沒'], ['嘢','東西'],
+  ];
+  function speechFriendly(t, nationality){
+    if(!t) return t;
+    let s = String(t);
+    const nat = String(nationality || '').toLowerCase();
+    const isCantonese = (nat==='hk' || nat==='gd' || nat==='canton' || nat==='guangdong' || nat==='hkcanton');
+    if(!isCantonese){
+      _CANTO_MAP.forEach(function(p){ s = s.split(p[0]).join(p[1]); });
+    }
+    s = s.replace(/[。.]{2,}/g,'，').replace(/[…⋯]+/g,'，').replace(/[~～]+/g,'');
+    s = s.replace(/(欸){2,}/g,'欸').replace(/(啊){2,}/g,'啊');
+    s = s.replace(/，{2,}/g,'，').replace(/,{2,}/g,',')
+         .replace(/^[，,、\s]+/,'').replace(/[，,、\s]+$/,'').trim();
+    return s;
+  }
+
+  /**
+   * 🆕 合併 AI 回來的 beats 進骨架(純函式)
+   *   - 把 shotDesc / dialogue 填進原骨架(保留 zhLabel / seconds / role 給 UI)
+   *   - 鎖定台詞逐字蓋回(雙保險)
+   *   - 每格跑一次 checkDialogueFit,標出爆秒的(overflow)
+   */
+  // 🆕 地點防呆清洗器:把 shotDesc 偷渡的地點/家具字自動中性化(避免跟使用者選的場景打架)
+  //   只洗地點/家具,保留鏡頭詞(定場遠景/極特寫等)與動作、台詞。
+  const _BANNED_PLACES = ['廚房','客廳','臥室','臥房','浴室','廁所','洗手間','辦公室','書房','餐廳','中島','流理台','流理臺','料理台','料理檯','吧台','吧檯','餐桌','書桌','梳妝台','梳妝臺','沙發','茶几','陽台','陽臺','玄關','咖啡廳','咖啡店','店裡','店內','房間','櫥櫃','廚櫃','洗手台','洗手臺'];
+  function sanitizeShotDesc(t){
+    if(!t) return t;
+    let s = String(t);
+    const B = '(' + _BANNED_PLACES.join('|') + ')';
+    s = s.replace(new RegExp('站在\\s*'+B+'\\s*(的)?\\s*(旁邊|邊|旁|前方|前)?','g'),'站著');
+    s = s.replace(new RegExp('坐在\\s*'+B+'\\s*(的)?\\s*(旁邊|邊|旁|前方|前)?','g'),'坐著');
+    s = s.replace(new RegExp('(靠在|倚在|趴在)\\s*'+B+'\\s*(的)?\\s*(旁邊|邊|旁|前方|前|上)?','g'),'$1一旁');
+    s = s.replace(new RegExp('(走向|走進|走到|走去|走回)\\s*'+B,'g'),'轉身');
+    s = s.replace(new RegExp('在\\s*'+B+'\\s*(的)?\\s*(裡|內|中|上|旁|邊)?','g'),'');
+    s = s.replace(new RegExp(B,'g'),'');
+    s = s.replace(/，\s*，+/g,'，').replace(/,\s*,+/g,',')
+         .replace(/^[，,、。\s]+/,'')
+         .replace(/，(的)/g,'，')
+         .trim();
+    return s;
+  }
+  function mergeExpandResult(skeleton, llmBeats, lockedLines = [], nationality = '') {
+    const lockMap = {};
+    (lockedLines || []).forEach(l => {
+      if (l && l.index != null && l.text) lockMap[l.index] = String(l.text);
+    });
+    const llmMap = {};
+    (llmBeats || []).forEach(b => { if (b && b.index != null) llmMap[b.index] = b; });
+
+    return skeleton.map(s => {
+      const got = llmMap[s.index] || {};
+      const locked = lockMap[s.index];
+      let dialogue = locked || got.dialogue || '';
+      if (!locked) dialogue = speechFriendly(dialogue, nationality);
+      const fit = checkDialogueFit(dialogue, s.seconds);
+      return {
+        ...s,
+        shotDesc: sanitizeShotDesc(got.shotDesc || s.shotDesc || ''),
+        angle: got.angle || s.angle || 'front',   // 🆕 AI 導演選的鏡位,帶進 beat
+        dialogue,
+        dialogueLocked: !!locked,
+        fit,
+        overflow: !fit.fits,
+      };
+    });
+  }
+
+  /**
+   * 把一個填好的 beat 轉成現有 pipeline 吃的 episode 設定
+   */
+  function beatToEpisode(beat, baseEpisode = {}) {
+    return {
+      ...baseEpisode,
+      situation: beat.shotDesc || baseEpisode.situation || '',
+      _beatRole: beat.role,
+      _beatIndex: beat.index,
+    };
+  }
+
+  /**
+   * 產出故事段落(v5.12 既有行為,完全不動)
+   */
+  function contribute(ctx) {
+    const parts = [];
+    const arc = ctx.storyArc || {};
+    const arcParts = [];
+    if (arc.tone) arcParts.push('emotional tone: ' + arc.tone);
+    if (arc.theme) arcParts.push('content theme: ' + arc.theme);
+    if (false && arc.productHint) arcParts.push('subtle product emphasis: ' + arc.productHint);
+    if (arcParts.length > 0) {
+      parts.push(arcParts.join(', ') + ', no explicit brand name mentioned, natural lifestyle integration');
+    }
+    if (ctx.episode?.situation) {
+      parts.push('scene context: ' + ctx.episode.situation);
+    }
+    if (ctx.episode?.portraitMode === 'natural') {
+      parts.push('IMPORTANT: generate this scene purely from text description, do not anchor to any reference face, let the imagination flow freely for maximum naturalism, authentic imperfect human presence, slight asymmetry in facial features is welcomed');
+    }
+    return parts.join('. ');
+  }
+
+  /**
+   * 多鏡頭故事拆分 — v5.13 起委派 planBeats(原本回 null、無人呼叫)
+   */
+  function splitForMultiShot(situation, duration) {
+    const beats = planBeats(duration);
+    if (beats.length && situation) beats[0].shotDesc = situation;
+    return beats;
+  }
+
+  // ─── 導出 + 自動向總導演註冊 ─────────────────────────
+  window.KolStorywriter = {
+    contribute,
+    splitForMultiShot,
+    planBeats,
+    checkDialogueFit,
+    buildExpandRequest,
+    mergeExpandResult,
+    beatToEpisode,
+    BEAT_ROLES,
+    DURATION_TEMPLATES,
+  };
+
+  if (window.CrewDirector?.register) {
+    window.CrewDirector.register('storywriter', window.KolStorywriter);
+  }
+
+  console.log('[KolStorywriter] 📖 v5.17 就緒(語速4.2實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
 })();
