@@ -736,17 +736,25 @@ window.KolStitch = (function () {
       console.log('[KolStitch] 🔬 診斷:本支跳過場景圖(KOL_DROP_SCENE=on)');
     }
     try {
-      if (!_dropScene && !sceneImageUrl && window.KolEnvironment) {
+      // 🆕 2026-08-23:條件從「沒有場景圖才進來」改成「沒被關掉就進來」。
+      //   病灶:舊條件 !sceneImageUrl 表示【客戶一旦上傳實景照就整段跳過】,
+      //   九宮格永遠不會跑 —— 而客戶自己的空間正是最需要多角度的那個。
+      //   ★ 現在:有實景照 → 用它當輸入生同空間多角度(image-to-image);
+      //     沒有 → 照舊走文字 → 藍圖 → 九宮格。
+      //   ★ 任何一步失敗都退回客戶原本那張實景照,絕不用想像的空間蓋掉它。
+      if (!_dropScene && window.KolEnvironment) {
         const sceneCtx = opts.sceneCtx || {
           brandId: opts.brandId || (window.S && window.S.currentBrandId) || '',
           sceneId: (window.S && window.S.selectedSceneId) || '',
           locationId: (window.S && window.S.selectedLocationId) || 'none',
+          sceneImageUrl: sceneImageUrl || '',   // 🆕 傳給 generateSceneGrid 走 image-to-image
         };
         // 🗺️ v6.17 場景九宮格保險絲(預設關):on → 生九宮格(多角度空間庫);失敗或關 → 退回單張場景圖
         const _wantGrid = (typeof window !== 'undefined' && window.KOL_SCENEGRID === true);
         if (_wantGrid && typeof window.KolEnvironment.generateSceneGrid === 'function') {
           log('正在準備拍攝場景…');
-          sceneImageUrl = await window.KolEnvironment.generateSceneGrid(sceneCtx);
+          const _grid = await window.KolEnvironment.generateSceneGrid(sceneCtx);
+          if (_grid) sceneImageUrl = _grid;   // 失敗就保留客戶原本那張實景照
         }
         if (!sceneImageUrl && typeof window.KolEnvironment.generateSceneRefImage === 'function') {
           log(_wantGrid ? '九宮格未生成,退回單張場景圖…' : '生成場景參考圖中…(鎖跨段背景,整支只生一次)');
