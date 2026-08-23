@@ -227,7 +227,11 @@ window.KolStitch = (function () {
         ? (_pron().s + ' holds the product referenced in each shot at a consistent real-world size and hand-scale; do not zoom or resize it within a shot; different shots show the specified products; ')
         : (_pron().s + ' holds a product that is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ');
       const _mc = (typeof window !== 'undefined' && window.KOL_MATCHCUT === true);  // 🎬 v6.16 結尾停+硬切(match cut)保險絲,預設關
-      const _sg = (typeof window !== 'undefined' && window.KOL_SCENEGRID === true);  // 🗺️ v6.17 場景九宮格保險絲,預設關(標註用)
+      // 🗺️ 場景九宮格 —— 2026-08-23 改為【預設開】。
+      //   理由:跨段場景飄移是已知的老問題,九宮格本來就是為它做的,
+      //   沒必要再測一輪確認「文字擋不住」。
+      //   ★ 保險絲反轉:預設開,顯式 window.KOL_SCENEGRID = false 才關。
+      const _sg = (typeof window === 'undefined' || window.KOL_SCENEGRID !== false);
       const _fa = (typeof window !== 'undefined' && window.KOL_FACEANGLES === true);  // 🎯 v6.18 多角度臉選配保險絲,預設關(每 beat 臉前綴用)
       let bodyB = shared.front + '\n'
         + 'Reference images are LOCKED assets, each the single source of truth for its element — keep identical in every shot: '
@@ -827,7 +831,9 @@ window.KolStitch = (function () {
           sceneImageUrl: sceneImageUrl || '',   // 🆕 傳給 generateSceneGrid 走 image-to-image
         };
         // 🗺️ v6.17 場景九宮格保險絲(預設關):on → 生九宮格(多角度空間庫);失敗或關 → 退回單張場景圖
-        const _wantGrid = (typeof window !== 'undefined' && window.KOL_SCENEGRID === true);
+        // 🗺️ 預設開(見上方 230 行說明)。任何一步失敗都會退回客戶原本那張實景照,
+        //   絕不會讓場景消失或被想像的空間蓋掉 —— 這是敢預設開的前提。
+        const _wantGrid = (typeof window === 'undefined' || window.KOL_SCENEGRID !== false);
         if (_wantGrid && typeof window.KolEnvironment.generateSceneGrid === 'function') {
           log('正在準備拍攝場景…');
           const _grid = await window.KolEnvironment.generateSceneGrid(sceneCtx);
