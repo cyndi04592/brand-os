@@ -78,26 +78,29 @@ const S = {
 
 // ── 反 AI 美學 Prompt 配方庫 ─────────────────────────────
 // ═══════════════════════════════════════════════════════════════
-//  🆕 v3.34(2026-08-23)臉部品質三道防呆
+//  🆕 v3.36(2026-08-23)臉部品質四道防呆
 //
 //  ★ 為什麼要在【生成端】治,不能等影片:
 //    這張臉是每一段影片都要餵給 Seedance 當 @Image1 的錨點。
 //    來源有鬥雞眼 → 每一段都鬥雞眼。引擎放大缺陷,不會修正缺陷。
 //    資產優先:資產負責穩定性,資產壞了後面全壞。
 //
-//  三個實例(2026-08-23 現場):
-//   ① 鬥雞眼 —— 側身回頭 + "friendly eye contact" 指令衝突。
-//      模型硬要兩眼都看鏡頭,結果一隻轉過去另一隻沒跟上。
-//      解:明確要求雙眼【對齊到同一個焦點】,並允許側臉時視線離開鏡頭。
+//  ⚠️ 這裡【不做】獨立的 negative_prompt 欄位:
+//    Worker 走的是 fal-ai/flux-pro/v1.1-ultra,那支 API 沒有這個參數。
+//    硬加會被靜默丟掉 —— 看起來有防護實際什麼都沒做,比沒有更糟
+//    (日後排查會誤以為已經擋過)。FLUX 對句中的 no / never 有反應,
+//    所以否定詞直接寫進正向句子。
+//
+//  三個現場實例(2026-08-23):
+//   ① 鬥雞眼 —— 側身回頭 + "friendly eye contact" 指令衝突,
+//      模型硬要兩眼都看鏡頭,一隻轉過去另一隻沒跟上。
 //   ② 遺照感 / 油畫感 —— 正面平光 + 深色背景 + 中性表情 + 無環境層次。
 //      光平 → 對比壓縮 → 皮膚失去高低起伏 → 塑膠或油畫。
-//      解:強制單側方向光 + 背景要有景深與環境線索,禁止純黑背板。
-//   ③ 痣太整齊 —— "skin texture" 被理解成規律紋理貼圖,
-//      痣呈均勻分布、大小一致。真人的痣是隨機叢聚、大小不一、
-//      多數落在單側。解:明講不規則與不對稱。
+//   ③ 痣太整齊 —— "skin texture" 被理解成規律紋理貼圖,痣呈均勻分布、
+//      大小一致。真人的痣是隨機叢聚、大小不一。
 // ═══════════════════════════════════════════════════════════════
 const FACE_GUARD =
-  // ① 眼睛
+  // ① 眼睛幾何
   'both eyes looking at exactly the same single focal point with perfectly aligned parallel gaze, ' +
   'no crossed eyes no wandering eye no divergent gaze, pupils centered consistently in both eyes, ' +
   // ③ 瑕疵的隨機性
@@ -107,11 +110,34 @@ const FACE_GUARD =
   'clear three-dimensional facial modeling with real depth, natural environmental context visible behind her, ' +
   'never a flat dark empty backdrop, never a memorial portrait look, never an oil-painting or illustrated look';
 
-// ⚠️ 這裡【不做】獨立的 negative_prompt 欄位:
-//   Worker 走的是 fal-ai/flux-pro/v1.1-ultra,那支 API 沒有 negative_prompt。
-//   硬加欄位會被靜默丟掉 —— 看起來有防護,實際上什麼都沒做,
-//   比沒有更糟(以後排查會誤以為已經擋過了)。
-//   FLUX 對句中的 no / never 敘述有反應,所以否定詞直接寫進上面的正向句子。
+// ═══ ④ 眼神 ════════════════════════════════════════════════
+//  RA:「眼神流轉很吃眼球,眼球呆滯很不行,我要連 AI 都以為是真人照片。」
+//
+//  ★ 這跟 ① 是兩件不同的事,不能混:
+//    ① 鬥雞眼 = 幾何問題(兩眼沒對齊)
+//    ④ 呆滯   = 生命感問題(對齊了但沒有人在裡面)
+//    只修 ① 會得到一雙「對得很整齊的死魚眼」。
+//
+//  呆滯的五個來源,逐項對治:
+//   ⑴ 沒有反光點 —— 真人眼球是濕的,一定有環境光源的 catchlight,
+//      左右眼位置一致(同一個光源),形狀是光源的形狀。
+//   ⑵ 瞳孔沒有對焦對象 —— 寫「看鏡頭」模型只會畫「朝向鏡頭」不是「聚焦」。
+//      要明講聚焦在一個【有距離的具體對象】上。
+//   ⑶ 眼白太乾淨 —— 真人有極細血絲、下眼瞼濕潤反光、內眼角淚阜。
+//   ⑷ 左右眼完全對稱 —— 真人雙眼皮寬度、上眼瞼高度天生略有差異。
+//      完美對稱是模型預設,也是最刺眼的假。
+//   ⑸ 沒有「正在想事情」—— 生命感來自眼周肌肉極輕微的收縮,
+//      那是真笑與假笑的差別。
+const EYE_GUARD =
+  'alive expressive eyes with a real sense of a thinking person behind them, ' +
+  'wet glossy eyeballs with clear sharp specular catchlights from the actual light source in the scene, ' +
+  'the catchlight sits in the same matching position in both eyes, ' +
+  'pupils genuinely focused on one specific object at a real distance, not vacantly aimed at the lens, ' +
+  'natural moist lower lash line with a faint wet reflection, visible tear duct and a few very fine blood vessels in the whites, ' +
+  'slight natural asymmetry between the two eyelids and eyelid crease widths, ' +
+  'subtle engagement of the muscles around the eyes as in a real unforced expression, ' +
+  'eyes never glassy never vacant never doll-like never dead-fish, ' +
+  'never a blank stare, never flat matte pupils, never identical mirrored eyes';
 
 // 骨幹模板(所有情境共用的「真人感」基底)
 const BACKBONES = {
@@ -229,7 +255,7 @@ const PERSONA_MAP = {
   salesperson:    'friendly energetic retail salesperson, approachable enthusiastic helpful smile, natural skin with real texture',
   couple_warm:    'warm affectionate partner-next-door vibe, gentle loving gaze and soft tender smile, natural skin with real texture',
   kid_cute:       'an innocent cheerful young child with a bright natural smile, soft round features, natural healthy child skin',
-  // ── 🆕 v3.34 美業與服務業(2026-08-19)──
+  // ── 🆕 v3.33 美業與服務業(2026-08-19)──
   //   共同要求:手一定會入鏡,指甲乾淨修短;神情專注不諂媚;不做誇張手勢。
   lash_artist:    'focused lash technician with calm steady hands, gentle attentive gaze, short clean unpainted nails, natural skin with visible pores and real texture',
   nail_artist:    'precise nail artist with well-groomed hands, relaxed creative confidence, tidy short nails on the working hand, natural skin with real texture',
@@ -240,7 +266,7 @@ const PERSONA_MAP = {
   tarot_reader:   'contemplative tarot reader with a quiet knowing presence, soft steady gaze, understated jewellery, natural skin with real texture',
   tour_guide:     'friendly experienced tour guide, weather-tanned outdoor skin, easy welcoming smile, practical unfussy grooming, natural skin texture',
   ip_attorney:    'meticulous trademark and patent professional, precise composed expression, quietly authoritative, natural skin with visible texture and faint fine lines',
-  // ── 🆕 v3.34 行銷代操與系統服務(芮比自己推 Brand OS 用)──
+  // ── 🆕 v3.33 行銷代操與系統服務(芮比自己推 Brand OS 用)──
   //   ⚠️ 氣質要「一人公司」不是「大公司主管」:專業但不端架子,忙但不慌。
   marketing_consultant: 'practical marketing consultant with a candid down-to-earth manner, thinking-out-loud expression, smart-casual and unfussy, natural skin with real texture',
   content_operator:     'hands-on content operator mid-work, focused unposed concentration with a slight tired-but-satisfied look, minimal grooming, natural skin with visible pores and real texture',
@@ -257,7 +283,7 @@ const LIGHTING_MAP = {
   bright_midday: 'bright natural midday sunlight, vivid energetic outdoor light',
   evening_warm:  'warm evening lamp light, intimate cozy glow',
   moody_side:    'moody low-key directional side lighting, dramatic shadow falloff',
-  // ── 🆕 v3.34 行業佈光 ──
+  // ── 🆕 v3.33 行業佈光 ──
   //   ⚠️ 全部維持「柔、散、無油光」,不加戲劇性硬光 —— 硬光會在臉上打出高光斑,
   //      那正是「AI 油臉」的來源(見 kol-cinematographer 的教訓)。
   salon_soft:    'soft even beauty-salon lighting from a large diffused source, clean shadowless falloff, flattering but not glamorous',
@@ -286,7 +312,7 @@ const OUTFIT_MAP = {
   blazer:        'a smart professional blazer',
   hoodie:        'a casual cotton hoodie',
   trendy_casual: 'a trendy casual everyday outfit',
-  // ── 🆕 v3.34 行業服裝 ──
+  // ── 🆕 v3.33 行業服裝 ──
   salon_uniform: 'a clean fitted beauty-salon work tunic in a soft neutral tone',
   apron:         'a simple canvas work apron over a plain long-sleeve top',
   yoga_set:      'a fitted matte yoga set in a muted tone, no logos',
@@ -318,7 +344,7 @@ const SCENE_MAP = {
   // ── v5.13 戶外場景 ──
   mountain:   'on a mountain trail with misty forest peaks behind, a little wind in the hair, candid hiking snapshot, natural outdoor light',
   campsite:   'at an outdoor campsite with tents and gear scattered around, warm golden hour light, candid relaxed moment',
-  // ── 🆕 v3.34 行業場域(2026-08-19)──
+  // ── 🆕 v3.33 行業場域(2026-08-19)──
   //   ⚠️ 全部寫成「她正在那個空間裡工作/生活」,不是「站在背景前面」,
   //      而且環境物件一律 softly out of focus —— 背景搶戲會壓掉主角的臉。
   lash_room:    'in a small tidy lash studio beside a treatment bed with a ring light and neat tools softly out of focus, calm clean light, candid working moment',
@@ -329,7 +355,7 @@ const SCENE_MAP = {
   tarot_table:  'at a small draped table with cards and a candle softly out of focus, low warm intimate light, quiet contemplative candid moment',
   scenic_trail: 'on a scenic travel trail with a landmark landscape softly out of focus behind, natural outdoor light, candid travelling moment',
   classroom:    'at the front of a small teaching room with a board and seats softly out of focus behind, bright natural daylight, candid teaching moment',
-  // ── 🆕 v3.34 一人公司(芮比自己推 Brand OS 用)──
+  // ── 🆕 v3.33 一人公司(芮比自己推 Brand OS 用)──
   //   ⚠️ 不要拍成大公司會議室 —— 故事是「一個人把整條線跑完」,
   //      空間要小、要有生活痕跡、要看得出真的在工作,不是形象照。
   solo_desk:    'at a single work desk in a small home studio, notebooks and a coffee cup and a little real clutter softly out of focus, plain daylight from a window, candid mid-work moment',
@@ -433,7 +459,7 @@ const LABEL = {
     salesperson:    '銷售員',
     couple_warm:    '情侶感',
     kid_cute:       '小朋友',
-    // 🆕 v3.34 美業與服務業
+    // 🆕 v3.33 美業與服務業
     lash_artist:          '美睫師',
     nail_artist:          '美甲師',
     hair_stylist:         '髮型師',
@@ -443,7 +469,7 @@ const LABEL = {
     tarot_reader:         '塔羅師',
     tour_guide:           '導遊',
     ip_attorney:          '商標專利師',
-    // 🆕 v3.34 行銷與系統服務
+    // 🆕 v3.33 行銷與系統服務
     marketing_consultant: '行銷顧問',
     content_operator:     '內容操盤手',
     solo_founder:         '一人公司創辦人',
@@ -458,7 +484,7 @@ const LABEL = {
     bright_midday: '正午陽光',
     evening_warm:  '暖夜燈光',
     moody_side:    '戲劇側光',
-    // 🆕 v3.34 行業佈光
+    // 🆕 v3.33 行業佈光
     salon_soft:    '美容室柔光',
     clinic_white:  '診間潔淨白光',
     classroom_day: '教室自然光',
@@ -483,7 +509,7 @@ const LABEL = {
     blazer:          '西裝外套',
     hoodie:          '連帽休閒',
     trendy_casual:   '時髦休閒',
-    // 🆕 v3.34 行業服裝
+    // 🆕 v3.33 行業服裝
     salon_uniform:   '美容師工作服',
     apron:           '工作圍裙',
     yoga_set:        '瑜伽服',
@@ -513,7 +539,7 @@ const LABEL = {
     street_live:  '街頭連線',
     mall:         '商場店內',
     shoe_store:   '鞋店/賣場',
-    // 🆕 v3.34 行業場域
+    // 🆕 v3.33 行業場域
     lash_room:      '美睫工作室',
     nail_desk:      '美甲工作桌',
     aesthetic_room: '醫美諮詢室',
@@ -522,7 +548,7 @@ const LABEL = {
     tarot_table:    '塔羅桌',
     scenic_trail:   '景點步道',
     classroom:      '教室講台',
-    // 🆕 v3.34 一人公司
+    // 🆕 v3.33 一人公司
     solo_desk:      '一人工作室書桌',
     dual_screen:    '雙螢幕工作區',
     client_table:   '與客戶討論',
@@ -557,7 +583,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.34] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
+  console.log('[kol-ai-generator v3.33] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1440,11 +1466,13 @@ if (params.nationality === 'kr') {
     prompt += ', ' + freeText;
   }
 
-  // 🆕 v3.34:臉部三道防呆。位置在【年齡特徵之前】——
-  //   年齡特徵必須留在更後面壓過通用傾向(見下方 v3.32 註解),
-  //   而這三道是結構性要求(視線對齊、瑕疵隨機、有立體感),
-  //   不會跟年齡打架,擺這裡兩者都保得住。
-  prompt += ', ' + FACE_GUARD;
+  // 🆕 v3.36:臉部四道防呆。
+  //   位置在【年齡特徵之前】—— 年齡特徵必須留在更後面壓過模型的
+  //   「畫年輕」傾向(見下方 v3.32 註解),而這四道是結構性要求,
+  //   擺這裡兩者都保得住。
+  //   FACE_GUARD 先於 EYE_GUARD:先把幾何講清楚(兩眼對齊)再談生命感;
+  //   順序反過來,「對齊」會被一長串眼神描述稀釋,容易變回鬥雞眼。
+  prompt += ', ' + FACE_GUARD + ', ' + EYE_GUARD;
 
   // 🆕 v3.32 年齡特徵接在最後(自由補充之後)——
   //   放最後是刻意的:老化特徵必須壓過前面的通用「年輕漂亮」傾向,
