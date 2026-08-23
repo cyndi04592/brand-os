@@ -883,7 +883,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v6.1 · 素材庫</div>
+  <div class="topbar-badge" style="margin-left:8px;">v6.2 · 建角色</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -930,8 +930,8 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="vision-card">
       <div class="vision-col now active" data-mode="talking">
         <div class="vision-stage">STEP 1 <span class="vision-badge live">從這裡開始</span></div>
-        <div class="vision-title">建立角色 + 口播</div>
-        <div class="vision-desc">所有 KOL 角色都在這裡建立 — 從素材庫選照片 → 建立品牌專屬角色 → AI 生成真人口播短影音。<strong style="color:var(--accent3)">STEP 2、3 都要先在這裡建好角色。</strong></div>
+        <div class="vision-title">建立 KOL 角色</div>
+        <div class="vision-desc">所有 KOL 角色都在這裡誕生 — AI 生成專屬長相 → 設定人設與語氣 → 產出多角度參考照。<strong style="color:var(--accent3)">建好角色後,到 STEP 2 拍第一支影片。</strong></div>
       </div>
       <div class="vision-col next" data-mode="cinematic">
         <div class="vision-stage">STEP 2 <span class="vision-badge live" data-badge="live">電影鏡頭</span><span class="vision-badge locked" data-badge="lock" style="display:none">需先建立角色</span></div>
@@ -1017,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
       <div class="panel onb-card" id="kol-onboard-card" style="display:none">
         <div class="onb-title">第一步:建立你的 KOL 角色</div>
-        <div class="onb-sub">這個品牌還沒有 KOL。先建立一位角色,才能製作口播影片,STEP 2、3 也才會解鎖。</div>
+        <div class="onb-sub">這個品牌還沒有 KOL。先建立一位角色,STEP 2、3 才會解鎖。</div>
         <div class="onb-opts">
           <button type="button" class="onb-opt" onclick="kolOnboardGoAI()">
             <span class="t">用 AI 生成一位<span class="tag">最快</span></span>
@@ -1030,7 +1030,27 @@ document.addEventListener('DOMContentLoaded', function(){
         </div>
       </div>
 
-      <div class="panel" id="video-panel">
+      <!-- 🆕 v6.2:角色就緒卡 — 取代原「口播影片設定」的位置 -->
+      <div class="panel" id="kol-ready-card" style="display:none">
+        <div class="panel-title"><div class="dot" style="background:var(--accent2)"></div>角色已就緒</div>
+        <div style="padding:4px 2px 14px;color:var(--muted);font-size:13.5px;line-height:1.75">
+          這位 KOL 的長相、人設與參考照都已經建好了,可以直接開始拍片。<br>
+          想再多一位角色,就用左側的「AI 生成 KOL 角色」繼續建。
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="switchMode('cinematic')">用這位角色去 STEP 2 拍片 →</button>
+        </div>
+      </div>
+
+      <!-- ⛔ v6.2:口播模式(HeyGen)已停用 ────────────────────────
+           理由:HeyGen talking-photo 是「靜態照片驅動嘴型」,與 STEP 2 的
+           影格生成是兩種技術,品質天花板差距無法靠提示詞補平;而 STEP 2 的
+           引擎本來就會講話,口播等於同一件事的劣化版。留著只會讓客戶先踩到
+           爛成品、失去信任。
+           做法:此處只隱藏 UI 入口,Worker 端 action 與相關函式暫不拆除
+                (跨檔案手術,等 STEP 2 穩定後再處理)。死程式碼不咬人,
+                 拆到一半的程式碼會。 -->
+      <div class="panel" id="video-panel" style="display:none">
         <div class="panel-title"><div class="dot" style="background:var(--accent2)"></div>口播影片設定</div>
 
         <div class="form-label" style="margin-bottom:2px">口播語音</div>
@@ -2763,9 +2783,14 @@ function updateStepLocks() {
   //   理由:設定全開但按下去會被擋,客戶會白填一輪腳本才發現不能生成。
   const _onb = document.getElementById('kol-onboard-card');
   const _vid = document.getElementById('video-panel');
+  const _rdy = document.getElementById('kol-ready-card');
   const _noKol = !hasBoundKol();
   if (_onb) _onb.style.display = (S.currentBrandId && _noKol) ? '' : 'none';
-  if (_vid) _vid.style.display = (S.currentBrandId && _noKol) ? 'none' : '';
+  // ⛔ v6.2:口播已停用 → 無論如何都不顯示(原條件式保留在註解供日後回溯)
+  //   舊行為:if (_vid) _vid.style.display = (S.currentBrandId && _noKol) ? 'none' : '';
+  if (_vid) _vid.style.display = 'none';
+  // 有角色 → 顯示「角色已就緒 → 去 STEP 2」導引,右欄才不會空一塊
+  if (_rdy) _rdy.style.display = (S.currentBrandId && !_noKol) ? '' : 'none';
 
   // 沒角色 → 左欄「KOL 形象庫」與「Drive 照片庫」整區變暗且不可點。
   //   理由:同事實測會一直去點這兩區問「是點這裡嗎」,新客更找不到路。
