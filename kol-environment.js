@@ -319,12 +319,30 @@ const LOCATIONS = {
    * @param {object} ctx  { brandId, sceneId, locationId } 或 { scene, locationId }
    * @returns {Promise<string|null>}  九宮格圖網址
    */
+  // 把實景照網址壓成短雜湊,當快取鍵的一部分(換照片就換一格快取)
+  function _hash(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
+    return Math.abs(h).toString(36);
+  }
+
   async function generateSceneGrid(ctx) {
     ctx = ctx || {};
     const sceneText = resolveSceneText(ctx);
-    if (!sceneText) { console.warn('[KolEnvironment] 沒有場景文字,跳過九宮格'); return null; }
 
-    const cacheKey = (ctx.brandId || 'b') + '|' + (ctx.sceneId || ctx.locationId || 'default');
+    // 🆕 2026-08-23:實景照為輸入的 image-to-image 路徑。
+    //   背景:舊版只吃「場景卡的文字」→ 叫 AI 從無到有畫一個想像的空間,
+    //   完全用不到客戶上傳的實景照,而且回傳值會【覆蓋】sceneImageUrl ——
+    //   等於客戶上傳了自家門市,系統卻用一個假空間蓋掉它,與需求正好相反。
+    //   ★ 客戶要的是「用我的真實空間,生出其他角度」,不是「生一個假的」。
+    //   ★ Worker 的 nanobanana_pro 傳 image_urls 就會自動切
+    //     fal-ai/nano-banana-pro/edit(image-to-image),上限 10 張,不用改後端。
+    const realShot = String(ctx.sceneImageUrl || '').trim();
+
+    //   快取鍵要含實景照 —— 否則同一個 sceneId 下,
+    //   「想像空間」與「客戶真實空間」會共用同一格快取而互相污染。
+    const cacheKey = (ctx.brandId || 'b') + '|' + (ctx.sceneId || ctx.locationId || 'default')
+      + (realShot ? '|real' + _hash(realShot) : '');
     window._sceneGridCache = window._sceneGridCache || {};
     if (window._sceneGridCache[cacheKey]) {
       console.log('[KolEnvironment] 🗺️ 九宮格快取命中(不重生)→', window._sceneGridCache[cacheKey]);
@@ -342,6 +360,47 @@ const LOCATIONS = {
     } catch (e) { console.warn('[KolEnvironment] 九宮格 R2 查詢略過:', e.message); }
 
     try {
+      // ═══ 路徑 A:有客戶實景照 → 直接用真照生多角度(image-to-image)═══
+      //   刻意【跳過藍圖】:藍圖是為了「無中生有」而存在的骨架,
+      //   已經有真實空間照時再過一次藍圖,反而會把真實細節洗成示意圖。
+      if (realShot) {
+        console.log('[KolEnvironment] 🗺️ 走實景照多角度(image-to-image)→', realShot);
+        const realPrompt =
+          'This photograph is the REAL location. Reproduce THIS EXACT SPACE — same walls, same colours, ' +
+          'same furniture, same fixtures, same signage, same flooring, same lighting character. ' +
+          'Output ONE image: a clean 3x3 grid of 9 panels, all showing this IDENTICAL empty place from different angles ' +
+          '(no people, no person in any panel). ' +
+          'Panel 1: the original wide establishing view. Panel 2: left side. Panel 3: right side. ' +
+          'Panel 4: reverse angle looking back. Panel 5: high overhead corner view. ' +
+          'Panel 6: close view of a key fixture visible in the photo. Panel 7: close view of the main desk or table surface, ' +
+          'showing exactly the objects that are really on it. Panel 8: view toward the entrance. ' +
+          'Panel 9: wider context of the same room. ' +
+          '★ Invent NOTHING that is not in the source photograph — do not add, remove, restyle or recolour ' +
+          'any furniture, monitor, keyboard, plant or decoration. Keep the count of every object identical across panels. ' +
+          'Photorealistic, consistent, evenly lit, no text overlays, no grid lines drawn on the image.';
+        const rR = await evCallWorker('nanobanana_pro', {
+          image_urls: [realShot], prompt: realPrompt, aspect_ratio: '1:1', resolution: '2K',
+        });
+        const rUrl = (rR && rR.images && rR.images[0] && rR.images[0].url) || null;
+        if (!rUrl) {
+          //   失敗就退回客戶原本那張真照 —— 絕不退回「AI 想像的空間」,
+          //   那會讓客戶的門市消失,比沒有九宮格更糟。
+          console.warn('[KolEnvironment] 實景多角度生成無圖 → 退回原實景照');
+          return realShot;
+        }
+        console.log('[KolEnvironment] 🗺️ 實景多角度已生成 →', rUrl);
+        let realFinal = rUrl;
+        try {
+          const st = await evCallWorker('scene_grid', { brandId: ctx.brandId || 'b', sceneKey: cacheKey, storeUrl: rUrl });
+          if (st && st.url) { realFinal = st.url; console.log('[KolEnvironment] 🗺️ 已存 R2(之後重用)→', realFinal); }
+        } catch (e) { console.warn('[KolEnvironment] 存 R2 略過(用原網址):', e.message); }
+        window._sceneGridCache[cacheKey] = realFinal;
+        return realFinal;
+      }
+
+      // ═══ 路徑 B:沒有實景照 → 舊路,文字 → 藍圖 → 九宮格 ═══
+      //   這條才需要場景文字(要靠它無中生有);路徑 A 有真照就不需要。
+      if (!sceneText) { console.warn('[KolEnvironment] 沒有場景文字也沒有實景照,跳過九宮格'); return null; }
       // ① 平面藍圖 = 空間骨架
       const bpPrompt =
         'Top-down architectural floor-plan blueprint of this location: ' + sceneText + '. ' +
