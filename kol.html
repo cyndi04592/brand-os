@@ -5540,10 +5540,12 @@ function preGenConfirm(opts) {
         + '</span></div>';
     }
 
+    // ⛔ v6.2:「尚未綁定口播語音」警告移除。
+    //   病灶:那個 voice_id 只餵 HeyGen 口播,Seedance 完全不吃(提交 payload 裡沒有這欄)。
+    //   Seedance 2.0 自己生成聲音,聲線由提示詞的 accent + 人設決定。
+    //   口播停用後這句話變成三重錯誤:警告一個不存在的問題、指向一個已隱藏的選單、
+    //   還嚇得客戶不敢按生成。直接拿掉。
     var voiceHtml = '';
-    if (!_faceless && (!S.selectedVoice || !S.selectedVoice.id)) {
-      voiceHtml = '<div style="margin-top:6px;padding:10px 12px;border:1px solid rgba(250,80,80,.55);background:rgba(250,80,80,.10);border-radius:10px;color:#ff5a5a;font-size:13px;line-height:1.6;font-weight:700;">⚠️ 尚未綁定口播語音!<br><span style="font-weight:400;color:#ff8a8a;">將使用預設「' + DEFAULT_VOICE_NAME + '」。若這支是中文口播,聽起來會完全不對。建議先到上方「口播語音」選一個 —— 選過一次就會綁在這位 KOL 身上,之後不用再選。</span></div>';
-    }
     var _p = pacePerItem(opts.itemCount, opts.duration);
     var paceHtml = '';
     if (!_faceless && _p.level !== 'ok') {
