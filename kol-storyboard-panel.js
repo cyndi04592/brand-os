@@ -127,7 +127,9 @@
       product: ctx?.product || {},
       sceneLabel: ctx?.sceneLabel || '',
       // 🧠 2026-08-23 劇情記憶:ctx.getRecentEpisodes 由 kol.html 掛上(可能沒有 → 空陣列 = 舊行為)
-      recentEpisodes: (typeof ctx?.getRecentEpisodes === 'function') ? (ctx.getRecentEpisodes() || []) : [],
+      //   🩹 改 await:取用器現在會「沒有就自己去撈」,不再依賴使用者先逛過劇情記憶頁。
+      //      舊寫法只讀快取 → 直接進 STEP2 的人永遠沒有記憶,而且安靜地沒有。
+      recentEpisodes: (typeof ctx?.getRecentEpisodes === 'function') ? (await ctx.getRecentEpisodes() || []) : [],
     });
 
     state.busy = true;
@@ -319,5 +321,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v1.7 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 超長擋確認 · 🆕偏短黃字提醒 · 🧠劇情記憶轉送)');
+  console.log('[KolStoryboardPanel] v1.8 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 超長擋確認 · 🆕偏短黃字提醒 · 🧠劇情記憶轉送·現撈不靠快取)');
 })();
