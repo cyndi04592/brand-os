@@ -3171,6 +3171,51 @@ window.updateStepLocks = updateStepLocks;
 //   載入位置見檔案尾端 <script src="mobile-select.js">。
 
 // ─── 載入品牌清單 ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  🧹 2026-08-23 靈魂書 Markdown 清理(全站唯一清理點)
+//   病灶(芮比實測抓到):靈魂書是 AI 用 Markdown 寫的,系統卻當純文字用 ——
+//     畫面「定位」印出「# … ### … --- ## 〇、」,「標籤」出現「--」「>」「SpaceX」。
+//   ⚠️ 不只是難看:kol-brand-soul.js 會把 adStyle 整串塞進影片提示詞末尾,
+//     那些 ```、|---|、> 會佔掉 1700 字預算,而且只會干擾模型。
+//   ★ 清在這裡的理由:S.brands 全站只在這一處被賦值(已 grep 確認),
+//     清這裡 = 顯示 / 影片提示詞 / 人設書 / 社群貼文一次全乾淨,不會兩邊漂移。
+//   ★ 規則刻意「不綁行首」—— 資料存進來是一整行沒有換行,
+//     用 ^$ 綁行首的寫法一條都不會生效(第一版就是這樣失敗的)。
+//   ★ 只清符號,不動文字。
+// ═══════════════════════════════════════════════════════════════
+function _stripMd(v) {
+  if (v == null) return v;
+  if (Array.isArray(v)) return v.map(_stripMd).filter(function (x) { return x !== ''; });
+  if (typeof v !== 'string') return v;
+  let t = v
+    .replace(/```[\s\S]*?```/g, ' ')                 // 整段程式碼框
+    .replace(/```/g, ' ')                              // 落單框線
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')       // 連結/圖片 → 留文字
+    .replace(/\*\*([^*]+)\*\*/g, '$1')               // 粗體 → 留字
+    .replace(/`([^`]+)`/g, '$1')                       // 行內程式碼 → 留字
+    .replace(/(^|[\s])#{1,6}(?=\s)/g, '$1 ')           // 標題井號(#E8A03A 不受影響:後面不是空白)
+    .replace(/(^|[\s])>+(?=\s)/g, '$1 ')               // 引用 >
+    .replace(/\|/g, ' ')                               // 表格直線
+    .replace(/(^|[\s])[-*_=]{2,}(?=[\s]|$)/g, '$1 ')   // 分隔線 --- *** ___ ==
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  // 收尾:整段只剩標點符號的碎片直接丟掉(例:「-- -- ------」)
+  t = t.split('\n').map(function (ln) {
+    return /^[\s\-*_=·.,、。|>#]*$/.test(ln) ? '' : ln;
+  }).filter(Boolean).join('\n').replace(/[ \t]+/g, ' ').trim();
+  return t;
+}
+function _cleanBrandText(b) {
+  if (!b || typeof b !== 'object') return b;
+  try {
+    ['soul', 'adStyle', 'hashtags', 'tagline'].forEach(function (k) {
+      if (b[k] != null) b[k] = _stripMd(b[k]);
+    });
+  } catch (e) {}
+  return b;
+}
+
 async function loadBrands() {
   try {
     const email = localStorage.getItem('bs_sso_email') || '';
@@ -3183,7 +3228,7 @@ async function loadBrands() {
     const res = await gasGet('getBrandOS', { email });
     if (!res.ok) throw new Error('讀取品牌清單失敗');
 
-    S.brands = res.data?.brands || [];
+    S.brands = (res.data?.brands || []).map(_cleanBrandText);   // 🧹 2026-08-23
     S.products = res.data?.products || [];  // v5.7: 一次載入產品
     S.folders = res.data?.folders || [];    // 🆕 v5.15: 載入 folders 表(商品照 productFolderId 用)
     const sel = document.getElementById('brand-switcher');
