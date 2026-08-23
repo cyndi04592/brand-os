@@ -3143,7 +3143,15 @@ function handleKolListClick(e) {
   if (!card) return;
   const kolId = card.dataset.kolId;
   const kol = window._kolCache?.[kolId];
-  if (!kol) return;
+  if (!kol) {
+    // 🔎 2026-08-22:點了卡片卻沒反應的唯一出口。
+    //   病灶:卡片是一份資料畫的、快取是另一份填的,兩邊的 id 對不上時
+    //   這裡就靜靜 return —— 畫面看起來「已選定」,但 selectedKol 其實是 null,
+    //   於是造型選單永遠畫不出多角度卡,而且全程沒有任何錯誤訊息。
+    console.warn('[KOL] 點了卡片但快取裡沒有這個人 · 卡片id:', kolId,
+      '· 快取裡有:', Object.keys(window._kolCache || {}));
+    return;
+  }
   selectKol(kol);
 }
 
@@ -3339,8 +3347,18 @@ function renderLookPicker() {
   //         Look 有 2 個以上 → 多出來的必然是多角度被綁進去了 → 角度卡整批隱藏,
   //         畫面回到「一個角色一組 Look」,不再出現一模一樣的第二組。
   //   ★ 生影片完全不受影響:後台是照 Drive 檔名抓角度,不看這面牆。
+  //   🩹 2026-08-22 修正上面那條規則的假設:
+  //     舊規則「Look ≥ 2 → 角度卡整批隱藏」,前提是「多出來的必然是多角度被綁進去」。
+  //     但實際還有另一種情況:同一張正臉被綁了兩次(建立角色時 front 重複送出)——
+  //     這時 Look = 2,角度卡卻被整批藏起來,客戶看到「有 2 個一樣的 Look、
+  //     卻沒有任何角度」,反而更困惑。(現場:RA 建「昱瑄」踩到。)
+  //   ★ 改用「Look 張數 vs 角度張數」判斷:
+  //     真的被綁進去的話,Look 會比角度多出好幾張(正臉+3/4+側臉 都在裡面);
+  //     只是重複的話,Look 數量不會超過「1 + 角度數」。
+  //   ⚠️ 判斷不到就寧可顯示 —— 少顯示會讓客戶以為系統沒做,
+  //     多顯示只是多一張參考卡,兩害相權取其輕。
   const _looksN = (S.availableLooks || []).length;
-  const _hideAllAngles = _looksN >= 2;
+  const _hideAllAngles = _angles.length > 0 && _looksN > (_angles.length + 1);
   const _hideFront = (_looksN >= 1);
   const anglesHtml = _angles.map(({ ph, label }) => `
       <div class="look-item ${label === '正臉' ? 'angle-front' : ''}" style="border:1px dashed #6c4cf0;cursor:default;opacity:.9;${(_hideAllAngles || (label === '正臉' && _hideFront)) ? 'display:none;' : ''}" title="生影片時依鏡頭角度自動使用(來自 Drive)">
