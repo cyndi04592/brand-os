@@ -7994,6 +7994,19 @@ function renderEpisodeCard() {
 
   // v5.9: 自動載入 Drive 商品照
   loadEpisodeProducts();
+
+  // 🩹 2026-08-23:STEP3 場景素材要在「卡片畫完」的當下載入。
+  //   病灶(現場抓到):renderSceneLibrary('s3') 以前【只】掛在
+  //     setProductModeOverride() 裡 —— 那是客戶手動切「商品呈現方式」
+  //     下拉才會跑的函式。不去動那個下拉,STEP3 的場景素材永遠是空的,
+  //     客戶明明已經上傳到素材庫,卻只看到一片空白。
+  //   ★ 對照 STEP2:它在品牌載入(3054)與挑選後(5492)兩處都會畫,
+  //     所以 STEP2 一直是對的 —— 又是「兩邊各寫一套」那一族。
+  //   ★ 掛在這裡是因為此刻 DOM 剛畫完,#scn-lib-s3 一定抓得到。
+  try { renderSceneLibrary('s3'); } catch (e) {}
+  if (document.getElementById('ep-custom-scene-thumb')) {
+    try { renderEpisodeCustomScene(); } catch (e) {}   // 已選的實景照縮圖也要還原
+  }
 }
 // ═══ 🆕 STEP3 單集企劃 商品照智慧槽(平行 STEP2,指到 episodeProductUrls)═══
 function defaultEpisodeRole() {
