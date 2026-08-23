@@ -1055,7 +1055,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.18 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.19 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -6173,7 +6173,7 @@ async function createStitchedVideo(beats) {
 //    否則客戶看到 100% 卻沒東西,比沒有進度條更糟。
 // ═══════════════════════════════════════════════════════════════
 const _stitchProgress = (function () {
-  let el = null, timer = null, total = 1, done = 0, pct = 0, note = '', t0 = 0;
+  let el = null, timer = null, total = 1, done = 0, pct = 0, note = '', t0 = 0, merging = false;
 
   function paint() {
     if (!el) return;
@@ -6189,30 +6189,65 @@ const _stitchProgress = (function () {
         '<div style="height:100%;width:' + p + '%;border-radius:99px;background:linear-gradient(90deg,#6dfac2,#7c6dfa);transition:width .6s ease;"></div>' +
       '</div>' +
       '<div style="margin-top:6px;font-size:11px;color:#7a7a88">' +
-        '已完成 ' + done + ' / ' + total + ' 段 · 已等候 ' + mins + ' 分 ' + secs + ' 秒' +
-        '<br>影片在後台繼續產生,關掉視窗會找不到成品,請留在這頁' +
+        // 🩹 v7.19:拿掉「已完成 N / N 段」。
+        //   病灶:「段」是接片引擎的內部單位,客戶不知道那是什麼,
+        //   看到「0 / 2 段」只會想「為什麼要分段?是不是壞了?」
+        //   —— 違反鐵律「不能露出馬腳,客戶不該看到中間工序」。
+        //   改成他真正在意的事:已經等多久、還要不要留在這頁。
+        '已等候 ' + mins + ' 分 ' + secs + ' 秒' +
+        (merging
+          ? '<br>畫面都拍好了,正在合成完整影片 —— 這步比較久,請再等一下,不要關視窗'
+          : '<br>影片在後台繼續產生,關掉視窗會找不到成品,請留在這頁') +
       '</div>';
   }
 
   return {
     start(box, segCount) {
       total = Math.max(1, segCount || 1); done = 0; pct = 2; note = '排隊中…'; t0 = Date.now();
+      merging = false;
       el = box && box.firstElementChild;
       if (!el) return;
       paint();
       clearInterval(timer);
       // 段內平滑推進:朝「本段結束時該有的百分比」逼近,越接近越慢,不會超車
       timer = setInterval(function () {
-        const target = (done + 1) * (80 / total);
-        if (pct < target) pct += Math.max(0.08, (target - pct) * 0.04);
+        // 合成階段:由 note() 依實際步驟跳點,動畫只做極慢補間,不搶在前面
+        const target = merging ? 99 : (done + 1) * (80 / total);
+        const rate   = merging ? 0.008 : 0.04;
+        if (pct < target) pct += Math.max(merging ? 0.02 : 0.08, (target - pct) * rate);
         paint();
       }, 1000);
     },
-    note(m) { note = String(m || ''); paint(); },
+    // 🛡️ v7.19 保險網:引擎端的訊息萬一漏了工程字眼,這裡最後一道攔截。
+    //   單靠改 kol-stitch.js 不夠 —— 那個檔案日後還會被改,
+    //   新增的 log 很容易又把 seed / 九宮格 / R2 這類詞漏出去。
+    //   ★ 客戶端 UI 的鐵律要擋在【最靠近畫面】的地方,才擋得住未來的改動。
+    note(m) {
+      let t = String(m || '');
+      const LEAK = /seed|R2|九宮格|藍圖|臉錨|接片|分鏡|Drive|fal|piapi|prompt|chunk|Image\d/i;
+      if (LEAK.test(t)) {
+        console.log('[進度] 已過濾工程訊息:', t);
+        t = '製作中…';
+      }
+      // 🩹 v7.19:偵測到合成階段 → 進度改由「階段」推進,不再空轉。
+      //   舊行為:所有段生完後 pct 目標停在 80,動畫慢慢爬到 99 就卡死,
+      //   而合成(下載+串接+上傳)實測要好幾分鐘 —— 客戶會以為當機而關視窗,
+      //   那兩段影片的點數就白花了。
+      const _MERGE_PCT = {
+        '正在下載畫面': 84, '正在處理畫面': 88,
+        '正在合成影片': 92, '正在輸出影片': 95, '正在上傳': 97, '正在儲存影片': 98,
+      };
+      for (const k in _MERGE_PCT) {
+        if (t.indexOf(k) !== -1) { merging = true; pct = Math.max(pct, _MERGE_PCT[k]); break; }
+      }
+      note = t;
+      paint();
+    },
     segDone(idx) {
       done = Math.min(total, (idx | 0) + 1);
       pct = Math.max(pct, done * (80 / total));
-      note = done >= total ? '影片接合中…' : ('第 ' + done + ' 段完成,繼續下一段…');
+      // 🩹 v7.19:不講「第 N 段」,改講進度感
+      note = done >= total ? '正在合成影片…' : '畫面製作中,請稍候…';
       paint();
     },
     stop() { clearInterval(timer); timer = null; el = null; },
@@ -9223,7 +9258,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     if (taskBox) taskBox.innerHTML =
       `<div class="seedance-task"><video src="${result.finalUrl}" controls autoplay loop style="width:100%;border-radius:10px;background:#000;"></video>`
       + `<div style="margin-top:6px;"><a href="${result.finalUrl}" target="_blank" style="color:#a78bfa;font-size:12px;word-break:break-all;">↗ 開新分頁 / 下載</a></div></div>`;
-    toast(`接片完成!共 ${plan.length} 段 · ${elapsed}s`, 'success');
+    toast(`影片完成!耗時 ${elapsed} 秒`, 'success');   // 🩹 v7.19:不露段數與「接片」
     if (episodeId) apiUpdateEpisodeStatus(episodeId, {
       video_status: 'done', video_url: result.finalUrl,
       video_cost_usd: +(1.21 * plan.length).toFixed(2), video_elapsed_sec: elapsed,
