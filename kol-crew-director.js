@@ -364,7 +364,19 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   // ② 化妝只取「不蓋掉真皮 / 自然殘留」這層真實度
   front.push('any makeup is a thin surface finish only that must not smooth or replace the real skin underneath, it looks naturally worn not freshly applied');
   // ③ 打光(doc 說影響最大)
-  if (ctx.scene?.light) front.push(ctx.scene.light);
+  //  🩹 2026-08-23:有客戶實景照時【不注入場景卡的光線描述】。
+  //   病灶(RA 現場提出):場景卡的光線是為「AI 從無到有想像空間」寫的。
+  //     客戶鎖了自家辦公室實景照,那張照片本身就帶著它真實的光 ——
+  //     再塞一句「廚房晨光 / 咖啡廳午後」的光線描述進去,兩邊【競圖】,
+  //     模型會把真照片往那個方向拉,實景就失真了。
+  //   ★ RA:「文字自述很重要」—— 正因為文字真的會影響畫面,才更不能讓它打架。
+  //   ★ 只拿掉這一句;SCENE_REALISM(通用落地錨)照留,那不綁特定場景。
+  //   ★ 沒實景照時行為完全不變。
+  if (ctx.scene?.light && !String(opts.sceneImageUrl || '').trim()) {
+    front.push(ctx.scene.light);
+  } else if (ctx.scene?.light) {
+    try { console.log('[CrewDirector] 🏢 有實景照 → 略過場景光線描述(避免與真照片競圖)'); } catch (e) {}
+  }
   front.push('keep the light on her face soft and even, no harsh overhead glare or hot specular highlights on the skin');
   // ④ 接地真實 + 🤝 公版接觸鏈(2026-08-11:光靠 never floating 這句否定句擋不住,商品照樣飄)
   front.push('soft natural contact shadows where her hands and the product touch surfaces, physically grounded never floating');
@@ -587,5 +599,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.19-tailorder 就緒 · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.20-realscene 就緒 · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
