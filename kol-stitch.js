@@ -657,7 +657,25 @@ window.KolStitch = (function () {
       if (cur.length) chunks.push({ beats: cur });
     }
 
-    // 🛡️ v6.4 防呆:分鏡未確認前,先攤開「要生幾段·幾秒·每段開頭」給看,留一次喊停的機會(擋掉誤燒 90 秒=6 段 fal 額度)。
+    // 🛡️ 90 秒總長硬上限(2026-08-23 新增)
+    //   病灶:v6.4 的註解寫著「擋掉誤燒 90 秒=6 段 fal 額度」,
+    //   但實際上只把總秒數【顯示】在確認視窗裡,從來沒有真的擋 ——
+    //   客戶把分鏡拉到 10 段,按下去就是 10 段的錢,而且要等很久。
+    //   ★ 90 秒是刻意的產品邊界:再長的內容應該拆成多支,
+    //     不是硬串成一支 —— 接片段數越多,臉的一致性風險越高。
+    //   ★ 擋在這裡(chunks 算完之後、確認視窗之前),
+    //     所以程式化呼叫 confirmed:true 也一樣擋得到。
+    const MAX_TOTAL_SEC = opts.maxTotalSec || 90;
+    const _allSec = chunks.reduce(function (t, c) {
+      return t + ((c.beats || []).reduce(function (a, b) { return a + (b.durationSec || 5); }, 0) || 0);
+    }, 0);
+    if (_allSec > MAX_TOTAL_SEC) {
+      log('🛑 總長 ' + _allSec + ' 秒,超過上限 ' + MAX_TOTAL_SEC + ' 秒。');
+      throw new Error('影片總長 ' + _allSec + ' 秒,超過單支上限 ' + MAX_TOTAL_SEC
+        + ' 秒。請刪掉幾段分鏡,或拆成兩支影片分開生成。');
+    }
+
+    // 🛡️ v6.4 防呆:分鏡未確認前,先攤開「要生幾段·幾秒·每段開頭」給看,留一次喊停的機會。
     //    程式化呼叫(無 UI)可傳 opts.confirmed = true 略過此檢查。
     if (!opts.confirmed && typeof window !== 'undefined' && typeof window.confirm === 'function') {
       const _segSec = chunks.map(function (c) {
