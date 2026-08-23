@@ -1727,6 +1727,19 @@ document.addEventListener('DOMContentLoaded', function(){
                   <option value="sign">簽署 / 用印(桌面俯拍)</option>
                   <option value="review">翻閱文件 / 指出條款</option>
                 </optgroup>
+                <!-- 💻 2026-08-23:桌前工作的行業(廣告 / 行銷 / 設計 / SaaS / 顧問 / 會計)
+                     在無臉模式裡本來一個動作都沒有,舊的「商務·文件」全是紙本時代的動作。
+                     這六個 value 對應 kol-crew-director.js v5.18-screenwork 的 FACELESS_ACTIONS,
+                     ★ 改 value 之前一定要先確認那邊有對應提示詞,
+                       否則會靜默 fallback 成「手持展示」(hold),客戶看不出來。 -->
+                <optgroup label="💻 電腦 · 數位工作">
+                  <option value="mouse">滑鼠操作(手 + 滑鼠特寫)</option>
+                  <option value="typing">打字(鍵盤俯拍)</option>
+                  <option value="screen">螢幕操作(畫面裡的介面在動)</option>
+                  <option value="laptop">筆電開闔 / 開始工作</option>
+                  <option value="notes">邊看螢幕邊寫筆記</option>
+                  <option value="handoff">轉螢幕給對方看 · 指出重點</option>
+                </optgroup>
               </select>
               <!-- 🩹 2026-08-11 無臉模式說明卡:客戶打開後完全不知道規則變了
                    (不用選 KOL、分鏡會被忽略、生成鈕改看商品照)。不講的話
@@ -1899,6 +1912,21 @@ document.addEventListener('DOMContentLoaded', function(){
         <button class="persona-modal-close" onclick="closePersonaEditor()">✕</button>
       </div>
       <div class="persona-modal-body">
+        <!-- 🩹 2026-08-23 性別欄補建。
+             病灶:gender 只有「AI 生成角色」那個下拉會寫入,建完就沒有任何地方能補。
+               在 gender 欄位存在之前建的舊 KOL,那一格是空的 ——
+               而 voice-modal.js 的 applyGenderLock 只認 'male' / 'female',
+               拿不到值就整個放行 → 「選擇口播語音」清單男女混在一起,
+               可能幫女生 KOL 配到男聲。
+             ★ 這一格不是裝飾:它同時決定 ①聲音清單過濾
+               ②kol-stitch.js 的 he/she 代名詞(v6.22 起讀 persona.gender)。 -->
+        <div class="pe-row">
+          <label>性別(gender) · 決定聲音清單與影片中的稱呼</label>
+          <select id="pe-gender" style="width:100%;padding:9px 10px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-family:inherit;font-size:13px">
+            <option value="female">女性</option>
+            <option value="male">男性</option>
+          </select>
+        </div>
         <div class="pe-row">
           <label>背景(background)</label>
           <textarea id="pe-background" rows="2" placeholder="例:日本母親+台灣父親,在日本長大..."></textarea>
@@ -5770,8 +5798,18 @@ function updateSeedanceSubmitButton() {
     // 🩹 按不下去一定要講原因,不然客戶只會覺得「壞了」
     const hint = document.getElementById('faceless-block-hint');
     if (hint) {
-      if (n === 0)      { hint.style.display = ''; hint.textContent = '⚠️ 還不能生成:請先加至少 1 張商品照(建議 2 張以上)'; }
-      else if (n === 1) { hint.style.display = ''; hint.textContent = '⚠️ 目前只有 1 張商品照 — 可以生成,但建議再加 1~2 張同商品的不同角度'; }
+      // 🩹 2026-08-23:這兩句原本寫死「商品照」。
+      //   病灶:服務業(律師/顧問/課程/旅遊)根本沒有實體商品,槽名明明已經
+      //     依行業寫成「情境照」「地點照·必須是真實地點」「上課情境」,
+      //     紅字卻還是叫他「加商品照」→ 客戶不知道要傳什麼,直接卡死。
+      //   ★ 規則只留一份:直接讀 productSlots() 的槽名,槽名改了這裡自動跟著改。
+      let _slotName = '商品照';
+      try {
+        const _s = (typeof productSlots === 'function') ? productSlots() : [];
+        if (_s && _s[0] && _s[0].label) _slotName = String(_s[0].label).split(' · ')[0].trim() || '商品照';
+      } catch (e) {}
+      if (n === 0)      { hint.style.display = ''; hint.textContent = '⚠️ 還不能生成:請先加至少 1 張「' + _slotName + '」(建議 2 張以上)'; }
+      else if (n === 1) { hint.style.display = ''; hint.textContent = '⚠️ 目前只有 1 張「' + _slotName + '」— 可以生成,但建議再加 1~2 張不同角度'; }
       else              { hint.style.display = 'none'; }
     }
     return;
@@ -7527,6 +7565,10 @@ function openPersonaEditor(personaIdArg) {
   if (!p) { toast('請先選 KOL', 'warn'); return; }
 
   document.getElementById('persona-editor-name').textContent = p.persona_name;
+  // 🩹 2026-08-23:舊 KOL 的 gender 是空的 → 預設落 female,與 voice-modal 及
+  //   kol-stitch v6.22 的預設一致(取不到值時行為維持女性,不會讓既有影片變樣)。
+  { const _g = document.getElementById('pe-gender');
+    if (_g) _g.value = (String(p.gender || '').toLowerCase() === 'male') ? 'male' : 'female'; }
   document.getElementById('pe-background').value = p.background || '';
   document.getElementById('pe-personality').value = p.personality || '';
   document.getElementById('pe-speaking-style').value = p.speaking_style || '';
@@ -7553,6 +7595,7 @@ async function savePersonaFromEditor() {
 
   const updated = {
     ...p,
+    gender: document.getElementById('pe-gender')?.value || 'female',   // 🩹 2026-08-23
     background: document.getElementById('pe-background').value.trim(),
     personality: document.getElementById('pe-personality').value.trim(),
     speaking_style: document.getElementById('pe-speaking-style').value.trim(),
