@@ -3257,7 +3257,10 @@ function renderLookPicker() {
 
   // 🆕 多角度:照 Drive 檔名自動抓「最新」的 front/q34/profile,每角度一張(看到的=後台用到的)
   const _norm = s => (s || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim();
-  const _kolName = _norm(S.selectedKol?.name);
+  // 🩹 2026-08-22:name 可能是空的(不同來源建出來的快取欄位不一致),
+  //   退回 persona.persona_name —— 那是資料庫裡的正本。
+  //   ⚠️ 名字對不上的後果是「多角度卡一張都畫不出來」,而且畫面完全不報錯。
+  const _kolName = _norm(S.selectedKol?.name || S.selectedKol?.persona?.persona_name);
   const _persona = (S.drivePhotos?.personas || []).find(x => _norm(x.persona_name) === _kolName);
   const _procs = _persona?.processed_photos || [];
   const _angles = [['front','正臉'], ['q34','3/4'], ['profile','側臉']]
@@ -3273,6 +3276,9 @@ function renderLookPicker() {
       !_persona ? ('找不到 KOL「' + _kolName + '」· 清單裡有:' +
                    (S.drivePhotos.personas || []).map(x => x.persona_name).join('/')) :
       '這位 KOL 沒有已處理的角度照(processed_photos 是空的)');
+    console.log('[LOOK] selectedKol 原始物件:', S.selectedKol);
+    console.log('[LOOK] name 欄位 =', JSON.stringify(S.selectedKol?.name),
+                '· persona_name =', JSON.stringify(S.selectedKol?.persona?.persona_name));
   } else if (_angles.length < _procs.length) {
     console.log('[LOOK] 有 ' + _procs.length + ' 張角度照,但只認出 ' + _angles.length +
       ' 張 · 檔名要含 sheet_front / sheet_q34 / sheet_profile · 實際檔名:',
