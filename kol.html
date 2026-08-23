@@ -182,6 +182,27 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   backdrop-filter:blur(20px);border-top:1px solid var(--border);transform:translateY(105%);
   transition:transform .25s cubic-bezier(.4,0,.2,1);}
 .rs-actionbar.show{transform:translateY(0);}
+/* 🆕 v7.7:實景背景挑選器(素材庫「照片素材」)
+   背景:貼 URL 是 Google 雲端時代的產物 —— 那時沒有自家素材庫,
+   只能叫客戶自己去找一個公開圖床。現在客戶的照片都在素材庫,
+   還要他去找圖床等於把責任丟回去。貼網址保留為備援,不再是主要路徑。 */
+.scn-lib{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;}
+@media(max-width:560px){.scn-lib{grid-template-columns:repeat(3,1fr);}}
+.scn-item{position:relative;aspect-ratio:4/3;border-radius:7px;overflow:hidden;cursor:pointer;
+  border:1.5px solid var(--border);background:var(--surface2);transition:all .15s;}
+.scn-item:hover{border-color:rgba(124,109,250,.55);}
+.scn-item.on{border-color:var(--accent3);box-shadow:0 0 0 1px var(--accent3);}
+.scn-item img{width:100%;height:100%;object-fit:cover;}
+.scn-item .tick{position:absolute;top:3px;right:3px;width:15px;height:15px;border-radius:50%;
+  background:var(--accent3);color:#05130e;font-size:9px;font-weight:700;display:none;
+  align-items:center;justify-content:center;}
+.scn-item.on .tick{display:flex;}
+.scn-empty{font-size:11px;color:var(--text-dim);line-height:1.7;padding:10px 12px;
+  background:var(--surface2);border:1px dashed var(--border);border-radius:var(--radius-sm);margin-bottom:8px;}
+.scn-toggle{font-size:10.5px;color:var(--text-dim);cursor:pointer;text-decoration:underline;
+  background:none;border:none;padding:0;font-family:inherit;}
+.scn-toggle:hover{color:var(--accent);}
+
 .rs-actionbar .in{max-width:1400px;margin:0 auto;padding:11px 24px;display:flex;align-items:center;gap:13px;flex-wrap:wrap;}
 .rs-ab-mini{width:36px;height:36px;border-radius:9px;overflow:hidden;border:1px solid var(--accent);flex:none;background:var(--surface2);}
 .rs-ab-mini img{width:100%;height:100%;object-fit:cover;}
@@ -1020,7 +1041,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.6 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.8 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1431,8 +1452,11 @@ document.addEventListener('DOMContentLoaded', function(){
         <!-- 🆕 上傳自家實景當背景(賣場 / 快閃店 / 門市)→ 跳過 AI 生背景,直接鎖真照 -->
         <div class="form-group" style="margin-top:0">
           <label class="form-label">或上傳自家實景背景(賣場 / 快閃店 · 選填)</label>
-          <div class="ref-url-input-row">
-            <input type="text" id="custom-scene-input" placeholder="貼實景照公開 URL(imgbb / R2 / 公開圖片)" onkeydown="if(event.key==='Enter')addCustomScene()">
+          <!-- 🆕 v7.7:先給素材庫挑選,貼網址收進「或貼網址」摺疊區當備援 -->
+          <div id="scn-lib-s2"></div>
+          <button type="button" class="scn-toggle" onclick="scnToggleUrl('s2')">或貼公開圖片網址(素材庫沒有的才用)</button>
+          <div class="ref-url-input-row" id="scn-url-s2" style="display:none;margin-top:6px">
+            <input type="text" id="custom-scene-input" placeholder="貼實景照公開 URL" onkeydown="if(event.key==='Enter')addCustomScene()">
             <button onclick="addCustomScene()" style="background:#7c5cff;border:none;border-radius:6px;color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap">加入</button>
           </div>
           <div id="custom-scene-thumb"></div>
@@ -2960,6 +2984,7 @@ function switchMode(mode) {
   if (mode === 'cinematic' && hasBrand) {
     syncKolListToCine();
     syncSelectedKolToCine();
+    try { renderSceneLibrary('s2'); } catch (e) {}   // 🆕 v7.7
   }
 
   // v5.7: 經營系統模式
@@ -3138,6 +3163,7 @@ async function onBrandChange() {
   // 🩹 v7.5:切品牌要清商品照快取並重載,否則 STEP2/STEP3 會停在
   //   上一個品牌的商品照 —— 跟稍早「切品牌角色殘留」同一型的病。
   if (window._libProductsCache) window._libProductsCache = {};
+  if (window._libSceneCache) window._libSceneCache = {};   // 🆕 v7.7
   try {
     if (document.getElementById('drive-product-gallery-wrap')) loadDriveProducts();
   } catch (e) {}
@@ -5166,6 +5192,80 @@ function renderRefList() {
 }
 
 // 🆕 上傳自家實景背景:有值就跳過 AI 生背景,直接鎖真照
+// ═══ 🆕 v7.7:實景背景 —— 從素材庫「照片素材」直接挑 ═══════════
+//  背景:貼 URL 是 Google 雲端時代的路 —— 那時沒有自家素材庫,
+//  只能叫客戶自己去找公開圖床。現在照片都在素材庫,還要他去找圖床
+//  等於把責任丟回去(違反「讓預設就是對的」)。貼網址降為備援。
+//
+//  ★ 只負責「把網址交給既有的 S.customSceneUrl / S.episodeCustomSceneUrl」,
+//    完全不碰 addCustomScene / renderCustomScene 那幾支既有函式 ——
+//    實景照的下游邏輯(跳過 AI 生背景、鎖真照)一行都不用改。
+//  ★ 素材庫的圖已經在 R2,不需要 drive_to_r2
+//    (2026-08-23 商品照就是漏了這點,炸出 File not found: lib_u405)。
+async function _fetchLibraryScenes() {
+  const ck = 'lib_scenes_' + S.currentBrandId;
+  window._libSceneCache = window._libSceneCache || {};
+  if (window._libSceneCache[ck]) return window._libSceneCache[ck];
+  const res = await api('list_assets', { brandId: S.currentBrandId, limit: 300 });
+  if (!res || !res.ok) return null;
+  const files = (res.items || [])
+    .filter(it => ['照片素材', '商品/服務照'].indexOf(String(it.category || '')) !== -1)
+    .filter(it => it.url && !/\.(mp4|mov|webm|m4v)(\?|$)/i.test(String(it.url)))
+    .map(it => ({ url: it.url, name: it.name || '照片' }));
+  window._libSceneCache[ck] = files;
+  return files;
+}
+
+function scnToggleUrl(which) {
+  const box = document.getElementById('scn-url-' + which);
+  if (box) box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+window.scnToggleUrl = scnToggleUrl;
+
+function _scnCurrent(which) {
+  return which === 's3' ? (S.episodeCustomSceneUrl || '') : (S.customSceneUrl || '');
+}
+
+function scnPick(which, url) {
+  const cur = _scnCurrent(which);
+  const next = (cur === url) ? '' : url;   // 再點一次 = 取消
+  if (which === 's3') {
+    S.episodeCustomSceneUrl = next;
+    if (typeof renderEpisodeCustomScene === 'function') renderEpisodeCustomScene();
+  } else {
+    S.customSceneUrl = next;
+    if (typeof renderCustomScene === 'function') renderCustomScene();
+  }
+  renderSceneLibrary(which);
+  toast(next ? '已鎖實景背景 · 生成時直接用這張(跳過 AI 生背景)' : '已取消實景背景', next ? 'ok' : 'warn');
+}
+window.scnPick = scnPick;
+
+async function renderSceneLibrary(which) {
+  const wrap = document.getElementById('scn-lib-' + which);
+  if (!wrap) return;
+  try {
+    const files = await _fetchLibraryScenes();
+    if (!files) { wrap.innerHTML = ''; return; }
+    if (!files.length) {
+      wrap.innerHTML = '<div class="scn-empty">素材庫還沒有可用的照片。<br>到「素材庫」上傳(分類選「照片素材」)就會出現在這裡。</div>';
+      return;
+    }
+    const cur = _scnCurrent(which);
+    wrap.innerHTML = '<div class="scn-lib">' + files.slice(0, 12).map(f => `
+      <div class="scn-item ${f.url === cur ? 'on' : ''}"
+           onclick="scnPick('${which}', ${JSON.stringify(f.url)})"
+           title="${escapeHtml(f.name)}">
+        <img src="${escapeHtml(f.url)}" loading="lazy" decoding="async" alt="">
+        <div class="tick">✓</div>
+      </div>`).join('') + '</div>';
+  } catch (e) {
+    wrap.innerHTML = '';
+    console.warn('[SCN] 素材庫實景讀取失敗', e);
+  }
+}
+window.renderSceneLibrary = renderSceneLibrary;
+
 function addCustomScene() {
   const input = document.getElementById('custom-scene-input');
   if (!input) return;
@@ -7031,6 +7131,9 @@ function setProductModeOverride(val) {
   renderProductModePicker('product-mode-s3');
   if (typeof renderRefList === 'function' && document.getElementById('ref-list')) renderRefList();
   if (typeof renderEpisodeSlots === 'function' && document.getElementById('ep-ref-list')) renderEpisodeSlots();
+  // 🆕 v7.7:STEP3 實景背景挑選器。掛在這裡是因為此處是企劃卡
+  //   重畫完成、DOM 已就緒的時機 —— 早於此會抓不到 #scn-lib-s3。
+  try { renderSceneLibrary('s3'); } catch (e) {}
   if (document.getElementById('ep-custom-scene-thumb')) renderEpisodeCustomScene();
 }
 // ─── 人設書編輯 Modal ────────────────────────────
@@ -7334,8 +7437,10 @@ function renderEpisodeCard() {
       </div>
       <div class="ep-field" style="margin-top:4px">
         <label>或上傳自家實景背景(賣場 / 快閃店 · 選填)</label>
-        <div class="ref-url-input-row">
-          <input type="text" id="ep-custom-scene-input" placeholder="貼實景照公開 URL(imgbb / R2 / 公開圖片)" onkeydown="if(event.key==='Enter')addEpisodeCustomScene()">
+        <div id="scn-lib-s3"></div>
+        <button type="button" class="scn-toggle" onclick="scnToggleUrl('s3')">或貼公開圖片網址(素材庫沒有的才用)</button>
+        <div class="ref-url-input-row" id="scn-url-s3" style="display:none;margin-top:6px">
+          <input type="text" id="ep-custom-scene-input" placeholder="貼實景照公開 URL" onkeydown="if(event.key==='Enter')addEpisodeCustomScene()">
           <button onclick="addEpisodeCustomScene()" style="background:#7c5cff;border:none;border-radius:6px;color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap">加入</button>
         </div>
         <div id="ep-custom-scene-thumb"></div>
@@ -8099,6 +8204,26 @@ async function aiGeneratePersona() {
       //   第一次生成時 background 是空的,那就交給 AI 依品牌行業自行判斷。
       //   🔴 待辦:kol_personas 應該補一個 persona_style 欄位,這裡才不用用猜的。
       personaStyle: (persona.background || '').slice(0, 120),
+      // 🩹 v7.8:補送年齡。
+      //   病灶(2026-08-23 現場):客戶在生成器拉 33 歲、臉也生成 33 歲的樣子,
+      //   人設書卻寫「27歲」。原因是這支 payload 從來沒有帶過 age ——
+      //   Worker 端明明寫了「有給指定年齡 → 一律以指定年齡為準,不准自己改」,
+      //   但前端一次都沒送,於是它走第二條規則「沒給就照照片猜」,猜錯。
+      //   ★ 這在今天之後會更嚴重:v5.15 起年齡會影響聲線
+      //     (resolveAgeVoice 從 background 抽「NN歲」),
+      //     33 歲的臉配上 27 歲寫死的人設 → 聲音跟臉對不上。
+      //   來源優先序:① 生成器拉桿當下的值 ② 既有 background 裡的「NN歲」
+      //     ③ 都沒有就不送,維持舊行為(交給 AI 依照片判斷)。
+      age: (function () {
+        try {
+          const g = (window.KAI && typeof window.KAI.getParams === 'function')
+            ? window.KAI.getParams() : null;
+          const n = g && parseInt(g.age, 10);
+          if (Number.isFinite(n) && n >= 1 && n <= 99) return n;
+        } catch (_) {}
+        const m = String(persona.background || '').match(/(\d{1,2})\s*歲/);
+        return m ? parseInt(m[1], 10) : undefined;
+      })(),
       kolImageUrl: kolImageUrl,
       brandName: brand.name || '',
       brandCategory: brand.category || '',                          // 品牌行業別
@@ -9222,4 +9347,3 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
-
