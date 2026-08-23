@@ -264,15 +264,22 @@
 
       btnUse.disabled = true;
       btnUse.style.background = '#3a3a4a';
-      btnUse.textContent = '💾 存進 Drive 中…(0/3)';   // 下方 set 固定三張(正臉+3/4+側臉)
+      btnUse.textContent = '💾 存檔中…(0/2)';   // 只存 3/4 與側臉;正臉已在素材庫
 
       var ts = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      // 🩹 2026-08-22 根治「每次生成都有兩張正臉」:
+      //   RESULTS.front 就是客戶稍早按「✓ 選這張」存進素材庫的那張原圖 ——
+      //   這裡再存一次,等於同一張圖用兩個檔名躺在素材庫裡。
+      //   後果不只是難看:建立角色時兩張都被綁進 Look → 造型選單出現雙胞胎 →
+      //   系統誤判「這人有多套造型」→ 把多角度卡整批藏起來。
+      //   一個重複,連鎖三個症狀。
+      //   ★ 3/4 與側臉是 Kontext 新生成的,素材庫沒有,一定要存。
+      //   ⚠️ 正臉仍寫進 KOL_CHARACTER_SHEET(下游要拿它當鎖臉錨點),只是不重複落檔。
       var set = [
-        { angle: 'front', url: RESULTS.front },
         { angle: 'q34', url: RESULTS.q34 },
         { angle: 'profile', url: RESULTS.profile }
       ];
-      var saved = [];
+      var saved = [{ angle: 'front', url: RESULTS.front, filename: '(已在素材庫,不重複存)' }];
 
       (function next(i) {
         if (i >= set.length) {
@@ -282,7 +289,7 @@
             drive: saved, ts: Date.now()
           };
           btnUse.style.background = '#0f7a42';
-          btnUse.textContent = '✅ 已存進素材庫 · 人物表鎖定(' + saved.length + '/3)';
+          btnUse.textContent = '✅ 已存進素材庫 · 人物表鎖定(' + saved.length + '/3)';   // 3 = 正臉(既有)+3/4+側臉
           if (typeof window.refreshAll === 'function') { try { window.refreshAll(); } catch (e) {} }
           return;
         }
@@ -298,7 +305,7 @@
         }).then(function (res) {
           // ⚠️ 2026-08-22 起已無 Drive 編號(file_id 恆為空字串),改記網址才有意義
           if (res && res.ok) saved.push({ angle: a.angle, url: res.url || res.drive_url || '', filename: res.filename });
-          btnUse.textContent = '💾 存檔中…(' + (i + 1) + '/3)';
+          btnUse.textContent = '💾 存檔中…(' + (i + 1) + '/2)';   // 只存 3/4 與側臉
           next(i + 1);
         }).catch(function (e) {
           btnUse.textContent = '❌ 存檔失敗:' + e.message;
