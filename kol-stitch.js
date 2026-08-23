@@ -816,6 +816,12 @@ window.KolStitch = (function () {
       sceneImageUrl = null;
       console.log('[KolStitch] 🔬 診斷:本支跳過場景圖(KOL_DROP_SCENE=on)');
     }
+    // 🛡️ 2026-08-23:先把客戶原本那張實景照存起來。
+    //   病灶:下面那個 catch 是 `sceneImageUrl = null` —— 九宮格只要丟出任何例外
+    //   (網路、逾時、fal 回錯),連【客戶自己上傳的照片】都會被一起清掉,
+    //   場景整個消失、影片變成隨機背景。客戶會說「我明明有放照片」。
+    //   ★ 九宮格是加分項,失敗最多退回原照,絕不能讓原照跟著陪葬。
+    const _userScene = sceneImageUrl || null;
     try {
       // 🆕 2026-08-23:條件從「沒有場景圖才進來」改成「沒被關掉就進來」。
       //   病灶:舊條件 !sceneImageUrl 表示【客戶一旦上傳實景照就整段跳過】,
@@ -844,7 +850,12 @@ window.KolStitch = (function () {
           sceneImageUrl = await window.KolEnvironment.generateSceneRefImage(sceneCtx);
         }
       }
-    } catch (e) { sceneImageUrl = null; }
+    } catch (e) {
+      // 🛡️ 退回客戶原照(而不是 null)。只有客戶本來就沒給照片時才會是 null。
+      console.warn('[KolStitch] 場景處理失敗,退回客戶原本的實景照:', e && e.message);
+      sceneImageUrl = _userScene;
+    }
+    if (!sceneImageUrl && _userScene) sceneImageUrl = _userScene;   // 雙保險
 
     log(`參考圖鎖定完成 ✓ · ${total} 段生成中…(同一張臉 · 同一件衣服 · 同一個場景 · 跨段不飄)`);
 
