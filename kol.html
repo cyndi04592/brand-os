@@ -1055,7 +1055,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.20 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.21 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -9250,12 +9250,15 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
   const taskBox = document.getElementById('system-episode-task');
   const startTime = Date.now();
   // 🆕 每秒更新:看得到「已等 Xs · X/N 段」,不再像當機
-  let lastMsg = `送出 ${plan.length} 段中…`, doneSeg = 0;
+  let lastMsg = '準備中…', doneSeg = 0;   // 🩹 v7.21:不露「段」(客戶不懂那是什麼)
   const paint = () => {
     if (!taskBox) return;
     const sec = Math.round((Date.now() - startTime) / 1000);
+    // 🩹 v7.21:與 STEP2 對齊 —— 不顯示「N/N 段」,改顯示百分比與等候時間。
+    //   「段」是接片引擎的內部單位,客戶看到只會想「為什麼要分段?是不是壞了?」
+    const _pct = Math.min(99, Math.round((doneSeg / Math.max(1, plan.length)) * 80) + (doneSeg >= plan.length ? 15 : 2));
     taskBox.innerHTML = `<div class="seedance-task"><div class="seedance-task-info">`
-      + `<strong>接片中 · ${doneSeg}/${plan.length} 段完成</strong>`
+      + `<strong>影片製作中 · ${_pct}%</strong>`
       + `<div style="font-size:12px;color:#8fd9b8;margin-top:4px">⏱ 已等 ${sec}s · ${escapeHtml(lastMsg)}</div></div></div>`;
   };
   paint();
@@ -9275,10 +9278,27 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       aspectRatio: S.episodeParams.aspectRatio,
       generateAudio: S.episodeParams.generateAudio,
       tier: S.episodeParams.tier,
-      onProgress: (m) => { lastMsg = m; paint(); },
-      onSegmentDone: (idx) => { doneSeg++; lastMsg = `第 ${idx + 1} 段好了`; paint(); },
+      // 🛡️ v7.21:與 STEP2 同一道保險網 —— 引擎端萬一漏了工程字眼,這裡攔下來
+      onProgress: (m) => {
+        let t = String(m || '');
+        if (/seed|R2|九宮格|藍圖|臉錨|接片|分鏡|Drive|fal|piapi|prompt|chunk|Image\d/i.test(t)) {
+          console.log('[進度] 已過濾工程訊息:', t);
+          t = '製作中…';
+        }
+        lastMsg = t; paint();
+      },
+      onSegmentDone: (idx) => { doneSeg++; lastMsg = doneSeg >= plan.length ? '正在合成影片…' : '畫面製作中,請稍候…'; paint(); },
       outfitCtx: { outfitBrand: chosenOutfitBrand, sceneId: sceneId, persona: persona },   // 🆕 +persona:服裝師抓得到人設
-      sceneCtx:  { brandId: S.currentBrandId, sceneId: sceneId, locationId: locationId },   // 修:STEP3 場景參考圖要吃企劃自己的場景+地標,不然背景鎖被跳過、6段背景各飄
+      // 🩹 2026-08-23:sceneCtx 必須帶 sceneImageUrl。
+      //   病灶:kol-stitch 內是 `opts.sceneCtx || {...預設...}` —— 有傳就用傳的。
+      //   STEP3 傳了一個【沒有 sceneImageUrl】的物件 → 九宮格會走
+      //   「文字→藍圖→想像空間」那條,生一個假辦公室【蓋掉】客戶的真實門市。
+      //   STEP2 因為沒傳 sceneCtx,反而走到預設值才正確 —— 這種
+      //   「兩邊各寫一套」的差異今天已經吃了三次虧。
+      sceneCtx:  {
+        brandId: S.currentBrandId, sceneId: sceneId, locationId: locationId,
+        sceneImageUrl: S.episodeCustomSceneUrl || '',
+      },
     });
     clearInterval(ticker);
     const elapsed = Math.round((Date.now() - startTime) / 1000);
