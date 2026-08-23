@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-//  kol-persona.js · v5.14
+//  kol-persona.js · v5.15
 //  
 //  🎭 KOL 本人 — 角色人設模組
 //  
@@ -55,6 +55,20 @@
     //   前端已保證不含任何地區或國家字眼。
     if (p.voice_style) parts.push('voice quality: ' + p.voice_style);
 
+    // 🆕 v5.15:年齡聲線。擺在 voice_style 之後、整串最尾端。
+    //   為什麼不加 DB 欄位:AI 寫的 background 開頭一定帶年齡
+    //   (「陳建達,42歲,台中人」「昱瑄,27歲,台北信義區」),
+    //   直接抽即可 —— 不動 D1、不動 Worker、不動 UI,一個檔案解決。
+    //   抽不到就完全不輸出,維持舊行為(讓模型看參考照自行判斷)。
+    //
+    //   為什麼需要它:speechLine 只吃 pronoun + accent,年齡從來沒進過聲音那條線。
+    //   結果是童聲/老成全靠參考照的長相碰運氣,客戶沒有任何開關。
+    //
+    //   ⚠️ 只寫【聲線的年齡感】,不重複描述外貌(外貌已由 resolveAppearance 負責),
+    //      也絕不含任何地區或國家字眼 —— 口音由 natToAccent 單獨鎖定。
+    const ageVoice = resolveAgeVoice(p);
+    if (ageVoice) parts.push(ageVoice);
+
     return parts.join('. ');
   }
 
@@ -66,6 +80,32 @@
    * @param {Object} p - persona 資料
    * @returns {string} 'appearance: ...' 片段
    */
+  /**
+   * v5.15:從 persona 推出「聲線的年齡感」描述
+   * @param {Object} p - persona 資料
+   * @returns {string} 'voice age: ...' 片段,推不出來則回空字串
+   */
+  function resolveAgeVoice(p) {
+    if (!p) return '';
+    // 來源優先序:明確的 age 欄位(日後若真的加了) → background 裡的「NN 歲」
+    let n = parseInt(p.age, 10);
+    if (!Number.isFinite(n)) {
+      const m = String(p.background || '').match(/(\d{1,2})\s*歲/);
+      if (m) n = parseInt(m[1], 10);
+    }
+    if (!Number.isFinite(n) || n < 1 || n > 99) return '';
+
+    // 分段刻意做粗 —— 細分在生成結果上分不出差異,徒增變數。
+    let v;
+    if (n <= 12)      v = 'a young child voice, light and small in timbre, unpolished and natural';
+    else if (n <= 19) v = 'a teenage voice, bright and thin in timbre, still youthful and unsettled';
+    else if (n <= 34) v = 'a young adult voice, clear and supple in timbre';
+    else if (n <= 49) v = 'a middle-aged voice, fuller and steadier in timbre, settled and experienced';
+    else if (n <= 64) v = 'a mature voice, slightly weathered in timbre, unhurried and seasoned';
+    else              v = 'an elderly voice, thinner and gently rougher in timbre, slower with a soft tremor';
+    return 'voice age: ' + v + ' (about ' + n + ' years old)';
+  }
+
   function resolveAppearance(p) {
     if (!p) return '';
 
