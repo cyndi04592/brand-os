@@ -79,6 +79,7 @@
   function buildExpandRequest({
     duration, outline, lockedLines,
     persona = {}, product = {}, sceneLabel = '',
+    recentEpisodes = [],   // 🧠 2026-08-23 劇情記憶
   }) {
     const joinList = (v) => Array.isArray(v) ? v.join('、') : (v || '');
 
@@ -97,7 +98,31 @@
     } catch (e) {}
     const _taboo = [joinList(persona.taboo_words), _compTaboo].filter(Boolean).join('、');
 
+    // ═══════════════════════════════════════════════════════════
+    //  🧠 2026-08-23 劇情記憶:讓 KOL 讀自己的日記
+    //   現況(本次修正前):每一集都存進 KOL_Episodes,月曆與記憶列表都讀得到,
+    //     但【生下一集時完全沒有人把它餵回去】—— KOL 有日記卻不會翻開來看。
+    //   ★ 只送「主題 + 故事框 + 情緒」三個欄位的極短摘要,最多 6 集。
+    //     絕不整包丟:episodes 一列有 31 欄(含 prompt_final、reference_images_json),
+    //     整包塞進去會把 token 吃光,而且對「別重複」這件事一點幫助也沒有。
+    //   ★ 空陣列 → 完全不送這個欄位 → 舊行為一字不變。
+    // ═══════════════════════════════════════════════════════════
+    let _memo = '';
+    try {
+      const eps = Array.isArray(recentEpisodes) ? recentEpisodes : [];
+      const lines = eps.slice(0, 6).map(function (ep) {
+        if (!ep) return '';
+        const t = String(ep.calendar_topic || ep.topic || '').trim();
+        const f = String(ep.story_frame || '').trim().slice(0, 40);
+        const m = String(ep.emotion || '').trim();
+        const parts = [t, f, m].filter(Boolean);
+        return parts.length ? '・' + parts.join(' / ') : '';
+      }).filter(Boolean);
+      if (lines.length) _memo = lines.join('\n');
+    } catch (e) {}
+
     return {
+      recentEpisodes: _memo,   // 🧠 純文字摘要,Worker 端直接貼進提示詞
       durationSec: duration,
       beats: planBeats(duration),
       outline: (outline || '') + _compBrief,
@@ -249,5 +274,5 @@
     window.CrewDirector.register('storywriter', window.KolStorywriter);
   }
 
-  console.log('[KolStorywriter] 📖 v5.16 就緒(語速4.2實測校準 · 分鏡 + AI 編修前端)');
+  console.log('[KolStorywriter] 📖 v5.17 就緒(語速4.2實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集)');
 })();
