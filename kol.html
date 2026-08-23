@@ -5875,14 +5875,32 @@ function copySeedancePrompt() {
 //     也不要把別的 KOL 的劇情餵進來。
 //   ★ 回空 = 舊行為一字不變。
 // ═══════════════════════════════════════════════════════════════
-function _recentEpisodesFor(personaId) {
+//  🩹 2026-08-23 二修:改成「沒有就自己去撈」。
+//   病灶:舊版只讀 renderSystemQueue 留下的快取 —— 那支只有進到
+//     「劇情記憶」頁面才會跑。客戶直接進 STEP2 生影片 = 快取永遠是空的,
+//     於是永遠沒有記憶,而且不報錯、看不出來。
+//     ★ 這違反鐵律「不教客戶做對的事,讓預設就是對的事」——
+//       不該要求使用者先逛過某一頁,功能才會生效。
+//   ★ 現撈成本很低:listEpisodes 走 Worker KV 快取(20 秒),
+//     而且一次生成只會呼叫一次。
+//   ★ 撈失敗一律回空陣列 = 舊行為,絕不擋住生成。
+async function _recentEpisodesFor(personaId) {
+  const pid = String(personaId || '');
+  const bid = String(S.currentBrandId || '');
+  if (!pid || !bid) return [];
+  const want = bid + '::' + pid;
   try {
     const c = S._recentEps;
-    if (!c || !c.list || !c.list.length) return [];
-    const want = String(S.currentBrandId || '') + '::' + String(personaId || '');
-    if (c.key !== want) return [];
-    return c.list;
-  } catch (e) { return []; }
+    if (c && c.key === want && Array.isArray(c.list) && c.list.length) return c.list;
+  } catch (e) {}
+  // 快取沒有(或不是這位 KOL)→ 現撈
+  try {
+    const res = await apiListEpisodes(bid, pid, 20);
+    const list = (res && res.ok && Array.isArray(res.episodes)) ? res.episodes : [];
+    S._recentEps = { key: want, list: list };
+    console.log('[記憶] 現撈' + list.length + '集 · ' + pid);
+    return list;
+  } catch (e) { console.log('[記憶] 撈取失敗,本次不帶記憶'); return []; }
 }
 
 // 🆕 v5.17: STEP2 分鏡產生器入口(確認鎖定 / 重新編輯解鎖)
