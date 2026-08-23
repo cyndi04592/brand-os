@@ -377,6 +377,19 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   if (['fashion_lingerie', 'lingerie', 'underwear'].includes(ctx.brand?.brand_type || '')) {
     tail.push('she is fully dressed in everyday outerwear, modest and tasteful, no exposed undergarments, no revealing clothing');
   }
+  // 🆕 2026-08-23 跨段道具鎖 —— 接片專用,只在 shared 出現一次。
+  //   病灶(現場實測 30 秒接片):臉、服裝、場景都鎖住了,
+  //   【桌面道具沒有人管】→ 第一段白鍵盤 1 台銀螢幕、
+  //   第二段黑鍵盤 2 台黑螢幕,桌上東西整組換掉。
+  //   觀眾不會逐格比對臉,但「鍵盤突然從白變黑」一眼就看得出來,
+  //   像剪錯片 —— 這比臉的細微漂移更傷。
+  //   ★ 寫法刻意用「同一張桌子、同一套東西、同樣位置」的正面陳述,
+  //     不用 never change 這種否定句 —— 實測否定句擋不住(見 CONTACT_CHAIN 那條教訓)。
+  //   ★ 字數控制在 ~150 字:1700 牆已經很緊(實測 1690),不能再吃太多。
+  tail.push('the exact same desk setup in every shot — identical monitor count, '
+    + 'identical keyboard and mouse in the same colour and model, '
+    + 'the same objects sitting in the same positions on the desk throughout');
+
   // ⑦ 品牌調性 + 無字幕
   pushIfNonEmpty(tail, C.brandSoul?.contribute(ctx));
   tail.push('no subtitles, no captions, no on-screen text, no watermark');
