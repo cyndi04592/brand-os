@@ -1927,6 +1927,16 @@ document.addEventListener('DOMContentLoaded', function(){
             <option value="male">男性</option>
           </select>
         </div>
+        <!-- 🧑‍💼 2026-08-23 職業欄補建(三處鐵律的第三處:畫面)。
+             kol_personas 的 persona_style 欄位 v4.60 就建好了(能寫、能讀),
+             但一直沒有地方填 → 生人設書時只好拿 background 前 120 字去猜職業。
+             ⚠️ 這是合規問題:禁用詞要照【KOL 職業所屬行業】挑那一組,不是照品牌行業。
+                觀眾會把「護理師人設」講的話當專業意見 —— 即使品牌賣的是鞋子。 -->
+        <div class="pe-row">
+          <label>職業 / 風格(persona_style) · 決定禁用詞挑哪一組</label>
+          <input type="text" id="pe-persona-style" placeholder="例:護理師 / 咖啡店店長 / 大學生 / 健身教練 / 上班族媽媽" maxlength="120">
+          <div style="font-size:10.5px;opacity:.55;margin-top:4px">留空 = 交給 AI 依品牌行業判斷(可能猜錯)。填了就是硬性條件,不會被改掉。</div>
+        </div>
         <div class="pe-row">
           <label>背景(background)</label>
           <textarea id="pe-background" rows="2" placeholder="例:日本母親+台灣父親,在日本長大..."></textarea>
@@ -5857,6 +5867,24 @@ function copySeedancePrompt() {
   if (!t) { toast('請先選場景', 'error'); return; }
   navigator.clipboard.writeText(t).then(() => toast('已複製 ✓', 'success'));
 }
+// ═══════════════════════════════════════════════════════════════
+//  🧠 2026-08-23 劇情記憶取用器(STEP2 / STEP3 共用,只寫一份)
+//   病灶:每一集都存進 KOL_Episodes,月曆與記憶列表都讀得到,
+//     但生下一集時沒有人把它餵回去 —— KOL 有日記卻不會翻開來看。
+//   ★ 身分不符一律回空陣列:寧可這一集沒有記憶,
+//     也不要把別的 KOL 的劇情餵進來。
+//   ★ 回空 = 舊行為一字不變。
+// ═══════════════════════════════════════════════════════════════
+function _recentEpisodesFor(personaId) {
+  try {
+    const c = S._recentEps;
+    if (!c || !c.list || !c.list.length) return [];
+    const want = String(S.currentBrandId || '') + '::' + String(personaId || '');
+    if (c.key !== want) return [];
+    return c.list;
+  } catch (e) { return []; }
+}
+
 // 🆕 v5.17: STEP2 分鏡產生器入口(確認鎖定 / 重新編輯解鎖)
 function openStoryboardForCine() {
   if (!S.selectedKol) { toast('請先選 KOL', 'warn'); return; }
@@ -5869,6 +5897,7 @@ function openStoryboardForCine() {
     product: { name: '', tag: '' },   // STEP2 商品靠大綱描述,不強制
     sceneLabel: '',
     getProductImages: () => (typeof orderedProductUrls === 'function' ? orderedProductUrls() : []),   // 🆕 1b 分段綁圖:縮圖來源
+    getRecentEpisodes: () => _recentEpisodesFor(S.selectedKol?.persona?.persona_id),   // 🧠 2026-08-23
     // ✅ 按「確認分鏡」:填劇情 + 鎖時長 15s + 凍結下面設定
    onConfirm: (beats) => {
       const b = beats[0] || {};
@@ -5931,6 +5960,7 @@ function openStoryboardForEpisode() {
     product: { name: product?.name || '', tag: '' },
     sceneLabel: document.getElementById('ep-scene')?.selectedOptions?.[0]?.text || '',
     getProductImages: () => (typeof orderedEpisodeUrls === 'function' ? orderedEpisodeUrls() : []),   // 🆕 1b 分段綁圖:縮圖來源
+    getRecentEpisodes: () => _recentEpisodesFor(persona.persona_id || persona?.persona?.persona_id),   // 🧠 2026-08-23
     onConfirm: (beats, duration) => {
       const b = beats[0] || {};
       const who = persona.persona_name || '主角';
@@ -7569,6 +7599,7 @@ function openPersonaEditor(personaIdArg) {
   //   kol-stitch v6.22 的預設一致(取不到值時行為維持女性,不會讓既有影片變樣)。
   { const _g = document.getElementById('pe-gender');
     if (_g) _g.value = (String(p.gender || '').toLowerCase() === 'male') ? 'male' : 'female'; }
+  { const _ps = document.getElementById('pe-persona-style'); if (_ps) _ps.value = p.persona_style || ''; }   // 🧑‍💼 2026-08-23
   document.getElementById('pe-background').value = p.background || '';
   document.getElementById('pe-personality').value = p.personality || '';
   document.getElementById('pe-speaking-style').value = p.speaking_style || '';
@@ -7596,6 +7627,7 @@ async function savePersonaFromEditor() {
   const updated = {
     ...p,
     gender: document.getElementById('pe-gender')?.value || 'female',   // 🩹 2026-08-23
+    persona_style: (document.getElementById('pe-persona-style')?.value || '').trim(),   // 🧑‍💼 2026-08-23
     background: document.getElementById('pe-background').value.trim(),
     personality: document.getElementById('pe-personality').value.trim(),
     speaking_style: document.getElementById('pe-speaking-style').value.trim(),
@@ -8495,11 +8527,12 @@ async function aiGeneratePersona() {
     const res = await api('ai_generate_persona', {
       personaName: persona.persona_name,
       personaType: persona.persona_type || 'independent',
-      // ⚠️ kol_personas 資料表沒有「職業」欄位 —— 職業只是生圖時的參數,沒存下來。
-      //   所以改從既有 background 撈(AI 寫的背景一定會提到職業);
-      //   第一次生成時 background 是空的,那就交給 AI 依品牌行業自行判斷。
-      //   🔴 待辦:kol_personas 應該補一個 persona_style 欄位,這裡才不用用猜的。
-      personaStyle: (persona.background || '').slice(0, 120),
+      // 🧑‍💼 2026-08-23:persona_style 欄位三處補齊(D1 v4.60 已能寫能讀,
+      //   今天補上「畫面」= 人設編輯器的職業欄,Worker v4.64 也終於收得到)。
+      //   來源優先序:① 客戶自己填的職業欄(硬性條件,AI 不准改)
+      //               ② 沒填 → 退回舊行為,從 background 撈(AI 寫的背景會提到職業)
+      //               ③ 都沒有 → 空字串,交給 AI 依品牌行業判斷(第一次生成時)
+      personaStyle: (persona.persona_style || '').trim() || (persona.background || '').slice(0, 120),
       // 🩹 v7.8:補送年齡。
       //   病灶(2026-08-23 現場):客戶在生成器拉 33 歲、臉也生成 33 歲的樣子,
       //   人設書卻寫「27歲」。原因是這支 payload 從來沒有帶過 age ——
@@ -8948,6 +8981,10 @@ async function renderSystemQueue() {
     if (!res.ok) throw new Error(res.error || '讀取失敗');
 
     const eps = res.episodes || [];
+    // 🧠 2026-08-23:順手存一份給「AI 編修分鏡」當劇情記憶用。
+    //   ★ 一定要連 KOL 身分一起存 —— 否則切到別的 KOL 時,
+    //     會把上一位的劇情餵進這一位的腳本(串味,而且很難發現)。
+    S._recentEps = { key: String(S.currentBrandId || '') + '::' + String(persona.persona_id || ''), list: eps };
     const listEl = document.getElementById('system-queue-list');
 
     if (eps.length === 0) {
