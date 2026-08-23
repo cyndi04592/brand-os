@@ -370,13 +370,45 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   front.push('soft natural contact shadows where her hands and the product touch surfaces, physically grounded never floating');
   front.push(CONTACT_CHAIN);
 
+  // ═══════════════════════════════════════════════════════════════
+  //  🩳 2026-08-23 tail 優先序重排(實測數字驅動,不是猜的)
+  //   現場實測(芮比 30 秒接片):
+  //     分鏡本體吃掉 ~1339 字 → front+tail 只剩 ~320 字
+  //     → 系統自動把 front 砍到最小,擠出 201 字給 tail
+  //     → 「🩳 商品鐵律保留 2/10 條」
+  //   而舊順序是 [道具師(多句), 內衣鎖, 跨段道具鎖, 品牌調性, 無字幕],
+  //   切開後道具師的子句全排在前面 → 預算用光 →
+  //     ★ 跨段道具鎖(8/23 才加的)一次都沒送出去過
+  //     ★ 無字幕條款排最後,也從來沒送出去(沒出字幕純屬運氣)
+  //   ★ RA 定的優先序:「商品、人臉、背景、服裝最重要,越自然越好,色板還好」
+  //     → 短而關鍵的規則往前,長而次要的往後,品牌調性墊底。
+  //   ★ 這是零成本改動:只換順序,一個字都沒加。
+  // ═══════════════════════════════════════════════════════════════
   const tail = [];
-  // ⑤ 商品(大小+形狀鎖+正面朝鏡頭)
-  pushIfNonEmpty(tail, window.KolProduct?.contribute(ctx));
-  // ⑥ 內衣安全鎖(只在內衣品牌)
+
+  //  道具師輸出是一整串用「;」串起來的子句。拆成【主句】與【其餘】——
+  //  主句定義「這是什麼東西」(PROP / HERO PRODUCT / SERVICE RESULT…),
+  //  少了它後面所有子句都失去主詞,所以它必須排第一(fitRules 對第一條無條件保留)。
+  const _prodRaw = String(window.KolProduct?.contribute(ctx) || '');
+  let _prodHead = '', _prodRest = '';
+  if (_prodRaw) {
+    const _p = _prodRaw.split(/(?:\.|;)\s+/)
+      .map(function (x) { return x.trim().replace(/[.;]+$/, ''); })
+      .filter(Boolean);
+    _prodHead = _p.shift() || '';
+    _prodRest = _p.join('; ');
+  }
+
+  // 1️⃣ 道具師主句 —— 再長都送(fitRules 保底)
+  pushIfNonEmpty(tail, _prodHead);
+
+  // 2️⃣ 內衣安全鎖(只在內衣品牌才存在)—— 法律風險,有就排前面
   if (['fashion_lingerie', 'lingerie', 'underwear'].includes(ctx.brand?.brand_type || '')) {
     tail.push('she is fully dressed in everyday outerwear, modest and tasteful, no exposed undergarments, no revealing clothing');
   }
+
+  // 3️⃣ 無字幕條款 —— 只有 58 字,CP 值最高,絕不能再排最後
+  tail.push('no subtitles, no captions, no on-screen text, no watermark');
   // 🆕 2026-08-23 跨段道具鎖 —— 接片專用,只在 shared 出現一次。
   //   病灶(現場實測 30 秒接片):臉、服裝、場景都鎖住了,
   //   【桌面道具沒有人管】→ 第一段白鍵盤 1 台銀螢幕、
@@ -396,9 +428,11 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
     + 'same items, same count, same colours and models, resting in the same places; '
     + 'the setting is one continuous unchanged space, only the camera angle changes');
 
-  // ⑦ 品牌調性 + 無字幕
+  // 5️⃣ 道具師其餘子句 —— 形狀鎖、尺寸鎖、接地、正面朝鏡頭…有多少放多少
+  pushIfNonEmpty(tail, _prodRest);
+
+  // 6️⃣ 品牌調性 —— RA 拍板:色板/調性可犧牲,排最後
   pushIfNonEmpty(tail, C.brandSoul?.contribute(ctx));
-  tail.push('no subtitles, no captions, no on-screen text, no watermark');
 
   return { front: front.filter(Boolean).join('. '), tail: tail.filter(Boolean).join('. ') };
 }
@@ -553,5 +587,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.18-screenwork 就緒 · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.19-tailorder 就緒 · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
