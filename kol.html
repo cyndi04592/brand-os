@@ -4145,11 +4145,17 @@ async function loadDriveProducts() {
 
   const folderId = BRAND_PRODUCT_FOLDERS[S.currentBrandId];
   if (!folderId) {
+    // 🚪 2026-08-22:新品牌不再有雲端資料夾(v4.52 起進駐就不建了)。
+    //   舊訊息叫客戶「等管理員補上 folderId」—— 那是一條死路:
+    //   管理員不會補、也不該補,他該去的是素材庫。
+    //   ⚠️ 教訓:拆掉一個東西時,要連「找不到它時顯示什麼」一起改。
+    //     報錯訊息會把客戶導向錯誤的求助對象,比功能壞掉更難查。
     wrap.innerHTML = `
       <div class="ref-drive-locked">
-        <span class="emoji">🔒</span>
-        <strong>此品牌尚未設定商品照資料夾</strong><br>
-        <small>等管理員補上 Drive folderId 即可解鎖</small>
+        <span class="emoji">📁</span>
+        <strong>這個品牌還沒有商品照</strong><br>
+        <small>請到「素材庫」上傳,分類選「商品/服務照」<br>
+        上傳後回來按「重新抓取素材」就會出現</small>
       </div>
     `;
     return;
@@ -6704,7 +6710,9 @@ function renderEpisodeProductPickerHTML() {
   const brandId = S.currentBrandId;
   const folderId = BRAND_PRODUCT_FOLDERS[brandId];
   if (!folderId) {
-    return `<div class="ep-product-locked">🔒 此品牌尚未設定商品照 Drive 資料夾<br><small>影片可生成但商品會是 AI 腦補,不是真實商品</small></div>`;
+    // 🚪 2026-08-22:同上 —— 不再提「Drive 資料夾」,直接告訴他該去哪。
+    //   ★ 後半句「AI 腦補」的警告要留著:那是真的,而且客戶必須知道。
+    return `<div class="ep-product-locked">📁 這個品牌還沒有商品照<br><small>請到「素材庫」上傳(分類選「商品/服務照」)<br>沒有的話影片照樣生,但商品會是 AI 腦補,不是真實商品</small></div>`;
   }
   const selected = S.episodeProductUrls || [];
   return `
