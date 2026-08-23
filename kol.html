@@ -74,6 +74,105 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .onb-opt:disabled:hover{border-color:var(--border);transform:none;}
 .onb-opt .tag.soon{background:rgba(255,255,255,.07);color:var(--text-dim);}
 .onb-blocked{opacity:.32;pointer-events:none;filter:grayscale(.45);transition:opacity .25s;}
+
+/* ══ 🆕 v7.0:STEP1 選角版面 ══════════════════════════════
+   背景:HeyGen 口播拆除後右欄空掉,不是加張卡片能補的 —— 版面本來就該重排。
+   結構參考遊戲選角:左名冊 / 中舞台 / 右檔案 / 底部確認列。
+   ★ 相容性鐵則(這次改版的最高優先):
+     ① 15 個活的 id 一律沿用原名,只換位置 → updateStepLocks 等 25 條防呆全部照舊生效
+     ② 標題含「KOL 形象庫」的 .panel 必須存在 → kol-ai-generator.js 靠文字找錨點
+     ③ .kai-panel 必須產生得出來 → kol-character-sheet.js 靠它定位,
+        找不到會每 800ms 無限重試而且不報錯(最難查的那種)
+     ④ #drive-gallery-wrap 只是搬進頁籤,renderDriveGallery() 一行不動
+        → 綁定鈕/自動換角色/數 .drive-photo/Look 去重 等 8 條 DOM 防呆不受影響 */
+.rs-grid{display:grid;grid-template-columns:250px minmax(0,1fr) 290px;gap:16px;align-items:start;
+  max-width:1400px;margin:0 auto;padding:0 24px 100px;}
+@media(max-width:1180px){.rs-grid{grid-template-columns:220px minmax(0,1fr);}
+  .rs-dossier{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:14px;}}
+@media(max-width:760px){.rs-grid{grid-template-columns:1fr;padding:0 16px 100px;}
+  .rs-dossier{grid-template-columns:1fr;}}
+
+/* 名冊格牆 */
+.rs-roster{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+@media(max-width:760px){.rs-roster{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:430px){.rs-roster{grid-template-columns:repeat(3,1fr);}}
+.rs-card{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;cursor:pointer;
+  border:1.5px solid var(--border);background:var(--surface2);transition:all .18s;}
+.rs-card:hover{border-color:rgba(124,109,250,.55);transform:translateY(-2px);}
+.rs-card.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 6px 18px rgba(124,109,250,.28);}
+.rs-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.rs-card .nm{position:absolute;left:0;right:0;bottom:0;padding:13px 5px 5px;font-size:10.5px;
+  font-weight:700;text-align:center;background:linear-gradient(transparent,rgba(10,10,15,.93));}
+.rs-card .flag{position:absolute;top:4px;right:4px;font-size:8.5px;padding:1px 5px;border-radius:4px;
+  background:rgba(250,109,155,.9);color:#fff;font-weight:700;}
+.rs-card .sig{position:absolute;top:5px;left:5px;display:flex;gap:1.5px;width:34px;height:3px;}
+.rs-card .sig i{flex:1;border-radius:2px;background:rgba(255,255,255,.18);}
+.rs-card .sig i.f{background:var(--accent3);}
+.rs-new{border-style:dashed;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  gap:4px;color:var(--text-dim);font-size:10.5px;text-align:center;padding:4px;}
+.rs-new:hover{color:var(--accent3);border-color:var(--accent3);}
+
+/* 中央舞台 */
+.rs-stage{background:linear-gradient(180deg,rgba(124,109,250,.07),rgba(250,109,155,.03));
+  border:1px solid rgba(124,109,250,.18);border-radius:var(--radius);overflow:hidden;}
+.rs-portrait{position:relative;aspect-ratio:4/3;background:var(--surface2);}
+.rs-portrait img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.rs-plate{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 14px;
+  background:linear-gradient(transparent,rgba(10,10,15,.94));display:flex;align-items:flex-end;gap:11px;flex-wrap:wrap;}
+.rs-plate .who{font-family:'Syne',sans-serif;font-weight:800;font-size:23px;}
+.rs-plate .meta{font-size:11.5px;color:var(--text-mid);padding-bottom:4px;}
+.rs-empty-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--text-dim);font-size:13px;text-align:center;line-height:2;padding:20px;}
+.rs-body{padding:13px 15px 15px;}
+
+/* 頁籤 */
+.rs-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+.rs-tab{padding:8px 13px;font-size:12px;cursor:pointer;color:var(--text-dim);
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap;}
+.rs-tab:hover{color:var(--text-mid);}
+.rs-tab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:700;}
+.rs-pane{display:none;}
+.rs-pane.on{display:block;}
+.rs-hint{font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:9px;}
+
+/* 右欄檔案 */
+.rs-dossier{display:flex;flex-direction:column;gap:14px;}
+.rs-bio{font-size:12px;line-height:1.85;color:var(--text-mid);
+  max-height:150px;overflow-y:auto;}
+.rs-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+.rs-chip{font-size:10.5px;padding:3px 9px;border-radius:999px;background:var(--surface2);
+  border:1px solid var(--border);color:var(--text-dim);}
+.rs-chip.hi{background:rgba(109,250,194,.12);border-color:rgba(109,250,194,.4);color:var(--accent3);font-weight:700;}
+.rs-chip.warn{background:rgba(250,109,155,.12);border-color:rgba(250,109,155,.45);color:var(--accent2);
+  font-weight:700;cursor:pointer;}
+
+/* ★ 招牌:聲音四軸 = 角色能力值(資料來自 voice_style,不是裝飾) */
+.rs-axes{display:flex;flex-direction:column;gap:10px;}
+.rs-axis .hd{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;margin-bottom:4px;}
+.rs-axis .hd .k{color:var(--text-dim);}
+.rs-axis .hd .v{color:var(--accent3);font-weight:700;}
+.rs-axis .bar{display:flex;gap:3px;}
+.rs-axis .bar i{flex:1;height:6px;border-radius:3px;background:var(--surface2);border:1px solid var(--border);}
+.rs-axis .bar i.f{background:linear-gradient(90deg,var(--accent),var(--accent3));border-color:transparent;}
+.rs-vtag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+  padding:5px 11px;border-radius:999px;background:rgba(124,109,250,.16);
+  border:1px solid var(--accent);color:var(--text);margin-bottom:12px;}
+.rs-vtag .d{width:5px;height:5px;border-radius:50%;background:var(--accent3);}
+.rs-vnone{font-size:11.5px;color:var(--text-dim);line-height:1.8;}
+
+/* 底部確認列 */
+.rs-actionbar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(10,10,15,.93);
+  backdrop-filter:blur(20px);border-top:1px solid var(--border);transform:translateY(105%);
+  transition:transform .25s cubic-bezier(.4,0,.2,1);}
+.rs-actionbar.show{transform:translateY(0);}
+.rs-actionbar .in{max-width:1400px;margin:0 auto;padding:11px 24px;display:flex;align-items:center;gap:13px;flex-wrap:wrap;}
+.rs-ab-mini{width:36px;height:36px;border-radius:9px;overflow:hidden;border:1px solid var(--accent);flex:none;background:var(--surface2);}
+.rs-ab-mini img{width:100%;height:100%;object-fit:cover;}
+.rs-ab-txt{font-size:12px;color:var(--text-dim);line-height:1.5;}
+.rs-ab-txt b{color:var(--text);font-size:13.5px;}
+.rs-ab-btns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+@media(max-width:600px){.rs-ab-txt{display:none;}.rs-actionbar .in{padding:10px 16px;}}
+@media(prefers-reduced-motion:reduce){.rs-actionbar{transition:none;}}
 .onb-opt .t{font-size:14px;font-weight:700;color:var(--text);display:block;margin-bottom:5px;}
 .onb-opt .d{font-size:11.5px;color:var(--text-dim);line-height:1.5;display:block;}
 .onb-opt .tag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(109,250,194,.15);color:var(--accent3);margin-left:6px;vertical-align:2px;}
@@ -904,7 +1003,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v6.5 · 建角色</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.0 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -993,47 +1092,97 @@ document.addEventListener('DOMContentLoaded', function(){
   <!-- ═══════════════════════════════════════════════════════ -->
   <!-- 模式 A:口播(原 v4.1 UI 完整保留) -->
   <!-- ═══════════════════════════════════════════════════════ -->
-  <div class="layout" id="main-layout-talking" style="display:none">
+  <div class="rs-grid" id="main-layout-talking" style="display:none">
+
+    <!-- ══ 左:名冊 ══════════════════════════════════════════
+         ⚠️ 這個 .panel 的標題必須含「KOL 形象庫」五個字 ——
+            kol-ai-generator.js 的 findLeftPanelAnchor() 是掃所有 .panel、
+            比對 .panel-title 文字來定位,並把整組建角色表單 insert 進來,
+            順帶產生 .kai-panel;而 kol-character-sheet.js 又靠 .kai-panel
+            定位多角度人物表,找不到會每 800ms 無限重試且不報錯。
+            兩層寄生都靠「猜位置」,改字 = 兩塊功能靜默跑到頁面最底部。 -->
     <div class="panel">
       <div class="panel-title" id="kol-gallery-title">
         <div class="dot"></div>
         KOL 形象庫
         <span class="kol-count-chip" id="kol-count" style="display:none">0</span>
       </div>
-      <div class="kol-list" id="kol-list">
+
+      <!-- 名冊格牆(v7.0 新增,由 renderRoster() 填) -->
+      <div class="rs-roster" id="rs-roster"></div>
+
+      <!-- 原始 kol-list:保留但視覺隱藏。
+           ★ 不能刪 —— updateStepLocks 會對它 toggle .onb-blocked,
+             renderKolList() 也仍寫入它;名冊格牆是從它讀資料重畫的。 -->
+      <div class="kol-list" id="kol-list" style="display:none">
         <div class="kol-empty">載入中…</div>
       </div>
-      <div class="drive-section" id="drive-section">
-        <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent2)"></div>KOL 照片庫</div>
-        <div class="drive-hint">素材庫裡的 KOL 照片會出現在這裡。選好照片後,可以建立角色或加入新角度。</div>
-        <div id="drive-gallery-wrap">
-          <div class="kol-empty">載入中…</div>
+
+
+    </div>
+
+    <!-- ══ 中:舞台 ══════════════════════════════════════════ -->
+    <div class="rs-stage">
+      <div class="rs-portrait" id="rs-portrait">
+        <div class="rs-empty-stage" id="rs-stage-empty">← 從左邊選一位角色<br>還沒有角色就按「＋ 建新角色」</div>
+      </div>
+      <div class="rs-body">
+        <div class="rs-tabs">
+          <div class="rs-tab on" data-pane="look">造型</div>
+          <div class="rs-tab" data-pane="photo">照片庫</div>
         </div>
-        <div class="drive-action-bar" id="drive-action-bar" style="display:none">
-          <span class="drive-selected-count" id="drive-selected-count">已選 0 張</span>
-          <button class="btn btn-success btn-sm" id="drive-confirm-btn" onclick="confirmDrivePhotos()" disabled>
-            建立 / 加入 Avatar
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="clearDriveSelection()">清除選取</button>
+
+        <div class="rs-pane on" id="rs-pane-look">
+          <div class="rs-hint">決定這支影片的穿著與場景。點一個當作本次拍攝的造型。</div>
+          <div id="selected-kol-banner">
+            <div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>
+          </div>
+          <div class="look-picker" id="look-picker" style="display:none">
+            <div class="look-picker-header">
+              <span class="look-picker-title">造型選擇(Look)</span>
+              <span class="look-picker-hint" id="look-picker-hint">預設 Base Look · 可點縮圖切換</span>
+            </div>
+            <div class="look-grid" id="look-grid">
+              <div class="kol-empty" style="grid-column:1/-1;padding:20px">載入 Look 中…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ★ id="drive-section" 必須包住實際的照片,不能只是個空殼:
+               updateStepLocks 對它 toggle .onb-blocked(帶 pointer-events:none),
+               那是「沒角色時不讓客戶亂點」的防呆。空殼會讓封鎖完全失效。
+               而 2026-08-19 的雞生蛋死結修補(Drive 有照片就放行)也依賴
+               封鎖範圍真的蓋在照片上,才有意義。 -->
+        <div class="rs-pane drive-section" id="drive-section">
+          <div class="rs-hint">素材庫裡的 KOL 照片會出現在這裡。選好照片後,可以建立角色或加入新角度。</div>
+          <!-- ★ #drive-gallery-wrap 只是換位置,renderDriveGallery() 一行未動 →
+                 綁定鈕長在照片下方、點別位角色照片自動換過去、數 .drive-photo
+                 解封鎖、Look 去重 等 8 條 DOM 防呆完全不受影響。 -->
+          <div id="drive-gallery-wrap">
+            <div class="kol-empty">載入中…</div>
+          </div>
+          <div class="drive-action-bar" id="drive-action-bar" style="display:none">
+            <span class="drive-selected-count" id="drive-selected-count">已選 0 張</span>
+            <button class="btn btn-success btn-sm" id="drive-confirm-btn" onclick="confirmDrivePhotos()" disabled>
+              建立 / 加入 Avatar
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="clearDriveSelection()">清除選取</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="right-panel">
-      <div class="panel">
-        <div class="panel-title"><div class="dot" style="background:var(--accent3)"></div>目前選定的 KOL</div>
-        <div id="selected-kol-banner">
-          <div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>
-        </div>
-        <div class="look-picker" id="look-picker" style="display:none">
-          <div class="look-picker-header">
-            <span class="look-picker-title">造型選擇(Look)</span>
-            <span class="look-picker-hint" id="look-picker-hint">預設 Base Look · 可點縮圖切換</span>
-          </div>
-          <div class="look-grid" id="look-grid">
-            <div class="kol-empty" style="grid-column:1/-1;padding:20px">載入 Look 中…</div>
-          </div>
-        </div>
+    <!-- ══ 右:檔案 ══════════════════════════════════════════ -->
+    <div class="rs-dossier">
+      <div class="panel" id="rs-persona-panel" style="display:none">
+        <div class="panel-title"><div class="dot" style="background:var(--accent2)"></div>人設</div>
+        <div class="rs-bio" id="rs-bio"></div>
+        <div class="rs-chips" id="rs-chips"></div>
+      </div>
+
+      <div class="panel" id="rs-voice-panel" style="display:none">
+        <div class="panel-title"><div class="dot" style="background:var(--accent3)"></div>聲音特質</div>
+        <div id="rs-voice-body"></div>
       </div>
 
       <div class="panel onb-card" id="kol-onboard-card" style="display:none">
@@ -1051,17 +1200,13 @@ document.addEventListener('DOMContentLoaded', function(){
         </div>
       </div>
 
-      <!-- 🆕 v6.2:角色就緒卡 — 取代原「口播影片設定」的位置 -->
-      <div class="panel" id="kol-ready-card" style="display:none">
-        <div class="panel-title"><div class="dot" style="background:var(--accent2)"></div>角色已就緒</div>
-        <div style="padding:4px 2px 14px;color:var(--muted);font-size:13.5px;line-height:1.75">
-          這位 KOL 的長相、人設與參考照都已經建好了,可以直接開始拍片。<br>
-          想再多一位角色,就用左側的「AI 生成 KOL 角色」繼續建。
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="switchMode('cinematic')">用這位角色去 STEP 2 拍片 →</button>
-        </div>
-      </div>
+      <!-- ⛔ v7.0:「角色已就緒」卡退場。
+           它是 v6.2 為了補 HeyGen 拆除後的空洞臨時放的,不是設計出來的:
+           整塊 panel 只為裝一顆按鈕,內容還跟旁邊三塊重複。
+           改由底部固定確認列承擔(參考選角畫面通用的「進入 / 出擊 / 확인」)。
+           ★ id 仍保留在下方隱藏節點 —— updateStepLocks 會對它設 display,
+             刪掉會讓那行 if 失效(雖然有 null 檢查,但留著語意才完整)。 -->
+      <div id="kol-ready-card" style="display:none"></div>
 
       <!-- ⛔ v6.2:口播模式(HeyGen)已停用 ────────────────────────
            理由:HeyGen talking-photo 是「靜態照片驅動嘴型」,與 STEP 2 的
@@ -1145,6 +1290,20 @@ document.addEventListener('DOMContentLoaded', function(){
 
         <div id="video-tasks"></div>
         <div id="video-preview-section"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🆕 v7.0:底部確認列 —— 取代已退場的「角色已就緒」卡。
+       選角畫面的通用語彙(進入 / 出擊 / 확인):選定後才滑出,捲到哪都按得到,
+       且不佔版面高度。只在 STEP1 顯示,由 renderStageAndDossier 控制 .show。 -->
+  <div class="rs-actionbar" id="rs-actionbar">
+    <div class="in">
+      <div class="rs-ab-mini" id="rs-ab-mini"></div>
+      <div class="rs-ab-txt">已選定 <b id="rs-ab-name">—</b><br><span id="rs-ab-sub"></span></div>
+      <div class="rs-ab-btns">
+        <button class="btn btn-ghost btn-sm" id="rs-ab-edit">編輯人設</button>
+        <button class="btn btn-primary btn-sm" onclick="switchMode('cinematic')">用這位角色拍片 →</button>
       </div>
     </div>
   </div>
@@ -2776,6 +2935,15 @@ function switchMode(mode) {
   if (mode === 'system') {
     renderSystemTab();
   }
+
+  // 🆕 v7.0:底部確認列只屬於 STEP1。
+  //   不收掉的話它會固定浮在 STEP2/STEP3 上面,擋住那兩頁的底部內容 ——
+  //   position:fixed 不隨版面切換消失,這是 fixed 元素最常見的坑。
+  const _rsBar = document.getElementById('rs-actionbar');
+  if (_rsBar) {
+    if (mode !== 'talking') _rsBar.classList.remove('show');
+    else if (S.selectedKol) _rsBar.classList.add('show');
+  }
 }
 
 // ─── STEP2 / STEP3 角色門檻鎖 ──────────────────────────────
@@ -3135,8 +3303,193 @@ async function loadKolList(brandId, force) {
   listEl.removeEventListener('click', handleKolListClick);
   listEl.addEventListener('click', handleKolListClick);
 
+  // 🆕 v7.0:名冊格牆與 #kol-list 同源重畫。
+  //   放在這裡是因為此處是「資料已到齊、卡片已寫進 DOM」的唯一權威時機,
+  //   名冊要靠 #kol-list 裡的節點轉發點擊,早於此會抓不到。
+  try {
+    renderRoster(); bindRsTabs();
+    // 🆕 v7.0:還沒有任何角色 → 自動切到「照片庫」頁籤。
+    //   舊版照片庫固定在左欄、一進來就看得到;搬進頁籤後若停在「造型」,
+    //   新客戶要自己想到去點頁籤才找得到照片 —— 建第一個角色的路等於被藏起來。
+    //   這條是為了讓 2026-08-19 雞生蛋修補的成果不被版面改動抵銷。
+    if (!hasBoundKol()) {
+      const tb = document.querySelector('.rs-tab[data-pane="photo"]');
+      if (tb) tb.click();
+    }
+  } catch (e) { console.warn('[RS] 名冊重畫失敗', e); }
+
   // 同步到 cine 版面
   syncKolListToCine();
+}
+
+// ═══ 🆕 v7.0:選角版面渲染 ═══════════════════════════════
+//  資料同源:名冊、舞台、檔案全部從 S.personas / S.selectedKol 讀,
+//  不另外發任何請求。#kol-list 仍照舊渲染(隱藏),名冊是它的視覺替身。
+
+// 聲音四軸:把 voice_style 的英文描述詞反推回 0/1/2 三段
+const RS_AX = [
+  { k:'語速', o:[['slow unhurried','慢'],['natural conversational','中'],['brisk quick','快']] },
+  { k:'音高', o:[['low resonant','低'],['mid register','中'],['bright higher','高']] },
+  { k:'力度', o:[['soft light','輕'],['even measured','適中'],['firm punchy','強']] },
+  { k:'情緒張力', o:[['restrained steady','平穩'],['naturally expressive','自然'],['highly expressive','強烈']] },
+];
+const RS_TAGNAME = {
+  'grounded and credible':'信任感', 'warm resonant and settled':'磁性沉穩',
+  'crisp clear articulation':'專業播報', 'playful with light':'明亮可愛',
+  'clean and efficient':'輕快俐落', 'gentle and soothing':'溫柔慢語',
+  'urgent push with strong':'急迫促銷', 'relaxed and unhurried':'慵懶隨性',
+  'easy and familiar':'親切鄰家', 'quiet and calming':'沉靜療癒',
+};
+function rsParseVoice(vs) {
+  const t = String(vs || '');
+  if (!t.trim()) return null;
+  const ax = RS_AX.map(a => {
+    const i = a.o.findIndex(o => t.includes(o[0]));
+    return i < 0 ? 1 : i;
+  });
+  let tag = '';
+  for (const k in RS_TAGNAME) if (t.includes(k)) { tag = RS_TAGNAME[k]; break; }
+  return { ax, tag };
+}
+
+function renderRoster() {
+  const wrap = document.getElementById('rs-roster');
+  const src = document.getElementById('kol-list');
+  if (!wrap || !src) return;
+  const curId = S.selectedKol ? S.selectedKol.id : '';
+
+  // ★ 資料來源刻意選「已渲染好的 #kol-list 節點」,不另外從 S 重組一份。
+  //   理由:kol-list 的資料經過快取、競速修補、孤兒修復等多層處理
+  //   (見 loadKolList 內那幾條 🩹),自己重組一份等於製造第二個事實來源,
+  //   兩邊遲早不一致。讀 DOM 保證跟客戶眼睛看到的完全相同。
+  const cards = Array.from(src.querySelectorAll('.kol-card-v2')).map(card => {
+    const id = card.dataset.kolId || '';
+    const nm = (card.querySelector('.kol-card-name, .kol-name') || {}).textContent
+               || (card.textContent || '').trim().split('\n')[0] || '未命名';
+    const im = card.querySelector('img');
+    const img = im ? im.getAttribute('src') : '';
+    const chip = card.querySelector('.kol-persona-chip');
+    const needPersona = !!chip;                       // 有「人設未填/待補」徽章就是還沒填齊
+    const pid = chip ? (chip.dataset.personaId || '') : '';
+    const per = (S.personas || []).find(p => p.talking_photo_id === id
+                 || (pid && p.persona_id === pid));
+    const v = rsParseVoice(per && per.voice_style);
+    return `<div class="rs-card${id === curId ? ' on' : ''}" data-kol-id="${escapeHtml(id)}" tabindex="0" title="${escapeHtml(nm.trim())}">
+      ${img ? `<img src="${escapeHtml(img)}" alt="" loading="lazy">` : ''}
+      ${v ? `<div class="sig">${v.ax.map(a => `<i class="${a >= 1 ? 'f' : ''}"></i>`).join('')}</div>` : ''}
+      ${needPersona ? `<div class="flag" data-persona-id="${escapeHtml(pid)}">人設未填</div>` : ''}
+      <div class="nm">${escapeHtml(nm.trim().slice(0, 8))}</div>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = cards +
+    `<div class="rs-card rs-new" id="rs-new-kol" tabindex="0">＋<span>建新角色</span></div>`;
+
+  wrap.querySelectorAll('.rs-card[data-kol-id]').forEach(el => {
+    const go = () => {
+      // 直接重用既有的 kol-list 點擊路徑,不另寫一套選取邏輯
+      const src = document.querySelector(`#kol-list [data-kol-id="${CSS.escape(el.dataset.kolId)}"]`);
+      if (src) src.click();
+    };
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  const nk = document.getElementById('rs-new-kol');
+  if (nk) {
+    const go = () => { if (typeof kolOnboardGoAI === 'function') kolOnboardGoAI(); };
+    nk.addEventListener('click', go);
+    nk.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  }
+}
+window.renderRoster = renderRoster;
+
+function renderStageAndDossier() {
+  const k = S.selectedKol;
+  const port = document.getElementById('rs-portrait');
+  const pp = document.getElementById('rs-persona-panel');
+  const vp = document.getElementById('rs-voice-panel');
+  const bar = document.getElementById('rs-actionbar');
+  if (!port) return;
+
+  if (!k) {
+    port.innerHTML = '<div class="rs-empty-stage" id="rs-stage-empty">← 從左邊選一位角色<br>還沒有角色就按「＋ 建新角色」</div>';
+    if (pp) pp.style.display = 'none';
+    if (vp) vp.style.display = 'none';
+    if (bar) bar.classList.remove('show');
+    return;
+  }
+
+  const p = k.persona || {};
+  const img = k.image_url ? String(k.image_url).trim() : '';
+  const ageM = String(p.background || '').match(/(\d{1,2})\s*歲/);
+  const meta = [ageM ? ageM[1] + ' 歲' : '', p.gender === 'male' ? '男性' : '女性',
+                p.nationality === 'jp' ? '日本' : p.nationality === 'kr' ? '韓國' : '台灣']
+                .filter(Boolean).join(' · ');
+  port.innerHTML =
+    (img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(k.name || '')}">` : '') +
+    `<div class="rs-plate"><div class="who">${escapeHtml(k.name || '未命名')}</div>
+       <div class="meta">${escapeHtml(meta)}</div></div>`;
+
+  // 人設
+  if (pp) {
+    pp.style.display = '';
+    const bio = String(p.background || p.personality || '').trim();
+    document.getElementById('rs-bio').textContent = bio || '這位角色還沒有人設。按下方「編輯人設」補上背景、個性與聲音特質。';
+    const topics = String(p.signature_topics || '').split(/[,,\/]/).map(t => t.trim()).filter(Boolean).slice(0, 4);
+    const needP = !bio;
+    document.getElementById('rs-chips').innerHTML =
+      (needP ? `<span class="rs-chip warn" onclick="openPersonaEditor('${escapeHtml(p.persona_id || '')}')">人設未填 · 點我補</span>` : '') +
+      topics.map(t => `<span class="rs-chip">${escapeHtml(t)}</span>`).join('');
+  }
+
+  // 聲音四軸
+  if (vp) {
+    vp.style.display = '';
+    const v = rsParseVoice(p.voice_style);
+    const body = document.getElementById('rs-voice-body');
+    if (!v) {
+      body.innerHTML = '<div class="rs-vnone">尚未設定 —— 聲音會依角色的年齡與長相自然生成。<br>想指定方向,按下方「編輯人設」。</div>';
+    } else {
+      body.innerHTML =
+        (v.tag ? `<div class="rs-vtag"><span class="d"></span>${escapeHtml(v.tag)}</div>` : '') +
+        `<div class="rs-axes">${RS_AX.map((a, i) => `
+          <div class="rs-axis">
+            <div class="hd"><span class="k">${a.k}</span><span class="v">${a.o[v.ax[i]][1]}</span></div>
+            <div class="bar">${[0,1,2].map(x => `<i class="${x <= v.ax[i] ? 'f' : ''}"></i>`).join('')}</div>
+          </div>`).join('')}</div>`;
+    }
+  }
+
+  // 底部確認列
+  if (bar) {
+    bar.classList.add('show');
+    const mini = document.getElementById('rs-ab-mini');
+    if (mini) mini.innerHTML = img ? `<img src="${escapeHtml(img)}" alt="">` : '';
+    document.getElementById('rs-ab-name').textContent = k.name || '未命名';
+    const v = rsParseVoice(p.voice_style);
+    document.getElementById('rs-ab-sub').textContent =
+      v ? (v.tag ? v.tag + ' · ' : '') + RS_AX.map((a, i) => a.o[v.ax[i]][1]).join(' / ')
+        : '聲音尚未設定';
+    const eb = document.getElementById('rs-ab-edit');
+    if (eb) eb.onclick = () => openPersonaEditor(p.persona_id || '');
+  }
+}
+window.renderStageAndDossier = renderStageAndDossier;
+
+function bindRsTabs() {
+  document.querySelectorAll('.rs-tab').forEach(t => {
+    if (t.dataset.bound) return;
+    t.dataset.bound = '1';
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.rs-tab').forEach(x => x.classList.remove('on'));
+      document.querySelectorAll('.rs-pane').forEach(x => x.classList.remove('on'));
+      t.classList.add('on');
+      // 照片庫那格的 id 是 drive-section(防呆封鎖對象),不是 rs-pane-photo
+      const paneId = t.dataset.pane === 'photo' ? 'drive-section' : 'rs-pane-' + t.dataset.pane;
+      const pane = document.getElementById(paneId);
+      if (pane) pane.classList.add('on');
+    });
+  });
 }
 
 function syncKolListToCine() {
@@ -3251,6 +3604,9 @@ function selectKol(g) {
   const _cvb = document.getElementById('create-video-btn');
   if (_cvb) _cvb.disabled = false;
   updateSeedanceSubmitButton();
+
+  // 🆕 v7.0:選完角色 → 重畫中央舞台、右欄檔案、底部確認列,並更新名冊高亮。
+  try { renderStageAndDossier(); renderRoster(); } catch (e) { console.warn('[RS] 舞台重畫失敗', e); }
 
   // 🩹 v6.3:選完 KOL 要重跑一次上鎖判斷。
   //   病灶:selectKol 寫了 S.selectedKol,卻沒通知 updateStepLocks →
