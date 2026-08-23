@@ -430,6 +430,11 @@ window.composeStitchBeat   = composeStitchBeat;
 
   // 商品外觀一律鎖死在 [Image1],避免模型自己重新設計包裝
   const FACELESS_KEEP = " Keep the product's shape, colour, material, label and proportions identical to [Image1] — do not redesign it.";
+  // 💻 2026-08-23 螢幕鐵律:電腦類動作必用。
+  //   病灶:客戶上傳的是「螢幕截圖」,模型會把它當成一張實體紙片畫在桌上
+  //     (跟海苔被畫成桌上實體物是同一種病)。必須明講:那是螢幕【裡面】的內容,
+  //     由螢幕自己發光顯示,不是一張放在桌上的印刷品。
+  const SCREEN_RULE = "The screen content shown in [Image1] is the live interface displayed inside the monitor itself — it is emitted by the screen and glows from within the display panel. It is never a printed sheet, never a photograph, never a physical object lying on the desk, and it is never held in a hand. The screen bezel and the display surface stay clearly visible around it, and the interface keeps its exact layout, colours and proportions from [Image1].";
   // 「嘴部特寫」專用裁切:只留下巴到鎖骨,眼睛與上半臉永遠在畫面外(食品/飲料必用)
   const FACELESS_CHINCROP = "Tight close-up cropped from just below the nose down to the collarbone — only the chin, lips and jawline are in frame. The eyes, nose and upper face are always outside the frame and never appear.";
 
@@ -507,6 +512,25 @@ window.composeStitchBeat   = composeStitchBeat;
     sign:     "Overhead top-down shot: the camera is directly above a desk, roughly 60cm up, framing only the desk surface, the documents and two hands entering from the bottom edge. " + FACELESS_CAMERA + " One hand steadies the paperwork while the other signs it with a fountain pen in smooth strokes, then presses a seal firmly onto the page and lifts it away to reveal a clean red impression." + FACELESS_KEEP,
 
     review:   "Overhead top-down shot: the camera is directly above a desk, roughly 55cm up, framing only the desk, the documents and two hands entering from the bottom and side edges. " + FACELESS_CAMERA + " The hands turn the pages of the paperwork, a fingertip traces along a line of text and stops to tap a key clause twice, then slides the page across the desk toward the other side." + FACELESS_KEEP,
+
+    // ══ 💻 電腦 · 數位工作(2026-08-23 新增)══
+    //   缺口:整個「桌前工作」的行業(廣告 / 行銷 / 設計 / SaaS / 顧問 / 會計)
+    //     在無臉模式裡一個動作都沒有 —— 舊的「商務 · 文件」全是紙本時代的動作。
+    //   ★ screen / laptop / handoff 這三條靠 SCREEN_RULE 撐著:
+    //     沒有那條,模型會把螢幕截圖畫成「一張平躺在桌上的紙」。
+    //     這條規則跟道具師 tail 裡那條是同一件事,這裡自己再講一次,
+    //     不依賴 tail 有沒有被送出去(tail 會被 1700 牆砍)。
+    mouse:    "Close-up at a shallow 45-degree angle looking down across a desk, roughly 40cm from the surface, framing only the desk mat, a computer mouse and one hand entering from the bottom edge. " + FACELESS_CAMERA + " The hand rests on the mouse, glides it a short distance across the mat, the index finger clicks twice with a clear visible press, then the finger rolls the scroll wheel and the hand settles still." + FACELESS_KEEP,
+
+    typing:   "Overhead top-down shot: the camera is directly above a keyboard, roughly 45cm up, framing only the keyboard, the desk immediately around it, and two hands entering from the bottom edge. " + FACELESS_CAMERA + " The fingers type in a steady natural rhythm, keys visibly depressing under each fingertip, one hand pauses and taps a single key deliberately, then both hands lift slightly and settle back onto the home row." + FACELESS_KEEP,
+
+    screen:   "Medium close-up from slightly off-axis in front of a computer monitor, roughly 50cm away, framing the screen and the desk edge below it, with one hand entering from the bottom or side edge. " + SCREEN_RULE + " " + FACELESS_CAMERA + " The interface on the screen is live and moving — a cursor travels across it, a panel opens, content scrolls — while the hand gestures toward one area of the screen and holds there.",
+
+    laptop:   "Low front-side angle at desk height, roughly 60cm away, framing a closed laptop on a desk and two hands entering from the side edge. " + SCREEN_RULE + " " + FACELESS_CAMERA + " The hands lift the laptop lid open in one smooth motion, the screen lights up with a live interface, then the fingers settle onto the keyboard and begin working.",
+
+    notes:    "Overhead top-down shot: the camera is directly above a desk, roughly 60cm up, framing a notebook and pen at the bottom of frame and the lower portion of a glowing monitor at the top of frame, with two hands entering from the bottom edge. " + SCREEN_RULE + " " + FACELESS_CAMERA + " One hand writes a short line in the notebook while the other rests beside it, then the pen pauses and taps the page once as if checking back against the screen.",
+
+    handoff:  "Medium close-up at desk height, roughly 55cm away, framing a monitor and two hands entering from the sides. " + SCREEN_RULE + " " + FACELESS_CAMERA + " One hand pivots the monitor so the screen turns toward the camera and its content becomes clearly readable, while the other hand raises and points at one specific area of the interface, holding the gesture there.",
   };
 
   function composeFacelessPrompt(action, opts) {
@@ -529,5 +553,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.17-facelessframing 就緒 · 組 prompt 責任已接管 · 無臉模式 prompt 已載入');
+  console.log('[CrewDirector] 🎬 v5.18-screenwork 就緒 · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
