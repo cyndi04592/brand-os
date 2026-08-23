@@ -6255,7 +6255,8 @@ async function createStitchedVideo(beats) {
   // B 版精簡敘事(預設·唯一路徑):組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
   const _shared = (typeof composeStitchShared === 'function')
     ? composeStitchShared(S.currentBrandId, _sceneForStitch, S.selectedLocationId, '15',
-        { outfitBrand: S.selectedOutfitBrand, episode: { persona, product: stitchProduct } })
+        { outfitBrand: S.selectedOutfitBrand, episode: { persona, product: stitchProduct },
+          sceneImageUrl: S.customSceneUrl || '' })   // 🏢 2026-08-23:有實景照 → 略過場景光線描述
     : null;
   const plan = beats.map((b, i) => {
     const sit = (b.shotDesc || '')
@@ -6730,6 +6731,11 @@ async function createSeedanceVideo() {
   }
   if (S.seedanceProductUrls.length === 0) {
     if (!confirm('你沒加任何商品照,影片裡的商品畫面會沒有對應參考圖(可能效果不佳)。\n\n純展示 KOL 情境(無帶貨)可以繼續,要繼續嗎?')) return;
+  }
+  {   // 🩹 2026-08-23:必填槽守門
+    const _miss = _missingRequiredSlots(orderedProductUrls());
+    if (_miss.length && !confirm('⚠️ 還缺這幾張照片:\n\n・' + _miss.join('\n・')
+      + '\n\n少了系統只能自己想像,成品容易糊掉或貼歪。\n\n還是要繼續?')) return;
   }
 
   // 🆕 v5.16: 讀劇情/情境輸入框(STEP2 終於可控)
@@ -7358,8 +7364,15 @@ const MODE_SLOTS = {
   //   後果:客戶傳了兩張截圖,第二張沒有槽可歸 → 排序值 undefined、位置不定;
   //   而 AI 拿不到裝置圖,就會自己想像一台筆電,或把兩張截圖疊在一起。
   //   ★ 這條路線就是軟體/網站/代操公司(含 Brand OS 自己)在走的,不能有洞。
-  screen:   [{ role: 'main', label: '裝置外觀 · 筆電/手機(可不放)' },
-             { role: 'contents', label: '螢幕截圖 · 要自己提供' }],
+  //  🩹 2026-08-23:裝置外觀從「可不放」改成【必放】。
+  //   病灶(芮比實測):只給螢幕截圖、沒給裝置照 →
+  //     模型得自己想像螢幕的邊框、角度與反光,再把截圖硬貼上去
+  //     → 貼歪、拉伸、細節糊掉,成品有明顯「破圖感」。
+  //   ★ screen 模式的設計本來就是兩張圖(裝置=外觀、截圖=內容物),
+  //     標成「可不放」等於鼓勵客戶少放一張,結果是自己承擔品質損失。
+  //   ★ required 由 productSlots 帶出去,生成前守門會擋(見 updateEpisodeSubmit 那條)。
+  screen:   [{ role: 'main', label: '裝置外觀 · 筆電/手機', required: true },
+             { role: 'contents', label: '螢幕截圖 · 要自己提供', required: true }],
   pro:      [{ role: 'main', label: '情境照 · 可不放' }],
   digital:  [{ role: 'main', label: '情境照 · 可不放' }],
   agency:   [{ role: 'main', label: '工作情境 · 可不放' }],
@@ -7386,6 +7399,26 @@ function productSlots() {
   const slots = [{ role: 'packaging', label: '外包裝' }];
   if (showC) slots.push({ role: 'contents', label: '內容物' });
   return slots;
+}
+// 🩹 2026-08-23:必填槽守門(STEP2 / STEP3 共用,只寫這一份)。
+//   為什麼要有:screen 模式(軟體/網站/後台)需要兩張圖 ——
+//     裝置外觀 + 螢幕截圖。只給截圖時,模型得自己想像螢幕的邊框角度反光,
+//     再把截圖硬貼上去 → 貼歪、拉伸、細節糊掉(芮比實測的「破圖感」)。
+//   ★ 刻意不寫成兩套 —— 今天已經因為「兩邊各寫一套」吃了五次虧。
+//   ★ 回傳「缺哪幾格的名稱」,由呼叫端決定要提醒還是硬擋。
+function _missingRequiredSlots(urls) {
+  try {
+    const slots = (typeof productSlots === 'function') ? productSlots() : [];
+    const req = slots.filter(function (x) { return x && x.required; });
+    if (!req.length) return [];
+    const used = {};
+    (urls || []).forEach(function (u) {
+      const r = S.productRefRole && S.productRefRole[u];
+      if (r) used[r] = true;
+    });
+    return req.filter(function (x) { return !used[x.role]; })
+              .map(function (x) { return String(x.label || x.role).split(' · ')[0]; });
+  } catch (e) { return []; }
 }
 function setActiveProductSlot(role) { S.activeProductSlot = role; renderRefList(); }
 function defaultProductRole() {
@@ -8464,7 +8497,19 @@ function renderSocialPosts(posts) {
 
   const igFull = `${ig.caption || ''}\n\n${(ig.hashtags || []).join(' ')}`.trim();
   const threadsFull = (threads.text || '').trim();
-  const fbFull = `${fb.caption || ''}${fb.cta_question ? '\n\n' + fb.cta_question : ''}${fb.hashtags?.length ? '\n\n' + fb.hashtags.join(' ') : ''}`.trim();
+  // 🩹 2026-08-23:FB 三段拼接的重複防護。
+  //   病灶(現場實測):AI 把引導問句【同時】寫進 caption 與 cta_question,
+  //     拼起來就變成同一個問題連問兩次 ——
+  //     「你們接案會怎麼整理客戶資料?」出現在倒數第三段,又出現在最後。
+  //   ★ Worker v4.72 已在提示詞講明「問句只寫 cta_question」(治本),
+  //     這裡是保險網:模型偶爾不聽話時擋下來。兩層都要,不能只靠一層。
+  //   ★ 比對前先正規化(去空白與全半形標點),避免只差一個問號就判定不同。
+  const _norm = (t) => String(t || '').replace(/[\s\u3000]/g, '').replace(/[?？!！。.,,~～]/g, '');
+  const _fbCap = String(fb.caption || '');
+  const _fbCta = String(fb.cta_question || '');
+  const _ctaDup = _fbCta && _norm(_fbCap).includes(_norm(_fbCta));
+  if (_ctaDup) console.log('[貼文] FB 引導問句已在內文出現過 → 不重複附加');
+  const fbFull = `${_fbCap}${(_fbCta && !_ctaDup) ? '\n\n' + _fbCta : ''}${fb.hashtags?.length ? '\n\n' + fb.hashtags.join(' ') : ''}`.trim();
 
   wrap.innerHTML = `
     <div class="social-posts-card">
@@ -9189,6 +9234,11 @@ async function generateEpisodeV510(mode) {
     const ok = confirm('⚠️ 你沒選商品照,系統會自行腦補商品(跟真實差很多)。\n\n建議先選 1-3 張官方商品照。\n\n還是要繼續?');
     if (!ok) return;
   }
+  if (mode !== 'posts') {   // 🩹 2026-08-23:必填槽守門(與 STEP2 共用同一支函式)
+    const _miss = _missingRequiredSlots(productImageUrls);
+    if (_miss.length && !confirm('⚠️ 還缺這幾張照片:\n\n・' + _miss.join('\n・')
+      + '\n\n少了系統只能自己想像,成品容易糊掉或貼歪。\n\n還是要繼續?')) return;
+  }
   // 🆕 立刻回饋:按下後立即顯示「準備素材中」,補掉 resolveKolImageUrl/drive_to_r2 那段空窗(不讓畫面卡2秒沒反應)
   if (mode !== 'posts') { const _tb0 = document.getElementById('system-episode-task'); if (_tb0) _tb0.innerHTML = '<div class="seedance-task"><div class="seedance-task-info"><strong>⏳ 準備素材中…(鎖定 KOL 臉 · 場景)</strong></div></div>'; }
   // 1. 先在 Episodes 建一筆 planned
@@ -9423,7 +9473,8 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
   // B 版精簡敘事(預設·唯一路徑):組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
   const _shared = (typeof composeStitchShared === 'function')
     ? composeStitchShared(S.currentBrandId, sceneId, locationId, '15',
-        { outfitBrand: chosenOutfitBrand || undefined, episode: { persona, product } })
+        { outfitBrand: chosenOutfitBrand || undefined, episode: { persona, product },
+          sceneImageUrl: S.episodeCustomSceneUrl || '' })   // 🏢 2026-08-23:同 STEP2,兩邊一起改
     : null;
   const plan = beats.map((b) => {
     const sit = (b.shotDesc || '')
