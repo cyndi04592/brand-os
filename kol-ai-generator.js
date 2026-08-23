@@ -78,6 +78,8 @@ const S = {
 
 // ── 反 AI 美學 Prompt 配方庫 ─────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+//  🆕 v3.37(2026-08-23)文案修正:角色下拉標題不再誤導成「創建」;
+//     清掉最後兩處 Google 雲端硬碟殘留文案(/KOL/{品牌}/ 與「資料夾」)
 //  🆕 v3.36(2026-08-23)臉部品質四道防呆
 //
 //  ★ 為什麼要在【生成端】治,不能等影片:
@@ -953,13 +955,17 @@ function buildPanelHTML() {
 
       <div class="kai-row-persona">
         <div class="kai-field">
-          <label class="kai-label">創建專屬 KOL 角色</label>
+          <!-- 🩹 2026-08-23 標題誤導修正:
+               病灶:這個下拉寫「創建專屬 KOL 角色」,但它根本不是用來創建的 ——
+                    它是「這次生的照片要掛在哪位既有角色底下」。
+                    要創建的是右邊那顆按鈕。客戶點開下拉找不到「新增」就卡住。 -->
+          <label class="kai-label">這次要生給哪位角色</label>
           <select class="kai-select" id="kai-persona">
             <option value="">— 先選品牌 —</option>
           </select>
         </div>
         <div style="display:flex;align-items:end;">
-          <button class="kai-btn-add" id="kai-btn-new-persona">創建KOL</button>
+          <button class="kai-btn-add" id="kai-btn-new-persona" title="清單裡沒有?按這裡開一位新角色">＋ 新角色</button>
         </div>
       </div>
 
@@ -1114,7 +1120,10 @@ function buildModalHTML() {
       <div class="kai-modal">
         <h3>建立 KOL 角色</h3>
         <div class="sub">
-          系統會在 <code style="color:#6dfac2;">/KOL/{品牌}/</code> 下建立新的子資料夾。<br>
+          <!-- 🩹 2026-08-23:舊文案印的是 Google 雲端硬碟路徑 /KOL/{品牌}/,
+               但照片從 v4.45 起就直接存進自家素材庫,那條路徑早就不存在。
+               (updateFolderHint 8/22 已改,這裡是漏網的第二處。) -->
+          這位角色的照片會收進本品牌的素材庫。<br>
           名字請用純個人名(例如「柚子」「小晴」),不要加品牌字樣。
         </div>
         <input class="kai-input" id="kai-new-name" type="text"
@@ -1388,7 +1397,7 @@ async function confirmNewPersona() {
     updateFolderHint();
 
     closeModal();
-    showStatus('✅ 已建立角色「' + name + '」資料夾', 'ok');
+    showStatus('✅ 已建立角色「' + name + '」', 'ok');   // 🩹 2026-08-23:拿掉「資料夾」(Google 雲端時代的說法)
   } catch (e) {
     alert('❌ 建立失敗:' + e.message);
   } finally {
