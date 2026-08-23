@@ -883,7 +883,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v6.2 · 建角色</div>
+  <div class="topbar-badge" style="margin-left:8px;">v6.3 · 建角色</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -2789,8 +2789,12 @@ function updateStepLocks() {
   // ⛔ v6.2:口播已停用 → 無論如何都不顯示(原條件式保留在註解供日後回溯)
   //   舊行為:if (_vid) _vid.style.display = (S.currentBrandId && _noKol) ? 'none' : '';
   if (_vid) _vid.style.display = 'none';
-  // 有角色 → 顯示「角色已就緒 → 去 STEP 2」導引,右欄才不會空一塊
-  if (_rdy) _rdy.style.display = (S.currentBrandId && !_noKol) ? '' : 'none';
+  // 🩹 v6.3 修:就緒卡改看【使用者選了誰】,不是【品牌有沒有 KOL】。
+  //   病灶:v6.2 用 hasBoundKol() —— 那問的是「這個品牌底下有沒有綁過 KOL」,
+  //         品牌層級有、但客戶還沒點選時,左欄顯示「← 從左側選擇一個 KOL 形象」,
+  //         右欄卻同時寫著「這位 KOL 已經建好了」。哪位?沒選人卻說「這位」,自相矛盾。
+  //   正解:S.selectedKol 才是介面層級的「現在選中誰」。
+  if (_rdy) _rdy.style.display = (S.currentBrandId && S.selectedKol) ? '' : 'none';
 
   // 沒角色 → 左欄「KOL 形象庫」與「Drive 照片庫」整區變暗且不可點。
   //   理由:同事實測會一直去點這兩區問「是點這裡嗎」,新客更找不到路。
@@ -3204,8 +3208,19 @@ function selectKol(g) {
   syncSelectedKolToCine();
 
   // 按鈕啟用判斷
-  document.getElementById('create-video-btn').disabled = false;
+  //   ⚠️ create-video-btn 住在已停用的 #video-panel 裡(v6.2 起隱藏)。
+  //      元素還在 DOM,所以這行不會噴錯;加 ?. 只是保險,免得日後真的整塊拆掉時炸在這。
+  const _cvb = document.getElementById('create-video-btn');
+  if (_cvb) _cvb.disabled = false;
   updateSeedanceSubmitButton();
+
+  // 🩹 v6.3:選完 KOL 要重跑一次上鎖判斷。
+  //   病灶:selectKol 寫了 S.selectedKol,卻沒通知 updateStepLocks →
+  //         就緒卡的顯示條件永遠停留在進頁面那一刻的舊值,
+  //         客戶點了 KOL 但右欄毫無反應,要手動重整才會出現。
+  //   這與待修清單「建立角色成功後 UI 不自動更新」是同一類:
+  //   ★ 任何寫入狀態的動作,都要問一句「畫面會自己更新嗎?」
+  updateStepLocks();
 
   toast(`已選定:${g.name}`, 'success');
 }
@@ -8323,6 +8338,13 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
 <script src="kol-storyboard-panel.js"></script>
 <script src="kol-stitch.js"></script>
 <script src="kol-engine-kling.js"></script><!-- 攝影師② Kling(必須在 kol-stitch.js 之後載入) -->
+<!-- 🆕 v6.3:人設面板接線。
+     這支檔案 2026-08-23 之前【從未被任何頁面載入】—— repo 裡零引用,
+     等於寫好了放在那裡沒接電。症狀:人設沒有編輯入口、
+     「AI 生成」按鈕的 v2 升級(吃品牌+人設)從來沒生效過。
+     相容性已比對:25 個 id 全 kpp- 前綴不撞、無 window.* 污染、
+     gas_cached/gas_write 兩個 action 在 Worker 已轉接 D1。 -->
+<script src="kol-persona-panel.js"></script>
 <!-- <script src="kol-stitch-panel.js"></script> --><!-- demo 暫藏接片,demo 後把這行的註解拿掉即可 -->
 <!-- 🆕 進階設定:預設展開 + 一致性 toggle 預設開 -->
 <script>
