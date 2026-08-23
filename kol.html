@@ -202,6 +202,20 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .scn-toggle{font-size:10.5px;color:var(--text-dim);cursor:pointer;text-decoration:underline;
   background:none;border:none;padding:0;font-family:inherit;}
 .scn-toggle:hover{color:var(--accent);}
+/* 🆕 v7.12:給實景背景一個看得見的邊界。
+   病灶:原本只有一排縮圖 + 一行小字連結,跟上下的場景卡、地標下拉
+   全部連在一起,客戶掃過去不會意識到「這裡可以放我自己的照片」——
+   尤其素材庫是空的時候,整區只剩一行灰字,等於隱形。 */
+.scn-box{border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:11px 12px;background:rgba(255,255,255,.02);}
+.scn-head{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
+.scn-head .t{font-size:11.5px;color:var(--text-mid);font-weight:700;}
+.scn-up{margin-left:auto;display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px;border-radius:8px;cursor:pointer;white-space:nowrap;
+  background:rgba(109,250,194,.12);border:1px solid rgba(109,250,194,.45);
+  color:var(--accent3);font-size:11px;font-weight:700;font-family:inherit;transition:all .15s;}
+.scn-up:hover{background:rgba(109,250,194,.2);}
+.scn-foot{margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 
 .rs-actionbar .in{max-width:1400px;margin:0 auto;padding:11px 24px;display:flex;align-items:center;gap:13px;flex-wrap:wrap;}
 .rs-ab-mini{width:36px;height:36px;border-radius:9px;overflow:hidden;border:1px solid var(--accent);flex:none;background:var(--surface2);}
@@ -1041,7 +1055,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.11 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.12 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1452,14 +1466,23 @@ document.addEventListener('DOMContentLoaded', function(){
         <!-- 🆕 上傳自家實景當背景(賣場 / 快閃店 / 門市)→ 跳過 AI 生背景,直接鎖真照 -->
         <div class="form-group" style="margin-top:0">
           <label class="form-label">或上傳自家實景背景(賣場 / 快閃店 · 選填)</label>
-          <!-- 🆕 v7.7:先給素材庫挑選,貼網址收進「或貼網址」摺疊區當備援 -->
-          <div id="scn-lib-s2"></div>
-          <button type="button" class="scn-toggle" onclick="scnToggleUrl('s2')">或貼公開圖片網址(素材庫沒有的才用)</button>
+          <!-- 🆕 v7.12:獨立成一塊,並補上「＋ 上傳場景素材」直達鈕 -->
+          <div class="scn-box">
+            <div class="scn-head">
+              <span class="t">🏢 用你自己的實景照當背景</span>
+              <button type="button" class="scn-up" onclick="scnGoUpload()">＋ 上傳場景素材</button>
+            </div>
+            <div id="scn-lib-s2"></div>
+            <div class="scn-foot">
+              <button type="button" class="scn-toggle" onclick="scnRefresh('s2')">重新整理</button>
+              <button type="button" class="scn-toggle" onclick="scnToggleUrl('s2')">或貼公開圖片網址(素材庫沒有的才用)</button>
+            </div>
           <div class="ref-url-input-row" id="scn-url-s2" style="display:none;margin-top:6px">
             <input type="text" id="custom-scene-input" placeholder="貼實景照公開 URL" onkeydown="if(event.key==='Enter')addCustomScene()">
             <button onclick="addCustomScene()" style="background:#7c5cff;border:none;border-radius:6px;color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap">加入</button>
           </div>
           <div id="custom-scene-thumb"></div>
+          </div>
           <div class="motion-hint">給了實景照,系統就<b>跳過 AI 生背景、直接用你的真照</b>。記得上面場景卡仍要挑一張(它出文字),賣場就挑「運動賣場特賣」,讓文字跟照片講同一個地方。</div>
         </div>
 
@@ -5235,6 +5258,24 @@ async function _fetchLibraryScenes() {
   return files;
 }
 
+// 🆕 v7.12:直接開素材庫上傳頁。
+//   為什麼不做行內上傳:素材庫已經有完整的上傳流程(分類、KOL 歸屬、
+//   大小限制、R2 寫入)。在這裡再做一套等於兩份實作,遲早漂移 ——
+//   今天光是「商品照讀取」寫成兩套就已經吃過虧。
+//   ★ 用新分頁開,客戶上傳完切回來按「重新整理」即可,不會弄丟已填的設定。
+// 清快取後重畫 —— 客戶剛在另一個分頁上傳完,回來按這顆就會出現
+function scnRefresh(which) {
+  if (window._libSceneCache) window._libSceneCache = {};
+  renderSceneLibrary(which);
+}
+window.scnRefresh = scnRefresh;
+
+function scnGoUpload() {
+  window.open('/library?upload=1&cat=' + encodeURIComponent('場景素材'), '_blank', 'noopener');
+  toast('上傳完切回這頁,按「重新整理」就會出現', 'ok');
+}
+window.scnGoUpload = scnGoUpload;
+
 function scnToggleUrl(which) {
   const box = document.getElementById('scn-url-' + which);
   if (box) box.style.display = box.style.display === 'none' ? '' : 'none';
@@ -7456,13 +7497,22 @@ function renderEpisodeCard() {
       </div>
       <div class="ep-field" style="margin-top:4px">
         <label>或上傳自家實景背景(賣場 / 快閃店 · 選填)</label>
-        <div id="scn-lib-s3"></div>
-        <button type="button" class="scn-toggle" onclick="scnToggleUrl('s3')">或貼公開圖片網址(素材庫沒有的才用)</button>
+        <div class="scn-box">
+          <div class="scn-head">
+            <span class="t">🏢 用你自己的實景照當背景</span>
+            <button type="button" class="scn-up" onclick="scnGoUpload()">＋ 上傳場景素材</button>
+          </div>
+          <div id="scn-lib-s3"></div>
+          <div class="scn-foot">
+            <button type="button" class="scn-toggle" onclick="scnRefresh('s3')">重新整理</button>
+            <button type="button" class="scn-toggle" onclick="scnToggleUrl('s3')">或貼公開圖片網址(素材庫沒有的才用)</button>
+          </div>
         <div class="ref-url-input-row" id="scn-url-s3" style="display:none;margin-top:6px">
           <input type="text" id="ep-custom-scene-input" placeholder="貼實景照公開 URL" onkeydown="if(event.key==='Enter')addEpisodeCustomScene()">
           <button onclick="addEpisodeCustomScene()" style="background:#7c5cff;border:none;border-radius:6px;color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap">加入</button>
         </div>
         <div id="ep-custom-scene-thumb"></div>
+        </div>
         <div class="motion-hint">給了實景照就跳過 AI 生背景、直接用你的真照。上面場景下拉仍要挑一張接近的(賣場挑「運動賣場特賣」)。</div>
       </div>
       <div class="ep-field">
