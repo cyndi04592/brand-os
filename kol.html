@@ -904,7 +904,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v6.4 · 建角色</div>
+  <div class="topbar-badge" style="margin-left:8px;">v6.5 · 建角色</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -6539,6 +6539,14 @@ const VS_TAGS = [
 ];
 let _vsState = { tag:'', pace:'mid', pitch:'mid', power:'mid', emotion:'mid' };
 let _vsTouched = false;   // 客戶有沒有動過。沒動過就存空字串,不硬塞預設值進資料庫。
+// 🆕 v6.5 防呆:記住「這組四軸原本是從哪個標籤撥出來的」。
+//   病灶:舊版手動改任一軸就把 tag 清成 ''、標籤全部熄掉。
+//   客戶點了「信任感」→ 捲頁面時手滑碰到滑桿 → 標籤默默熄滅,
+//   毫無提示,他會以為沒選到或存壞了(實測就是這樣被誤判成 bug)。
+//   正解:標籤【繼續亮著】,只加註「(已微調)」。
+//   客戶看得到自己從哪個基礎改過來,也知道確實動過。
+let _vsBaseTag = '';   // 微調前的標籤代號
+let _vsCustom  = false; // 是否已偏離該標籤的預設四軸
 
 function _vsText() {
   const parts = [];
@@ -6556,7 +6564,13 @@ function _vsText() {
 function _vsSync(markTouched) {
   if (markTouched) _vsTouched = true;
   document.querySelectorAll('#vs-tags .vs-tag').forEach(el => {
-    el.classList.toggle('on', el.dataset.k === _vsState.tag);
+    // 🆕 v6.5:亮的依據是 _vsBaseTag(基礎來源),不是 _vsState.tag。
+    //   微調後 tag 會清空,但基礎來源仍要看得見。
+    const on = el.dataset.k === (_vsBaseTag || _vsState.tag);
+    el.classList.toggle('on', on);
+    const base = el.dataset.label || el.textContent;
+    if (!el.dataset.label) el.dataset.label = base;
+    el.textContent = (on && _vsCustom) ? (el.dataset.label + '(已微調)') : el.dataset.label;
   });
   VS_AXES.forEach(ax => {
     document.querySelectorAll(`#vs-sliders [data-ax="${ax.k}"] button`).forEach(b => {
@@ -6581,9 +6595,11 @@ function renderVoiceStyle() {
   wrap.querySelectorAll('.vs-tag').forEach(el => {
     el.addEventListener('click', () => {
       const k = el.dataset.k;
-      if (_vsState.tag === k) { _vsState.tag = ''; }          // 再點一次 = 取消
-      else {
-        _vsState.tag = k;
+      if (_vsBaseTag === k && !_vsCustom) {
+        _vsState.tag = ''; _vsBaseTag = ''; _vsCustom = false;   // 再點一次 = 取消
+      } else {
+        // 已微調時再點同一顆 = 復原成該標籤的預設四軸
+        _vsState.tag = k; _vsBaseTag = k; _vsCustom = false;
         const t = VS_TAGS.find(x => x.k === k);
         if (t) { _vsState.pace=t.pace; _vsState.pitch=t.pitch; _vsState.power=t.power; _vsState.emotion=t.emotion; }
       }
@@ -6600,7 +6616,10 @@ function renderVoiceStyle() {
   sl.querySelectorAll('.vs-seg button').forEach(b => {
     b.addEventListener('click', () => {
       _vsState[b.parentNode.dataset.ax] = b.dataset.v;
-      _vsState.tag = '';   // 手動微調 → 脫離標籤預設
+      // 🆕 v6.5:tag 清空(描述詞不再帶該標籤的 extra 句),
+      //   但 _vsBaseTag 保留 → 標籤仍亮著並標示「(已微調)」。
+      _vsState.tag = '';
+      if (_vsBaseTag) _vsCustom = true;
       _vsSync(true);
     });
   });
@@ -6610,15 +6629,25 @@ function renderVoiceStyle() {
 function loadVoiceStyle(text) {
   const t = String(text || '').trim();
   _vsState = { tag:'', pace:'mid', pitch:'mid', power:'mid', emotion:'mid' };
-  _vsTouched = false;
+  _vsTouched = false; _vsBaseTag = ''; _vsCustom = false;
   if (t) {
+    // 先試「完全吻合某個標籤」
     for (const g of VS_TAGS) {
       const save = _vsState;
       _vsState = { tag:g.k, pace:g.pace, pitch:g.pitch, power:g.power, emotion:g.emotion };
       _vsTouched = true;
-      if (_vsText() === t) { _vsSync(false); return; }
+      if (_vsText() === t) { _vsBaseTag = g.k; _vsSync(false); return; }
       _vsState = save; _vsTouched = false;
     }
+    // 🆕 v6.5:不吻合 → 逐軸反推,認得幾軸算幾軸。
+    //   這樣「信任感微調過」的資料重開後,四軸位置仍會正確還原,
+    //   不會全部掉回中等(舊版就是這樣,看起來像沒存到)。
+    VS_AXES.forEach(ax => {
+      const hit = ax.opts.find(o => t.includes(o[2]));
+      if (hit) _vsState[ax.k] = hit[0];
+    });
+    const baseHit = VS_TAGS.find(g => g.extra && t.includes(g.extra));
+    if (baseHit) { _vsBaseTag = baseHit.k; _vsCustom = true; }
     _vsTouched = true;   // 是自訂內容 → 保留,存檔時不會被清成空字串
   }
   _vsSync(false);
@@ -7440,7 +7469,8 @@ async function regenerateOneSocial(platform) {
 //         更糟的是先按儲存,存進去的是空白人設。
 //   「取消」不鎖,客戶隨時可以退出。
 const _PE_FIELDS = ['pe-background', 'pe-personality', 'pe-speaking-style', 'pe-role-relationship',
-                    'pe-catchphrases', 'pe-taboo-words', 'pe-signature-topics', 'pe-forbidden-topics'];
+                    'pe-catchphrases', 'pe-taboo-words', 'pe-signature-topics', 'pe-forbidden-topics',
+                    'pe-voice-style'];   // 🆕 v6.5
 function _setPersonaEditorBusy(on) {
   _PE_FIELDS.forEach(id => {
     const el = document.getElementById(id);
@@ -7464,7 +7494,7 @@ async function aiGeneratePersona() {
   const persona = S.personas.find(x => x.persona_id === systemSelectedPersonaId);
   if (!persona) { toast('請先選 KOL', 'error'); return; }
 
-  if (!confirm(`AI 即將依 ${persona.persona_name} 的照片 + ${S.brands.find(b=>b.id===S.currentBrandId)?.name || ''} 品牌靈魂生成 8 欄人設書初稿。\n\n已填的欄位會被覆蓋,確定要繼續?`)) return;
+  if (!confirm(`AI 即將依 ${persona.persona_name} 的照片 + ${S.brands.find(b=>b.id===S.currentBrandId)?.name || ''} 品牌靈魂生成人設書初稿(含聲音特質)。\n\n已填的欄位會被覆蓋,確定要繼續?`)) return;
 
   // 🆕 防呆:生成中鎖住按鈕 + 顯示進度,避免客戶以為沒反應而狂點(重複打 API、白花錢)
   if (window._aiGenPersonaBusy) return;
@@ -7538,6 +7568,7 @@ async function aiGeneratePersona() {
       document.getElementById('pe-taboo-words').value = Array.isArray(data.taboo_words) ? data.taboo_words.join(', ') : (data.taboo_words || '');
       document.getElementById('pe-signature-topics').value = Array.isArray(data.signature_topics) ? data.signature_topics.join(', ') : (data.signature_topics || '');
       document.getElementById('pe-forbidden-topics').value = Array.isArray(data.forbidden_topics) ? data.forbidden_topics.join(', ') : (data.forbidden_topics || '');
+      loadVoiceStyle(data.voice_style || '');   // 🆕 v6.5:接住 AI 選的聲線
       toast('AI 人設書已生成,請微調後儲存', 'success');
     } else {
       // Modal 沒開 → 開 Modal 並填入
@@ -7551,6 +7582,7 @@ async function aiGeneratePersona() {
         document.getElementById('pe-taboo-words').value = Array.isArray(data.taboo_words) ? data.taboo_words.join(', ') : (data.taboo_words || '');
         document.getElementById('pe-signature-topics').value = Array.isArray(data.signature_topics) ? data.signature_topics.join(', ') : (data.signature_topics || '');
         document.getElementById('pe-forbidden-topics').value = Array.isArray(data.forbidden_topics) ? data.forbidden_topics.join(', ') : (data.forbidden_topics || '');
+        loadVoiceStyle(data.voice_style || '');   // 🆕 v6.5:接住 AI 選的聲線
         toast('AI 人設書已生成,請微調後儲存', 'success');
       }, 100);
     }
