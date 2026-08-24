@@ -3780,7 +3780,7 @@ function renderRoster() {
                  || (pid && p.persona_id === pid));
     const v = rsParseVoice(per && per.voice_style);
     return `<div class="rs-card${id === curId ? ' on' : ''}" data-kol-id="${escapeHtml(id)}" tabindex="0" title="${escapeHtml(nm.trim())}">
-      ${img ? `<img src="${escapeHtml(img)}" alt="" loading="lazy">` : ''}
+      ${img ? `<img src="${escapeHtml(_thumb(img, 240))}" alt="" loading="lazy" decoding="async">` : ''}
       ${v ? `<div class="sig">${v.ax.map(a => `<i class="${a >= 1 ? 'f' : ''}"></i>`).join('')}</div>` : ''}
       ${needPersona ? `<div class="flag" data-persona-id="${escapeHtml(pid)}">人設未填</div>` : ''}
       <div class="nm">${escapeHtml(nm.trim().slice(0, 8))}</div>
@@ -3831,7 +3831,7 @@ function renderStageAndDossier() {
                 p.nationality === 'jp' ? '日本' : p.nationality === 'kr' ? '韓國' : '台灣']
                 .filter(Boolean).join(' · ');
   port.innerHTML =
-    (img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(k.name || '')}">` : '') +
+    (img ? `<img src="${escapeHtml(_thumb(img, 240))}" alt="${escapeHtml(k.name || '')}" loading="lazy" decoding="async">` : '') +
     `<div class="rs-plate"><div class="who">${escapeHtml(k.name || '未命名')}</div>
        <div class="meta">${escapeHtml(meta)}</div></div>`;
 
@@ -3876,7 +3876,7 @@ function renderStageAndDossier() {
     if (S.currentMode !== 'talking') { bar.classList.remove('show'); return; }
     bar.classList.add('show');
     const mini = document.getElementById('rs-ab-mini');
-    if (mini) mini.innerHTML = img ? `<img src="${escapeHtml(img)}" alt="">` : '';
+    if (mini) mini.innerHTML = img ? `<img src="${escapeHtml(_thumb(img, 160))}" alt="" loading="lazy" decoding="async">` : '';
     document.getElementById('rs-ab-name').textContent = k.name || '未命名';
     const v = rsParseVoice(p.voice_style);
     document.getElementById('rs-ab-sub').textContent =
@@ -4230,7 +4230,7 @@ function renderLookPicker() {
     const isBase = look.id === groupId;
     const hasImage = look.image_url && String(look.image_url).trim();
     const imgHtml = hasImage
-      ? `<img src="${escapeHtml(look.image_url)}" alt="${escapeHtml(look.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder></div>'">`
+      ? `<img src="${escapeHtml(_thumb(look.image_url, 200))}" loading="lazy" decoding="async" alt="${escapeHtml(look.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder></div>'">`
       : `<div class="look-placeholder"></div>`;
     const tagName = look.name || `Look ${look.id.slice(0, 6)}`;
     return `
@@ -4499,7 +4499,7 @@ function renderPersonaSection(p) {
     ? `<div class="drive-gallery" data-persona="${escapeHtml(p.persona_name)}">
         ${p.photos.map(ph => `
           <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-url="${escapeHtml(ph.url || '')}" data-photo-key="${escapeHtml(ph.file_id || ph.url || ph.name || '')}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}">
-            <img src="${escapeHtml(ph.thumbnail_url)}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder></div>'" referrerpolicy="no-referrer">
+            <img src="${escapeHtml(_thumb(ph.thumbnail_url, 200))}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder></div>'" referrerpolicy="no-referrer">
           </div>
         `).join('')}
       </div>`
@@ -4513,7 +4513,7 @@ function renderPersonaSection(p) {
        <div class="drive-gallery" data-zone="processed" style="opacity:.75" data-persona="${escapeHtml(p.persona_name)}">
         ${procs.map(ph => `
           <div class="drive-photo" data-file-id="${escapeHtml(ph.file_id)}" data-url="${escapeHtml(ph.url || '')}" data-photo-key="${escapeHtml(ph.file_id || ph.url || ph.name || '')}" data-persona="${escapeHtml(p.persona_name)}" title="${escapeHtml(ph.name)}" style="border:1px solid #3a3a4a;">
-            <img src="${escapeHtml(ph.thumbnail_url)}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder></div>'" referrerpolicy="no-referrer">
+            <img src="${escapeHtml(_thumb(ph.thumbnail_url, 200))}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name)}" onerror="this.outerHTML='<div class=placeholder></div>'" referrerpolicy="no-referrer">
           </div>
         `).join('')}
       </div>`
@@ -6832,6 +6832,10 @@ async function _ensureKolPhotos(brandId) {
 }
 
 // 取這位 KOL 的「正臉」當卡片頭像。
+// ⚠️ 這裡【一定要回原圖網址】,不可以在這裡套 _thumb ——
+//   這個值同時會被存進 S.selectedKol.image_url,再當成 fallbackUrl 傳進
+//   resolveKolImageUrl → 有機會餵給引擎。縮圖只給人看,絕不餵引擎。
+//   ★ 縮圖一律在【畫 <img> 的那一行】才套(全站 7 個出圖點都已套上)。
 // ⚠️ 名字要正規化再比對(去 emoji / 空白)—— 對不上的後果是頭像空白且完全不報錯。
 function _kolFrontFromLibrary(personaName) {
   try {
@@ -7522,7 +7526,7 @@ function renderSystemKolSwitcher() {
     const kolCached = hasPhoto ? window._kolCache?.[p.talking_photo_id] : null;
     const imgUrl = kolCached?.image_url || '';
     const avatarInner = imgUrl
-      ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.persona_name)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.outerHTML='<span>${escapeHtml(initial)}</span>';this.parentElement.style.background='${bg}';">`
+      ? `<img src="${escapeHtml(_thumb(imgUrl, 200))}" loading="lazy" decoding="async" alt="${escapeHtml(p.persona_name)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.outerHTML='<span>${escapeHtml(initial)}</span>';this.parentElement.style.background='${bg}';">`
       : `<span>${escapeHtml(initial)}</span>`;
     const avatarStyle = imgUrl ? 'overflow:hidden' : `background:${bg}`;
 
