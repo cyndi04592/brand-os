@@ -5192,6 +5192,11 @@ async function _fetchLibraryProducts() {
       name: it.name || '商品照',
       mimeType: 'image/jpeg',
       url: it.url,
+      // ⚠️ 2026-08-24:這裡塞的是【原圖】網址,欄位名卻叫 thumbnailLink ——
+      //   Drive 時代 thumbnailLink 真的是 Google 產好的小縮圖,直接 <img src> 沒事;
+      //   改讀素材庫之後同一個欄位裝的是 8256×5504 的原圖,舊流程照單全收,
+      //   結果 92×92 的格子在載 4500 萬畫素的圖(RA 實測 STEP2 卡 + 捲動卡)。
+      //   ★ 名字沒變、內容變了,是最難發現的一種。渲染端一律用 _thumb() 轉。
       thumbnailLink: it.url,
       webContentLink: it.url,
       __fromLibrary: true,
@@ -5375,7 +5380,7 @@ function renderDriveProducts(files) {
                data-thumb="${escapeHtml(f.thumbnailLink || '')}"
                data-name="${escapeHtml(f.name || '')}"
                title="${escapeHtml(f.name || '')}">
-            <img src="${escapeHtml(f.thumbnailLink)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f></div>'">
+            <img src="${escapeHtml(_thumb(f.thumbnailLink, 300))}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f></div>'">
             <div class="drive-name">${escapeHtml(f.name || '')}</div>
           </div>
         `;
@@ -8621,7 +8626,7 @@ function renderEpisodeProducts(files) {
                data-hi-res="${escapeHtml(f.hiResUrl)}"
                data-name="${escapeHtml(f.name || '')}"
                title="${escapeHtml(f.name || '')}">
-            <img src="${escapeHtml(f.thumbnailLink)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f></div>'">
+            <img src="${escapeHtml(_thumb(f.thumbnailLink, 300))}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f></div>'">
           </div>
         `;
       }).join('')}
