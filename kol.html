@@ -3446,7 +3446,7 @@ async function onBrandChange() {
   const cineSit0 = document.getElementById('cine-situation');
   if (cineSit0) cineSit0.value = '';
   const obGroup0 = document.getElementById('outfit-brand-group');
-  if (obGroup0) obGroup0.style.display = 'none';
+  if (obGroup0) obGroup0.style.display = 'none';   // 👗 v7.27:切品牌先藏,選了場景或鎖了實景照會再打開
   const obPicker0 = document.getElementById('outfit-brand-picker');
   if (obPicker0) obPicker0.value = 'auto';
   S.storyArc = { theme: '', tone: '', productHint: '' };  // 🆕 v5.4: 重置故事弧
@@ -5571,6 +5571,7 @@ async function scnPick(which, url) {
   renderSceneLibrary(which);
   // 🆕 v7.15:實景照本身就能解鎖生成鈕 → 選/取消都要重算
   try { if (typeof updateSeedanceSubmitButton === 'function') updateSeedanceSubmitButton(); } catch (e) {}
+  try { syncOutfitPickerVisibility(); } catch (e) {}   // 👗 v7.27:實景照也算場景已定 → 服飾下拉要跟著出現/收起
   toast(next ? '已鎖實景背景 · 生成時直接用這張(跳過 AI 生背景)' : '已取消實景背景', next ? 'ok' : 'warn');
 }
 window.scnPick = scnPick;
@@ -5653,12 +5654,14 @@ async function addCustomScene() {
   input.value = '';
   renderCustomScene();
   try { if (typeof updateSeedanceSubmitButton === 'function') updateSeedanceSubmitButton(); } catch (e) {}
+  try { syncOutfitPickerVisibility(); } catch (e) {}   // 👗 v7.27:實景照也算場景已定 → 服飾下拉要跟著出現/收起
   toast('已鎖實景背景 · 生成時直接用這張(跳過 AI 生背景)', 'ok');
 }
 function removeCustomScene() {
   S.customSceneUrl = '';
   renderCustomScene();
   try { if (typeof updateSeedanceSubmitButton === 'function') updateSeedanceSubmitButton(); } catch (e) {}
+  try { syncOutfitPickerVisibility(); } catch (e) {}   // 👗 v7.27:實景照也算場景已定 → 服飾下拉要跟著出現/收起
   try { renderSceneLibrary('s2'); } catch (e) {}
 }
 function renderCustomScene() {
@@ -5768,9 +5771,8 @@ function handleSceneCardClick(e) {
   renderLocationPicker();
   // v5.3: 運鏡選擇器出現
   renderMovementPicker();
-  // v5.13: 服飾品牌下拉也跟場景一起出現
-  const obGroup = document.getElementById('outfit-brand-group');
-  if (obGroup) obGroup.style.display = '';
+  // v5.13 → 🩹 v7.27:改叫共用函式(選卡 / 鎖實景照 都算場景已定)
+  syncOutfitPickerVisibility();
   // v5.4: 故事弧區塊也跟場景一起出現
   document.getElementById('story-arc-block').style.display = '';
 
@@ -5778,6 +5780,27 @@ function handleSceneCardClick(e) {
   syncScenePrompt();
   updateSeedanceSubmitButton();
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  👗 v7.27(2026-08-24)服飾品牌風格下拉「消失」的真因
+//   RA 回報:「換衣服選項被你刪除了」——查了才發現【沒被刪】,
+//     它一直都在(STEP2 第 1552 行),只是預設 display:none,
+//     而唯一會打開它的地方是 onSceneChange()【選了場景卡才觸發】。
+//   ★ 但昨天起「鎖了自家實景照 → 場景卡可以不用挑」,
+//     於是 onSceneChange 永遠不會跑 → 服飾下拉永遠藏著。
+//     換品牌時又被藏回去(onBrandChange),所以切一切就再也看不到。
+//   ★ 這是「放寬限制時要找出所有檢查同一件事的地方」的【第五處】——
+//     當初「免選場景卡」改了四次:按鈕 disabled → 函式守門 →
+//     組提示詞 → STEP3 獨立守門。這一處漏了。
+//   ★ 抽成一支共用函式:以後不管是選卡、鎖實景照、還是將來多一種來源,
+//     都叫這一支,不會再漏。
+// ═══════════════════════════════════════════════════════════════
+function syncOutfitPickerVisibility() {
+  const has = !!(S.selectedSceneId || S.customSceneUrl);
+  const g = document.getElementById('outfit-brand-group');
+  if (g) g.style.display = has ? '' : 'none';
+}
+window.syncOutfitPickerVisibility = syncOutfitPickerVisibility;
 
 function onLocationChange() {
   const val = document.getElementById('location-picker').value;
