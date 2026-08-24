@@ -42,39 +42,104 @@
 (function () {
   'use strict';
 
+  // ═══════════════════════════════════════════════════════════════
+  //  👗 v5.19(2026-08-24)全面改寫「有品牌名」版 —— 實測驅動,不是猜的
+  //
+  //  【兩組 A/B 實測(RA 用服裝參考圖跑,一張 100 點)】
+  //   ① The North Face
+  //      🅰 寫品牌名 → LOGO 畫得完全正確、三色拼接、機能布反光、細節豐富 ✅
+  //      🅱 純風格描述 → 單色平版像制服,而且褲子上冒出一個【亂碼假 LOGO】❌
+  //   ② AAPE
+  //      🅰 保留 camo patterns → 黑白灰迷彩全套,結構清楚,就是 AAPE ✅
+  //      🅱 改成「材質色調」(拿掉迷彩)→ 變成卡其工裝外套,好看但【根本不是那個品牌】❌
+  //
+  //  【結論】
+  //   ・寫具體的東西 > 寫抽象風格。模型認得品牌,不寫它就【自己編一個假標】,那才醜。
+  //   ・「好看」和「對」是兩件事 —— 客戶選 AAPE 是要迷彩街頭,拿到日系工裝就是錯的。
+  //   ・所以:品牌名 + 招牌特徵(圖案/材質/版型)全部寫清楚,不迴避。
+  //
+  //  【商標考量】RA 拍板:我們賣的是商品(防熊噴霧/海苔),衣服只是穿搭 ——
+  //   跟明星穿名牌上節目一樣是「使用」不是「販售」。不加禁 LOGO 規則。
+  //
+  //  ★ casual / refined 兩版由 sceneTone() 依場景自動選(白天休閒 / 夜間精緻)。
+  //  ★ 每一條都保留「品牌名 + 該品牌真正的識別特徵」,不寫空泛形容詞。
+  // ═══════════════════════════════════════════════════════════════
   const BRAND_STYLE_LIBRARY = {
-    uniqlo:    { base: 'Japanese minimalist basics, solid muted colors, clean tailored fit, lifewear simplicity',
-                 casual: 'soft cotton tee and relaxed pants', refined: 'fine knit and tailored trousers' },
-    gu:        { base: 'young Japanese fast-fashion, trendy affordable styling, casual playful pieces',
-                 casual: 'oversized tee and wide pants', refined: 'trendy layered casual look' },
-    niko_and:  { base: 'Japanese zakka literary style, natural earthy tones, relaxed artsy layering, lifestyle ease',
-                 casual: 'loose linen layers and comfy silhouette', refined: 'curated artsy ensemble with texture' },
-    tnewties:  { base: 'Japanese vintage girl style, 1920s-meets-2020s retro fashion, pintuck blouses, houndstooth and embroidery details',
-                 casual: 'retro blouse and pleated skirt', refined: 'vintage-inspired dress with delicate details' },
-    human_made: { base: 'Japanese retro streetwear, vintage casual, cartoon-style graphic prints, relaxed loose fit',
-                 casual: 'graphic sweatshirt and relaxed denim', refined: 'retro varsity layering' },
-    aape:      { base: 'urban streetwear, camo patterns, sporty street style, youthful edgy fit',
-                 casual: 'camo hoodie and joggers', refined: 'street-luxe layered look' },
-    mardi:     { base: 'Korean French-leisure style, daisy floral print sweatshirt, sweet-cool casual vibe',
-                 casual: 'floral sweatshirt and relaxed bottoms', refined: 'minimal logo knit with clean lines' },
-    mallothi:  { base: 'French romantic vintage, pleated and gingham dresses, literary slow-living elegance, soft pastel tones',
-                 casual: 'soft pastel cotton dress', refined: 'pleated romantic midi dress' },
-    pazzo:     { base: 'Taiwanese good-life casual, Japanese-Korean versatile styling, flattering slim fit, comfortable quality fabric',
-                 casual: 'comfy versatile tee and slimming pants', refined: 'elegant flattering dress' },
-    caco:      { base: 'Taiwanese casual everyday, cute graphic print tops, slimming relaxed urban fit',
-                 casual: 'cute graphic-print tee and casual bottoms', refined: 'clean casual layered look' },
-    lv:        { base: 'luxury fashion-house elegance, refined tailoring, premium leather accents, timeless sophisticated silhouette',
-                 casual: 'understated luxe knit and tailored pants', refined: 'elegant designer ensemble' },
-    chanel:    { base: 'French haute-couture elegance, tweed jacket, pearl details, classic refined silhouette',
-                 casual: 'refined tweed-trimmed casual', refined: 'elegant tweed ensemble with pearls' },
-    hermes:    { base: 'understated ultra-luxury, impeccable craftsmanship, refined neutral palette, quiet elegance',
-                 casual: 'quiet-luxury knit and tailored trousers', refined: 'impeccably tailored elegant look' },
-    gucci:     { base: 'eclectic luxury, bold prints, vintage-glam maximalist styling, statement pieces',
-                 casual: 'bold-print relaxed luxe', refined: 'glamorous statement ensemble' },
-    diesel:    { base: 'Italian denim streetwear, distressed washed denim, Y2K rebellious edge',
-                 casual: 'washed denim and graphic tee', refined: 'edgy denim-layered look' },
-    on:        { base: 'Swiss performance sportswear, clean technical minimal design, athletic streamlined fit',
-                 casual: 'sleek athleisure set', refined: 'minimal sporty-chic layering' },
+    // ── 日系 ──────────────────────────────────────────────
+    uniqlo:    { base: 'UNIQLO lifewear, Japanese minimalist basics, solid muted colors, clean tailored fit, quality everyday fabric',
+                 casual: 'UNIQLO soft cotton tee and relaxed easy pants', refined: 'UNIQLO fine merino knit and tailored trousers' },
+    gu:        { base: 'GU by UNIQLO young Japanese fast-fashion, trendy affordable styling, casual playful pieces',
+                 casual: 'GU oversized tee and wide-leg pants', refined: 'GU trendy layered casual look' },
+    niko_and:  { base: 'niko and... Japanese zakka literary style, natural earthy tones, relaxed artsy layering, lifestyle store aesthetic',
+                 casual: 'niko and... loose linen layers and comfy silhouette', refined: 'niko and... curated artsy ensemble with natural texture' },
+    tnewties:  { base: '20s tnewties Japanese vintage girl style, 1920s-meets-2020s retro fashion, pintuck blouses, houndstooth and embroidery details',
+                 casual: '20s tnewties retro blouse and pleated skirt', refined: '20s tnewties vintage-inspired dress with delicate details' },
+    human_made: { base: 'HUMAN MADE by NIGO Japanese retro streetwear, signature heart and duck cartoon graphic prints, vintage americana casual, relaxed loose fit',
+                 casual: 'HUMAN MADE graphic sweatshirt and relaxed denim', refined: 'HUMAN MADE retro varsity jacket layering' },
+    aape:      { base: 'AAPE by A Bathing Ape streetwear, signature AAPE camo print, ape-head logo detail, sporty urban street style, youthful edgy fit',
+                 casual: 'AAPE camo hoodie and joggers', refined: 'AAPE street-luxe layered look with camo accents' },
+    beams:     { base: 'BEAMS Japanese select-shop styling, refined casual mix, quality basics with a touch of trend, effortless Tokyo city look',
+                 casual: 'BEAMS relaxed shirt and easy trousers', refined: 'BEAMS smart-casual jacket over knit' },
+    muji:      { base: 'MUJI no-brand quality, ultra-simple unadorned design, natural undyed cotton and linen, soft neutral palette, zero logos',
+                 casual: 'MUJI plain cotton tee and drawstring pants', refined: 'MUJI simple linen shirt and straight trousers' },
+
+    // ── 韓系 ──────────────────────────────────────────────
+    mardi:     { base: 'Mardi Mercredi Korean French-leisure style, signature Flowermardi daisy print sweatshirt, sweet-cool casual vibe',
+                 casual: 'Mardi Mercredi daisy floral sweatshirt and relaxed bottoms', refined: 'Mardi Mercredi minimal logo knit with clean lines' },
+
+    // ── 台灣女裝 ──────────────────────────────────────────
+    mallothi:  { base: 'Mallothi French romantic vintage, pleated and gingham dresses, literary slow-living elegance, soft pastel tones',
+                 casual: 'Mallothi soft pastel cotton dress', refined: 'Mallothi pleated romantic midi dress' },
+    pazzo:     { base: 'PAZZO Taiwanese good-life casual, Japanese-Korean versatile styling, flattering slim fit, comfortable quality fabric',
+                 casual: 'PAZZO comfy versatile tee and slimming pants', refined: 'PAZZO elegant flattering dress' },
+    caco:      { base: 'CACO Taiwanese casual everyday, cute graphic print tops, slimming relaxed urban fit',
+                 casual: 'CACO cute graphic-print tee and casual bottoms', refined: 'CACO clean casual layered look' },
+
+    // ── 精品 ──────────────────────────────────────────────
+    lv:        { base: 'Louis Vuitton luxury fashion house, monogram canvas accents, refined tailoring, premium leather trim, timeless sophisticated silhouette',
+                 casual: 'Louis Vuitton understated luxe knit and tailored pants', refined: 'Louis Vuitton elegant designer ensemble with monogram detail' },
+    chanel:    { base: 'CHANEL French haute couture, signature tweed jacket with braided trim, camellia and pearl details, classic refined silhouette',
+                 casual: 'CHANEL refined tweed-trimmed casual set', refined: 'CHANEL elegant tweed ensemble with pearl accessories' },
+    hermes:    { base: 'HERMES understated ultra-luxury, impeccable saddle-stitch craftsmanship, refined neutral palette, quiet elegance without visible branding',
+                 casual: 'HERMES quiet-luxury cashmere knit and tailored trousers', refined: 'HERMES impeccably tailored elegant look with silk scarf' },
+
+    // ── 輕奢潮牌 ──────────────────────────────────────────
+    gucci:     { base: 'GUCCI eclectic luxury, GG monogram and green-red web stripe, bold vintage-glam maximalist prints, statement pieces',
+                 casual: 'GUCCI bold-print relaxed luxe with web stripe detail', refined: 'GUCCI glamorous statement ensemble' },
+    diesel:    { base: 'DIESEL Italian denim streetwear, heavily distressed washed denim, Y2K rebellious edge, bold logo treatment',
+                 casual: 'DIESEL washed distressed denim and graphic tee', refined: 'DIESEL edgy denim-layered look' },
+
+    // ── 機能運動 / 戶外(v5.19 大幅補強:PROTEX 防熊噴霧、登山嚮導這類客戶需要)──
+    on:        { base: 'On Running Swiss performance sportswear, CloudTec sole, clean technical minimal design, athletic streamlined fit',
+                 casual: 'On Running sleek athleisure set', refined: 'On Running minimal sporty-chic layering' },
+    tnf:       { base: 'The North Face outdoor apparel, technical shell jacket with the half-dome logo, contrast colour-block panels, performance mountain styling',
+                 casual: 'The North Face fleece jacket and hiking pants', refined: 'The North Face technical shell layered over base layer' },
+    patagonia: { base: 'Patagonia outdoor apparel, Synchilla fleece texture, earthy muted colour palette, understated eco-conscious mountain styling',
+                 casual: 'Patagonia retro pile fleece and hiking shorts', refined: 'Patagonia weatherproof shell over merino base layer' },
+    arcteryx:  { base: 'ARC TERYX technical alpine apparel, minimal seam-taped GORE-TEX shell, dead-bird logo, precision-engineered athletic cut',
+                 casual: 'ARC TERYX lightweight windshell and technical pants', refined: 'ARC TERYX hardshell alpine layering system' },
+    salomon:   { base: 'Salomon trail running and outdoor apparel, technical mesh panels, trail-ready streamlined fit, sporty outdoor-tech aesthetic',
+                 casual: 'Salomon trail running tee and lightweight shorts', refined: 'Salomon technical windbreaker and trail pants' },
+    columbia:  { base: 'Columbia outdoor sportswear, practical multi-pocket construction, approachable everyday outdoor styling, durable weatherproof fabric',
+                 casual: 'Columbia fishing shirt and cargo hiking pants', refined: 'Columbia insulated jacket over fleece mid-layer' },
+    montbell:  { base: 'mont-bell Japanese lightweight outdoor gear, superlight packable nylon, bright accent colours on muted base, functional minimal design',
+                 casual: 'mont-bell packable windbreaker and light trekking pants', refined: 'mont-bell down inner layered under shell' },
+    snowpeak:  { base: 'Snow Peak Japanese outdoor lifestyle apparel, refined camping aesthetic, natural muted tones, relaxed technical tailoring',
+                 casual: 'Snow Peak flexible camp shirt and tapered pants', refined: 'Snow Peak insulated haori jacket over layers' },
+
+    // ── 工裝 ──────────────────────────────────────────────
+    dickies:   { base: 'Dickies workwear, 874 work pants silhouette, sturdy twill fabric, classic American blue-collar utility styling',
+                 casual: 'Dickies work shirt and 874 straight-leg pants', refined: 'Dickies Eisenhower jacket over work shirt' },
+    carhartt:  { base: 'Carhartt WIP heavy-duty workwear, Detroit jacket with corduroy collar, rugged duck canvas, boxy utilitarian fit',
+                 casual: 'Carhartt duck canvas chore coat and double-knee pants', refined: 'Carhartt Detroit jacket layered over hooded sweat' },
+
+    // ── 運動 ──────────────────────────────────────────────
+    nike:      { base: 'Nike sportswear, swoosh logo, Tech Fleece and Dri-FIT materials, bold athletic silhouette, street-sport crossover',
+                 casual: 'Nike Tech Fleece hoodie and joggers', refined: 'Nike sleek windrunner jacket and training pants' },
+    adidas:    { base: 'adidas Originals sportswear, three-stripe detail, trefoil logo, retro track-suit silhouette, sporty heritage styling',
+                 casual: 'adidas three-stripe track jacket and track pants', refined: 'adidas sleek performance layering with stripe accents' },
+    lululemon: { base: 'lululemon athletic apparel, Luon and Nulu buttery-soft technical fabric, sculpted seamless fit, refined athleisure aesthetic',
+                 casual: 'lululemon Align leggings and cropped tank', refined: 'lululemon Define jacket over technical top' },
   };
 
   function sceneTone(sceneId) {
@@ -105,6 +170,16 @@
     lv: 'lv', louis_vuitton: 'lv', louisvuitton: 'lv',
     chanel: 'chanel', hermes: 'hermes', 'herm_s': 'hermes',
     gucci: 'gucci', diesel: 'diesel', on: 'on',
+    // 🆕 v5.19 新增
+    beams: 'beams', muji: 'muji', mujirushi: 'muji',
+    tnf: 'tnf', north_face: 'tnf', thenorthface: 'tnf', the_north_face: 'tnf',
+    patagonia: 'patagonia', pata: 'patagonia',
+    arcteryx: 'arcteryx', arc_teryx: 'arcteryx', 'arc\'teryx': 'arcteryx',
+    salomon: 'salomon', columbia: 'columbia',
+    montbell: 'montbell', 'mont_bell': 'montbell', 'mont-bell': 'montbell',
+    snowpeak: 'snowpeak', snow_peak: 'snowpeak',
+    dickies: 'dickies', carhartt: 'carhartt', carhartt_wip: 'carhartt',
+    nike: 'nike', adidas: 'adidas', lululemon: 'lululemon',
   };
   function resolveBrandKey(raw) {
     if (!raw) return '';
@@ -300,5 +375,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.18 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
+  console.log('[KolWardrobe] 👗 v5.19 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
