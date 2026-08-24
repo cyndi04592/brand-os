@@ -5438,7 +5438,7 @@ function renderRefList() {
       ? urls.map(u => {
           const gi = S.seedanceProductUrls.indexOf(u);
           return `<div style="position:relative;width:54px;height:54px;border-radius:8px;overflow:hidden;background:#111">`
-            + `<img src="${escapeHtml(u)}" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML='';" referrerpolicy="no-referrer">`
+            + `<img src="${escapeHtml(_thumb(u, 300))}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML='';" referrerpolicy="no-referrer">`
             + `<button onclick="event.stopPropagation();removeProductUrl(${gi})" title="移除" style="position:absolute;top:1px;right:1px;width:16px;height:16px;line-height:14px;padding:0;border:none;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-size:10px">✕</button>`
             + `</div>`;
         }).join('')
@@ -8251,7 +8251,7 @@ function renderEpisodeSlots() {
     const imgTag = slot.role === 'contents' ? 'Image3' : 'Image2';
     const thumbs = urls.length
       ? urls.map(u => `<div style="position:relative;width:54px;height:54px;border-radius:8px;overflow:hidden;background:#111">`
-          + `<img src="${escapeHtml(u)}" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML='';" referrerpolicy="no-referrer">`
+          + `<img src="${escapeHtml(_thumb(u, 300))}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML='';" referrerpolicy="no-referrer">`
           + `<button onclick="event.stopPropagation();removeEpisodeProduct('${u.replace(/'/g, "\\'")}')" title="移除" style="position:absolute;top:1px;right:1px;width:16px;height:16px;line-height:14px;padding:0;border:none;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-size:10px">✕</button>`
           + `</div>`).join('')
       : `<div style="font-size:11px;opacity:.45;padding:6px 2px">尚未選圖 · 點此設為目標槽</div>`;
