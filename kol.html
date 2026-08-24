@@ -3496,7 +3496,7 @@ async function onBrandChange() {
   //         【別的品牌的角色】進 STEP2,而且畫面上看起來完全正常。
   //   ★ 又一次驗證那條老教訓:任何寫入狀態的動作,都要問「畫面會自己更新嗎?」
   try { renderStageAndDossier(); } catch (e) {}
-  S.rsPhotoShowAll = false;   // 照片庫的「顯示全部」開關也一併重置
+  S.rsPhotoShowAll = false; S.rsPhotoUserSet = false;   // 照片庫的「顯示全部」開關也一併重置
   // 🩹 v7.5:切品牌要清商品照快取並重載,否則 STEP2/STEP3 會停在
   //   上一個品牌的商品照 —— 跟稍早「切品牌角色殘留」同一型的病。
   if (window._libProductsCache) window._libProductsCache = {};
@@ -3890,6 +3890,8 @@ window.renderStageAndDossier = renderStageAndDossier;
 
 // 🆕 v7.2:照片庫範圍切換(只看這位 ↔ 顯示全部)
 function rsTogglePhotoScope() {
+  // 🩹 2026-08-24:客戶自己按過 → 之後不再自動覆蓋(見 renderDriveGallery 的 _autoAll)
+  S.rsPhotoUserSet = true;
   S.rsPhotoShowAll = !S.rsPhotoShowAll;
   try { renderDriveGallery(); } catch (e) { console.warn('[RS] 照片庫重畫失敗', e); }
 }
@@ -4049,7 +4051,7 @@ function selectKol(g) {
   // 🩹 v7.2:換人時把照片庫範圍切回「只看這位」並重畫 ——
   //   不重畫的話,照片庫會停在上一位角色的內容(同一類「畫面不自己更新」)。
   try {
-    S.rsPhotoShowAll = false;
+    S.rsPhotoShowAll = false; S.rsPhotoUserSet = false;
     renderStageAndDossier(); renderRoster();
     if (S.drivePhotos && document.getElementById('drive-gallery-wrap')) renderDriveGallery();
   } catch (e) { console.warn('[RS] 舞台重畫失敗', e); }
@@ -4391,7 +4393,25 @@ function renderDriveGallery() {
   //      雞生蛋死結的變形。所以留一顆「顯示全部照片」開關,
   //      而且【沒選角色時自動顯示全部】。
   const _selName = S.selectedKol ? String(S.selectedKol.name || '').trim() : '';
-  const _showAll = !!S.rsPhotoShowAll || !_selName;
+
+  // 🩹 2026-08-24:有「還沒建立角色」的照片 → 【系統自動展開】,不要等客戶去按開關。
+  //   病灶(RA 現場):可昀的照片生好了、人物表也跑完了,但因為當時選定的是昱瑄,
+  //     她整個人被過濾掉 —— 畫面上完全看不到有這位待辦,
+  //     客戶必須知道右上角有顆「顯示全部照片」才找得到。
+  //     RA 原話:「要按顯示全部照片,新人不會」。
+  //   ★ 照「不教客戶做對的事,讓預設就是對的事」:
+  //     系統明明知道有人還沒建立(下面就印著「還沒建立」的標籤),
+  //     那就自己把它攤開,而不是藏在一顆要主動點的開關後面。
+  //   ⚠️ 但客戶【自己按過】開關之後就尊重他的選擇(rsPhotoUserSet),
+  //     否則他想專心看某一位時,系統會一直把畫面掰回全部,那更煩。
+  const _unbound = (S.drivePhotos?.personas || []).filter(x => {
+    const nm = String(x.persona_name || '').trim();
+    if (!nm) return false;
+    const pd = (S.personas || []).find(q => String(q.persona_name || '').trim() === nm);
+    return !pd || !String(pd.talking_photo_id || '').trim();
+  });
+  const _autoAll = !S.rsPhotoUserSet && _unbound.length > 0;
+  const _showAll = !!S.rsPhotoShowAll || !_selName || _autoAll;
   if (!_showAll) {
     const hit = personas.filter(p => String(p.persona_name || '').trim() === _selName);
     if (hit.length) personas = hit;   // 對不到就退回全部,寧可多顯示也不要空白
@@ -4399,13 +4419,16 @@ function renderDriveGallery() {
   const _tgl = document.getElementById('rs-photo-toggle');
   if (_tgl) {
     _tgl.style.display = _selName ? '' : 'none';
-    _tgl.textContent = S.rsPhotoShowAll ? `只看 ${_selName}` : '顯示全部照片';
+    _tgl.textContent = _showAll ? `只看 ${_selName}` : '顯示全部照片';
   }
   const _hint = document.getElementById('rs-photo-hint');
   if (_hint) {
-    _hint.textContent = _showAll
-      ? '這個品牌所有 KOL 的照片。選好照片後,可以建立角色或加入新角度。'
-      : `${_selName} 的照片。選好後可以加入新角度,或按「顯示全部照片」建立其他角色。`;
+    // 🩹 2026-08-24:有待建立的角色就【直接講】,不要讓客戶自己看出來
+    _hint.textContent = _unbound.length
+      ? `有 ${_unbound.length} 位還沒建立角色(${_unbound.map(x => x.persona_name).join('、')})—— 已為你顯示全部照片,選好照片後按綠色按鈕建立。`
+      : (_showAll
+          ? '這個品牌所有 KOL 的照片。選好照片後,可以建立角色或加入新角度。'
+          : `${_selName} 的照片。選好後可以加入新角度,或按「顯示全部照片」建立其他角色。`);
   }
 
   let rootWarn = '';
