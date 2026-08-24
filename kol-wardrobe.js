@@ -103,20 +103,33 @@
     //   (它也有 Hello Kitty / Disney 聯名,但那不是主力,所以不提圖案。)
     pazzo:     { base: 'PAZZO Taiwanese good-life womenswear, signature body-shaping high-waist trousers with leg-lengthening cut, soft cloud-cotton jersey, flattering slim silhouette, plain refined colours',
                  casual: 'PAZZO soft cotton top and body-shaping slim trousers', refined: 'PAZZO flattering waist-defined dress' },
-    //  🩹 v5.22(2026-08-24)CACO 改寫 —— 我先前【只看首頁就下結論】,錯了。
-    //   ❌ 第一版:寫 'CACO … cute graphic print tops' → 模型不認識這個台灣品牌,
-    //      把「CACO」四個字直接印在 T 恤上再亂編一隻兔子。
-    //   ❌ 第二版:查首頁看到「最大聯名服飾品牌」(迪士尼/三麗鷗/蠟筆小新),
-    //      判定它靠授權 IP → 拿掉品牌名 + 禁印花 → 結果生出來跟 GU 沒兩樣(RA 實測)。
-    //   ✅ 真相(RA 提供 NAVY 分類頁才看到):CACO 有【自有品牌 NAVY】,
-    //      識別是「鯊魚」—— 骷髏鯊魚三防短T / 鯊魚胸圖 / 美式小鯊魚 / 鯊魚織章長襯衫,
-    //      系列是海軍鯊魚、戶外衝浪、城市運動、山系野營、素面基礎款,
-    //      材質主打三防面料 / 空氣棉 / 薄荷棉,價位 NT$600–1300 平價機能。
-    //   ★ 鯊魚是【自家原創標記】不是授權角色 —— 與 HUMAN MADE 的鴨子同類,可以寫。
-    //   ★ 教訓:判斷一個品牌「靠什麼識別」不能只看首頁行銷語,
-    //     要看它的【自有品牌線】—— 聯名是流量,自有才是識別。
-    caco:      { base: 'CACO NAVY Taiwanese casual label, signature shark emblem chest graphic, nautical and surf-inspired casual styling, functional lightweight cotton tee, relaxed everyday urban fit',
-                 casual: 'CACO NAVY shark-graphic tee and easy casual bottoms', refined: 'CACO NAVY woven shark-patch overshirt layered over plain tee' },
+    //  🩹 v5.23(2026-08-24)CACO 第四版 —— 前三版全錯,錯法各不相同,一起記下來:
+    //   ❌ 一版:寫 'CACO … cute graphic print tops' → 模型不認識這個台灣品牌,
+    //      把「CACO」四個字直接印在 T 恤上,再亂編一隻兔子。
+    //   ❌ 二版:看首頁「最大聯名服飾品牌」→ 判定靠授權 IP → 拿掉品牌名 + 禁印花
+    //      → 生出來跟 GU 沒兩樣(RA 實測)。
+    //   ❌ 三版:看 NAVY 分類頁滿滿鯊魚 → 判定鯊魚是自有識別 → 實測鯊魚是出來了,
+    //      但「CACO NAVY」六個字又被印在胸口(模型仍不認識,照樣自己編 logo)。
+    //      而且 RA 指出:【鯊魚只是這一季的主題,不是品牌的恆常識別】。
+    //   ✅ 四版(RA 提供 CC.DAILY 主題企劃頁,790 件商品):
+    //      CACO 的自有日常線是 CC.DAILY,網站標題就寫「韓系顯瘦女裝」,
+    //      主打系列叫「最懂你的顯瘦系列」。商品名稱本身就是識別:
+    //        顯瘦高磅西裝短裙/短褲 · 交疊打褶寬鬆西裝褲 · 假兩件連帽坑紋上衣
+    //        條紋假兩件開襟短裙 · 鉚釘設計合身背心 · 棉麻格紋連帽短版罩衫
+    //      色系:黑/鐵灰/深灰/灰棕/灰杏/卡其/米白 + 少量粉紅淺藍。
+    //      質感來自【織紋】(坑紋/格紋/條紋)不是印花。版型是【上合身下寬鬆】。
+    //   🔴 卡通角色全在「聯名」那條線(迪士尼/三麗鷗/蠟筆小新/哈利波特…),
+    //      那些是【授權他人 IP】—— 絕對不生成,不是技術限制而是法律紅線。
+    //      所以下面明確寫死 no cartoon characters / no lettering / no logo,
+    //      不能指望模型自己不畫。
+    //   ★ 不寫品牌名:一版和三版都實測過,模型不認識 CACO,寫了就把字印上去。
+    //   ★★ 教訓(比 CACO 本身值錢):判斷品牌「靠什麼識別」,
+    //      首頁會騙人(那是行銷語)、分類頁也會騙人(那是這一季的檔期)。
+    //      要問的是【這個特徵三年後還在嗎】——
+    //      聯名是流量,當季是檔期,只有【版型與材質】才是識別。
+    caco:      { base: 'Korean-style slimming daily wear, high-gauge tailored suiting cut, faux-two-piece layering detail, ribbed or checked woven texture, fitted top paired with relaxed wide-leg bottom, muted neutral palette of black charcoal grey khaki and off-white, plain woven fabric only, no printed graphics, no cartoon characters, no lettering, no logo',
+                 casual: 'faux-two-piece ribbed knit top with relaxed wide-leg tailored trousers, plain fabric, no print',
+                 refined: 'high-gauge tailored suit skirt with fitted knit top, plain fabric, no print' },
 
     // ── 精品 ──────────────────────────────────────────────
     //  🩹 v5.21:LV 實測(RA 生的服裝參考圖)—— 寫 monogram 完全沒出現,
@@ -406,5 +419,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.22 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
+  console.log('[KolWardrobe] 👗 v5.23 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
