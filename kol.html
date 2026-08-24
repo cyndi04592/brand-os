@@ -1551,15 +1551,42 @@ document.addEventListener('DOMContentLoaded', function(){
         <!-- 🆕 v5.13: 服飾品牌風格(品牌接通 · 服裝師讀 outfitBrand) -->
         <div class="form-group" id="outfit-brand-group" style="display:none">
           <label class="form-label">服飾品牌風格(選填 · 決定穿搭調性,系統不寫品牌名給 AI)</label>
+          <!-- 👗 v7.28(2026-08-24)選單同步 kol-wardrobe v5.19:16 → 30 個。
+               ★ 新增機能戶外八個(TNF / Patagonia / Arc'teryx / Salomon / Columbia /
+                 mont-bell / Snow Peak)、工裝兩個、運動三個、日系兩個 ——
+                 PROTEX 防熊噴霧、健一登山嚮導這類客戶原本只有 On 一個能選。
+               ★ value 必須與 BRAND_STYLE_LIBRARY 的 key 完全一致,
+                 打錯不會報錯、只會靜默 fallback 成 auto,客戶看不出來。 -->
           <select class="form-select" id="outfit-brand-picker" onchange="onOutfitBrandChange()">
             <option value="auto">— auto(系統依場景自由搭配)—</option>
+            <optgroup label="機能運動 · 戶外">
+              <option value="tnf">The North Face 機能山系</option>
+              <option value="patagonia">Patagonia 環保戶外</option>
+              <option value="arcteryx">ARC'TERYX 硬派登山</option>
+              <option value="salomon">Salomon 越野跑山</option>
+              <option value="columbia">Columbia 實用戶外</option>
+              <option value="montbell">mont-bell 日系輕量</option>
+              <option value="snowpeak">Snow Peak 露營生活</option>
+              <option value="on">On 瑞士機能</option>
+            </optgroup>
+            <optgroup label="運動">
+              <option value="nike">Nike 街頭運動</option>
+              <option value="adidas">adidas 復古運動</option>
+              <option value="lululemon">lululemon 質感運動</option>
+            </optgroup>
+            <optgroup label="工裝">
+              <option value="dickies">Dickies 經典工裝</option>
+              <option value="carhartt">Carhartt WIP 重磅工裝</option>
+            </optgroup>
             <optgroup label="日系">
               <option value="uniqlo">UNIQLO 日系極簡</option>
+              <option value="muji">MUJI 無標籤自然</option>
               <option value="gu">GU 平價潮流</option>
+              <option value="beams">BEAMS 選品都會</option>
               <option value="niko_and">niko and... 雜貨文青</option>
               <option value="tnewties">20s tnewties 日系復古</option>
               <option value="human_made">HUMAN MADE 復古街頭</option>
-              <option value="aape">AAPE 都會街頭</option>
+              <option value="aape">AAPE 迷彩街頭</option>
             </optgroup>
             <optgroup label="韓系">
               <option value="mardi">Mardi Mercredi 法式休閒</option>
@@ -1577,9 +1604,6 @@ document.addEventListener('DOMContentLoaded', function(){
             <optgroup label="輕奢潮牌">
               <option value="gucci">GUCCI 折衷華麗</option>
               <option value="diesel">DIESEL 丹寧街頭</option>
-            </optgroup>
-            <optgroup label="機能運動">
-              <option value="on">On 瑞士機能</option>
             </optgroup>
           </select>
         </div>
@@ -3845,13 +3869,34 @@ function bindRsTabs() {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  🩹 v7.29(2026-08-24)STEP3 ↔ STEP2 切換卡頓的【真兇】
+//   RA 回報切到 STEP2 會頓一下(琉宇最明顯,那品牌 KOL/圖最多)。
+//   上一輪(v7.26)把四件重活丟到 requestAnimationFrame —— 只是延後,
+//   工作量沒變,所以還是頓。真正的成本在這一行:
+//       destList.innerHTML = srcList.innerHTML;
+//   它做了三件昂貴的事:
+//     ① 把來源整棵 DOM 序列化成 HTML 字串
+//     ② 在目標端【重新解析、重建整棵 DOM】
+//     ③ 裡面每一個 <img> 都是新元素 → 瀏覽器重新發請求、重新解碼
+//   而 KOL 頭像走的是原圖(g.image_url),一次好幾張大圖同時解碼 → 掉幀。
+//   ★ 修法一:內容沒變就整段跳過(切來切去最常見的情況,成本直接歸零)。
+//   ★ 修法二:見 renderKolCardV2 —— 頭像改走 /cdn-cgi/image 縮圖。
+//   ★ 事件監聽只在真的重建時才重綁,重複綁定沒必要。
+// ═══════════════════════════════════════════════════════════════
 function syncKolListToCine() {
   const srcList = document.getElementById('kol-list');
   const destList = document.getElementById('kol-list-cine');
   const countEl = document.getElementById('kol-count');
   const cineCountEl = document.getElementById('kol-count-cine');
   if (!srcList || !destList) return;
-  destList.innerHTML = srcList.innerHTML;
+  const _html = srcList.innerHTML;
+  if (destList.dataset.syncHash === String(_html.length) && destList.childElementCount) {
+    // 內容長度沒變 → 判定沒變動,不重建(切換 STEP 的常態)
+    return;
+  }
+  destList.innerHTML = _html;
+  destList.dataset.syncHash = String(_html.length);
   destList.removeEventListener('click', handleKolListClick);
   destList.addEventListener('click', handleKolListClick);
   if (cineCountEl && countEl) {
@@ -3868,7 +3913,7 @@ function renderKolCardV2(g) {
   const lookChip = g.look_count ? `${g.look_count} Looks` : '';
 
   const avatarInner = hasImage
-    ? `<img src="${escapeHtml(g.image_url)}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<span>${initial}</span>';this.parentElement.style.background='${bgColor}';">`
+    ? `<img src="${escapeHtml(_thumb(g.image_url, 120))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<span>${initial}</span>';this.parentElement.style.background='${bgColor}';">`
     : `<span>${initial}</span>`;
 
   const avatarStyle = hasImage ? '' : `style="background:${bgColor}"`;
@@ -3983,7 +4028,7 @@ function renderSelectedKolBanner(g) {
   const initial = escapeHtml(getInitial(g.name));
   const bgColor = getColorForName(g.name || '');
   const avatarHtml = hasImage
-    ? `<img src="${escapeHtml(g.image_url)}" onerror="this.outerHTML='<div style=\\'width:52px;height:52px;border-radius:8px;background:${bgColor};display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:18px;color:white;\\'>${initial}</div>'" alt="">`
+    ? `<img src="${escapeHtml(_thumb(g.image_url, 120))}" loading="lazy" decoding="async" onerror="this.outerHTML='<div style=\\'width:52px;height:52px;border-radius:8px;background:${bgColor};display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:18px;color:white;\\'>${initial}</div>'" alt="">`
     : `<div style="width:52px;height:52px;border-radius:8px;background:${bgColor};display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:18px;color:white;">${initial}</div>`;
 
   const lookChip = g.look_count > 1 ? `<span class="chip">${g.look_count} Looks</span>` : '';
@@ -5584,6 +5629,26 @@ window.scnPick = scnPick;
 //     只有這一區漏掉 —— 又是「同一件事寫兩套」。
 //   ★ 鐵律:縮圖只給人看,【絕不餵給引擎】。
 //     所以只有這個 <img> 換,scnPick 存進 S 的仍是原圖網址。
+// ═══════════════════════════════════════════════════════════════
+//  🖼 v7.29(2026-08-24)全站共用縮圖函式
+//   ⚠️ 事故記錄:v7.25 想把 _scnThumb 改名成通用的 _thumb,
+//     但改名補丁與「商品照改用 _thumb」補丁分兩次跑,只有後者進去 ——
+//     結果線上版出現【_thumb 被呼叫兩次但從未定義】,
+//     商品照那兩處靜靜噴 ReferenceError,縮圖等於沒生效。
+//     ★ 教訓:重新命名一定要與所有呼叫點【同一個補丁】一起改,
+//       不然中間狀態就是壞的,而且 node --check 抓不到(它只驗語法不驗定義)。
+//   ⚠️ 鐵律:縮圖只給【人看】,絕不餵給引擎 ——
+//     所有 pick / 存進 S 的值一律維持原圖網址,這裡只換 <img> 的 src。
+// ═══════════════════════════════════════════════════════════════
+function _thumb(u, w) {
+  try {
+    const url = new URL(u);
+    if (url.hostname !== 'cdn.raby.com.tw') return u;          // 非自家來源 → 原樣
+    if (url.pathname.indexOf('/cdn-cgi/') === 0) return u;      // 已轉換過 → 不重複包
+    return url.origin + '/cdn-cgi/image/width=' + (w || 400) + ',quality=80,format=auto' + url.pathname;
+  } catch (e) { return u; }
+}
+
 function _scnThumb(u) {
   try {
     const url = new URL(u);
