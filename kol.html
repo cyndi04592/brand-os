@@ -5480,12 +5480,16 @@ async function _fetchLibraryScenes() {
   //     v7.9 收「照片素材」→ 對了一半,但那一類太籠統,
   //          客戶不知道該放什麼才有用,隨手參考照也會列出來。
   //     v7.10 專用分類「場景素材」→ 語意明確:門市 / 賣場 / 辦公室的實景照。
-  //   ⚠️ 相容:舊資料還沒有「場景素材」標籤,所以【找不到就退回「照片素材」】,
-  //     老客戶不會突然變空。等客戶把舊照片改分類後自然收斂。
-  const _scene = (res.items || []).filter(it => String(it.category || '') === '場景素材');
-  const _src = _scene.length ? _scene
-             : (res.items || []).filter(it => String(it.category || '') === '照片素材');
-  const files = _src
+  //   ⚠️ v7.24(2026-08-24)【拿掉退回機制】——
+  //     舊版:找不到「場景素材」就退回抓「照片素材」,理由是「老客戶不會突然變空」。
+  //     現場實測(LACEZ):那個品牌的「照片素材」放的全是【商品照】(一整桌包包),
+  //       結果場景背景區列出十幾張商品照 —— 客戶會以為系統亂抓圖。
+  //     ★ 空著 + 一句清楚的指引,比「抓錯東西」好太多:
+  //       抓錯會被當成 bug,空著只是還沒設定,而文案已經教他怎麼做。
+  //     ★ 這也是「不教客戶做對的事,讓預設就是對的事」的反面教材 ——
+  //       為了避免空白而亂填,反而製造出更難解釋的畫面。
+  const files = (res.items || [])
+    .filter(it => String(it.category || '') === '場景素材')
     .filter(it => it.url && !/\.(mp4|mov|webm|m4v)(\?|$)/i.test(String(it.url)))
     .map(it => ({ url: it.url, name: it.name || '照片' }));
   window._libSceneCache[ck] = files;
@@ -5550,6 +5554,23 @@ async function scnPick(which, url) {
 }
 window.scnPick = scnPick;
 
+// 🩹 v7.24(2026-08-24)場景素材縮圖走即時轉換,不要直接載原圖。
+//   病灶(RA 現場):滑到場景素材那區「超級 LAG」——
+//     原本是 <img src="原圖網址">,實景照動輒 2-4MB,一次列 12 張 = 幾十 MB,
+//     瀏覽器同時解碼十幾張大圖,整頁卡住。
+//   ★ 素材庫(library.html / assets.js)早就走 /cdn-cgi/image/width=400 了,
+//     只有這一區漏掉 —— 又是「同一件事寫兩套」。
+//   ★ 鐵律:縮圖只給人看,【絕不餵給引擎】。
+//     所以只有這個 <img> 換,scnPick 存進 S 的仍是原圖網址。
+function _scnThumb(u) {
+  try {
+    const url = new URL(u);
+    if (url.hostname !== 'cdn.raby.com.tw') return u;          // 非自家來源 → 原樣
+    if (url.pathname.indexOf('/cdn-cgi/') === 0) return u;      // 已轉換過 → 不重複包
+    return url.origin + '/cdn-cgi/image/width=400,quality=80,format=auto' + url.pathname;
+  } catch (e) { return u; }
+}
+
 async function renderSceneLibrary(which) {
   const wrap = document.getElementById('scn-lib-' + which);
   if (!wrap) return;
@@ -5557,7 +5578,15 @@ async function renderSceneLibrary(which) {
     const files = await _fetchLibraryScenes();
     if (!files) { wrap.innerHTML = ''; return; }
     if (!files.length) {
-      wrap.innerHTML = '<div class="scn-empty">素材庫還沒有場景素材。<br>到「素材庫」上傳門市 / 賣場 / 辦公室的實景照(分類選「<b>場景素材</b>」),就能直接當背景,跳過 AI 生場景。</div>';
+      // 🩹 v7.24(2026-08-24):指引改成【指向眼前那顆按鈕】。
+      //   舊文案叫客戶「到素材庫上傳,分類選場景素材」——
+      //   但標題旁邊就有一顆「＋ 上傳場景素材」,按下去會直接開素材庫、
+      //   帶上傳模式、而且分類已經預填好(scnGoUpload)。
+      //   ★ 叫客戶自己跑一趟、自己選對分類 = 教他做對的事;
+      //     指向那顆按鈕 = 讓預設就是對的事。
+      wrap.innerHTML = '<div class="scn-empty">這個品牌還沒有場景素材。<br>'
+        + '按右上角「<b>＋ 上傳場景素材</b>」上傳門市 / 賣場 / 辦公室的實景照,'
+        + '就能直接當背景,跳過 AI 生場景(分類系統會自動帶好)。</div>';
       return;
     }
     const cur = _scnCurrent(which);
@@ -5571,7 +5600,7 @@ async function renderSceneLibrary(which) {
       <div class="scn-item ${f.url === cur ? 'on' : ''}"
            data-url="${escapeHtml(f.url)}" tabindex="0"
            title="${escapeHtml(f.name)}">
-        <img src="${escapeHtml(f.url)}" loading="lazy" decoding="async" alt="">
+        <img src="${escapeHtml(_scnThumb(f.url))}" loading="lazy" decoding="async" alt="">
         <div class="tick">✓</div>
       </div>`).join('') + '</div>';
     wrap.querySelectorAll('.scn-item').forEach(el => {
