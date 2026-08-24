@@ -314,9 +314,17 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
            只有主站這裡沒有,客戶得自己找到「素材庫」再自己選分類。
            ★ 送 ?upload=1&cat=…,library.html v2.4 已經會接住:
              自動展開上傳面板 + 預填分類 + 捲到定位。 -->
+      <!-- 🩹 2026-08-24(第二版)RA:「主站『＋ 上傳素材』再多一個 +LOGO」。
+           ★ 順手修掉一個陷阱:原本那顆叫「＋ 上傳素材」,卻【硬送商品/服務照】。
+             多了 LOGO 專用鈕之後,客戶會很合理地推論「LOGO 走那顆、其他素材走這顆」,
+             然後把場景照 / 人物照全部倒進商品照裡 —— 名字在騙人的鈕比沒有鈕更傷。
+           ★ 依「不教客戶做對的事,讓預設就是對的事」:
+             每顆鈕的【名字】= 它預填的【分類】,一一對應,不留模糊的通用鈕。
+           ⚠️ 寬度:原本兩顆共 11 字,現在三顆共 12 字,不會擠成兩行。 -->
       <div style="display:flex;gap:5px;margin-bottom:5px;">
-        <button class="fetch-btn fetch-sky" style="flex:1;font-size:11px;font-weight:900;padding:8px 10px;" onclick="goUploadAssets()">＋ 上傳素材</button>
-        <button class="fetch-btn fetch-sky" style="flex:1;font-size:11px;font-weight:900;padding:8px 10px;" onclick="fetchBoth()">· 重新抓取</button>
+        <button class="fetch-btn fetch-sky" style="flex:1;font-size:11px;font-weight:900;padding:8px 10px;" onclick="goUploadAssets('product')">＋ 商品照</button>
+        <button class="fetch-btn fetch-sky" style="flex:1;font-size:11px;font-weight:900;padding:8px 10px;" onclick="goUploadAssets('logo')">＋ LOGO</button>
+        <button class="fetch-btn fetch-sky" style="flex:1;font-size:11px;font-weight:900;padding:8px 10px;" onclick="fetchBoth()">重新抓取</button>
       </div>
       <div class="dcfg-hint">切換品牌自動載入對應素材</div>
     </div>
@@ -916,12 +924,19 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
 <script src="brands.js"></script>
 <script src="assets.js"></script>
 <script>
-/* 🩹 2026-08-24:主站素材庫直達上傳(對應上面那顆「＋ 上傳素材」)。
-   ★ 分類刻意帶「商品/服務照」—— 主站是廣告圖產線,客戶上傳的九成是商品照。
-     客戶要改分類,上傳面板裡的下拉隨時可以換。 */
-function goUploadAssets(){
+/* 🩹 2026-08-24(第二版)主站素材庫直達上傳,一顆鈕 = 一個分類。
+   goUploadAssets('product') → 商品/服務照
+   goUploadAssets('logo')    → LOGO
+   ★ 值必須跟 library.html 上傳下拉的 <option value> 逐字相同,
+     否則 v2.4 那段「值存在才設」的保護會靜靜地不預填(按了沒反應那類 bug)。
+     library.html 現行 value:商品/服務照 · 場景素材 · KOL · LOGO(顯示名不同,別拿顯示名來送)。
+   ★ 不帶參數 → 只展開上傳面板、不預填分類(保留舊呼叫的相容,不會炸)。 */
+var _UP_CAT_MAP = { product:'商品/服務照', logo:'LOGO', scene:'場景素材', kol:'KOL' };
+function goUploadAssets(kind){
   try{
-    window.open('/library?upload=1&cat=' + encodeURIComponent('商品/服務照'), '_blank', 'noopener');
+    var cat = _UP_CAT_MAP[kind] || '';
+    var q = cat ? ('?upload=1&cat=' + encodeURIComponent(cat)) : '?upload=1';
+    window.open('/library' + q, '_blank', 'noopener');
   }catch(e){ window.open('/library', '_blank'); }
 }
 window.goUploadAssets = goUploadAssets;
