@@ -24,6 +24,40 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .nav-btn-admin:hover{background:rgba(124,109,250,0.18);transform:translateY(-1px);}
 .nav-btn-logout{border:1px solid rgba(255,255,255,0.20);background:rgba(255,255,255,0.04);color:var(--text-mid);}
 .nav-btn-logout:hover{background:rgba(255,255,255,0.10);color:var(--text);}
+/* ═══════════════════════════════════════════════════════════════
+   🩹 v7.31(2026-08-24)小筆電上排選單擠成兩行
+   病灶(RA 在 1080px 寬實測):topbar 是單行 flex,裡面塞了
+     LOGO · 回主系統 · 素材庫 · Admin · Logout · 訂閱方案 · 💎 ·
+     點數條 · email · 版本徽章  —— 十樣東西。
+   手機(≤768)有漢堡選單處理,桌機(≥1400)排得下,
+   【768~1400 這段完全沒處理】—— 而那正好是小筆電最常見的寬度。
+   ★ 修法:分三段漸進瘦身,愈窄砍愈多「看了也不會點」的東西:
+     ≤1400 → 縮小間距與內距、email 只留帳號名不顯示 @後面
+     ≤1200 → 藏版本徽章、「回主系統」只留箭頭
+     ≤1000 → 藏 email、按鈕文字縮到最小、只留圖示
+   ★ 刻意【不藏功能鍵】(素材庫 / Admin / Logout / 訂閱方案)——
+     那些是客戶真的會點的;藏起來等於找不到。
+   ★ 桌機(>1400px)完全不受影響。
+   ═══════════════════════════════════════════════════════════════ */
+@media(max-width:1400px){
+  .topbar{padding:0 14px;gap:8px;}
+  .topbar > a, .topbar > button{padding-left:9px !important;padding-right:9px !important;font-size:11.5px !important;}
+  #navUserEmail{max-width:150px;overflow:hidden;}
+  #navUserEmailTxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;display:inline-block;vertical-align:middle;}
+}
+@media(max-width:1200px){
+  .topbar{gap:6px;}
+  .topbar-badge{display:none;}                      /* 版本徽章:除錯用,客戶不需要 */
+  .topbar .sub-label{display:none;}                 /* 「訂閱方案」留星星圖示 */
+  .topbar > a[href="index.html"]{font-size:0 !important;padding:5px 10px !important;}
+  .topbar > a[href="index.html"]::before{content:'←';font-size:13px;}
+}
+@media(max-width:1000px){
+  .topbar{padding:0 10px;gap:5px;}
+  #navUserEmail{display:none !important;}           /* email 客戶自己知道,不用顯示 */
+  .topbar > a, .topbar > button{padding-left:8px !important;padding-right:8px !important;font-size:11px !important;}
+}
+
 .topbar-badge{margin-left:auto;font-size:10px;font-family:'Syne',sans-serif;font-weight:700;padding:3px 10px;border-radius:20px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;}
 .main{padding-top:56px;min-height:100vh;position:relative;z-index:1;}
 
