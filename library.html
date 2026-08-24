@@ -238,17 +238,34 @@ a{color:inherit;text-decoration:none;}
   <div class="up-panel" id="upPanel"><div class="up-box" id="upBox">
     <div class="up-row">
       <span style="font-size:13px;color:var(--text-mid)">放到</span>
-      <select id="upCat" class="sel" style="min-width:150px">
-        <option value="照片素材">照片素材</option>
-        <option value="商品/服務照">商品/服務照</option>
-        <option value="場景素材">場景素材(門市 / 賣場 / 辦公室)</option>
-        <option value="LOGO">LOGO</option>
-        <option value="KOL">KOL</option>
+      <!-- ═══════════════════════════════════════════════════════════
+           🩹 v2.3(2026-08-24)分類名稱重寫 —— 兩個客戶同一天都傳錯
+           病灶不是客戶粗心,是【「照片素材」跟其他三個不是同一個維度】:
+             商品/服務照、場景素材、LOGO、KOL 講的是「用途」,
+             「照片素材」講的是「檔案類型」——
+             客戶心裡想「這是照片」就全丟那裡。
+           現場證據:香港福臨門五張全落在「照片素材」,
+             但那些是燉湯 / 燒賣 / 蝦餃 / 蛋撻 = 明明是【商品照】。
+           ★ 三個修法一起:
+             ① 每一項都寫「用途 + 具體例子」,不要只給名詞
+             ② 把最會被誤選的「照片素材」改名成「其他參考照」並【降到最後】
+                —— 它本來就該是最後的收容所,不是第一個選項
+             ③ 預設值改成「商品/服務照」(實際最常上傳的東西)
+           ⚠️ 這是 8/22「兩段式上傳」之後的第二層修正 ——
+             那次修的是「什麼時候選」,這次修的是「選項看不看得懂」。
+           ═══════════════════════════════════════════════════════════ -->
+      <select id="upCat" class="sel" style="min-width:230px">
+        <option value="商品/服務照">🍽 商品 / 服務照 — 菜色、產品、成品</option>
+        <option value="場景素材">🏢 場景素材 — 門市 / 賣場 / 辦公室實景</option>
+        <option value="KOL">👤 KOL — 人物照片</option>
+        <option value="LOGO">🅰 LOGO — 品牌標誌</option>
+        <option value="照片素材">📁 其他參考照 — 以上都不是</option>
       </select>
       <input id="upKol" class="sel" style="min-width:150px;display:none" placeholder="這是誰的照片?">
       <button class="up-btn" id="upPick">選擇檔案</button>
     </div>
-    <div class="up-hint">也可以直接把圖片拖進這個框 · 單檔 25MB 以內</div>
+    <div class="up-hint">也可以直接把圖片拖進這個框 · 單檔 25MB 以內<br>
+      <span style="opacity:.75">不確定放哪?<b>要出現在影片裡的東西就選「商品 / 服務照」</b>(菜色、產品都算)。分類選錯之後也能在素材庫改。</span></div>
     <div class="up-list" id="upList"></div>
     <div class="up-row" id="upConfirmRow" style="display:none;margin-top:10px">
       <button class="up-btn" id="upGo">開始上傳</button>
@@ -670,6 +687,859 @@ upFile.style.display = 'none';
 let _pending = null;
 
 $('upToggle').onclick = function(){ $('upPanel').classList.toggle('on'); };
+
+/* 🩹 v2.4(2026-08-24)接住 ?upload=1&cat=XXX 直達上傳
+   病灶(RA 現場提出「那邊也要直接有鈕可以＋新增」時查到):
+     kol.html 的「＋ 上傳場景素材」(scnGoUpload)早就在送
+       /library?upload=1&cat=場景素材
+     但【library.html 從來沒有讀這兩個參數】——
+     按下去只是開了素材庫首頁,上傳面板沒展開、分類也沒預填,
+     客戶還是要自己找「上傳」、自己選對分類 = 那顆按鈕等於白做。
+   ★ 這是「兩邊各寫一套」的變形:送的人以為對方會接,接的人根本不知道。
+   ★ 現在補上,商品照那顆新按鈕(goUploadProducts)也一起受惠。 */
+(function(){
+  try{
+    const q = new URLSearchParams(location.search);
+    if (q.get('upload') !== '1') return;
+    $('upPanel').classList.add('on');                    // 展開上傳面板
+    const cat = q.get('cat');
+    if (cat) {
+      const sel = $('upCat');
+      // 值必須真的存在於選單裡才設,免得選到空白
+      if (sel && Array.from(sel.options).some(o => o.value === cat)) sel.value = cat;
+    }
+    // 捲到上傳面板,客戶一眼看到要做什麼
+    setTimeout(function(){ try{ $('upPanel').scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){} }, 120);
+  }catch(e){}
+})();
+$('upPick').onclick   = function(){ upFile.click(); };
+$('upCat').onchange   = function(){
+  $('upKol').style.display = (this.value === 'KOL') ? '' : 'none';
+  _renderPending();                       // 改分類 → 按鈕上的目的地跟著變
+};
+upFile.onchange       = function(){ if(this.files && this.files.length) _stage(this.files); this.value=''; };
+
+function _stage(files){
+  if(!S.brandId){ alert('請先選擇品牌'); return; }
+  _pending = Array.prototype.slice.call(files);
+  _renderPending();
+}
+
+function _renderPending(){
+  const list = $('upList'), row = $('upConfirmRow');
+  if(!_pending || !_pending.length){
+    if(row) row.style.display = 'none';
+    return;
+  }
+  const cat = $('upCat').value;
+  list.innerHTML = _pending.map(function(f){
+    return '<div class="up-item"><span class="st">📄</span><span>'+esc(f.name)+'</span></div>';
+  }).join('');
+  if(row) row.style.display = '';
+  $('upGo').textContent = '⬆️ 上傳 ' + _pending.length + ' 個檔案到「' + cat + '」';
+}
+
+$('upGo').onclick = function(){
+  const f = _pending; _pending = null;
+  $('upConfirmRow').style.display = 'none';
+  if(f && f.length) doUpload(f);
+};
+$('upCancel').onclick = function(){
+  _pending = null;
+  $('upList').innerHTML = '';
+  $('upConfirmRow').style.display = 'none';
+};
+
+const upBox = $('upBox');
+['dragenter','dragover'].forEach(function(e){
+  upBox.addEventListener(e, function(ev){ ev.preventDefault(); upBox.classList.add('drag'); });
+});
+['dragleave','drop'].forEach(function(e){
+  upBox.addEventListener(e, function(ev){ ev.preventDefault(); upBox.classList.remove('drag'); });
+});
+upBox.addEventListener('drop', function(ev){
+  const fs = ev.dataTransfer && ev.dataTransfer.files;
+  if(fs && fs.length) _stage(fs);          // 拖進來也一樣先停下來確認分類
+});
+
+async function doUpload(files){
+  if(!S.brandId){ alert('請先選擇品牌'); return; }
+  const cat = $('upCat').value;
+  const kol = $('upKol').value.trim();
+  if(cat === 'KOL' && !kol){ alert('請填這是誰的照片'); $('upKol').focus(); return; }
+
+  const list = $('upList');
+  list.innerHTML = '';
+  let ok = 0, bad = 0;
+
+  for(let i = 0; i < files.length; i++){
+    const f = files[i];
+    const row = document.createElement('div');
+    row.className = 'up-item';
+    row.innerHTML = '<span class="st">⏳</span><span>'+esc(f.name)+'</span>';
+    list.appendChild(row);
+    try{
+      const fd = new FormData();
+      fd.append('file', f);
+      fd.append('password', PASSWORD);
+      fd.append('token', authToken());
+      fd.append('brandId', S.brandId);
+      fd.append('category', cat);
+      if(kol) fd.append('kolName', kol);
+      const r = await fetch(WORKER + '/asset_upload', { method:'POST', body: fd });
+      const jn = await r.json();
+      if(jn && jn.ok){ row.querySelector('.st').textContent = '✅'; ok++; }
+      else { row.querySelector('.st').textContent = '❌';
+             row.innerHTML += '<span style="color:var(--text-dim)"> · '+esc(jn&&jn.error||'失敗')+'</span>'; bad++; }
+    }catch(e){
+      row.querySelector('.st').textContent = '❌';
+      row.innerHTML += '<span style="color:var(--text-dim)"> · 連線失敗</span>'; bad++;
+    }
+  }
+
+  const done = document.createElement('div');
+  done.className = 'up-item';
+  done.style.marginTop = '6px';
+  done.innerHTML = '<span class="st">🎉</span><span>完成 · 成功 '+ok+(bad?(' · 失敗 '+bad):'')+'</span>';
+  list.appendChild(done);
+
+  if(ok){ delete CACHE[S.brandId]; await loadAssets(true); }
+}
+
+$('brandSel').onchange = function(){ S.brandId = this.value; S.cat='all'; S.kol='all'; S.q=''; $('q').value=''; $('qx').classList.remove('on'); loadAssets(); };
+$('reloadBtn').onclick = function(){ loadAssets(true); };   // 強制重抓,跳過快取
+$('q').oninput = function(){
+  S.q = this.value;
+  $('qx').classList.toggle('on', !!this.value);
+  applyFilter();
+};
+$('qx').onclick = function(){ $('q').value=''; S.q=''; this.classList.remove('on'); applyFilter(); };
+$('lbX').onclick = closeLb;
+$('lb').onclick  = function(e){ if(e.target === $('lb')) closeLb(); };
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeLb(); });
+
+// 點到選單裡任何一項就收起來(照抄 kol.html)
+document.querySelector('.kol-menu').addEventListener('click', function (e) {
+  if (e.target.closest('a,button')) document.body.classList.remove('kol-nav-open');
+});
+
+loadBrands();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>我的素材庫 · Brand OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   我的素材庫 v2.1(2026-08-21)
+   職責(單一):列出客戶自己品牌的素材,可預覽、可下載。
+   ⚠️ 視覺一律沿用 kol.html 的設計系統(變數、字體、漸層、圓角)——
+      不自創配色。v1.0 自己編了一套,已作廢。
+   ⚠️ 白話原則:畫面上不出現任何後台技術名稱。
+   ═══════════════════════════════════════════════════════════════ */
+:root{--bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--border:rgba(255,255,255,0.07);--accent:#7c6dfa;--accent2:#fa6d9b;--accent3:#6dfac2;--text:#f0f0f8;--text-dim:rgba(240,240,248,0.45);--text-mid:rgba(240,240,248,0.72);--radius:14px;--radius-sm:8px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 20% 10%,rgba(124,109,250,.12) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 80% 80%,rgba(250,109,155,.08) 0%,transparent 55%);pointer-events:none;z-index:0;}
+a{color:inherit;text-decoration:none;}
+
+/* 頂部 topbar — 照抄 kol.html */
+.topbar{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(10,10,15,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100;}
+.topbar-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--text);}
+.topbar-logo span{color:var(--accent);}
+.topbar-sep{width:1px;height:20px;background:var(--border);}
+.topbar-title{font-size:13px;color:var(--text-dim);}
+.nav-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:10px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:all .2s;white-space:nowrap;border:1px solid rgba(255,255,255,0.20);background:rgba(255,255,255,0.04);color:var(--text-mid);}
+.nav-btn:hover{background:rgba(255,255,255,0.10);color:var(--text);}
+.nav-btn.pri{border-color:rgba(124,109,250,0.4);background:rgba(124,109,250,0.06);color:var(--accent);}
+.nav-btn.pri:hover{background:rgba(124,109,250,0.18);transform:translateY(-1px);}
+.topbar-badge{font-size:10px;font-family:'Syne',sans-serif;font-weight:700;padding:3px 10px;border-radius:20px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+.main{padding-top:56px;min-height:100vh;position:relative;z-index:1;}
+
+/* 頁首卡 — 沿用 vision-card 的漸層與頂邊三色線 */
+.head{max-width:1100px;margin:20px auto 0;padding:0 24px;}
+.head-card{background:linear-gradient(135deg,rgba(124,109,250,.08) 0%,rgba(250,109,155,.05) 100%);border:1px solid rgba(124,109,250,.18);border-radius:var(--radius);padding:20px 24px;position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.head-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent3),var(--accent),var(--accent2));}
+.head-t{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:.02em;}
+.head-s{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
+.head-sp{flex:1;}
+.sel{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:13.5px;font-family:'Noto Sans TC',sans-serif;min-width:190px;outline:none;cursor:pointer;}
+.sel:focus{border-color:var(--accent);}
+
+/* 分類籤 */
+.tabs{max-width:1100px;margin:18px auto 0;padding:0 24px;display:flex;gap:8px;flex-wrap:wrap;}
+.tab{background:rgba(255,255,255,0.03);color:var(--text-dim);border:1px solid var(--border);border-radius:30px;padding:7px 16px;font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'Noto Sans TC',sans-serif;}
+.tab:hover{color:var(--text);border-color:rgba(124,109,250,.35);}
+.tab.on{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;font-weight:700;}
+.tab .n{opacity:.7;margin-left:6px;font-size:11.5px;}
+/* 🏆 AI生成完成區 —— 客戶真正要的成品都在這,給它金色,最顯眼 */
+.tab.gold{border-color:rgba(201,162,39,.6);color:#e8c766;background:rgba(201,162,39,.07);}
+.tab.gold:hover{border-color:rgba(201,162,39,.8);color:#e8c766;}
+.tab.gold.on{background:linear-gradient(135deg,#c9a227,#e8c766);border-color:transparent;color:#1a1408;font-weight:800;box-shadow:0 4px 16px rgba(201,162,39,.35);}
+.tab.t2.gold.on{background:rgba(201,162,39,.18);border-color:rgba(201,162,39,.6);color:#e8c766;box-shadow:none;}
+.badge.gold{background:linear-gradient(135deg,rgba(201,162,39,.9),rgba(232,199,102,.9));border-color:transparent;color:#1a1408;font-weight:700;}
+.card.gold{border-color:rgba(201,162,39,.28);}
+.card.gold:hover{border-color:rgba(201,162,39,.65);box-shadow:0 8px 28px rgba(201,162,39,.22);}
+/* ⬆️ 上傳 */
+.up-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;border:none;transition:.2s;white-space:nowrap;}
+.up-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,109,250,.35);}
+.up-panel{max-width:1100px;margin:14px auto 0;padding:0 24px;display:none;}
+.up-panel.on{display:block;}
+.up-box{background:var(--surface);border:1px dashed rgba(124,109,250,.4);border-radius:var(--radius);padding:22px;text-align:center;transition:.2s;}
+.up-box.drag{border-color:var(--accent);background:rgba(124,109,250,.07);}
+.up-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:14px;}
+.up-hint{font-size:13px;color:var(--text-dim);margin-top:10px;}
+.up-list{margin-top:14px;display:flex;flex-direction:column;gap:6px;text-align:left;}
+.up-item{font-size:12.5px;color:var(--text-mid);display:flex;gap:8px;align-items:center;}
+.up-item .st{font-size:13px;}
+.tabs2{width:100%;display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;padding-left:2px;}
+.tab.t2{font-size:12.5px;padding:6px 13px;background:transparent;}
+.tab.sub{margin-left:12px;}
+.tab.sub .arm{opacity:.4;margin-right:5px;font-size:11px;}
+/* 分組分隔線:靠視覺切開「我的素材 / 成品」,不用點兩層 */
+.tsep{width:1px;align-self:stretch;background:var(--border);margin:2px 6px;}
+/* 🔎 搜尋:客戶要的是「看到」,不是「導航」——打字比翻資料夾快 */
+.srch{position:relative;flex:1;min-width:170px;max-width:280px;}
+.srch input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:30px;padding:8px 34px 8px 15px;color:var(--text);font-size:13px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:.2s;}
+.srch input:focus{border-color:rgba(124,109,250,.55);}
+.srch input::placeholder{color:var(--text-dim);}
+.srch .x{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);cursor:pointer;font-size:16px;display:none;line-height:1;}
+.srch .x.on{display:block;}
+.srch .x:hover{color:var(--text);}
+/* 👤 KOL 用頭像切換,比文字籤直覺 */
+.kolbar{width:100%;display:flex;gap:10px;flex-wrap:wrap;margin-top:11px;align-items:center;}
+.kolchip{display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;border:1px solid var(--border);background:rgba(255,255,255,.03);cursor:pointer;transition:.2s;font-size:12.5px;color:var(--text-dim);}
+.kolchip:hover{color:var(--text);border-color:rgba(124,109,250,.35);}
+.kolchip.on{background:rgba(124,109,250,.16);border-color:rgba(124,109,250,.5);color:var(--text);font-weight:600;}
+.kolchip img{width:28px;height:28px;border-radius:50%;object-fit:cover;display:block;background:var(--surface2);}
+.kolchip .ini{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:12px;font-weight:700;}
+.kolchip .n{opacity:.65;font-size:11px;}
+.tab.t2.on{background:rgba(124,109,250,.18);border-color:rgba(124,109,250,.5);color:var(--accent);font-weight:600;}
+.tab.t3{font-size:12px;padding:5px 12px;background:transparent;border-style:dashed;}
+.tab.t3.on{background:rgba(109,250,194,.12);border-color:rgba(109,250,194,.45);border-style:solid;color:var(--accent3);font-weight:600;}
+
+/* 卡片牆 */
+.wrap{max-width:1100px;margin:0 auto;padding:18px 24px 60px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:14px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .2s;}
+.card:hover{transform:translateY(-2px);border-color:rgba(124,109,250,.45);box-shadow:0 8px 28px rgba(0,0,0,.4);}
+.thumb{position:relative;width:100%;aspect-ratio:1/1;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block;}
+.badge{position:absolute;left:9px;top:9px;background:rgba(10,10,15,.78);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--text-mid);}
+.play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;color:rgba(255,255,255,.9);text-shadow:0 2px 12px rgba(0,0,0,.7);pointer-events:none;}
+.meta{padding:11px 13px 13px;}
+.meta .nm{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.meta .dt{font-size:11.5px;color:var(--text-dim);margin-top:3px;font-family:'Syne',sans-serif;}
+
+.state{padding:70px 20px;text-align:center;color:var(--text-mid);}
+.state .big{font-size:40px;opacity:.3;margin-bottom:14px;}
+.state .sub{font-size:13px;color:var(--text-dim);margin-top:8px;}
+
+/* 燈箱 */
+.lb{position:fixed;inset:0;z-index:200;background:rgba(10,10,15,.94);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px;}
+.lb.on{display:flex;}
+.lb-in{max-width:min(1000px,92vw);max-height:88vh;display:flex;flex-direction:column;gap:14px;}
+.lb-in img,.lb-in video{max-width:100%;max-height:72vh;border-radius:var(--radius);display:block;margin:0 auto;}
+.lb-bar{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;}
+.lb-x{position:absolute;right:22px;top:16px;font-size:30px;color:var(--text-mid);cursor:pointer;line-height:1;transition:.2s;}
+.lb-x:hover{color:var(--text);}
+.dl{display:inline-flex;align-items:center;gap:7px;padding:10px 22px;border-radius:10px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;transition:.2s;}
+.dl:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,109,250,.35);}
+
+/* ═══════════════════════════════════════════════════════════════
+   📱 RWD —— 斷點對齊 kol.html(900/768/640/480/400),
+   不然同一個站在手機上會有兩種行為。v1.9 只做了 768,細節全沒調。
+   ═══════════════════════════════════════════════════════════════ */
+/* 📱 漢堡選單 —— 規格照抄 kol.html,兩頁行為一致 */
+.kol-hamburger{display:none;}
+.kol-menu{display:contents;}
+@media(max-width:768px){
+  .topbar{position:sticky;top:0;height:auto;flex-wrap:wrap;padding:7px 12px;gap:10px;}
+  .main{padding-top:0;}
+  .kol-hamburger{display:flex;flex-direction:column;justify-content:center;gap:4px;
+    width:40px;height:38px;padding:9px 10px;background:transparent;
+    border:1px solid var(--border);border-radius:10px;cursor:pointer;
+    margin-left:auto;order:1;flex-shrink:0;}
+  .kol-hamburger span{display:block;height:2px;border-radius:2px;background:var(--text);
+    transition:transform .25s ease,opacity .2s ease;}
+  body.kol-nav-open .kol-hamburger span:nth-child(1){transform:translateY(6px) rotate(45deg);}
+  body.kol-nav-open .kol-hamburger span:nth-child(2){opacity:0;}
+  body.kol-nav-open .kol-hamburger span:nth-child(3){transform:translateY(-6px) rotate(-45deg);}
+  .kol-menu{display:none;position:absolute;top:100%;left:0;right:0;
+    flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px 18px;
+    background:rgba(10,10,15,.97);backdrop-filter:blur(24px);
+    border-bottom:1px solid var(--border);box-shadow:0 18px 40px rgba(0,0,0,.55);z-index:60;}
+  body.kol-nav-open .kol-menu{display:flex;}
+  .kol-menu a,.kol-menu button{margin:0 !important;justify-content:center;width:100%;display:inline-flex !important;}
+}
+@media(max-width:900px){
+  .head-card{gap:12px;}
+  .srch{max-width:220px;}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));}
+}
+@media(max-width:768px){
+  .topbar{padding:0 12px;gap:8px;}
+  .topbar-title,.topbar-sep,.topbar-badge{display:none;}
+  .head,.tabs,.wrap,.up-panel{padding-left:12px;padding-right:12px;}
+  .head-card{padding:15px 16px;flex-direction:column;align-items:stretch;}
+  .head-sp{display:none;}
+  .srch{max-width:none;width:100%;}
+  .sel{min-width:0;width:100%;}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;}
+  .lb{padding:14px;}
+  .lb-in img,.lb-in video{max-height:66vh;}   /* 留位置給下載鈕,不被網址列吃掉 */
+}
+@media(max-width:640px){
+  .head-t{font-size:18px;}
+  .head-s{font-size:12px;}
+  .tab{font-size:12.5px;padding:6px 13px;}
+  .tab.t2,.tab.t3{font-size:11.5px;padding:5px 11px;}
+  .up-row{flex-direction:column;align-items:stretch;gap:8px;}
+  .up-row>span{display:none;}
+  .up-btn{width:100%;justify-content:center;}
+  .kolchip{font-size:12px;padding:4px 12px 4px 4px;}
+  .kolchip img,.kolchip .ini{width:24px;height:24px;font-size:11px;}
+}
+@media(max-width:480px){
+  .topbar{height:52px;}
+  .main{padding-top:52px;}
+  .topbar-logo{font-size:14px;}
+  .topbar-badge{display:none;}          /* 窄螢幕先讓路給功能鈕 */
+  .grid{grid-template-columns:repeat(2,1fr);gap:9px;}
+  .meta{padding:9px 10px 11px;}
+  .meta .nm{font-size:12px;}
+  .meta .dt{font-size:11px;}
+  .badge{font-size:10px;padding:2px 8px;left:7px;top:7px;}
+  .tsep{display:none;}                  /* 分隔線在換行後只會變亂 */
+  .state{padding:48px 16px;}
+}
+@media(max-width:400px){
+  .topbar{gap:6px;padding:0 10px;}
+  .nav-btn,.up-btn{padding:7px 11px;font-size:12px;}
+  .grid{gap:8px;}
+  .tab .n{display:none;}                /* 數字讓位,先讓分類名看得完 */
+}
+/* 手機橫向:燈箱不要被壓扁 */
+@media(max-height:520px) and (orientation:landscape){
+  .lb-in img,.lb-in video{max-height:78vh;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="topbar-logo" href="index.html">BRAND<span>OS</span></a>
+  <div class="topbar-sep"></div>
+  <div class="topbar-title">我的素材庫</div>
+  <div style="flex:1"></div>
+  <!-- 📱 漢堡:窄螢幕把按鈕收起來(機制照抄 kol.html,同一個站不該有兩種行為) -->
+  <button class="kol-hamburger" id="libHamburger" aria-label="開啟選單"
+          onclick="document.body.classList.toggle('kol-nav-open')">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="kol-menu">
+    <a class="nav-btn pri" href="index.html">← 回主系統</a>
+    <a class="nav-btn" href="kol.html">KOL 工作室</a>
+    <button class="up-btn" id="upToggle">＋ 上傳素材</button>
+    <button class="nav-btn" id="reloadBtn">重新整理</button>
+  </div>
+  <div class="topbar-badge">LIBRARY</div>
+</div>
+
+<div class="main">
+  <div class="head"><div class="head-card">
+    <div>
+      <div class="head-t">我的素材庫</div>
+      <div class="head-s">這裡收著你所有的成品與素材,隨時可以預覽、下載</div>
+    </div>
+    <div class="head-sp"></div>
+    <div class="srch"><input id="q" placeholder="搜尋素材…"><span class="x" id="qx">&times;</span></div>
+    <select id="brandSel" class="sel"><option value="">載入中…</option></select>
+  </div></div>
+
+  <div class="up-panel" id="upPanel"><div class="up-box" id="upBox">
+    <div class="up-row">
+      <span style="font-size:13px;color:var(--text-mid)">放到</span>
+      <!-- ═══════════════════════════════════════════════════════════
+           🩹 v2.3(2026-08-24)分類名稱重寫 —— 兩個客戶同一天都傳錯
+           病灶不是客戶粗心,是【「照片素材」跟其他三個不是同一個維度】:
+             商品/服務照、場景素材、LOGO、KOL 講的是「用途」,
+             「照片素材」講的是「檔案類型」——
+             客戶心裡想「這是照片」就全丟那裡。
+           現場證據:香港福臨門五張全落在「照片素材」,
+             但那些是燉湯 / 燒賣 / 蝦餃 / 蛋撻 = 明明是【商品照】。
+           ★ 三個修法一起:
+             ① 每一項都寫「用途 + 具體例子」,不要只給名詞
+             ② 把最會被誤選的「照片素材」改名成「其他參考照」並【降到最後】
+                —— 它本來就該是最後的收容所,不是第一個選項
+             ③ 預設值改成「商品/服務照」(實際最常上傳的東西)
+           ⚠️ 這是 8/22「兩段式上傳」之後的第二層修正 ——
+             那次修的是「什麼時候選」,這次修的是「選項看不看得懂」。
+           ═══════════════════════════════════════════════════════════ -->
+      <select id="upCat" class="sel" style="min-width:230px">
+        <option value="商品/服務照">🍽 商品 / 服務照 — 菜色、產品、成品</option>
+        <option value="場景素材">🏢 場景素材 — 門市 / 賣場 / 辦公室實景</option>
+        <option value="KOL">👤 KOL — 人物照片</option>
+        <option value="LOGO">🅰 LOGO — 品牌標誌</option>
+        <option value="照片素材">📁 其他參考照 — 以上都不是</option>
+      </select>
+      <input id="upKol" class="sel" style="min-width:150px;display:none" placeholder="這是誰的照片?">
+      <button class="up-btn" id="upPick">選擇檔案</button>
+    </div>
+    <div class="up-hint">也可以直接把圖片拖進這個框 · 單檔 25MB 以內<br>
+      <span style="opacity:.75">不確定放哪?<b>要出現在影片裡的東西就選「商品 / 服務照」</b>(菜色、產品都算)。分類選錯之後也能在素材庫改。</span></div>
+    <div class="up-list" id="upList"></div>
+    <div class="up-row" id="upConfirmRow" style="display:none;margin-top:10px">
+      <button class="up-btn" id="upGo">開始上傳</button>
+      <button class="nav-btn" id="upCancel">取消</button>
+    </div>
+  </div></div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="wrap"><div id="body"></div></div>
+</div>
+
+<div class="lb" id="lb">
+  <div class="lb-x" id="lbX">&times;</div>
+  <div class="lb-in" id="lbIn"></div>
+</div>
+
+<script>
+/* ── 設定 ── */
+const WORKER   = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+const PASSWORD = 'raby2026';
+const LAST_KEY = 'bs_library_last_brand';
+
+const S = { brands: [], brandId: '', items: [], counts: {}, cat: 'all', kol: 'all', q: '', loading: false };
+
+/* ═══════════════════════════════════════════════════════════════
+   ⚡ 切換順暢度(v1.4)
+   量出來的事實:後端回一次約 0.5 秒。單看不慢,但每切一次品牌
+     就重跑一次、整面圖片也全部重新請求 —— 累積起來就是「很卡」。
+   三個修法(都在前端,不動後端):
+     ① 品牌資料存在記憶體 → 切回看過的品牌 = 瞬間,不打後端
+     ② 切分類籤只換顯示 → 資料本來就在手上,不重打
+     ③ 圖片元素重用 → 同一張圖不會因為切籤而重新請求
+   ⚠️ 快取只活在這次開啟的分頁裡,重整就沒了 —— 不會看到過期資料。
+     要立刻拿最新的,按「重新整理」會強制重抓。
+   ═══════════════════════════════════════════════════════════════ */
+const CACHE = {};   // brandId → { items, counts }
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function authToken(){ try{ return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; }catch(e){ return ''; } }
+// ═══════════════════════════════════════════════════════════════
+//  🔑 2026-08-23 解出「憑證裡的帳號」——這才是後端真正拿來查資料的身分
+//   病灶(黃凱翊實測):畫面顯示 ln715333@gmail.com(來自 localStorage
+//     的 bs_sso_email),白名單那筆也完全正確,但品牌就是空的。
+//     追下去發現 Worker 讀的是【token 裡的 email】,不是 localStorage:
+//       params.email = _who.email;   // 查誰的資料由證決定,不由請求決定
+//     兩者是各自獨立儲存的,會漂移 —— 例如先用 A 帳號登入(token 簽 A),
+//     之後某個流程只更新了 bs_sso_email 成 B,token 還是 A。
+//   ★ token 格式:v1.<base64url payload>.<簽章>,payload = {e:email,r:role,x:到期}
+//     只是要「讀」不需要密鑰(簽章是防竄改用的,不是加密)。
+//   ★ 解不出來就回空字串,絕不擋住任何流程。
+// ═══════════════════════════════════════════════════════════════
+function _tokenEmail() {
+  try {
+    const t = localStorage.getItem('bs_auth_token') || '';
+    const seg = t.split('.');
+    if (seg.length < 2) return '';
+    let b = seg[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    const o = JSON.parse(decodeURIComponent(escape(atob(b))));
+    return String(o.e || '');
+  } catch (e) { return ''; }
+}
+
+function myEmail(){ try{ return localStorage.getItem('bs_sso_email') || ''; }catch(e){ return ''; } }
+function fmtDate(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  if(isNaN(d)) return String(ts).slice(0,10);
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate());
+}
+function isVideo(u){ return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(String(u||'')); }
+
+/* ═══════════════════════════════════════════════════════════════
+   🖼 縮圖:列表只載小圖,點開才給原圖
+   為什麼要有:原本每一格都直接載原圖(產品規格圖動輒好幾 MB),
+     十幾張同時下載 → 切換卡到像壞掉。Google 雲端之所以順,
+     就是因為它列表給的是縮圖、點開才給原檔 —— 這裡把那層補上。
+   做法:同網域下加一段轉換路徑,當場縮小,原檔完全不動、不用重搬。
+     ⚠️ 路徑一定要用「相對」寫法(/尺寸/檔案路徑),
+        後面再接一個完整網址會回 9404。
+   ⚠️ 只對自家網域生效;其他來源原樣回傳,不會壞掉。
+   ═══════════════════════════════════════════════════════════════ */
+const CDN_HOST = 'cdn.raby.com.tw';
+function thumbUrl(u, w){
+  try{
+    const url = new URL(u);
+    if(url.hostname !== CDN_HOST) return u;              // 非自家來源 → 原樣
+    if(url.pathname.indexOf('/cdn-cgi/') === 0) return u; // 已經是轉換過的 → 不重複包
+    return url.origin + '/cdn-cgi/image/width=' + (w||400) + ',quality=80,format=auto' + url.pathname;
+  }catch(e){ return u; }
+}
+
+async function api(action, extra){
+  const r = await fetch(WORKER, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({ password:PASSWORD, action, email:myEmail(), token:authToken() }, extra||{}))
+  });
+  return r.json();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   🗂 兩層分類(v1.5)—— 照品牌資料夾的層次,客戶看得懂
+   為什麼分層:扁平一排籤,東西一多就找不到;而且「我自己給的素材」
+     跟「系統做出來的成品」本來就是兩回事,混在一起很怪。
+   ⚠️ 這只是「顯示」的分層 —— 資料庫裡還是單一標籤,
+     生成流程完全沒讀 assets 表,所以怎麼分都不會影響出片。
+   ═══════════════════════════════════════════════════════════════ */
+// ⚠️ 2026-08-21 改名:「商品照」→「商品/服務照」
+//   原因:後面接的是律師 / 美睫 / 美甲 / 瑜珈 / 旅遊 —— 服務業沒有「商品」,
+//   他們放的是成果、環境、案例。一個名字要全行業通用。
+//   ★ 舊資料同步用 SQL 換過標籤,否則會分裂成兩個分類。
+const GROUPS = [
+  { key:'mine', label:'我的素材',      cats:['LOGO','照片素材','商品/服務照','場景素材','影片素材','KOL'] },
+  { key:'ai',   label:'AI生成完成區',  cats:['廣告圖','短影片','腳本分鏡'] },
+];
+// 子從屬:顯示上「商品/服務照」掛在「照片素材」底下(照 RA 定的資料夾層次)
+// 🆕 2026-08-23:「場景素材」= 門市 / 賣場 / 辦公室的實景照。
+//   獨立一類的理由:它的用途是【當整支影片的背景,跳過 AI 生場景】,
+//   跟「隨手放的參考照」完全不同。混在「照片素材」裡的話,
+//   影片端的背景挑選器只能把整包列出來,客戶會誤選,
+//   也不知道該上傳什麼才有用。
+const SUB_OF = { '商品/服務照': '照片素材', '場景素材': '照片素材' };
+const CATS = GROUPS.reduce(function(a,g){ return a.concat(g.cats); }, []);
+
+async function loadBrands(){
+  const sel = $('brandSel');
+  if(!myEmail()){
+    sel.innerHTML = '<option value="">尚未登入</option>';
+    showState('🔒','請先登入','回主系統登入後再進入素材庫');
+    return;
+  }
+  try{
+    // ⚠️ getBrandOS 是 GAS 的動作,不是 Worker 的 ——
+    //    直接送會回「未知 action」。要用 gas_cached 包一層(照抄 kol.html gasGet)。
+    const res = await api('gas_cached', { gasAction:'getBrandOS', gasParams:{ email: myEmail() } });
+    const list = (res && res.ok !== false && res.data && res.data.brands) ? res.data.brands : [];
+    S.brands = list;
+    if(!list.length){
+      // 🩹 2026-08-23:授權為空時【要說是哪個帳號】(與 kol.html 同一套處理)。
+      //   病灶:舊文案只說「找不到品牌,請聯絡我們協助開通」——
+      //     員工不知道自己可能登錯帳號,管理者也查不出原因。
+      //   ★ 把實際登入的帳號印出來,客戶截一張圖就能自己發現登錯帳號。
+      sel.innerHTML = '<option value="">此帳號尚未開通品牌</option>';
+      const _tok = _tokenEmail(), _ls = myEmail() || '';
+      let _msg = '系統實際查詢的帳號是 ' + esc(_tok || _ls || '(未取得)')
+        + '。請登出後改用正確帳號重新登入;確認帳號無誤請聯絡我們開通。';
+      if (_tok && _ls && _tok.toLowerCase() !== _ls.toLowerCase()) {
+        _msg += ' ⚠ 這台裝置上有兩個帳號的紀錄(瀏覽器記著 ' + esc(_ls)
+          + ',憑證是 ' + esc(_tok) + '),系統以憑證為準,請登出重登。';
+      }
+      showState('📁','此帳號尚未開通品牌', _msg);
+      try{ console.log('[素材庫] 未開通 · 憑證帳號:', _tok, '· 瀏覽器記錄:', _ls); }catch(e){}
+      return;
+    }
+    sel.innerHTML = list.map(b => '<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>').join('');
+    let last = '';
+    try{ last = localStorage.getItem(LAST_KEY) || ''; }catch(e){}
+    S.brandId = (last && list.some(b=>b.id===last)) ? last : list[0].id;
+    sel.value = S.brandId;
+    await loadAssets();
+  }catch(e){
+    sel.innerHTML = '<option value="">載入失敗</option>';
+    showState('⚠️','載入品牌失敗','請稍後再試一次');
+  }
+}
+
+async function loadAssets(force){
+  if(!S.brandId || S.loading) return;
+
+  // 看過的品牌 → 直接用手上的,不打後端
+  if(!force && CACHE[S.brandId]){
+    S.items  = CACHE[S.brandId].items;
+    S.counts = CACHE[S.brandId].counts;
+    renderTabs(); renderGrid();
+    return;
+  }
+
+  S.loading = true;
+  showState('⏳','讀取中…','');
+  try{
+    const res = await api('list_assets', { brandId:S.brandId, limit:300 });
+    if(!res || !res.ok){
+      S.items = []; S.counts = {}; renderTabs();
+      showState('⚠️','讀取失敗','請稍後再試一次');
+      return;
+    }
+    S.items  = res.items || [];
+    S.counts = res.counts || {};
+    CACHE[S.brandId] = { items: S.items, counts: S.counts };
+    try{ localStorage.setItem(LAST_KEY, S.brandId); }catch(e){}
+    renderTabs();
+    renderGrid();
+  }catch(e){
+    showState('⚠️','讀取失敗','請稍後再試一次');
+  }finally{
+    S.loading = false;
+  }
+}
+
+function groupCount(g){
+  return g.cats.reduce(function(n,c){ return n + (S.counts[c]||0); }, 0);
+}
+function kolNames(){
+  const seen = {}, face = {}, out = [];
+  S.items.forEach(function(x){
+    if(x.category !== 'KOL' || !x.kol_name) return;
+    if(!seen[x.kol_name]){ seen[x.kol_name] = 0; out.push(x.kol_name); }
+    seen[x.kol_name]++;
+    // 頭像優先挑正臉,挑不到就用第一張
+    if(!face[x.kol_name] || /front|正臉/i.test(String(x.name||''))) face[x.kol_name] = x.url;
+  });
+  return out.map(function(n){ return { name:n, n:seen[n], face:face[n] }; });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   籤:一排排完,靠分隔線分組(v1.9)
+   為什麼不做資料夾樹:樹狀是「檔案總管」思維 —— 要先知道東西放哪
+     才找得到。但客戶打開素材庫想的是「上次那支海苔影片呢」,
+     他要的是「看到」不是「導航」。而且樹在手機上會吃掉半個螢幕。
+   → 分類一排看完、搜尋當主力、KOL 用頭像切換。
+   ═══════════════════════════════════════════════════════════════ */
+function renderTabs(){
+  const total = S.items.length;
+  let html = '<button class="tab'+(S.cat==='all'?' on':'')+'" data-c="all">全部<span class="n">'+total+'</span></button>';
+
+  GROUPS.forEach(function(g){
+    const cats = g.cats.filter(function(c){ return (S.counts[c]||0) > 0; });
+    if(!cats.length) return;
+    html += '<div class="tsep"></div>';
+    const gd = (g.key === 'ai') ? ' gold' : '';
+    html += cats.map(function(c){
+      // ⚠️ 2026-08-22:拿掉「└」那個層級符號。
+      //   那是開發期間標示從屬關係用的記號,不是給客戶看的東西。
+      //   縮排(sub 這個 class)保留 —— 視覺上的從屬夠了,不必再畫線。
+      const sub = SUB_OF[c] ? ' sub' : '';
+      return '<button class="tab'+gd+sub+(S.cat===c?' on':'')+'" data-c="'+esc(c)+'">'
+        + esc(c) + '<span class="n">' + (S.counts[c]||0) + '</span></button>';
+    }).join('');
+  });
+
+  // KOL 頭像列:選到 KOL 才出現,用臉切換比文字直覺
+  let kb = '';
+  if(S.cat === 'KOL'){
+    const ks = kolNames();
+    if(ks.length > 1){
+      kb = '<div class="kolbar"><div class="kolchip'+(S.kol==='all'?' on':'')+'" data-k="all">'
+         + '<span class="ini">全</span>全部</div>'
+         + ks.map(function(k){
+             const face = k.face
+               ? '<img src="'+esc(thumbUrl(k.face,80))+'" alt="">'
+               : '<span class="ini">'+esc(k.name.slice(0,1))+'</span>';
+             return '<div class="kolchip'+(S.kol===k.name?' on':'')+'" data-k="'+esc(k.name)+'">'
+               + face + esc(k.name) + '<span class="n">'+k.n+'</span></div>';
+           }).join('') + '</div>';
+    }
+  }
+
+  $('tabs').innerHTML = html + kb;
+
+  Array.prototype.forEach.call($('tabs').querySelectorAll('.tab'), function(b){
+    b.onclick = function(){ S.cat = b.dataset.c; S.kol = 'all'; renderTabs(); applyFilter(); };
+  });
+  Array.prototype.forEach.call($('tabs').querySelectorAll('.kolchip'), function(b){
+    b.onclick = function(){ S.kol = b.dataset.k; renderTabs(); applyFilter(); };
+  });
+}
+
+// 切分類籤 → 只改顯示/隱藏,圖片元素留著不動 = 不會重新請求
+function applyFilter(){
+  const cards = $('body').querySelectorAll('.card');
+  if(!cards.length){ renderGrid(); return; }
+  const kw = (S.q || '').trim().toLowerCase();
+  let shown = 0;
+  Array.prototype.forEach.call(cards, function(c){
+    let ok = true;
+    if(S.cat !== 'all') ok = (c.dataset.cat === S.cat);
+    if(ok && S.kol !== 'all') ok = (c.dataset.kol === S.kol);
+    if(ok && kw) ok = (c.dataset.s || '').indexOf(kw) !== -1;
+    c.style.display = ok ? '' : 'none';
+    if(ok) shown++;
+  });
+  if(!shown){
+    $('body').innerHTML = '<div class="state"><div class="big">📭</div><div>這個分類還沒有東西</div></div>';
+  }
+}
+
+function renderGrid(){
+  const list = S.items;
+  if(!list.length){
+    showState('📭','這裡還沒有東西','生成的影片和廣告圖會自動出現在這裡');
+    return;
+  }
+  $('body').innerHTML = '<div class="grid">' + list.map(function(it,i){
+    const vid = isVideo(it.url);
+    const nm  = it.name || (vid ? '影片' : '圖片');
+    const th  = vid
+      ? '<video src="'+esc(it.url)+'#t=0.5" preload="metadata" muted playsinline></video><div class="play">▶</div>'
+      : '<img src="'+esc(thumbUrl(it.url,400))+'" loading="lazy" decoding="async" alt="">';
+    const isAI = GROUPS[1].cats.indexOf(it.category) !== -1;   // 成品 → 金框金標
+    const sidx = ((it.name||'')+' '+(it.category||'')+' '+(it.kol_name||'')+' '+fmtDate(it.ts)).toLowerCase();
+    return '<div class="card'+(isAI?' gold':'')+'" data-i="'+i+'" data-cat="'+esc(it.category||'')+'" data-kol="'+esc(it.kol_name||'')+'" data-s="'+esc(sidx)+'">'
+      +   '<div class="thumb">'+th+'<div class="badge'+(isAI?' gold':'')+'">'+esc(it.category||'')+'</div></div>'
+      +   '<div class="meta"><div class="nm">'+esc(nm)+'</div><div class="dt">'+fmtDate(it.ts)+'</div></div>'
+      + '</div>';
+  }).join('') + '</div>';
+
+  Array.prototype.forEach.call($('body').querySelectorAll('.card'), function(c){
+    c.onclick = function(){ openLb(list[Number(c.dataset.i)]); };
+  });
+  if(S.cat !== 'all' || S.kol !== 'all' || S.q) applyFilter();
+}
+
+function showState(icon, title, sub){
+  $('body').innerHTML =
+    '<div class="state"><div class="big">'+icon+'</div><div>'+esc(title)+'</div>'
+    + (sub ? '<div class="sub">'+esc(sub)+'</div>' : '') + '</div>';
+}
+
+/* 🗂 2026-08-22 改分類 —— 傳錯了要能自己救。
+   沒有這顆的話,每個傳錯的客戶都得回頭來問,只能由人工進資料庫改。
+   ⚠️ 只有「我的素材」那四類能改;AI 生成的成品不給動 ——
+     讓成品被搬進素材類,只會讓兩邊都錯亂。 */
+const MY_CATS = ['照片素材','商品/服務照','場景素材','LOGO','KOL'];
+
+function openLb(it){
+  if(!it) return;
+  const vid = isVideo(it.url);
+  // 只有客戶自己上傳的(id 前綴 u)且屬於「我的素材」四類才給改。
+  //   系統生成的成品(前綴 g)住在生成登記簿,不是 assets,改了也無處可寫。
+  const canRecat = MY_CATS.indexOf(it.category) !== -1 && /^u/.test(String(it.id || ''));
+  $('lbIn').innerHTML =
+    (vid ? '<video src="'+esc(it.url)+'" controls autoplay playsinline></video>'
+         : '<img src="'+esc(thumbUrl(it.url,1400))+'" alt="">')
+    + '<div class="lb-bar">'
+    +   (canRecat ? '<button class="nav-btn" id="lbRecat">🗂 改分類(目前:'+esc(it.category)+')</button>' : '')
+    +   '<a class="dl" href="'+esc(it.url)+'" download target="_blank" rel="noopener">下載</a>'
+    + '</div>';
+  $('lb').classList.add('on');
+  if(canRecat) $('lbRecat').onclick = function(ev){ ev.stopPropagation(); _askRecat(it); };
+}
+
+/* 🗂 改分類:直接在原地換一列下拉選單,選了就存。
+   ⚠️ 不要用 prompt 叫客戶「輸入 1-4」—— 那是把選單退化成打字,
+     客戶要先讀完清單、記住編號、再打字,三個動作換一次分類。
+     有選單就給選單。 */
+function _askRecat(it){
+  const bar = document.querySelector('#lbIn .lb-bar');
+  if(!bar) return;
+  const opts = MY_CATS.map(function(c){
+    return '<option value="'+esc(c)+'"'+(c===it.category?' selected':'')+'>'+esc(c)+'</option>';
+  }).join('');
+  bar.innerHTML =
+      '<span style="font-size:13px;color:var(--text-mid)">改到</span>'
+    + '<select class="sel" id="rcCat" style="min-width:140px">'+opts+'</select>'
+    + '<input class="sel" id="rcKol" style="min-width:140px;display:none" placeholder="這是誰的照片?" value="'+esc(it.kol_name||'')+'">'
+    + '<button class="up-btn" id="rcGo">儲存</button>'
+    + '<button class="nav-btn" id="rcCancel">取消</button>';
+
+  const sel = $('rcCat'), kolIn = $('rcKol');
+  function syncKol(){ kolIn.style.display = (sel.value === 'KOL') ? '' : 'none'; }
+  syncKol();
+  sel.onchange   = syncKol;
+  sel.onclick    = function(ev){ ev.stopPropagation(); };
+  kolIn.onclick  = function(ev){ ev.stopPropagation(); };
+  $('rcCancel').onclick = function(ev){ ev.stopPropagation(); openLb(it); };
+  $('rcGo').onclick     = function(ev){ ev.stopPropagation(); _doRecat(it, sel.value, kolIn.value.trim()); };
+}
+
+async function _doRecat(it, cat, kol){
+  if(cat === it.category && (cat !== 'KOL' || kol === (it.kol_name||''))){ openLb(it); return; }
+  if(cat === 'KOL' && !kol){ alert('KOL 分類要填名字'); return; }
+  const btn = $('rcGo');
+  if(btn){ btn.disabled = true; btn.textContent = '儲存中…'; }
+  try{
+    // ⚠️ 素材 id 帶來源前綴:'u42' = 客戶上傳、'g7' = 系統生成(見 list_assets)。
+    //   送給後端前要把前綴剝掉,否則它拿到 'u42' 會解析成 NaN → 「缺少 assetId」。
+    const _rawId = String(it.id || '').replace(/^u/, '');
+    const r = await api('asset_recat', { assetId: _rawId, category: cat, kolName: kol });
+    if(r && r.ok){
+      closeLb();
+      await loadAssets(true);                 // 強制重抓,牆上立刻更新
+    } else {
+      alert('改分類失敗:' + ((r && r.error) || '未知錯誤'));
+      if(btn){ btn.disabled = false; btn.textContent = '儲存'; }
+    }
+  }catch(e){
+    alert('改分類失敗:' + e.message);
+    if(btn){ btn.disabled = false; btn.textContent = '儲存'; }
+  }
+}
+
+function closeLb(){
+  $('lb').classList.remove('on');
+  $('lbIn').innerHTML = '';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ⬆️ 上傳(v1.7)—— 切斷 Google 雲端的第一刀
+   以前東西只能從 Google 雲端進來,所以 Drive 永遠拆不掉。
+   現在檔案直接進自家倉庫,傳完立刻出現在牆上。
+   ⚠️ 一張一張送,不併發 —— 併發會讓 Worker 同時吃好幾個檔,
+     反而容易逾時;而且一張一張才能逐筆回報成敗。
+   ═══════════════════════════════════════════════════════════════ */
+const upFile = document.createElement('input');
+upFile.type = 'file'; upFile.accept = 'image/*'; upFile.multiple = true;
+document.body.appendChild(upFile);
+upFile.style.display = 'none';
+
+/* 🛡️ 2026-08-22 兩段式上傳(修「傳錯分類」)
+   病灶:自然的動作是「先選檔案 → 再想放哪」,但介面要求「先選分類 → 再選檔案」,
+     而且選完檔案就立刻開始傳 —— 客戶還沒想到分類,預設值就已經默默生效了。
+     (現場:RA 自己第一次用就把 Logo 傳進了「照片素材」。)
+   ★ 這不是客戶粗心,是介面把「預設值」當成了「客戶的決定」。
+   ★ 修法:選完檔案先停下來,把分類和檔案一起攤在眼前,按了才傳。
+     而且按鈕上直接寫目的地 —— 客戶不用回頭去看選單選了什麼。
+   ⚠️ 不是加一行提示叫客戶「記得選分類」—— 提示要看、要懂、要照做,三關都可能失敗。 */
+let _pending = null;
+
+$('upToggle').onclick = function(){ $('upPanel').classList.toggle('on'); };
+
+/* 🩹 v2.4(2026-08-24)接住 ?upload=1&cat=XXX 直達上傳
+   病灶(RA 現場提出「那邊也要直接有鈕可以＋新增」時查到):
+     kol.html 的「＋ 上傳場景素材」(scnGoUpload)早就在送
+       /library?upload=1&cat=場景素材
+     但【library.html 從來沒有讀這兩個參數】——
+     按下去只是開了素材庫首頁,上傳面板沒展開、分類也沒預填,
+     客戶還是要自己找「上傳」、自己選對分類 = 那顆按鈕等於白做。
+   ★ 這是「兩邊各寫一套」的變形:送的人以為對方會接,接的人根本不知道。
+   ★ 現在補上,商品照那顆新按鈕(goUploadProducts)也一起受惠。 */
+(function(){
+  try{
+    const q = new URLSearchParams(location.search);
+    if (q.get('upload') !== '1') return;
+    $('upPanel').classList.add('on');                    // 展開上傳面板
+    const cat = q.get('cat');
+    if (cat) {
+      const sel = $('upCat');
+      // 值必須真的存在於選單裡才設,免得選到空白
+      if (sel && Array.from(sel.options).some(o => o.value === cat)) sel.value = cat;
+    }
+    // 捲到上傳面板,客戶一眼看到要做什麼
+    setTimeout(function(){ try{ $('upPanel').scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){} }, 120);
+  }catch(e){}
+})();
 $('upPick').onclick   = function(){ upFile.click(); };
 $('upCat').onchange   = function(){
   $('upKol').style.display = (this.value === 'KOL') ? '' : 'none';
