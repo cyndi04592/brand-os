@@ -3277,8 +3277,38 @@ async function loadBrands() {
     S.products = res.data?.products || [];  // v5.7: 一次載入產品
     S.folders = res.data?.folders || [];    // 🆕 v5.15: 載入 folders 表(商品照 productFolderId 用)
     const sel = document.getElementById('brand-switcher');
-    sel.innerHTML = '<option value="">— 請先選擇品牌 —</option>' +
-      S.brands.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)}</option>`).join('');
+    // 🩹 2026-08-23:授權為空時【要說是哪個帳號】,不要安靜地空著。
+    //   病灶(黃凱翊實測):他登入後品牌下拉只有「請先選擇品牌」,
+    //     素材庫顯示「找不到品牌」——【畫面完全沒說是哪個帳號沒授權】,
+    //     結果是:員工不知道自己登錯帳號、RA 也查不出原因,只能一路挖到資料庫。
+    //     (查證結果:白名單 ln715333@gmail.com 的 11 個品牌 id 完全正確,
+    //      所以問題必定是「他登入的是另一個帳號」。)
+    //   ★ 把實際使用的帳號印在畫面上 —— 既修體驗,也永久當診斷工具:
+    //     以後同類問題,客戶截一張圖就知道原因,不用再進資料庫查。
+    if (!S.brands.length) {
+      sel.innerHTML = '<option value="">此帳號尚未開通品牌</option>';
+      const _acct = escapeHtml(email);
+      const _hint = document.getElementById('brand-empty-hint');
+      const _html = '目前登入的帳號是 <b style="color:var(--accent)">' + _acct + '</b>,'
+        + '這個帳號還沒有被授權任何品牌。<br>'
+        + '如果這不是你平常用的帳號,請按右上角登出後,改用正確的帳號重新登入。';
+      if (_hint) { _hint.innerHTML = _html; _hint.style.display = ''; }
+      else {
+        const box = document.createElement('div');
+        box.id = 'brand-empty-hint';
+        box.style.cssText = 'margin:10px 0;padding:11px 13px;border-radius:10px;line-height:1.75;'
+          + 'background:rgba(255,157,77,.10);border:1px solid rgba(255,157,77,.42);'
+          + 'color:var(--text);font-size:12.5px;';
+        box.innerHTML = _html;
+        sel.parentNode?.insertBefore(box, sel.nextSibling);
+      }
+      console.log('[品牌] 此帳號未開通任何品牌 ·', email);
+    } else {
+      const _hint = document.getElementById('brand-empty-hint');
+      if (_hint) _hint.style.display = 'none';   // 換到有授權的帳號 → 提示要收掉
+      sel.innerHTML = '<option value="">— 請先選擇品牌 —</option>' +
+        S.brands.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)}</option>`).join('');
+    }
 
     const lastBrand = localStorage.getItem('kol_last_brand');
     if (lastBrand && S.brands.find(b => b.id === lastBrand)) {
