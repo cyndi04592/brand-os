@@ -1628,7 +1628,11 @@ document.addEventListener('DOMContentLoaded', function(){
             <optgroup label="台灣女裝">
               <option value="mallothi">Mallothi 法式復古</option>
               <option value="pazzo">PAZZO 好感日韓</option>
-              <option value="caco">CACO 日常休閒</option>
+              <!-- 🩹 v7.32:標籤不再寫「CACO」——
+                   那個品牌的識別靠授權 IP(迪士尼/三麗鷗/蠟筆小新),我們不能生;
+                   實際送出的描述已改成「台系日常 · 素色無印花」(kol-wardrobe v5.20)。
+                   標籤跟著改,才不會讓客戶以為選了就會生出 CACO 的聯名 T。 -->
+              <option value="caco">台系日常 · 素色休閒</option>
             </optgroup>
             <optgroup label="精品">
               <option value="lv">Louis Vuitton 精品優雅</option>
@@ -4104,10 +4108,31 @@ function renderSelectedKolBanner(g) {
   document.getElementById('selected-kol-banner').innerHTML = html;
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  🩹 v7.33(2026-08-24)切換頓挫的【第二層】
+//   v7.29 修掉 syncKolListToCine 的整棵重建後,RA 回報「快了約 10%,
+//   但還是有頓挫感」—— 代表方向對、但還有別的成本沒清掉。
+//   這一支同樣做了【三次 innerHTML 複製】,而且圖更大:
+//     ① KOL 橫幅  ② 造型 Look 網格(每張都是大圖) ③ 提示文字
+//   Look 網格最貴 —— 琉宇的米禾/橘子各有 4 Looks,
+//   複製後每張圖都要重新建立元素、重新解碼。
+//   ★ 同樣用「內容沒變就跳過」:切來切去的常態成本直接歸零。
+//   ★ Look 網格還多一步 querySelectorAll + remove(濾掉 HeyGen look),
+//     跳過複製也連帶跳過那次全樹掃描。
+// ═══════════════════════════════════════════════════════════════
+function _syncHtmlIfChanged(src, dest) {
+  if (!src || !dest) return false;
+  const h = src.innerHTML;
+  if (dest.dataset.syncHash === String(h.length) && dest.childElementCount) return false;
+  dest.innerHTML = h;
+  dest.dataset.syncHash = String(h.length);
+  return true;   // 真的有重建 → 呼叫端才需要做後續處理
+}
+
 function syncSelectedKolToCine() {
   const src = document.getElementById('selected-kol-banner');
   const dest = document.getElementById('selected-kol-banner-cine');
-  if (src && dest) dest.innerHTML = src.innerHTML;
+  _syncHtmlIfChanged(src, dest);
 
   // Look picker 同步
   const srcPicker = document.getElementById('look-picker');
@@ -4119,7 +4144,8 @@ function syncSelectedKolToCine() {
     const srcHint = document.getElementById('look-picker-hint');
     const destHint = document.getElementById('look-picker-hint-cine');
     if (srcGrid && destGrid) {
-      destGrid.innerHTML = srcGrid.innerHTML;
+      const _rebuilt = _syncHtmlIfChanged(srcGrid, destGrid);
+      if (!_rebuilt) { /* 內容沒變 → 連下面的濾除掃描都不用跑 */ } else {
       // 🆕 STEP2(電影鏡頭)只保留「Drive 多角度」卡,濾掉 HeyGen Avatar Group 的 look。
       //    原因:電影鏡頭走 Seedance/PiAPI,吃的是 Drive 乾淨原圖(resolveKolImageUrl→R2),
       //    HeyGen 那幾張是 WEBP 髒圖、這條路根本不會用到 → 顯示出來只會誤導
@@ -4135,6 +4161,7 @@ function syncSelectedKolToCine() {
       if (destHint) destHint.textContent = _angleCount
         ? '多角度 · 生影片時自動依鏡頭使用(來自 Drive)'
         : '';
+      }   // ← v7.33:對應上面的 else {(只有真的重建才跑濾除與重算)
     }
     if (srcHint && destHint && !destGrid) destHint.textContent = srcHint.textContent;
     destGrid.removeEventListener('click', handleLookClick);
