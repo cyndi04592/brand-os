@@ -3092,11 +3092,29 @@ function switchMode(mode) {
   };
   document.getElementById('page-subtitle').textContent = subtitles[mode];
 
-  // 電影鏡頭模式:同步 KOL 清單和選定的 KOL 到 cine 版面
+  // ═══════════════════════════════════════════════════════════════
+  //  🩹 v7.26(2026-08-24)切到 STEP2 會頓一下(RA 在琉宇實測,那品牌圖最多)
+  //   病灶:切過去的【同一個瞬間】同步做了四件重活 ——
+  //     ① syncKolListToCine   重畫整份 KOL 清單
+  //     ② syncSelectedKolToCine 重畫選定的 KOL
+  //     ③ renderSceneLibrary  撈 + 畫場景素材
+  //     ④ loadDriveProducts   撈 + 畫商品照(琉宇 8 張)
+  //   四件全擠在一幀裡,瀏覽器來不及畫下一幀 → 使用者感覺到那一下卡。
+  //   (縮圖已改走 /cdn-cgi/image,下載變快了,但「同時解碼一堆圖 + 同時重畫兩份清單」還在。)
+  //   ★ 修法:版面切換先完成、讓畫面立刻有反應,重活丟到下一幀再做。
+  //     requestAnimationFrame → 瀏覽器畫完這一幀才跑,體感上「切過去就到了」。
+  //   ★ 只改執行時機,不改任何一支函式的內容與順序。
+  // ═══════════════════════════════════════════════════════════════
   if (mode === 'cinematic' && hasBrand) {
-    syncKolListToCine();
-    syncSelectedKolToCine();
-    try { renderSceneLibrary('s2'); } catch (e) {}   // 🆕 v7.7
+    const _defer = (fn) => {
+      try {
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => { try { fn(); } catch (e) {} });
+        else setTimeout(() => { try { fn(); } catch (e) {} }, 0);
+      } catch (e) { try { fn(); } catch (e2) {} }
+    };
+    _defer(() => syncKolListToCine());
+    _defer(() => syncSelectedKolToCine());
+    _defer(() => renderSceneLibrary('s2'));
     // 🩹 v7.11:進 STEP2 就主動載商品照。
     //   病灶:HTML 預設 active 是「從素材庫選」,但真正去抓資料的是
     //   switchRefTab('drive') —— 那要客戶【手動點一下分頁】才會跑。
@@ -3105,12 +3123,15 @@ function switchMode(mode) {
     //   畫面就停在「素材庫選 🔒 + 停在貼網址」的舊狀態。
     //   ★ 教訓:把某個分頁設成預設 active,一定要同時觸發它的載入,
     //     否則「看起來被選中」和「真的被選中」是兩件事。
-    try { if (document.getElementById('drive-product-gallery-wrap')) loadDriveProducts(); } catch (e) {}
+    _defer(() => { if (document.getElementById('drive-product-gallery-wrap')) loadDriveProducts(); });
   }
 
-  // v5.7: 經營系統模式
+  // v5.7: 經營系統模式(🩹 v7.26:同理,重活延到下一幀 —— STEP3 的企劃卡也不輕)
   if (mode === 'system') {
-    renderSystemTab();
+    try {
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => { try { renderSystemTab(); } catch (e) {} });
+      else setTimeout(() => { try { renderSystemTab(); } catch (e) {} }, 0);
+    } catch (e) { renderSystemTab(); }
   }
 
   // 🆕 v7.0:底部確認列只屬於 STEP1。
