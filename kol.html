@@ -3668,23 +3668,17 @@ async function loadKolList(brandId, force) {
   S._kolListCache = S._kolListCache || {};
   let groupsData = (!force && S._kolListCache[brandId]) ? S._kolListCache[brandId] : null;
   if (!groupsData) {
-    groupsData = await Promise.all(
-      boundPersonas.map(async p => {
-        try {
-          const res = await api('heygen_list_group_avatars', { group_id: p.talking_photo_id });
-          const avatars = res.avatars || [];
-          const firstLook = avatars[0];
-          return {
-            persona: p,
-            image_url: firstLook?.image_url || '',
-            look_count: avatars.length,
-            looks: avatars,
-          };
-        } catch (e) {
-          return { persona: p, image_url: '', look_count: 0, looks: [] };
-        }
-      })
-    );
+    // 🎭 2026-08-24:改讀素材庫(原本每個 KOL 各打一次 HeyGen,N 個人 = N 趟網路)
+    //   現在整個品牌只打一次 listKolPhotos → 人越多省越多。
+    //   look_count: 0 → 卡片上那個誤導的「4 Looks」標籤自動消失
+    //   (那 4 張其實是 base + 三個角度,不是四套造型;衣服由服裝參考圖決定,不歸這裡管)
+    await _ensureKolPhotos(brandId);
+    groupsData = boundPersonas.map(p => ({
+      persona: p,
+      image_url: _kolFrontFromLibrary(p.persona_name),
+      look_count: 0,
+      looks: [],
+    }));
     if (S.currentBrandId !== brandId) return;  // 🆕 #2: 使用者已切走 → 放棄,別蓋掉新品牌
     S._kolListCache[brandId] = groupsData;  // 🆕 A: 每品牌快取 → 切回不重打 HeyGen,秒出
   }
@@ -4283,7 +4277,7 @@ function renderLookPicker() {
   const _hideFront = (_looksN >= 1);
   const anglesHtml = _angles.map(({ ph, label }) => `
       <div class="look-item ${label === '正臉' ? 'angle-front' : ''}" style="border:1px dashed #6c4cf0;cursor:default;opacity:.9;${(_hideAllAngles || (label === '正臉' && _hideFront)) ? 'display:none;' : ''}" title="生影片時依鏡頭角度自動使用(來自 Drive)">
-        <img src="${escapeHtml(ph.thumbnail_url)}" alt="${escapeHtml(ph.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder></div>'">
+        <img src="${escapeHtml(_thumb(ph.thumbnail_url, 200))}" loading="lazy" decoding="async" alt="${escapeHtml(ph.name || '')}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=look-placeholder></div>'">
         <div class="look-tag">${label}</div>
       </div>
     `).join('');
@@ -6816,6 +6810,43 @@ const _stitchProgress = (function () {
 //    任何一步失敗都自動退回原本的 HeyGen 圖,不會讓生成壞掉。全自動、零人工。
 //    🆕 加 localStorage 持久快取:同一個 KOL 算過一次 → 之後免 GAS、免 Worker、刷新也秒回。
 window._kolCleanCache = window._kolCleanCache || {};
+// ═══════════════════════════════════════════════════════════════
+//  🎭 2026-08-24 HeyGen 退場 · KOL 照片一律讀自家素材庫
+//   RA 決策:「heygen 確定不用了,以後都用自家素材庫」。
+//   ★ 為什麼拔得掉:talking_photo_id 只是 D1 裡的一串文字,HeyGen 停用也不會消失,
+//     系統照樣認得每個 KOL —— 真正會失效的只有 files2.heygen.ai 開頭的【圖片網址】。
+//     所以把圖換掉,HeyGen 就完全退場,不必動那 37 個用到 talking_photo_id 的地方。
+//   ★ 為什麼不會少東西:實測比對過,HeyGen 那 4 個「Look」就是素材庫這 4 張的副本
+//     (base + sheet_front / sheet_q34 / sheet_profile),名字全叫角色名,沒有獨有內容。
+//   ★ 生成流程本來就不吃 HeyGen:resolveKolImageUrl 一律優先用素材庫的 R2 原圖,
+//     HeyGen 那張只是 fallback,而且是髒 WEBP(餵引擎會生烤肉架紋路)。
+// ═══════════════════════════════════════════════════════════════
+async function _ensureKolPhotos(brandId) {
+  const bid = brandId || S.currentBrandId;
+  if (S.drivePhotos && S._drivePhotosBrand === bid) return S.drivePhotos;   // 同品牌已載過 → 不重打
+  try {
+    const r = await gasGet('listKolPhotos', { brandId: bid });
+    if (r && r.ok) { S.drivePhotos = r; S._drivePhotosBrand = bid; }
+  } catch (e) { console.warn('[KOL照片] 素材庫讀取失敗', e); }
+  return S.drivePhotos;
+}
+
+// 取這位 KOL 的「正臉」當卡片頭像。
+// ⚠️ 名字要正規化再比對(去 emoji / 空白)—— 對不上的後果是頭像空白且完全不報錯。
+function _kolFrontFromLibrary(personaName) {
+  try {
+    const _norm = s => (s || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim();
+    const _pn = _norm(personaName);
+    const p = (S.drivePhotos?.personas || []).find(x => _norm(x.persona_name) === _pn);
+    if (!p) return '';
+    const procs = p.processed_photos || [];
+    const front = (typeof pickAnglePhoto === 'function' ? pickAnglePhoto(procs, 'front') : null)
+               || procs.find(x => /(^|_)sheet_front|正臉/i.test(x.name || ''))
+               || procs[0] || (p.photos || [])[0];
+    return front?.url || front?.thumbnail_url || '';
+  } catch (e) { return ''; }
+}
+
 async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
   const _ang = (angle === 'profile' || angle === 'q34') ? angle : 'front';   // 🆕 角度
   // 🆕 名字正規化:去掉 emoji 前綴(例「又晴」)+前後空白,避免精準比對失敗退 HeyGen
@@ -7443,22 +7474,19 @@ async function ensureKolCache() {
   );
   if (toLoad.length === 0) return;
 
-  await Promise.all(toLoad.map(async p => {
-    try {
-      const res = await api('heygen_list_group_avatars', { group_id: p.talking_photo_id });
-      const avatars = res.avatars || [];
-      const firstLook = avatars[0];
-      window._kolCache[p.talking_photo_id] = {
-        id: p.talking_photo_id,
-        name: p.persona_name,
-        image_url: firstLook?.image_url || '',
-        talking_photo_id: p.talking_photo_id,
-        persona: p,
-        look_count: avatars.length,
-        looks: avatars,
-      };
-    } catch (_) {}
-  }));
+  // 🎭 2026-08-24:同 loadKolList,改讀素材庫,整批只打一次
+  await _ensureKolPhotos(S.currentBrandId);
+  toLoad.forEach(p => {
+    window._kolCache[p.talking_photo_id] = {
+      id: p.talking_photo_id,
+      name: p.persona_name,
+      image_url: _kolFrontFromLibrary(p.persona_name),
+      talking_photo_id: p.talking_photo_id,
+      persona: p,
+      look_count: 0,
+      looks: [],
+    };
+  });
 
   // 載完再重畫(若使用者還在 Tab 3)
   if (S.currentMode === 'system') {
@@ -9033,9 +9061,12 @@ async function aiGeneratePersona() {
   let kolImageUrl = '';
   if (persona.talking_photo_id) {
     try {
-      const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
-      kolImageUrl = res?.avatars?.[0]?.image_url || '';
-      kolImageUrl = await resolveKolImageUrl(persona.persona_name, kolImageUrl);
+      // 🎭 2026-08-24:原本先打一趟 HeyGen 拿圖,再丟給 resolveKolImageUrl 當 fallback ——
+      //   但那支一律優先用素材庫的 R2 原圖,fallback 幾乎輪不到,等於白打一趟網路。
+      //   ⚠️ 行為變更:素材庫真的沒照片時,不再偷偷用 HeyGen 的髒 WEBP 頂替,
+      //     而是明確失敗(下面的 if (!kolImageUrl) 會擋)。髒圖餵引擎會生烤肉架紋路,
+      //     與其出一支爛片,不如告訴客戶「這個 KOL 還沒有照片」。
+      kolImageUrl = await resolveKolImageUrl(persona.persona_name, '');
     } catch (_) {}
   }
 
@@ -9704,9 +9735,12 @@ async function runVideoGeneration(persona, product, sceneId, movementId, tone, s
   // 取 KOL 頭像 URL
   let kolImageUrl = '';
   try {
-    const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
-    kolImageUrl = res?.avatars?.[0]?.image_url || '';
-    kolImageUrl = await resolveKolImageUrl(persona.persona_name, kolImageUrl);
+    // 🎭 2026-08-24:原本先打一趟 HeyGen 拿圖,再丟給 resolveKolImageUrl 當 fallback ——
+    //   但那支一律優先用素材庫的 R2 原圖,fallback 幾乎輪不到,等於白打一趟網路。
+    //   ⚠️ 行為變更:素材庫真的沒照片時,不再偷偷用 HeyGen 的髒 WEBP 頂替,
+    //     而是明確失敗(下面的 if (!kolImageUrl) 會擋)。髒圖餵引擎會生烤肉架紋路,
+    //     與其出一支爛片,不如告訴客戶「這個 KOL 還沒有照片」。
+    kolImageUrl = await resolveKolImageUrl(persona.persona_name, '');
   } catch (_) {}
   if (!kolImageUrl) {
     toast('無法取得 KOL 肖像 URL', 'error');
@@ -9818,9 +9852,12 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
 
   let kolImageUrl = '';
   try {
-    const res = await api('heygen_list_group_avatars', { group_id: persona.talking_photo_id });
-    kolImageUrl = res?.avatars?.[0]?.image_url || '';
-    kolImageUrl = await resolveKolImageUrl(persona.persona_name, kolImageUrl);
+    // 🎭 2026-08-24:原本先打一趟 HeyGen 拿圖,再丟給 resolveKolImageUrl 當 fallback ——
+    //   但那支一律優先用素材庫的 R2 原圖,fallback 幾乎輪不到,等於白打一趟網路。
+    //   ⚠️ 行為變更:素材庫真的沒照片時,不再偷偷用 HeyGen 的髒 WEBP 頂替,
+    //     而是明確失敗(下面的 if (!kolImageUrl) 會擋)。髒圖餵引擎會生烤肉架紋路,
+    //     與其出一支爛片,不如告訴客戶「這個 KOL 還沒有照片」。
+    kolImageUrl = await resolveKolImageUrl(persona.persona_name, '');
   } catch (_) {}
   if (!kolImageUrl) {
     toast('無法取得 KOL 肖像 URL', 'error');
