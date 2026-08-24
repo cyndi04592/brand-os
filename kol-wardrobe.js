@@ -103,17 +103,20 @@
     //   (它也有 Hello Kitty / Disney 聯名,但那不是主力,所以不提圖案。)
     pazzo:     { base: 'PAZZO Taiwanese good-life womenswear, signature body-shaping high-waist trousers with leg-lengthening cut, soft cloud-cotton jersey, flattering slim silhouette, plain refined colours',
                  casual: 'PAZZO soft cotton top and body-shaping slim trousers', refined: 'PAZZO flattering waist-defined dress' },
-    //  ⚠️ CACO 是【唯一刻意不寫品牌名】的一條 —— 而且明確禁印花。
-    //   RA 實測:寫 'CACO … cute graphic print tops' → 模型不認識這個台灣品牌,
-    //     就把「CACO」四個字直接印在 T 恤上,再亂編一隻兔子插畫。那不是穿搭,是亂畫。
-    //   查官網才發現根因:CACO 的定位是「最大聯名服飾品牌」,
-    //     識別靠的是【授權 IP】—— 迪士尼、三麗鷗、蠟筆小新、海綿寶寶、玩具總動員…
-    //     ★ 那些 IP 我們【絕對不能生】:重製他人著作角色,
-    //       跟「穿 North Face 外套」完全不是同一個等級。
-    //   ★ 所以這條反過來處理:不給品牌名、不引導圖案、明確寫 no printed graphics,
-    //     只留它真正可畫的部分 —— 版型與定位(台系日常、修飾顯瘦、棉質)。
-    caco:      { base: 'Taiwanese everyday casual womenswear, relaxed slimming urban fit, soft cotton jersey, plain solid colours with no printed graphics and no cartoon characters',
-                 casual: 'plain cotton tee and easy casual bottoms', refined: 'clean solid-colour casual layered look' },
+    //  🩹 v5.22(2026-08-24)CACO 改寫 —— 我先前【只看首頁就下結論】,錯了。
+    //   ❌ 第一版:寫 'CACO … cute graphic print tops' → 模型不認識這個台灣品牌,
+    //      把「CACO」四個字直接印在 T 恤上再亂編一隻兔子。
+    //   ❌ 第二版:查首頁看到「最大聯名服飾品牌」(迪士尼/三麗鷗/蠟筆小新),
+    //      判定它靠授權 IP → 拿掉品牌名 + 禁印花 → 結果生出來跟 GU 沒兩樣(RA 實測)。
+    //   ✅ 真相(RA 提供 NAVY 分類頁才看到):CACO 有【自有品牌 NAVY】,
+    //      識別是「鯊魚」—— 骷髏鯊魚三防短T / 鯊魚胸圖 / 美式小鯊魚 / 鯊魚織章長襯衫,
+    //      系列是海軍鯊魚、戶外衝浪、城市運動、山系野營、素面基礎款,
+    //      材質主打三防面料 / 空氣棉 / 薄荷棉,價位 NT$600–1300 平價機能。
+    //   ★ 鯊魚是【自家原創標記】不是授權角色 —— 與 HUMAN MADE 的鴨子同類,可以寫。
+    //   ★ 教訓:判斷一個品牌「靠什麼識別」不能只看首頁行銷語,
+    //     要看它的【自有品牌線】—— 聯名是流量,自有才是識別。
+    caco:      { base: 'CACO NAVY Taiwanese casual label, signature shark emblem chest graphic, nautical and surf-inspired casual styling, functional lightweight cotton tee, relaxed everyday urban fit',
+                 casual: 'CACO NAVY shark-graphic tee and easy casual bottoms', refined: 'CACO NAVY woven shark-patch overshirt layered over plain tee' },
 
     // ── 精品 ──────────────────────────────────────────────
     //  🩹 v5.21:LV 實測(RA 生的服裝參考圖)—— 寫 monogram 完全沒出現,
@@ -403,5 +406,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.21 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
+  console.log('[KolWardrobe] 👗 v5.22 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
