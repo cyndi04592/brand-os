@@ -1646,14 +1646,21 @@ document.addEventListener('DOMContentLoaded', function(){
               </div>
               <div class="story-arc-field">
                 <label>主推產品(自然帶入)</label>
+                <!-- ═══════════════════════════════════════════════════════
+                     🩹 v7.30(2026-08-24)清掉寫死的內衣選項(LACE&Z 時代殘留)
+                     為什麼不只是「死碼」:
+                       populateStoryArcProducts() 會用當前品牌的真商品覆蓋這裡,
+                       但它在 onBrandChange 裡、而且【排在 if (!brandId) return 之後】——
+                       沒選品牌(或載入失敗)時那行永遠跑不到,
+                       這六個內衣選項就成了畫面上實際顯示的東西。
+                     而它們的 value 是【英文提示詞】,不是商品名 ——
+                       海苔品牌的客戶誤選「蕾絲系列」,送出去的就是
+                       "lace lingerie set tastefully implied"。
+                     ★ 選項一律由 populateStoryArcProducts() 動態產生,
+                       HTML 只留一個中性預設,任何品牌看到都不會錯。
+                     ═══════════════════════════════════════════════════════ -->
                 <select class="form-select" id="story-arc-product" onchange="onStoryArcChange()">
-                  <option value="">— 不強調 —</option>
-                  <option value="comfortable wireless bra shown subtly through outfit">無鋼圈內衣</option>
-                  <option value="seamless strapless bra naturally worn">無肩帶內衣</option>
-                  <option value="soft lightweight panties hinted casually">內褲日常</option>
-                  <option value="cozy sleepwear worn at home">居家睡衣</option>
-                  <option value="supportive sports bra in everyday context">運動內衣</option>
-                  <option value="lace lingerie set tastefully implied">蕾絲系列</option>
+                  <option value="">— 不強調(用本週主推)—</option>
                 </select>
               </div>
             </div>
@@ -3495,7 +3502,10 @@ async function onBrandChange() {
     const prodSel = document.getElementById('story-arc-product');
     if (themeSel) themeSel.value = '';
     if (toneSel) toneSel.value = '';
-    if (prodSel) prodSel.value = '';
+    // 🩹 v7.30:連【選項本身】一起清掉,不只清選中值。
+    //   否則切品牌時會留著上一個品牌的商品清單 ——
+    //   海苔品牌的下拉裡出現內衣商品,就是這樣來的。
+    if (prodSel) { prodSel.innerHTML = '<option value="">— 不強調(用本週主推)—</option>'; prodSel.value = ''; }
   }
 
   if (!brandId) {
