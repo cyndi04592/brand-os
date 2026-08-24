@@ -3261,6 +3261,30 @@ function _cleanBrandText(b) {
   return b;
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  🔑 2026-08-23 解出「憑證裡的帳號」——這才是後端真正拿來查資料的身分
+//   病灶(黃凱翊實測):畫面顯示 ln715333@gmail.com(來自 localStorage
+//     的 bs_sso_email),白名單那筆也完全正確,但品牌就是空的。
+//     追下去發現 Worker 讀的是【token 裡的 email】,不是 localStorage:
+//       params.email = _who.email;   // 查誰的資料由證決定,不由請求決定
+//     兩者是各自獨立儲存的,會漂移 —— 例如先用 A 帳號登入(token 簽 A),
+//     之後某個流程只更新了 bs_sso_email 成 B,token 還是 A。
+//   ★ token 格式:v1.<base64url payload>.<簽章>,payload = {e:email,r:role,x:到期}
+//     只是要「讀」不需要密鑰(簽章是防竄改用的,不是加密)。
+//   ★ 解不出來就回空字串,絕不擋住任何流程。
+// ═══════════════════════════════════════════════════════════════
+function _tokenEmail() {
+  try {
+    const t = localStorage.getItem('bs_auth_token') || '';
+    const seg = t.split('.');
+    if (seg.length < 2) return '';
+    let b = seg[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    const o = JSON.parse(decodeURIComponent(escape(atob(b))));
+    return String(o.e || '');
+  } catch (e) { return ''; }
+}
+
 async function loadBrands() {
   try {
     const email = localStorage.getItem('bs_sso_email') || '';
@@ -3287,11 +3311,18 @@ async function loadBrands() {
     //     以後同類問題,客戶截一張圖就知道原因,不用再進資料庫查。
     if (!S.brands.length) {
       sel.innerHTML = '<option value="">此帳號尚未開通品牌</option>';
-      const _acct = escapeHtml(email);
+      const _tokEmail = _tokenEmail();
+      const _acct = escapeHtml(_tokEmail || email);
       const _hint = document.getElementById('brand-empty-hint');
-      const _html = '目前登入的帳號是 <b style="color:var(--accent)">' + _acct + '</b>,'
+      let _html = '系統實際用來查詢的帳號是 <b style="color:var(--accent)">' + _acct + '</b>,'
         + '這個帳號還沒有被授權任何品牌。<br>'
-        + '如果這不是你平常用的帳號,請按右上角登出後,改用正確的帳號重新登入。';
+        + '請按右上角<b>登出</b>後,改用正確的帳號重新登入。';
+      // ★ 憑證與畫面記錄的帳號不一致 → 一定要講出來,這是最難查的一種狀況
+      if (_tokEmail && email && _tokEmail.toLowerCase() !== String(email).toLowerCase()) {
+        _html += '<br><br><b style="color:#ff9d4d">⚠ 這台裝置上有兩個帳號的紀錄</b>:'
+          + '瀏覽器記著 <b>' + escapeHtml(email) + '</b>,但登入憑證是 <b>' + _acct + '</b>。'
+          + '<br>系統以<b>憑證</b>為準。請登出後重新登入一次,兩者就會一致。';
+      }
       if (_hint) { _hint.innerHTML = _html; _hint.style.display = ''; }
       else {
         const box = document.createElement('div');
