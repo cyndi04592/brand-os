@@ -365,8 +365,16 @@ async function loadBrands(){
     const list = (res && res.ok !== false && res.data && res.data.brands) ? res.data.brands : [];
     S.brands = list;
     if(!list.length){
-      sel.innerHTML = '<option value="">沒有可用品牌</option>';
-      showState('📁','找不到品牌','請聯絡我們協助開通');
+      // 🩹 2026-08-23:授權為空時【要說是哪個帳號】(與 kol.html 同一套處理)。
+      //   病灶:舊文案只說「找不到品牌,請聯絡我們協助開通」——
+      //     員工不知道自己可能登錯帳號,管理者也查不出原因。
+      //   ★ 把實際登入的帳號印出來,客戶截一張圖就能自己發現登錯帳號。
+      sel.innerHTML = '<option value="">此帳號尚未開通品牌</option>';
+      showState('📁','此帳號尚未開通品牌',
+        '目前登入的是 ' + esc(myEmail() || '(未取得帳號)')
+        + '。若這不是你平常用的帳號,請登出後改用正確帳號重新登入;'
+        + '確認帳號無誤請聯絡我們開通。');
+      try{ console.log('[素材庫] 此帳號未開通任何品牌 ·', myEmail()); }catch(e){}
       return;
     }
     sel.innerHTML = list.map(b => '<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>').join('');
