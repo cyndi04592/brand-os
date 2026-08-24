@@ -5201,12 +5201,41 @@ async function _fetchLibraryProducts() {
 }
 
 // STEP2 用的薄封裝:讀到就渲染並回 true,沒有就回 false 交給 Drive 舊路徑
+// ═══════════════════════════════════════════════════════════════
+//  🩹 v7.34(2026-08-24)切到 STEP2 頓挫的真兇
+//   關鍵線索(RA 提供):STEP1→STEP3【超快】,只有切到 STEP2 慢
+//   → 問題必定在 STEP2 專屬那段(它做四件事,STEP3 只做一件)。
+//
+//   ⚠️ 我第一次誤診成「商品照沒快取」—— 查了才發現
+//      _fetchLibraryProducts 本來就有 window._libProductsCache,
+//      快取命中時 0ms 就回來,根本沒打網路。
+//
+//   真兇是【無條件先清空】這一行:
+//       wrap.innerHTML = '⏳ 讀取中…';   ← 即使快取命中也照跑
+//       const files = await ...;          ← 0ms 就回來
+//       renderDriveProducts(files);       ← 整區重畫
+//     圖消失一瞬間 → 重畫 → 所有 <img> 都是新元素、要重新解碼
+//     = 你看到的「閃一下再卡一下」。運算不慢,是畫面被砍掉重建。
+//   ★ 修法:快取命中就【完全不動畫面】;
+//     上次就是畫這批 → 連重畫都跳過(切來切去的常態,成本歸零)。
+//   ★ 只有真的要打網路(第一次進這個品牌)才顯示「讀取中」。
+// ═══════════════════════════════════════════════════════════════
 async function _loadProductsFromLibrary(wrap) {
   try {
+    const ck = 'lib_products_' + S.currentBrandId;
+    const cached = window._libProductsCache && window._libProductsCache[ck];
+    if (cached) {
+      if (!cached.length) return false;
+      if (wrap && wrap.dataset.prodKey === ck + ':' + cached.length && wrap.childElementCount) return true;
+      renderDriveProducts(cached);
+      if (wrap) wrap.dataset.prodKey = ck + ':' + cached.length;
+      return true;
+    }
     if (wrap) wrap.innerHTML = '<div class="kol-empty" style="padding:28px 16px;font-size:12px"><span class="spin">⏳</span> 讀取素材庫商品照中…</div>';
     const files = await _fetchLibraryProducts();
     if (!files || !files.length) return false;
     renderDriveProducts(files);
+    if (wrap) wrap.dataset.prodKey = ck + ':' + files.length;
     return true;
   } catch (e) {
     console.warn('[REF] 素材庫商品照讀取失敗,退回 Drive', e);
@@ -5285,6 +5314,8 @@ async function loadDriveProducts() {
 }
 
 function reloadDriveProducts() {
+  // 🩹 v7.34:連「上次畫了什麼」的記號一起清,否則清了快取也不會重畫
+  { const _w = document.getElementById('drive-product-gallery-wrap'); if (_w) delete _w.dataset.prodKey; }
   const folderId = BRAND_PRODUCT_FOLDERS[S.currentBrandId];
   if (folderId && window._driveProductsCache) {
     delete window._driveProductsCache['drive_products_' + folderId];
