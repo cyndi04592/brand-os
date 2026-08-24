@@ -78,6 +78,8 @@ const S = {
 
 // ── 反 AI 美學 Prompt 配方庫 ─────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+//  🆕 v3.38(2026-08-23)版面主從修正:「建立新角色」提為主要動作(整排大按鈕),
+//     既有角色下拉降為「或者…」次要路徑;區塊標題改「AI 生成角色形象照」
 //  🆕 v3.37(2026-08-23)文案修正:角色下拉標題不再誤導成「創建」;
 //     清掉最後兩處 Google 雲端硬碟殘留文案(/KOL/{品牌}/ 與「資料夾」)
 //  🆕 v3.36(2026-08-23)臉部品質四道防呆
@@ -585,7 +587,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.33] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
+  console.log('[kol-ai-generator v3.38] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -950,22 +952,39 @@ function buildPanelHTML() {
   return `
     <div class="kai-panel" id="kai-panel">
       <div class="kai-head">
-        <span class="kai-title">AI 生成 KOL 角色</span>
+        <span class="kai-title">AI 生成角色形象照</span>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           🩹 2026-08-23 主從關係修正(同事實測:一看就困惑)
+           病灶:整塊標題寫「AI 生成 KOL 角色」→ 同事以為是【建新角色】,
+             結果第一個欄位是下拉、裡面全是【已經建好的】又晴/米禾/橘子,
+             「我要建新的,為什麼叫我選舊的?」→ 當場卡住。
+           真相:這塊其實同時做兩件事 ——
+             ① 建一位全新角色(「＋ 建立新角色」)
+             ② 幫已建好的角色再生一張形象照(下拉)
+             舊版把②放最前面又放大,①擠在旁邊當附屬 → 主從反了。
+           ★ 修法:把①提到最前面當主要動作,②降成「或者…」的次要路徑,
+             並在標題下用一句話講清楚這塊在幹嘛。
+           ★ 只動版面與文案,id 與事件完全不變(kai-persona / kai-btn-new-persona
+             在 onPersonaChange、syncBrandAndLoadPersonas、建立流程都有引用)。
+           ═══════════════════════════════════════════════════════════ -->
+      <div style="font-size:11.5px;color:#8a8a99;line-height:1.75;margin:-4px 0 12px">
+        建立一位全新的 AI KOL,或幫已經建好的角色再生一張形象照。
+      </div>
+
+      <div style="margin-bottom:12px">
+        <button class="kai-btn-add" id="kai-btn-new-persona"
+                style="width:100%;padding:11px;font-size:13px;font-weight:800;letter-spacing:.5px"
+                title="從零建立一位全新的 AI KOL">＋ 建立新角色</button>
       </div>
 
       <div class="kai-row-persona">
         <div class="kai-field">
-          <!-- 🩹 2026-08-23 標題誤導修正:
-               病灶:這個下拉寫「創建專屬 KOL 角色」,但它根本不是用來創建的 ——
-                    它是「這次生的照片要掛在哪位既有角色底下」。
-                    要創建的是右邊那顆按鈕。客戶點開下拉找不到「新增」就卡住。 -->
-          <label class="kai-label">這次要生給哪位角色</label>
+          <label class="kai-label">或者 · 生給已建立的角色</label>
           <select class="kai-select" id="kai-persona">
             <option value="">— 先選品牌 —</option>
           </select>
-        </div>
-        <div style="display:flex;align-items:end;">
-          <button class="kai-btn-add" id="kai-btn-new-persona" title="清單裡沒有?按這裡開一位新角色">＋ 新角色</button>
         </div>
       </div>
 
