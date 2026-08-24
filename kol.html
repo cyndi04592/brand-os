@@ -3317,6 +3317,20 @@ async function loadBrands() {
       let _html = '系統實際用來查詢的帳號是 <b style="color:var(--accent)">' + _acct + '</b>,'
         + '這個帳號還沒有被授權任何品牌。<br>'
         + '請按右上角<b>登出</b>後,改用正確的帳號重新登入。';
+      // 🔎 2026-08-23:附上「資料從哪來」。
+      //   病灶追查到這一步才發現:帳號正確、白名單也正確(11 個 id 全對得上),
+      //   但客戶端就是拿到 0 個品牌 —— 那就只剩兩種可能:
+      //     ① D1 讀取器丟例外 → 退回 GAS(__src=gas_fallback),
+      //        而 GAS 那張白名單表已停用,回 ok:true 但 0 筆
+      //     ② 快取回了舊的空結果(__cache=stale)
+      //   Worker 每次回傳都附 __src / __cache,只是以前沒人看。印出來就能一眼分辨。
+      //   ★ 這行只在「0 個品牌」時出現,正常客戶永遠看不到。
+      try {
+        const _src = res.__src || '(未標示)', _cch = res.__cache || '(未標示)';
+        _html += '<br><span style="opacity:.62;font-size:11px">診斷碼:'
+          + escapeHtml(_src) + ' / ' + escapeHtml(_cch) + '</span>';
+        console.log('[品牌] 空清單診斷 · __src=', _src, '· __cache=', _cch, '· 帳號=', _acct);
+      } catch (e) {}
       // ★ 憑證與畫面記錄的帳號不一致 → 一定要講出來,這是最難查的一種狀況
       if (_tokEmail && email && _tokEmail.toLowerCase() !== String(email).toLowerCase()) {
         _html += '<br><br><b style="color:#ff9d4d">⚠ 這台裝置上有兩個帳號的紀錄</b>:'
