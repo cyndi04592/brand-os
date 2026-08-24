@@ -72,9 +72,15 @@
                  casual: 'GU oversized tee and wide-leg pants', refined: 'GU trendy layered casual look' },
     niko_and:  { base: 'niko and... Japanese zakka literary style, natural earthy tones, relaxed artsy layering, lifestyle store aesthetic',
                  casual: 'niko and... loose linen layers and comfy silhouette', refined: 'niko and... curated artsy ensemble with natural texture' },
-    tnewties:  { base: '20s tnewties Japanese vintage girl style, 1920s-meets-2020s retro fashion, pintuck blouses, houndstooth and embroidery details',
-                 casual: '20s tnewties retro blouse and pleated skirt', refined: '20s tnewties vintage-inspired dress with delicate details' },
-    human_made: { base: 'HUMAN MADE by NIGO Japanese retro streetwear, signature heart and duck cartoon graphic prints, vintage americana casual, relaxed loose fit',
+    //  🩹 v5.21:「20s tnewties」是台灣小眾品牌,模型多半不認得,
+    //   而且開頭是數字,視覺上不像品牌名 —— 照 CACO 的教訓,
+    //   不認得的品牌名反而會被【當成要印在衣服上的字】。
+    //   ★ 特徵擺前面(那些模型畫得出來),品牌名不寫。
+    tnewties:  { base: 'Japanese vintage girl style womenswear, 1920s-meets-modern retro silhouette, pintuck blouse detailing, houndstooth check fabric and delicate embroidery, soft antique tones',
+                 casual: 'retro pintuck blouse and pleated midi skirt', refined: 'vintage-inspired dress with lace and embroidery detail' },
+    //  HUMAN MADE 保留品牌名與圖案 —— 心形與鴨子是它【自家原創】角色,
+    //   不是授權他人的 IP,與 CACO 的情況不同。
+    human_made: { base: 'HUMAN MADE by NIGO Japanese retro streetwear, its own original heart-motif and duck-motif graphic prints, vintage americana casual, relaxed loose fit',
                  casual: 'HUMAN MADE graphic sweatshirt and relaxed denim', refined: 'HUMAN MADE retro varsity jacket layering' },
     aape:      { base: 'AAPE by A Bathing Ape streetwear, signature AAPE camo print, ape-head logo detail, sporty urban street style, youthful edgy fit',
                  casual: 'AAPE camo hoodie and joggers', refined: 'AAPE street-luxe layered look with camo accents' },
@@ -88,24 +94,46 @@
                  casual: 'Mardi Mercredi daisy floral sweatshirt and relaxed bottoms', refined: 'Mardi Mercredi minimal logo knit with clean lines' },
 
     // ── 台灣女裝 ──────────────────────────────────────────
-    mallothi:  { base: 'Mallothi French romantic vintage, pleated and gingham dresses, literary slow-living elegance, soft pastel tones',
+    //  Mallothi 保留品牌名 —— 它的識別是【剪裁與花色】(細褶、格紋、粉霧色),
+    //   那是布料紋樣不是授權角色,模型畫得對。
+    mallothi:  { base: 'Mallothi French romantic vintage womenswear, fine pleating and gingham check fabric, literary slow-living elegance, soft pastel tones',
                  casual: 'Mallothi soft pastel cotton dress', refined: 'Mallothi pleated romantic midi dress' },
-    pazzo:     { base: 'PAZZO Taiwanese good-life casual, Japanese-Korean versatile styling, flattering slim fit, comfortable quality fabric',
-                 casual: 'PAZZO comfy versatile tee and slimming pants', refined: 'PAZZO elegant flattering dress' },
-    caco:      { base: 'CACO Taiwanese casual everyday, cute graphic print tops, slimming relaxed urban fit',
-                 casual: 'CACO cute graphic-print tee and casual bottoms', refined: 'CACO clean casual layered look' },
+    //  PAZZO 可以寫品牌名 —— 它的識別是【版型修飾】不是圖案,那模型畫得出來:
+    //   招牌「美圖瘦瘦褲」(收腰修長腿)、雲朵棉、BRA TOP、涼感防曬系列。
+    //   (它也有 Hello Kitty / Disney 聯名,但那不是主力,所以不提圖案。)
+    pazzo:     { base: 'PAZZO Taiwanese good-life womenswear, signature body-shaping high-waist trousers with leg-lengthening cut, soft cloud-cotton jersey, flattering slim silhouette, plain refined colours',
+                 casual: 'PAZZO soft cotton top and body-shaping slim trousers', refined: 'PAZZO flattering waist-defined dress' },
+    //  ⚠️ CACO 是【唯一刻意不寫品牌名】的一條 —— 而且明確禁印花。
+    //   RA 實測:寫 'CACO … cute graphic print tops' → 模型不認識這個台灣品牌,
+    //     就把「CACO」四個字直接印在 T 恤上,再亂編一隻兔子插畫。那不是穿搭,是亂畫。
+    //   查官網才發現根因:CACO 的定位是「最大聯名服飾品牌」,
+    //     識別靠的是【授權 IP】—— 迪士尼、三麗鷗、蠟筆小新、海綿寶寶、玩具總動員…
+    //     ★ 那些 IP 我們【絕對不能生】:重製他人著作角色,
+    //       跟「穿 North Face 外套」完全不是同一個等級。
+    //   ★ 所以這條反過來處理:不給品牌名、不引導圖案、明確寫 no printed graphics,
+    //     只留它真正可畫的部分 —— 版型與定位(台系日常、修飾顯瘦、棉質)。
+    caco:      { base: 'Taiwanese everyday casual womenswear, relaxed slimming urban fit, soft cotton jersey, plain solid colours with no printed graphics and no cartoon characters',
+                 casual: 'plain cotton tee and easy casual bottoms', refined: 'clean solid-colour casual layered look' },
 
     // ── 精品 ──────────────────────────────────────────────
-    lv:        { base: 'Louis Vuitton luxury fashion house, monogram canvas accents, refined tailoring, premium leather trim, timeless sophisticated silhouette',
-                 casual: 'Louis Vuitton understated luxe knit and tailored pants', refined: 'Louis Vuitton elegant designer ensemble with monogram detail' },
+    //  🩹 v5.21:LV 實測(RA 生的服裝參考圖)—— 寫 monogram 完全沒出現,
+    //   模型畫出「質感很好的精品西裝」但看不出是 LV。
+    //   原因:LV 的 monogram 在【包款與配件】上,服裝線本來就以剪裁見長。
+    //   ★ 不加包款(那是道具師的職責,服裝師跑去生包會跟商品打架、
+    //     而且影片裡多一個物件會跟客戶商品搶注意力)。
+    //   ★ 改寫成服裝線真正做得到的:建築感剪裁、皮革滾邊、金屬扣件。
+    lv:        { base: 'Louis Vuitton ready-to-wear, precise architectural tailoring, premium leather trim and polished gold hardware, elevated neutral palette, quiet confident luxury silhouette',
+                 casual: 'Louis Vuitton refined knit and impeccably tailored trousers', refined: 'Louis Vuitton structured designer ensemble with leather and hardware detail' },
     chanel:    { base: 'CHANEL French haute couture, signature tweed jacket with braided trim, camellia and pearl details, classic refined silhouette',
                  casual: 'CHANEL refined tweed-trimmed casual set', refined: 'CHANEL elegant tweed ensemble with pearl accessories' },
     hermes:    { base: 'HERMES understated ultra-luxury, impeccable saddle-stitch craftsmanship, refined neutral palette, quiet elegance without visible branding',
                  casual: 'HERMES quiet-luxury cashmere knit and tailored trousers', refined: 'HERMES impeccably tailored elegant look with silk scarf' },
 
     // ── 輕奢潮牌 ──────────────────────────────────────────
-    gucci:     { base: 'GUCCI eclectic luxury, GG monogram and green-red web stripe, bold vintage-glam maximalist prints, statement pieces',
-                 casual: 'GUCCI bold-print relaxed luxe with web stripe detail', refined: 'GUCCI glamorous statement ensemble' },
+    //  🩹 v5.21:拿掉 GG monogram(同 LV:那在包款上),
+    //   保留【紅綠織帶條紋】—— 那個在 GUCCI 服裝上真的看得到,模型畫得出來。
+    gucci:     { base: 'GUCCI eclectic luxury ready-to-wear, signature green-and-red web stripe trim, bold vintage-glam colour mixing, statement retro silhouette',
+                 casual: 'GUCCI relaxed luxe piece with web stripe detail', refined: 'GUCCI glamorous retro statement ensemble' },
     diesel:    { base: 'DIESEL Italian denim streetwear, heavily distressed washed denim, Y2K rebellious edge, bold logo treatment',
                  casual: 'DIESEL washed distressed denim and graphic tee', refined: 'DIESEL edgy denim-layered look' },
 
@@ -116,7 +144,7 @@
                  casual: 'The North Face fleece jacket and hiking pants', refined: 'The North Face technical shell layered over base layer' },
     patagonia: { base: 'Patagonia outdoor apparel, Synchilla fleece texture, earthy muted colour palette, understated eco-conscious mountain styling',
                  casual: 'Patagonia retro pile fleece and hiking shorts', refined: 'Patagonia weatherproof shell over merino base layer' },
-    arcteryx:  { base: 'ARC TERYX technical alpine apparel, minimal seam-taped GORE-TEX shell, dead-bird logo, precision-engineered athletic cut',
+    arcteryx:  { base: "Arc'teryx technical alpine apparel, minimal seam-taped GORE-TEX shell, archaeopteryx bird logo, precision-engineered athletic cut",
                  casual: 'ARC TERYX lightweight windshell and technical pants', refined: 'ARC TERYX hardshell alpine layering system' },
     salomon:   { base: 'Salomon trail running and outdoor apparel, technical mesh panels, trail-ready streamlined fit, sporty outdoor-tech aesthetic',
                  casual: 'Salomon trail running tee and lightweight shorts', refined: 'Salomon technical windbreaker and trail pants' },
@@ -375,5 +403,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.19 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
+  console.log('[KolWardrobe] 👗 v5.21 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
