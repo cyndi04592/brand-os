@@ -78,6 +78,10 @@ const S = {
 
 // ── 反 AI 美學 Prompt 配方庫 ─────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+//  🆕 v3.39(2026-08-24)① 選角色→性別/年齡/國籍/氣質/服裝自動帶入
+//     (兒少風險:舊版永遠停在預設 26 歲,選了 8 歲角色也不會變)
+//     ② 存照片時不再覆蓋既有角色的 outfit(空的才填)
+//     ③ 下拉標籤講清楚「多拍一套造型」與 Look 的關係
 //  🆕 v3.38(2026-08-23)版面主從修正:「建立新角色」提為主要動作(整排大按鈕),
 //     既有角色下拉降為「或者…」次要路徑;區塊標題改「AI 生成角色形象照」
 //  🆕 v3.37(2026-08-23)文案修正:角色下拉標題不再誤導成「創建」;
@@ -587,7 +591,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.38] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
+  console.log('[kol-ai-generator v3.39] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -981,7 +985,15 @@ function buildPanelHTML() {
 
       <div class="kai-row-persona">
         <div class="kai-field">
-          <label class="kai-label">或者 · 生給已建立的角色</label>
+          <!-- 🩹 2026-08-24:標籤只講「給誰」,沒講「在幹嘛」→ 連 RA 自己都看不懂。
+               真相:這裡生出來的照片會進那位角色的照片庫,
+               而 STEP2/STEP3 的「造型選擇(Look)」挑的就是這些照片。
+               一位 KOL 有幾張照片,拍影片時就有幾種造型可選。 -->
+          <label class="kai-label">或者 · 幫已建立的角色多拍一套造型</label>
+          <div style="font-size:11px;color:#8a8a99;line-height:1.7;margin:-2px 0 6px">
+            換服裝 / 換場景 / 換角度再拍一張,拍影片時的「造型選擇」就會多一個選項。<br>
+            原本的照片會保留,選了角色後下面的設定會自動帶入她原本的樣子。
+          </div>
           <select class="kai-select" id="kai-persona">
             <option value="">— 先選品牌 —</option>
           </select>
@@ -1329,7 +1341,66 @@ function applyBrandDefaults(brandId) {
 
 function onPersonaChange() {
   S.currentPersonaName = document.getElementById('kai-persona').value;
+  applyPersonaDefaults(S.currentPersonaName);   // 🩹 2026-08-24
   updateFolderHint();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  🩹 2026-08-24 選了角色 → 參數跟著帶入(RA 現場提出,這是【兒少風險】不是體驗問題)
+//   病灶:onPersonaChange 舊版只做兩件事 —— 記下名字、更新「存到哪」那行字。
+//     下面的性別 / 年齡 / 國籍 / 氣質 / 服裝【完全不動】,永遠停在預設(26 歲、米色針織)。
+//   後果:
+//     ① 選了 8 歲的角色,年齡拉桿還是 26 → 生出來是大人,跟角色對不上
+//     ② 反過來更嚴重:26 歲的成人角色,拉桿若被動到 18 以下 → 生出兒童照片
+//        (未成年閘門會攔,但那是「勾確認」,前提是預設值本來就該對齊角色)
+//   ★ 修法:選中角色的當下,把她的既有設定填回每一格。
+//     客戶要改當然可以改 —— 但【預設值必須是這位角色本來的樣子】。
+//     這正是「不教客戶做對的事,讓預設就是對的事」。
+//   ★ 取不到的欄位一律不動,絕不用預設值去蓋掉現況。
+// ═══════════════════════════════════════════════════════════════
+function applyPersonaDefaults(name) {
+  if (!name) return;
+  const p = (S.personas || []).find(x => String(x.persona_name || '') === String(name));
+  if (!p) return;
+  const set = (k, v) => {
+    if (v === undefined || v === null || v === '') return;
+    const el = document.querySelector('.kai-param[data-k="' + k + '"]');
+    if (!el) return;
+    // 下拉:值必須真的存在於選項裡,否則寧可不動(避免選到空白)
+    if (el.tagName === 'SELECT' && !Array.from(el.options).some(o => o.value === String(v))) return;
+    el.value = String(v);
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  // 性別:persona 存的是 'male' / 'female',與下拉 value 同格式
+  set('gender', String(p.gender || '').toLowerCase());
+
+  // 年齡:優先讀 age 欄位;沒有就從 background 抽「NN歲」(與 kol-persona.js 同一套來源)
+  let age = parseInt(p.age, 10);
+  if (!Number.isFinite(age)) {
+    const m = String(p.background || '').match(/(\d{1,2})\s*歲/);
+    if (m) age = parseInt(m[1], 10);
+  }
+  if (Number.isFinite(age) && age >= 1 && age <= 99) {
+    const el = document.querySelector('.kai-param[data-k="age"]');
+    if (el) {
+      el.value = String(age);
+      el.dispatchEvent(new Event('input', { bubbles: true }));   // 拉桿要 input 才會更新旁邊數字
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  set('nationality', p.nationality);
+  set('persona', p.persona_style);
+
+  // 服裝:persona 存的是英文長句(OUTFIT_MAP 的值),要反查回 key 才能選中下拉
+  if (p.outfit) {
+    const hit = Object.keys(OUTFIT_MAP).find(k => OUTFIT_MAP[k] === p.outfit);
+    if (hit) set('outfit', hit);
+  }
+
+  try { console.log('[kai] 已帶入角色設定 ·', name, '· 年齡', age, '· 性別', p.gender || '(未設)'); } catch (e) {}
+  if (typeof renderPromptPreview === 'function') renderPromptPreview();
 }
 
 function updateFolderHint() {
@@ -1786,9 +1857,21 @@ async function saveKolImageToLibrary(idx) {
   const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const filename = S.currentPersonaName + '_ai_' + img.seed + '_' + timestamp + '_' + (idx + 1) + '.jpg';
 
-  // 把創角選的服裝一起存進 persona(以後免手填 outfit)
+  // 🩹 2026-08-24:只有【這位角色還沒有服裝設定】時才寫進去,絕不覆蓋既有值。
+  //   病灶(RA 現場推敲出來的):這行原本的用意是「建角色時順手記下服裝」,
+  //     但同一支流程也被拿來「幫既有角色多拍一套造型」——
+  //     於是你幫又晴生一張咖啡廳版,順手把她的【官方服裝設定】改成那次隨手選的衣服。
+  //     客戶不會發現,下次拍影片時服裝就跟著變了。
+  //   ★ 規則:空的才填(第一次建角色),已經有值就當唯讀。
+  //     真的要改服裝,去「編輯人設」改 —— 那裡才是設定的地方。
   const _outfitSel = document.querySelector('.kai-param[data-k="outfit"]');
-  const _outfitText = _outfitSel ? (OUTFIT_MAP[_outfitSel.value] || '') : '';
+  const _outfitPick = _outfitSel ? (OUTFIT_MAP[_outfitSel.value] || '') : '';
+  const _pRow = (S.personas || []).find(x => String(x.persona_name || '') === String(S.currentPersonaName));
+  const _hasOutfit = !!String(_pRow?.outfit || '').trim();
+  const _outfitText = _hasOutfit ? '' : _outfitPick;
+  if (_hasOutfit && _outfitPick && _outfitPick !== _pRow.outfit) {
+    try { console.log('[kai] 這位角色已有服裝設定 → 本次不覆蓋(要改請走「編輯人設」)'); } catch (e) {}
+  }
 
   try {
     const res = await gasPost('saveKolPhoto', {
