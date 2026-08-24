@@ -78,6 +78,8 @@ const S = {
 
 // ── 反 AI 美學 Prompt 配方庫 ─────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+//  🆕 v3.40(2026-08-24)🔒 選角色時連 seed 一起帶入(從既有照片檔名 _ai_<seed>_ 解回)
+//     —— 沒有 seed 就只是「同樣描述的另一個人」,參數帶得再準也沒用
 //  🆕 v3.39(2026-08-24)① 選角色→性別/年齡/國籍/氣質/服裝自動帶入
 //     (兒少風險:舊版永遠停在預設 26 歲,選了 8 歲角色也不會變)
 //     ② 存照片時不再覆蓋既有角色的 outfit(空的才填)
@@ -591,7 +593,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.39] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
+  console.log('[kol-ai-generator v3.40] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1358,6 +1360,26 @@ function onPersonaChange() {
 //     這正是「不教客戶做對的事,讓預設就是對的事」。
 //   ★ 取不到的欄位一律不動,絕不用預設值去蓋掉現況。
 // ═══════════════════════════════════════════════════════════════
+// 🔒 2026-08-24:從既有照片的檔名解出 seed。
+//   檔名格式(saveKolPhoto 產的):<角色名>_ai_<seed>_<日期>_<序號>.jpg
+//   ★ 取【最新一張】的 seed —— 客戶最近一次滿意的那張臉。
+//   ★ 只認 6 位數以上的純數字,避免把日期(20260824)之類的誤當 seed:
+//     格式固定是 _ai_ 緊接著 seed,所以直接鎖那個位置最準。
+function _findPersonaSeed(name) {
+  try {
+    const personas = (window.S && window.S.drivePhotos && window.S.drivePhotos.personas) || [];
+    const p = personas.find(x => String(x.persona_name || '') === String(name));
+    if (!p) return null;
+    const all = [].concat(p.processed_photos || [], p.photos || []);
+    let best = null;
+    for (const ph of all) {
+      const m = String(ph && ph.name || '').match(/_ai_(\d{4,})_/);
+      if (m) best = parseInt(m[1], 10);        // 陣列通常由舊到新 → 留最後命中的
+    }
+    return Number.isFinite(best) ? best : null;
+  } catch (e) { return null; }
+}
+
 function applyPersonaDefaults(name) {
   if (!name) return;
   const p = (S.personas || []).find(x => String(x.persona_name || '') === String(name));
@@ -1392,6 +1414,36 @@ function applyPersonaDefaults(name) {
 
   set('nationality', p.nationality);
   set('persona', p.persona_style);
+
+  // ═══════════════════════════════════════════════════════════
+  //  🔒 2026-08-24 連 seed 一起帶入 —— 這才是「同一個人」的關鍵
+  //   病灶(RA 一眼看出):參數帶對了(28歲/女性/台灣/知性親和),
+  //     但那些全是【文字描述】。同一段文字,flux 每次都生出不同的臉 ——
+  //     就像叫十個畫家照同一句話畫,會畫出十個人。
+  //     seed 才是那張臉的身分證,而畫面上顯示「未鎖」。
+  //   ★ 好消息:seed 早就在【檔名】裡 ——
+  //       saveKolPhoto 存的檔名格式:又晴_ai_<seed>_20260824_1.jpg
+  //     所以不用改資料庫、不用改 Worker,從檔名解回來就好。
+  //     (metadata 前端有送,但 Worker 只存 url 與檔名,沒收 metadata。)
+  //   ★ 解不到就維持「未鎖」——不亂填,寧可讓客戶知道這次不保證同一張臉。
+  // ═══════════════════════════════════════════════════════════
+  try {
+    const seed = _findPersonaSeed(name);
+    const seedEl = document.getElementById('kai-seed');
+    if (seed && seedEl) {
+      seedEl.value = String(seed);
+      S.lockedSeed = seed;
+      const lockEl = document.getElementById('kai-seed-lock');
+      if (lockEl) lockEl.textContent = '已鎖';
+      console.log('[kai] 🔒 已帶入 ' + name + ' 的 seed =', seed, '(同一張臉)');
+    } else {
+      if (seedEl) seedEl.value = '';
+      S.lockedSeed = null;
+      const lockEl = document.getElementById('kai-seed-lock');
+      if (lockEl) lockEl.textContent = '未鎖';
+      console.log('[kai] ⚠ 找不到 ' + name + ' 的 seed(舊照片檔名沒帶)→ 這次生出來可能不是同一張臉');
+    }
+  } catch (e) {}
 
   // 服裝:persona 存的是英文長句(OUTFIT_MAP 的值),要反查回 key 才能選中下拉
   if (p.outfit) {
