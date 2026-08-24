@@ -3573,6 +3573,9 @@ async function onBrandChange() {
   document.getElementById('create-seedance-btn').disabled = true;
 
   const _drivePhotosP = loadDrivePhotos(brandId);   // 🆕 #2: Drive 照片不需 personas → 提前並行發,別排隊等
+  // 🩹 2026-08-24:把這次的 promise 登記起來 —— loadKolList / ensureKolCache 要用同一份照片,
+  //   登記後它們【等這一次】就好,不會各自再打一遍(見 _ensureKolPhotos)。
+  S._drivePhotosP = S._drivePhotosP || {}; S._drivePhotosP[brandId] = _drivePhotosP;
   await loadPersonas(brandId);
 
   // v5.7: 重置 system KOL 選擇(S.products 已在 loadBrands 載入)
@@ -6844,13 +6847,29 @@ window._kolCleanCache = window._kolCleanCache || {};
 //   ★ 生成流程本來就不吃 HeyGen:resolveKolImageUrl 一律優先用素材庫的 R2 原圖,
 //     HeyGen 那張只是 fallback,而且是髒 WEBP(餵引擎會生烤肉架紋路)。
 // ═══════════════════════════════════════════════════════════════
+// 🩹 2026-08-24(修正)原本這支自己 gasGet('listKolPhotos') —— 那是【退回 Drive 的最後一條路】,
+//   等於繞過既有的 loadDrivePhotos(素材庫快取 → 素材庫 → 空的才退回 Drive),
+//   而且切品牌時 loadDrivePhotos 本來就已經並行發出 → 同一份資料被抓兩遍。
+//   現場症狀:切品牌 KOL 卡片跳出來很慢(RA 在 MOZ 實測 —— 那個品牌的 KOL 照片
+//   還留在 Drive 沒搬進素材庫,最慢那條路的代價全被吃到)。
+//   ★ 教訓(重複實作):要拿同一份資料,先找【既有的共用咽喉點】,不要另寫一支。
+//     這條在交接卡上寫過,今天還是犯了。
 async function _ensureKolPhotos(brandId) {
   const bid = brandId || S.currentBrandId;
-  if (S.drivePhotos && S._drivePhotosBrand === bid) return S.drivePhotos;   // 同品牌已載過 → 不重打
+  if (S.drivePhotos && S._drivePhotosBrand === bid) return S.drivePhotos;   // ① 這次已載過 → 秒回
+  // ② 既有快取(loadDrivePhotos 抓過就會寫這裡)→ 完全不打網路
+  if (S._drivePhotoCache && S._drivePhotoCache[bid]) {
+    S.drivePhotos = S._drivePhotoCache[bid]; S._drivePhotosBrand = bid;
+    return S.drivePhotos;
+  }
+  // ③ 切品牌時那次還在飛 → 等它,不要再發一次
   try {
-    const r = await gasGet('listKolPhotos', { brandId: bid });
-    if (r && r.ok) { S.drivePhotos = r; S._drivePhotosBrand = bid; }
-  } catch (e) { console.warn('[KOL照片] 素材庫讀取失敗', e); }
+    const inflight = S._drivePhotosP && S._drivePhotosP[bid];
+    if (inflight) { await inflight; S._drivePhotosBrand = bid; return S.drivePhotos; }
+  } catch (e) { /* 那次失敗 → 落到 ④ 自己抓 */ }
+  // ④ 真的沒人在跑(例如直接進 STEP2)→ 走共用流程,不要自己另開一條
+  try { await loadDrivePhotos(bid); S._drivePhotosBrand = bid; }
+  catch (e) { console.warn('[KOL照片] 讀取失敗', e); }
   return S.drivePhotos;
 }
 
