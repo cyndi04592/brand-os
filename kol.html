@@ -5226,7 +5226,16 @@ async function _loadProductsFromLibrary(wrap) {
     const cached = window._libProductsCache && window._libProductsCache[ck];
     if (cached) {
       if (!cached.length) return false;
-      if (wrap && wrap.dataset.prodKey === ck + ':' + cached.length && wrap.childElementCount) return true;
+      // 🩹 v7.36:即使跳過重畫,也要跑 _decideRefTab ——
+      //   它負責【清掉「從素材庫選」旁邊那個 🔒】,而它原本住在 renderDriveProducts 第一行。
+      //   v7.34 我加了「內容沒變就 return」的快速路徑,結果連帶跳過清鎖頭 →
+      //   客戶明明有照片,分頁卻掛著鎖頭、還被停在「貼網址」(RA 現場截圖抓到)。
+      //   ★ 教訓:加「提早 return」的快速路徑時,要先問
+      //     「被我跳過的那段程式,除了畫面之外還做了什麼?」
+      if (wrap && wrap.dataset.prodKey === ck + ':' + cached.length && wrap.childElementCount) {
+        try { _decideRefTab(cached.length); } catch (e) {}
+        return true;
+      }
       renderDriveProducts(cached);
       if (wrap) wrap.dataset.prodKey = ck + ':' + cached.length;
       return true;
@@ -5336,7 +5345,10 @@ function renderDriveProducts(files) {
       <div class="ref-drive-locked">
         <span class="emoji">📷</span>
         <strong>這個品牌還沒有商品照</strong><br>
-        <small>到「素材庫」上傳,分類選「商品/服務照」<br>上傳後回來按重試就會出現</small>
+        <small>按下面的按鈕直接去上傳,分類會自動選好「商品/服務照」</small>
+        <div style="margin-top:10px">
+          <button type="button" class="btn btn-primary btn-sm" onclick="goUploadProducts()">＋ 上傳商品照</button>
+        </div>
         <div class="drive-product-refresh">
           <button class="btn btn-ghost btn-sm" onclick="reloadDriveProducts()">重試</button>
         </div>
@@ -5370,6 +5382,7 @@ function renderDriveProducts(files) {
       }).join('')}
     </div>
     <div class="drive-product-refresh">
+      <button class="btn btn-ghost btn-sm" onclick="goUploadProducts()">＋ 新增商品照</button>
       <button class="btn btn-ghost btn-sm" onclick="reloadDriveProducts()">重新整理</button>
       <span style="margin-left:10px;font-size:10.5px;color:var(--text-dim);font-family:'Syne',sans-serif">共 ${upgradedFiles.length} 張</span>
     </div>
@@ -5675,6 +5688,17 @@ function scnRefresh(which) {
   renderSceneLibrary(which);
 }
 window.scnRefresh = scnRefresh;
+
+// 🩹 v7.36(2026-08-24)商品照直達上傳。
+//   RA 現場:「那邊也要直接有鈕可以＋新增,這樣都很直覺」——
+//   場景素材早就有「＋ 上傳場景素材」(scnGoUpload),商品照卻只寫
+//   「到素材庫上傳,分類選商品/服務照」= 要客戶自己走過去、自己選對分類。
+//   ★ 照抄場景素材那套:開素材庫 + 帶上傳模式 + 分類預填,客戶一步到位。
+function goUploadProducts() {
+  window.open('/library?upload=1&cat=' + encodeURIComponent('商品/服務照'), '_blank', 'noopener');
+  toast('上傳完切回這頁,按「重新整理」就會出現', 'ok');
+}
+window.goUploadProducts = goUploadProducts;
 
 function scnGoUpload() {
   window.open('/library?upload=1&cat=' + encodeURIComponent('場景素材'), '_blank', 'noopener');
@@ -8489,6 +8513,7 @@ function renderEpisodeProductPickerHTML() {
       </div>
       <div class="ep-product-footer">
         <span style="font-size:10.5px;color:var(--text-dim)">已選 <span id="ep-product-count">${selected.length}</span>/6 件 · 已預留場景+服裝<span id="ep-pace">${paceHintHtml(selected.length, S.episodeParams && S.episodeParams.duration)}</span></span>
+        <button class="btn btn-ghost btn-sm" onclick="goUploadProducts()">＋ 新增商品照</button>
         <button class="btn btn-ghost btn-sm" onclick="reloadEpisodeProducts()">重新整理</button>
       </div>
       <!-- 🆕 v3.1 商品呈現方式(mode 選擇器 · STEP3) -->
@@ -8519,7 +8544,10 @@ async function loadEpisodeProducts() {
   if (!folderId) {
     // 素材庫也沒有、Drive 也沒有 → 這時才顯示空狀態。
     // ★ 「AI 腦補」那句警告要留著:那是真的,客戶必須知道。
-    wrap.innerHTML = `<div class="ep-product-locked">📷 這個品牌還沒有商品照<br><small>請到「素材庫」上傳(分類選「商品/服務照」)<br>沒有的話影片照樣生,但商品會是 AI 腦補,不是真實商品</small></div>`;
+    // 🩹 v7.36:STEP3 也給同一顆按鈕(STEP2 有、STEP3 沒有 = 又是兩邊各寫一套)
+    wrap.innerHTML = `<div class="ep-product-locked">📷 這個品牌還沒有商品照<br>`
+      + `<small>沒有的話影片照樣生,但商品會是 AI 腦補,不是真實商品</small>`
+      + `<div style="margin-top:10px"><button type="button" class="btn btn-primary btn-sm" onclick="goUploadProducts()">＋ 上傳商品照</button></div></div>`;
     return;
   }
 
