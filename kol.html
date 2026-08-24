@@ -4341,6 +4341,7 @@ async function loadDrivePhotos(brandId, force) {
     //   ★ 素材庫沒東西(還沒搬過、剛建的品牌)→ 自動退回 Drive,不能斷炊。
     // ═══════════════════════════════════════════════════════════
     let res = null;
+    let _libErr = '';        // 🆕 2026-08-24:區分「真的沒有」與「讀取失敗」
     try {
       // ⚡ 快取:切品牌回來不重打。上一版把新查詢插在快取判斷「之後」,
       //    等於每次切品牌都重打一次後端 —— 體感比 Drive 還慢。
@@ -4359,9 +4360,34 @@ async function loadDrivePhotos(brandId, force) {
         console.log('[KOL] 素材庫沒有這個品牌的 KOL 照片 → 退回 Drive');
       }
     } catch (e) {
-      console.warn('[KOL] 素材庫讀取失敗 → 退回 Drive:', e.message);
+      _libErr = e.message || '素材庫讀取失敗';
+      console.warn('[KOL] 素材庫讀取失敗:', _libErr);
     }
-    if (!res) res = await gasGet('listKolPhotos', { brandId });
+    // ═══════════════════════════════════════════════════════════
+    //  🗑 2026-08-24 拆掉「退回 Google Drive」那條退路
+    //   RA 決策:「反正 Google 雲端也不能容納 1000 人使用」。
+    //   ★ 拆得掉的證據(2026-08-24 全品牌盤點,17 個):
+    //     · 11 個素材庫有 KOL 照片 → 早就不靠 Drive
+    //     · 6 個素材庫是空的,但【KOL 數也是 0】—— 是還沒建過角色,
+    //       不是照片還躺在 Drive。也就是 Drive 上已經沒有任何還在用的 KOL 照片,
+    //       這條退路保護的是空氣。
+    //   ★ 而它的代價很實在:誤判一次就打十幾趟 Google API
+    //     (_driveListKolPhotos 會逐一列每位 KOL 的資料夾 + 已處理夾),
+    //     而且查不到 kolFolderId 時是【直接拋錯】不是回空 —— 新品牌走到就炸。
+    //   ⚠️ 拆掉後最重要的是【分清楚兩件事】:
+    //     「素材庫真的沒有」→ 正常,顯示空清單,讓客戶去建角色
+    //     「素材庫讀取失敗」→ 異常,要明講,絕不能靜靜當成空的
+    //       (靜靜當空 = 客戶以為照片不見了,那比慢嚴重得多)
+    // ═══════════════════════════════════════════════════════════
+    if (!res) {
+      if (_libErr) {
+        if (S.currentBrandId !== brandId) return;
+        wrap.innerHTML = `<div class="kol-empty">❌ 素材庫讀取失敗:${escapeHtml(_libErr)}<br><small>請重新整理頁面再試</small></div>`;
+        return;
+      }
+      res = { ok: true, personas: [], root_photos: [], __src: 'library-empty' };
+      console.log('[KOL] 📚 素材庫沒有這個品牌的 KOL(尚未建立角色)');
+    }
     if (S.currentBrandId !== brandId) return;  // 🆕 #2: 已切走就別覆蓋
     if (!res.ok) {
       wrap.innerHTML = `<div class="kol-empty">❌ ${escapeHtml(res.error || '讀取失敗')}</div>`;
@@ -4440,7 +4466,10 @@ function renderDriveGallery() {
   }
 
   if (personas.length === 0) {
-    wrap.innerHTML = rootWarn + `<div class="kol-empty"><span class="emoji"></span>此品牌還沒有 KOL 子資料夾<br><small><a href="${data.kol_folder_url}" target="_blank" style="color:var(--accent)">打開 /KOL 資料夾</a><br>在裡面建立「Persona名稱」的子資料夾並放照片</small></div>`;
+    // 🩹 2026-08-24:舊文案是 Drive 時代的(叫客戶去開 /KOL 資料夾、自己建子資料夾),
+    //   而 kol_folder_url 在素材庫版根本不存在 → 那個連結是 undefined。
+    //   改成講現在真正該做的事。
+    wrap.innerHTML = rootWarn + `<div class="kol-empty"><span class="emoji"></span>這個品牌還沒有 KOL 角色<br><small>用上方「＋ 建立新角色」生成一位,<br>或到素材庫上傳人物照後回來建立。</small></div>`;
     return;
   }
 
@@ -6910,8 +6939,12 @@ async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
     let p = (S.drivePhotos?.personas || []).find(x => _normName(x.persona_name) === _pn);
     // 沒載過、或舊快取沒有 processed_photos 欄 → 重抓一次最新的
     if (!p || p.processed_photos === undefined) {
-      const r = await gasGet('listKolPhotos', { brandId: S.currentBrandId });
-      if (r && r.ok) S.drivePhotos = r;
+      // 🩹 2026-08-24:原本這裡自己 gasGet('listKolPhotos') —— 那是【退回 Drive 的那條路】,
+      //   而 Drive 退路今天已經拆掉。改走共用的 _ensureKolPhotos:
+      //   快取 → 既有的載入流程,不另開一條。
+      //   ⚠️ 這支在【生成鏈】上,客戶第一次進 STEP2 就會跑到,
+      //     以前會在按下生成之後多等一趟 Google 往返。
+      await _ensureKolPhotos(S.currentBrandId);
       p = (S.drivePhotos?.personas || []).find(x => _normName(x.persona_name) === _pn);
     }
     // 優先用「已處理」裡的乾淨原圖,沒有才退回未處理的
