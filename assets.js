@@ -92,25 +92,35 @@ function _hydrateFromLS(brandId) {
   if (ls) _assetCache[brandId] = { loaded: true, photos: ls.photos, videos: SHOW_VIDEO_ASSETS ? ls.videos : [] };
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  📚 2026-08-24 v2.0 · Google Drive 全面退場,素材庫成為唯一來源
+//   RA 決策:「要直接根治」。
+//   ★ 病灶(RA 現場實測):主站品牌素材庫空白,而素材庫頁面看得到 55 張。
+//     追進去發現舊版 autoFetchAssets 第一行就是:
+//         if (!window._driveToken) return;      ← Drive 時代的【入場券】
+//     沒有 Drive token 就掉頭走人,連自家素材庫都不去問 ——
+//     所以 S.photos 一次都沒動、Console 一則 [assets] 都沒有。
+//   ★ 為什麼今天才爆:Google 登入早就改走 _workerDriveMode(零 Drive 權限),
+//     只要那個旗標因任何原因沒還原(換分頁 / session 不完整),就會掉進這條死路。
+//     KOL 那條線今天已經拆掉 Drive,廣告圖這條【還留著整套】—— 漏了半邊。
+//   ★ 新架構:不再有「兩種模式」,不再有入場券。
+//     一律 快取 → 素材庫。拿不到就是空的,誠實顯示,不再繞去 Google。
+//   ⚠️ ensureFullRes 保留:admaker.js 用它 3 次。素材庫的照片沒有 driveId,
+//     它會直接 return,admaker 走 hiRes(原檔網址)—— 行為不變。
+// ═══════════════════════════════════════════════════════════════
 async function autoFetchAssets(brandId) {
-  // ★ Worker Drive 模式（帳密登入）
-  if (window._workerDriveMode) {
-    await autoFetchAssetsWorker(brandId);
-    return;
-  }
-  // 原本 Google OAuth 模式
-  if (!window._driveToken) return;
-  _hydrateFromLS(brandId); // 🆕 WIN1：刷新後先看本地有沒有
+  if (!brandId) return;
+
+  _hydrateFromLS(brandId);                       // 先看本地快取
   if (_assetCache[brandId]?.loaded) {
     window.S.photos   = _assetCache[brandId].photos;
-    window.S.videos   = _assetCache[brandId].videos;
+    window.S.videos   = _assetCache[brandId].videos || [];
     window.S.selPhoto = null;
     window.S.selVideo = null;
     renderAssets();
+    setDriveStatus('ok');
     return;
   }
-  const f = window.BRAND_FOLDERS[brandId];
-  if (!f) return;
 
   window.S.photos   = [];
   window.S.videos   = [];
@@ -118,97 +128,23 @@ async function autoFetchAssets(brandId) {
   window.S.selVideo = null;
 
   setDriveStatus('busy');
-  const _req = ++_assetReqSeq;   // 🩹 2026-08-11:這一輪的流水號
-  const photoInput = document.getElementById('inPhotoFolder');
-  const videoInput = document.getElementById('inVideoFolder');
+  const _req = ++_assetReqSeq;
+  const n = await fetchFromLibrary(brandId, _req);
+  if (n === -1) return;                          // 已切走 → 這包不算數
 
-  // 🆕 先問自家素材庫 —— 這是另一條載入路徑(Google OAuth 模式),
-  //    只改 Worker 那支會漏掉一半的客戶。
-  const _libCount = await fetchFromLibrary(brandId, _req);
-  if (_libCount === -1) return;
-  if (_libCount > 0) console.log('[assets] 📚 素材庫供圖 ' + _libCount + ' 張(未經 Google)');
+  if (_assetReqStale(_req, brandId)) return;     // 🩹 以品牌為準,不用流水號
+  if (n > 0) console.log('[assets] 📚 素材庫供圖 ' + n + ' 張');
+  else       console.log('[assets] 📚 這個品牌的素材庫是空的');
 
-  const promises = [];
-  if (f.photo && photoInput && _libCount <= 0) {
-    photoInput.value = f.photo;
-    promises.push(fetchFromDriveAPI(f.photo, 'photo', window._driveToken, _req));
-  }
-  if (SHOW_VIDEO_ASSETS && f.video && videoInput) {
-    videoInput.value = f.video;
-    promises.push(fetchFromDriveAPI(f.video, 'video', window._driveToken, _req));
-  }
-  await Promise.all(promises);
-  // 🩹 抓完才發現已經切走 → 不准寫進快取,也不准重畫(否則會把別的品牌的清單存成這個品牌的)
-  if (_assetReqStale(_req, brandId)) return;   // 🩹 2026-08-24:以品牌為準,不用流水號
-
-  _assetCache[brandId] = {
-    loaded: true,
-    photos: [...window.S.photos],
-    videos: [...window.S.videos]
-  };
-  _saveAssetCacheLS(brandId, window.S.photos, window.S.videos); // 🆕 WIN1
-
+  _assetCache[brandId] = { photos: window.S.photos, videos: [], loaded: true };
+  _saveAssetCacheLS(brandId);
   renderAssets();
-  setDriveStatus('ok');
+  setDriveStatus(n > 0 ? 'ok' : 'empty');
 }
 
-// ★ Worker Drive 模式：透過小號 Refresh Token 抓圖
-async function autoFetchAssetsWorker(brandId) {
-  _hydrateFromLS(brandId); // 🆕 WIN1：刷新後先看本地有沒有
-  if (_assetCache[brandId]?.loaded) {
-    window.S.photos   = _assetCache[brandId].photos;
-    window.S.videos   = _assetCache[brandId].videos;
-    window.S.selPhoto = null;
-    window.S.selVideo = null;
-    renderAssets();
-    return;
-  }
-  const f = window.BRAND_FOLDERS[brandId];
-  if (!f) return;
+// 🔁 舊名保留:brands.js 以外若還有人叫這個名字,一律導到上面那支
+async function autoFetchAssetsWorker(brandId) { return autoFetchAssets(brandId); }
 
-  window.S.photos   = [];
-  window.S.videos   = [];
-  window.S.selPhoto = null;
-  window.S.selVideo = null;
-  setDriveStatus('busy');
-  const _req = ++_assetReqSeq;   // 🩹 2026-08-11:這一輪的流水號
-
-  const photoInput = document.getElementById('inPhotoFolder');
-  const videoInput = document.getElementById('inVideoFolder');
-
-  // 🆕 先問自家素材庫;拿到東西就不必再去 Google 繞一圈
-  const _libCount = await fetchFromLibrary(brandId, _req);
-  if (_libCount === -1) return;                 // 已切走,整包丟掉
-  if (_libCount > 0) console.log('[assets] 📚 素材庫供圖 ' + _libCount + ' 張(未經 Google)');
-
-  const promises = [];
-  if (f.photo && _libCount <= 0) {
-    if (photoInput) photoInput.value = f.photo;
-    promises.push(fetchFromWorker(f.photo, 'photo', _req));  // 保底:素材庫沒東西才走 Drive
-  }
-  if (SHOW_VIDEO_ASSETS && f.video) {
-    if (videoInput) videoInput.value = f.video;
-    promises.push(fetchFromWorker(f.video, 'video', _req));  // 🆕 同上,走 Worker
-  }
-  await Promise.all(promises);
-  // 🩹 抓完才發現已經切走 → 不准寫進快取,也不准重畫
-  if (_assetReqStale(_req, brandId)) return;   // 🩹 2026-08-24:以品牌為準,不用流水號
-
-  _assetCache[brandId] = {
-    loaded: true,
-    photos: [...window.S.photos],
-    videos: [...window.S.videos]
-  };
-  _saveAssetCacheLS(brandId, window.S.photos, window.S.videos); // 🆕 WIN1
-
-  renderAssets();
-  setDriveStatus('ok');
-}
-
-// ══ 🆕 傳輸層自動重試:對付 Cloudflare QUIC/HTTP3 間歇性斷線 ══
-//    QUIC 斷線會讓 fetch 直接 throw「TypeError: Failed to fetch」(即使伺服器已回 200 OK)
-//    → 自動重打:指數退避 + jitter(跟 GAS gasFetch 同款抗性)
-//    ⚠️ 只用於「讀取類、可重複安全」的請求;上傳/建檔等寫入絕不可套(會重複)
 async function _retryFetchJson(makeReq, label, tries) {
   tries = tries || 4;
   let lastErr;
@@ -314,191 +250,23 @@ async function fetchFromLibrary(brandId, reqId, force) {
   }
 }
 
-// ★ 透過 Cloudflare Worker 抓 Drive 檔案
-async function fetchFromWorker(folderId, type, reqId) {
-  if (!folderId) return;
-  try {
-    const data = await _retryFetchJson(() => fetch(CF_WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'drive_files',
-        password: GAS_PASSWORD,
-        folderId,
-        type: type === 'photo' ? 'photo' : 'video'
-      })
-    }), 'drive_files');
-    if (!data.ok) { console.warn('Worker Drive error:', data.error); return; }
-    // 🩹 回應回來時已經切到別的品牌 → 整包丟掉,絕不 push(否則會污染新品牌的素材庫)
-    if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return; }
-
-    (data.files || []).forEach(f => {
-      const arr = type === 'photo' ? window.S.photos : window.S.videos;
-      if (!arr.find(x => x.driveId === f.id)) {
-        arr.push({
-          driveId: f.id,
-          name: f.name,
-          thumb: f.thumbnailLink || '',
-          hiRes: (f.thumbnailLink || '').replace(/=s\d+/, '=s1600'),  // 🆕 生圖用高解析(s1600)
-          driveUrl: f.viewUrl,
-          src: (f.thumbnailLink || '').replace(/=s\d+/, '=s400'),     // 🆕 列表強制縮成 s400(載入快)
-          type
-        });
-      }
-    });
-  } catch (e) { console.warn('fetchFromWorker error:', e); }
-}
-
-// ★ 透過 GAS（owner 帳號）抓 Drive 檔案 —— 不靠服務帳號金鑰，最穩（跟 KOL 同一條路）
-async function fetchFromGAS(folderId, type, reqId) {
-  if (!folderId) return;
-  try {
-    const url = `${GAS_URL}?action=listBrandAssets&password=${GAS_PASSWORD}&folderId=${encodeURIComponent(folderId)}&type=${type === 'photo' ? 'photo' : 'video'}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (!data.ok) { console.warn('GAS Drive error:', data.error); return; }
-    if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return; }   // 🩹 2026-08-11 競速防護
-
-    (data.files || []).forEach(f => {
-      const arr = type === 'photo' ? window.S.photos : window.S.videos;
-      if (!arr.find(x => x.driveId === f.id)) {
-        arr.push({
-          driveId: f.id,
-          name: f.name,
-          thumb:    `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`,
-          hiRes:    `https://drive.google.com/uc?id=${f.id}`,   // 生圖用原圖（跟 KOL 一樣）
-          driveUrl: `https://drive.google.com/file/d/${f.id}/view`,
-          src:      `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`,  // 列表用縮圖（載入快）
-          type
-        });
-      }
-    });
-  } catch (e) { console.warn('fetchFromGAS error:', e); }
-}
-
-// ══ 手動抓取（按鈕觸發）══
-async function fetchDriveAssets(type) {
-  if (window._workerDriveMode) {
-    await fetchBoth();
-    return;
-  }
-  if (!window._driveToken) {
-    document.getElementById('assetGrid').innerHTML = `
-      <div style="margin:12px;padding:14px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;">
-        <div style="font-size:13px;font-weight:900;color:#FF4D6A;">· 尚未連結 Google Drive！</div>
-        <button onclick="driveLogin()" style="margin-top:10px;padding:8px 20px;background:#D4182E;border:none;border-radius:8px;color:#fff;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:900;cursor:pointer;">· 立即連結 Drive</button>
-      </div>`;
-    return;
-  }
-  const inputId  = type === 'photo' ? 'inPhotoFolder' : 'inVideoFolder';
-  const raw      = document.getElementById(inputId)?.value?.trim();
-  const folderId = parseDriveId(raw);
-  if (!raw) { alert('請先貼上 Drive 資料夾連結'); return; }
-  setDriveStatus('busy');
-  const _req = ++_assetReqSeq;   // 🩹 2026-08-11:單獨抓某一類也算新的一輪
-  if (window._driveToken && folderId) await fetchFromDriveAPI(folderId, type, window._driveToken, _req);
-  renderAssets();
-  setDriveStatus('ok');
-}
-
+// ══ 手動重抓(index.html 右上角「重新抓取」按鈕)══
+//  🩹 2026-08-24 v2.0:整支改走素材庫。
+//   舊版這裡還有三條活的 Drive 呼叫(driveLogin / fetchFromDriveAPI / parseDriveId),
+//   Drive 拆掉後按下去會直接 ReferenceError —— 這是拆檔最容易漏的地方:
+//   【被 HTML onclick 直接呼叫的函式,拆內部實作時一定要一起改】。
 async function fetchBoth() {
-  // 🩹 2026-08-19:這一輪的編號一定要「接住」並往下傳。
-  //   舊寫法只有 ++ 沒有存,下面兩個 fetchFromDriveAPI 就漏傳了 reqId,
-  //   而 _assetReqStale(undefined) 回傳 false(視為不過期)——
-  //   等於防護整個失效,而且不會報錯,只會安靜地讓髒資料混進來。
-  //   ★ 實際災情:HH美學工作室的素材區出現浟意褌舞的照片。
-  const _req = ++_assetReqSeq;   // 🩹 2026-08-11:手動重抓 = 新的一輪,先讓所有在路上的舊回應失效
   const bid = window.S.brandId;
-  if (bid) { delete _assetCache[bid]; _clearAssetCacheLS(bid); } // 🆕 WIN1：手動重抓連本地一起清
+  if (!bid) { console.warn('[assets] 還沒選品牌'); return; }
+  // 手動重抓 = 連本地快取一起清,強制回源
+  delete _assetCache[bid];
+  _clearAssetCacheLS(bid);
+  _libCache[bid] = null;
   window.S.photos = [];
   window.S.videos = [];
-
-  // ★ Worker Drive 模式
-  if (window._workerDriveMode) {
-    await autoFetchAssetsWorker(bid);
-    return;
-  }
-
-  if (!window._driveToken) { driveLogin(); return; }
-
-  const photoRaw = document.getElementById('inPhotoFolder')?.value?.trim();
-  const videoRaw = document.getElementById('inVideoFolder')?.value?.trim();
-
-  if (!photoRaw && !videoRaw) {
-    const f = window.BRAND_FOLDERS[bid];
-    if (f?.photo) document.getElementById('inPhotoFolder').value = f.photo;
-    if (f?.video) document.getElementById('inVideoFolder').value = f.video;
-  }
-
-  setDriveStatus('busy');
-  const pRaw = document.getElementById('inPhotoFolder')?.value?.trim();
-  const vRaw = document.getElementById('inVideoFolder')?.value?.trim();
-
-  const promises = [];
-  if (pRaw) promises.push(fetchFromDriveAPI(parseDriveId(pRaw) || pRaw, 'photo', window._driveToken, _req));
-  if (SHOW_VIDEO_ASSETS && vRaw) promises.push(fetchFromDriveAPI(parseDriveId(vRaw) || vRaw, 'video', window._driveToken, _req));
-  await Promise.all(promises);
-
-  // 🩹 2026-08-19:等到這裡才發現已經換過品牌,就不要把結果寫進快取,
-  //   否則髒資料被存起來,下次切回這個品牌還是錯的(而且更難查)。
-  // 🩹 2026-08-24:這一處就是「快取裡永遠沒有 ff」的原因 ——
-  //   資料抓回來了,卻在寫入快取前被流水號判死,所以下次進來又要重抓、又再被判死。
-  if (_assetReqStale(_req, bid)) { console.warn('[assets] fetchBoth 完成時已切換品牌,不寫入快取(bid=' + bid + ')'); return; }
-
-  if (bid) {
-    _assetCache[bid] = { loaded: true, photos: [...window.S.photos], videos: [...window.S.videos] };
-  }
-  renderAssets();
-  setDriveStatus('ok');
+  await autoFetchAssets(bid);
 }
 
-// ══ Drive API 實際抓取（原本 Google OAuth 流程，不動）══
-async function fetchFromDriveAPI(folderId, type, token, reqId) {
-  const mimeFilter = type === 'photo' ? "mimeType contains 'image/'" : "mimeType contains 'video/'";
-  const q = encodeURIComponent(`'${folderId}' in parents and (${mimeFilter}) and trashed=false`);
-  try {
-    const r = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,thumbnailLink,webViewLink)&pageSize=100`,
-      { headers: { Authorization: 'Bearer ' + token } }
-    );
-
-    if (r.status === 401) {
-      console.warn('Drive token 過期，清除快取重新授權');
-      sessionStorage.removeItem('bs_token');
-      window._driveToken = null;
-      setDriveStatus('err');
-      document.getElementById('assetGrid').innerHTML = `
-        <div style="margin:12px;padding:14px;background:rgba(212,24,46,0.12);border:1.5px solid #D4182E;border-radius:10px;text-align:center;">
-          <div style="font-size:13px;font-weight:900;color:#FF4D6A;margin-bottom:6px;">· Drive 授權已過期</div>
-          <div style="font-size:11px;color:#FF8099;margin-bottom:10px;">請重新連結 Google Drive</div>
-          <button onclick="driveLogin()" style="padding:8px 20px;background:#D4182E;border:none;border-radius:8px;color:#fff;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:900;cursor:pointer;">· 重新連結 Drive</button>
-        </div>`;
-      return;
-    }
-
-    const d = await r.json();
-    if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return; }   // 🩹 2026-08-11 競速防護
-    if (d.files) {
-      d.files.forEach(f => {
-        const arr = type === 'photo' ? window.S.photos : window.S.videos;
-        if (!arr.find(x => x.driveId === f.id)) {
-          // 🆕 列表只用縮圖(s400):切品牌秒開,不再每張載原圖 base64
-          //    原圖等「生圖時」才靠 driveId 抓那一張(見 ensureFullRes)
-          const thumb400 = (f.thumbnailLink || '').replace(/=s\d+/, '=s400');
-          arr.push({
-            driveId: f.id, name: f.name, thumb: thumb400,
-            driveUrl: f.webViewLink || `https://drive.google.com/file/d/${f.id}/view`,
-            src: '', full: '', type
-          });
-        }
-      });
-      renderAssets();
-    }
-  } catch (e) { console.warn('Drive API error', e); }
-}
-
-// ══ 🆕 生圖前才抓「那一張」原圖 base64(避開列表全載的 324MB)══
-//    列表只有縮圖,真正生圖/合成才用 driveId 重新抓原檔 → 畫質一樣、不踩 CORS/tainted 坑
 async function ensureFullRes(photo, thumb) {
   if (!photo || !photo.driveId) return;
   const key = thumb ? 'canvasRes' : 'full';   // canvas 縮圖與 FAL 原圖分開存,絕不互蓋
@@ -581,52 +349,3 @@ function selectAsset(type, i) {
 }
 
 // ══ Drive 上傳廣告圖（只有 Google 模式才能用）══
-async function uploadAdToDrive(canvas, filename) {
-  if (window._workerDriveMode) return; // worker mode 不支援上傳
-  const dlBtn = document.getElementById('adDownloadBtn');
-  const origText = dlBtn?.textContent || '';
-  if (dlBtn) { dlBtn.textContent = '· 上傳中...'; dlBtn.disabled = true; }
-  try {
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
-    let folderId = window.DRIVE_OUTPUT_FOLDER_ID;
-    if (!folderId) { folderId = await getOrCreateAdFolder(); window.DRIVE_OUTPUT_FOLDER_ID = folderId; }
-    const meta = JSON.stringify({ name: filename, parents: folderId ? [folderId] : [] });
-    const form = new FormData();
-    form.append('metadata', new Blob([meta], { type: 'application/json' }));
-    form.append('file', blob, filename);
-    const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + window._driveToken },
-      body: form
-    });
-    if (!resp.ok) throw new Error('上傳失敗');
-    if (dlBtn) { dlBtn.textContent = '· 已存到 Drive！'; setTimeout(() => { dlBtn.textContent = origText; dlBtn.disabled = false; }, 3000); }
-  } catch (e) {
-    if (dlBtn) { dlBtn.textContent = origText; dlBtn.disabled = false; }
-  }
-}
-
-async function getOrCreateAdFolder() {
-  const token = window._driveToken;
-  const search = await fetch(
-    "https://www.googleapis.com/drive/v3/files?q=name%3D'Brand+OS+廣告圖'+and+mimeType%3D'application%2Fvnd.google-apps.folder'+and+trashed%3Dfalse&fields=files(id)",
-    { headers: { 'Authorization': 'Bearer ' + token } }
-  );
-  const sdata = await search.json();
-  if (sdata.files?.length > 0) return sdata.files[0].id;
-  const create = await fetch('https://www.googleapis.com/drive/v3/files', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'Brand OS 廣告圖', mimeType: 'application/vnd.google-apps.folder' })
-  });
-  return (await create.json()).id;
-}
-
-// ══ Drive ID 解析 ══
-function parseDriveId(raw) {
-  if (!raw) return '';
-  const m = raw.match(/folders\/([a-zA-Z0-9_-]+)/);
-  if (m) return m[1];
-  if (/^[a-zA-Z0-9_-]{25,}$/.test(raw)) return raw;
-  return raw;
-}
