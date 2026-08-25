@@ -4017,16 +4017,27 @@ async function saveAdImageSilently(imageUrl, kind, reqId) {
     //   中間那一站從 v11.2 起就只是純轉發,不做任何事 ——
     //   多一站就多一個失敗點、多一次網路來回。
     //   ⚠️ photoroom-proxy 那支不刪,標記為停用備援(見該檔註解)。
+    // 🩹 2026-08-24:改成 kol-proxy 的正確契約。
+    //   舊寫法直送 { action:'saveAiImage', ... } → kol-proxy 回「未知 action」,
+    //   因為 D1_WRITERS 的動作【必須包在 gas_write 外殼裡】:
+    //     { action:'gas_write', gasAction:'saveAiImage', payload:{...} }
+    //   ★ 為什麼一直沒人發現:fal 那條 webhook 是主線(fal 生完自己回呼 Worker 存檔,
+    //     跟瀏覽器無關),圖【本來就有】存進素材庫 —— 前端這條只是備援。
+    //     備援壞掉不影響功能,只是每次生圖都噴一則假警報。
+    //   ⚠️ 假警報比沒有警報更危險:真的存檔失敗時,沒人會相信那則訊息。
     const res = await _kolPost({
-      action: 'saveAiImage',
-      brandId,
-      imageUrl,
-      requestId: finalReqId,
-      metadata: {
-        source: 'admaker_' + (kind || 'poster'),
-        brand: brand?.name || '',
-        product: prod?.name || '',
-        generated_at: new Date().toISOString(),
+      action: 'gas_write',
+      gasAction: 'saveAiImage',
+      payload: {
+        brandId,
+        imageUrl,
+        requestId: finalReqId,
+        metadata: {
+          source: 'admaker_' + (kind || 'poster'),
+          brand: brand?.name || '',
+          product: prod?.name || '',
+          generated_at: new Date().toISOString(),
+        },
       },
     });
 
