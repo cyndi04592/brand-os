@@ -1136,7 +1136,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.23 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.29 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -6333,10 +6333,17 @@ function updateSeedanceCostEstimate() {
   //   實測 2 段 = 10 分 19 秒 → 反推「準備 ~60 秒 + 每段 ~280 秒」。
   //   接片是逐段生成,段數才是主導變數,不是解析度也不是 tier。
   const segs = (S.cineStoryboard && S.cineStoryboard.length) ? S.cineStoryboard.length : 1;
+  // 🩹 2026-08-26 再修:舊公式只算「生成」,漏掉【合成】那一步。
+  //   實測 2 段:6 分鐘畫面就拍完了,合成又跑了 13 分鐘以上,總計 19 分 +。
+  //   舊顯示「10-12 分鐘」等於承諾了一個從來做不到的數字。
+  //   ★ 改成:準備 1 + 段數 × 5 + 合成 4,上限抓 1.4 倍(排隊時間會浮動)。
+  //     寧可區間寬一點,也不要讓客戶以為當機。
   const perSeg = p.tier === 'standard' ? 6 : 5;   // 分鐘 / 段
-  const mid = 1 + segs * perSeg;
+  const mid = 1 + segs * perSeg + 4;              // ＋合成階段
+  const lo = Math.max(2, mid - 4);
+  const hi = Math.round(mid * 1.4);
   const segTxt = segs > 1 ? `${segs} 段 × ` : '';
-  el.textContent = `~ ${mid - 1}-${mid + 1} 分鐘(${segTxt}${p.resolution} × ${seconds}s)`;
+  el.textContent = `~ ${lo}-${hi} 分鐘(${segTxt}${p.resolution} × ${seconds}s)`;
 }
 
 function copySeedancePrompt() {
@@ -6781,49 +6788,129 @@ async function createStitchedVideo(beats) {
 // ═══════════════════════════════════════════════════════════════
 const _stitchProgress = (function () {
   let el = null, timer = null, total = 1, done = 0, pct = 0, note = '', t0 = 0, merging = false;
+  let mergeT0 = 0, overtime = false, plan = { gen: 600, merge: 240, all: 900, over: 1260 };
+
+  // ═══════════════════════════════════════════════════════════════
+  //  🕒 2026-08-26 改成「時間制」進度 —— 百分比由【已經過多久】推,
+  //     不再由【還差多少】推。RA 實測回報的兩個症狀是同一個病根:
+  //     ① 40% → 70% 暴衝:舊碼段完成後用 (target - pct) * 0.04 逼近,
+  //        剩餘距離越大跑越快 → 兩段時 40% 只要 34 秒就爬到 70%,
+  //        但那一段實際要好幾分鐘 → 客戶看到「衝上去然後靜止」。
+  //     ② 99% 卡 13 分鐘:舊碼合成階段目標寫死 99%,paint 又 Math.min(99),
+  //        6 分 4 秒就摸到天花板,之後【沒有地方可以去】,
+  //        一路站到 19 分 —— 看起來就是當機。
+  //  ★ 新規則三條:
+  //     1. 每個階段有「時間預算」,百分比 = 天花板 × (1 - e^(-t/τ)),
+  //        永遠逼近但永遠到不了 → 不會提早撞頂。
+  //     2. 真實事件(某段生完 / 合成步驟)可以【往前拉】,那是誠實的跳動;
+  //        事件之間的移動一律靠時間,所以不會暴衝。
+  //     3. 超過預算上限 → 不再假裝有進度,切成「不定量模式」:
+  //        收起百分比、跑動態條、明講「比預期久但沒有失敗」。
+  //        寧可承認不知道還要多久,也不要停在 99% 騙人。
+  // ═══════════════════════════════════════════════════════════════
+  const CEIL_GEN = 80;    // 生成階段天花板
+  const CEIL_ALL = 96;    // 合成階段天花板(留 4% 給「真的好了」)
+  //  ⚖️ 預算配重照實測抓,不照直覺:2026-08-26 那支 2 段,
+  //     【畫面 6 分 4 秒就拍完了,合成一個人跑了 13 分鐘以上】。
+  //     直覺會以為生成最久 —— 錯,瓶頸在合成(下載 + 串接 + 上傳)。
+  //     所以權重必須往合成搬,否則進度條又會在合成階段提早見頂。
+  const PER_SEG  = 200;   // 每段生成預算(秒)
+  const MERGE    = 420;   // 合成預算(秒)—— 實測最慢的一段
+  const PREP     = 60;    // 前置(參考圖鎖定)預算(秒)
+
+  function makePlan(segs) {
+    const gen = Math.max(1, segs) * PER_SEG;
+    const all = PREP + gen + MERGE;
+    return { gen: gen, merge: MERGE, all: all, over: Math.round(all * 1.4) };
+  }
+
+  // 飽和曲線:t 越大越接近 ceil,但永遠不等於 ceil
+  function ease(t, tau, floorV, ceilV) {
+    return floorV + (ceilV - floorV) * (1 - Math.exp(-Math.max(0, t) / tau));
+  }
+
+  // 不定量模式的動態條只需要注入一次
+  function ensureCss() {
+    if (document.getElementById('_stitchprog-css')) return;
+    const st = document.createElement('style');
+    st.id = '_stitchprog-css';
+    st.textContent =
+      '@keyframes _spSlide{0%{transform:translateX(-100%)}100%{transform:translateX(320%)}}';
+    document.head.appendChild(st);
+  }
 
   function paint() {
     if (!el) return;
-    const p = Math.min(99, Math.round(pct));
-    const mins = Math.floor((Date.now() - t0) / 60000);
-    const secs = Math.floor(((Date.now() - t0) % 60000) / 1000);
+    const elapsed = (Date.now() - t0) / 1000;
+    const mins = Math.floor(elapsed / 60);
+    const secs = Math.floor(elapsed % 60);
+    const waited = '已等候 ' + mins + ' 分 ' + secs + ' 秒';
+
+    // 右上角:正常顯示百分比;超時後不顯示數字(不再有假的 99%)
+    const rightTxt = overtime ? '處理中' : (Math.min(CEIL_ALL, Math.round(pct)) + '%');
+
+    const barInner = overtime
+      // 不定量:一段亮條來回跑,代表「還在動,但沒有 ETA」
+      ? '<div style="height:100%;width:30%;border-radius:99px;' +
+        'background:linear-gradient(90deg,rgba(109,250,194,0),#6dfac2,#7c6dfa,rgba(124,109,250,0));' +
+        'animation:_spSlide 1.8s ease-in-out infinite;"></div>'
+      : '<div style="height:100%;width:' + Math.min(CEIL_ALL, pct) + '%;border-radius:99px;' +
+        'background:linear-gradient(90deg,#6dfac2,#7c6dfa);transition:width .6s ease;"></div>';
+
+    const sub = overtime
+      ? waited + '<br>這支比預期久,但還在進行中 —— 沒有失敗,請不要關視窗'
+      : waited + (merging
+          ? '<br>畫面都拍好了,正在合成完整影片 —— 這步比較久,請再等一下,不要關視窗'
+          : '<br>影片在後台繼續產生,關掉視窗會找不到成品,請留在這頁');
+
     el.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">' +
         '<span style="font-size:13px;font-weight:600;color:#c9c9d4">' + escapeHtml(note || '準備中…') + '</span>' +
-        '<span style="font-size:12px;color:#8a8a99;font-variant-numeric:tabular-nums">' + p + '%</span>' +
+        '<span style="font-size:12px;color:#8a8a99;font-variant-numeric:tabular-nums">' + rightTxt + '</span>' +
       '</div>' +
       '<div style="height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;">' +
-        '<div style="height:100%;width:' + p + '%;border-radius:99px;background:linear-gradient(90deg,#6dfac2,#7c6dfa);transition:width .6s ease;"></div>' +
+        barInner +
       '</div>' +
-      '<div style="margin-top:6px;font-size:11px;color:#7a7a88">' +
-        // 🩹 v7.19:拿掉「已完成 N / N 段」。
-        //   病灶:「段」是接片引擎的內部單位,客戶不知道那是什麼,
-        //   看到「0 / 2 段」只會想「為什麼要分段?是不是壞了?」
-        //   —— 違反鐵律「不能露出馬腳,客戶不該看到中間工序」。
-        //   改成他真正在意的事:已經等多久、還要不要留在這頁。
-        '已等候 ' + mins + ' 分 ' + secs + ' 秒' +
-        (merging
-          ? '<br>畫面都拍好了,正在合成完整影片 —— 這步比較久,請再等一下,不要關視窗'
-          : '<br>影片在後台繼續產生,關掉視窗會找不到成品,請留在這頁') +
-      '</div>';
+      '<div style="margin-top:6px;font-size:11px;color:#7a7a88">' + sub + '</div>';
+  }
+
+  function tick() {
+    const elapsed = (Date.now() - t0) / 1000;
+
+    // 超時判定:一旦進入就不再退回(避免數字忽有忽無)
+    if (!overtime && elapsed > plan.over) overtime = true;
+
+    if (merging) {
+      const mt = (Date.now() - mergeT0) / 1000;
+      // τ 放大 → 合成階段爬得更慢更久,不會像舊版 6 分鐘就撞頂空轉
+      pct = Math.max(pct, ease(mt, plan.merge / 1.2, CEIL_GEN, CEIL_ALL));
+    } else {
+      // 生成階段:時間曲線 vs 已完成段數,取大的(事件可往前拉,時間負責填空隙)
+      const byTime = ease(elapsed, plan.gen / 1.6, 2, CEIL_GEN);
+      const byDone = done * (CEIL_GEN / total);
+      pct = Math.max(pct, byTime, byDone);
+    }
+    paint();
+  }
+
+  function enterMerge() {
+    if (merging) return;
+    merging = true;
+    mergeT0 = Date.now();
+    pct = Math.max(pct, CEIL_GEN);
   }
 
   return {
     start(box, segCount) {
       total = Math.max(1, segCount || 1); done = 0; pct = 2; note = '排隊中…'; t0 = Date.now();
-      merging = false;
+      merging = false; mergeT0 = 0; overtime = false;
+      plan = makePlan(total);
       el = box && box.firstElementChild;
       if (!el) return;
+      ensureCss();
       paint();
       clearInterval(timer);
-      // 段內平滑推進:朝「本段結束時該有的百分比」逼近,越接近越慢,不會超車
-      timer = setInterval(function () {
-        // 合成階段:由 note() 依實際步驟跳點,動畫只做極慢補間,不搶在前面
-        const target = merging ? 99 : (done + 1) * (80 / total);
-        const rate   = merging ? 0.008 : 0.04;
-        if (pct < target) pct += Math.max(merging ? 0.02 : 0.08, (target - pct) * rate);
-        paint();
-      }, 1000);
+      timer = setInterval(tick, 1000);
     },
     // 🛡️ v7.19 保險網:引擎端的訊息萬一漏了工程字眼,這裡最後一道攔截。
     //   單靠改 kol-stitch.js 不夠 —— 那個檔案日後還會被改,
@@ -6836,25 +6923,23 @@ const _stitchProgress = (function () {
         console.log('[進度] 已過濾工程訊息:', t);
         t = '製作中…';
       }
-      // 🩹 v7.19:偵測到合成階段 → 進度改由「階段」推進,不再空轉。
-      //   舊行為:所有段生完後 pct 目標停在 80,動畫慢慢爬到 99 就卡死,
-      //   而合成(下載+串接+上傳)實測要好幾分鐘 —— 客戶會以為當機而關視窗,
-      //   那兩段影片的點數就白花了。
+      // 合成階段的實際步驟 → 允許往前拉,但天花板降到 96(舊值 98 太貼 99,一下就撞頂)
       const _MERGE_PCT = {
-        '正在下載畫面': 84, '正在處理畫面': 88,
-        '正在合成影片': 92, '正在輸出影片': 95, '正在上傳': 97, '正在儲存影片': 98,
+        '正在下載畫面': 84, '正在處理畫面': 87,
+        '正在合成影片': 90, '正在輸出影片': 93, '正在上傳': 95, '正在儲存影片': 96,
       };
       for (const k in _MERGE_PCT) {
-        if (t.indexOf(k) !== -1) { merging = true; pct = Math.max(pct, _MERGE_PCT[k]); break; }
+        if (t.indexOf(k) !== -1) { enterMerge(); pct = Math.max(pct, _MERGE_PCT[k]); break; }
       }
       note = t;
       paint();
     },
     segDone(idx) {
       done = Math.min(total, (idx | 0) + 1);
-      pct = Math.max(pct, done * (80 / total));
+      pct = Math.max(pct, done * (CEIL_GEN / total));
       // 🩹 v7.19:不講「第 N 段」,改講進度感
-      note = done >= total ? '正在合成影片…' : '畫面製作中,請稍候…';
+      if (done >= total) { enterMerge(); note = '正在合成影片…'; }
+      else { note = '畫面製作中,請稍候…'; }
       paint();
     },
     stop() { clearInterval(timer); timer = null; el = null; },
