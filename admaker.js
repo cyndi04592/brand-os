@@ -2348,13 +2348,15 @@ const PRODTYPE_PROMPT = {
     `- The product is the hero — build the advertising scene AROUND it\n\n`,
 
   beauty:
-    `=== SERVICE RESULT — NO PRODUCT EXISTS (HIGHEST PRIORITY) ===\n` +
-    `- The source image shows a FINISHED SERVICE RESULT on a real person (lashes on an eye, nails on a hand, hair, brows, skin)\n` +
-    `- ⛔ ABSOLUTELY DO NOT invent, draw or place ANY product box, package, bottle, jar, tube, tray, retail packaging or branded container anywhere in the frame\n` +
-    `- ⛔ Inventing a fake product is the single worst failure — this business sells a service, not merchandise\n` +
-    `- Reproduce the result in the source image PIXEL-PERFECT on the person; never reinterpret it as a sellable item\n` +
-    `- The finished result is the hero — build the advertising scene AROUND the person and their result\n` +
-    `- Keep skin real: pores, fine hairs and natural texture preserved, never airbrushed into a mannequin\n\n`,
+    // 🩹 2026-08-24:六條禁令壓縮成一條紅線,其餘改成創作指引(見 BEAUTY_BASE 的說明)
+    `=== CRAFTSMANSHIP ON A PERSON (HIGHEST PRIORITY) ===\n` +
+    `- The source image shows a finished service result worn by a real person (lashes on an eye, nails on a hand, a cut/colour/perm/extensions on someone's head, brows, skin)\n` +
+    `- Match the gender in the source image exactly — men's barbering is a normal part of this trade, never default to a female subject\n` +
+    `- The person wearing that result is the hero — build the advertising scene AROUND them, with the salon environment supporting the story\n` +
+    `- Reproduce the result PIXEL-PERFECT where it sits on their body; the craft is the selling point\n` +
+    `- Keep skin real: pores, fine hairs and natural texture preserved, never airbrushed into a mannequin\n` +
+    `- Salon props (lash tray, tweezers, dried flowers, towel, lamp, mirror, styling chair, basin) are welcome as environment — they read as a real working studio\n` +
+    `- ⛔ THE ONE HARD RULE: the result must stay ON A LIVING BODY. Never detach it into a sellable object — no false-lash strips on a tray, no press-on nail sets, no wig, no hairpiece, no mannequin head, no bundle of hair extensions laid out (extensions must appear already blended into the client's own hair), no box, bottle, tube or retail packaging. Turning craftsmanship into merchandise misrepresents the business\n\n`,
 
   medical:
     `=== CLINIC / MEDICAL AESTHETIC — TRUST OVER RESULT (HIGHEST PRIORITY) ===\n` +
@@ -2469,10 +2471,31 @@ const PHYSICAL_LAYOUT_KEYS = [
 // ═══════════════════════════════════════════════════════════════════════
 
 // ── 美業(非醫療)──────────────────────────────────────────────────
+// 🩹 2026-08-24 美業基底改寫 —— RA:「美業都不好看」。
+//  ★ 診斷:舊版是用【防呆】邏輯寫的,美業有 6 條禁令、0 條創作指引;
+//    對照組 physical 有 0 條禁令、1 條「build the scene AROUND it」。
+//    模型被禁令包圍時會選最保守的做法 → 原圖 + 換背景 = 乾淨但無聊。
+//  ★ 三個放行:
+//    (1) 沙龍【場景道具】可以有 —— 托盤/鑷子/乾燥花/毛巾/燈,那是環境不是商品。
+//        舊版 ZERO merchandise 把所有物件一起殺掉,畫面只剩一張臉 + 空背景,構圖天生單調。
+//    (2) 節慶主題可以帶入該節慶的重點色 —— 舊版鎖死裸色系,
+//        跟萬聖節(橘)/農曆年(紅)直接打架,結果生出誰都不像的暗橘光(RA 實測)。
+//    (3) 語氣從「不要做什麼」改成「主角是誰」。
+//  🔴 但這一條【絕不放行】,而且寫得比舊版更精準:
+//    睫毛長在她眼睛上、指甲長在她手上 —— 不是可以裝盒賣的東西。
+//    一旦變成假睫毛片 / 假指甲片躺在盤子上,這家店就從「手藝好」
+//    被講成「賣材料」,客戶的生意被說錯了。
 const BEAUTY_BASE = `
-- Warm nude palette ONLY: cream, nude pink, off-white, warm brown, natural wood. NO saturated colors, NO neon, NO primary red/blue/green
+- The person and their finished result are the hero — build the scene AROUND them
+- Match the gender presented in the source image exactly. Men's barbering and men's perms are a normal part of this trade — never default to a female subject
+- Warm nude base palette (cream, nude pink, off-white, warm brown, natural wood). When a seasonal or festive theme is specified, that theme's signature accent colour is allowed and welcome, kept muted and tasteful rather than neon
 - Skin must stay real: keep pores, fine hairs, natural texture. NOT airbrushed into a mannequin
-- ZERO merchandise in frame: no box, no bottle, no tube, no jar, no retail packaging, no branded container`;
+- Salon environment props are encouraged and add credibility: lash tray, tweezers, dried flowers, folded towel, soft lamp, mirror, plant, styling chair, salon basin, treatment bed linen
+- ⛔ ABSOLUTE RULE — the service result must stay ON THE LIVING BODY: lashes on their eyes, nails on their hand, hair on their head. NEVER detach it into a sellable object:
+  · no false-lash strip on a tray, no press-on nail set laid out
+  · no wig, no hairpiece, no mannequin head, no bundle of hair extensions laid out — hair extensions must be shown already blended into the client's own hair, on their head
+  · no product box, bottle, tube, jar or retail packaging anywhere
+  This business sells craftsmanship performed on a living person, not merchandise`;
 
 const BEAUTY_LAYOUTS = {
   result_closeup: {
@@ -2481,7 +2504,8 @@ const BEAUTY_LAYOUTS = {
     composition: `Extreme close-up of the finished service result:
 - Treated area occupies 75-85% of the canvas, placed slightly off-centre on a thirds line
 - Negative space 15-25%, all of it on one side — never a symmetrical border
-- Plain seamless backdrop in a warm nude tone, no scene, no props, no furniture
+- Quiet backdrop in a warm nude tone, thrown well out of focus. A minimal hint of the real salon may sit in that blur — a folded towel edge, a sliver of window light, a soft shadow of foliage — but nothing sharp enough to compete with the treated area
+- ⛔ The subject is a living person, framed tight. Never place the result on a stand, tray or surface
 - Optional single line of small caption type along the quiet edge; brand signature tiny at one bottom corner
 - Soft diffused frontal light plus a subtle top fill, 4500-5000K, minimal shadow
 - Shallow depth of field so the treated area is critically sharp and the backdrop falls off cleanly
@@ -2489,18 +2513,82 @@ const BEAUTY_LAYOUTS = {
 Reference aesthetic: Aesop product detail photography, Japanese beauty editorial close-ups, Muji catalogue macro${BEAUTY_BASE}`
   },
 
+  // 🆕 2026-08-24 美業前後對比 —— 台灣美業社群實務裡【成效最好的形式】:
+  //   「一張簡單的對比圖,讓人一目了然看出專業技術帶來的改變」。
+  //   ★ 而且客戶原圖本來就是這個格式(S__192536582_0.jpg 就是上下兩格前後對比)——
+  //     以前 beauty 底下沒有這個版型,客戶只好選「多格對照型」,
+  //     結果同一隻眼睛被複製成四條(RA 實測 12 張全中)。
+  //   ⚠️ 醫美(medical)禁止 before/after(醫療法),但美睫/美甲不受醫療法規範,
+  //     所以這個版型只掛在 beauty,不掛 medical。
+  beauty_before_after: {
+    label: '前後對比型',
+    desc: '施作前／後上下對照,美業最有效的形式',
+    composition: `Two-panel before/after comparison of the SAME treated area on the same person:
+- Split the canvas into two equal panels, stacked vertically (or left/right if the source framing is wide)
+- Thin clean gutter between panels, 1-2% of canvas width
+- IDENTICAL framing, angle, distance and lighting in both panels — the only visible difference must be the treatment itself, or the comparison is not credible
+- Small discreet BEFORE / AFTER labels in the local language, placed in a quiet corner of each panel, delicate type, never large or shouty
+- Same white balance and colour treatment across both panels so they read as one set
+- Shallow depth in each panel with the treated area critically sharp
+- ${CAM_MACRO} f/4, macro clarity on lash fibres or nail surface texture
+- If the source image already contains a before/after pair, PRESERVE that pairing and simply re-stage it cleanly — do not duplicate a single state into two panels
+Reference aesthetic: Japanese salon portfolio, quiet documentary comparison${BEAUTY_BASE}`
+  },
+
+  // 🩹 2026-08-24 全面改寫 —— RA 給了七張真實美業參考圖後定調。
+  //  ★ 舊版三個病(RA 實測 12 張全中):
+  //    (1) 只規定橫帶「多高」,沒規定「多寬」→ 直式原圖排完右邊空一大塊,
+  //        模型只好隨手放個花瓶(RA:「很像小花加插圖」)
+  //    (2) 沒說每格要不同 → 同一隻眼睛被複製四次
+  //    (3) 留白沒有內容 → 版面看起來未完成
+  //  ★ 正解(參考 MARU MARU LASH SALON 那類真實貼文):
+  //    留白【不是問題】,留白【空著】才是問題 —— 那塊該放 LOGO 和服務名稱。
+  //    而且每一格要標出【不同的服務項目】(原生睫毛/嫁接/塑型/塑型+隔離精華),
+  //    那才是有用的對照,不是四張一樣的圖疊起來。
   multi_angle_grid: {
     label: '多格對照型',
-    desc: '同部位多角度直式堆疊 + 底部小字署名',
-    composition: `Vertical stacked grid of the SAME treated area from different angles:
-- 2-4 equal-height horizontal bands, each band 22-30% of canvas height
-- Thin consistent light gutters between bands, 1-2% of canvas width
-- Bottom strip 8-12% of canvas: small delicate signature type (studio or artist name), generous margin, left- or right-aligned never centred
-- Identical soft diffused frontal lighting at 4500-5000K across every band, same white balance and colour treatment so they read as one set
-- Shallow depth in each band with the treated area critically sharp
-- Each band shot at the same distance with only the angle changing
-- ${CAM_MACRO} f/4, consistent exposure across all frames
-Reference aesthetic: Japanese nail salon lookbooks, Kinfolk multi-panel spreads, Muji product angle sheets${BEAUTY_BASE}`
+    desc: '側邊放 LOGO + 每格標服務名稱;需 2-4 張不同角度或不同項目的原圖',
+    composition: `Editorial comparison layout — a quiet brand panel beside a stack of result bands:
+- Split the canvas vertically: a calm brand panel occupying 28-38% on ONE side, and the image stack filling the remaining 62-72%
+- The brand panel is NEVER left empty. It carries, vertically centred with generous margin: the studio name or logotype, and optionally a one-line service descriptor beneath it. Warm off-white or soft nude ground, delicate light type, no clutter
+- The image stack: 2-4 equal-height horizontal bands, each band spanning the FULL width of the stack area edge to edge — never shrink a photo and leave a blank column
+- If a source photo is portrait-orientation, CROP it to the band's aspect ratio rather than scaling it down and leaving empty space
+- ⛔ Each band must show a DIFFERENT state, angle or service tier. Never duplicate one photo across multiple bands — repeating the same eye is the single most obvious failure of this layout
+- Small delicate caption on each band naming that band's service or stage, in the local language, placed in the quiet area of the band, light weight type, never shouty
+- Identical white balance, colour treatment and light direction across every band so the set reads as one coherent piece
+- Thin consistent gutters between bands, 0.5-1% of canvas height
+- ${CAM_MACRO} f/4, macro clarity on lash fibres or nail surface texture
+Reference aesthetic: Japanese lash salon portfolio panels, quiet editorial menu boards${BEAUTY_BASE}`
+  },
+
+  // 🆕 2026-08-24 大圖 + 側邊小格(RA:「這個分隔方式更好」)
+  hero_side_grid: {
+    label: '主圖側格型',
+    desc: '一張大人像 + 側邊 2-3 格細節,層次感最好',
+    composition: `Asymmetric hero-and-details layout:
+- One large hero image occupying 55-65% of the canvas on one side: a portrait or three-quarter face showing the finished result in context, the person looking naturally away from camera or softly down
+- The remaining 35-45% is a vertical stack of 2-3 smaller detail frames: macro crops of the treated area from different angles
+- Thin consistent gutters, 0.5-1% of canvas width, aligned so the outer edges of the stack line up flush with the hero image
+- ⛔ The detail frames must each show something DIFFERENT from the hero and from each other — a different angle, a different eye, a different stage
+- Unified colour grade across hero and details: same white balance, same warmth, so they read as one shoot rather than a collage
+- Optional tiny studio signature in one corner of the hero image
+- ${CAM_MACRO} f/4 on the detail frames; the hero image may use a slightly wider framing
+Reference aesthetic: Korean beauty editorial spreads, salon portfolio hero cards${BEAUTY_BASE}`
+  },
+
+  // 🆕 2026-08-24 超近距離細節(RA:「圖4 那種超近距離照片細節」)
+  macro_detail: {
+    label: '極致細節型',
+    desc: '單眼/單指超近距離,看得見纖維與反光',
+    composition: `Extreme macro of the treated area, filling the frame:
+- The treated area occupies 85-95% of the canvas — this is a technical showcase, get close
+- Individual lash fibres, their taper and separation, or individual nail surface texture must be resolvable
+- Catchlight visible in the iris if the subject is an eye; the eye should read wet and alive, never plastic
+- Skin around the treated area keeps pores and fine downy hair — the realism of the skin is what makes the craft believable
+- Plain quiet backdrop falling completely out of focus, warm nude or soft neutral
+- Soft diffused frontal light plus gentle top fill, 4500-5000K, no harsh specular hotspots on the skin
+- ${CAM_MACRO} f/2.8-4, focus plane exactly on the lash line or nail surface
+Reference aesthetic: cosmetic technical photography, Japanese beauty macro editorial${BEAUTY_BASE}`
   },
 
   in_session: {
@@ -3190,7 +3278,9 @@ const LAYOUT_BY_PRODTYPE = {
     { group: '新增版式', keys: ['before_after', 'grid_showcase', 'big_statement', 'checklist_info', 'hand_hold'] },
   ],
   beauty: [
-    { group: '成果呈現', keys: ['result_closeup', 'multi_angle_grid', 'model_editorial'] },
+    // 🆕 2026-08-24 依 RA 提供的七張真實美業參考圖重排:
+    //   前後對比(最有效)→ 主圖側格(層次最好)→ 成果特寫 → 極致細節 → 多格對照 → 模特情境
+    { group: '成果呈現', keys: ['beauty_before_after', 'hero_side_grid', 'result_closeup', 'macro_detail', 'multi_angle_grid', 'model_editorial'] },
     { group: '信任感', keys: ['in_session', 'mirror_selfie'] },
     { group: '文字型', keys: ['question_headline', 'booking_info'] },
   ],
