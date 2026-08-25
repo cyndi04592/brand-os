@@ -1136,7 +1136,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.31 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.32 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -6342,7 +6342,7 @@ function updateSeedanceCostEstimate() {
   //     standard 檔生成較慢 → 只在生成那段乘 1.2,合成不受 tier 影響。
   const _plan = (typeof window._stitchPlan === 'function')
     ? window._stitchPlan(segs)
-    : { gen: 300 + segs * 25, merge: segs <= 1 ? 40 : segs * 400, all: 0 };
+    : { gen: 300 + segs * 25, merge: segs <= 1 ? 40 : 600 + segs * 60, all: 0 };
   const _slow = (p.tier === 'standard') ? _plan.gen * 0.2 : 0;
   const _allMin = (_plan.all + _slow) / 60;
   const lo = Math.max(2, Math.round(_allMin * 0.7));
@@ -6831,10 +6831,19 @@ const _stitchProgress = (function () {
   //     (下載每段 720p → 解碼 → 串接 → 上傳 R2),吃客戶的網路和 CPU。
   //  ★ 實測(2 段):5 分 49 秒兩段同時生完 → 19 分 03 秒仍在合成 = 合成 13 分鐘 +。
   //     ⚠️ 只有這一筆數據,合成係數屬暫定值,之後有實測要回來修。
-  const GEN_BASE = 300;  // 生成:最慢那一段(平行,不乘段數)
-  const GEN_SEG  = 25;   // 生成:每段的送出排隊 + 佇列擁塞增量
-  const MERGE_SEG = 400; // 合成:每段增量(瀏覽器端下載+串接+上傳)—— 主導項
-  const PREP      = 60;  // 前置(參考圖鎖定)
+  //  🔁 2026-08-26 第三次修正(RA 問「合成不是靠 FAL 嗎?」問出來的):
+  //     前一版寫「合成跑在瀏覽器端」是【照抄 kol-stitch.js 的一行錯註解】,
+  //     沒去追 composeSegments 實際呼叫什麼。實際上它送 video_compose →
+  //     Worker 打 fal-ai/ffmpeg-api/merge-videos,跑在 fal 伺服器,帶 webhook。
+  //  ★ ffmpeg 串接幾支短片,運算本身只要幾秒 —— 那 13 分鐘幾乎全是
+  //     【佇列等待 + webhook/輪詢偵測延遲】,而那些【不隨段數增加】。
+  //     所以合成寫成「大的固定成本 + 很小的每段增量」,不是每段 400 秒。
+  //  ⚠️ 教訓:註解會過期,程式不會。時間模型只能照程式實際呼叫的東西建。
+  const GEN_BASE   = 300;  // 生成:最慢那一段(平行,不乘段數)
+  const GEN_SEG    = 25;   // 生成:每段的送出排隊 + 佇列擁塞增量
+  const MERGE_BASE = 600;  // 合成:佇列 + 偵測延遲(固定,不隨段數長)—— 主導項
+  const MERGE_SEG  = 60;   // 合成:每段的實際 ffmpeg 成本(很小)
+  const PREP       = 60;   // 前置(參考圖鎖定)
 
   //  ★ 唯一的時間模型:進度條和畫面上的估時【共用這一支】,
   //    不能各自算 —— 否則會出現「估時說還在範圍內、進度條already投降」的矛盾。
@@ -6842,7 +6851,7 @@ const _stitchProgress = (function () {
     const n = Math.max(1, segs);
     const gen = GEN_BASE + n * GEN_SEG;
     // 單段不接片(程式直接 toR2),沒有下載+串接那段成本
-    const merge = (n <= 1) ? 40 : (n * MERGE_SEG);
+    const merge = (n <= 1) ? 40 : (MERGE_BASE + n * MERGE_SEG);
     const all = PREP + gen + merge;
     return { gen: gen, merge: merge, all: all, over: Math.round(all * 1.4) };
   }
