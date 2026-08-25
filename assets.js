@@ -31,7 +31,29 @@ let _assetReqSeq = 0;
 //   附帶好處:每次切品牌少打一次 Drive,載入更快。
 //   要恢復的話把這個改回 true 即可(渲染與抓取都吃這個旗標)。
 const SHOW_VIDEO_ASSETS = false;
-function _assetReqStale(reqId) { return reqId !== undefined && reqId !== _assetReqSeq; }
+// ═══════════════════════════════════════════════════════════════
+//  🩹 2026-08-24 競速防護改判準:流水號 → 品牌 ID
+//   現場(RA 回報):香港福臨門(ff)員工在素材庫看得到 55 張,
+//     主站「品牌素材庫」卻是空的。實測 API 正常回 55 筆、篩選後 45 張,
+//     但 fetchFromLibrary(brandId, undefined) 關掉這道防護就立刻進來 ——
+//     ★ 資料一直都在,是被【我們自己的防護】丟掉的。
+//   ★ 病灶:_assetReqSeq 在 4 個地方 ++,而切品牌時有【兩個入口】
+//     都會先 ++ 再發請求。先發的那個回來時號碼已被推進 → 判定「過期」→ 整包丟。
+//     商品照最多的品牌回應最慢,所以【最慢的那個最容易被自己判死】。
+//     而且它丟得很安靜:不報錯、不提示,畫面只是空的。
+//   ★ 修法:號碼會因為重複觸發而失準,但【品牌 ID 不會騙人】。
+//     只要回來的資料就是「當前品牌」的,就該收下,管它是第幾次請求。
+//     這樣既保住原本的防護目的(2026-08-19 那次 HH 素材區混進浟意褌舞的照片),
+//     又不會誤殺自己人 —— 而且比流水號更精準,因為它擋的正是「別的品牌」。
+//   ⚠️ 沒帶 brandId 的舊呼叫點(Drive 那三條路)自動退回流水號判斷,行為不變。
+// ═══════════════════════════════════════════════════════════════
+function _assetReqStale(reqId, brandId) {
+  if (brandId !== undefined && brandId !== null && brandId !== '') {
+    const _cur = (window.S && (window.S.brandId || window.S.currentBrandId)) || '';
+    return String(brandId) !== String(_cur);
+  }
+  return reqId !== undefined && reqId !== _assetReqSeq;
+}
 
 function _slimAsset(p) {
   return {
@@ -117,7 +139,7 @@ async function autoFetchAssets(brandId) {
   }
   await Promise.all(promises);
   // 🩹 抓完才發現已經切走 → 不准寫進快取,也不准重畫(否則會把別的品牌的清單存成這個品牌的)
-  if (_assetReqStale(_req)) return;
+  if (_assetReqStale(_req, brandId)) return;   // 🩹 2026-08-24:以品牌為準,不用流水號
 
   _assetCache[brandId] = {
     loaded: true,
@@ -170,7 +192,7 @@ async function autoFetchAssetsWorker(brandId) {
   }
   await Promise.all(promises);
   // 🩹 抓完才發現已經切走 → 不准寫進快取,也不准重畫
-  if (_assetReqStale(_req)) return;
+  if (_assetReqStale(_req, brandId)) return;   // 🩹 2026-08-24:以品牌為準,不用流水號
 
   _assetCache[brandId] = {
     loaded: true,
@@ -222,7 +244,7 @@ async function fetchFromLibrary(brandId, reqId, force) {
   // ⚡ 命中快取就直接用 —— 沒有這層,每切一次品牌就重打一次後端,
   //    體感會比 Drive 還慢(Drive 那邊前端本來就有 _assetCache)。
   if (!force && _libCache[brandId]) {
-    if (_assetReqStale(reqId)) return -1;
+    if (_assetReqStale(reqId, brandId)) return -1;
     // ⚠️ 2026-08-21 修:這裡原本是「往現有清單加」,切品牌時舊的沒清掉
     //    → 兩個品牌的素材會疊在一起。客戶會看到別家的照片,
     //    做圖時也可能選錯。改成「只留這個品牌的」。
@@ -250,7 +272,7 @@ async function fetchFromLibrary(brandId, reqId, force) {
     }), 'list_assets');
 
     if (!data || !data.ok) { console.warn('[assets] 素材庫讀取失敗,改走 Drive:', data && data.error); return 0; }
-    if (_assetReqStale(reqId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應'); return -1; }
+    if (_assetReqStale(reqId, brandId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應(brandId=' + brandId + ')'); return -1; }
     // 🛡 只留這個品牌的:上一個品牌的殘留清掉,否則兩家素材會混在一起
     window.S.photos = (window.S.photos || []).filter(function (x) { return x._src !== 'library'; });
 
@@ -419,7 +441,9 @@ async function fetchBoth() {
 
   // 🩹 2026-08-19:等到這裡才發現已經換過品牌,就不要把結果寫進快取,
   //   否則髒資料被存起來,下次切回這個品牌還是錯的(而且更難查)。
-  if (_assetReqStale(_req)) { console.warn('[assets] fetchBoth 完成時已切換品牌,不寫入快取'); return; }
+  // 🩹 2026-08-24:這一處就是「快取裡永遠沒有 ff」的原因 ——
+  //   資料抓回來了,卻在寫入快取前被流水號判死,所以下次進來又要重抓、又再被判死。
+  if (_assetReqStale(_req, bid)) { console.warn('[assets] fetchBoth 完成時已切換品牌,不寫入快取(bid=' + bid + ')'); return; }
 
   if (bid) {
     _assetCache[bid] = { loaded: true, photos: [...window.S.photos], videos: [...window.S.videos] };
