@@ -2580,7 +2580,11 @@ Reference aesthetic: Korean beauty editorial spreads, salon portfolio hero cards
   macro_detail: {
     label: '極致細節型',
     desc: '單眼/單指超近距離,看得見纖維與反光',
-    composition: `Extreme macro of the treated area, filling the frame:
+    composition: `CROP OVERRIDE — this layout deliberately shows ONLY a body detail, never a whole face. The face-preservation rule applies to the visible region only; the rest of the head is intentionally cropped away:
+- Frame ONE eye (or ONE finger/nail) so that the eye socket, lashes and the brow directly above fill the frame corner to corner
+- ⛔ The mouth, chin, jawline, mask and neck must be entirely OUTSIDE the frame. If a mask is visible, you have not cropped close enough — push in further
+- ⛔ Do NOT show both eyes, do NOT show a three-quarter face, do NOT leave background walls or furniture around the head
+- Correct framing test: the lash line should span roughly half the canvas width; the brow sits near the top edge; the lower lid and a little cheek fill the bottom
 - The treated area occupies 85-95% of the canvas — this is a technical showcase, get close
 - Individual lash fibres, their taper and separation, or individual nail surface texture must be resolvable
 - Catchlight visible in the iris if the subject is an eye; the eye should read wet and alive, never plastic
