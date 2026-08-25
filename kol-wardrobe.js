@@ -103,33 +103,22 @@
     //   (它也有 Hello Kitty / Disney 聯名,但那不是主力,所以不提圖案。)
     pazzo:     { base: 'PAZZO Taiwanese good-life womenswear, signature body-shaping high-waist trousers with leg-lengthening cut, soft cloud-cotton jersey, flattering slim silhouette, plain refined colours',
                  casual: 'PAZZO soft cotton top and body-shaping slim trousers', refined: 'PAZZO flattering waist-defined dress' },
-    //  🩹 v5.23(2026-08-24)CACO 第四版 —— 前三版全錯,錯法各不相同,一起記下來:
-    //   ❌ 一版:寫 'CACO … cute graphic print tops' → 模型不認識這個台灣品牌,
-    //      把「CACO」四個字直接印在 T 恤上,再亂編一隻兔子。
-    //   ❌ 二版:看首頁「最大聯名服飾品牌」→ 判定靠授權 IP → 拿掉品牌名 + 禁印花
-    //      → 生出來跟 GU 沒兩樣(RA 實測)。
-    //   ❌ 三版:看 NAVY 分類頁滿滿鯊魚 → 判定鯊魚是自有識別 → 實測鯊魚是出來了,
-    //      但「CACO NAVY」六個字又被印在胸口(模型仍不認識,照樣自己編 logo)。
-    //      而且 RA 指出:【鯊魚只是這一季的主題,不是品牌的恆常識別】。
-    //   ✅ 四版(RA 提供 CC.DAILY 主題企劃頁,790 件商品):
-    //      CACO 的自有日常線是 CC.DAILY,網站標題就寫「韓系顯瘦女裝」,
-    //      主打系列叫「最懂你的顯瘦系列」。商品名稱本身就是識別:
-    //        顯瘦高磅西裝短裙/短褲 · 交疊打褶寬鬆西裝褲 · 假兩件連帽坑紋上衣
-    //        條紋假兩件開襟短裙 · 鉚釘設計合身背心 · 棉麻格紋連帽短版罩衫
-    //      色系:黑/鐵灰/深灰/灰棕/灰杏/卡其/米白 + 少量粉紅淺藍。
-    //      質感來自【織紋】(坑紋/格紋/條紋)不是印花。版型是【上合身下寬鬆】。
-    //   🔴 卡通角色全在「聯名」那條線(迪士尼/三麗鷗/蠟筆小新/哈利波特…),
-    //      那些是【授權他人 IP】—— 絕對不生成,不是技術限制而是法律紅線。
-    //      所以下面明確寫死 no cartoon characters / no lettering / no logo,
-    //      不能指望模型自己不畫。
-    //   ★ 不寫品牌名:一版和三版都實測過,模型不認識 CACO,寫了就把字印上去。
-    //   ★★ 教訓(比 CACO 本身值錢):判斷品牌「靠什麼識別」,
-    //      首頁會騙人(那是行銷語)、分類頁也會騙人(那是這一季的檔期)。
-    //      要問的是【這個特徵三年後還在嗎】——
-    //      聯名是流量,當季是檔期,只有【版型與材質】才是識別。
-    caco:      { base: 'Korean-style slimming daily wear, high-gauge tailored suiting cut, faux-two-piece layering detail, ribbed or checked woven texture, fitted top paired with relaxed wide-leg bottom, muted neutral palette of black charcoal grey khaki and off-white, plain woven fabric only, no printed graphics, no cartoon characters, no lettering, no logo',
-                 casual: 'faux-two-piece ribbed knit top with relaxed wide-leg tailored trousers, plain fabric, no print',
-                 refined: 'high-gauge tailored suit skirt with fitted knit top, plain fabric, no print' },
+    // ═══════════════════════════════════════════════════════════
+    //  🗑 v5.24(2026-08-24)CACO 移除 —— RA 決策:「算了把 caco 刪除吧」
+    //   ★ 為什麼刪,而不是繼續調:CACO 的真實識別【就是授權卡通 IP】——
+    //     藍色小精靈、迪士尼、Kuromi、蠟筆小新、三麗鷗…(RA 提供實際貼文佐證)。
+    //     那些是他們付授權金才能印的,我們生成 = 幫客戶的商業影片侵權。
+    //     這是法律紅線,不是「做得像一點」就能繞過。
+    //   ★ 而把 IP 拿掉之後剩下的(落肩短T + 卡其工裝 + 美式街拍),
+    //     跟其他平價品牌沒有區別 —— 寫了也不會「看起來像 CACO」。
+    //     RA 實測四版的結論:一版印字、二版變 GU、三版鯊魚是當季、四版變高價西裝。
+    //   ✅ 正解是【走實拍】:請 CACO 把自己的商品照傳進素材庫當服裝參考。
+    //     那是他們授權過的商品,100% 是真的那件衣服,零侵權風險,
+    //     而且每季換新品不必回頭改程式。
+    //   ⚠️ 刪除是安全的:resolveBrand() 查不到會 return '',
+    //     系統落回一般穿搭描述,不報錯也不空白。舊資料選到 caco 一樣不會炸。
+    //   🚫 不要因為「看到某一季的圖很好看」就把它加回來 —— 加回來就是侵權。
+    // ═══════════════════════════════════════════════════════════
 
     // ── 精品 ──────────────────────────────────────────────
     //  🩹 v5.21:LV 實測(RA 生的服裝參考圖)—— 寫 monogram 完全沒出現,
@@ -210,7 +199,7 @@
     human_made: 'human_made', humanmade: 'human_made', human: 'human_made',
     aape: 'aape',
     mardi: 'mardi', mardi_mercredi: 'mardi', mardimercredi: 'mardi',
-    mallothi: 'mallothi', pazzo: 'pazzo', caco: 'caco',
+    mallothi: 'mallothi', pazzo: 'pazzo',   // 🗑 v5.24 caco 已移除(授權 IP,見上方說明)
     lv: 'lv', louis_vuitton: 'lv', louisvuitton: 'lv',
     chanel: 'chanel', hermes: 'hermes', 'herm_s': 'hermes',
     gucci: 'gucci', diesel: 'diesel', on: 'on',
@@ -419,5 +408,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.23 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
+  console.log('[KolWardrobe] 👗 v5.24 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
