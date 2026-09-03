@@ -1136,7 +1136,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.37 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.39 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -3963,12 +3963,14 @@ function syncKolListToCine() {
   const cineCountEl = document.getElementById('kol-count-cine');
   if (!srcList || !destList) return;
   const _html = srcList.innerHTML;
-  if (destList.dataset.syncHash === String(_html.length) && destList.childElementCount) {
-    // 內容長度沒變 → 判定沒變動,不重建(切換 STEP 的常態)
-    return;
+  //  🩹 2026-08-26:這裡是【第二處】同樣的長度判斷(第一處在 _syncHtmlIfChanged)。
+  //    修一處不夠 —— 放寬或修正一個判斷時,要找出所有做同一件事的地方,
+  //    否則會變成「右欄跟上了、左邊清單沒跟上」的半好不好狀態。
+  if (destList.childElementCount && destList.innerHTML === _html) {
+    return;   // 內容真的一模一樣 → 不重建(切換 STEP 的常態)
   }
   destList.innerHTML = _html;
-  destList.dataset.syncHash = String(_html.length);
+  destList.dataset.syncHash = String(_html.length);   // 保留欄位,不讓舊碼讀到 undefined
   destList.removeEventListener('click', handleKolListClick);
   destList.addEventListener('click', handleKolListClick);
   if (cineCountEl && countEl) {
@@ -4152,9 +4154,18 @@ function renderSelectedKolBanner(g) {
 function _syncHtmlIfChanged(src, dest) {
   if (!src || !dest) return false;
   const h = src.innerHTML;
-  if (dest.dataset.syncHash === String(h.length) && dest.childElementCount) return false;
+  //  🩹 2026-08-26 根治「STEP2 切換 KOL 沒跟上」(RA 實測:芸菲→薇拉,右欄不動):
+  //    舊判斷是【比 HTML 字串長度】—— 長度一樣就當成沒變、直接跳過。
+  //    但兩位 KOL 的名字同為 2 字、照片檔名格式又一模一樣
+  //    (名字_ai_十位數字_日期.jpg)→ 產生的 HTML 長度剛好相同 →
+  //    系統判定「沒變」→ STEP2 永遠停在上一位,而且【完全不報錯】。
+  //    ⚠️ 後果不是難看:客戶以為選了薇拉,實際生出來是芸菲的臉。
+  //  ★ 這是「名字沒變、內容變了」的另一種外衣 ——【長度沒變、內容變了】。
+  //    判斷要用不會騙人的東西:直接比對現有內容本身,不比它的長度。
+  //    (dest.innerHTML 就是上一次同步的結果,不必另外存 hash。)
+  if (dest.childElementCount && dest.innerHTML === h) return false;
   dest.innerHTML = h;
-  dest.dataset.syncHash = String(h.length);
+  dest.dataset.syncHash = String(h.length);   // 保留欄位,舊碼若有讀到不會爆
   return true;   // 真的有重建 → 呼叫端才需要做後續處理
 }
 
@@ -4251,6 +4262,10 @@ function refreshKolFaces() {
   } catch (e) {}
   try { if (S.selectedKol && typeof renderSelectedKolBanner === 'function') renderSelectedKolBanner(S.selectedKol); } catch (e) {}
   try { if (typeof syncKolListToCine === 'function') syncKolListToCine(); } catch (e) {}
+  //  🖼 STEP3 的切換器也要補 —— 三個 STEP 都要,少一個就是「這頁好那頁壞」
+  try {
+    if (S.currentMode === 'system' && typeof renderSystemKolSwitcher === 'function') renderSystemKolSwitcher();
+  } catch (e) {}
 }
 window.refreshKolFaces = refreshKolFaces;
 
@@ -7849,7 +7864,11 @@ function renderSystemKolSwitcher() {
 
     // v5.7.1: 從 Tab 1 的 _kolCache 撈真頭像 URL
     const kolCached = hasPhoto ? window._kolCache?.[p.talking_photo_id] : null;
-    const imgUrl = kolCached?.image_url || '';
+    //  🖼 2026-08-26:STEP3 是【第三套】獨立渲染 —— STEP1/STEP2 改完它還是側臉。
+    //    「同一件事在三個 STEP 各寫一份」,改兩份等於沒改完。
+    const imgUrl = (typeof kolFrontUrl === 'function'
+                    ? kolFrontUrl(kolCached || p, kolCached?.image_url)
+                    : kolCached?.image_url) || '';
     const avatarInner = imgUrl
       ? `<img src="${escapeHtml(_thumb(imgUrl, 200))}" loading="lazy" decoding="async" alt="${escapeHtml(p.persona_name)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.outerHTML='<span>${escapeHtml(initial)}</span>';this.parentElement.style.background='${bg}';">`
       : `<span>${escapeHtml(initial)}</span>`;
