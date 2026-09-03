@@ -1136,7 +1136,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.34 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.35 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -3775,7 +3775,10 @@ function renderRoster() {
     const nm = (card.querySelector('.kol-card-name, .kol-name') || {}).textContent
                || (card.textContent || '').trim().split('\n')[0] || '未命名';
     const im = card.querySelector('img');
-    const img = im ? im.getAttribute('src') : '';
+    const _domImg = im ? im.getAttribute('src') : '';
+    // 🖼 名冊縮圖同樣改用原始形象照;抓不到就退回 DOM 上那張(行為不變)
+    const _k = (S.personas || []).find(x => x.talking_photo_id === id);
+    const img = kolFrontUrl(_k || { name: nm.trim() }, _domImg);
     const chip = card.querySelector('.kol-persona-chip');
     const needPersona = !!chip;                       // 有「人設未填/待補」徽章就是還沒填齊
     const pid = chip ? (chip.dataset.personaId || '') : '';
@@ -3850,7 +3853,7 @@ function renderStageAndDossier() {
   }
 
   const p = k.persona || {};
-  const img = k.image_url ? String(k.image_url).trim() : '';
+  const img = String(kolFrontUrl(k) || k.image_url || '').trim();   // 🖼 露臉處改用原始形象照
   const ageM = String(p.background || '').match(/(\d{1,2})\s*歲/);
   const meta = [ageM ? ageM[1] + ' 歲' : '', p.gender === 'male' ? '男性' : '女性',
                 p.nationality === 'jp' ? '日本' : p.nationality === 'kr' ? '韓國' : '台灣']
@@ -4191,6 +4194,41 @@ function syncSelectedKolToCine() {
 }
 // 🆕 單一真相:依角度從「已處理」挑「最新」那張(檔名含 sheet_front/q34/profile)。
 //    LOOK 顯示 + 生影片(Seedance)都用這個 → 看到的=用到的;重複/很多張只取最新一張。
+// ═══════════════════════════════════════════════════════════════
+//  🖼 2026-08-26 kolFrontUrl:角色的「正臉」該用哪張。
+//  背景:代表照(image_url)是綁定時選的那張,而生完多角度後去照片庫綁定時,
+//    側臉是最新的、排在最前面 → 九位裡有六位的代表照被綁成側臉。
+//    症狀:形象庫縮圖是側臉、舞台大圖被裁成臉頰特寫。
+//  ★ 修顯示,不修資料:代表照仍是代表照(綁定關係不動),
+//    只在【要露臉的地方】改用素材庫裡的原始形象照(檔名含 _ai_、非 sheet_)。
+//    這樣九位立刻回正,不必請客戶回頭重綁六次。
+//  ⚠️ 照片清單還沒到 → 回傳代表照,畫面不會空白;清單到了會重畫一次。
+//  ℹ️ 生影片的鎖臉錨點【不走這裡】(kol_sheet 另外給 faceUrl),此改動與影片品質無關。
+function kolFrontUrl(kol, fallbackUrl) {
+  const _fb = fallbackUrl || (kol && kol.image_url) || '';
+  try {
+    const nm = _norm(kol?.name || kol?.persona?.persona_name || '');
+    if (!nm || !S.drivePhotos) return _fb;
+    const per = (S.drivePhotos.personas || []).find(x => _norm(x.persona_name) === nm);
+    const all = (per && per.photos) || [];
+    const isSheet = n => /sheet_(q34|profile|front)/i.test(n || '');
+    const hit = all.find(x => /_ai_/i.test(x.name || '') && !isSheet(x.name))
+             || all.find(x => !isSheet(x.name));
+    return (hit && (hit.url || hit.thumbnail_url)) || _fb;
+  } catch (e) { return _fb; }
+}
+window.kolFrontUrl = kolFrontUrl;
+
+// 🖼 2026-08-26:照片清單到齊 → 名冊縮圖與舞台大圖要補畫一次。
+//   否則第一次渲染時 drivePhotos 還沒回來,kolFrontUrl 退回代表照(側臉),
+//   之後【再也沒有人叫它重畫】→ 客戶永遠看到側臉,而且完全不報錯。
+//   ⚠️ 快取命中與實抓兩條路都要呼叫 —— 少一條就會變成「有時好有時壞」。
+function refreshKolFaces() {
+  try { if (typeof renderRoster === 'function') renderRoster(); } catch (e) {}
+  try { if (S.selectedKol && typeof renderStageAndDossier === 'function') renderStageAndDossier(); } catch (e) {}
+}
+window.refreshKolFaces = refreshKolFaces;
+
 function pickAnglePhoto(procs, angle) {
   const re = angle === 'profile' ? /sheet_profile/i
            : angle === 'q34'     ? /sheet_q34/i
@@ -4395,6 +4433,7 @@ async function loadDrivePhotos(brandId, force) {
     //   ⚠️ 這是老病:「快取命中 → 跳過重畫」。凡是抓資料有兩條路(快取/實抓),
     //     兩條路後面要做的事必須一模一樣,少一行就會變成「有時好有時壞」。
     renderLookPicker();
+    refreshKolFaces();      // 🖼 縮圖/大圖改用原始形象照
     return;
   }
   wrap.innerHTML = '<div class="kol-empty">讀取素材中…</div>';
@@ -4467,6 +4506,7 @@ async function loadDrivePhotos(brandId, force) {
     //   ⚠️ 若客戶已經先選好 KOL,這一次補畫就是把多角度卡補上去的關鍵;
     //     若還沒選,renderLookPicker 會自己判斷資料不齊而跳過。
     renderLookPicker();
+    refreshKolFaces();      // 🖼 同上 —— 兩條路要做一樣的事
   } catch (e) {
     wrap.innerHTML = `<div class="kol-empty">❌ ${escapeHtml(e.message)}</div>`;
   }
