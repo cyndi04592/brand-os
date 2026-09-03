@@ -1136,7 +1136,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.35 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.37 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -3978,14 +3978,18 @@ function syncKolListToCine() {
 }
 
 function renderKolCardV2(g) {
-  const hasImage = g.image_url && String(g.image_url).trim();
+  //  🖼 2026-08-26:STEP2 的形象庫清單有【自己一套渲染】,不走 STEP1 的名冊。
+  //    v7.35 只改了 STEP1,STEP2 照舊用代表照(側臉)→ 客戶在 STEP2 依然分不出人。
+  //    ★ 這正是「同一件事在 STEP1/STEP2 各寫一份」的老坑:改一邊等於沒改。
+  const _face = kolFrontUrl(g);
+  const hasImage = _face && String(_face).trim();
   const nameEsc = escapeHtml(g.name || '');
   const initial = escapeHtml(getInitial(g.name));
   const bgColor = getColorForName(g.name || '');
   const lookChip = g.look_count ? `${g.look_count} Looks` : '';
 
   const avatarInner = hasImage
-    ? `<img src="${escapeHtml(_thumb(g.image_url, 120))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<span>${initial}</span>';this.parentElement.style.background='${bgColor}';">`
+    ? `<img src="${escapeHtml(_thumb(_face, 120))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<span>${initial}</span>';this.parentElement.style.background='${bgColor}';">`
     : `<span>${initial}</span>`;
 
   const avatarStyle = hasImage ? '' : `style="background:${bgColor}"`;
@@ -4096,11 +4100,12 @@ function selectKol(g) {
 }
 
 function renderSelectedKolBanner(g) {
-  const hasImage = g.image_url && String(g.image_url).trim();
+  const _face = kolFrontUrl(g);          // 🖼 同上:露臉處一律用原始形象照
+  const hasImage = _face && String(_face).trim();
   const initial = escapeHtml(getInitial(g.name));
   const bgColor = getColorForName(g.name || '');
   const avatarHtml = hasImage
-    ? `<img src="${escapeHtml(_thumb(g.image_url, 120))}" loading="lazy" decoding="async" onerror="this.outerHTML='<div style=\\'width:52px;height:52px;border-radius:8px;background:${bgColor};display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:18px;color:white;\\'>${initial}</div>'" alt="">`
+    ? `<img src="${escapeHtml(_thumb(_face, 120))}" loading="lazy" decoding="async" onerror="this.outerHTML='<div style=\\'width:52px;height:52px;border-radius:8px;background:${bgColor};display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:18px;color:white;\\'>${initial}</div>'" alt="">`
     : `<div style="width:52px;height:52px;border-radius:8px;background:${bgColor};display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:18px;color:white;">${initial}</div>`;
 
   const lookChip = g.look_count > 1 ? `<span class="chip">${g.look_count} Looks</span>` : '';
@@ -4205,16 +4210,22 @@ function syncSelectedKolToCine() {
 //  ⚠️ 照片清單還沒到 → 回傳代表照,畫面不會空白;清單到了會重畫一次。
 //  ℹ️ 生影片的鎖臉錨點【不走這裡】(kol_sheet 另外給 faceUrl),此改動與影片品質無關。
 function kolFrontUrl(kol, fallbackUrl) {
-  const _fb = fallbackUrl || (kol && kol.image_url) || '';
+  const _fb = fallbackUrl || (kol && (kol.image_url || kol.photo_url)) || '';
   try {
-    const nm = _norm(kol?.name || kol?.persona?.persona_name || '');
+    //  ⚠️ 這裡【不能】借用 renderLookPicker 裡的 _norm —— 那是它的區域變數,
+    //    這支看不到 → 每次呼叫直接丟 ReferenceError → 被下面 catch 吃掉 →
+    //    安靜地退回代表照(側臉),Console 一個字都不印。
+    //    (2026-08-26 v7.35/36 就是這樣「改了等於沒改」,自己的保護罩把自己的 bug 藏起來。)
+    //  ★ 自備正規化,不依賴別人的作用域。
+    const _n = v => String(v || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim();
+    const nm = _n(kol?.name || kol?.persona_name || kol?.persona?.persona_name);
     if (!nm || !S.drivePhotos) return _fb;
-    const per = (S.drivePhotos.personas || []).find(x => _norm(x.persona_name) === nm);
+    const per = (S.drivePhotos.personas || []).find(x => _n(x.persona_name) === nm);
     const all = (per && per.photos) || [];
     const isSheet = n => /sheet_(q34|profile|front)/i.test(n || '');
     const hit = all.find(x => /_ai_/i.test(x.name || '') && !isSheet(x.name))
              || all.find(x => !isSheet(x.name));
-    return (hit && (hit.url || hit.thumbnail_url)) || _fb;
+    return (hit && (hit.url || hit.image_url || hit.thumbnail_url)) || _fb;
   } catch (e) { return _fb; }
 }
 window.kolFrontUrl = kolFrontUrl;
@@ -4226,6 +4237,20 @@ window.kolFrontUrl = kolFrontUrl;
 function refreshKolFaces() {
   try { if (typeof renderRoster === 'function') renderRoster(); } catch (e) {}
   try { if (S.selectedKol && typeof renderStageAndDossier === 'function') renderStageAndDossier(); } catch (e) {}
+  //  🖼 STEP2:清單卡片是第一次載入時就寫進 DOM 的,照片清單晚到就再也不會重畫。
+  //    這裡不整批重建(會踩掉選取狀態與事件),只把每張頭像的網址換掉。
+  try {
+    document.querySelectorAll('#kol-list .kol-card-v2').forEach(card => {
+      const id = card.dataset.kolId || '';
+      const k = (S.personas || []).find(x => x.talking_photo_id === id);
+      const im = card.querySelector('img');
+      if (!k || !im) return;
+      const u = kolFrontUrl(k);
+      if (u) im.setAttribute('src', _thumb(u, 120));
+    });
+  } catch (e) {}
+  try { if (S.selectedKol && typeof renderSelectedKolBanner === 'function') renderSelectedKolBanner(S.selectedKol); } catch (e) {}
+  try { if (typeof syncKolListToCine === 'function') syncKolListToCine(); } catch (e) {}
 }
 window.refreshKolFaces = refreshKolFaces;
 
