@@ -1136,7 +1136,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.32 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.34 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -3804,7 +3804,29 @@ function renderRoster() {
   });
   const nk = document.getElementById('rs-new-kol');
   if (nk) {
-    const go = () => { if (typeof kolOnboardGoAI === 'function') kolOnboardGoAI(); };
+    //  🩹 2026-08-26 根治「建新角色的路藏太深」(RA 四位同事都卡住):
+    //    系統本來有一條「帳號裡一個角色都沒有 → 自動切到照片庫」的規則,
+    //    但它問的是【有沒有角色】,不是【現在想不想建角色】——
+    //    已經有八位的帳號,這條永遠不會觸發,建第九位時路一樣是藏的。
+    //    而這顆鈕舊行為只捲到 AI 生成器 = 只給了「從零生一張新臉」那條路;
+    //    想用現成照片綁定的人,入口(照片庫頁籤)根本沒被打開。
+    //  ★ 按下「＋建新角色」的那一刻,意圖已經明確,不必再讓系統去猜。
+    const go = () => {
+      let opened = false;
+      try {
+        const tb = document.querySelector('.rs-tab[data-pane="photo"]');
+        if (tb) { tb.click(); opened = true; }
+      } catch (e) {}
+      // AI 生成器仍然閃一下(那是另一條路),但不搶走捲動位置
+      const ai = document.getElementById('kai-panel');
+      if (ai) { ai.classList.add('sbp-recommend'); setTimeout(() => ai.classList.remove('sbp-recommend'), 3000); }
+      if (opened) {
+        const tb2 = document.querySelector('.rs-tab[data-pane="photo"]');
+        if (tb2) tb2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (typeof kolOnboardGoAI === 'function') {
+        kolOnboardGoAI();   // 頁籤不在(舊版面)→ 完全回到舊行為
+      }
+    };
     nk.addEventListener('click', go);
     nk.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
   }
@@ -4203,8 +4225,35 @@ function renderLookPicker() {
   const _kolName = _norm(S.selectedKol?.name || S.selectedKol?.persona?.persona_name);
   const _persona = (S.drivePhotos?.personas || []).find(x => _norm(x.persona_name) === _kolName);
   const _procs = _persona?.processed_photos || [];
+  //  🩹 2026-08-26 根治「正臉卡全站消失」(RA 四位同事同時重現,九位 KOL 無一例外):
+  //    病灶是【存的那一支】和【找的那一支】各自都對,合起來卻永遠湊不到。
+  //      · 存(kol-character-sheet.js):正臉是客戶原圖,素材庫已有 → 刻意不重複落檔
+  //        (重複落檔會讓 Look 長出雙胞胎 → 反而把角度卡整批藏起來,是舊坑)
+  //      · 找(這裡):靠檔名 sheet_front 去撈 → 那個檔案從來沒被建立過
+  //    兩邊透過【檔名】溝通,但一邊退出了這個約定 → 正臉永遠是 null。
+  //  ★ 正臉那張其實一直都在 —— 就是角色本人的主照片(image_url)。
+  //    撈不到檔案就退回用它,九位舊角色立刻全好,不必回頭重跑。
+  //  ⚠️ 退路只補「正臉」:3/4 與側臉是 Kontext 另外生的,沒有等價的替代來源,
+  //    硬拿主照片頂替會讓三張角度變成同一張臉、失去多角度的意義。
   const _angles = [['front','正臉'], ['q34','3/4'], ['profile','側臉']]
-    .map(([k, label]) => { const ph = pickAnglePhoto(_procs, k); return ph ? { ph, label } : null; })
+    .map(([k, label]) => {
+      let ph = pickAnglePhoto(_procs, k);
+      if (!ph && k === 'front') {
+        //  ⚠️ 這裡【不能】用角色代表照(image_url)頂替 —— 那正是壞掉的東西本身。
+        //    現場實測:有生角度照的六位,代表照被綁成了側臉那張
+        //    (生完角度照去照片庫綁定時,側臉是最新的、排最前面 → 被選中)。
+        //    拿它當正臉 = 把側臉貼上「正臉」標籤,看起來修好了,其實更糟。
+        //  ★ 真正的正臉是素材庫裡那張【原始形象照】,檔名含 _ai_、不是 sheet_ 那批。
+        //    抓不到就寧可不顯示,讓下面的缺角度警報喊出來 —— 少一張看得見,
+        //    貼錯標籤看不見。
+        const _all = _persona?.photos || [];
+        const _isSheet = n => /sheet_(q34|profile|front)/i.test(n || '');
+        const _hit = _all.find(x => /_ai_/i.test(x.name || '') && !_isSheet(x.name))
+                  || _all.find(x => !_isSheet(x.name));
+        if (_hit) ph = Object.assign({}, _hit, { _fromMain: true });
+      }
+      return ph ? { ph, label } : null;
+    })
     .filter(Boolean);
 
   // 🔎 2026-08-22:多角度卡畫不出來時,這裡是唯一看得到原因的地方。
@@ -4223,6 +4272,24 @@ function renderLookPicker() {
     console.log('[LOOK] 有 ' + _procs.length + ' 張角度照,但只認出 ' + _angles.length +
       ' 張 · 檔名要含 sheet_front / sheet_q34 / sheet_profile · 實際檔名:',
       _procs.map(x => x.name).join(' | '));
+  }
+
+  // 🛡️ 2026-08-26 防呆本身也要修 —— 這才是正臉能壞這麼久沒人發現的真正原因。
+  //   舊檢查問的是:「手上的照片,有幾張認得出來?」
+  //     薇拉手上 2 張、2 張都認得 → 警報器回報「一切正常」。
+  //   ★ 它防的是「有檔案但貼錯標籤」,防不了「檔案根本不存在」——
+  //     而正臉正是後者。檢查測錯了東西,等於沒裝。
+  //   ★ 改成問:「應該要有的三個角度,少了哪一個?」
+  //     少了就喊,不管是沒存、沒標、還是名字改過。下次換側臉不見也抓得到。
+  const _EXPECT = ['正臉', '3/4', '側臉'];
+  const _got = _angles.map(a => a.label);
+  const _missing = _EXPECT.filter(x => _got.indexOf(x) === -1);
+  const _usedMain = _angles.some(a => a.ph && a.ph._fromMain);
+  if (_missing.length) {
+    console.warn('[LOOK] ⚠️ 缺角度:' + _missing.join('、') +
+      ' · 這位 KOL 的實際檔名:', _procs.map(x => x.name).join(' | ') || '(沒有角度照)');
+  } else if (_usedMain) {
+    console.log('[LOOK] 正臉用素材庫原始形象照頂替(沒有 sheet_front 檔)· 顯示正常');
   }
 
   const haveLooks = S.availableLooks && S.availableLooks.length >= 2;
