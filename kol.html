@@ -697,8 +697,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 /* ── STEP2:電影鏡頭的形象庫(桌機才變方格) ──
    ⚠️ 手機版原本就有一套「橫向滑軌」(見 @media 768px 的 .kol-list),
       那是刻意設計的,不能被這裡蓋掉 → 整段鎖在 769px 以上才生效。 */
-@media(min-width:769px){
-  #kol-list-cine{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
+/*  🩹 2026-08-26 v7.42:RA 回饋「手機版三個 STEP 長得都不一樣」。
+    v7.41 為了保留手機原有的橫向滑軌,把方格鎖在桌機 —— 結果變成
+    STEP1 方格、STEP2 滑軌、STEP3 小方格,三種語言擠在同一支手機裡。
+    ★ 一致性優先:三個 STEP 手機桌機都用【同一種格子】。
+      而且格子用「固定寬度自動填滿」,不用「固定欄數」——
+      欄數固定的話,容器寬的地方(STEP3 全寬)格子就會被拉大,
+      那正是 v7.40 照片過大的原因。 */
+@media(min-width:1px){
+  #kol-list-cine{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:7px;
     /* 角色一多不讓它無限往下長:鎖約三排高,再多就在框內捲 */
     max-height:330px;overflow-y:auto;padding-right:4px;}
   #kol-list-cine::-webkit-scrollbar{width:4px;}
@@ -715,7 +722,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   /* 方格塞不下「已綁定」——留下真正有資訊量的「人設未填」徽章 */
   #kol-list-cine .kol-meta-v2 .status-dot{display:none;}
   #kol-list-cine .kol-meta-v2 > span:not([class]){display:none;}
-  @media(max-width:1320px){#kol-list-cine{grid-template-columns:repeat(3,1fr);}}
+  /* 手機:蓋掉 .kol-list 的橫向滑軌規則,改用跟 STEP1/STEP3 一樣的方格 */
+  @media(max-width:768px){
+    #kol-list-cine{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));
+      overflow-x:visible;max-height:none;}
+    #kol-list-cine .kol-card-v2{flex:none;width:auto;}
+  }
 }
 
 /* ── STEP3:經營系統的 KOL 切換器 ──
@@ -738,8 +750,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   font-size:8px;padding:1px 4px;}
 @media(max-width:768px){
   /* 手機:格再縮一點,一排放得下四個 */
-  #system-kol-switcher{grid-template-columns:repeat(auto-fill,76px);gap:6px;}
-  #system-kol-switcher .system-kol-info strong{font-size:9px;}
+  /* 跟 STEP2 手機同一個尺寸 —— 三個 STEP 看起來要是同一套系統 */
+  #system-kol-switcher{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px;}
+  #system-kol-switcher .system-kol-info strong{font-size:10px;}
 }
 .system-kol-card{
   flex:1;min-width:220px;background:var(--surface2);border:1px solid var(--border);
@@ -1191,7 +1204,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.41 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.42 · 選角</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
