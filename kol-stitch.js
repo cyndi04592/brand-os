@@ -57,6 +57,25 @@ window.KolStitch = (function () {
   //   所以 kol.html 一個字都不用改。(臨時要退回 A 版除錯才在 Console 設 window.LEAN_STITCH = false)
   if (typeof window !== 'undefined' && window.LEAN_STITCH === undefined) window.LEAN_STITCH = true;
 
+  // ═══════════════════════════════════════════════════════════════════════
+  //  🔒 v6.24 診斷保險絲 · window.KOL_DEBUG(預設關)
+  //  ─────────────────────────────────────────────────────────────────────
+  //  ★ 為什麼要有這個:客戶按 F12 就看得到 Console。原本這裡有多行 log 會印出
+  //    後端供應商名稱、引擎名稱、[Image1] 這類內部術語,以及臉圖/商品圖的原始
+  //    網址 —— 等於把整套生成配方攤開給人看,違反白標鐵律。
+  //  ★ 做法:所有「內部診斷」一律走 _dbg(),預設完全靜音;
+  //    RA 自己要看時在 Console 打一行:window.KOL_DEBUG = true
+  //  ★ 客戶會看到的「進度文字」不受影響(那條走 onTick,本來就中性)。
+  //  ★ 真正的錯誤訊息(throw / console.error)不關,否則出事查不到。
+  // ═══════════════════════════════════════════════════════════════════════
+  function _dbgOn() {
+    return (typeof window !== 'undefined' && window.KOL_DEBUG === true);
+  }
+  function _dbg() {
+    if (!_dbgOn()) return;
+    try { console.log.apply(console, arguments); } catch (_) {}
+  }
+
   // ---- 設定 ---------------------------------------------------------------
   const cfg = {
     workerUrl: 'https://kol-proxy.calm-sunset-6b66.workers.dev',
@@ -91,11 +110,11 @@ window.KolStitch = (function () {
         if (_at >= 0) {
           var _pi = JSON.parse(_s.slice(_at));
           var _d = (_pi && _pi.data) || {};
-          console.log('%c[KolStitch] 🔬🔬 PiAPI 真正原因 logs =', 'color:#e11;font-weight:bold', _d.logs);
-          console.log('[KolStitch] 🔬🔬 PiAPI detail =', _d.detail, '· code =', _pi.code, '· status =', _d.status);
+          console.log('%c[KolStitch] 🔬 生成服務回傳的原因 logs =', 'color:#e11;font-weight:bold', _d.logs);
+          console.log('[KolStitch] 🔬 detail =', _d.detail, '· code =', _pi.code, '· status =', _d.status);
         }
-      } catch (_e) { console.log('[KolStitch] 🔬 抽 PiAPI logs 失敗(把上面完整錯誤物件截圖即可):', _e); }
-      try { console.log('[KolStitch] 🔬🔬 r2Refs(PiAPI 實際去抓的圖) =', data.r2Refs); } catch (_e2) {}
+      } catch (_e) { console.log('[KolStitch] 🔬 抽取失敗原因失敗(把上面完整錯誤物件截圖即可):', _e); }
+      try { _dbg('[KolStitch] 🔬 r2Refs(實際抓到的參考圖) =', data.r2Refs); } catch (_e2) {}
       throw new Error(`[${action}] ${data.error || '未知錯誤'}`);
     }
     return data;
@@ -476,7 +495,7 @@ window.KolStitch = (function () {
         });
       });
       // 🆕 v6.7:印出 reqId → 視窗關掉/斷線也能用 pollEpisode(reqId) 撈回,不必重生(省錢)。
-      console.log('[KolStitch] 🎫 本段 reqId:', _sub.requestId, '(關掉視窗可用它撈回,不用重生)');
+      _dbg('[KolStitch] 🎫 本段 reqId:', _sub.requestId, '(關掉視窗可用它撈回,不用重生)');
       const _url = await pollEpisode(_sub.requestId, opts.brandId, onTick, _sub.endpoint);
       if (!_url) throw new Error('攝影師「' + opts.engine + '」沒拿到影片 URL');
       return _url;
@@ -495,7 +514,7 @@ window.KolStitch = (function () {
         const _capLen = (typeof window !== 'undefined' && window.KOL_MATCHCUT === true) ? 150 : 200;  // 🎬 match cut 開啟→look 讓位給交棒句
         if (_look.length > _capLen) {
           _look = _look.slice(0, _capLen).replace(/\S*$/, '').trim();   // 切到最後一個完整字,不砍半字
-          console.log('[KolStitch] 🎨 look 過長,截到 ' + _look.length + ' 字(避 1700 牆)');
+          _dbg('[KolStitch] 🎨 look 過長,截到 ' + _look.length + ' 字(避 1700 牆)');
         }
         if (_look) _lookFront = _look + ' Soft diffused natural light, matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
       } catch (_) {}
@@ -503,6 +522,9 @@ window.KolStitch = (function () {
     // look 當 front:兩路都吃 opts.shared.front(Seedance 完整敘述路 & piapi lean 路)
     if (_lookFront) { opts.shared = opts.shared || {}; opts.shared.front = _lookFront; }
 
+    // 📊 v6.24 字數盤點收集器(只在 window.KOL_DEBUG=true 時才印;不影響任何邏輯)
+    const _blk = { front: 0, probe: 0, beats: 0, tailBudget: 0, tailSent: 0,
+                   tailKept: 0, tailTotal: 0, voice: 0, before: 0, rescued: false };
     let prompt = buildMultiShotPrompt(beats, totalSec, opts.shared, opts.continuityFrom);
 
     // 🩳 v6.10 PiAPI 硬上限修正:realism 冗字散在多模組 → shared.front 太長會撞 PiAPI prompt 上限。
@@ -573,25 +595,35 @@ window.KolStitch = (function () {
       if (_budget < 120) {
         //  空間太小 → 連 front 都要瘦。front 是膚質光影冗字,參考圖本來就扛得住;
         //  tail 是商品鐵律,參考圖扛不住 —— 兩者相衝時,先砍 front。
-        console.log('[KolStitch] 🩳 空間不足(' + _budget + ' 字),front 讓位給商品鐵律');
+        _blk.rescued = true;
+        _dbg('[KolStitch] 🩳 空間不足(' + _budget + ' 字),front 讓位給商品鐵律');
         _useFront = 'Realistic vertical UGC video. Soft diffused natural light, matte skin, no beauty filter, an ordinary real person.';
         _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront }, opts.continuityFrom);
         _budget = _WALL - _SAFE - _probe.length;
       }
 
       const _fit = fitRules(_rawTail, Math.max(0, _budget));
+      _blk.front = _useFront.length;
+      _blk.probe = _probe.length;
+      _blk.beats = beats.reduce(function (a, b) {
+        return a + String((b && typeof b === 'object') ? (b.prompt || '') : (b || '')).length;
+      }, 0);
+      _blk.tailBudget = _budget;
+      _blk.tailSent = _fit.text.length;
+      _blk.tailKept = _fit.kept;
+      _blk.tailTotal = _fit.total;
       if (_fit.kept < _fit.total) {
-        console.log('[KolStitch] 🩳 商品鐵律保留 ' + _fit.kept + '/' + _fit.total
+        _dbg('[KolStitch] 🩳 商品鐵律保留 ' + _fit.kept + '/' + _fit.total
           + ' 條(預算 ' + _budget + ' 字)· 放不下的整條略過,不切半句');
         //  🩳 2026-08-23:光看「2/10 條」看不出【丟掉的是哪幾條】——
         //    現場實測才發現「跨段道具鎖」與「無字幕條款」原本排在最後,
         //    等於一次都沒送出去過,而畫面上完全看不出來。
         //    ★ 只印前 40 字當指紋,不洗版;要看全文自己展開。
         try {
-          console.log('[KolStitch] 🩳 ✅ 有送出:',
+          _dbg('[KolStitch] 🩳 ✅ 有送出:',
             _fit.text.split('; ').map(function (x, i) { return (i + 1) + '. ' + x.slice(0, 40); }));
           if (_fit.dropped && _fit.dropped.length) {
-            console.log('[KolStitch] 🩳 ❌ 被丟掉:',
+            _dbg('[KolStitch] 🩳 ❌ 被丟掉:',
               _fit.dropped.map(function (x, i) { return (i + 1) + '. ' + x.slice(0, 40); }));
           }
         } catch (_) {}
@@ -602,6 +634,7 @@ window.KolStitch = (function () {
 
     // 🔒 口音 + 口型鐵律(v6.4):開語音時,只有「有台詞的鏡頭」才說話+對嘴;
     //   沒台詞的鏡頭(吃/咀嚼/拿商品/純反應)→ 不講話、嘴不動、只有環境音 → 解決「邊吃邊有人聲」desync。
+    _blk.before = prompt.length;
     if (opts.generateAudio === true && !/lip-sync/i.test(prompt)) {
       const _nat = opts.nationality
         || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
@@ -618,13 +651,58 @@ window.KolStitch = (function () {
     // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
     //   Worker 自動把 [OUTFIT_IMG]/[SCENE_IMG] 換成真實 [ImageN]。
     var _provNow = (typeof window !== 'undefined' && window.KOL_PROVIDER) ? window.KOL_PROVIDER : (opts.provider || 'piapi');
-    console.log('[KolStitch] 📏 送出 prompt 長度 =', prompt.length, '字 · provider=' + _provNow + (_provNow !== 'piapi' ? ' 🔬(已切換引擎)' : ''));
-    console.log('[KolStitch] 🔬 診斷 · 本段送出 [Image1] 臉圖 =', opts.kolImageUrl,
+    _dbg('[KolStitch] 🔀 本段引擎 =', _provNow);
+    _blk.voice = prompt.length - _blk.before;
+    // ═══════════════════════════════════════════════════════════════════
+    //  📊 v6.24 字數分項盤點探針(window.KOL_DEBUG = true 才印)
+    //  ★ 只讀不寫:所有數字都是已經算好的變數,一個字都沒改 prompt。
+    //  ★ 回答四個問題:
+    //     ① 這一段總共送出幾字?超過 1700 嗎?超多少?
+    //     ② 1700 被誰吃掉的?(開場光線膚質 / 五鎖骨架 / 分鏡台詞 / 商品鐵律 / 對嘴)
+    //     ③ 商品鐵律被丟掉幾條?
+    //     ④ 圖片 9 格夠不夠?服裝圖跟場景圖有沒有搶到格位?
+    // ═══════════════════════════════════════════════════════════════════
+    if (_dbgOn()) {
+      try {
+        const _over = prompt.length - 1700;
+        //  五鎖骨架 = probe 扣掉開場白、扣掉分鏡文字後剩下的固定結構
+        const _frame = Math.max(0, _blk.probe - _blk.front - _blk.beats);
+        const _rows = [
+          { '區塊': '① 開場(光線/膚質/防油光)', '字數': _blk.front, '備註': _blk.rescued ? '⚠️ 已被砍成救援版,防油光與膚色鎖沒送出' : '' },
+          { '區塊': '② 五鎖骨架(臉/場景/服裝/商品)', '字數': _frame, '備註': '固定成本,每段都付一次' },
+          { '區塊': '③ 分鏡動作＋台詞', '字數': _blk.beats, '備註': beats.length + ' 個鏡頭' },
+          { '區塊': '④ 商品鐵律', '字數': _blk.tailSent, '備註': '保留 ' + _blk.tailKept + '/' + _blk.tailTotal + ' 條 · 預算 ' + _blk.tailBudget + ' 字' },
+          { '區塊': '⑤ 對嘴／語音規則', '字數': _blk.voice, '備註': _blk.voice ? '★ 排在最後,超標時第一個被切' : '(本段未開語音)' },
+          { '區塊': '＝ 總計', '字數': prompt.length, '備註': _over > 0 ? ('🔴 超過 1700 共 ' + _over + ' 字') : ('🟢 牆內,還剩 ' + (-_over) + ' 字') },
+        ];
+        console.log('%c[KolStitch] 📊 本段字數盤點', 'color:#0a7;font-weight:bold');
+        if (console.table) console.table(_rows); else console.log(_rows);
+
+        //  圖片格位:Worker 端順序 = 臉 → 商品(貪心塞到 9) → 服裝 → 場景 → 角度臉
+        const _bpDbg = collectBeatProducts(beats);   // 自己算,不依賴後面才宣告的變數
+        const _nProd = (_bpDbg && _bpDbg.has)
+          ? _bpDbg.urls.length
+          : (Array.isArray(opts.productImageUrls) ? opts.productImageUrls.length : 0);
+        const _wantOutfit = !!opts.outfitImageUrl, _wantScene = !!opts.sceneImageUrl;
+        let _used = 1 + _nProd;                       // 1 = 正臉
+        const _outfitGot = _wantOutfit && _used < 9;  if (_outfitGot) _used++;
+        const _sceneGot  = _wantScene  && _used < 9;  if (_sceneGot)  _used++;
+        console.log('[KolStitch] 🖼 圖片格位 ' + _used + '/9 · 正臉1 + 商品' + _nProd
+          + ' · 服裝' + (!_wantOutfit ? '(未指定)' : (_outfitGot ? '✅有格位' : '🔴 被商品擠掉,服裝鎖失效'))
+          + ' · 場景' + (!_wantScene ? '(未指定)' : (_sceneGot ? '✅有格位' : '🔴 被商品擠掉,場景鎖失效')));
+
+        //  要看完整 prompt 原文時自己展開(預設收合,不洗版)
+        console.groupCollapsed('[KolStitch] 📜 本段完整 prompt 原文(點開)');
+        console.log(prompt);
+        console.groupEnd();
+      } catch (_e) { console.log('[KolStitch] 📊 盤點探針失敗(不影響生成):', _e); }
+    }
+    _dbg('[KolStitch] 🔬 診斷 · 本段送出臉圖 =', opts.kolImageUrl,
       '· outfit=', opts.outfitImageUrl || '(無)', '· scene=', opts.sceneImageUrl || '(無)',
       '· 商品數=', (Array.isArray(opts.productImageUrls) ? opts.productImageUrls.length : 0));
-    if (onTick) onTick(0, 'reference-to-video(多鏡頭)');
+    if (onTick) onTick(0, '影片生成中(多鏡頭)…');
     const _segProducts = collectBeatProducts(beats);   // 🆕 分段綁圖:beats 帶鞋 → 用它組圖(順序對齊 prompt)
-    console.log('[KolStitch] 🔬 診斷 · 本段實送商品圖 =',
+    _dbg('[KolStitch] 🔬 診斷 · 本段實送商品圖 =',
       _segProducts.has ? _segProducts.urls : (Array.isArray(opts.productImageUrls) ? opts.productImageUrls : []));
     // 🎯 v6.18 選配器 Phase 1b:多角度臉選配(fuse window.KOL_FACEANGLES 預設關)
     //   讀這段 beats 的 angle → 從 resolveKolSheet 挑對應角度臉 → 傳 kolFaceDriveIds(Worker 排最後幾格)。
@@ -900,7 +978,7 @@ window.KolStitch = (function () {
     if (!_identityFace) _identityFace = kolImg;   // 最後退路(無角度圖時,行為同 v6.2 全域圖)
     if (_lockFace) {
       log('正在確認人物一致性…');
-      console.log('[KolStitch] 🔬 診斷 · 鎖臉錨 [Image1] =', _identityFace,
+      _dbg('[KolStitch] 🔬 診斷 · 鎖臉錨 =', _identityFace,
         '· 是否退回主肖像 kolImg(=可能抓不到的 Drive 圖):', (_identityFace === kolImg));
     }
 
@@ -977,7 +1055,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  console.log('[KolStitch] 🎬 v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  _dbg('[KolStitch] 🎬 v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
