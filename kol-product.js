@@ -179,7 +179,13 @@
       //   所以這條刻意只用逗號,整條綁在一起,永遠送得出去。
       // ⚠️ 不要再往這條加否定句。『她穿著什麼外衣』由服裝師(kol-wardrobe.js)負責講,
       //   這裡只負責講「內衣在外衣底下」這一件事,講一次就好。
-      return 'PROP (intimate apparel, worn as the inner layer): keep the product in [Image2] consistent in shape, proportions, color, fabric and lace pattern, never mirrored or flipped, and she wears it under her outfit, glimpsed at an open neckline, tasteful and modestly framed';
+      //  📦 2026-09-05 兩槽點名:內衣需要正面 + 背面才畫得準(肩帶走向、背扣、蕾絲接縫)。
+      //    ⚠️ 兩張是【同一件的兩個角度】,不是兩件商品 —— 這句一定要寫,
+      //      否則模型會當成兩件不同的衣服,把正反面的特徵混在一起(logo 正反都有、肩帶多一條)。
+      //    只有真的給了第二張才寫,沒給不要提,免得模型自己想像一個背面。
+      return 'PROP (intimate apparel, worn as the inner layer): keep the product in [Image2] consistent in shape, proportions, color, fabric and lace pattern, never mirrored or flipped'
+        + (isYes(prod && prod.showContents) ? ', with [Image3] showing the SAME single garment from the back (same piece, not a second garment) — match its strap routing, back closure and lace seams' : '')
+        + ', and she wears it under her outfit, glimpsed at an open neckline, tasteful and modestly framed';
     }
     if (mode === 'worn') {
       return 'PROP (a wearable product — feature it being worn or carried): keep the product in [Image2] consistent in shape, proportions, color, material and any logo, never mirrored or flipped, do not distort or morph it; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
@@ -221,7 +227,11 @@
         'DO NOT invent any product box, retail package or consumer packaging. ' +
         'The hero is the MACHINE and the MACHINED PART: precision equipment in operation, ' +
         'the finished component with its true surface finish and tolerances, clean workshop or cleanroom environment. ' +
-        'Keep any part shown in [Image2] exact in shape, proportion, surface and markings — engineering parts are ' +
+        //  📦 2026-09-05:這個模式有兩槽(機台 / 加工件),但原本只點名 [Image2],
+        //    第二張是無名圖 —— 模型不知道那是「這台機器做出來的東西」。
+        'Keep the machine shown in [Image2] exact in shape, proportion, surface and markings, ' +
+        'and the machined part shown in [Image3] is the component this equipment produces — ' +
+        'keep its true surface finish, geometry and markings exact. Engineering parts are ' +
         'judged on precision, so any distortion destroys credibility. She presents beside the equipment as an expert, ' +
         'not as a shopper holding merchandise.';
     }
@@ -244,7 +254,9 @@
         'The screenshot is treated exactly like the contents of a package: never made up. ' +
         'Keep the screen legible, undistorted, correctly proportioned and free of moiré or glare. ';
       return base + (hasDevice
-        ? 'The device shown in the reference (laptop, phone, tablet or monitor) is the outer shell and the SCREEN CONTENT is the real substance — ' +
+        //  📦 2026-09-05:兩槽都點名。原本只說「reference」,模型不知道哪張是裝置、哪張是畫面。
+        ? 'The device shown in [Image2] (laptop, phone, tablet or monitor) is the outer shell, ' +
+          'and [Image3] is the SCREEN CONTENT that must appear on that device screen — ' +
           'reproduce the device shape faithfully too, with correct bezel proportions.'
         : 'No device reference was supplied, so DO NOT invent a specific laptop or phone model — ' +
           'either let the supplied screen image fill the frame directly as a clean digital display, ' +
@@ -314,8 +326,10 @@
     if (mode === 'wellness') {
       const wsz = scale ? '; it is ' + scale + ', at that true size' : '';
       return 'WELLNESS / ENERGY GOODS — legally an ORDINARY consumer product, NOT a medical device and NOT a medicine. ' +
+        //  📦 2026-09-05:這個模式有兩槽(商品照 / 配戴擺放照),原本只點名 [Image2]。
         'Keep the product in [Image2] consistent in shape, bead order, colour, metal fittings and any printed text, ' +
         'never mirrored or flipped, do not distort or morph it' + wsz + '. ' +
+        (isYes(prod && prod.showContents) ? '[Image3] shows the SAME piece being worn or placed in a real setting (same item, not a second product) — follow it for how it sits and drapes. ' : '') +
         'DO NOT depict, imply or illustrate ANY bodily or health effect: no anatomy diagram, no body outline, no organ, ' +
         'no pain-relief symbol, no energy flowing into a person, no before/after wellbeing comparison. ' +
         'DO NOT render glowing auras, light rays, chakra points, meridian lines or radiating energy from the product. ' +
@@ -359,8 +373,16 @@
       bits.push(desc
         ? 'the packaged product in [Image2] is ' + desc + ', keep its packaging shape, color and label consistent and undistorted, its printed brand text reading correctly and never mirrored, reversed or flipped, matching [Image2] exactly'
         : 'keep the packaging in [Image2] consistent in shape, proportions, color and label, printed text never mirrored or flipped, do not distort or morph it');
-      if (isYes(prod.showContents) && (prod.contentsLook || '').trim()) {
-        bits.push('its contents shown in [Image3] look like ' + prod.contentsLook.trim() + ', keep this shape, count and texture natural and stable, do not morph (loose pieces may vary naturally)');
+      //  🐛 2026-09-05 修靜默失效:原條件是「勾了顯示內容物 AND 填了內容物長相」,
+      //    兩個都要成立 [Image3] 才會被點名。客戶勾了卻沒填描述時 ——
+      //    第二張圖照樣送進引擎,但在提示詞裡【沒有名字】,模型不知道那是什麼。
+      //    ★ 描述是加分項,不該當成點名的門檻。拆成兩層:
+      //      勾了 → 一定點名;有描述 → 再補上長相。
+      if (isYes(prod.showContents)) {
+        const _cl = (prod.contentsLook || '').trim();
+        bits.push('its contents are shown in [Image3]'
+          + (_cl ? ' and look like ' + _cl : '')
+          + ', keep this shape, count and texture natural and stable, do not morph (loose pieces may vary naturally)');
       }
       if (scale) bits.push('the product is ' + scale + ', shown at that true size against her body');
       bits.push(GROUNDED + ', its printed front and label kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it');
@@ -375,6 +397,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.8', resolveMode };
-  console.log('[KolProduct] 🎒 v3.8 就緒 · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.9', resolveMode };
+  console.log('[KolProduct] 🎒 v3.9 就緒 · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
