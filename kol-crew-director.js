@@ -475,8 +475,56 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
 }
 
 // 每段只放「這一格獨一無二」的靈魂:動作+payoff(原封不動,絕不砍)+ 台詞
+// ═══════════════════════════════════════════════════════════════════════════
+//  🗣 v5.32 發音易錯字表(_PRON_MAP)· 2026-09-05
+//  ─────────────────────────────────────────────────────────────────────────
+//  ★ 為什麼要有:Seedance 的聲音是【影片模型自己生的】,不是 TTS ——
+//    沒有發音字典、沒有 SSML、沒有注音標記可以下。它只吃文字。
+//    所以唯一能控制發音的手段,就是【把字換成不容易念錯的字】。
+//    這是官方提示詞指南自己給的方法(把唸錯的詞寫成同音字)。
+//  ★ 為什麼放在這裡:composeStitchBeat 是 STEP2 與 STEP3 共同的必經點,
+//    而且在送出生成【之前】。原本的 speechFriendly 只在「AI 編修」那一瞬間跑,
+//    RA 手改過的台詞、按鎖的台詞【永遠不會跑到】—— 而 RA 每次都手改。
+//  ★ 只改引號【裡面】的台詞,動作描述一個字不動(動作描述不會被念出來)。
+//  ★ 觀眾看不到文字(全站禁字幕),所以換成同音字沒有任何副作用。
+//
+//  📌 怎麼維護:踩到一個念錯的就加一行。左邊是原字,右邊是同音替代字。
+//     ⚠️ 只放【同音】替換。要換意思的詞(例:鋼圈→鋼絲)請先問客戶,
+//        因為那會改到品牌用語,不是發音問題。
+// ═══════════════════════════════════════════════════════════════════════════
+const _PRON_MAP = [
+  ['誇張', '誇章'],   // 實測念成「誇光」
+  ['尷尬', '乾尬'],   // 實測念成「阿沙」
+  ['緊繃', '緊崩'],   // 實測念成「緊頂」
+  ['視覺', '視爵'],   // 實測念成「視館」
+  //  👙「無鋼圈」實測念成「無鋼換」。
+  //  ⚠️ RA 拍板:【絕對不可以換詞】——「無鋼圈內衣」是消費者聽得懂的產業用語,
+  //     換成「無鋼絲內衣」沒人聽得懂,那是砸品牌不是修發音。
+  //  ★ 改用「換說法不換詞」:「無鋼圈」是文言縮寫,音節少、容易被吞;
+  //    「沒有鋼圈」意思一模一樣、口語、音節完整,模型比較不會抽錯。
+  //    消費者聽到的還是「鋼圈」兩個字,品牌用語零損失。
+  ['無鋼圈', '沒有鋼圈'],
+];
+
+//  只清洗引號內的台詞(中文「」『』與英文 " '),動作描述不動
+function _pronFix(situation) {
+  if (!situation) return situation;
+  let hits = [];
+  const out = String(situation).replace(/([「『"'])([^「『"'』」]*)([」』"'])/g, function (m, a, body, b) {
+    let t = body;
+    _PRON_MAP.forEach(function (p) {
+      if (t.indexOf(p[0]) > -1) { hits.push(p[0] + '→' + p[1]); t = t.split(p[0]).join(p[1]); }
+    });
+    return a + t + b;
+  });
+  if (hits.length && typeof window !== 'undefined' && window.KOL_DEBUG === true) {
+    console.log('[CrewDirector] 🗣 發音替換 ' + hits.length + ' 處:', hits.join('、'));
+  }
+  return out;
+}
+
 function composeStitchBeat(situation, persona) {
-  const { action, speechLine } = parseSituation(situation, persona);
+  const { action, speechLine } = parseSituation(_pronFix(situation), persona);
   return [action, speechLine].filter(Boolean).join('. ');
 }
 window.composeStitchShared = composeStitchShared;
@@ -624,5 +672,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.21-dialogue60 就緒 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.32-pron 就緒 · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
