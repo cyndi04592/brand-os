@@ -174,7 +174,12 @@
     //   模型拿到一張內衣平面圖 + 這句話 → 最省事的解法就是貼在最外層。
     //   這條把三件事一次講死:①內層 ②不准穿在衣服外面 ③只從外衣敞開處露出。
     if (mode === 'innerwear') {
-      return 'PROP (intimate apparel — an INNER layer, never an outer layer): keep the product in [Image2] consistent in shape, proportions, color, fabric, lace pattern and logo, never mirrored or flipped, do not distort it; she wears it against her skin UNDER her clothing — never on top of a shirt, top, dress or any garment; it shows only where her outer layer opens (an unbuttoned shirt, a relaxed neckline), she stays modestly covered and the framing tasteful; it sits smoothly with real fabric weight, straps flat, never floating';
+      // ⚠️ 全條【不准出現分號或句點+空白】——kol-stitch.js 的 fitRules 用「. 」和「; 」切規則,
+      //   只有切完的【第一段】無條件保底。有分號 = 核心句「穿在外衣底下」會被砍掉。
+      //   所以這條刻意只用逗號,整條綁在一起,永遠送得出去。
+      // ⚠️ 不要再往這條加否定句。『她穿著什麼外衣』由服裝師(kol-wardrobe.js)負責講,
+      //   這裡只負責講「內衣在外衣底下」這一件事,講一次就好。
+      return 'PROP (intimate apparel, worn as the inner layer): keep the product in [Image2] consistent in shape, proportions, color, fabric and lace pattern, never mirrored or flipped, and she wears it under her outfit, glimpsed at an open neckline, tasteful and modestly framed';
     }
     if (mode === 'worn') {
       return 'PROP (a wearable product — feature it being worn or carried): keep the product in [Image2] consistent in shape, proportions, color, material and any logo, never mirrored or flipped, do not distort or morph it; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
@@ -370,6 +375,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.7', resolveMode };
-  console.log('[KolProduct] 🎒 v3.7 就緒 · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(內衣自動判斷,不再穿在襯衫外面) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.8', resolveMode };
+  console.log('[KolProduct] 🎒 v3.8 就緒 · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
