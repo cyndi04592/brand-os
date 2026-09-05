@@ -265,6 +265,16 @@ window.KolStitch = (function () {
       const prodRule = bp.has
         ? (_pron().s + ' holds the product referenced in each shot at a consistent real-world size and hand-scale; do not zoom or resize it within a shot; different shots show the specified products; ')
         : (_pron().s + ' holds a product that is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ');
+      //  📦 2026-09-05:商品圖【一直沒有在清單裡被宣告】。
+      //    實測任務 03c0171d:清單宣告了 Image1=身份 / Image3=服裝 / Image4=場景,
+      //    但商品是 [Image2],全篇只在最後一句 PROP 出現一次,前面模型完全不知道它是什麼。
+      //    ★ 刺蝟星球實務指南明確警告:「圖片順序和提示詞引用對不上,
+      //      很容易出現人物拿錯道具、場景識別錯誤」——這正是那個坑。
+      //    ★ [Image1] 固定是臉,商品從 [Image2] 起算(見 collectBeatProducts),
+      //      所以這裡宣告 [Image2] 一定對得上。
+      const prodDecl = bp.has
+        ? '[Image2] onward = the products (each shot names the one it uses; keep each product\'s shape, proportions, colour, material and any logo identical). '
+        : '[Image2] = the product (keep its shape, proportions, colour, material and any logo identical; never mirrored or flipped). ';
       const _mc = (typeof window !== 'undefined' && window.KOL_MATCHCUT === true);  // 🎬 v6.16 結尾停+硬切(match cut)保險絲,預設關
       // 🗺️ 場景九宮格 —— 2026-08-23 改為【預設開】。
       //   理由:跨段場景飄移是已知的老問題,九宮格本來就是為它做的,
@@ -275,6 +285,7 @@ window.KolStitch = (function () {
       let bodyB = shared.front + '\n'
         + 'Reference images are LOCKED assets, each the single source of truth for its element — keep identical in every shot: '
         + '[Image1] = identity (same face, hair, body proportions, vibe; one person). '
+        + prodDecl
         + (_sg
            ? '[SCENE_IMG] = one location shown from multiple angles; lock its layout, structures, materials and colours, pull the right camera angle per shot; never draw the grid, panels or dividing lines into the video. '
            : '[SCENE_IMG] = location (same background and layout; do not rearrange). ')
@@ -613,7 +624,24 @@ window.KolStitch = (function () {
       //    但語音行實際 278 字 —— 短少 238 字,所以每支都固定超標。
       //    現在改成把語音行【真的算進 probe】,預算自然含它,_SAFE 只留零頭。
       const _voiceLine = _buildVoiceLine(opts);
-      const _WALL = 1700, _SAFE = 20;
+      // ═══════════════════════════════════════════════════════════════
+      //  🧱 2026-09-05 _WALL 1700 → 3000(查證後修正,不是放寬)
+      //  ─────────────────────────────────────────────────────────────
+      //  ★ 1700 這個數字【查不到任何官方依據】。全檔 12 處提到它,
+      //    全部都是註解裡的斷言,沒有一條引用 PiAPI 文件。
+      //  ★ 它極可能是 fal.ai 時代留下的:版本紀錄「修400 prompt exceeds」
+      //    出現在 v7.7,而 PiAPI 是 v6.11 才切過去的 —— 換引擎後沒人重驗。
+      //  ★ 官方文件實查(piapi.ai/docs/seedance-api/seedance-2):
+      //    列了時長 4-15s、圖 9 / 影片 3 / 音檔 3、比例、解析度、審核、@語法,
+      //    【完全沒有提示詞長度限制】。Seedance 2.5 規格頁寫的是 4,000 字元。
+      //  ★ 實測反證:2026-09-05 任務 03c0171d 送出 1,956 字 → completed,
+      //    error code 0,點數正常扣。1700 不是牆。
+      //  ★ 代價很實際:這道假牆每天把 front 砍成 113 字救援版,
+      //    丟掉 no oily specular sheen + 膚色鎖 → 客戶看到油光與膚色漂移。
+      //  ⚠️ 保守設 3000 不是 4000:太長可能稀釋模型注意力(不是被退件)。
+      //    若之後實測 3000 仍穩,再往上調;若出現 400,退回 2200 觀察。
+      // ═══════════════════════════════════════════════════════════════
+      const _WALL = 3000, _SAFE = 20;
       const _rawTail = String((opts.shared && opts.shared.tail) || '');
       let _useFront = _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
@@ -686,16 +714,19 @@ window.KolStitch = (function () {
     // ═══════════════════════════════════════════════════════════════════
     if (_dbgOn()) {
       try {
-        const _over = prompt.length - 1700;
+        const _WALL_SHOW = 3000;   // 與 _WALL 同步(探針在外層,取不到區塊內常數)
+        const _over = prompt.length - _WALL_SHOW;
         //  五鎖骨架 = probe 扣掉開場白、扣掉分鏡文字後剩下的固定結構
-        const _frame = Math.max(0, _blk.probe - _blk.front - _blk.beats);
+        //  🩹 2026-09-05:voiceLine 現在包含在 probe 裡,要扣掉,否則「五鎖骨架」
+        //    會把對嘴那 277 字重複算一次,表面上看起來像加錯。
+        const _frame = Math.max(0, _blk.probe - _blk.front - _blk.beats - _blk.voice);
         const _rows = [
           { '區塊': '① 開場(光線/膚質/防油光)', '字數': _blk.front, '備註': _blk.rescued ? '⚠️ 已被砍成救援版,防油光與膚色鎖沒送出' : '' },
           { '區塊': '② 五鎖骨架(臉/場景/服裝/商品)', '字數': _frame, '備註': '固定成本,每段都付一次' },
           { '區塊': '③ 分鏡動作＋台詞', '字數': _blk.beats, '備註': beats.length + ' 個鏡頭' },
           { '區塊': '④ 商品鐵律', '字數': _blk.tailSent, '備註': '保留 ' + _blk.tailKept + '/' + _blk.tailTotal + ' 條 · 預算 ' + _blk.tailBudget + ' 字' },
           { '區塊': '⑤ 對嘴／語音規則', '字數': _blk.voice, '備註': _blk.voice ? '✅ 已搬到台詞旁,且已納入預算' : '(本段未開語音)' },
-          { '區塊': '＝ 總計', '字數': prompt.length, '備註': _over > 0 ? ('🔴 超過 1700 共 ' + _over + ' 字') : ('🟢 牆內,還剩 ' + (-_over) + ' 字') },
+          { '區塊': '＝ 總計', '字數': prompt.length, '備註': _over > 0 ? ('🔴 超過 ' + _WALL_SHOW + ' 共 ' + _over + ' 字') : ('🟢 牆內,還剩 ' + (-_over) + ' 字') },
         ];
         console.log('%c[KolStitch] 📊 本段字數盤點', 'color:#0a7;font-weight:bold');
         if (console.table) console.table(_rows); else console.log(_rows);
@@ -1077,7 +1108,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  _dbg('[KolStitch] 🎬 v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  _dbg('[KolStitch] 🎬 v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
