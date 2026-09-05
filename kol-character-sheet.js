@@ -14,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v0.9-library';
+  var VER = 'v0.9-library-r2';
 
   // 🔧 v0.8:記住「這張正臉是誰的」—— 從形象庫勾選讀進來時,persona 跟著圖走,
   //   存 Drive 不再要求去 AI 生成器另外選 persona(那是舊流程的殘留)。
@@ -32,6 +32,37 @@
       prompt: 'Rotate this exact same woman to a TRUE 90-degree side profile, her face turned fully to the side so we see only one side of her face, the bridge and tip of her nose forming a clear silhouette against the background, only the near eye and cheek visible, NOT a three-quarter view — keep her identical face, identical facial features, identical hair and identical skin texture, do NOT beautify or smooth the skin, keep it photographic and real' }
   ];
 
+  // ═══════════════════════════════════════════════════════════════════════
+  //  🪣 2026-09-05 角度圖一律轉存自家 R2 再顯示(白標根治)
+  //  ★ 病灶:角度圖原本直接用影像引擎回傳的網址塞進 <img src>(三處預覽都是),
+  //    瀏覽器一載入,【Network 分頁就會列出供應商網域】。
+  //    ⚠️ Console 保險絲擋不住 Network,只有換掉網址才擋得住。
+  //  ★ kontext() 是這支檔案唯一的產圖收口 —— 在這裡包一層,三處預覽全部受惠,
+  //    不用分別去改三個 img.src(那正是「同一件事改三個地方」的坑)。
+  //  ★ 附帶好處:引擎網址是暫時的,轉存後角度圖不會過期。
+  //  ★ 沿用既有 scene_grid 動作,不動 Worker;失敗沿用原網址,不擋流程。
+  // ═══════════════════════════════════════════════════════════════════════
+  function _csKey(url) {
+    var h = 0, t = String(url || '');
+    for (var i = 0; i < t.length; i++) h = ((h << 5) - h + t.charCodeAt(i)) | 0;
+    return 'csheet_' + (h >>> 0).toString(36) + '_' + Date.now().toString(36);
+  }
+  function _csToR2(url) {
+    if (!url || /cdn\.raby\.com\.tw/.test(url)) return Promise.resolve(url);
+    var kai = K();
+    return fetch(kai.WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password: kai.PASSWORD, action: 'scene_grid',
+        brandId: (window.S && window.S.currentBrandId) || 'csheet',
+        sceneKey: _csKey(url), storeUrl: url
+      })
+    }).then(function (r) { return r.json(); })
+      .then(function (d) { return (d && d.ok && d.url) ? d.url : url; })
+      .catch(function () { return url; });
+  }
+
   function kontext(imageUrl, prompt) {
     var kai = K();
     return fetch(kai.WORKER_URL, {
@@ -40,7 +71,7 @@
       body: JSON.stringify({ password: kai.PASSWORD, action: 'flux_kontext', image_url: imageUrl, prompt: prompt })
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) throw new Error(d.error || 'Kontext 失敗');
-      return d.images[0].url;
+      return _csToR2(d.images[0].url);   // 🪣 顯示之前先轉存自家 R2
     });
   }
 
@@ -178,11 +209,15 @@
         // ② 沒勾選也沒選過 → 這一輪剛生成的 AI 正臉(原本邏輯)
         var st = K() && K().S;
         if (st && st.lastImages && st.lastImages.length) st.lastImages.forEach(function (x) { push(x.url || x, null, ''); });
-        // ③ 再沒有 → 生成器面板裡的 fal / R2 圖(原本邏輯)
+        // ③ 再沒有 → 生成器面板裡的產出圖
+        //  ⚠️ 2026-09-05:這裡是靠【網址長相】辨識「這是產出圖」。
+        //    白標改動把候選圖轉存自家 CDN 之後,網址不再含舊的網域字樣 ——
+        //    若不同步補上 cdn.raby.com.tw,這條偵測會【一張都找不到】,
+        //    而且不會報錯,只會顯示「沒有可用的正臉」。舊網域保留當回溯相容。
         if (!items.length) [].slice.call(document.querySelectorAll('.kai-panel img')).forEach(function (i) {
           if (i.closest('#cs-box')) return;
           var s = i.src || '';
-          if (s.indexOf('fal.media') > -1 || s.indexOf('r2.dev') > -1) push(s, null, '');
+          if (s.indexOf('cdn.raby.com.tw') > -1 || s.indexOf('fal.media') > -1 || s.indexOf('r2.dev') > -1) push(s, null, '');
         });
       }
 
