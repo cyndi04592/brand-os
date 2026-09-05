@@ -287,6 +287,22 @@ Reference aesthetic: Pinterest food photography hero shots, premium beverage com
 - Soft natural directional lighting on product
 - Background is plain or near-plain (single color wash, soft gradient, paper texture)
 Reference aesthetic: Apple product posters, Blue Bottle Coffee posters, Muji store displays, Aesop magazine ads`
+  },
+
+  // 🆕 v11.4 餐廳・小吃專用美食版:版面 + 餐飲場景一次打包。
+  //    選了它 → buildPosterPrompt 自動疊上 FOOD_CRAFT 淺景深融合手法(見觸發判斷)。
+  food_special: {
+    label: '🍽 美食版',
+    desc: '餐廳・小吃專用｜暖光美食+淺景深,主菜融合不貼上去',
+    composition: `Food & beverage advertising poster layout:
+- Hero dish shot large and appetizing, occupying 45-60% of the canvas, placed on the rule-of-thirds
+- Warm inviting restaurant atmosphere: soft wooden, stone or linen table surface, dining background softly blurred behind
+- Surround the dish with in-category fresh ingredients and garnishes as tasteful props (herbs, spices, citrus, aromatics, sauces), all kept in soft focus so they never compete
+- Single bold appetizing headline (elegant Serif or confident brush calligraphy) in the upper third or one clean side, 2 lines maximum, sitting on a calm negative-space area
+- Small refined subtitle below the headline; tiny brand signature tucked in a quiet corner
+- Warm golden key lighting with a gentle rim light on the dish edge, deep but not pure-black shadows, faint appetizing steam where it fits — cinematic and mouth-watering
+- Generous calm negative space reserved so a designer can set typography later
+Reference aesthetic: Michelin restaurant posters, HUALUXE / InterContinental hotel dining promotions, premium 小紅書 food editorial covers`
   }
 };
 
@@ -3291,6 +3307,7 @@ Object.assign(LAYOUT_TEMPLATES,
 const LAYOUT_BY_PRODTYPE = {
   physical: [
     { group: '', keys: ['minimal_poster'] },
+    { group: '🍽 餐飲專用', keys: ['food_special'] },
     { group: '經典版式', keys: ['magazine_cover', 'spec_breakdown', 'scene_lifestyle', 'dramatic_splash'] },
     { group: '新增版式', keys: ['before_after', 'grid_showcase', 'big_statement', 'checklist_info', 'hand_hold'] },
   ],
@@ -3730,9 +3747,9 @@ function buildPosterPrompt() {
     prompt += `CRITICAL OVERRIDE RULE: This regional flavor takes precedence over any scene description, era, or decor hinted by the brand pack. If brand pack says "warm domestic Taiwan" and flavor says "Korean clean pastel" → output MUST be Korean clean pastel (not Taiwan retro). Brand pack only contributes overall mood; flavor decides the actual visual scene.\n\n`;
   }
 
-  // 🆕 v11.4 餐飲呈現準則:選了食物場景(food_ 開頭)→ 自動注入淺景深融合手法。
-  //    餐飲/小吃客戶照常選食物氛圍場景就會吃到,不用懂任何設定。非食物不觸發。
-  if (String(SELECTED_FLAVOR || '').startsWith('food_')) {
+  // 🆕 v11.4 餐飲呈現準則:選了「🍽 美食版」排版 → 自動注入淺景深融合手法。
+  //    餐廳/小吃客戶只要選美食版就吃到,不用懂設定。非美食版不觸發。
+  if (SELECTED_LAYOUT === 'food_special') {
     prompt += FOOD_CRAFT;
   }
 
