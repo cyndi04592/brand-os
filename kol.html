@@ -1204,7 +1204,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.44 · 單段接片</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.45 · 白標</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -10616,7 +10616,18 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
 <script src="kol-storywriter.js"></script>
 <script src="kol-storyboard-panel.js"></script>
 <script src="kol-stitch.js"></script>
-<script src="kol-engine-kling.js"></script><!-- 攝影師② Kling(必須在 kol-stitch.js 之後載入) -->
+<!-- 🔇 2026-09-05 停止載入 kol-engine-kling.js(檔案保留在 repo,只是不載)
+     ★ 原因一(白標):它一載入就 console.log 印出引擎廠商名,
+       客戶開 F12 什麼都不用做就看得到。裡面另有 8 條 console.warn 提到
+       供應商硬限制,全部沒有保險絲。RA 已商用並將與外部講師合作,不能露。
+     ★ 原因二(它本來就沒在跑):三向掃描確認 ——
+       ① kol.html 全站沒有任何一處設定 opts.engine
+       ② kol-stitch.js:495 只有 opts.engine 存在且非 seedance 時才會去找它
+       ③ 其餘命中都是誤判(kol-crew-director.js:594 是 "crinkling" 包裝窸窣聲)
+       → 目前它只是「載進來、印一行字、然後躺著」。
+     ★ 要恢復:把下面那行的註解拿掉即可,檔案沒有刪。
+     ⚠️ 恢復前記得先把它裡面的 console.log/warn 關進 window.KOL_DEBUG。 -->
+<!-- <script src="kol-engine-kling.js"></script> -->
 <script src="mobile-select.js"></script><!-- 手機長下拉挑選層(全站共用·桌機不影響) -->
 <!-- ⛔ v6.4:kol-persona-panel.js 撤回,不再載入。
      v6.3 曾把這支孤兒檔案接上,但那是【錯的判斷】——
