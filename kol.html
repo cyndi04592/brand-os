@@ -1204,7 +1204,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.42 · 選角</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.44 · 單段接片</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -6297,6 +6297,7 @@ function renderMovementPicker() {
 
   // 分鏡模式 → 維持鎖定(灰掉 + 說明),不是消失
   if (S.cineStoryboard) lockCineZone(true);
+  _syncMovementLock();   // 🎬 2026-09-05:重繪方格會洗掉鎖,重繪後補回
 }
 
 function handleMovementClick(e) {
@@ -6630,6 +6631,7 @@ function openStoryboardForCine() {
    onConfirm: (beats) => {
       const b = beats[0] || {};
       S.cineStoryboard = beats;   // 🆕 存整包分鏡
+      _syncMovementLock();   // 🎬 有分鏡 → 運鏡反灰
       S.cineStoryboardPending = false;   // 已確認分鏡
       const sit = (b.shotDesc || '') + (b.dialogue ? `\n她直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
       const el = document.getElementById('cine-situation');
@@ -6661,6 +6663,7 @@ function openStoryboardForCine() {
     // 按「重新編輯」:解鎖下面設定
     onEdit: () => {
       S.cineStoryboard = null;    // 🆕 解鎖時清掉
+      _syncMovementLock();   // 🎬 解鎖 → 運鏡恢復
       S.cineStoryboardPending = true;   // 重新編輯 = 又變未確認
       lockCineZone(false);
       // 🩹 2026-08-11:時長鎖有「兩套」機制 —— lockCineZone(加 class)跟
@@ -6692,7 +6695,13 @@ function openStoryboardForEpisode() {
     onConfirm: (beats, duration) => {
       const b = beats[0] || {};
       const who = persona.persona_name || '主角';
-      S.episodeStoryboard = (beats && beats.length > 1) ? beats : null;   // 🆕 多段→接片;單段→null走原單集
+      // 🩹 2026-09-05:單段分鏡原本被存成 null → 掉進舊的單集路徑,
+      //   完全繞過導演組(道具師/服裝師/攝影師)與接片引擎 ——
+      //   等於「用了分鏡產生器,卻沒吃到分鏡產生器的任何規則」。
+      //   ★ RA 設計原意:不管幾秒,只要走分鏡產生器就要走同一條路。
+      //   ★ 接片引擎本來就支援單段(kol-stitch.js:1047 單段跳過合成直接存檔)。
+      S.episodeStoryboard = (beats && beats.length >= 1) ? beats : null;   // 單段也走接片
+      _syncMovementLock();   // 🎬 有分鏡 → 運鏡反灰
       S.episodeStoryboardPending = false;   // 已確認分鏡
       const sit = (b.shotDesc || '') + (b.dialogue ? `\n${who}直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
       const el = document.getElementById('ep-situation');
@@ -6722,6 +6731,7 @@ function openStoryboardForEpisode() {
     },
     onEdit: () => {
       S.episodeStoryboard = null;   // 🆕 解鎖時清掉,回到單集
+      _syncMovementLock();   // 🎬 解鎖 → 運鏡恢復
       S.episodeStoryboardPending = true;   // 重新編輯 = 又變未確認
       const durBox = document.querySelector('[data-ep-group="duration"]');
       if (durBox) durBox.classList.remove('ep-locked');
@@ -6797,6 +6807,50 @@ async function saveStitchedToDrive(videoUrl) {
 //        期間畫面完全沒動靜,最久近兩分鐘 → 客戶以為當機、狂點按鈕。
 //  做法:按下的那一瞬間就鎖按鈕 + 顯示步驟,每完成一步就更新。
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+//  🎬 2026-09-05 運鏡防呆(_syncMovementLock)
+//  ─────────────────────────────────────────────────────────────────────
+//  ★ 為什麼:接片路徑的 composeStitchShared 是【寫死 movementId: null】的
+//    (kol-crew-director.js:196 註解:「接片不疊運鏡,運鏡交給分鏡卡」),
+//    所以只要用了分鏡產生器,運鏡下拉【選什麼都完全無效】——
+//    客戶認真挑了一個,系統一個字都沒送出去。這是騙人的 UI。
+//  ★ 條件反灰,不是永久移除:沒有分鏡時仍走單鏡頭路徑,那時運鏡是有效的。
+//  ⚠️ 地標【不要】一起鎖:它的文字雖然被色板師覆蓋,但 resolveSceneText
+//    (kol-environment.js:282/331)會把地標寫進【場景參考圖的生成】,
+//    選東京·澀谷背景真的會不一樣 —— 地標是活的。
+// ═══════════════════════════════════════════════════════════════════════
+function _syncMovementLock() {
+  try {
+    const locked = !!((S.cineStoryboard && S.cineStoryboard.length) ||
+                      (S.episodeStoryboard && S.episodeStoryboard.length));
+    // STEP3:下拉
+    const sel = document.getElementById('ep-movement');
+    if (sel) {
+      sel.disabled = locked;
+      sel.style.opacity = locked ? '0.45' : '';
+      sel.title = locked ? '分鏡已決定運鏡,這裡不再生效' : '';
+    }
+    // STEP2:方格
+    const grp = document.getElementById('movement-picker-group');
+    if (grp) {
+      grp.style.opacity = locked ? '0.45' : '';
+      grp.style.pointerEvents = locked ? 'none' : '';
+    }
+    // 兩邊都補一行說明,客戶才知道為什麼點不動(不是壞掉)
+    document.querySelectorAll('.movement-locked-note').forEach(function (n) { n.remove(); });
+    if (locked) {
+      [sel && sel.parentElement, grp].forEach(function (host) {
+        if (!host) return;
+        const note = document.createElement('div');
+        note.className = 'movement-locked-note';
+        note.style.cssText = 'font-size:11px;color:#8fd9b8;margin-top:4px;';
+        note.textContent = '🎬 運鏡改由分鏡卡決定 — 想換運鏡請在分鏡的「鏡頭」欄位寫';
+        host.appendChild(note);
+      });
+    }
+  } catch (_) {}
+}
+
 function _genProgress(btnId, boxId) {
   const btn = document.getElementById(btnId);
   const box = document.getElementById(boxId);
@@ -7548,7 +7602,7 @@ async function createSeedanceVideo() {
   // 🆕 無臉模式:跳過 KOL,商品當主角(v5.13-faceless)
   if (document.getElementById('faceless-toggle')?.classList.contains('on')) return createFacelessVideo();
   // 🆕 多段分鏡 → 走接片;單段維持原樣,demo 零風險
-  if (S.cineStoryboard && S.cineStoryboard.length > 1) {
+  if (S.cineStoryboard && S.cineStoryboard.length >= 1) {   // 🩹 2026-09-05:單段也走接片(與 STEP3 對齊)
     return createStitchedVideo(S.cineStoryboard);
   }
   if (!S.selectedKol) { toast('請先選定 KOL 形象', 'error'); return; }
@@ -8854,6 +8908,7 @@ function renderEpisodeCard() {
   });
   const sit = document.getElementById('ep-situation');
   if (sit) sit.addEventListener('input', () => saveEpisodeDraft(true));
+  _syncMovementLock();   // 🎬 2026-09-05:整塊 innerHTML 重畫會洗掉鎖,重畫後補回
   // 🆕 v5.13: 還原草稿存的服飾品牌選擇
   const obEp = document.getElementById('ep-outfit-brand');
   if (obEp && draft.outfitBrand) obEp.value = draft.outfitBrand;
@@ -10121,7 +10176,7 @@ async function generateEpisodeV510(mode) {
   // 2. 依 mode 決定要跑什麼
   const tasks = [];
   if (mode === 'video' || mode === 'all') {
-    if (S.episodeStoryboard && S.episodeStoryboard.length > 1) {
+    if (S.episodeStoryboard && S.episodeStoryboard.length >= 1) {   // 🩹 2026-09-05:單段也走接片
       tasks.push(runEpisodeStitch(persona, S.episodeStoryboard, product, sceneId, movementId, tone, productImageUrls, episodeId));   // 🆕 多段分鏡→接片
     } else {
       tasks.push(runVideoGeneration(persona, product, sceneId, movementId, tone, situation, productImageUrls, episodeId));
