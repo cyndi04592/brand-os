@@ -366,14 +366,25 @@ const BRAND_TYPE_LABELS = {
 };
 
 // 核心函式:拿某品牌可用的場景
-// LACEZ (la) → 只用自家 5 個
-// 其他有專屬的 → 專屬 + 通用 pool
-// 沒專屬的 → 只用通用 pool
+// ═══════════════════════════════════════════════════════════════════════════
+//  🗺️ 2026-09-05 全品牌一視同仁:專屬場景 + 通用池
+//  ─────────────────────────────────────────────────────────────────────────
+//  ★ 舊版有一行 `if (brandId === 'la') return { ...brandSpecific };`
+//    把 LACEZ 鎖死在自家 5 個場景。當初的用意是「內衣品牌場景要收斂」,
+//    但實際狀況已經反過來:通用池那 16 個其他品牌早就在用,
+//    而且涵蓋範圍遠超過那 5 個 —— LACEZ 反而是被限制最多的那個。
+//  ★ 改成跟其他品牌一樣:專屬的留著(id 有 la_ 前綴不會撞),再併通用池。
+//    LACEZ 從 5 個變成 21 個。
+//  ★ STEP2 與 STEP3 都是呼叫這一個函式(kol.html:6173 / 8698),
+//    所以改這裡兩邊【自動同步】,不需要各改一份。
+//    ⚠️ 這正是「同一件事寫三個地方」的相反例子 —— 一個收口,改一次就好。
+//  ⚠️ 副作用:新增的場景在 R2 還沒有九宮格,第一次選到會現生一張(一次性成本),
+//    生完存 R2 之後就重用,不會重複收費。
+// ═══════════════════════════════════════════════════════════════════════════
 window.getScenesForBrand = function(brandId) {
   if (!brandId) return { ...UNIVERSAL_POOL };
   const brandSpecific = BRAND_SCENES[brandId] || {};
   const hasBrandScenes = Object.keys(brandSpecific).length > 0;
-  if (brandId === 'la') return { ...brandSpecific };
   if (hasBrandScenes) return { ...brandSpecific, ...UNIVERSAL_POOL };
   return { ...UNIVERSAL_POOL };
 };
