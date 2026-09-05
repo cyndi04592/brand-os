@@ -90,14 +90,39 @@
     const situation = (raw || '').trim();
     if (!situation) return { action: '', speechLine: '' };
 
-    // 同時支援中文引號「」『』 與英文 " " 和 ' '
-    const quoteRe = /[「『"']([^「『"'』」]{1,40})[」』"']/g;
+    // 同時支援中文引號「」『」 與英文 " " 和 ' '
+    // ═══════════════════════════════════════════════════════════════════
+    //  🗣 v5.30 台詞上限對齊 40 → 60(兩道牆講同一個數字)
+    //  ─────────────────────────────────────────────────────────────────
+    //  ★ 病:分鏡面板放行 56.7 字(4.2字/秒 × 15秒 × 0.9),這裡卻只認 40 字,
+    //    而且【完全不出聲】。41–56 字 = 死亡地帶:面板說可以,這裡抓不到。
+    //  ★ 連鎖:引號抓不到 → 台詞留在動作描述裡 → speechLine 是空的
+    //    → 專用的英文對嘴指令從沒送出過 → 模型改用旁白念。
+    //  ★ 修法:40 這個數字是刻意的煞車(防語速太快),【不是拆掉,是對齊】。
+    //    煞車完整保留在面板端(超過會跳警告 + 擋確認),這裡只負責抓得到。
+    //  ★ 為什麼是 60 不是 56.7:面板算字數時會把空白扣掉,這裡的正則不會,
+    //    留一點餘裕,免得標點空格把合法台詞又擠出去。
+    // ═══════════════════════════════════════════════════════════════════
+    const DIALOGUE_MAX = 60;
+    const quoteRe = new RegExp('[「『"\']([^「『"\'』」]{1,' + DIALOGUE_MAX + '})[」』"\']', 'g');
     const lines = [];
     let m;
     while ((m = quoteRe.exec(situation)) !== null) {
       const t = (m[1] || '').trim();
       if (t) lines.push(t);
     }
+    //  🔎 超過上限的引號會被整句忽略(靜默失敗)→ 開 KOL_DEBUG 時出聲,不再無聲無息
+    try {
+      if (typeof window !== 'undefined' && window.KOL_DEBUG === true) {
+        const over = (situation.match(/[「『"\']([^「『"\'』」]+)[」』"\']/g) || [])
+          .map(function (x) { return x.length - 2; })
+          .filter(function (n) { return n > DIALOGUE_MAX; });
+        if (over.length) {
+          console.log('[CrewDirector] 🗣 有 ' + over.length + ' 句台詞超過 '
+            + DIALOGUE_MAX + ' 字上限(' + over.join('/') + ' 字),會被忽略 → 該鏡沒有對嘴指令');
+        }
+      }
+    } catch (_) {}
 
     // 動作 = 把引號連同內容拿掉後剩下的字
     const action = situation.replace(quoteRe, ' ').replace(/\s+/g, ' ').trim();
@@ -599,5 +624,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.20-realscene 就緒 · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.21-dialogue60 就緒 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
