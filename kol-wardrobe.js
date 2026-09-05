@@ -192,6 +192,25 @@
 
   const LINGERIE_BRAND_TYPES = ['fashion_lingerie', 'lingerie', 'underwear'];
 
+  // ═══════════════════════════════════════════════════════════════════════
+  //  👙 v5.31 內衣品牌外層:必須是【可以敞開的】
+  //  ─────────────────────────────────────────────────────────────────────
+  //  ★ 舊版是安全鎖:'fully dressed in everyday outerwear … no exposed undergarments'。
+  //    它擋住了情色風險,但也把商品擋光了 —— 內衣穿在密不透風的白 T 底下
+  //    = 廣告拍出來看不到商品 = 白拍。2026-09-05 實測:分鏡自己寫「居家T恤與短褲」,
+  //    道具師就算說了「穿在外衣底下」,也沒有任何開口能露出來。
+  //  ★ 新做法:外層改成【敞開的襯衫/罩衫】—— 領口自然露出商品,
+  //    同時保留 modest and tasteful 的分寸。這是「換規則」不是「拿掉規則」。
+  //  ⚠️ 不要在這裡疊否定句。『內衣是內層、不可穿在衣服外面』由道具師
+  //    (kol-product.js innerwear 模式)負責講,這裡只負責【給它一個開口】。
+  // ═══════════════════════════════════════════════════════════════════════
+  const LINGERIE_OUTER = {
+    casual:  'a soft oversized shirt worn unbuttoned and loose over it, relaxed at home',
+    refined: 'a light long cardigan worn open over it, calm and composed',
+  };
+  //  商品名稱後備:品牌類型沒設也能認出貼身衣物(與 kol-product.js 同一組關鍵字)
+  const INNER_RE = /內衣|內著|胸罩|內褲|無鋼圈|bra|bralette|lingerie|nubra|nu bra|塑身衣|貼身衣物/i;
+
   const BRAND_ALIASES = {
     uniqlo: 'uniqlo', gu: 'gu',
     niko_and: 'niko_and', niko: 'niko_and', 'niko_and___': 'niko_and',
@@ -246,7 +265,12 @@
 
     const sceneId    = ctx.sceneId || ctx.scene?.id || '';
     const brandType  = ctx.brand?.brand_type || '';
-    const isLingerie = LINGERIE_BRAND_TYPES.includes(brandType);
+    //  🩹 v5.31:品牌類型沒設時(實測 la 品牌 brand_type 是空的),
+    //    退而用【本週主推商品的名稱】判斷,免得整套內衣邏輯靜默失效。
+    const _prodName = [ctx.episode?.product?.name, ctx.episode?.product?.prodName,
+                       ctx.episode?.product?.subName].filter(Boolean).join(' ');
+    const isLingerie = LINGERIE_BRAND_TYPES.includes(brandType)
+      || (!!_prodName && INNER_RE.test(_prodName));
 
     // 🔑 persona 後備:ctx 沒帶 persona(實測 null)→ 從全域 window.S 補抓(全站共用同一顆)
     const persona = ctx.persona
@@ -277,9 +301,11 @@
 
     if (!outfitText) return '';
 
-    // 內衣品牌安全鎖(不論哪個來源都會套上)
+    //  👙 v5.31 內衣品牌:外層【覆寫】成可敞開款,商品才看得見。
+    //    覆寫而非附加 —— 附加會變成「白T恤 + 敞開的襯衫」兩層互相打架。
     if (isLingerie) {
-      outfitText += ', fully dressed in everyday outerwear, modest and tasteful, no exposed undergarments, no revealing clothing';
+      outfitText = (LINGERIE_OUTER[sceneTone(sceneId)] || LINGERIE_OUTER.casual)
+        + ', modest and tasteful, no nudity';
     }
 
     return 'wearing ' + outfitText;
@@ -384,7 +410,7 @@
         output_format: 'jpeg',
       });
       const url = (r && r.images && r.images[0] && r.images[0].url) || null;
-      if (url) console.log('[KolWardrobe] 👗 服裝參考圖已生成 →', url);
+      if (url) console.log('[KolWardrobe] 👗 v5.31 內衣外層可敞開(商品看得見) · 服裝參考圖已生成 →', url);
       else     console.warn('[KolWardrobe] 影像引擎回應無圖:', JSON.stringify(r).slice(0, 200));
       return url;
     } catch (e) {
@@ -408,5 +434,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.24 就緒 · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
+  console.log('[KolWardrobe] 👗 v5.31 就緒 · 👙內衣外層改可敞開(商品看得見·品牌類型沒設也認得出) · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
