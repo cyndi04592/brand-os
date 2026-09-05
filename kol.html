@@ -1204,7 +1204,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.45 · 白標</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.46 · 內衣分槽</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -8243,6 +8243,16 @@ const MAX_PRODUCT_REFS = 6;
 //   ⚠️ 只借用既有的四個 role key(packaging / contents / main / dish),不發明新 key,
 //      因為 role 決定 [Image2] / [Image3] 的排序(contents=Image3,其餘=Image2)。
 const MODE_SLOTS = {
+  //  👙 2026-09-05 內衣專屬兩槽:正面 + 背面。
+  //    為什麼要兩張:內衣的辨識重點有一半在背後(肩帶走向、背扣、蕾絲接縫),
+    //  只給正面照,模型得自己想像背面 → 常見災情是 logo 正反都有、肩帶多一條。
+  //    ⚠️ 只借用既有的 packaging / contents 兩個 role key —— 它們決定
+  //      [Image2] / [Image3] 的排序(見 PRODUCT_ROLE_ORDER)。不發明新 key。
+  //    ★ 對應的點名寫在 kol-product.js 的 innerwear 分支:
+  //      [Image2]=正面、[Image3]=同一件的背面(明講是同一件,不是兩件)。
+  //    ★ 背面是選填 —— 沒給就只送正面,道具師不會提到 [Image3]。
+  innerwear:[{ role: 'packaging', label: '正面照' },
+             { role: 'contents',  label: '背面照 · 選填(肩帶/背扣會更準)' }],
   service:  [{ role: 'main', label: '成果照 · 做完的樣子' }],
   equip:    [{ role: 'main', label: '機台 / 設備' }, { role: 'contents', label: '加工件 / 成品' }],
   // 🖥 2026-08-22 修「前後端對不上」:道具師(kol-product.js)對 screen 的指令是
@@ -8379,6 +8389,11 @@ const PRODUCT_MODE_OPTS = [
     { v: 'packaged', label: '包裝商品(海苔 / 零食 / 盒裝)' },
     { v: 'dish',     label: '盛盤食物(料理 / 飲品)' },
     { v: 'worn',     label: '穿戴(鞋 / 包 / 衣 / 錶 / 飾品)' },
+    //  👙 2026-09-05:內衣不能套「穿戴」——「穿戴」對模型的指令是
+    //    「清楚看得出穿在身上」,內衣套上去就被畫在襯衫外面。
+    //    ★ 商品名稱含內衣/胸罩/無鋼圈等字時,kol-product.js 會自動改走這個模式,
+    //      所以客戶選錯也會被救。這個選項是給名稱看不出來的商品用的。
+    { v: 'innerwear', label: '貼身衣物(內衣 / 內褲 / 塑身衣)' },
     { v: 'hero',     label: '主角大物(家具 / 家電 / 大型品)' },
     { v: 'demo',     label: '操作示範(噴霧 / 上妝 / 烹調 / 安裝)' },
   ] },
