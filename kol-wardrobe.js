@@ -382,16 +382,64 @@
    *                       可額外帶 ctx.lockedOutfitImageUrl 直接指定固定服裝圖
    * @returns {Promise<string|null>}
    */
+  // ═══════════════════════════════════════════════════════════════════════
+  //  🪣 v5.33 服裝參考圖轉存 R2 · 2026-09-05
+  //  ─────────────────────────────────────────────────────────────────────
+  //  ★ 病灶(RA 2026-09-05 在 Console 抓到):服裝參考圖直接用影像引擎回傳的
+  //    暫時網址,四種參考圖裡【只有它沒進 R2】(臉/商品/場景都是 cdn.raby.com.tw)。
+  //  ★ 兩個後果:
+  //    ① 白標破口 —— 這個網址會出現在瀏覽器 Network 分頁,
+  //       客戶(尤其懂技術的)一看就知道後端串接了誰。Console 保險絲擋不住 Network。
+  //    ② 更嚴重:那種網址是【暫時的】,過期後服裝鎖靜默失效,而且不會報錯。
+  //  ★ 修法:沿用既有的 scene_grid 動作(它本來就吃 storeUrl → 存 R2 → 回 CDN 網址),
+  //    不新增 Worker 動作 —— 避免 RA 得去 Cloudflare 儀表板貼整包 Worker。
+  //  ★ 附帶好處:同一個品牌 + 同一段服裝文字 → 同一把快取鑰匙,
+  //    第二次直接秒回,不用再花錢生圖。
+  //  📌 已知小債:圖會存進 scenegrid/ 資料夾(鍵名 outfit_ 開頭)。
+  //     語意不完美但功能正確;之後 Worker 有別的事要改時再一起搬。
+  // ═══════════════════════════════════════════════════════════════════════
+  function _outfitKey(brandId, outfitText) {
+    let h = 0;
+    const str = String(brandId || 'b') + '|' + String(outfitText || '');
+    for (let i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
+    return 'outfit_' + (h >>> 0).toString(36);
+  }
+
+  async function _toR2(brandId, key, srcUrl) {
+    try {
+      const st = await wdCallWorker('scene_grid', { brandId: brandId || 'b', sceneKey: key, storeUrl: srcUrl });
+      if (st && st.ok && st.url) return st.url;
+      _wdbg('[KolWardrobe] 🪣 轉存失敗,沿用原網址:', st && st.error);
+    } catch (e) {
+      _wdbg('[KolWardrobe] 🪣 轉存例外,沿用原網址:', e.message);
+    }
+    return srcUrl;   // 轉存失敗不擋生成,只是少了白標保護
+  }
+
+  //  🔒 內部診斷一律走這裡:預設靜音,RA 要看時在 Console 打 window.KOL_DEBUG = true
+  function _wdbg() {
+    if (typeof window === 'undefined' || window.KOL_DEBUG !== true) return;
+    try { console.log.apply(console, arguments); } catch (_) {}
+  }
+
   async function generateOutfitRefImage(ctx) {
     // 🔒 v5.18 服裝鎖定:有釘住的固定服裝圖 → 直接用,不現生
     const lockedUrl = resolveLockedOutfitUrl(ctx);
     if (lockedUrl) {
-      console.log('[KolWardrobe] 🔒 服裝鎖定:使用釘住的固定服裝圖(不現生)→', lockedUrl);
+      _wdbg('[KolWardrobe] 🔒 服裝鎖定:使用釘住的固定服裝圖(不現生)→', lockedUrl);
       return lockedUrl;
     }
 
     const outfitText = resolveOutfitText(ctx);
-    if (!outfitText) { console.warn('[KolWardrobe] 沒有衣服文字,跳過服裝參考圖'); return null; }
+    if (!outfitText) { _wdbg('[KolWardrobe] 沒有衣服文字,跳過服裝參考圖'); return null; }
+
+    //  🪣 先問 R2 有沒有現成的(同品牌+同服裝文字)→ 有就秒回,不重生、不花錢
+    const _brandId = (ctx && (ctx.brandId || (ctx.brand && ctx.brand.id))) || (window.S && window.S.currentBrandId) || 'b';
+    const _key = _outfitKey(_brandId, outfitText);
+    try {
+      const hit = await wdCallWorker('scene_grid', { brandId: _brandId, sceneKey: _key });
+      if (hit && hit.ok && hit.url) { _wdbg('[KolWardrobe] 🪣 服裝圖快取命中'); return hit.url; }
+    } catch (_) {}
 
     const prompt =
       'Clean cut-out e-commerce product listing photo. ' +
@@ -410,11 +458,12 @@
         output_format: 'jpeg',
       });
       const url = (r && r.images && r.images[0] && r.images[0].url) || null;
-      if (url) console.log('[KolWardrobe] 👗 v5.31 內衣外層可敞開(商品看得見) · 服裝參考圖已生成 →', url);
-      else     console.warn('[KolWardrobe] 影像引擎回應無圖:', JSON.stringify(r).slice(0, 200));
-      return url;
+      if (!url) { _wdbg('[KolWardrobe] 影像引擎回應無圖:', JSON.stringify(r).slice(0, 200)); return null; }
+      const durable = await _toR2(_brandId, _key, url);
+      _wdbg('[KolWardrobe] 👗 服裝參考圖已生成並轉存 →', durable);
+      return durable;
     } catch (e) {
-      console.warn('[KolWardrobe] 服裝參考圖生成失敗(照舊純文字):', e.message);
+      _wdbg('[KolWardrobe] 服裝參考圖生成失敗(照舊純文字):', e.message);
       return null;
     }
   }
@@ -434,5 +483,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.31 就緒 · 👙內衣外層改可敞開(商品看得見·品牌類型沒設也認得出) · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
+  console.log('[KolWardrobe] 👗 v5.33 就緒 · 🪣服裝圖轉存R2(白標+不過期)+快取 · v5.31 · 👙內衣外層改可敞開(商品看得見·品牌類型沒設也認得出) · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
