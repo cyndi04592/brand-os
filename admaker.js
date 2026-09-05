@@ -49,6 +49,19 @@ const DESIGNER_POLISH =
 'ONE clear focal hierarchy on a deliberate grid, intentional and edited, never over-filled.';
 
 // ═══════════════════════════════════════════════════════════════════════
+//  v11.4 ★ FOOD_CRAFT 餐飲呈現準則 —— 只在食物場景(SELECTED_FLAVOR 以 food_ 開頭)注入
+//    來源:華邑/洲際/MO 等專業餐飲海報拆解,解「產品貼在背景上」的合成感。
+//    核心 = 淺景深把背景柔化 → 光差藏起來 → 場景自然融合。
+//    不碰其他品類;非食物場景不觸發。
+// ═══════════════════════════════════════════════════════════════════════
+const FOOD_CRAFT =
+'=== FOOD PLATING CRAFT (food & beverage only — makes the scene blend, never pasted-on) ===\n' +
+'- SHALLOW DEPTH OF FIELD is mandatory: the hero dish must be tack-sharp while the background falls into soft creamy bokeh (equivalent to f/2.8–f/4). A blurred background hides any lighting mismatch so the dish never looks cut-and-pasted onto the scene.\n' +
+'- Surround the hero with IN-CATEGORY ingredients, sauces, garnishes and utensils (herbs, spices, citrus, aromatics, condiments, chopsticks, ladles) placed in the near and far ground, but keep them OUT of focus — they enrich the story without competing with the dish.\n' +
+'- RESTAURANT-GRADE LIGHTING: a single warm key light with soft falloff, gentle golden rim light on the dish edge, deep but not pure-black shadows, faint atmospheric steam where appropriate — cinematic and appetizing, never flat or evenly lit.\n' +
+'- OPTIONAL human action that NEVER touches the preserved product: a hand sprinkling garnish or crushed nuts from above, a chef plating in the blurred background, hands framing the scene beside the dish. The hand must never grip, cover, or overlap the locked hero dish — keep all human elements clear of the product so the pixel-perfect dish stays intact.\n\n';
+
+// ═══════════════════════════════════════════════════════════════════════
 //  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
 // ═══════════════════════════════════════════════════════════════════════
 const PRODUCT_SCENES = {
@@ -3715,6 +3728,12 @@ function buildPosterPrompt() {
     prompt += `=== REGIONAL FLAVOR (OVERRIDES brand pack scene hints) ===\n`;
     prompt += flavor.flavor + '\n';
     prompt += `CRITICAL OVERRIDE RULE: This regional flavor takes precedence over any scene description, era, or decor hinted by the brand pack. If brand pack says "warm domestic Taiwan" and flavor says "Korean clean pastel" → output MUST be Korean clean pastel (not Taiwan retro). Brand pack only contributes overall mood; flavor decides the actual visual scene.\n\n`;
+  }
+
+  // 🆕 v11.4 餐飲呈現準則:選了食物場景(food_ 開頭)→ 自動注入淺景深融合手法。
+  //    餐飲/小吃客戶照常選食物氛圍場景就會吃到,不用懂任何設定。非食物不觸發。
+  if (String(SELECTED_FLAVOR || '').startsWith('food_')) {
+    prompt += FOOD_CRAFT;
   }
 
   if (contextTheme.context) {
