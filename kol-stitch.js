@@ -229,6 +229,26 @@ window.KolStitch = (function () {
     };
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  //  🔊 v6.25 語音／對嘴行(抽成函式)
+  //  ★ 為什麼要抽出來:原本這段是在 prompt 全部組完【之後】才 += 上去的,
+  //    所以它永遠排在最尾巴 —— 而 1700 超標時就是從尾巴切。
+  //    等於「對嘴指令」是每次超標的第一個犧牲者,人沒開口卻有旁白就是這樣來的。
+  //  ★ 抽成函式後可以【提早算長度】,讓預算把它算進去,並【提早插入】到台詞旁邊。
+  //  ⚠️ 文字內容一字未改,只改「算的時機」與「站的位置」。
+  // ═══════════════════════════════════════════════════════════════════════
+  function _buildVoiceLine(opts) {
+    if (!opts || opts.generateAudio !== true) return '';
+    const _nat = opts.nationality
+      || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
+      || 'tw';
+    const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
+    if ((opts.provider || 'piapi') === 'piapi') {
+      return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still; still moving on the last frame.';
+    }
+    return 'Voice & body: ' + _pron().s + ' speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) ' + _pron().s + ' stays silent, mouth still, only ambient sound. ' + _pron().S + ' is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
+  }
+
   function buildMultiShotPrompt(beats, totalSec, shared, continuityFrom) {
     const list = beats.map(function (b) { return (typeof b === 'string') ? { prompt: b } : b; });
     const n = Math.max(1, list.length);
@@ -277,6 +297,9 @@ window.KolStitch = (function () {
         tb = tb1;
       }
       bodyB += '\nThe quoted line is ' + _pron().p + ' COMPLETE and ONLY speech per shot — no extra words or improvised prices after it, only ambient sound.';
+      //  🔊 v6.25 對嘴行搬家:緊貼台詞規則(引號講的就是它),不再排最尾巴。
+      //    超標時被切掉的變成排在後面的品牌調性,不再是對嘴指令。
+      if (shared.voiceLine) bodyB += '\n' + shared.voiceLine;
       if (shared.tail) bodyB += '\n' + shared.tail;
       return bodyB;
     }
@@ -586,10 +609,14 @@ window.KolStitch = (function () {
         return { text: kept.join('; '), kept: kept.length, total: rules.length, dropped: dropped };
       }
 
-      const _WALL = 1700, _SAFE = 40;   // 留 40 字緩衝給語音行/口音行後續追加
+      //  🔊 v6.25 修正一個算術錯誤:原本 _SAFE = 40,意思是「留 40 字給語音行後續追加」,
+      //    但語音行實際 278 字 —— 短少 238 字,所以每支都固定超標。
+      //    現在改成把語音行【真的算進 probe】,預算自然含它,_SAFE 只留零頭。
+      const _voiceLine = _buildVoiceLine(opts);
+      const _WALL = 1700, _SAFE = 20;
       const _rawTail = String((opts.shared && opts.shared.tail) || '');
       let _useFront = _leanFront;
-      let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront }, opts.continuityFrom);
+      let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
       let _budget = _WALL - _SAFE - _probe.length;
 
       if (_budget < 120) {
@@ -598,7 +625,7 @@ window.KolStitch = (function () {
         _blk.rescued = true;
         _dbg('[KolStitch] 🩳 空間不足(' + _budget + ' 字),front 讓位給商品鐵律');
         _useFront = 'Realistic vertical UGC video. Soft diffused natural light, matte skin, no beauty filter, an ordinary real person.';
-        _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront }, opts.continuityFrom);
+        _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
         _budget = _WALL - _SAFE - _probe.length;
       }
 
@@ -629,30 +656,25 @@ window.KolStitch = (function () {
         } catch (_) {}
       }
       prompt = buildMultiShotPrompt(beats, totalSec,
-        { front: _useFront, tail: _fit.text }, opts.continuityFrom);
+        { front: _useFront, tail: _fit.text, voiceLine: _voiceLine }, opts.continuityFrom);
+      _blk.voice = _voiceLine.length;   // 📊 已提早插入,探針直接記長度
     }
 
     // 🔒 口音 + 口型鐵律(v6.4):開語音時,只有「有台詞的鏡頭」才說話+對嘴;
     //   沒台詞的鏡頭(吃/咀嚼/拿商品/純反應)→ 不講話、嘴不動、只有環境音 → 解決「邊吃邊有人聲」desync。
     _blk.before = prompt.length;
     if (opts.generateAudio === true && !/lip-sync/i.test(prompt)) {
-      const _nat = opts.nationality
-        || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
-        || 'tw';
-      const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
-      if ((opts.provider || 'piapi') === 'piapi') {
-        // 🩳 v6.10 PiAPI 超短語音行(省字避開 prompt 上限;鐵律照留:只講台詞/台灣腔/對嘴/沒台詞不講話/不定格)
-        prompt += '\nVoice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still; still moving on the last frame.';
-      } else {
-        prompt += '\nVoice & body: ' + _pron().s + ' speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) ' + _pron().s + ' stays silent, mouth still, only ambient sound. ' + _pron().S + ' is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
-      }
+      //  lean 路徑已在組裝時插入 → prompt 已含 lip-sync → 上面的 if 會自動跳過這裡。
+      //  這裡只服務「非 lean / 非 piapi」的舊路徑,文字與 lean 路徑共用同一個函式,不再兩份。
+      const _vl = _buildVoiceLine(opts);
+      if (_vl) prompt += '\n' + _vl;
     }
 
     // reference-to-video:KOL臉=[Image1] 鎖身份 + 商品 + 服裝 + 場景(最多9張)。
     //   Worker 自動把 [OUTFIT_IMG]/[SCENE_IMG] 換成真實 [ImageN]。
     var _provNow = (typeof window !== 'undefined' && window.KOL_PROVIDER) ? window.KOL_PROVIDER : (opts.provider || 'piapi');
     _dbg('[KolStitch] 🔀 本段引擎 =', _provNow);
-    _blk.voice = prompt.length - _blk.before;
+    if (!_blk.voice) _blk.voice = prompt.length - _blk.before;
     // ═══════════════════════════════════════════════════════════════════
     //  📊 v6.24 字數分項盤點探針(window.KOL_DEBUG = true 才印)
     //  ★ 只讀不寫:所有數字都是已經算好的變數,一個字都沒改 prompt。
@@ -672,7 +694,7 @@ window.KolStitch = (function () {
           { '區塊': '② 五鎖骨架(臉/場景/服裝/商品)', '字數': _frame, '備註': '固定成本,每段都付一次' },
           { '區塊': '③ 分鏡動作＋台詞', '字數': _blk.beats, '備註': beats.length + ' 個鏡頭' },
           { '區塊': '④ 商品鐵律', '字數': _blk.tailSent, '備註': '保留 ' + _blk.tailKept + '/' + _blk.tailTotal + ' 條 · 預算 ' + _blk.tailBudget + ' 字' },
-          { '區塊': '⑤ 對嘴／語音規則', '字數': _blk.voice, '備註': _blk.voice ? '★ 排在最後,超標時第一個被切' : '(本段未開語音)' },
+          { '區塊': '⑤ 對嘴／語音規則', '字數': _blk.voice, '備註': _blk.voice ? '✅ 已搬到台詞旁,且已納入預算' : '(本段未開語音)' },
           { '區塊': '＝ 總計', '字數': prompt.length, '備註': _over > 0 ? ('🔴 超過 1700 共 ' + _over + ' 字') : ('🟢 牆內,還剩 ' + (-_over) + ' 字') },
         ];
         console.log('%c[KolStitch] 📊 本段字數盤點', 'color:#0a7;font-weight:bold');
@@ -1055,7 +1077,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  _dbg('[KolStitch] 🎬 v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  _dbg('[KolStitch] 🎬 v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
