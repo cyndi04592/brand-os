@@ -52,6 +52,41 @@ function _authToken() {
   try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; }
   catch (e) { return ''; }
 }
+// ═══════════════════════════════════════════════════════════════════════════
+//  🪣 2026-09-05 產出圖一律轉存自家 R2 再顯示(白標根治)
+//  ─────────────────────────────────────────────────────────────────────────
+//  ★ 病灶:候選圖原本直接用影像引擎回傳的網址塞進 <img src>,
+//    瀏覽器一載入,【Network 分頁就會列出供應商網域】——
+//    客戶按 F12 什麼都不用做就知道後端串接了誰。
+//    ⚠️ 這個 Console 保險絲擋不住,只有換掉網址才擋得住。
+//  ★ 附帶好處:引擎回傳的網址是【暫時的】,轉存之後候選圖不會過期。
+//  ★ 沿用既有的 scene_grid 動作(吃 storeUrl → 存 R2 → 回自家 CDN 網址),
+//    不新增 Worker 動作,不用去 Cloudflare 儀表板重貼。
+//  ★ 失敗不擋流程:轉存不成就沿用原網址,少了白標保護但功能照常。
+// ═══════════════════════════════════════════════════════════════════════════
+function _kaiKey(url) {
+  let h = 0; const t = String(url || '');
+  for (let i = 0; i < t.length; i++) h = ((h << 5) - h + t.charCodeAt(i)) | 0;
+  return 'aikol_' + (h >>> 0).toString(36) + '_' + Date.now().toString(36);
+}
+async function _kaiToR2(url) {
+  if (!url || /cdn\.raby\.com\.tw/.test(url)) return url;   // 已經是自家的就不動
+  try {
+    const r = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_withAuth({
+        password: PASSWORD, action: 'scene_grid',
+        brandId: (window.S && window.S.currentBrandId) || 'aikol',
+        sceneKey: _kaiKey(url), storeUrl: url,
+      })),
+    });
+    const d = await r.json();
+    if (d && d.ok && d.url) return d.url;
+  } catch (_) {}
+  return url;
+}
+
 function _withAuth(o) {
   o = o || {};
   try {
@@ -595,7 +630,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.41] 已載入(+window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
+  console.log('[kol-ai-generator v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1822,6 +1857,12 @@ async function generate() {
       saved: false,
       driveFileId: null,
     }));
+
+    //  🪣 白標:顯示之前先把每張候選圖轉存自家 R2(平行跑,失敗沿用原網址)
+    try {
+      const _urls = await Promise.all(S.lastImages.map(im => _kaiToR2(im.url)));
+      S.lastImages.forEach((im, i) => { if (_urls[i]) im.url = _urls[i]; });
+    } catch (_) {}
 
     renderGallery();
 
