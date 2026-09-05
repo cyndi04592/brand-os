@@ -252,6 +252,38 @@ const LOCATIONS = {
   // 抽「場景文字」— 跟 composeSeedancePrompt 同一套真相(setting/env_prompt + 地標 + 光線)
   //   → 確保「場景參考圖」跟「prompt 文字」描述的是同一個場景
   //   ctx 可給:{ scene:{...} } 直接帶物件,或 { brandId, sceneId } 由這裡自己解析
+  // ═══════════════════════════════════════════════════════════════════════
+  //  🪣🔒 2026-09-05 白標:場景圖轉存自家 R2 + 內部診斷收進保險絲
+  //  ─────────────────────────────────────────────────────────────────────
+  //  ★ 破口一(Network):單張場景圖原本直接回傳影像引擎的網址,
+  //    瀏覽器一載入,Network 分頁就列出供應商網域。九宮格那條路徑早就有轉存,
+  //    但【單張這條沒有】—— 而它正是九宮格關閉或失敗時的退路。
+  //  ★ 破口二(Console):這支檔案多處 console.log 直接印圖片網址,沒有保險絲。
+  //  ★ 沿用既有 scene_grid 動作,不動 Worker;失敗沿用原網址,不擋生成。
+  // ═══════════════════════════════════════════════════════════════════════
+  function _evdbg() {
+    if (typeof window === 'undefined' || window.KOL_DEBUG !== true) return;
+    try { console.log.apply(console, arguments); } catch (_) {}
+  }
+  function _evKey(brandId, sceneId, tag) {
+    const raw = String(brandId || 'b') + '|' + String(sceneId || '') + '|' + String(tag || '');
+    let h = 0;
+    for (let i = 0; i < raw.length; i++) h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
+    return 'scene1_' + (h >>> 0).toString(36);
+  }
+  async function _evToR2(ctx, url, tag) {
+    if (!url || /cdn\.raby\.com\.tw/.test(url)) return url;
+    try {
+      const st = await evCallWorker('scene_grid', {
+        brandId: (ctx && ctx.brandId) || 'b',
+        sceneKey: _evKey(ctx && ctx.brandId, (ctx && (ctx.sceneId || ctx.locationId)) || '', tag),
+        storeUrl: url,
+      });
+      if (st && st.ok && st.url) return st.url;
+    } catch (e) { _evdbg('[KolEnvironment] 🪣 轉存失敗,沿用原網址:', e.message); }
+    return url;
+  }
+
   function resolveSceneText(ctx) {
     ctx = ctx || {};
     let scene = ctx.scene;
@@ -280,7 +312,7 @@ const LOCATIONS = {
    */
   async function generateSceneRefImage(ctx) {
     const sceneText = resolveSceneText(ctx);
-    if (!sceneText) { console.warn('[KolEnvironment] 沒有場景文字,跳過場景參考圖'); return null; }
+    if (!sceneText) { _evdbg('[KolEnvironment] 沒有場景文字,跳過場景參考圖'); return null; }
 
     const prompt =
       'Establishing background photograph of a location, clean realistic style. ' +
@@ -299,11 +331,12 @@ const LOCATIONS = {
         output_format: 'jpeg',
       });
       const url = (r && r.images && r.images[0] && r.images[0].url) || null;
-      if (url) console.log('[KolEnvironment] 🏠 場景參考圖已生成 →', url);
-      else     console.warn('[KolEnvironment] 影像引擎回應無圖:', JSON.stringify(r).slice(0, 200));
-      return url;
+      if (!url) { _evdbg('[KolEnvironment] 影像引擎回應無圖:', JSON.stringify(r).slice(0, 200)); return null; }
+      const durable = await _evToR2(ctx, url, 'single');   // 🪣 白標 + 不過期
+      _evdbg('[KolEnvironment] 🏠 場景參考圖已生成 →', durable);
+      return durable;
     } catch (e) {
-      console.warn('[KolEnvironment] 場景參考圖生成失敗(照舊純文字):', e.message);
+      _evdbg('[KolEnvironment] 場景參考圖生成失敗(照舊純文字):', e.message);
       return null;
     }
   }
@@ -345,7 +378,7 @@ const LOCATIONS = {
       + (realShot ? '|real' + _hash(realShot) : '');
     window._sceneGridCache = window._sceneGridCache || {};
     if (window._sceneGridCache[cacheKey]) {
-      console.log('[KolEnvironment] 🗺️ 九宮格快取命中(不重生)→', window._sceneGridCache[cacheKey]);
+      _evdbg('[KolEnvironment] 🗺️ 九宮格快取命中(不重生)→', window._sceneGridCache[cacheKey]);
       return window._sceneGridCache[cacheKey];
     }
 
@@ -353,18 +386,18 @@ const LOCATIONS = {
     try {
       const q = await evCallWorker('scene_grid', { brandId: ctx.brandId || 'b', sceneKey: cacheKey });
       if (q && q.url) {
-        console.log('[KolEnvironment] 🗺️ 九宮格 R2 命中(不重生·秒回)→', q.url);
+        _evdbg('[KolEnvironment] 🗺️ 九宮格 R2 命中(不重生·秒回)→', q.url);
         window._sceneGridCache[cacheKey] = q.url;
         return q.url;
       }
-    } catch (e) { console.warn('[KolEnvironment] 九宮格 R2 查詢略過:', e.message); }
+    } catch (e) { _evdbg('[KolEnvironment] 九宮格 R2 查詢略過:', e.message); }
 
     try {
       // ═══ 路徑 A:有客戶實景照 → 直接用真照生多角度(image-to-image)═══
       //   刻意【跳過藍圖】:藍圖是為了「無中生有」而存在的骨架,
       //   已經有真實空間照時再過一次藍圖,反而會把真實細節洗成示意圖。
       if (realShot) {
-        console.log('[KolEnvironment] 🗺️ 走實景照多角度(image-to-image)→', realShot);
+        _evdbg('[KolEnvironment] 🗺️ 走實景照多角度(image-to-image)→', realShot);
         const realPrompt =
           'This photograph is the REAL location. Reproduce THIS EXACT SPACE — same walls, same colours, ' +
           'same furniture, same fixtures, same signage, same flooring, same lighting character. ' +
@@ -385,22 +418,22 @@ const LOCATIONS = {
         if (!rUrl) {
           //   失敗就退回客戶原本那張真照 —— 絕不退回「AI 想像的空間」,
           //   那會讓客戶的門市消失,比沒有九宮格更糟。
-          console.warn('[KolEnvironment] 實景多角度生成無圖 → 退回原實景照');
+          _evdbg('[KolEnvironment] 實景多角度生成無圖 → 退回原實景照');
           return realShot;
         }
-        console.log('[KolEnvironment] 🗺️ 實景多角度已生成 →', rUrl);
+        _evdbg('[KolEnvironment] 🗺️ 實景多角度已生成 →', rUrl);
         let realFinal = rUrl;
         try {
           const st = await evCallWorker('scene_grid', { brandId: ctx.brandId || 'b', sceneKey: cacheKey, storeUrl: rUrl });
-          if (st && st.url) { realFinal = st.url; console.log('[KolEnvironment] 🗺️ 已存 R2(之後重用)→', realFinal); }
-        } catch (e) { console.warn('[KolEnvironment] 存 R2 略過(用原網址):', e.message); }
+          if (st && st.url) { realFinal = st.url; _evdbg('[KolEnvironment] 🗺️ 已存 R2(之後重用)→', realFinal); }
+        } catch (e) { _evdbg('[KolEnvironment] 存 R2 略過(用原網址):', e.message); }
         window._sceneGridCache[cacheKey] = realFinal;
         return realFinal;
       }
 
       // ═══ 路徑 B:沒有實景照 → 舊路,文字 → 藍圖 → 九宮格 ═══
       //   這條才需要場景文字(要靠它無中生有);路徑 A 有真照就不需要。
-      if (!sceneText) { console.warn('[KolEnvironment] 沒有場景文字也沒有實景照,跳過九宮格'); return null; }
+      if (!sceneText) { _evdbg('[KolEnvironment] 沒有場景文字也沒有實景照,跳過九宮格'); return null; }
       // ① 平面藍圖 = 空間骨架
       const bpPrompt =
         'Top-down architectural floor-plan blueprint of this location: ' + sceneText + '. ' +
@@ -411,8 +444,8 @@ const LOCATIONS = {
         prompt: bpPrompt, aspect_ratio: '1:1', resolution: '2K',
       });
       const bpUrl = (bpR && bpR.images && bpR.images[0] && bpR.images[0].url) || null;
-      if (!bpUrl) { console.warn('[KolEnvironment] 藍圖生成無圖:', JSON.stringify(bpR).slice(0, 200)); return null; }
-      console.log('[KolEnvironment] 🗺️ 藍圖已生成 →', bpUrl);
+      if (!bpUrl) { _evdbg('[KolEnvironment] 藍圖生成無圖:', JSON.stringify(bpR).slice(0, 200)); return null; }
+      _evdbg('[KolEnvironment] 🗺️ 藍圖已生成 →', bpUrl);
 
       // ② 依藍圖生九宮格(點名鎖獨立家具,壓漂移)
       const gridPrompt =
@@ -430,20 +463,20 @@ const LOCATIONS = {
         image_urls: [bpUrl], prompt: gridPrompt, aspect_ratio: '1:1', resolution: '2K',
       });
       const gUrl = (gR && gR.images && gR.images[0] && gR.images[0].url) || null;
-      if (!gUrl) { console.warn('[KolEnvironment] 九宮格生成無圖:', JSON.stringify(gR).slice(0, 200)); return null; }
-      console.log('[KolEnvironment] 🗺️ 九宮格已生成 →', gUrl);
+      if (!gUrl) { _evdbg('[KolEnvironment] 九宮格生成無圖:', JSON.stringify(gR).slice(0, 200)); return null; }
+      _evdbg('[KolEnvironment] 🗺️ 九宮格已生成 →', gUrl);
 
       // 🆕 v5.25 durable:生完存進 R2,回 durable 網址(下次起秒回·不重生不重花)
       let finalUrl = gUrl;
       try {
         const st = await evCallWorker('scene_grid', { brandId: ctx.brandId || 'b', sceneKey: cacheKey, storeUrl: gUrl });
-        if (st && st.url) { finalUrl = st.url; console.log('[KolEnvironment] 🗺️ 九宮格已存 R2(之後重用)→', finalUrl); }
-      } catch (e) { console.warn('[KolEnvironment] 九宮格存 R2 略過(用原網址):', e.message); }
+        if (st && st.url) { finalUrl = st.url; _evdbg('[KolEnvironment] 🗺️ 九宮格已存 R2(之後重用)→', finalUrl); }
+      } catch (e) { _evdbg('[KolEnvironment] 九宮格存 R2 略過(用原網址):', e.message); }
 
       window._sceneGridCache[cacheKey] = finalUrl;
       return finalUrl;
     } catch (e) {
-      console.warn('[KolEnvironment] 九宮格生成失敗(退回單張場景圖):', e.message);
+      _evdbg('[KolEnvironment] 九宮格生成失敗(退回單張場景圖):', e.message);
       return null;
     }
   }
@@ -469,5 +502,5 @@ const LOCATIONS = {
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.25 就緒 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·2K避6000px·durable R2(生一次重用·治524逾時+不重花)·點名鎖家具)');
+  console.log('[KolEnvironment] 🌆 v5.26 就緒 · 🪣單張場景圖轉存R2(白標·不過期) · 🔒診斷收進KOL_DEBUG · v5.25 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·2K避6000px·durable R2(生一次重用·治524逾時+不重花)·點名鎖家具)');
 })();
