@@ -67,6 +67,16 @@
   //   沒設 → resolveMode 回 null → 落到下面 v2.2 原本的 packaged/dish/object 分支(海苔等舊商品輸出一字不變)。
   function resolveMode(prod) {
     const m = String(prod.productMode || '').trim().toLowerCase();
+    // 🆕 v3.7 貼身衣物守門(在所有判斷之前):
+    //   ★ 只覆寫『穿戴』與『沒選/自動』這兩種 —— 因為對內衣而言那兩個一定是錯的。
+    //   ★ 客戶若刻意選了 hero/demo 等其他模式,尊重他的選擇,不覆寫。
+    //   RA 產品原則:不教客戶做對的事,讓預設就是對的事。
+    if (m === 'innerwear') return 'innerwear';
+    if (!m || m === 'auto' || m === 'worn') {
+      const hay = [prod && prod.name, prod && prod.prodName, prod && prod.tag,
+                   prod && prod.subName, prod && prod.productLook].filter(Boolean).join(' ');
+      if (hay && INNER_RE.test(hay)) return 'innerwear';
+    }
     if (m === 'held' || m === 'worn' || m === 'hero' || m === 'demo' || m === 'digital') return m;
     // 🆕 v3.2 服務型四模式
     if (m === 'service' || m === 'equip' || m === 'screen' || m === 'pro') return m;
@@ -123,6 +133,10 @@
   const SCREEN_RE = /官網|網站|網頁|後台|儀表板|軟體|系統平台|線上系統|APP|SaaS/i;
   const EQUIP_RE  = /機台|設備|CNC|半導體|工廠|加工|製程|產線|模具|射出/i;
   const DIGI_RE   = /訂閱制|會員制|線上訂閱|月費方案|年費方案/;
+  // 🆕 v3.7 貼身衣物(內衣/胸罩/內褲/NuBra/塑身衣)——這類商品是【內層】,
+  //   套到通用 'worn'(『清楚看得出穿著在身上』)會讓模型把內衣畫在襯衫外面。
+  //   ⚠️ 泳裝/比基尼【故意不收】:它是單穿的外層,規則不同,另開模式,不要順手塞進來。
+  const INNER_RE  = /內衣|內著|胸罩|內褲|無鋼圈|бра|bra|bralette|lingerie|nubra|nu bra|塑身衣|貼身衣物|бюст/i;
 
   function _autoModeFromName(prod) {
     try {
@@ -154,6 +168,13 @@
     const sz = scale ? '; it is ' + scale + ', at that true size' : '';
     if (mode === 'held') {
       return 'PROP (a small product she is holding — keep it subtle and natural, do NOT overpower the subject): keep the product in [Image2] consistent in shape, proportions, color and any printed text, never mirrored or flipped, do not distort or morph it' + sz + '; ' + GROUNDED + ', its front kept toward the camera and recognizable while held; it may also rest naturally on a clean surface, never scattered messily';
+    }
+    // ══ 🆕 v3.7 貼身衣物:唯一講清楚「內層」的模式 ══
+    //   為什麼要獨立一條:通用 'worn' 說的是「清楚看得出穿在身上」,
+    //   模型拿到一張內衣平面圖 + 這句話 → 最省事的解法就是貼在最外層。
+    //   這條把三件事一次講死:①內層 ②不准穿在衣服外面 ③只從外衣敞開處露出。
+    if (mode === 'innerwear') {
+      return 'PROP (intimate apparel — an INNER layer, never an outer layer): keep the product in [Image2] consistent in shape, proportions, color, fabric, lace pattern and logo, never mirrored or flipped, do not distort it; she wears it against her skin UNDER her clothing — never on top of a shirt, top, dress or any garment; it shows only where her outer layer opens (an unbuttoned shirt, a relaxed neckline), she stays modestly covered and the framing tasteful; it sits smoothly with real fabric weight, straps flat, never floating';
     }
     if (mode === 'worn') {
       return 'PROP (a wearable product — feature it being worn or carried): keep the product in [Image2] consistent in shape, proportions, color, material and any logo, never mirrored or flipped, do not distort or morph it; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
@@ -349,6 +370,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.6', resolveMode };
-  console.log('[KolProduct] 🎒 v3.6 就緒 · 道具師·模式驅動(15模式) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.7', resolveMode };
+  console.log('[KolProduct] 🎒 v3.7 就緒 · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(內衣自動判斷,不再穿在襯衫外面) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
