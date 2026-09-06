@@ -467,357 +467,357 @@ const REGIONAL_FLAVORS = {
   },
   food_ingredient: {
     label: '食材特寫',
-    flavor: 'Add ingredient-surround flavor: fresh in-category raw ingredients, herbs, spices, citrus and sauces arranged around the hero dish in the near and far ground but kept OUT of focus, warm directional light, shallow depth of field so only the dish stays sharp — a rich, appetizing still-life feel. Shot on Nikon Z9 with NIKKOR Z MC 105mm f/2.8 macro, f/4, ISO 200, appetizing ingredient still-life photography.'
+    flavor: 'Add ingredient-surround flavor: fresh in-category raw ingredients, herbs, spices, citrus and sauces arranged around the hero dish in the near and far ground but kept OUT of focus, warm directional light, shallow depth of field so only the dish stays sharp — a rich, appetizing still-life feel. Shot on Nikon Z9 with LAOWA 24mm T/14 2x Macro Periprobe — ultra-wide 2x macro periscope diving in among the fresh ingredients and sauces for an immersive, dramatic bug-eye macro angle, continuous LED lighting, f/4, appetizing ingredient still-life.'
   },
   japan_kinfolk: {
     label: '日系雅致',
-    flavor: 'Add Japanese editorial flavor: muted earth tones, washi paper texture overlay, vertical Mincho serif feel, lots of negative space, single dried branch or ceramic vase prop in background bokeh, contemplative wabi-sabi atmosphere.'
+    flavor: 'Add Japanese editorial flavor: muted earth tones, washi paper texture overlay, vertical Mincho serif feel, lots of negative space, single dried branch or ceramic vase prop in background bokeh, contemplative wabi-sabi atmosphere. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   korea_oliveyoung: {
     label: '韓系乾淨',
-    flavor: 'Add Korean beauty brand flavor: soft pastel ivory and dusty pink palette, very high-key bright exposure, glossy clean surfaces, holographic micro sparkles, dreamy soft-focus highlights, OliveYoung / Innisfree campaign vibe.'
+    flavor: 'Add Korean beauty brand flavor: soft pastel ivory and dusty pink palette, very high-key bright exposure, glossy clean surfaces, holographic micro sparkles, dreamy soft-focus highlights, OliveYoung / Innisfree campaign vibe. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   // ══ 2026-08-18 新增:日系衍生(參考日本潮牌與零售場景)══
   jp_harajuku_street: {
     label: '裏原宿街頭',
-    flavor: 'Add Ura-Harajuku street flavor: bold graphic prints and camo patterns, playful rebellious energy, sticker-like layered graphics, saturated pop colors on concrete or shutter backdrops, youthful Tokyo streetwear attitude.'
+    flavor: 'Add Ura-Harajuku street flavor: bold graphic prints and camo patterns, playful rebellious energy, sticker-like layered graphics, saturated pop colors on concrete or shutter backdrops, youthful Tokyo streetwear attitude. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_vintage_craft: {
     label: '美式復古工藝',
-    flavor: 'Add Japanese-Americana vintage flavor: varsity and workwear textures, retro embroidered patches, faded washed colors, honest handcrafted stitching detail, warm nostalgic tungsten light, 1970s catalogue mood.'
+    flavor: 'Add Japanese-Americana vintage flavor: varsity and workwear textures, retro embroidered patches, faded washed colors, honest handcrafted stitching detail, warm nostalgic tungsten light, 1970s catalogue mood. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_workwear_hard: {
     label: '硬派工裝',
-    flavor: 'Add hard-edged Japanese workwear flavor: military and motorcycle influence, rugged matte fabrics, utilitarian metal hardware, dark olive and black palette, strong directional light, gritty confident masculinity.'
+    flavor: 'Add hard-edged Japanese workwear flavor: military and motorcycle influence, rugged matte fabrics, utilitarian metal hardware, dark olive and black palette, strong directional light, gritty confident masculinity. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_art_graffiti: {
     label: '藝術塗鴉',
-    flavor: 'Add Japanese art-graffiti flavor: hand-drawn doodle overlays, paint splatter and brush strokes, gallery-meets-street collage, expressive irregular linework, artwork-as-product presentation.'
+    flavor: 'Add Japanese art-graffiti flavor: hand-drawn doodle overlays, paint splatter and brush strokes, gallery-meets-street collage, expressive irregular linework, artwork-as-product presentation. MEDIUM: raw street graffiti — spray-paint with soft overspray haze, thick marker outlines, drips and stencil edges, energetic hand-tagged spontaneity on a textured wall.'
   },
   jp_graphic_tee: {
     label: '童趣插畫',
-    flavor: 'Add Japanese graphic-illustration flavor: cheerful flat illustration, friendly character-like shapes, primary playful palette, generous white space, light-hearted everyday storytelling.'
+    flavor: 'Add Japanese graphic-illustration flavor: cheerful flat illustration, friendly character-like shapes, primary playful palette, generous white space, light-hearted everyday storytelling. MEDIUM: childlike hand-drawn illustration in crayon and marker — playful naive outlines, warm hand-drawn charm, visible stroke texture.'
   },
   jp_drugstore: {
     label: '藥妝明亮',
-    flavor: 'Add Japanese drugstore flavor: bright even fluorescent-clean lighting, crisp white and fresh accent colors, tidy dense shelf arrangement, trustworthy clinical cleanliness, clear informative labeling mood.'
+    flavor: 'Add Japanese drugstore flavor: bright even fluorescent-clean lighting, crisp white and fresh accent colors, tidy dense shelf arrangement, trustworthy clinical cleanliness, clear informative labeling mood. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_konbini: {
     label: '便利店日常',
-    flavor: 'Add Japanese convenience-store flavor: cool bright interior light, neat grid shelving, everyday approachable packaging feel, blue-white and fresh-green accents, effortless daily-life convenience mood.'
+    flavor: 'Add Japanese convenience-store flavor: cool bright interior light, neat grid shelving, everyday approachable packaging feel, blue-white and fresh-green accents, effortless daily-life convenience mood. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
 
   // ══ 2026-08-18 新增:韓系衍生 ══
   kr_seoul_studio: {
     label: '首爾工作室',
-    flavor: 'Add Seoul studio flavor: minimal concrete and warm-wood interior, soft diffused window light, restrained beige and grey palette, calm curated styling, quiet modern Korean creative-studio mood.'
+    flavor: 'Add Seoul studio flavor: minimal concrete and warm-wood interior, soft diffused window light, restrained beige and grey palette, calm curated styling, quiet modern Korean creative-studio mood. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   kr_cream_tone: {
     label: '韓系奶油調',
-    flavor: 'Add Korean cream-tone flavor: soft milky beige and ivory palette, gentle low-contrast lighting, smooth matte surfaces, cozy tender femininity, subtle warm shadow gradients.'
+    flavor: 'Add Korean cream-tone flavor: soft milky beige and ivory palette, gentle low-contrast lighting, smooth matte surfaces, cozy tender femininity, subtle warm shadow gradients. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   kr_glass_skin: {
     label: '玻璃肌光感',
-    flavor: 'Add K-beauty glass-skin flavor: dewy luminous highlights, wet-glow reflections, clean translucent surfaces, pastel and pearl tones, fresh hydrated radiance.'
+    flavor: 'Add K-beauty glass-skin flavor: dewy luminous highlights, wet-glow reflections, clean translucent surfaces, pastel and pearl tones, fresh hydrated radiance. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   kr_myeongdong: {
     label: '明洞街頭',
-    flavor: 'Add Myeongdong street flavor: lively neon signage bokeh, night city energy, bold contrasting colors, busy shopping-street atmosphere, youthful trendy urban vibe.'
+    flavor: 'Add Myeongdong street flavor: lively neon signage bokeh, night city energy, bold contrasting colors, busy shopping-street atmosphere, youthful trendy urban vibe. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   kr_leather_minimal: {
     label: '韓系皮革極簡',
-    flavor: 'Add Korean minimal-leather flavor: smooth premium leather grain, structured clean silhouettes, muted camel and charcoal palette, single hero object on seamless backdrop, understated luxury.'
+    flavor: 'Add Korean minimal-leather flavor: smooth premium leather grain, structured clean silhouettes, muted camel and charcoal palette, single hero object on seamless backdrop, understated luxury. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   kr_idol_pop: {
     label: '偶像應援風',
-    flavor: 'Add K-pop fandom flavor: vivid saturated color blocking, holographic and glitter accents, stage-light beams, playful sticker and star graphics, high-energy celebratory mood.'
+    flavor: 'Add K-pop fandom flavor: vivid saturated color blocking, holographic and glitter accents, stage-light beams, playful sticker and star graphics, high-energy celebratory mood. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
 
   // ══ 2026-08-18 新增:日本女裝品牌衍生(客戶認得品牌名,比抽象形容詞好選)══
   jp_beams_ivy: {
     label: 'BEAMS 學院休閒',
-    flavor: 'Add BEAMS-style Japanese-Ivy flavor: American preppy casual filtered through Japanese refinement, soft comfortable fabrics, navy/white/camel palette, relaxed tailored silhouettes, clean daylight, effortless weekday-to-weekend ease.'
+    flavor: 'Add BEAMS-style Japanese-Ivy flavor: American preppy casual filtered through Japanese refinement, soft comfortable fabrics, navy/white/camel palette, relaxed tailored silhouettes, clean daylight, effortless weekday-to-weekend ease. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_nikoand_life: {
     label: 'Niko and 生活雜貨',
-    flavor: 'Add Japanese lifestyle-store flavor: natural wood and iron fixtures, potted greenery, mixed vintage-and-new props, earthy linen textures, warm ambient store lighting, cozy curated everyday-living mood.'
+    flavor: 'Add Japanese lifestyle-store flavor: natural wood and iron fixtures, potted greenery, mixed vintage-and-new props, earthy linen textures, warm ambient store lighting, cozy curated everyday-living mood. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_lowrys_sweet: {
     label: 'Lowrys 柔甜日常',
-    flavor: 'Add sweet-daily Japanese flavor: soft pastel and warm earth tones, gentle diffused light, cozy knit and cotton textures, girlish approachable styling, calm cheerful everyday atmosphere.'
+    flavor: 'Add sweet-daily Japanese flavor: soft pastel and warm earth tones, gentle diffused light, cozy knit and cotton textures, girlish approachable styling, calm cheerful everyday atmosphere. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_journal_urban: {
     label: 'Journal 都會知性',
-    flavor: 'Add urban-intellectual Japanese flavor: muted sophisticated palette, French-Japanese hybrid styling, matte fabrics and clean lines, quiet confident adult elegance, soft overcast city light.'
+    flavor: 'Add urban-intellectual Japanese flavor: muted sophisticated palette, French-Japanese hybrid styling, matte fabrics and clean lines, quiet confident adult elegance, soft overcast city light. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_moussy_denim: {
     label: 'Moussy 東京街頭',
-    flavor: 'Add Tokyo street-fashion flavor: Japanese street-culture attitude, mix of fitted and oversized proportions, cool confident edge balanced with elegance, urban asphalt and night-signage tones, hard directional light with strong shadows.'
+    flavor: 'Add Tokyo street-fashion flavor: Japanese street-culture attitude, mix of fitted and oversized proportions, cool confident edge balanced with elegance, urban asphalt and night-signage tones, hard directional light with strong shadows. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_snidel_romance: {
     label: 'Snidel 浪漫少女',
-    flavor: 'Add romantic-feminine Japanese flavor: delicate lace and ruffle textures, blush pink and cream palette, dreamy soft-focus glow, floral and ribbon accents, tender girlish elegance.'
+    flavor: 'Add romantic-feminine Japanese flavor: delicate lace and ruffle textures, blush pink and cream palette, dreamy soft-focus glow, floral and ribbon accents, tender girlish elegance. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_wego_vintage: {
     label: 'WEGO 古著混搭',
-    flavor: 'Add Japanese vintage-mix flavor: thrift-store layered styling, faded retro colors, Y2K accessories, playful clashing patterns, casual snapshot framing, affordable youthful street energy.'
+    flavor: 'Add Japanese vintage-mix flavor: thrift-store layered styling, faded retro colors, Y2K accessories, playful clashing patterns, casual snapshot framing, affordable youthful street energy. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_clane_mode: {
     label: 'CLANE 優雅力量',
-    flavor: 'Add elegant-strength Japanese flavor: precise tailored fit, quiet powerful poise, high-quality natural fabric texture, restrained neutral palette, clean soft studio light — sophistication for a working woman who wants independence, not loudness.'
+    flavor: 'Add elegant-strength Japanese flavor: precise tailored fit, quiet powerful poise, high-quality natural fabric texture, restrained neutral palette, clean soft studio light — sophistication for a working woman who wants independence, not loudness. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_coen_natural: {
     label: 'coen 輕鬆百搭',
-    flavor: 'Add easy-everyday Japanese flavor: relaxed unpretentious styling, honest simple materials, bright even daylight, friendly approachable mood — good design that feels effortless and within reach, never precious.'
+    flavor: 'Add easy-everyday Japanese flavor: relaxed unpretentious styling, honest simple materials, bright even daylight, friendly approachable mood — good design that feels effortless and within reach, never precious. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   jp_bp_deconstruct: {
     label: 'Beautiful People 藝術工藝',
-    flavor: 'Add artisanal art-piece flavor: exquisite craftsmanship detail, unusual fabric surface and unexpected silhouette shaped by technique, gallery-quiet backdrop, each item presented as a work of art with individual character.'
+    flavor: 'Add artisanal art-piece flavor: exquisite craftsmanship detail, unusual fabric surface and unexpected silhouette shaped by technique, gallery-quiet backdrop, each item presented as a work of art with individual character. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
 
   // ══ 韓系:漢南洞 / 梨泰院選品店一帶的視覺 ══
   kr_glowny_basic: {
     label: 'GLOWNY 光感基本款',
-    flavor: 'Add Korean light-and-basics flavor: white-tee-and-denim simplicity elevated by light itself, soft natural daylight catching edges and creating a gentle glow, American-casual ease with delicate finishing, warm neutral base — beauty from light rather than decoration.'
+    flavor: 'Add Korean light-and-basics flavor: white-tee-and-denim simplicity elevated by light itself, soft natural daylight catching edges and creating a gentle glow, American-casual ease with delicate finishing, warm neutral base — beauty from light rather than decoration. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   kr_marge_leather: {
     label: 'MARGE 皮革日常',
-    flavor: 'Add Korean everyday-leather flavor: smooth supple leather grain in warm camel/cream/charcoal tones, relaxed slouchy shapes rather than rigid structure, soft indoor light, understated wearable luxury priced for daily use.'
+    flavor: 'Add Korean everyday-leather flavor: smooth supple leather grain in warm camel/cream/charcoal tones, relaxed slouchy shapes rather than rigid structure, soft indoor light, understated wearable luxury priced for daily use. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   kr_emis_street: {
     label: 'EMIS 街頭玩味',
-    flavor: 'Add Korean playful-street flavor: bold clean logo graphics, cheeky youthful attitude, saturated primary accents on neutral base, casual snapshot framing, city-street energy that stays friendly rather than aggressive.'
+    flavor: 'Add Korean playful-street flavor: bold clean logo graphics, cheeky youthful attitude, saturated primary accents on neutral base, casual snapshot framing, city-street energy that stays friendly rather than aggressive. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   kr_balletcore: {
     label: 'Balletcore 英倫少女',
-    flavor: 'Add balletcore flavor: British heritage aesthetic softened with girlish romance, matte pastel and cream palette (butter, oat, mint, pale pink), functional-yet-pretty detailing, soft overcast daylight, retro-elegant charm.'
+    flavor: 'Add balletcore flavor: British heritage aesthetic softened with girlish romance, matte pastel and cream palette (butter, oat, mint, pale pink), functional-yet-pretty detailing, soft overcast daylight, retro-elegant charm. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
 
   // ══ 插畫 / 平面設計風(省掉美編自己畫插畫的時間)══
   illust_flat_editorial_light: {
     label: '扁平編輯插畫 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw flat vector-style illustration with simplified geometric shapes, bold clean outlines and a limited 3-4 colour palette, magazine spot-illustration character. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw flat vector-style illustration with simplified geometric shapes, bold clean outlines and a limited 3-4 colour palette, magazine spot-illustration character. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: clean flat vector editorial illustration — crisp geometric shapes, limited flat colour palette, smooth confident curves, modern editorial simplicity.'
   },
   illust_flat_editorial_half: {
     label: '扁平編輯插畫 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using flat vector-style illustration with simplified geometric shapes, bold clean outlines and a limited 3-4 colour palette, magazine spot-illustration character. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using flat vector-style illustration with simplified geometric shapes, bold clean outlines and a limited 3-4 colour palette, magazine spot-illustration character. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: clean flat vector editorial illustration — crisp geometric shapes, limited flat colour palette, smooth confident curves, modern editorial simplicity.'
   },
   illust_riso_print_light: {
     label: '孔版印刷感 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw risograph-style illustration with two-colour overprint, visible misregistration, grainy ink texture and fluorescent pink/blue inks on paper fibre. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw risograph-style illustration with two-colour overprint, visible misregistration, grainy ink texture and fluorescent pink/blue inks on paper fibre. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: risograph print — 2-3 spot-colour layers with slight mis-registration offset, coarse grainy halftone texture, punchy fluorescent inks, imperfect ink coverage.'
   },
   illust_riso_print_half: {
     label: '孔版印刷感 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using risograph-style illustration with two-colour overprint, visible misregistration, grainy ink texture and fluorescent pink/blue inks on paper fibre. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using risograph-style illustration with two-colour overprint, visible misregistration, grainy ink texture and fluorescent pink/blue inks on paper fibre. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: risograph print — 2-3 spot-colour layers with slight mis-registration offset, coarse grainy halftone texture, punchy fluorescent inks, imperfect ink coverage.'
   },
   illust_woodblock_light: {
     label: '版畫民藝 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw folk woodblock-print illustration with carved-line texture, flat traditional pigments and decorative border motifs. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw folk woodblock-print illustration with carved-line texture, flat traditional pigments and decorative border motifs. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: hand-pulled linocut / woodblock folk print — bold hand-carved marks with visible gouge chatter, hand-pressed uneven inking, textured washi paper, saturated limited palette.'
   },
   illust_woodblock_half: {
     label: '版畫民藝 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using folk woodblock-print illustration with carved-line texture, flat traditional pigments and decorative border motifs. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using folk woodblock-print illustration with carved-line texture, flat traditional pigments and decorative border motifs. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: hand-pulled linocut / woodblock folk print — bold hand-carved marks with visible gouge chatter, hand-pressed uneven inking, textured washi paper, saturated limited palette.'
   },
   illust_watercolor_light: {
     label: '水彩手繪 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw hand-painted watercolour illustration with soft bleeding pigment edges, translucent layered washes and delicate ink linework on visible paper grain. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw hand-painted watercolour illustration with soft bleeding pigment edges, translucent layered washes and delicate ink linework on visible paper grain. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: genuine transparent watercolour (Shinhan / Winsor & Newton pigments) on cold-press rough watercolour paper — wet-on-wet blooms and bleeding pigment edges, controlled dry-brush texture on the paper tooth, layered translucent washes, natural granulation and masking-fluid highlights; visible hand-painted brushwork, never a flat digital fill.'
   },
   illust_watercolor_half: {
     label: '水彩手繪 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using hand-painted watercolour illustration with soft bleeding pigment edges, translucent layered washes and delicate ink linework on visible paper grain. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using hand-painted watercolour illustration with soft bleeding pigment edges, translucent layered washes and delicate ink linework on visible paper grain. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: genuine transparent watercolour (Shinhan / Winsor & Newton pigments) on cold-press rough watercolour paper — wet-on-wet blooms and bleeding pigment edges, controlled dry-brush texture on the paper tooth, layered translucent washes, natural granulation and masking-fluid highlights; visible hand-painted brushwork, never a flat digital fill.'
   },
   illust_healing_char_light: {
     label: '療癒角色插畫 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw warm rounded healing-character illustration with friendly soft forms, gentle candy palette and affectionate hand-made charm. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw warm rounded healing-character illustration with friendly soft forms, gentle candy palette and affectionate hand-made charm. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: soft coloured-pencil illustration — gentle layered pencil hatching, soft muted palette, warm hand-drawn healing charm, visible paper tooth.'
   },
   illust_healing_char_half: {
     label: '療癒角色插畫 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using warm rounded healing-character illustration with friendly soft forms, gentle candy palette and affectionate hand-made charm. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using warm rounded healing-character illustration with friendly soft forms, gentle candy palette and affectionate hand-made charm. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: soft coloured-pencil illustration — gentle layered pencil hatching, soft muted palette, warm hand-drawn healing charm, visible paper tooth.'
   },
   illust_craft_ceramic: {
     label: '職人手作陶感',
-    flavor: 'Add artisan-ceramic flavor: matte unglazed clay texture with visible maker marks, earthy off-white and clay-brown palette, botanical and rural-memory motifs, quiet natural daylight, the warmth of something shaped by hand.'
+    flavor: 'Add artisan-ceramic flavor: matte unglazed clay texture with visible maker marks, earthy off-white and clay-brown palette, botanical and rural-memory motifs, quiet natural daylight, the warmth of something shaped by hand. MEDIUM: handmade ceramic / clay craft feel — matte glazed earthenware texture, hand-pinched irregularities, tactile artisan surface.'
   },
 
   showa_retro: {
     label: '昭和復古',
-    flavor: 'Add 1970s Showa-era retro flavor: slight Kodachrome film grain, faded warm highlights, terrazzo floor or vintage wallpaper background, retro objects like turntables, rotary phones, glass bottles as props, sepia-amber color cast, soft vignetting at edges.'
+    flavor: 'Add 1970s Showa-era retro flavor: slight Kodachrome film grain, faded warm highlights, terrazzo floor or vintage wallpaper background, retro objects like turntables, rotary phones, glass bottles as props, sepia-amber color cast, soft vignetting at edges. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   retro_future_y2k: {
     label: '復古未來 Y2K',
-    flavor: 'Add Y2K retro-futuristic flavor: chrome metallic highlights, holographic gradient backgrounds (purple to blue to pink), bubble-shaped soft UI elements, slight CRT scan lines, 2000s techno-optimism, soft glow halations.'
+    flavor: 'Add Y2K retro-futuristic flavor: chrome metallic highlights, holographic gradient backgrounds (purple to blue to pink), bubble-shaped soft UI elements, slight CRT scan lines, 2000s techno-optimism, soft glow halations. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   bold_clash_2026: {
     label: '2026 大膽撞色',
-    flavor: 'Add 2026 trend bold color clashing flavor: high-saturation contrasting color pairs (electric blue + acid yellow, bubblegum pink + lime green, terracotta orange + cobalt), oversized typography, brutalist blocky layouts, intentional roughness.'
+    flavor: 'Add 2026 trend bold color clashing flavor: high-saturation contrasting color pairs (electric blue + acid yellow, bubblegum pink + lime green, terracotta orange + cobalt), oversized typography, brutalist blocky layouts, intentional roughness. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   ugly_cute_2026: {
     label: '2026 醜萌',
-    flavor: 'Add 2026 ugly-cute trend flavor: hand-drawn squiggly lines, intentionally awkward emoji-like decorations, mixed mismatched fonts, scrapbook-style pasted elements, casual snapshot energy, NewJeans-cover aesthetic.'
+    flavor: 'Add 2026 ugly-cute trend flavor: hand-drawn squiggly lines, intentionally awkward emoji-like decorations, mixed mismatched fonts, scrapbook-style pasted elements, casual snapshot energy, NewJeans-cover aesthetic. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   euro_editorial: {
     label: '歐美雜誌',
-    flavor: 'Add European editorial flavor: high contrast film tones, sharp Serif headlines (Playfair / Didot), confident large typography, minimalist graphic elements, Vogue / The Gentlewoman magazine sophistication.'
+    flavor: 'Add European editorial flavor: high contrast film tones, sharp Serif headlines (Playfair / Didot), confident large typography, minimalist graphic elements, Vogue / The Gentlewoman magazine sophistication. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   taiwan_nostalgia: {
     label: '台式懷舊',
-    flavor: 'Add Taiwanese nostalgia flavor: 1980s magazine paper grain, terrazzo floor, vintage Taiwanese tile patterns, faded poster colors (mustard, teal, brick), floral patterned fabric backgrounds, warm afternoon light through wooden venetian blinds.'
+    flavor: 'Add Taiwanese nostalgia flavor: 1980s magazine paper grain, terrazzo floor, vintage Taiwanese tile patterns, faded poster colors (mustard, teal, brick), floral patterned fabric backgrounds, warm afternoon light through wooden venetian blinds. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
 
   // ══ v11 新增:2026 設計風格 (25) ══
   bauhaus: {
     label: '包浩斯',
-    flavor: 'Add Bauhaus design flavor: bold geometric blocks, circles and triangles in primary red/blue/yellow, strict grid-based composition, clean negative space, modernist sans-serif typography, flat color planes, balanced structural layout.'
+    flavor: 'Add Bauhaus design flavor: bold geometric blocks, circles and triangles in primary red/blue/yellow, strict grid-based composition, clean negative space, modernist sans-serif typography, flat color planes, balanced structural layout. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   chrome_futurism: {
     label: '鍍鉻未來',
-    flavor: 'Add chrome futurism flavor: reflective liquid-metal chrome surfaces, silver and dark backdrop, high-contrast studio lighting, sci-fi luxury sheen, sleek modern typography, glossy premium product feel.'
+    flavor: 'Add chrome futurism flavor: reflective liquid-metal chrome surfaces, silver and dark backdrop, high-contrast studio lighting, sci-fi luxury sheen, sleek modern typography, glossy premium product feel. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   neo_minimal: {
     label: '溫暖新極簡',
-    flavor: 'Add warm neo-minimalism flavor: single hero subject in generous negative space, soft natural daylight, restrained palette with one warm accent, quiet-luxury calm, subtle paper or fabric texture, refined modern composition.'
+    flavor: 'Add warm neo-minimalism flavor: single hero subject in generous negative space, soft natural daylight, restrained palette with one warm accent, quiet-luxury calm, subtle paper or fabric texture, refined modern composition. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   architectural_min: {
     label: '建築極簡',
-    flavor: 'Add architectural minimalism flavor: clean concrete and stone surfaces, sharp directional sunlight casting deep crisp shadows, monochrome or warm-grey palette, strong spatial geometry, precise lines, calm premium structure.'
+    flavor: 'Add architectural minimalism flavor: clean concrete and stone surfaces, sharp directional sunlight casting deep crisp shadows, monochrome or warm-grey palette, strong spatial geometry, precise lines, calm premium structure. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   experimental_type: {
     label: '實驗字體',
-    flavor: 'Add experimental typography flavor: oversized distorted and overlapping headline text as the main visual, layered ink/spray/glitch textures, broken asymmetric grid, bold graphic tension, contemporary design-studio energy.'
+    flavor: 'Add experimental typography flavor: oversized distorted and overlapping headline text as the main visual, layered ink/spray/glitch textures, broken asymmetric grid, bold graphic tension, contemporary design-studio energy. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   cinematic_light: {
     label: '光影電影感',
-    flavor: 'Add cinematic light flavor: a single dramatic beam of light on the subject, dark moody negative space around it, deep atmospheric shadows, film-poster tension, emotional minimal staging.'
+    flavor: 'Add cinematic light flavor: a single dramatic beam of light on the subject, dark moody negative space around it, deep atmospheric shadows, film-poster tension, emotional minimal staging. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   gradient_glow: {
     label: '漸層光暈',
-    flavor: 'Add gradient glow flavor: smooth vibrant gradient field (pink to blue to orange to purple), soft glowing abstract spheres, clean tech-minimal layout, futuristic typography, polished digital sheen.'
+    flavor: 'Add gradient glow flavor: smooth vibrant gradient field (pink to blue to orange to purple), soft glowing abstract spheres, clean tech-minimal layout, futuristic typography, polished digital sheen. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   blurry_floral: {
     label: '模糊花卉',
-    flavor: 'Add blurry floral flavor: soft-focus flowers melting into a dreamy grainy gradient, ethereal pastel haze, atmosphere over detail, delicate luminous mood, fine grain texture overlay.'
+    flavor: 'Add blurry floral flavor: soft-focus flowers melting into a dreamy grainy gradient, ethereal pastel haze, atmosphere over detail, delicate luminous mood, fine grain texture overlay. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   geometric_abstract: {
     label: '幾何抽象',
-    flavor: 'Add geometric abstract flavor: circles, rectangles and lines in confident asymmetric composition, bold flat color accents, strong visual rhythm, controlled modern graphic structure.'
+    flavor: 'Add geometric abstract flavor: circles, rectangles and lines in confident asymmetric composition, bold flat color accents, strong visual rhythm, controlled modern graphic structure. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   mono_contrast: {
     label: '黑白高對比',
-    flavor: 'Add black-and-white high-contrast flavor: stark monochrome palette, torn-paper texture, bold condensed typography, dramatic light/dark separation, raw gritty editorial impact.'
+    flavor: 'Add black-and-white high-contrast flavor: stark monochrome palette, torn-paper texture, bold condensed typography, dramatic light/dark separation, raw gritty editorial impact. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   natural_shadow: {
     label: '自然光影',
-    flavor: 'Add natural light-and-shadow flavor: soft sunlight casting leaf or window shadows across a warm neutral wall, quiet lifestyle calm, subtle texture, refined minimal editorial tone.'
+    flavor: 'Add natural light-and-shadow flavor: soft sunlight casting leaf or window shadows across a warm neutral wall, quiet lifestyle calm, subtle texture, refined minimal editorial tone. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   luxury_texture: {
     label: '輕奢質感',
-    flavor: 'Add luxury-texture flavor: black and gold palette, premium material surfaces (marble, brushed metal, velvet), single dramatic spotlight, refined high-end beauty-campaign elegance.'
+    flavor: 'Add luxury-texture flavor: black and gold palette, premium material surfaces (marble, brushed metal, velvet), single dramatic spotlight, refined high-end beauty-campaign elegance. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   hand_doodle_light: {
     label: '手繪塗鴉 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw loose hand-drawn doodle illustration with wobbly marker lines, arrows, stars and casual scribbled annotations. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw loose hand-drawn doodle illustration with wobbly marker lines, arrows, stars and casual scribbled annotations. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: childlike hand-drawn doodles in wax crayon / oil pastel and coloured marker — wobbly spontaneous outlines, uneven pressure, playful naive charm, visible waxy stroke texture.'
   },
   hand_doodle_half: {
     label: '手繪塗鴉 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using loose hand-drawn doodle illustration with wobbly marker lines, arrows, stars and casual scribbled annotations. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using loose hand-drawn doodle illustration with wobbly marker lines, arrows, stars and casual scribbled annotations. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: childlike hand-drawn doodles in wax crayon / oil pastel and coloured marker — wobbly spontaneous outlines, uneven pressure, playful naive charm, visible waxy stroke texture.'
   },
   collage_art_light: {
     label: '拼貼藝術 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw paper-collage illustration with torn edges, layered cut-out shapes, tape marks and mixed printed textures. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw paper-collage illustration with torn edges, layered cut-out shapes, tape marks and mixed printed textures. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: physical cut-paper collage — torn and scissor-cut edges, layered pieces casting subtle real shadows, mixed paper textures and printed scraps, tactile hand-assembled feel.'
   },
   collage_art_half: {
     label: '拼貼藝術 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using paper-collage illustration with torn edges, layered cut-out shapes, tape marks and mixed printed textures. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using paper-collage illustration with torn edges, layered cut-out shapes, tape marks and mixed printed textures. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: physical cut-paper collage — torn and scissor-cut edges, layered pieces casting subtle real shadows, mixed paper textures and printed scraps, tactile hand-assembled feel.'
   },
   line_art_light: {
     label: '線描極簡 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw single-weight continuous line-art illustration, minimal contour drawing with no fill, elegant and sparse. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw single-weight continuous line-art illustration, minimal contour drawing with no fill, elegant and sparse. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: minimal line art in technical fineliner — a single confident continuous even-weight line, clean contour drawing, vast negative space, no shading.'
   },
   line_art_half: {
     label: '線描極簡 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using single-weight continuous line-art illustration, minimal contour drawing with no fill, elegant and sparse. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using single-weight continuous line-art illustration, minimal contour drawing with no fill, elegant and sparse. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: minimal line art in technical fineliner — a single confident continuous even-weight line, clean contour drawing, vast negative space, no shading.'
   },
   pop_art_light: {
     label: '普普藝術 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw pop-art illustration with halftone dot texture, bold primary colours, thick comic outlines and speech-bubble shapes. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw pop-art illustration with halftone dot texture, bold primary colours, thick comic outlines and speech-bubble shapes. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: pop-art print — Ben-Day halftone dots, flat bold colour blocking, thick black outlines, comic-book screen-print energy.'
   },
   pop_art_half: {
     label: '普普藝術 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using pop-art illustration with halftone dot texture, bold primary colours, thick comic outlines and speech-bubble shapes. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using pop-art illustration with halftone dot texture, bold primary colours, thick comic outlines and speech-bubble shapes. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: pop-art print — Ben-Day halftone dots, flat bold colour blocking, thick black outlines, comic-book screen-print energy.'
   },
   acid_neon: {
     label: '螢光科技',
-    flavor: 'Add acid neon flavor: fluorescent green and electric color clashes, surreal glossy 3D form, cyber-inspired composition, bold glow effects, edgy experimental energy.'
+    flavor: 'Add acid neon flavor: fluorescent green and electric color clashes, surreal glossy 3D form, cyber-inspired composition, bold glow effects, edgy experimental energy. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   ink_zen_light: {
     label: '水墨禪意 · 點綴',
-    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw sumi-e ink illustration with expressive wet brush strokes, ink wash gradients and generous empty space. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer.'
+    flavor: '★ ILLUSTRATION OVERLAY — LIGHT. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Around it, hand-draw sumi-e ink illustration with expressive wet brush strokes, ink wash gradients and generous empty space. Keep the illustration sparse — a few accents in the corners or along one edge only, covering under about 20% of the canvas. The area immediately around the product stays clean. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer. MEDIUM: East-Asian sumi-e ink painting — pine-soot ink on raw xuan rice paper, expressive wet brush strokes with flying-white (feibai) dry drag, graded washes across the five ink tones, spontaneous calligraphic energy and generous empty space.'
   },
   ink_zen_half: {
     label: '水墨禪意 · 半版',
-    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using sumi-e ink illustration with expressive wet brush strokes, ink wash gradients and generous empty space. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene.'
+    flavor: '★ ILLUSTRATION OVERLAY — HALF. The product itself stays a REAL untouched PHOTOGRAPH: do not redraw, stylise, repaint or illustrate the product. Build an illustrated SCENE around it using sumi-e ink illustration with expressive wet brush strokes, ink wash gradients and generous empty space. The illustration occupies roughly half the canvas — one side or the background becomes a drawn world (props, plants, patterns, small characters, framing shapes) while the product sits in the clear half. The illustrated elements must clearly look DRAWN BY HAND, sitting on top of the photo as a separate layer, with a visible boundary between photographed product and drawn scene. MEDIUM: East-Asian sumi-e ink painting — pine-soot ink on raw xuan rice paper, expressive wet brush strokes with flying-white (feibai) dry drag, graded washes across the five ink tones, spontaneous calligraphic energy and generous empty space.'
   },
   chaos_pkg: {
     label: '混沌極繁',
-    flavor: 'Add chaos / maximalist packaging flavor: loud clashing colors, playful display fonts, hand-drawn illustration and sticker elements, dense cut-and-paste layout, confident over-the-top personality.'
+    flavor: 'Add chaos / maximalist packaging flavor: loud clashing colors, playful display fonts, hand-drawn illustration and sticker elements, dense cut-and-paste layout, confident over-the-top personality. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   kinetic_3d: {
     label: '立體動態',
-    flavor: 'Add 3D kinetic flavor: oversized sculptural 3D forms (giant spheres, twisted ribbons, liquid metal shapes), surreal depth, energetic motion feel, futuristic dimensional layout.'
+    flavor: 'Add 3D kinetic flavor: oversized sculptural 3D forms (giant spheres, twisted ribbons, liquid metal shapes), surreal depth, energetic motion feel, futuristic dimensional layout. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   scattered_layout: {
     label: '散布佈局',
-    flavor: 'Add scattered-layout flavor: elements freely placed across the frame like a discovery map, playful non-linear arrangement, looks random but carefully balanced, experimental editorial feel.'
+    flavor: 'Add scattered-layout flavor: elements freely placed across the frame like a discovery map, playful non-linear arrangement, looks random but carefully balanced, experimental editorial feel. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   candid_film: {
     label: '真實膠卷',
-    flavor: 'Add candid film-roll flavor: natural unretouched lighting, slightly imperfect snapshot framing, warm film-grain texture, real spontaneous everyday moment, anti-polished authenticity.'
+    flavor: 'Add candid film-roll flavor: natural unretouched lighting, slightly imperfect snapshot framing, warm film-grain texture, real spontaneous everyday moment, anti-polished authenticity. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   trinket: {
     label: '收藏品式',
-    flavor: 'Add trinket-collection flavor: objects arranged and numbered like museum specimens, neat grid of small items, nostalgic cataloguing charm, playful curated collector mood.'
+    flavor: 'Add trinket-collection flavor: objects arranged and numbered like museum specimens, neat grid of small items, nostalgic cataloguing charm, playful curated collector mood. MEDIUM: handmade collectible-trinket craft feel — tactile soft-toy / resin / ceramic texture, hand-finished irregularities, cute artisan charm.'
   },
   blueprint: {
     label: '藍圖風格',
-    flavor: 'Add blueprint flavor: object rendered as a precise white technical line-drawing on deep blue, engineering schematic labels and measurement lines, rigorous structural tech-aesthetic.'
+    flavor: 'Add blueprint flavor: object rendered as a precise white technical line-drawing on deep blue, engineering schematic labels and measurement lines, rigorous structural tech-aesthetic. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   surveillance: {
     label: '監控美學',
-    flavor: 'Add surveillance-aesthetic flavor: machine-vision overlays, face-tracking frames, infrared/thermal color mapping, timestamped data grids, cold futuristic monitoring tone.'
+    flavor: 'Add surveillance-aesthetic flavor: machine-vision overlays, face-tracking frames, infrared/thermal color mapping, timestamped data grids, cold futuristic monitoring tone. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   future_medieval: {
     label: '未來中世紀',
-    flavor: 'Add future-medieval flavor: mystical gothic symbols and blackletter type fused with digital patterns and AI-generated ornament, ornate layered florals, both ancient and futuristic ritual mood.'
+    flavor: 'Add future-medieval flavor: mystical gothic symbols and blackletter type fused with digital patterns and AI-generated ornament, ornate layered florals, both ancient and futuristic ritual mood. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
 
   // ══ v11 新增:標竿品牌風格 (7) ══
   brand_3coins: {
     label: '3COINS',
-    flavor: 'Add 3COINS lifestyle flavor: bright airy Japanese variety-goods styling, soft fresh pastel palette, casual handwritten captions, neatly arranged everyday small items as a friendly life proposal.'
+    flavor: 'Add 3COINS lifestyle flavor: bright airy Japanese variety-goods styling, soft fresh pastel palette, casual handwritten captions, neatly arranged everyday small items as a friendly life proposal. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   brand_uniqlo: {
     label: 'UNIQLO',
-    flavor: 'Add UNIQLO LifeWear flavor: clean minimal grid layout, product front-and-center on plain white, restrained palette with red/black accents, functional honest simplicity, large crisp product photography.'
+    flavor: 'Add UNIQLO LifeWear flavor: clean minimal grid layout, product front-and-center on plain white, restrained palette with red/black accents, functional honest simplicity, large crisp product photography. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   brand_muji: {
     label: '無印良品',
-    flavor: 'Add MUJI flavor: ultra-minimal no-brand calm, off-white and natural-wood tones, generous empty space, no decoration, soft even natural light, quiet honest materials.'
+    flavor: 'Add MUJI flavor: ultra-minimal no-brand calm, off-white and natural-wood tones, generous empty space, no decoration, soft even natural light, quiet honest materials. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   brand_beams: {
     label: 'BEAMS',
-    flavor: 'Add BEAMS select-shop flavor: Japanese street-meets-refined styling, lively accent-color blocking, editorial collage energy, curated fashion-forward mix, confident youthful tone.'
+    flavor: 'Add BEAMS select-shop flavor: Japanese street-meets-refined styling, lively accent-color blocking, editorial collage energy, curated fashion-forward mix, confident youthful tone. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   brand_issey: {
     label: '三宅一生',
-    flavor: 'Add Issey Miyake flavor: pleated sculptural structure, avant-garde minimalism, bold single-color planes, material and form experimentation, architectural fashion sophistication.'
+    flavor: 'Add Issey Miyake flavor: pleated sculptural structure, avant-garde minimalism, bold single-color planes, material and form experimentation, architectural fashion sophistication. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   brand_snowpeak: {
     label: 'Snow Peak',
-    flavor: 'Add Snow Peak outdoor flavor: refined nature aesthetic, muted grey-green and earth tones, metal and raw-wood textures, calm functional craftsmanship, quiet premium outdoor mood.'
+    flavor: 'Add Snow Peak outdoor flavor: refined nature aesthetic, muted grey-green and earth tones, metal and raw-wood textures, calm functional craftsmanship, quiet premium outdoor mood. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   },
   brand_plusd: {
     label: '+d',
-    flavor: 'Add +d (h concept) flavor: playful Japanese everyday-object design, warm humorous kawaii spirit, simple clean form, single hero object on soft uplifting background, friendly product-still styling.'
+    flavor: 'Add +d (h concept) flavor: playful Japanese everyday-object design, warm humorous kawaii spirit, simple clean form, single hero object on soft uplifting background, friendly product-still styling. Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.'
   }
 };
 
