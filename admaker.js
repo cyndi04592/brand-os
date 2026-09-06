@@ -50,6 +50,13 @@ const DESIGNER_POLISH =
 'All text must be real, meaningful and correctly spelled; supporting icons form ONE cohesive set with identical weight and detail. ' +
 'ONE clear focal hierarchy on a deliberate grid, intentional and edited, never over-filled.';
 
+// 🆕 v11.6 情境質感準則:台灣精緻電商 + 韓日質感,避開大陸俗豔。只在有選情境時注入。
+const CONTEXT_QUALITY =
+'=== AESTHETIC QUALITY STANDARD (applies to the promotional / seasonal context above) ===\n' +
+'Render the context with a refined, restrained, editorial sensibility — a premium Taiwan e-commerce aesthetic elevated with Korean and Japanese quality: clean, calm, tasteful, high-end, with generous breathing space. ' +
+'STRICTLY AVOID the tacky mainland-China mass-market look — NO garish red-and-gold explosions, NO giant screaming price numerals stacked across the frame, NO cluttered pile-up of discount badges, NO over-saturated loud clashing colours. ' +
+'Even sale and festival contexts must stay elegant, breathable, well-composed and genuinely high-end.\n\n';
+
 // ═══════════════════════════════════════════════════════════════════════
 //  v11.4 ★ FOOD_CRAFT 餐飲呈現準則 —— 只在食物場景(SELECTED_FLAVOR 以 food_ 開頭)注入
 //    來源:華邑/洲際/MO 等專業餐飲海報拆解,解「產品貼在背景上」的合成感。
@@ -3807,6 +3814,7 @@ function buildPosterPrompt() {
   if (contextTheme.context) {
     prompt += `=== CONTEXTUAL THEME ===\n`;
     prompt += contextTheme.context + '\n\n';
+    prompt += CONTEXT_QUALITY;
   }
 
   if (styleDesc) {
