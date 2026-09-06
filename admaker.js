@@ -43,7 +43,7 @@ const CAM_FREEZE = 'Shot on Nikon Z9 using its fast electronic shutter (1/8000s 
 // ★ v11.1 設計師工法層 (DESIGNER_POLISH) — 具體反 AI 指紋版(相機/佈光 + 品類 + 單一促銷 + 真材質),風格分流、不碰選定風格
 const DESIGNER_POLISH =
 'Output must look like REAL human-made work, never an AI render. ' +
-'For PHOTOGRAPHIC styles: render as real professional photography — shot on a professional body (Nikon Z9) with fast NIKKOR Z S-line prime lenses — 35mm or 50mm for scenes, 85mm for portraits, 90mm macro for food and product detail — at a real wide aperture (f/1.4–f/2.8) with genuine shallow depth of field and creamy bokeh, ISO 100–200, professional lighting (softbox key plus natural fill), true-to-life materials and micro-texture; strictly avoid the over-glossy, over-smooth, over-symmetrical AI-render sheen. ' +
+'For PHOTOGRAPHIC styles: render as real professional photography — shot on a professional body (Nikon Z9) with fast NIKKOR Z S-line prime lenses — 35mm or 50mm for scenes, 85mm for portraits, 105mm macro for food and product detail — at a real wide aperture (f/1.4–f/2.8) with genuine shallow depth of field and creamy bokeh, ISO 100–200, professional lighting (softbox key plus natural fill), true-to-life materials and micro-texture; strictly avoid the over-glossy, over-smooth, over-symmetrical AI-render sheen. ' +
 'For ILLUSTRATION, ink or graphic styles: execute in the authentic medium (real ink, paint, print, collage texture) with a human designer hand, not slick AI gradients. ' +
 'Decoration must fit the product category logically (seaweed uses ocean / wave / seaweed motifs, NOT wheat or coffee; tech uses clean studio; food uses real ingredients) — no off-category or meaningless symbols. ' +
 'Keep only ONE primary promotional message; never repeat the same discount or event across multiple badges. ' +
@@ -2662,6 +2662,8 @@ Reference aesthetic: Aesop product detail photography, Japanese beauty editorial
 - Shallow depth in each panel with the treated area critically sharp
 - ${CAM_MACRO} f/4, macro clarity on lash fibres or nail surface texture
 - If the source image already contains a before/after pair, PRESERVE that pairing and simply re-stage it cleanly — do not duplicate a single state into two panels
+- ⛔ ABSOLUTE RULE — BOTH panels must come from the real source imagery. NEVER generate, imagine, improve or retouch the "after" state: do not lighten pigmentation, do not even out skin tone, do not shrink pores, do not remove blemishes, do not thicken lashes, do not alter nail work. Fabricating a result is falsified efficacy evidence
+- ✅ What you MAY do, and what actually makes the difference visible: normalise the two panels so they are genuinely comparable — same exposure, same white balance, same colour temperature, same angle, same distance, same background. Most before/after images fail to show the real result only because the two shots were taken under different lighting
 Reference aesthetic: Japanese salon portfolio, quiet documentary comparison${BEAUTY_BASE}`
   },
 
@@ -2675,21 +2677,6 @@ Reference aesthetic: Japanese salon portfolio, quiet documentary comparison${BEA
   //    留白【不是問題】,留白【空著】才是問題 —— 那塊該放 LOGO 和服務名稱。
   //    而且每一格要標出【不同的服務項目】(原生睫毛/嫁接/塑型/塑型+隔離精華),
   //    那才是有用的對照,不是四張一樣的圖疊起來。
-  multi_angle_grid: {
-    label: '多格對照型',
-    desc: '側邊放 LOGO + 每格標服務名稱;需 2-4 張不同角度或不同項目的原圖',
-    composition: `Editorial comparison layout — a quiet brand panel beside a stack of result bands:
-- Split the canvas vertically: a calm brand panel occupying 28-38% on ONE side, and the image stack filling the remaining 62-72%
-- The brand panel is NEVER left empty. It carries, vertically centred with generous margin: the studio name or logotype, and optionally a one-line service descriptor beneath it. Warm off-white or soft nude ground, delicate light type, no clutter
-- The image stack: 2-4 equal-height horizontal bands, each band spanning the FULL width of the stack area edge to edge — never shrink a photo and leave a blank column
-- If a source photo is portrait-orientation, CROP it to the band's aspect ratio rather than scaling it down and leaving empty space
-- ⛔ Each band must show a DIFFERENT state, angle or service tier. Never duplicate one photo across multiple bands — repeating the same eye is the single most obvious failure of this layout
-- Small delicate caption on each band naming that band's service or stage, in the local language, placed in the quiet area of the band, light weight type, never shouty
-- Identical white balance, colour treatment and light direction across every band so the set reads as one coherent piece
-- Thin consistent gutters between bands, 0.5-1% of canvas height
-- ${CAM_MACRO} f/4, macro clarity on lash fibres or nail surface texture
-Reference aesthetic: Japanese lash salon portfolio panels, quiet editorial menu boards${BEAUTY_BASE}`
-  },
 
   // 🆕 2026-08-24 大圖 + 側邊小格(RA:「這個分隔方式更好」)
   hero_side_grid: {
@@ -2725,6 +2712,27 @@ Reference aesthetic: Korean beauty editorial spreads, salon portfolio hero cards
 Reference aesthetic: cosmetic technical photography, Japanese beauty macro editorial${BEAUTY_BASE}`
   },
 
+  // 🆕 2026-09-07 膚質細節型 —— 補「做臉/臉部保養」這一塊。
+  //   病灶:極致細節型硬性要求「嘴、下巴、口罩必須在框外」,做臉的臉頰特寫直接卡死。
+  //   ⚠️ 只呈現「當下真實膚況」,不做前後差異 —— 淡斑/美白屬化粧品法禁用效能宣稱,
+  //     用 AI 生一張「斑變淺」等於偽造療效證據。要做前後,請用「前後對比型」+ 真實兩張照片。
+  skin_detail: {
+    label: '膚質細節型',
+    desc: '臉頰/鼻翼膚質特寫,呈現當下真實光澤與細緻度(做臉/保養適用)',
+    composition: `CROP OVERRIDE — a macro study of facial SKIN QUALITY on one region of the face:
+- Frame ONE region only — the cheek and the side of the nose, or the under-eye and cheekbone — filling the canvas corner to corner
+- The skin region occupies 85-95% of the canvas. Part of an eye, a brow or the corner of the mouth may enter the frame naturally as an anchor; a full face is NOT this layout
+- ⛔ Do NOT show the whole face, do NOT leave background walls or furniture around the head
+- The point of this layout is that a macro lens with proper lighting reveals what the naked eye can see but a phone camera cannot: real luminosity, fine surface refinement, well-settled makeup, a healthy hydrated sheen
+- Pores, fine downy hair and natural micro-texture MUST stay visible and resolvable — refined skin still has texture. Airbrushed plastic skin reads as fake and destroys the whole point
+- ⛔ ABSOLUTE RULE — reproduce the skin condition EXACTLY as supplied. Do NOT lighten pigmentation, do NOT fade freckles or age spots, do NOT even out redness, do NOT erase blemishes, do NOT shrink pores. This layout documents real current condition; fabricating an improvement is falsified efficacy evidence and is illegal in Taiwanese cosmetic advertising
+- ✅ What you MAY do is light it properly: soft wrap-around key with a gentle top fill so the natural sheen and surface refinement read clearly — good lighting, not a new face
+- Plain quiet backdrop falling completely out of focus, warm nude or soft neutral
+- Soft diffused light at 4500-5000K, broad and wrapping, no harsh specular hotspot
+- ${CAM_MACRO} f/2.8-4, focus plane exactly on the skin surface
+Reference aesthetic: Japanese skincare technical photography, La Mer / SK-II macro skin detail, dermatological documentation with an editorial finish${BEAUTY_BASE}`
+  },
+
   in_session: {
     label: '施作現場型',
     desc: '師傅工作中、環形燈、客人躺著 —— 信任感來源',
@@ -2737,6 +2745,8 @@ Reference aesthetic: cosmetic technical photography, Japanese beauty macro edito
 - Text, if any, overlaid directly on the image in a quiet low-detail area with a soft dark scrim for legibility — do NOT split the canvas into a colour block
 - Warm 4000-4500K key from the ring light, gentle ambient fill, natural falloff
 - ${CAM_DEFAULT} f/2.8, shallow depth isolating the hands
+- ⛔ CONTINUITY RULE — the work being performed MUST match the result in the source image. If the source shows dense volume lashes, the technician cannot be applying sparse natural ones; if the source shows a plain milk-tea single colour, the nail on the table cannot be houndstooth. This is the SAME client and the SAME session — any mismatch is instantly spotted by anyone in the trade and destroys credibility
+- ⛔ Do NOT invent a different service: lashes stay lashes, nails stay nails, hair stays hair, matching the source
 - ★ This layout sells trust and craft — it intentionally does NOT showcase the result
 Reference aesthetic: Aesop store documentary photography, Kinfolk artisan features, behind-the-scenes editorial${BEAUTY_BASE}`
   },
@@ -2752,6 +2762,10 @@ Reference aesthetic: Aesop store documentary photography, Kinfolk artisan featur
 - Editorial side light with gentle falloff, 4500K, soft shadow on the shaded cheek
 - Shallow depth of field, background reading as a soft nude wash
 - ${CAM_PORTRAIT} f/2, creamy separation
+- ★ RETOUCH EXCEPTION — this layout only: editorial-grade beauty retouching IS permitted here, unlike every other beauty layout. Even out skin tone, soften texture gently, add a clean contoured glow and magazine-grade colour grading, so the subject reads as a professional model shot
+- ⛔ But identity is untouchable: the same face, same features, same face shape, same skin tone family, same hairline as the source. Retouch the finish, never the person
+- ⛔ The service result stays PIXEL-PERFECT: lash density, curl and length, nail colour and shape, hair cut and colour must match the source exactly — the craft is what is being sold and must not be "improved"
+- If the subject wears a face mask in the source, you may remove it and reconstruct the lower face naturally in keeping with their visible features — or crop above it. Never leave a half-rendered or distorted mask edge
 Reference aesthetic: &Premium beauty pages, Aesop campaign portraits, Japanese lifestyle magazine covers${BEAUTY_BASE}`
   },
 
@@ -2762,17 +2776,20 @@ Reference aesthetic: &Premium beauty pages, Aesop campaign portraits, Japanese l
 - Subject fills 60-75% of the canvas, framing slightly off, natural handheld tilt of 3-8 degrees
 - Phone visible in hand or reflected in the mirror
 - Ordinary indoor lighting at mixed 3000-5000K colour temperature, mild everyday grain — NOT a studio setup
-- ${CAM_DEFAULT} f/2.2, phone-like rendering
+- Shot on an iPhone 17 Pro Max rear camera — modern smartphone computational photography: wide lens, deep-ish focus, natural HDR, slight sensor noise in shadows, the exact look of a real phone photo
 - No reserved text area: any caption sits casually over the image like a story sticker would
 - Deeper focus than an editorial shot, everything reasonably sharp, no creamy bokeh
-- ⛔ Do NOT over-retouch, do NOT add professional lighting, do NOT clean up the background — the roughness is the point
+- ✅ Phone-app level beautification IS expected and welcome — this is how real people actually post: even out skin tone, gentle smoothing, a light contour and brightening pass, subtle warm filter. Real customers never post an unedited selfie
+- ⛔ But keep it at PHONE-FILTER level, not studio retouching: pores and real skin still readable, no face-slimming distortion, no changed features, no plastic finish
+- ⛔ Do NOT add professional lighting and do NOT clean up or restage the background — the ordinary room is what makes it read as genuine
+- If the source was taken BY the technician rather than the client, restage it as a self-shot: phone in the subject's own hand or reflected in the mirror, natural handheld tilt
 - Feels like a real customer posting to their own story, NOT a brand campaign
 Reference aesthetic: real Instagram story screenshots, unedited user-generated content${BEAUTY_BASE}`
   },
 
   question_headline: {
-    label: '問句大字型',
-    desc: '一半色塊放標題(「接睫毛後真的不能碰水嗎?」)',
+    label: '問句知識型',
+    desc: '專業者的知識提問(「接睫毛後真的不能碰水嗎?」「光療其實有分強度?」)',
     composition: `Split composition, knowledge/FAQ post format:
 - One half of the canvas (left or top, 45-55%) is a solid warm nude colour block holding a large question headline in Traditional Chinese
 - Headline set in 2-3 lines maximum, generous letter spacing, aligned left or right — never centred
@@ -2783,6 +2800,8 @@ Reference aesthetic: real Instagram story screenshots, unedited user-generated c
 - Moderate depth keeping the photographic half readable throughout
 - ${CAM_MACRO} f/4 on the photographic half
 - ★ The flat colour block is intentional design, NOT empty unfinished space
+- ★ EDITORIAL INTENT — this is a knowledge post by a practitioner to their audience, not a sales post. The headline should read as a professional myth-buster or a genuine technical question the trade knows the answer to ("接睫毛後真的不能碰水嗎?", "光療其實有分強度?", "原來大家的睫毛都接錯了?")
+- ⛔ Do NOT render promotional language: no discount, no price, no limited-time urgency, no call-to-action button. Authority is the product here
 Reference aesthetic: Japanese pharmacy educational posters, Muji information signage, editorial FAQ spreads${BEAUTY_BASE}`
   },
 
@@ -2820,6 +2839,9 @@ const MEDICAL_LAYOUTS = {
 - Even broad key light from 45 degrees with a soft fill, 5000K, no hard shadow on the face
 - Shallow but controlled depth: eyes critically sharp, background a smooth wash
 - ${CAM_PORTRAIT} f/2.8
+- ★ WARDROBE UPGRADE IS ALLOWED: if the source shows the subject in casual clothes, restyle them into appropriate professional attire and place them in a proper studio-lit portrait setting — that is the entire purpose of this layout
+- ⛔ IDENTITY IS UNTOUCHABLE: the same person, same facial features, same face shape, same skin tone, same hairline, same age, same build, same glasses if worn. Change the clothing and the setting, NEVER the person. A portrait that is not recognisably them is worthless to the client
+- Retouching stays at professional-headshot level: clean, flattering light and tidy skin — never a different face
 Reference aesthetic: Japanese clinic brand photography, corporate annual-report portraiture${MEDICAL_BASE}`
   },
 
@@ -2834,6 +2856,9 @@ Reference aesthetic: Japanese clinic brand photography, corporate annual-report 
 - Soft even daylight-balanced illumination 5000K, no harsh pools or hotspots
 - Deep focus so the whole room reads sharp
 - ${CAM_DEFAULT} f/8
+- ⛔ ARCHITECTURE IS FIXED: reproduce the real space as supplied. Do NOT add or move walls, windows, doors, columns, staircases or built-in furniture; do NOT enlarge the room, raise the ceiling or invent an extra area. A space the visitor cannot recognise on arrival is a misrepresentation
+- ✅ What you MAY do is photograph it well: correct the verticals, clean and tidy the surfaces, balance the exposure, warm the light, remove clutter and cables — beautify the photograph, not the floor plan
+- ⛔ EQUIPMENT IS FIXED: reproduce every machine and instrument exactly as it appears in the source. Do NOT swap one device for another, do NOT invent equipment the clinic does not own, do NOT add brand names or control-panel readouts. A hair-removal laser must not become a dental scaler
 Reference aesthetic: Japanese architectural interior photography, minimal clinic brand sites${MEDICAL_BASE}`
   },
 
@@ -2847,6 +2872,9 @@ Reference aesthetic: Japanese architectural interior photography, minimal clinic
 - Broad even lighting across all faces, 5000K, no single dominant highlight
 - Moderate depth of field so every person stays sharp
 - ${CAM_DEFAULT} f/5.6
+- ⛔ ABSOLUTE RULE — USE ONLY THE REAL PEOPLE IN THE SOURCE IMAGE. Do NOT add, duplicate, clone or invent a single additional person. If the source shows three people, the final image shows those three people and nobody else
+- ⛔ Do NOT pad the frame with generated faces to make the group look larger. A fabricated team or class is false advertising, and in a licensed or professional setting it is the client who carries the liability
+- ✅ If the real group is small, compose for it honestly: tighter framing, closer arrangement, shallower background — a well-composed small group looks confident, a padded one looks fake
 Reference aesthetic: Japanese hospital brand books, professional firm group portraits${MEDICAL_BASE}`
   },
 
@@ -2914,7 +2942,8 @@ Reference aesthetic: lululemon and Alo Yoga brand documentary imagery, Kinfolk w
 - Shallow depth isolating the figure from the background
 - ${CAM_PORTRAIT} f/2.5
 - NOT the most extreme variation — a well-extended, readable line photographs better
-Reference aesthetic: Alo Yoga campaign stills, Japanese wellness editorial${COURSE_BASE}`
+- ★ THIS LAYOUT COVERS BOTH KINDS OF CLASS. For movement-based teaching (yoga, dance, fitness, martial arts) use the extended body line described above. For seated or desk-based learning (languages, exam prep, AI and software courses, art, music, crafts) the same principles apply to a person absorbed in the work: hands on the keyboard, pen, instrument or tool; gaze down on the task; posture showing genuine concentration. Read the source image and follow what the class actually is — never force a yoga pose onto a language class
+Reference aesthetic: Alo Yoga campaign stills, Japanese wellness editorial; for seated learning, Japanese cram-school and workshop documentary photography${COURSE_BASE}`
   },
 
   outdoor_class: {
@@ -2935,13 +2964,16 @@ Reference aesthetic: outdoor yoga campaign photography, Patagonia and Snow Peak 
     label: '團體合照型',
     desc: '強調人數與氣氛,避免拍起來沒幾個人',
     composition: `Group portrait of a full class:
-- Shoot from slightly above and fill 70-85% of the canvas with people — the most common failure is a large class that looks sparse
+- Shoot from slightly above and let the REAL group fill the frame as fully as it honestly can — compose tighter rather than adding anyone
 - Staggered rows or a curved formation so every face is visible, nobody hidden behind another
 - Lower band 12-18% left clear for the studio name in restrained type
 - Relaxed genuine expressions with natural variety of posture, never a rigid line-up
 - Broad even lighting across the entire group 5000K, venue visible behind and readable
 - Moderate depth so every face stays sharp
 - ${CAM_DEFAULT} f/5.6
+- ⛔ ABSOLUTE RULE — USE ONLY THE REAL PEOPLE IN THE SOURCE IMAGE. Do NOT add, duplicate, clone or invent a single additional person. If the source shows three people, the final image shows those three people and nobody else
+- ⛔ Do NOT pad the frame with generated faces to make the group look larger. A fabricated team or class is false advertising, and in a licensed or professional setting it is the client who carries the liability
+- ✅ If the real group is small, compose for it honestly: tighter framing, closer arrangement, shallower background — a well-composed small group looks confident, a padded one looks fake
 Reference aesthetic: Japanese school and workshop commemorative photography${COURSE_BASE}`
   },
 
@@ -2956,6 +2988,9 @@ Reference aesthetic: Japanese school and workshop commemorative photography${COU
 - Shallow depth, background a smooth wash
 - ${CAM_PORTRAIT} f/2.8
 - Confident approachable expression, posture suggesting capability rather than performance
+- ★ WARDROBE UPGRADE IS ALLOWED: if the source shows the subject in casual clothes, restyle them into appropriate professional attire and place them in a proper studio-lit portrait setting — that is the entire purpose of this layout
+- ⛔ IDENTITY IS UNTOUCHABLE: the same person, same facial features, same face shape, same skin tone, same hairline, same age, same build, same glasses if worn. Change the clothing and the setting, NEVER the person. A portrait that is not recognisably them is worthless to the client
+- Retouching stays at professional-headshot level: clean, flattering light and tidy skin — never a different face
 Reference aesthetic: lululemon ambassador portraits, Japanese studio profile photography${COURSE_BASE}`
   },
 
@@ -2970,6 +3005,8 @@ Reference aesthetic: lululemon ambassador portraits, Japanese studio profile pho
 - Natural window light 5000K, honest colour, no heavy grading, gentle falloff into corners
 - Deep focus so the whole room reads sharp
 - ${CAM_DEFAULT} f/8
+- ⛔ ARCHITECTURE IS FIXED: reproduce the real space as supplied. Do NOT add or move walls, windows, doors, columns, staircases or built-in furniture; do NOT enlarge the room, raise the ceiling or invent an extra area. A space the visitor cannot recognise on arrival is a misrepresentation
+- ✅ What you MAY do is photograph it well: correct the verticals, clean and tidy the surfaces, balance the exposure, warm the light, remove clutter and cables — beautify the photograph, not the floor plan
 Reference aesthetic: Japanese architectural interiors, Muji store photography, Kinfolk spaces${COURSE_BASE}`
   },
 };
@@ -2993,6 +3030,7 @@ const MYSTIC_LAYOUTS = {
 - Shallow depth: the near cards critically sharp, the far edge softly falling away
 - ${CAM_MACRO} f/2.8
 - Intimate and unhurried, the feeling of a private consultation
+- ⛔ THE PRACTITIONER'S OWN TOOLS ONLY: reproduce the cards, board, stones, compass or charts exactly as supplied — the real deck, the real backs, the real spread. Do NOT invent card artwork, symbols, glyphs, inscriptions, constellations or a different divination system. What is on the table is what is on the table
 Reference aesthetic: Kinfolk still-life features, Japanese craft documentary photography${MYSTIC_BASE}`
   },
 
@@ -3035,6 +3073,8 @@ Reference aesthetic: Japanese craftsman portrait series, editorial profile photo
 - Deep enough focus that the room reads clearly, with the far corners softening naturally
 - ${CAM_DEFAULT} f/5.6
 - Feels private, safe and unrushed — a place to talk, not a shrine
+- ⛔ ARCHITECTURE IS FIXED: reproduce the real space as supplied. Do NOT add or move walls, windows, doors, columns, staircases or built-in furniture; do NOT enlarge the room, raise the ceiling or invent an extra area. A space the visitor cannot recognise on arrival is a misrepresentation
+- ✅ What you MAY do is photograph it well: correct the verticals, clean and tidy the surfaces, balance the exposure, warm the light, remove clutter and cables — beautify the photograph, not the floor plan
 Reference aesthetic: Japanese ryokan interior photography, moody architectural stills${MYSTIC_BASE}`
   },
 
@@ -3193,6 +3233,9 @@ Reference aesthetic: precision component catalogue macro, watch movement photogr
 - Even industrial ambient 5000-5600K with a directional accent on the subject
 - Moderate depth establishing both subject and context
 - ${CAM_DEFAULT} f/5.6
+- ⛔ THE INDUSTRY IS NOT YOURS TO CHOOSE. Only depict an end-use setting that is actually evidenced — by the source image, or by the text the client supplied. Do NOT decide that a machine belongs in semiconductor, aerospace, medical or automotive production and build that world around it. A fabricated application field is spotted instantly by B2B buyers and can misrepresent what the company actually serves
+- ✅ When the industry is not evidenced, stay deliberately neutral: a generic clean machining workshop or inspection bench that could belong to any sector — capability shown, sector unclaimed
+- ⛔ Do NOT invent other branded machines, cleanroom garments, industry certification signage or facility markings around the subject
 Reference aesthetic: Siemens and Bosch industrial application photography${EQUIP_BASE}`
   },
 
@@ -3200,8 +3243,10 @@ Reference aesthetic: Siemens and Bosch industrial application photography${EQUIP
     label: '產線現場型',
     desc: '廠房實景、機台在運轉',
     composition: `Factory floor documentary shot, FULL-BLEED:
-- Wide view filling 90-100% of canvas, rows of machines receding to create depth and a sense of scale, nearest machine occupying 25-35%
-- Operator visible at a distance as a human-scale reference, never the focal subject
+- Wide view filling 90-100% of canvas, nearest machine occupying 25-35%, depth built by camera position and perspective
+- ⛔ DO NOT MULTIPLY THE MACHINES. Show only the machines actually present in the source image. Never clone the subject into a receding row to manufacture a sense of scale — an invented production line overstates the company's capacity and is false advertising to a B2B buyer
+- ⛔ Do NOT add people who are not in the source. If an operator appears in the source they may stay as a human-scale reference, never the focal subject; if nobody is there, the floor stays empty
+- ⛔ FACTORY ARCHITECTURE IS FIXED: do not add or move walls, bays, gantries, mezzanines or roof structure, and do not enlarge the hall. Photograph the real plant well — straight verticals, honest light, tidy floor — do not build a bigger one
 - Any text overlaid on a calm ceiling or floor region, clear of the outer 12%
 - Honest overhead industrial lighting 5000K with slight atmospheric depth, no staged glamour
 - Deep focus, near machine to far wall sharp
@@ -3220,6 +3265,8 @@ Reference aesthetic: industrial documentary photography, manufacturing annual re
 - Flat even studio illumination on the product element 5600K so type stays dominant
 - Deep focus, the product element fully sharp
 - ${CAM_DEFAULT} f/8
+- ⛔ THE FIGURES MUST COME FROM THE CLIENT. Render only numbers the client actually supplied in the headline / subheadline. Do NOT generate plausible-looking precision, stroke, spindle-speed, tolerance or capacity values — a fabricated spec is a quotable technical claim and the client is liable for it
+- ✅ If no figures were supplied, build the layout around the reserved typographic area and leave it clean and empty for the client to fill
 Reference aesthetic: German industrial brochures, Braun and Leica specification pages${EQUIP_BASE}`
   },
 
@@ -3233,6 +3280,7 @@ Reference aesthetic: German industrial brochures, Braun and Leica specification 
 - Moderate depth with the machine fully sharp and the backdrop softly graded
 - ${CAM_DEFAULT} f/8
 - Polished and confident, still strictly industrial in palette
+- ⛔ Do NOT invent a company logo, wordmark, booth branding, exhibition name, hall number or partner logos. Any company identity must come only from the client's own supplied logo and the text they filled in — otherwise leave that area as clean reserved space
 Reference aesthetic: Hannover Messe booth photography, industrial trade-show brand walls${EQUIP_BASE}`
   },
 };
@@ -3256,6 +3304,8 @@ const SCREEN_LAYOUTS = {
 - Even flat illumination at 5600K, no simulated screen glare or reflection
 - Deep focus, the entire screen uniformly sharp edge to edge
 - ${CAM_DEFAULT} f/8, straight-on with no perspective distortion
+- Browser frame must be a CURRENT minimal desktop browser chrome — Chrome or Safari style: rounded window corners, three small window dots or a slim toolbar, one clean address bar, no bookmark clutter
+- ⛔ Do NOT draw a legacy browser: no Internet Explorer, no Windows XP/7 title bars, no thick beveled chrome, no menu bar rows, no vendor logo in the frame
 - ⛔ No annotations, no callout arrows, no marketing copy drawn onto the screenshot itself
 Reference aesthetic: Stripe and Linear marketing pages, Notion product site${SCREEN_BASE}`
   },
@@ -3285,6 +3335,8 @@ Reference aesthetic: Apple product page device shots, SaaS landing hero sections
 - Soft even key with a gentle edge highlight along the device chassis, 5600K
 - Slight depth so the near corner is sharp and the far corner softens marginally
 - ${CAM_DEFAULT} f/5.6
+- Device body must read as a current-generation iPhone 17 Pro Max: large flat-edged titanium-style chassis, very slim uniform bezels, rounded display corners, Dynamic Island cutout at the top of the screen
+- ⛔ Do NOT draw a notch, a home button, thick bezels or any dated handset
 Reference aesthetic: App Store feature graphics, modern SaaS mobile sections${SCREEN_BASE}`
   },
 
@@ -3336,6 +3388,9 @@ const PRO_LAYOUTS = {
 - Broad soft key at 45 degrees with a subtle fill, 5000K, gentle modelling and no harsh shadow
 - Shallow depth, eyes critically sharp, background a smooth wash
 - ${CAM_PORTRAIT} f/2.8
+- ★ WARDROBE UPGRADE IS ALLOWED: if the source shows the subject in casual clothes, restyle them into appropriate professional attire and place them in a proper studio-lit portrait setting — that is the entire purpose of this layout
+- ⛔ IDENTITY IS UNTOUCHABLE: the same person, same facial features, same face shape, same skin tone, same hairline, same age, same build, same glasses if worn. Change the clothing and the setting, NEVER the person. A portrait that is not recognisably them is worthless to the client
+- Retouching stays at professional-headshot level: clean, flattering light and tidy skin — never a different face
 Reference aesthetic: law firm and consultancy brand portraiture, corporate annual reports${PRO_BASE}`
   },
 
@@ -3349,6 +3404,9 @@ Reference aesthetic: law firm and consultancy brand portraiture, corporate annua
 - Broad even lighting across all faces 5000K, no single dominant figure by light or placement
 - Moderate depth so every person stays sharp
 - ${CAM_DEFAULT} f/5.6
+- ⛔ ABSOLUTE RULE — USE ONLY THE REAL PEOPLE IN THE SOURCE IMAGE. Do NOT add, duplicate, clone or invent a single additional person. If the source shows three people, the final image shows those three people and nobody else
+- ⛔ Do NOT pad the frame with generated faces to make the group look larger. A fabricated team or class is false advertising, and in a licensed or professional setting it is the client who carries the liability
+- ✅ If the real group is small, compose for it honestly: tighter framing, closer arrangement, shallower background — a well-composed small group looks confident, a padded one looks fake
 Reference aesthetic: professional services firm brand photography${PRO_BASE}`
   },
 
@@ -3363,6 +3421,8 @@ Reference aesthetic: professional services firm brand photography${PRO_BASE}`
 - Deep focus, foreground to back wall sharp
 - ${CAM_DEFAULT} f/8
 - Orderly surfaces, quality materials, calm and substantial atmosphere
+- ⛔ ARCHITECTURE IS FIXED: reproduce the real space as supplied. Do NOT add or move walls, windows, doors, columns, staircases or built-in furniture; do NOT enlarge the room, raise the ceiling or invent an extra area. A space the visitor cannot recognise on arrival is a misrepresentation
+- ✅ What you MAY do is photograph it well: correct the verticals, clean and tidy the surfaces, balance the exposure, warm the light, remove clutter and cables — beautify the photograph, not the floor plan
 Reference aesthetic: architectural interior photography for professional firms${PRO_BASE}`
   },
 
@@ -3416,7 +3476,7 @@ const LAYOUT_BY_PRODTYPE = {
   beauty: [
     // 🆕 2026-08-24 依 RA 提供的七張真實美業參考圖重排:
     //   前後對比(最有效)→ 主圖側格(層次最好)→ 成果特寫 → 極致細節 → 多格對照 → 模特情境
-    { group: '成果呈現', keys: ['beauty_before_after', 'hero_side_grid', 'result_closeup', 'macro_detail', 'multi_angle_grid', 'model_editorial'] },
+    { group: '成果呈現', keys: ['beauty_before_after', 'hero_side_grid', 'result_closeup', 'macro_detail', 'skin_detail', 'model_editorial'] },
     { group: '信任感', keys: ['in_session', 'mirror_selfie'] },
     { group: '文字型', keys: ['question_headline', 'booking_info'] },
   ],
