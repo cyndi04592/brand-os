@@ -34,14 +34,16 @@ const COMMERCIAL_CONTEXT =
   'Professional commercial product advertisement, mainstream retail catalog photography, ' +
   'acceptable for major retailers and department stores. ';
 
-const CAM_DEFAULT = 'Shot on Nikon Z9 NIKKOR Z 24-70mm f/2.8 S.';
-const CAM_PORTRAIT = 'Shot on Nikon Z9 NIKKOR Z 85mm f/1.4 S, f/2.8.';
-const CAM_MACRO = 'Shot on Nikon Z9 NIKKOR Z 50mm f/1.2 S.';
+const CAM_DEFAULT = 'Shot on Nikon Z9 with NIKKOR Z 24-70mm f/2.8 S at f/2.8, lit by a Profoto softbox key plus natural fill.';
+const CAM_PORTRAIT = 'Shot on Nikon Z9 with NIKKOR Z 85mm f/1.2 S at f/2.8, lit by a Profoto B10X softbox / beauty dish for flattering skin and creamy bokeh.';
+const CAM_MACRO = 'Shot on Nikon Z9 with NIKKOR Z MC 105mm f/2.8 VR S macro, twin/ring macro flash for even crisp detail.';
+const CAM_PROBE = 'Shot on Nikon Z9 with LAOWA 24mm T/14 2x Macro Periprobe — an ultra-wide 2x macro periscope lens that can dive right into liquids, sauces, drinks and product interiors for dramatic immersive bug-eye macro angles, lit with continuous LED — the secret weapon for food & beverage hero details.';
+const CAM_FREEZE = 'Shot on Nikon Z9 using its fast electronic shutter (1/8000s up to 1/32000s, zero rolling shutter) together with a Godox AD600 high-speed-sync strobe to freeze splashes, droplets and flying particles razor-sharp, NIKKOR Z 50mm f/1.2 S or MC 105mm macro.';
 
 // ★ v11.1 設計師工法層 (DESIGNER_POLISH) — 具體反 AI 指紋版(相機/佈光 + 品類 + 單一促銷 + 真材質),風格分流、不碰選定風格
 const DESIGNER_POLISH =
 'Output must look like REAL human-made work, never an AI render. ' +
-'For PHOTOGRAPHIC styles: render as real professional photography — shot on a pro body (Nikon Z9 / Sony A1 / Canon R5) with a real lens (35mm or 50mm prime for scenes, 85mm for portraits, macro for food and product detail), professional lighting setup (softbox key plus natural fill), realistic depth of field, true-to-life materials and micro-texture; avoid the over-glossy, over-smooth, over-symmetrical AI-render sheen. ' +
+'For PHOTOGRAPHIC styles: render as real professional photography — shot on a professional body (Nikon Z9) with fast NIKKOR Z S-line prime lenses — 35mm or 50mm for scenes, 85mm for portraits, 90mm macro for food and product detail — at a real wide aperture (f/1.4–f/2.8) with genuine shallow depth of field and creamy bokeh, ISO 100–200, professional lighting (softbox key plus natural fill), true-to-life materials and micro-texture; strictly avoid the over-glossy, over-smooth, over-symmetrical AI-render sheen. ' +
 'For ILLUSTRATION, ink or graphic styles: execute in the authentic medium (real ink, paint, print, collage texture) with a human designer hand, not slick AI gradients. ' +
 'Decoration must fit the product category logically (seaweed uses ocean / wave / seaweed motifs, NOT wheat or coffee; tech uses clean studio; food uses real ingredients) — no off-category or meaningless symbols. ' +
 'Keep only ONE primary promotional message; never repeat the same discount or event across multiple badges. ' +
@@ -55,11 +57,14 @@ const DESIGNER_POLISH =
 //    不碰其他品類;非食物場景不觸發。
 // ═══════════════════════════════════════════════════════════════════════
 const FOOD_CRAFT =
-'=== FOOD PLATING CRAFT (food & beverage only — makes the scene blend, never pasted-on) ===\n' +
-'- SHALLOW DEPTH OF FIELD is mandatory: the hero dish must be tack-sharp while the background falls into soft creamy bokeh (equivalent to f/2.8–f/4). A blurred background hides any lighting mismatch so the dish never looks cut-and-pasted onto the scene.\n' +
-'- Surround the hero with IN-CATEGORY ingredients, sauces, garnishes and utensils (herbs, spices, citrus, aromatics, condiments, chopsticks, ladles) placed in the near and far ground, but keep them OUT of focus — they enrich the story without competing with the dish.\n' +
-'- RESTAURANT-GRADE LIGHTING: a single warm key light with soft falloff, gentle golden rim light on the dish edge, deep but not pure-black shadows, faint atmospheric steam where appropriate — cinematic and appetizing, never flat or evenly lit.\n' +
-'- OPTIONAL human action that NEVER touches the preserved product: a hand sprinkling garnish or crushed nuts from above, a chef plating in the blurred background, hands framing the scene beside the dish. The hand must never grip, cover, or overlap the locked hero dish — keep all human elements clear of the product so the pixel-perfect dish stays intact.\n\n';
+'=== FOOD PLATING CRAFT (food & beverage — the dish MUST look genuinely photographed INSIDE the scene, never pasted onto a backdrop) ===\n' +
+'- ONE UNIFIED LIGHT FIELD (the #1 fix for the pasted-on look): RE-LIGHT the dish so its highlights, shadows and colour temperature match the new background EXACTLY. If the scene is warm amber tungsten, the food itself must also glow warm amber — never leave the dish under its original flat studio light on a moody dark background.\n' +
+'- REAL GROUNDING & CONTACT SHADOW: where the plate meets the surface, cast a soft realistic contact shadow — darkest and tightest right under the rim, fading outward with natural penumbra — NOT a hard uniform cut-out drop shadow. On glossy surfaces (marble, lacquered wood, glass, metal) add a faint reflection beneath the dish. The plate must read as having real weight resting ON the table.\n' +
+'- FOREGROUND OCCLUSION for real depth: place a few OUT-OF-FOCUS foreground elements (herbs, a sauce dish, chopsticks, rising steam, scattered spices) partially overlapping the lower or side edge of frame, so the hero dish is nestled BETWEEN a soft blurred foreground and a soft blurred background — this near/far layering seats it into believable 3D space instead of floating on a flat wall.\n' +
+'- EDGE INTEGRATION: let the rim of the plate and edges of the food pick up a gentle ambient / rim light in the scene own colour (warm gold, candle glow, window light), so the silhouette melts into the environment rather than cutting out with a sharp hard edge.\n' +
+'- SHALLOW DEPTH OF FIELD: hero dish tack-sharp, background dissolving into creamy bokeh, consistent with the foreground blur above.\n' +
+'- ABUNDANT IN-CATEGORY PROPS softly out of focus — warm and generous like reference HUALUXE / InterContinental / Michelin hotel-dining editorials, never sparse, never floating on empty tabletop.\n' +
+'- RESTAURANT ATMOSPHERE: warm directional key with soft falloff, deep but not pure-black shadows, faint appetizing steam where it fits — cinematic and mouth-watering, never a flat evenly-lit product shot.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
@@ -242,6 +247,7 @@ Reference aesthetic: Kinfolk lifestyle photography, Muji homeware catalogs, Japa
 - Background can be either a contextual nature scene (foliage, wood) or a clean gradient
 - Minimal text — just a bold short product name on top, optional one-line tagline
 - High contrast, cinematic punch
+- CAMERA: Nikon Z9 with fast electronic shutter (1/8000s or faster) to freeze the splash tack-sharp, high-speed flash sync, NIKKOR Z 50mm or 105mm macro — genuine high-speed freeze photography, every droplet and splash crown crisp and frozen.
 Reference aesthetic: Pinterest food photography hero shots, premium beverage commercials, Japanese drink ads`
   },
 
@@ -293,8 +299,8 @@ Reference aesthetic: Apple product posters, Blue Bottle Coffee posters, Muji sto
   //    選了它 → buildPosterPrompt 自動疊上 FOOD_CRAFT 淺景深融合手法(見觸發判斷)。
   food_special: {
     label: '美食版',
-    desc: '餐廳・小吃專用｜暖光美食+淺景深,主菜融合不貼上去',
-    composition: `Food & beverage advertising poster layout:
+    desc: '必比登餐廳級(如福臨門)｜暖光淺景深融合,小吃也適用',
+    composition: `Fine-dining / Bib Gourmand restaurant food poster (Fook Lam Moon calibre — refined, upscale, elegant plating; also works for elevated street food but default to premium restaurant quality):
 - Hero dish shot large and appetizing, occupying 45-60% of the canvas, placed on the rule-of-thirds
 - Warm inviting restaurant atmosphere: soft wooden, stone or linen table surface, dining background softly blurred behind
 - Surround the dish with in-category fresh ingredients and garnishes as tasteful props (herbs, spices, citrus, aromatics, sauces), all kept in soft focus so they never compete
@@ -302,7 +308,24 @@ Reference aesthetic: Apple product posters, Blue Bottle Coffee posters, Muji sto
 - Small refined subtitle below the headline; tiny brand signature tucked in a quiet corner
 - Warm golden key lighting with a gentle rim light on the dish edge, deep but not pure-black shadows, faint appetizing steam where it fits — cinematic and mouth-watering
 - Generous calm negative space reserved so a designer can set typography later
-Reference aesthetic: Michelin restaurant posters, HUALUXE / InterContinental hotel dining promotions, premium 小紅書 food editorial covers`
+Reference aesthetic: Michelin restaurant posters, HUALUXE / InterContinental hotel dining promotions, premium 小紅書 food editorial covers
+- Shot on a professional body (Nikon Z9) with a 90-100mm macro or 85mm lens, f/2.8-f/4, ISO 200, warm restaurant key lighting — real food photography, never an AI render`
+  },
+
+  // 🆕 v11.5 白棚攝影:替代進棚拍白棚,電商首圖高質感主圖。無縫背景+專業棚燈+光影質感。
+  white_studio: {
+    label: '白棚攝影',
+    desc: '電商首圖｜無縫白棚+專業棚燈,替代進棚拍攝',
+    composition: `Seamless white studio (infinity cove) e-commerce product photography layout:
+- Pure seamless white or very light warm-grey studio backdrop where the back wall curves smoothly into the floor with NO visible edge, seam or horizon line (professional infinity cove / seamless paper cyclorama) — exactly like a real e-commerce photo studio.
+- The product (or model) is the hero, placed on the rule-of-thirds, tack-sharp, clean and centred in generous space.
+- Optional minimal white geometric riser / plinth / pedestal to elevate the product (clean Korean e-commerce styling).
+- PROFESSIONAL STUDIO STROBE LIGHTING: a large Profoto/Broncolor softbox key from one side plus a broad fill and a subtle rim/hair light — soft directional light that sculpts the product with gentle tonal gradients and reveals real material texture. NEVER flat, even, shadowless lighting.
+- Light is the hero: capture the exact moment directional studio light wraps the form, giving dimensional highlight-to-shadow falloff and a premium sculpted look.
+- Soft realistic contact shadow beneath the product and a faint reflection on the clean floor, grounding it naturally.
+- Bright airy high-key exposure, clean neutral-to-warm white balance, 50%+ calm negative space reserved for later typography.
+- The mood of a premium brand's e-commerce hero / main product image — the kind a brand would pay a studio day to shoot.
+Reference aesthetic: Korean minimal e-commerce product photography (Aesop, Tamburins, wisely), premium beauty catalog studio shots, seamless white cove fashion lookbook`
   }
 };
 
@@ -418,6 +441,33 @@ const REGIONAL_FLAVORS = {
   none: {
     label: '無',
     flavor: ''
+  },
+
+  // 🆕 v11.4 餐飲風格組:給餐廳/小吃客戶。每個自帶淺景深+暖光+美食專屬相機規格(90-100mm 微距,非廣角)。
+  //   搭配「美食版」排版效果最完整;對應 index.html flavorSel 的「餐飲」optgroup。
+  food_michelin: {
+    label: '暖光米其林',
+    flavor: 'Add Michelin fine-dining flavor: warm golden key lighting with soft falloff, dark slate or charcoal table surface, a softly blurred upscale restaurant interior behind, gentle rim light on the dish edge, faint atmospheric steam, shallow depth of field so the dish is tack-sharp while the background melts into creamy bokeh — cinematic, appetizing, never flat or pasted-on. Shot on Nikon Z9 with NIKKOR Z MC 105mm f/2.8 VR S macro, f/3.2, ISO 200, professional Michelin food photography.'
+  },
+  food_cantonese: {
+    label: '粵菜宴席',
+    flavor: 'Add Hong Kong Cantonese banquet flavor (Fook Lam Moon level): dark lacquered rosewood table, a deep red-and-gold wall with subtle traditional pattern softly blurred behind, warm amber pendant light from above, opulent Michelin banquet mood, shallow depth of field with rich golden bokeh so the dish never looks stuck onto the scene. Shot on Nikon Z9 with NIKKOR Z MC 105mm f/2.8 macro, f/3.5, ISO 200, opulent banquet food photography.'
+  },
+  food_kappo: {
+    label: '日式割烹',
+    flavor: 'Add Japanese kappo fine-dining flavor: dark aged charcoal stone slate surface with rough texture, a deep shadowed wood wall softly blurred behind, cool 4000K single-source side light, wabi-sabi minimal restraint, shallow depth of field, quiet contemplative mood. Shot on Nikon Z9 with NIKKOR Z MC 105mm f/2.8 macro, f/2.8, ISO 400, minimalist kappo food photography.'
+  },
+  food_street: {
+    label: '台式小吃',
+    flavor: 'Add Taiwanese street-food flavor: warm nostalgic night-market atmosphere, a worn wooden or stainless surface, softly blurred stall lights and bokeh behind, cozy amber tungsten glow, gentle steam rising, honest lived-in market energy, shallow depth of field keeping the dish sharp. Shot on Nikon Z9 with NIKKOR Z 50mm f/1.2 S, f/2.8, ISO 320, honest street-food photography.'
+  },
+  food_chef: {
+    label: '廚師上菜',
+    flavor: 'Add chef-plating flavor: a chef in a dark uniform presents or holds the plate, or plates in the softly blurred background — the hands frame and present the dish but MUST NOT grip, cover or touch the preserved food surface itself. Warm restaurant lighting, shallow depth of field on the hero dish, the human presence adding life and scale. Shot on Nikon Z9 with NIKKOR Z 85mm f/1.2 S, f/2.8, ISO 200, editorial chef-and-dish photography.'
+  },
+  food_ingredient: {
+    label: '食材特寫',
+    flavor: 'Add ingredient-surround flavor: fresh in-category raw ingredients, herbs, spices, citrus and sauces arranged around the hero dish in the near and far ground but kept OUT of focus, warm directional light, shallow depth of field so only the dish stays sharp — a rich, appetizing still-life feel. Shot on Nikon Z9 with NIKKOR Z MC 105mm f/2.8 macro, f/4, ISO 200, appetizing ingredient still-life photography.'
   },
   japan_kinfolk: {
     label: '日系雅致',
@@ -3307,6 +3357,7 @@ Object.assign(LAYOUT_TEMPLATES,
 const LAYOUT_BY_PRODTYPE = {
   physical: [
     { group: '', keys: ['minimal_poster'] },
+    { group: '攝影棚', keys: ['white_studio'] },
     { group: '餐飲專用', keys: ['food_special'] },
     { group: '經典版式', keys: ['magazine_cover', 'spec_breakdown', 'scene_lifestyle', 'dramatic_splash'] },
     { group: '新增版式', keys: ['before_after', 'grid_showcase', 'big_statement', 'checklist_info', 'hand_hold'] },
