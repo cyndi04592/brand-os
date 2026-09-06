@@ -5,6 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brand OS · 創捷國際貿易</title>
 
+<!-- 🔒 Console 敏感字過濾 — 一般 log 照顯示(自己看狀態用),只擋掉 AI 供應商
+     名稱 / API 網址那幾行,防洩漏。要看被擋的內容 → 網址加 ?debug=1。 -->
+<script>
+(function(){
+  if (/[?&]debug=1/.test(location.search)) return; /* debug 模式全放行 */
+  var BLOCK = /fal\.run|queue\.fal|fal-ai|piapi|photoroom|klingai|api\.kling|kling|heygen|openai\.com|gpt-image|anthropic|workers\.dev/i;
+  ['log','info','warn','debug'].forEach(function(m){
+    var orig = console[m] ? console[m].bind(console) : function(){};
+    console[m] = function(){
+      try {
+        var s = Array.prototype.map.call(arguments, function(a){
+          return (typeof a === 'string') ? a : (function(){ try { return JSON.stringify(a); } catch(e){ return String(a); } })();
+        }).join(' ');
+        if (BLOCK.test(s)) return; /* 含供應商字眼/網址 → 整行不印 */
+      } catch(e){}
+      orig.apply(console, arguments);
+    };
+  });
+})();
+</script>
+
 <!-- ★ WebView 偵測 — 最優先執行 -->
 <script>
 (function() {
