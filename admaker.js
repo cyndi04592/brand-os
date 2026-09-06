@@ -977,6 +977,29 @@ function onSelAdSize(v){ SELECTED_AD_SIZE = v; }
 //   結果:畫面顯示限動REELS、程式卻用正方去裁切+算錢 = 永遠慢一步。
 //   修法:以畫面為準(所見即所得),讀不到才退回變數。
 function _adSize(){ var _v = (document.getElementById('gptAdSize')||{}).value || SELECTED_AD_SIZE; return AD_SIZES.find(x=>x.key===_v) || AD_SIZES[0]; }
+// 💰 2026-09-06 廣告圖點數 = 按尺寸算(這段公式必須跟 Worker 的 _posterCost 一模一樣)
+//   為什麼要在前端也算一次:畫面上的「樂觀扣點」原本寫死 240,
+//   但後端其實照尺寸收(限動 430、A4 1700…)→ 客戶按下去看到只掉 240,
+//   重整後才發現掉更多 = 會被當成系統偷吃點數。
+//   ⚠️ 這裡只負責「畫面顯示」。真正的扣款永遠以 Worker 為準,前端算錯也不影響金流。
+//   ⚠️ 之後如果調價,兩邊要一起改(Worker 的 _posterCost 與這裡)。
+const AD_BASE_PX = 1080 * 1080, AD_BASE_COST = 240;
+function _adPx(fal){
+  if (fal && typeof fal === 'object'){
+    var w = Number(fal.width || 0), h = Number(fal.height || 0);
+    if (w > 0 && h > 0) return w * h;
+  }
+  var MAP = {
+    'square': 1024*1024, 'square_hd': 1080*1080,
+    'portrait_4_3': 1080*1440, 'portrait_16_9': 1080*1920,
+    'landscape_4_3': 1440*1080, 'landscape_16_9': 1920*1080
+  };
+  return MAP[String(fal || '')] || AD_BASE_PX;
+}
+function _adCost(){
+  var raw = AD_BASE_COST * _adPx(_adSize().fal) / AD_BASE_PX;
+  return Math.min(Math.max(Math.round(raw / 5) * 5, 60), 3000);
+}
 let PR_BG_IMG  = null;
 // 🆕 2026-08-08:預設模式改「懶人 AI 廣告圖」。
 //   實務上使用者一進來就是要用這個,情境生成／真人試穿已在 index.html 隱藏
@@ -1349,7 +1372,10 @@ const _BITS_COST = {
   kling_poster_video_submit: 960  // 影片(5秒 Kling)
 };
 async function callWorker(params) {
-  const _cost = _BITS_COST[params.action] || 0;
+  // 💰 廣告圖不再用寫死的 240,改照使用者選的尺寸算(與 Worker 同一套公式)
+  const _cost = (params.action === 'gpt_poster_edit_submit')
+    ? _adCost()
+    : (_BITS_COST[params.action] || 0);
   const _email = (typeof _userEmail !== 'undefined' && _userEmail) ? _userEmail : (localStorage.getItem('bs_sso_email') || '');
   if (_cost > 0 && typeof bumpBitsDisplay === 'function') bumpBitsDisplay(-_cost);   // 樂觀扣點
   const resp = await fetch(CF_WORKER_URL, {
