@@ -971,7 +971,12 @@ const AD_SIZES = [
 ];
 let SELECTED_AD_SIZE = 'square';   // 預設正方;沒選就是這個
 function onSelAdSize(v){ SELECTED_AD_SIZE = v; }
-function _adSize(){ return AD_SIZES.find(x=>x.key===SELECTED_AD_SIZE) || AD_SIZES[0]; }
+// 🩹 2026-09-06 尺寸修正:不要相信 SELECTED_AD_SIZE,直接讀下拉選單當下顯示的值。
+//   病灶:瀏覽器重新整理後會自動把 <select> 還原成上次選的那一項,
+//   但「還原」不會觸發 onchange → 程式裡的 SELECTED_AD_SIZE 還停在舊值/預設。
+//   結果:畫面顯示限動REELS、程式卻用正方去裁切+算錢 = 永遠慢一步。
+//   修法:以畫面為準(所見即所得),讀不到才退回變數。
+function _adSize(){ var _v = (document.getElementById('gptAdSize')||{}).value || SELECTED_AD_SIZE; return AD_SIZES.find(x=>x.key===_v) || AD_SIZES[0]; }
 let PR_BG_IMG  = null;
 // 🆕 2026-08-08:預設模式改「懶人 AI 廣告圖」。
 //   實務上使用者一進來就是要用這個,情境生成／真人試穿已在 index.html 隱藏
