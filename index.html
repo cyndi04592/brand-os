@@ -768,6 +768,22 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
             </div>
           </div>
 
+          <!-- 🆕 v11.7 廣告圖尺寸(單選:選什麼生什麼,各扣一次點;預設正方) -->
+          <div style="margin-top:12px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <span style="font-size:13px;color:#E8DCFF;font-weight:900;letter-spacing:1px;">⑤ 尺寸</span>
+              <span style="font-size:9px;color:var(--t3);font-weight:400;">預設正方 · 選其他各扣一次點</span>
+            </div>
+            <select id="gptAdSize" onchange="onSelAdSize(this.value)" style="width:100%;padding:9px 12px;border-radius:9px;border:1.5px solid rgba(124,109,250,0.35);background:rgba(20,16,38,0.9);color:#E8DCFF;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">
+              <option value="square">正方形 · 廣告投放 · 1080×1080</option>
+              <option value="ig_portrait">IG貼文直式 · 1080×1350 · 4:5</option>
+              <option value="reels">限動REELS · 1080×1920 · 9:16</option>
+              <option value="fb_landscape">FB橫式 · 1200×630 · 1.9:1</option>
+              <option value="landscape">橫式 · 1920×1080 · 16:9</option>
+              <option value="poster_a4">實體海報A4 · 2416×3424 · 300dpi印刷</option>
+            </select>
+          </div>
+
           <!-- 🩹 2026-08-11 品牌色開關:品牌包把主色寫死,同一品牌生一百張都同一個顏色。
                關掉只放開「配色」,字體/攝影風格/氛圍/構圖習慣全部保留。 -->
           <style>
