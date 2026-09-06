@@ -958,6 +958,20 @@ const CONTEXT_THEMES = {
 //  v10.2 狀態
 // ═══════════════════════════════════════════════════════════════════════
 let AM = { w:1080, h:1080, scriptIdx:null };
+
+// 🆕 v11.7 廣告圖尺寸選項(單選,選什麼生什麼,各扣一次點)。第一個=預設正方。
+//   FAL gpt-image-2 限制:邊長16倍數、比例<=3:1、總像素65萬~830萬。
+const AD_SIZES = [
+  { key:'square',       label:'正方形 · 廣告投放 · 1080×1080',        w:1088, h:1088, fal:'square_hd' },
+  { key:'ig_portrait',  label:'IG貼文直式 · 1080×1350 · 4:5',          w:1088, h:1360, fal:{width:1088,height:1360} },
+  { key:'reels',        label:'限動REELS · 1080×1920 · 9:16',           w:1088, h:1920, fal:{width:1088,height:1920} },
+  { key:'fb_landscape', label:'FB橫式 · 1200×630 · 1.9:1',              w:1200, h:624,  fal:{width:1200,height:624} },
+  { key:'landscape',    label:'橫式 · 1920×1080 · 16:9',                w:1920, h:1088, fal:{width:1920,height:1088} },
+  { key:'poster_a4',    label:'實體海報A4 · 2416×3424 · 300dpi印刷',    w:2416, h:3424, fal:{width:2416,height:3424} },
+];
+let SELECTED_AD_SIZE = 'square';   // 預設正方;沒選就是這個
+function onSelAdSize(v){ SELECTED_AD_SIZE = v; }
+function _adSize(){ return AD_SIZES.find(x=>x.key===SELECTED_AD_SIZE) || AD_SIZES[0]; }
 let PR_BG_IMG  = null;
 // 🆕 2026-08-08:預設模式改「懶人 AI 廣告圖」。
 //   實務上使用者一進來就是要用這個,情境生成／真人試穿已在 index.html 隱藏
@@ -2155,21 +2169,20 @@ async function compressImageBase64(base64, maxSize, quality) {
   });
 }
 
-async function padImageTo1080(base64) {
+async function padImageTo1080(base64, W=1080, H=1080) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
       const w0 = img.width, h0 = img.height;
       const ratio = w0 / h0;
 
-      if (ratio >= 0.85 && ratio <= 1.15 && Math.min(w0, h0) >= 1000) {
+      if (W===H && ratio >= 0.85 && ratio <= 1.15 && Math.min(w0, h0) >= 1000) {
         resolve(base64);
         return;
       }
 
-      const SIZE = 1080;
       const canvas = document.createElement('canvas');
-      canvas.width = SIZE; canvas.height = SIZE;
+      canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
       let fillColor = '#ffffff';
@@ -2196,13 +2209,13 @@ async function padImageTo1080(base64) {
       }
 
       ctx.fillStyle = fillColor;
-      ctx.fillRect(0, 0, SIZE, SIZE);
+      ctx.fillRect(0, 0, W, H);
 
-      const scale = Math.min(SIZE / w0, SIZE / h0);
+      const scale = Math.min(W / w0, H / h0);
       const w = Math.round(w0 * scale);
       const h = Math.round(h0 * scale);
-      const x = Math.round((SIZE - w) / 2);
-      const y = Math.round((SIZE - h) / 2);
+      const x = Math.round((W - w) / 2);
+      const y = Math.round((H - h) / 2);
       ctx.drawImage(img, x, y, w, h);
       resolve(canvas.toDataURL('image/jpeg', 0.92));
     };
@@ -3964,7 +3977,9 @@ async function generateGptPoster() {
     setPrStatus('上傳商品照處理中...', 'var(--t3)');
     const blob = await urlToBlob(imgSrc);
     const base64 = await blobToBase64(blob);
-    const paddedBase64 = await padImageTo1080(base64);
+    const _sz = _adSize();
+    AM.w = _sz.w; AM.h = _sz.h;   // 🆕 畫布依選的尺寸
+    const paddedBase64 = await padImageTo1080(base64, _sz.w, _sz.h);
     const imageUrl = await uploadToFal(paddedBase64);
 
     const prompt = buildPosterPrompt();
@@ -3975,7 +3990,7 @@ async function generateGptPoster() {
       action: 'gpt_poster_edit_submit',
       prompt,
       imageUrls: [imageUrl],
-      image_size: 'square_hd',
+      image_size: _sz.fal,
       quality: 'high',
       num_images: 1,
       brandId,
