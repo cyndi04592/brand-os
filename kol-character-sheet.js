@@ -14,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.0-resume';
+  var VER = 'v1.1-pickface';
 
   // 🔧 v0.8:記住「這張正臉是誰的」—— 從形象庫勾選讀進來時,persona 跟著圖走,
   //   存 Drive 不再要求去 AI 生成器另外選 persona(那是舊流程的殘留)。
@@ -248,13 +248,20 @@
             })[0];
             var _isSheet = function (n) { return /sheet_(q34|profile|front)/i.test(n || ''); };
             var _all = (_pe && _pe.photos) || [];
-            var _hit = _all.filter(function (x) { return /_ai_/i.test(x.name || '') && !_isSheet(x.name); })[0]
-                    || _all.filter(function (x) { return !_isSheet(x.name); })[0];
-            if (_hit) {
+            //  🩹 2026-09-07:這裡【不能只取第一張】——
+            //    「✓ 選這張」的語意是「存進照片庫」,不是「設為這個角色的臉」,
+            //    所以一個角色本來就可能有好幾張正臉(客戶把三張候選存了兩張)。
+            //    只取 [0] 會讓客戶【沒機會選】要拿哪一張去生角度表,而且不出聲。
+            //    → 全部撈出來,只有剛好一張時才自動選定。
+            var _hits = _all.filter(function (x) { return /_ai_/i.test(x.name || '') && !_isSheet(x.name); });
+            if (!_hits.length) _hits = _all.filter(function (x) { return !_isSheet(x.name); });
+            if (_hits.length) {
               //  欄位名對齊 kol.html:4794 的實際資料:file_id / url / thumbnail_url
               //  ⚠️ 帶 file_id 進去,renderThumbs 才會去取【全解析度原圖】——
               //     縮圖拿去 Kontext 轉頭會糊掉(縮圖只能顯示,不能餵引擎)。
-              push(_hit.url || _hit.thumbnail_url, _hit.file_id || null, _pe.persona_name || '');
+              _hits.forEach(function (h) {
+                push(h.url || h.thumbnail_url, h.file_id || null, _pe.persona_name || '');
+              });
             } else {
               // 素材庫裡找不到 → 退回目前選定的造型圖(至少讓客戶有東西可用)
               var _look = (_S.availableLooks || []).filter(function (l) { return l.id === _S.selectedLookId; })[0];
@@ -262,8 +269,15 @@
               if (_u) push(_u, null, (_S.selectedKol && _S.selectedKol.name) || '');
             }
             if (items.length) {
-              items[0].autoPick = true;
-              status.textContent = '讀到「' + ((_S.selectedKol && _S.selectedKol.name) || '這位 KOL') + '」的正臉,取原圖中…';
+              var _who = (_S.selectedKol && _S.selectedKol.name) || '這位 KOL';
+              if (items.length === 1) {
+                items[0].autoPick = true;
+                status.textContent = '讀到「' + _who + '」的正臉,取原圖中…';
+              } else {
+                //  ⚠️ 多張時【不自動選】—— 角度表會拿這張去生 3/4 與側臉並存進素材庫,
+                //     選錯等於幫這位角色定了一張不想要的臉,而且要重生一次才救得回來。
+                status.textContent = '「' + _who + '」有 ' + items.length + ' 張照片 · 點一張當正臉(角度表會照這張生 3/4 與側臉):';
+              }
               renderThumbs(items);
               return;
             }
