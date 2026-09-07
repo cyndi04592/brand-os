@@ -14,7 +14,35 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.1-pickface';
+  var VER = 'v1.2-friendly';
+
+  // ══════════════════════════════════════════════════════════════════
+  //  🩹 2026-09-07 · 錯誤訊息講人話
+  //  ────────────────────────────────────────────────────────────────
+  //  ★ 病:網路抖一下,客戶看到的是英文的「Failed to fetch」——
+  //    看起來像系統壞了,而其實【再按一次就會成功】。
+  //    現場實測:RA 按第二次就過了,但沒有任何地方告訴她可以再按。
+  //  ★ 為什麼不做自動重試(RA 拍板只改文案):
+  //    ERR_CONNECTION_CLOSED 的語意是「連線斷了,不知道伺服器收到沒」。
+  //    存照片是【寫入】—— 自動重試可能存進兩張一樣的,
+  //    而系統目前【沒有刪除照片的功能】(Worker 沒有 deleteKolPhoto),
+  //    存錯了清不掉。要加重試,必須先確認 Worker 端擋不擋重複。
+  // ══════════════════════════════════════════════════════════════════
+  function friendlyErr(e) {
+    var m = String((e && e.message) || e || '');
+    if (/Failed to fetch|NetworkError|ERR_CONNECTION|ERR_NETWORK|Load failed/i.test(m))
+      return '網路斷了一下,沒送出去 —— 再按一次就好(不會重複扣點)';
+    if (/timeout|timed out|AbortError/i.test(m))
+      return '等太久逾時了 —— 再按一次試試';
+    if (/429|rate.?limit|too many/i.test(m))
+      return '同時處理的人太多 —— 等 10 秒再按一次';
+    if (/50[0234]|GAS_HTTP_5|GAS_UNAVAILABLE|系統忙碌/i.test(m))
+      return '系統忙碌中 —— 等一下再按一次';
+    if (/密碼|PWD|401|403/i.test(m))
+      return '登入逾時了 —— 請重新整理頁面後再試';
+    return m || '出了點問題 —— 再按一次試試';
+  }
+
 
   // 🔧 v0.8:記住「這張正臉是誰的」—— 從形象庫勾選讀進來時,persona 跟著圖走,
   //   存 Drive 不再要求去 AI 生成器另外選 persona(那是舊流程的殘留)。
@@ -144,7 +172,7 @@
         status.textContent = '✅ 原圖已就緒(全解析度),可以生成了。';
         if (doneCb) doneCb(true);
       }).catch(function (e) {
-        status.textContent = '❌ Drive 取圖失敗:' + e.message;
+        status.textContent = '❌ 取原圖失敗:' + friendlyErr(e);
         if (doneCb) doneCb(false);
       });
     }
@@ -325,7 +353,7 @@
           rb.textContent = '…生成中'; rb.disabled = true;
           kontext(FRONT, ang.prompt).then(function (url2) {
             RESULTS[angleKey] = url2; img.src = url2; rb.textContent = '↻ 重生'; rb.disabled = false;
-          }).catch(function (e) { rb.textContent = '❌ 重試'; rb.disabled = false; status.textContent = '❌ ' + e.message; });
+          }).catch(function (e) { rb.textContent = '❌ 重試'; rb.disabled = false; status.textContent = '❌ ' + friendlyErr(e); });
         };
         c.appendChild(rb);
       }
@@ -348,7 +376,7 @@
           btnGen.disabled = false; btnGen.style.opacity = 1;
           btnUse.style.display = 'block';
         })
-        .catch(function (e) { status.textContent = '❌ ' + e.message; btnGen.disabled = false; btnGen.style.opacity = 1; });
+        .catch(function (e) { status.textContent = '❌ ' + friendlyErr(e); btnGen.disabled = false; btnGen.style.opacity = 1; });
     };
 
     btnUse.onclick = function () {
@@ -407,8 +435,12 @@
           btnUse.textContent = '💾 存檔中…(' + (i + 1) + '/2)';   // 只存 3/4 與側臉
           next(i + 1);
         }).catch(function (e) {
-          btnUse.textContent = '❌ 存檔失敗:' + e.message;
+          //  ⚠️ 這裡是【寫入】失敗 —— 按鈕文字要留住,不能被下一輪蓋掉,
+          //     而且必須明講「再按一次會從頭存」,客戶才知道不是白按。
+          btnUse.textContent = '❌ 存檔失敗 · 點我再試一次';
+          btnUse.title = friendlyErr(e);
           btnUse.disabled = false; btnUse.style.background = '#1f9d57';
+          try { status.textContent = '❌ 存檔失敗:' + friendlyErr(e); } catch (_) {}
         });
       })(0);
     };
