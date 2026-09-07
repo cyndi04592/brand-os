@@ -1536,6 +1536,13 @@ function updateFolderHint() {
 }
 
 // ── 新 Persona Modal ──────────────────────────────────────
+//  🩹 2026-09-07:掛到 window —— 形象庫那顆「＋建新角色」要能叫到這支。
+//    ★ 病:系統裡有兩顆名字差一個字的按鈕(「建新角色」vs「建立新角色」),
+//      行為卻完全不同:一顆切到照片庫,一顆才跳取名字視窗。
+//      RA 現場按錯,而 8/26 的註解顯示四位同事也卡過同一個地方。
+//    ★ 修:兩顆都跳同一個取名字視窗,入口只有一種行為。
+//    ⚠️ 跨檔呼叫必須經 window(IIFE 內的函式外面看不到)——
+//      忘了掛的話 kol.html 那邊會靜默失敗,按了沒反應也不報錯。
 function openNewPersonaModal() {
   ensureBrandSynced();
   if (!S.currentBrandId) {
@@ -1550,6 +1557,8 @@ function openNewPersonaModal() {
 function closeModal() {
   document.getElementById('kai-modal-wrap').classList.remove('open');
 }
+
+window.openNewPersonaModal = openNewPersonaModal;
 
 async function confirmNewPersona() {
   const name = document.getElementById('kai-new-name').value.trim();
