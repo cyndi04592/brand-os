@@ -149,6 +149,22 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .rs-card .sig{position:absolute;top:5px;left:5px;display:flex;gap:1.5px;width:34px;height:3px;}
 .rs-card .sig i{flex:1;border-radius:2px;background:rgba(255,255,255,.18);}
 .rs-card .sig i.f{background:var(--accent3);}
+/* 🩹 2026-09-07 · 還沒綁照片的角色 —— 黑色剪影 + 紅框
+   ★ 病:角色建好了、照片也存好了,但「確認創建」那顆按鈕
+     藏在【照片庫】分頁裡。客戶重新整理後形象庫沒有他,
+     看起來就像資料掉了 —— 這是最容易讓人放棄的訊號。
+   ★ 修:一建立就在形象庫佔位子,黑剪影+紅框,一眼看得出沒完成。
+   ⚠️ 刻意【不加徽章】—— 旁邊已經有「人設未填」了,再疊一個會變雜訊牆。
+     紅框本身就是訊號,而且整張卡可點。 */
+.rs-card.rs-unbound{border:2px solid #ff4d4d;background:#0b0b10;}
+.rs-card.rs-unbound::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 42% 30% at 50% 30%,#1a1a22 0%,#0b0b10 70%);}
+.rs-card.rs-unbound .silo{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);
+  font-size:34px;color:#26262f;line-height:1;}
+.rs-card.rs-unbound .nm{color:#ff8a8a;}
+.rs-card.rs-unbound .todo{position:absolute;left:0;right:0;top:0;padding:4px 3px;
+  font-size:8.5px;text-align:center;font-weight:700;color:#fff;background:#ff4d4d;}
+.rs-card.rs-unbound:hover{transform:translateY(-2px);box-shadow:0 0 0 2px rgba(255,77,77,.4);}
 .rs-new{border-style:dashed;display:flex;align-items:center;justify-content:center;flex-direction:column;
   gap:4px;color:var(--text-dim);font-size:10.5px;text-align:center;padding:4px;}
 .rs-new:hover{color:var(--accent3);border-color:var(--accent3);}
@@ -1204,7 +1220,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.51 · 入口文案</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.52 · 建角色防呆</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1511,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', function(){
       <div class="rs-ab-txt">已選定 <b id="rs-ab-name">—</b><br><span id="rs-ab-sub"></span></div>
       <div class="rs-ab-btns">
         <button class="btn btn-ghost btn-sm" id="rs-ab-edit">編輯人設</button>
-        <button class="btn btn-primary btn-sm" onclick="switchMode('cinematic')">用這位角色拍片 →</button>
+        <button class="btn btn-primary btn-sm" onclick="goShootWithKol()">用這位角色拍片 →</button>
       </div>
     </div>
   </div>
@@ -3837,6 +3853,83 @@ function rsParseVoice(vs) {
   return { ax, tag };
 }
 
+// ════════════════════════════════════════════════════════════════════
+//  🩹 2026-09-07 · 「有照片但還沒建角色」的名單(唯一收口)
+//  ──────────────────────────────────────────────────────────────────
+//  ★ 這條規則原本只寫在照片庫的渲染裡(算 _unbound 那段)。
+//    形象庫要用同一條規則畫剪影卡 —— 如果各寫一份,兩邊遲早不一致,
+//    那正是「同一件事寫在三個地方」那個踩過五次的坑。
+//  ★ 判斷:素材庫裡有這個名字的照片,但 kol_personas 裡沒有他、
+//    或有他但 talking_photo_id 是空的(= 還沒按「確認創建角色」)。
+// ════════════════════════════════════════════════════════════════════
+function unboundPersonas() {
+  try {
+    return (S.drivePhotos?.personas || []).filter(x => {
+      const nm = String(x.persona_name || '').trim();
+      if (!nm) return false;
+      const pd = (S.personas || []).find(q => String(q.persona_name || '').trim() === nm);
+      return !pd || !String(pd.talking_photo_id || '').trim();
+    });
+  } catch (_) { return []; }
+}
+window.unboundPersonas = unboundPersonas;
+
+// 🩹 2026-09-07:點剪影卡 → 切到照片庫分頁 + 捲到那個人
+function gotoBindPersona(name) {
+  try {
+    S.rsPhotoShowAll = true; S.rsPhotoUserSet = false;
+    const tb = document.querySelector('.rs-tab[data-pane="photo"]');
+    if (tb) tb.click();
+    setTimeout(() => {
+      const sec = document.getElementById('drive-section');
+      if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+  } catch (_) {}
+}
+window.gotoBindPersona = gotoBindPersona;
+
+// ════════════════════════════════════════════════════════════════════
+//  🛑 2026-09-07 · 沒有多角度照片就不准拍片(RA 拍板:擋住,不是提醒)
+//  ──────────────────────────────────────────────────────────────────
+//  ★ 為什麼要硬擋:接片路徑每一段會挑不同角度的臉(正臉/3-4/側臉)。
+//    抓不到時會【自動退回正臉】—— 不報錯、不出聲,影片照樣生得出來,
+//    只是每一段都同一張臉、同一個方向。品質無聲流失,沒有人會發現。
+//  ★ RA 的標準是刺蝟星球 / RIIV 那一套:三個角度都要有才算及格。
+//    「不會報錯」是工程師的標準,不是產品的標準。
+//  ⚠️ 判斷只認【已處理】區(processed_photos)裡的 3/4 與側臉 ——
+//    正臉本來就有,不算數。
+// ════════════════════════════════════════════════════════════════════
+function kolAngleStatus(name) {
+  const nm = String(name || '').trim();
+  const p = (S.drivePhotos?.personas || []).find(x => String(x.persona_name || '').trim() === nm);
+  const procs = (p && p.processed_photos) || [];
+  const has = a => procs.some(x => new RegExp('(^|_)sheet_' + a + '|' + a, 'i').test(x.name || ''));
+  return { q34: has('q34'), profile: has('profile'), count: procs.length };
+}
+
+function goShootWithKol() {
+  const nm = (S.selectedKol && (S.selectedKol.name
+              || (S.selectedKol.persona && S.selectedKol.persona.persona_name))) || '';
+  const st = kolAngleStatus(nm);
+  if (!st.q34 || !st.profile) {
+    const miss = [!st.q34 ? '3/4 側' : '', !st.profile ? '側臉' : ''].filter(Boolean).join('、');
+    alert('「' + (nm || '這位 KOL') + '」還沒有多角度照片(缺 ' + miss + ')。\n\n' +
+          '影片的每一段都會用同一張正臉,人物會很呆板 —— 這是影片品質差最主要的原因。\n\n' +
+          '請先在下面「🎬 多角度人物表」按:\n' +
+          '  ① 讀取上面的正臉\n' +
+          '  ② 生成 3/4 + 側臉\n' +
+          '  ③ 用這組當人物表\n\n' +
+          '做完再回來拍片。');
+    try {
+      const cs = document.getElementById('cs-box');
+      if (cs) cs.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (_) {}
+    return;
+  }
+  switchMode('cinematic');
+}
+window.goShootWithKol = goShootWithKol;
+
 function renderRoster() {
   const wrap = document.getElementById('rs-roster');
   const src = document.getElementById('kol-list');
@@ -3870,8 +3963,31 @@ function renderRoster() {
     </div>`;
   }).join('');
 
-  wrap.innerHTML = cards +
+  // 🩹 2026-09-07:把「有照片但還沒建角色」的人也畫出來(黑剪影 + 紅框)
+  //   ⚠️ 要排除已經在 cards 裡的(名字對得上就跳過),否則會出現兩張同名卡。
+  const _shownNames = Array.from(src.querySelectorAll('.kol-card-v2')).map(c =>
+    ((c.querySelector('.kol-card-name, .kol-name') || {}).textContent
+      || (c.textContent || '').trim().split('\n')[0] || '').trim());
+  const _unboundCards = unboundPersonas()
+    .filter(u => _shownNames.indexOf(String(u.persona_name || '').trim()) === -1)
+    .map(u => {
+      const nm = String(u.persona_name || '').trim();
+      return `<div class="rs-card rs-unbound" data-unbound="${escapeHtml(nm)}" tabindex="0"
+        title="${escapeHtml(nm)} 的照片已經存好了,但還沒完成建立 —— 點我去綁定">
+        <div class="todo">還沒建立 · 點我完成</div>
+        <div class="silo">👤</div>
+        <div class="nm">${escapeHtml(nm.slice(0, 8))}</div>
+      </div>`;
+    }).join('');
+
+  wrap.innerHTML = cards + _unboundCards +
     `<div class="rs-card rs-new" id="rs-new-kol" tabindex="0">＋<span>建新角色</span></div>`;
+
+  wrap.querySelectorAll('.rs-card[data-unbound]').forEach(el => {
+    const go = () => gotoBindPersona(el.dataset.unbound);
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
 
   wrap.querySelectorAll('.rs-card[data-kol-id]').forEach(el => {
     const go = () => {
@@ -4657,12 +4773,10 @@ function renderDriveGallery() {
   //     那就自己把它攤開,而不是藏在一顆要主動點的開關後面。
   //   ⚠️ 但客戶【自己按過】開關之後就尊重他的選擇(rsPhotoUserSet),
   //     否則他想專心看某一位時,系統會一直把畫面掰回全部,那更煩。
-  const _unbound = (S.drivePhotos?.personas || []).filter(x => {
-    const nm = String(x.persona_name || '').trim();
-    if (!nm) return false;
-    const pd = (S.personas || []).find(q => String(q.persona_name || '').trim() === nm);
-    return !pd || !String(pd.talking_photo_id || '').trim();
-  });
+  // 🩹 2026-09-07:改用共用的 unboundPersonas() —— 形象庫的剪影卡用同一條規則。
+  //   ★ 原本這段是唯一的判斷,現在形象庫也要用;各寫一份的話兩邊遲早不一致
+  //     (「同一件事寫在三個地方」已經踩過五次)。改在那支,這裡自動同步。
+  const _unbound = unboundPersonas();
   const _autoAll = !S.rsPhotoUserSet && _unbound.length > 0;
   const _showAll = !!S.rsPhotoShowAll || !_selName || _autoAll;
   if (!_showAll) {
