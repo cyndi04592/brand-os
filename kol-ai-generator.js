@@ -630,7 +630,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張)');
+  console.log('[kol-ai-generator v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -2147,14 +2147,55 @@ const WRITE_VIA_WORKER = {
   saveKolPhoto: 1,
 };
 
+// ════════════════════════════════════════════════════════════════════
+//  🩹 2026-09-07 · Worker 直打路徑補上自動重試
+//  ──────────────────────────────────────────────────────────────────
+//  ★ 病:走 gasFetch 的那條有 4 次重試,直打 Worker 這條【一次就死】。
+//    現場實測一個下午出現三次 ERR_CONNECTION_CLOSED(連線被切斷),
+//    客戶看到英文錯誤、卡在「存檔中…(0/2)」不動,而【再按一次就會成功】。
+//  ★ 為什麼敢自動重試(先查證過才做,不是憑感覺):
+//    Worker 的 saveKolPhoto 存之前會先查
+//      SELECT url FROM assets WHERE brand_id=? AND category='KOL'
+//        AND kol_name=? AND file_name=?
+//    有同名就回傳既有那張、不再存 —— 【去重靠檔名】。
+//    而兩支呼叫端的檔名都是固定的(只到日期,沒有時分秒):
+//      角度表   persona_sheet_<角度>_<yyyymmdd>.jpg
+//      候選圖   persona_ai_<seed>_<yyyymmdd>_<序號>.jpg
+//    同一天重試 → 檔名一樣 → 被去重 → 不會變成兩張。
+//  ⚠️ 這個安全性【建立在檔名固定上】。哪天有人把時分秒加進檔名,
+//     或新增別的寫入動作進 WRITE_VIA_WORKER,這段重試就會開始製造重複。
+//     改檔名前先回來看這裡。
+//  ⚠️ 只重試【網路層】失敗(fetch 直接 throw)。
+//     伺服器有回應但說失敗(ok:false)→ 那是業務錯誤,重試沒用,直接回。
+// ════════════════════════════════════════════════════════════════════
+function _isNetErr(e) {
+  var m = String((e && e.message) || e || '');
+  return /Failed to fetch|NetworkError|ERR_CONNECTION|ERR_NETWORK|Load failed|terminated/i.test(m);
+}
+
 async function gasPost(action, extra = {}) {
   if (WRITE_VIA_WORKER[action]) {
-    const r = await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(_withAuth({ password: PASSWORD, action: 'gas_write', gasAction: action, payload: extra })),
-    });
-    return r.json();
+    const _body = JSON.stringify(_withAuth({ password: PASSWORD, action: 'gas_write', gasAction: action, payload: extra }));
+    let _lastErr;
+    for (let _try = 0; _try < 3; _try++) {
+      if (_try > 0) {
+        // 0.8s → 2.0s,加亂數打散多客戶同時重試
+        await new Promise(r => setTimeout(r, [800, 2000][_try - 1] + Math.floor(Math.random() * 400)));
+        console.warn('[kai] ' + action + ' 網路失敗,第 ' + (_try + 1) + ' 次重試…');
+      }
+      try {
+        const r = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: _body,
+        });
+        return r.json();
+      } catch (e) {
+        _lastErr = e;
+        if (!_isNetErr(e)) throw e;   // 不是網路問題 → 重試沒意義
+      }
+    }
+    throw _lastErr || new Error('Failed to fetch');
   }
   return gasFetch(() => fetch(GAS_URL, {
     method: 'POST',
