@@ -1204,7 +1204,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.49 · 分鏡唯一入口</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.50 · 分鏡入口主按鈕</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1591,8 +1591,10 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>電影鏡頭設定</div>
 <!-- 🆕 v5.17: 分鏡產生器入口 -->
         <div style="margin:0 0 4px" id="cine-sbp-entry">
-          <button class="btn btn-ghost btn-sm sbp-recommend" type="button" onclick="openStoryboardForCine()">用分鏡產生器(大綱 → AI 編修)</button>
-          <div class="motion-hint" style="margin-top:4px">推薦:先用這個把大綱變成有台詞、時間對得上的 15 秒腳本,確認後會自動鎖好時長,台詞不會被切。</div>
+          <!-- 🩹 2026-09-07:情境框藏起來之後,這顆從「推薦選項」變成【唯一入口】,
+               但外表還是小灰按鈕 → 客戶進來看不出第一步要點哪裡。改成主按鈕 + 全寬。 -->
+          <button class="btn btn-primary btn-full sbp-recommend" type="button" onclick="openStoryboardForCine()" style="font-size:14px;padding:13px 18px">🎬 第一步 · 用分鏡產生器排這支影片</button>
+          <div class="motion-hint" style="margin-top:6px">把想講的內容變成有台詞、時間對得上的腳本 —— 也可以自己在分鏡卡上寫。確認後會自動鎖好時長,台詞不會被切。</div>
         </div>
         <div id="sbp-cine-mount" style="display:none;margin-bottom:10px"></div>
         <!-- 🆕 v5.16: 劇情/情境輸入(STEP2 終於可控 · 選填)
@@ -8839,8 +8841,9 @@ function renderEpisodeCard() {
     <div class="episode-edit">
       <!-- 🆕 B-1: STEP3 分鏡產生器入口(共用 STEP2 的 KolStoryboardPanel) -->
       <div class="ep-field">
-        <button class="btn btn-ghost btn-sm sbp-recommend" type="button" onclick="openStoryboardForEpisode()">用分鏡產生器(大綱 → AI 編修)</button>
-        <div class="motion-hint" style="margin-top:4px">推薦:先把大綱變成有台詞、時間對得上的腳本,確認後會自動填入下面情境、鎖好時長,台詞不會被切。</div>
+        <!-- 🩹 2026-09-07:同 STEP2 —— 唯一入口就要長得像唯一入口。 -->
+        <button class="btn btn-primary btn-full sbp-recommend" type="button" onclick="openStoryboardForEpisode()" style="font-size:14px;padding:13px 18px">🎬 第一步 · 用分鏡產生器排這一集</button>
+        <div class="motion-hint" style="margin-top:6px">把想講的內容變成有台詞、時間對得上的腳本 —— 也可以自己在分鏡卡上寫。確認後會自動鎖好時長,台詞不會被切。</div>
         <div id="sbp-episode-mount" style="display:none;margin-top:10px"></div>
       </div>
       <!-- 🩹 2026-09-07:STEP3 沒有無臉模式(純 KOL),情境框永遠藏起來。
