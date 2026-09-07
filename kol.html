@@ -1220,7 +1220,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.53 · 完成即反灰</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.54 · 建角色入口統一</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -4007,20 +4007,33 @@ function renderRoster() {
     //    而這顆鈕舊行為只捲到 AI 生成器 = 只給了「從零生一張新臉」那條路;
     //    想用現成照片綁定的人,入口(照片庫頁籤)根本沒被打開。
     //  ★ 按下「＋建新角色」的那一刻,意圖已經明確,不必再讓系統去猜。
+    //  🩹 2026-09-07 RA 拍板:這顆也要【直接跳取名字視窗】,跟 AI 生成器裡那顆一樣。
+    //    ★ 舊行為的病:按下去只切到照片庫,取名字視窗完全沒出現。
+    //      而「另一條路」是靠讓 AI 生成器閃 3 秒來暗示 —— 但畫面同時捲去右邊的
+    //      照片庫,生成器在左邊,那個閃爍【根本看不到】。等於只給了一條路。
+    //    ★ 兩顆名字只差一個「立」字(建新角色 / 建立新角色),行為卻完全不同,
+    //      RA 自己按錯,8/26 的註解也記著四位同事卡在同一個地方。
+    //      → 入口統一成一種行為,不要讓人猜哪顆是哪顆。
+    //    ⚠️ openNewPersonaModal 住在 kol-ai-generator.js 的 IIFE 裡,
+    //      必須走 window 才叫得到(那邊已補掛)。叫不到才退回舊行為。
     const go = () => {
+      if (typeof window.openNewPersonaModal === 'function') {
+        window.openNewPersonaModal();
+        return;
+      }
+      // ── 以下是退路:生成器還沒載入時,回到舊行為 ──
       let opened = false;
       try {
         const tb = document.querySelector('.rs-tab[data-pane="photo"]');
         if (tb) { tb.click(); opened = true; }
       } catch (e) {}
-      // AI 生成器仍然閃一下(那是另一條路),但不搶走捲動位置
       const ai = document.getElementById('kai-panel');
       if (ai) { ai.classList.add('sbp-recommend'); setTimeout(() => ai.classList.remove('sbp-recommend'), 3000); }
       if (opened) {
         const tb2 = document.querySelector('.rs-tab[data-pane="photo"]');
         if (tb2) tb2.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else if (typeof kolOnboardGoAI === 'function') {
-        kolOnboardGoAI();   // 頁籤不在(舊版面)→ 完全回到舊行為
+        kolOnboardGoAI();
       }
     };
     nk.addEventListener('click', go);
