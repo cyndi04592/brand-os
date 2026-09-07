@@ -14,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v0.9-library-r2';
+  var VER = 'v1.0-resume';
 
   // 🔧 v0.8:記住「這張正臉是誰的」—— 從形象庫勾選讀進來時,persona 跟著圖走,
   //   存 Drive 不再要求去 AI 生成器另外選 persona(那是舊流程的殘留)。
@@ -219,10 +219,60 @@
           var s = i.src || '';
           if (s.indexOf('cdn.raby.com.tw') > -1 || s.indexOf('fal.media') > -1 || s.indexOf('r2.dev') > -1) push(s, null, '');
         });
+
+        // ══════════════════════════════════════════════════════════════
+        //  ⑤ 2026-09-07:【已經建好的角色】—— 這一條以前完全不存在。
+        //  ★ 病灶:上面四個來源全部都要「你剛剛才生成」才有東西
+        //    (勾選中 / 剛按選這張 / 這一輪產出 / 生成器面板裡的圖)。
+        //    角色建好、重新整理、隔天回來想補角度 → 四個來源全空,
+        //    畫面卻叫你「去上面 KOL 形象庫勾選一張」,而客戶勾了也不一定對。
+        //    等於【角度表只有一鼓作氣做完才走得通】,中斷就再也接不回去。
+        //  ★ 後果不會報錯:接片端抓不到 3/4 與側臉會自動退回正臉,
+        //    影片照樣生得出來,只是每一段都同一張臉 —— 品質無聲流失。
+        //  ★ 取圖規則【必須】跟 kol.html:4404 一致:
+        //    不能拿角色代表照(image_url)當正臉 —— 實測有六位的代表照
+        //    被綁成了側臉那張(生完角度照回照片庫綁定時,側臉排最前面)。
+        //    真正的正臉是素材庫裡的原始形象照:檔名含 _ai_、且不是 sheet_ 那批。
+        //  ⚠️ 改這裡時務必同步看 kol.html:4404 —— 同一條規則寫在兩個地方,
+        //    這是已知的重複,先求「兩邊一致」,收口另外排。
+        // ══════════════════════════════════════════════════════════════
+        if (!items.length) {
+          try {
+            var _S = window.S || {};
+            var _nm = String((_S.selectedKol && (_S.selectedKol.name ||
+                      (_S.selectedKol.persona && _S.selectedKol.persona.persona_name))) || '')
+                      .replace(/\s+/g, '').toLowerCase();
+            var _pl = (_S.drivePhotos && _S.drivePhotos.personas) || [];
+            var _pe = _pl.filter(function (x) {
+              return String(x.persona_name || '').replace(/\s+/g, '').toLowerCase() === _nm;
+            })[0];
+            var _isSheet = function (n) { return /sheet_(q34|profile|front)/i.test(n || ''); };
+            var _all = (_pe && _pe.photos) || [];
+            var _hit = _all.filter(function (x) { return /_ai_/i.test(x.name || '') && !_isSheet(x.name); })[0]
+                    || _all.filter(function (x) { return !_isSheet(x.name); })[0];
+            if (_hit) {
+              //  欄位名對齊 kol.html:4794 的實際資料:file_id / url / thumbnail_url
+              //  ⚠️ 帶 file_id 進去,renderThumbs 才會去取【全解析度原圖】——
+              //     縮圖拿去 Kontext 轉頭會糊掉(縮圖只能顯示,不能餵引擎)。
+              push(_hit.url || _hit.thumbnail_url, _hit.file_id || null, _pe.persona_name || '');
+            } else {
+              // 素材庫裡找不到 → 退回目前選定的造型圖(至少讓客戶有東西可用)
+              var _look = (_S.availableLooks || []).filter(function (l) { return l.id === _S.selectedLookId; })[0];
+              var _u = (_look && _look.image_url) || (_S.selectedKol && _S.selectedKol.image_url);
+              if (_u) push(_u, null, (_S.selectedKol && _S.selectedKol.name) || '');
+            }
+            if (items.length) {
+              items[0].autoPick = true;
+              status.textContent = '讀到「' + ((_S.selectedKol && _S.selectedKol.name) || '這位 KOL') + '」的正臉,取原圖中…';
+              renderThumbs(items);
+              return;
+            }
+          } catch (_e) {}
+        }
       }
 
       if (!items.length) {
-        status.textContent = '沒有可用的正臉 → 去上面「KOL 形象庫」勾選(✓)一張,或先生一批 AI 正臉,或直接貼網址。';
+        status.textContent = '找不到這位 KOL 的正臉照 —— 可能是素材庫還沒載完(等一下再按),或這位角色還沒有形象照。可以去上面「KOL 形象庫」勾選(✓)一張、先生一批 AI 正臉,或直接貼網址。';
         return;
       }
 
