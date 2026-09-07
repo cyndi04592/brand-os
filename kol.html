@@ -1204,7 +1204,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.48 · 分槽自動判斷</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.49 · 分鏡唯一入口</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1590,14 +1590,21 @@ document.addEventListener('DOMContentLoaded', function(){
       <div class="panel">
         <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>電影鏡頭設定</div>
 <!-- 🆕 v5.17: 分鏡產生器入口 -->
-        <div style="margin:0 0 4px">
+        <div style="margin:0 0 4px" id="cine-sbp-entry">
           <button class="btn btn-ghost btn-sm sbp-recommend" type="button" onclick="openStoryboardForCine()">用分鏡產生器(大綱 → AI 編修)</button>
           <div class="motion-hint" style="margin-top:4px">推薦:先用這個把大綱變成有台詞、時間對得上的 15 秒腳本,確認後會自動鎖好時長,台詞不會被切。</div>
         </div>
         <div id="sbp-cine-mount" style="display:none;margin-bottom:10px"></div>
-        <!-- 🆕 v5.16: 劇情/情境輸入(STEP2 終於可控 · 選填) -->
-        <div class="form-group" style="margin-top:0">
-          <label class="form-label">劇情 / 情境(選填 · 留空則 AI 依場景自由發揮)</label>
+        <!-- 🆕 v5.16: 劇情/情境輸入(STEP2 終於可控 · 選填)
+             🩹 2026-09-07:預設藏起來 —— 客戶直接在這裡打字會走舊的單集路徑,
+               整組導演組(服裝師/道具師/場景參考圖/發音修正/共用 seed)全被繞過,
+               而且只能一段、沒有台詞欄。正常流程一律走分鏡產生器。
+             ★ 但【無臉模式】只讀這一格(kol.html createFacelessVideo),
+               所以不能真的刪掉,也不能永遠藏 —— 改成跟無臉開關連動:
+               開無臉 → 這格出現、分鏡反灰;關無臉 → 這格藏起、分鏡恢復。
+               規則只寫在 _syncFacelessUI() 一支,兩處呼叫,避免兩邊漂移。 -->
+        <div class="form-group" style="margin-top:0;display:none" id="cine-situation-field">
+          <label class="form-label">劇情 / 情境(無臉模式專用 · 描述畫面在做什麼)</label>
           <div class="script-wrap">
             <textarea id="cine-situation" placeholder="例:在登山步道休息時,拿出防熊噴霧示範怎麼快速取用、按壓的動作,神情警覺專注" style="min-height:70px"></textarea>
           </div>
@@ -6633,7 +6640,8 @@ function openStoryboardForCine() {
       S.cineStoryboard = beats;   // 🆕 存整包分鏡
       _syncMovementLock();   // 🎬 有分鏡 → 運鏡反灰
       S.cineStoryboardPending = false;   // 已確認分鏡
-      const sit = (b.shotDesc || '') + (b.dialogue ? `\n她直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
+      // 🧠 2026-09-07:改存【整支濃縮劇情】,不再只存 Beat 1
+      const sit = _storyDigest(beats, S.selectedKol?.persona?.persona_name || '她');
       const el = document.getElementById('cine-situation');
       if (el) el.value = sit;
       // 智能挑時長 + 鎖定:依台詞估計秒數決定檔位
@@ -6703,7 +6711,9 @@ function openStoryboardForEpisode() {
       S.episodeStoryboard = (beats && beats.length >= 1) ? beats : null;   // 單段也走接片
       _syncMovementLock();   // 🎬 有分鏡 → 運鏡反灰
       S.episodeStoryboardPending = false;   // 已確認分鏡
-      const sit = (b.shotDesc || '') + (b.dialogue ? `\n${who}直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
+      // 🧠 2026-09-07:改存【整支濃縮劇情】,不再只存 Beat 1
+      //   (STEP3 存進單集紀錄的 scenario 欄,劇情記憶直接靠它)
+      const sit = _storyDigest(beats, who);
       const el = document.getElementById('ep-situation');
       if (el) el.value = sit;
 
@@ -7493,6 +7503,67 @@ function toggleFaceless() {
 //   病灶:這個開關住在「進階設定」摺疊區裡,客戶打開後把摺疊區收起來,
 //        畫面上就完全沒有任何線索,只會看到 KOL 整個不見。
 //   規則只寫在這一支,toggleFaceless 與切品牌兩處都呼叫它,避免兩邊漂移。
+// ════════════════════════════════════════════════════════════════════
+//  🧠 2026-09-07 · 整支濃縮劇情(給劇情記憶用)
+//  ─────────────────────────────────────────────────────────────────
+//  ★ 舊病:確認分鏡時只把 beats[0] 寫回情境框 → 存進 scenario 欄 →
+//    劇情記憶撈回來只砍到 70 字(kol-storywriter.js:132)
+//    → AI 只知道每一集的【開頭】,不知道中段與結尾演了什麼 → 照樣重複橋段。
+//    這跟 2026-08-23 修過的病是同一種(當時是只存了場景名),只是漏在另一處。
+//  ★ 修:把每段的鏡頭描述串起來,讓 70 字裡塞得下整條故事弧線,
+//    而不是被第一段的完整台詞吃光。
+//  ★ 台詞只取【最後一段】的:結尾那句才是記憶點(收尾/CTA),
+//    而且長度可控,不會把 70 字額度用完。
+// ════════════════════════════════════════════════════════════════════
+function _storyDigest(beats, who) {
+  const bs = Array.isArray(beats) ? beats.filter(Boolean) : [];
+  if (!bs.length) return '';
+  const shots = bs.map(b => String(b.shotDesc || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const last  = bs[bs.length - 1] || {};
+  const line  = String(last.dialogue || '').trim();
+  let out = shots.join(' → ');
+  if (line) out += `\n${who || '主角'}直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${line}」`;
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  🩹 2026-09-07 · 無臉模式 ↔ 情境框 / 分鏡產生器 連動
+//  ─────────────────────────────────────────────────────────────────
+//  ★ 為什麼綁在一起:無臉模式【不走分鏡】(判斷在 createSeedanceVideo 最前面),
+//    它唯一的輸入就是情境框;而 KOL 模式反過來,一律走分鏡。
+//    兩者互斥 —— 所以用同一個開關同時控制,客戶不用學規則,預設就是對的。
+//  ⚠️ 只影響 STEP2。STEP3 是純 KOL,情境框永遠藏著。
+// ════════════════════════════════════════════════════════════════════
+function _syncFacelessUI() {
+  try {
+    const on = !!document.getElementById('faceless-toggle')?.classList.contains('on');
+    // ① 情境框:開無臉才出現
+    const sit = document.getElementById('cine-situation-field');
+    if (sit) sit.style.display = on ? '' : 'none';
+    // ② 分鏡產生器:開無臉就反灰(不然客戶會排 6 段卻只生出第 1 段)
+    const entry = document.getElementById('cine-sbp-entry');
+    if (entry) {
+      entry.style.opacity = on ? '0.45' : '';
+      entry.style.pointerEvents = on ? 'none' : '';
+    }
+    // ③ 補一行說明,客戶才知道為什麼點不動(不是壞掉)
+    document.querySelectorAll('.faceless-sbp-note').forEach(n => n.remove());
+    if (on && entry) {
+      const note = document.createElement('div');
+      note.className = 'faceless-sbp-note';
+      note.style.cssText = 'font-size:11px;color:#8fd9b8;margin-top:4px;';
+      note.textContent = '🚫 無臉模式不走分鏡(畫面沒有人,分鏡是為 KOL 設計的)— 請在下面「劇情 / 情境」直接描述畫面';
+      entry.appendChild(note);
+    }
+    // ④ 關掉無臉時順手清空情境框:避免殘留的無臉描述被 KOL 模式誤讀
+    //    ⚠️ 但【已確認分鏡】時不能清 —— 那一格裝的是分鏡回填的濃縮劇情,不是客戶打的。
+    if (!on && !(S.cineStoryboard && S.cineStoryboard.length)) {
+      const el = document.getElementById('cine-situation');
+      if (el && !el.readOnly) el.value = '';
+    }
+  } catch (_) {}
+}
+
 function _syncFacelessBadge() {
   const on = !!document.getElementById('faceless-toggle')?.classList.contains('on');
   const badge = document.getElementById('faceless-adv-badge');
@@ -7502,6 +7573,7 @@ function _syncFacelessBadge() {
     row.style.background = on ? 'rgba(255,107,107,.08)' : '';
     row.style.boxShadow  = on ? 'inset 0 0 0 1.5px rgba(255,107,107,.5)' : '';
   }
+  _syncFacelessUI();   // 🩹 2026-09-07:情境框/分鏡反灰跟著同一個開關走
 }
 
 async function createFacelessVideo() {
@@ -8771,9 +8843,13 @@ function renderEpisodeCard() {
         <div class="motion-hint" style="margin-top:4px">推薦:先把大綱變成有台詞、時間對得上的腳本,確認後會自動填入下面情境、鎖好時長,台詞不會被切。</div>
         <div id="sbp-episode-mount" style="display:none;margin-top:10px"></div>
       </div>
-      <div class="ep-field">
+      <!-- 🩹 2026-09-07:STEP3 沒有無臉模式(純 KOL),情境框永遠藏起來。
+           ⚠️ DOM 必須留著,不能刪 —— 它是「確認分鏡」的回填目標,
+             而回填的值會存進單集紀錄的 scenario 欄 → 劇情記憶靠它撈回前情。
+             刪掉的話 AI 照樣會寫下一集,只是【不記得前面演過什麼】,而且不報錯。 -->
+      <div class="ep-field" id="ep-situation-field" style="display:none">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <label>故事情境(必填)</label>
+          <label>故事情境(由分鏡自動填入)</label>
           <button class="btn btn-ghost btn-sm" type="button" onclick="clearEpisodeSituation()" style="padding:3px 10px;font-size:11px">🗑️ 清空</button>
         </div>
         <textarea id="ep-situation" placeholder="例:加班到 7 點後走進巷弄咖啡廳,和自己對話一下...">${escapeHtml(draft.situation || '')}</textarea>
@@ -10145,8 +10221,10 @@ async function generateEpisodeV510(mode) {
     toast('請選場景,或上傳自家實景照', 'error'); return;
   }
   if (!sceneId && S.episodeCustomSceneUrl) sceneId = 'office';
+  // 🩹 2026-09-07:情境框藏起來了,擋門改成擋【沒用分鏡產生器】。
+  //   ★ 舊訊息叫客戶「去填故事情境」,但那一格已經看不到了 —— 會變成叫人去按找不到的東西。
   if (!situation && mode !== 'posts') {
-    if (!confirm('你沒填「故事情境」,AI 會只依 KOL 人設生成泛用 vlog。要繼續嗎?')) return;
+    if (!confirm('你還沒用「分鏡產生器」排這一集的內容。\n\n直接生成的話,AI 只會依 KOL 人設生成泛用 vlog(沒有台詞、沒有故事)。\n\n建議先按上面的「用分鏡產生器」。\n\n還是要繼續嗎?')) return;
   }
 
   // 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳;社群貼文(posts)不需要
