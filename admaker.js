@@ -74,6 +74,22 @@ const FOOD_CRAFT =
 '- RESTAURANT ATMOSPHERE: warm directional key with soft falloff, deep but not pure-black shadows, faint appetizing steam where it fits — cinematic and mouth-watering, never a flat evenly-lit product shot.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
+//  2026-09-07 ★ HUMAN_TOUCH 接觸物理層
+//    病灶:客戶生出來的廚師「手懸空」,沒有真的拿盤子/蒸籠,像貼上去的假手。
+//    真因:全檔沒有任何「接觸受力」指令,而 food_chef 還寫著 MUST NOT touch。
+//    修法:只要場景會出現手/人,就強制寫明接觸點、受力、遮擋、同一光場。
+// ═══════════════════════════════════════════════════════════════════════
+const HUMAN_TOUCH =
+'=== HANDS & PHYSICAL CONTACT (mandatory whenever a hand, arm or person appears) ===\n' +
+'- REAL GRIP, NOT A HOVERING GESTURE: if a hand is presenting a plate, bowl, steamer basket, tray, cup or package, the fingers MUST physically wrap the rim, handle or underside and carry its actual weight. Show the true contact: fingertips and pads slightly flattened and compressed against the surface, nail beds paling under pressure, thumb hooked over the rim while the fingers support from beneath. A hand merely floating near, behind or under the object without touching it is WRONG and must never happen.\n' +
+'- CONTACT SHADOW & OCCLUSION AT EVERY TOUCH POINT: dark tight ambient occlusion exactly where skin meets the object, and the object edge correctly overlapping and hiding the fingers behind it. No glowing gap, no halo, no floating separation between hand and object.\n' +
+'- WEIGHT READS THROUGH THE BODY: tendons and knuckles engaged, wrist angled naturally to balance the load, forearm muscle subtly tensed, sleeve or cuff falling with gravity. The object must look heavy and real, never weightless.\n' +
+'- SAME LIGHT AS THE SCENE: skin is lit by the identical key, fill and colour temperature as the environment, and picks up the same rim light and bounced colour from nearby surfaces. Never leave the hands under separate flat studio light on an atmospheric background.\n' +
+'- REAL HUMAN SKIN: visible pores, fine hairs, knuckle creases, slight redness at joints, natural nail shape, faint veins — living skin, never smooth waxy plastic or mannequin rubber.\n' +
+'- CORRECT ANATOMY: exactly five fingers per hand, correct proportion, correct joint direction, both hands consistent with each other and with the body they belong to; no merged, extra, missing, bent-backwards or boneless fingers.\n' +
+'- NATURAL POSE: the gesture must be one a real working person would actually make while serving or presenting — relaxed and purposeful, never a stiff symmetrical open-palm display pose.\n\n';
+
+// ═══════════════════════════════════════════════════════════════════════
 //  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
 // ═══════════════════════════════════════════════════════════════════════
 const PRODUCT_SCENES = {
@@ -470,7 +486,7 @@ const REGIONAL_FLAVORS = {
   },
   food_chef: {
     label: '廚師上菜',
-    flavor: 'Add chef-plating flavor: a chef in a dark uniform presents or holds the plate, or plates in the softly blurred background — the hands frame and present the dish but MUST NOT grip, cover or touch the preserved food surface itself. Warm restaurant lighting, shallow depth of field on the hero dish, the human presence adding life and scale. Shot on Nikon Z9 with NIKKOR Z 85mm f/1.2 S, f/2.8, ISO 200, editorial chef-and-dish photography.'
+    flavor: 'Add chef-plating flavor: a chef in a dark uniform genuinely CARRIES or SETS DOWN the plate — the hands must make real physical contact with the plate rim, bowl edge or steamer basket and visibly bear its weight (fingers wrapped under, thumb hooked on the rim, flesh compressed at the contact points, contact shadow where skin meets ceramic or bamboo). What the hands must NOT do is cover, grip or touch the FOOD itself, which stays fully visible and unobstructed. A hand hovering near the vessel without holding it is forbidden. The chef may also be plating in the softly blurred background. Warm restaurant lighting, shallow depth of field on the hero dish, the human presence adding life and scale. Shot on Nikon Z9 with NIKKOR Z 85mm f/1.2 S, f/2.8, ISO 200, editorial chef-and-dish photography.'
   },
   food_ingredient: {
     label: '食材特寫',
@@ -3911,7 +3927,10 @@ function buildPosterPrompt() {
 
   // 🆕 v11.4 餐飲呈現準則:選了「美食版」排版 → 自動注入淺景深融合手法。
   //    餐廳/小吃客戶只要選美食版就吃到,不用懂設定。非美食版不觸發。
-  if (SELECTED_LAYOUT === 'food_special') {
+  // 🩹 2026-09-07 觸發條件修正:原本只認①排版=美食版,但六個 food_ 設計風格
+  //   (米其林/粵菜/割烹/台式小吃/廚師上菜/食材特寫)配上別的排版時完全吃不到這段,
+  //   於是「統一光場/接觸陰影/前景遮擋」全部沒下,菜色就像貼在背景上。
+  if (SELECTED_LAYOUT === 'food_special' || /^food_/.test(String(SELECTED_FLAVOR || ''))) {
     prompt += FOOD_CRAFT;
   }
 
@@ -3984,13 +4003,36 @@ function buildPosterPrompt() {
   prompt += _cv + '\n';
   prompt += `Vary the typographic treatment too — the size, weight and placement of the text should not repeat the most obvious arrangement every time — while staying faithful to the brand's typography style.\n\n`;
 
+  // 🩹 2026-09-07 只要這張圖會出現手或人,就補上接觸物理層(治「假手、沒真的拿東西」)
+  var _sceneTxt = [_layoutComp, (flavor && flavor.flavor) || '', (contextTheme && contextTheme.context) || '', styleDesc || '']
+    .join(' ')
+    .replace(/hand-?(draw|drawn|drawing|made|make|craft|crafted|write|written|letter|lettered|lettering|paint|painted|painting|print|printed)\w*/gi, '')
+    .replace(/designer hand/gi, '');
+  if (/\b(hands?|holding|holds|grip|gripping|presenting|presents|carrying|carries|pouring|serving|chef|barista|waiter|waitress|technician|unboxing)\b/i.test(_sceneTxt)) {
+    prompt += HUMAN_TOUCH;
+  }
+
   prompt += `=== ART DIRECTOR CRAFT (INTENT — must NOT override the chosen style above) ===
 ${DESIGNER_POLISH}
 
 `;
 
+  // 🩹 2026-09-07 輸出規格不再寫死「Square 1:1 / 1080x1080」——
+  //   客戶選 9:16 限動時,畫布是 1088x1920 但 prompt 還在叫模型畫正方形,
+  //   構圖跟畫布互打,才會出現空白帶、主體被擠壓、文字貼邊。
+  var _RATIO_TXT = {
+    square:       'square 1:1',
+    ig_portrait:  'vertical portrait 4:5',
+    reels:        'tall vertical 9:16 full-screen story / Reels',
+    fb_landscape: 'wide horizontal 1.91:1',
+    landscape:    'horizontal 16:9',
+    poster_a4:    'vertical A4 print portrait 1:1.414 at 300dpi'
+  };
+  var _osz = _adSize();
+  var _ortxt = _RATIO_TXT[_osz.key] || 'square 1:1';
+
   prompt += `=== OUTPUT SPECIFICATION ===\n`;
-  prompt += `- Square 1:1 orientation, advertising poster optimized for Instagram / Meta feed (1080x1080, works across all feed placements)\n`;
+  prompt += `- ${_ortxt} orientation, exactly ${_osz.w}x${_osz.h} pixels — compose the artwork specifically FOR this aspect ratio: fill the whole canvas edge to edge, never letterbox, never pad with empty bands, never compose a square and crop it, and keep headline and product comfortably inside the frame with balanced margins\n`;
   prompt += `- High resolution, sharp typography, professional commercial photography quality\n`;
   prompt += `- Change: background, environment, lighting, decorative graphics, typography, layout composition\n`;
   prompt += `- Preserve: product identity, product details, brand marks, all text printed on the product itself\n`;
