@@ -630,7 +630,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門)');
+  console.log('[kol-ai-generator v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1891,10 +1891,26 @@ function renderGallery() {
   const gallery = document.getElementById('kai-gallery');
   if (!gallery) return;
 
+  // ══════════════════════════════════════════════════════════════════
+  //  🩹 2026-09-07 · 同一批候選只能選一張(RA 拍板)
+  //  ────────────────────────────────────────────────────────────────
+  //  ★ 病:一次生三張候選,三顆「✓ 選這張」都能按 —— 客戶按了兩張,
+  //    照片庫就多出一張長得幾乎一樣的臉。後果不在這裡發作,在下游:
+  //    多角度人物表得先問「要拿哪一張生 3/4 與側臉」,
+  //    客戶根本分不出差別,而選錯要重生一次才救得回來。
+  //  ★ 修:同一批裡只要有人被選過,其他張就反灰(A 案)。
+  //  ⚠️ 這是【同一批】的限制,不是「一個角色只能一張臉」——
+  //    分次生成照樣存得進去,「造型選擇(LOOK)」那條線完全不受影響。
+  //    要改成一個角色只能一張,那會廢掉造型功能,不要順手改成那樣。
+  // ══════════════════════════════════════════════════════════════════
+  const _pickedIdx = S.lastImages.findIndex(x => x && x.saved);
+  const _hasPicked = _pickedIdx > -1;
+
   gallery.innerHTML = S.lastImages.map((img, i) => {
     const nsfw = img.nsfw ? '<div style="position:absolute;top:6px;right:6px;background:rgba(250,109,155,0.85);color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;">NSFW</div>' : '';
+    const _locked = _hasPicked && !img.saved;   // 別人被選走了 → 這張鎖住
     return `
-      <div class="kai-img-card${img.saved ? ' picked' : ''}" data-idx="${i}">
+      <div class="kai-img-card${img.saved ? ' picked' : ''}" data-idx="${i}"${_locked ? ' style="opacity:.4"' : ''}>
         <div class="kai-img-thumb" data-act="zoom" data-idx="${i}" title="點擊放大看原圖">
           <span class="kai-img-idx">#${i + 1}</span>
           ${nsfw}
@@ -1902,8 +1918,9 @@ function renderGallery() {
         </div>
         <div class="kai-img-actions">
           <button class="kai-img-btn${img.saved ? ' saved' : ''}" data-act="save" data-idx="${i}"
-            ${img.saved ? 'disabled' : ''}>
-            ${img.saved ? '✅ 已選用' : '✓ 選這張'}
+            ${img.saved || _locked ? 'disabled' : ''}
+            ${_locked ? 'title="這批已經選過 #' + (_pickedIdx + 1) + ' 了 —— 想換一張請重新生成"' : ''}>
+            ${img.saved ? '✅ 已選用' : (_locked ? '已選 #' + (_pickedIdx + 1) : '✓ 選這張')}
           </button>
         </div>
       </div>
@@ -1958,6 +1975,14 @@ async function saveKolImageToLibrary(idx) {
   const img = S.lastImages[idx];
   if (!img) return;
   if (img.saved) return;
+
+  //  🩹 2026-09-07:反灰只是外觀,這裡才是真正的門。
+  //    ★ 教訓:UI 反灰擋不住「別的地方直接呼叫這支」——
+  //      規則要寫在動作本身,不能只寫在按鈕上。
+  if (S.lastImages.some(x => x && x.saved)) {
+    alert('這一批候選已經選過一張了。\n\n想換一張請按「生成 AI KOL」重新生成;\n想幫這位角色多加一套造型,也是重新生成一批。');
+    return;
+  }
 
   if (!S.currentBrandId || !S.currentPersonaName) {
     alert('尚未選擇品牌或 KOL 角色');
