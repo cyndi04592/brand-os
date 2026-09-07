@@ -1350,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', function(){
         </div>
 
         <div class="rs-pane on" id="rs-pane-look">
-          <div class="rs-hint">決定這支影片的穿著與場景。點一個當作本次拍攝的造型。</div>
+          <div class="rs-hint" id="look-picker-lead">決定這支影片的穿著與場景。點一個當作本次拍攝的造型。</div>
           <div id="selected-kol-banner">
             <div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>
           </div>
@@ -4652,10 +4652,12 @@ function renderLookPicker() {
   try {
     const _t = document.getElementById('look-picker-title');
     if (_t) _t.textContent = haveLooks ? '造型選擇(Look)' : '多角度參考照';
-    const _h = document.querySelector('#stage-dossier .rs-hint, .rs-hint');
-    if (_h && !haveLooks && /造型/.test(_h.textContent || '')) {
-      _h.textContent = '這三張是生影片時依鏡頭自動使用的參考照,不用挑。';
-    }
+    //  ⚠️ 一定要用 id —— 頁面上有【兩個】.rs-hint,
+    //     querySelector 會抓到第一個,改到不相干的地方而且不報錯。
+    const _h = document.getElementById('look-picker-lead');
+    if (_h) _h.textContent = haveLooks
+      ? '決定這支影片的穿著與場景。點一個當作本次拍攝的造型。'
+      : '這三張是生影片時依鏡頭自動使用的參考照,不用挑。';
   } catch (_) {}
 
   grid.removeEventListener('click', handleLookClick);
