@@ -66,6 +66,25 @@
     document.head.appendChild(el);
   }
 
+  // ════════════════════════════════════════════════════════════════
+  //  🎬 2026-09-07 v1.9 · 導演模式:選長度就開空白卡
+  //  ───────────────────────────────────────────────────────────────
+  //  ★ 為什麼:分鏡產生器以前是「AI 產完才有卡片」,想自己寫的導演
+  //    只能退回情境框 —— 而情境框只有 1 段、沒有台詞欄,
+  //    等於繞過導演組(服裝/道具/場景/發音修正全掉)。
+  //  ★ 修:卡片改成【永遠存在】。planBeats() 本來就會回空白骨架,
+  //    直接鋪出來就好,AI 編修從「必經之路」降級成「選配的填字工具」。
+  // ════════════════════════════════════════════════════════════════
+  function blankBeats() {
+    try { return window.KolStorywriter.planBeats(state.duration) || []; }
+    catch (_) { return []; }
+  }
+
+  //  卡片上有沒有人打過字(換長度 / AI 重寫之前要問,不能默默清空)
+  function hasContent() {
+    return state.beats.some(b => (b.shotDesc || '').trim() || (b.dialogue || '').trim());
+  }
+
   function mount(containerId) {
     rootEl = document.getElementById(containerId);
     if (!rootEl) { console.warn('[sbp] 找不到容器', containerId); return; }
@@ -117,8 +136,12 @@
     if (state.busy) return;
     if (!window.KolStorywriter) { alert('KolStorywriter 未載入'); return; }
     if (typeof api !== 'function') { alert('api() 未載入'); return; }
-    unlockIfConfirmed();
+    // 🆕 v1.9:先把畫面上的字收回 state,才問得準
     if (state.beats.length) syncDom();
+    //  ⚠️ 開放自己打之後,這一步變成必要 ——
+    //     以前卡片只能由 AI 生,沒東西可洗;現在導演可能已經打了半小時。
+    if (hasContent() && !confirm('AI 編修會用新的內容蓋掉卡片上已經寫好的字。\n\n(按過「🔒 鎖台詞」的台詞會保住,鏡頭描述不會)\n\n確定要讓 AI 重寫嗎?')) return;
+    unlockIfConfirmed();
 
     const lockedLines = collectLocked();
     const payload = window.KolStorywriter.buildExpandRequest({
@@ -143,7 +166,11 @@
       if (!res || !res.ok) {
         alert('AI 編修失敗:' + (res?.error || '未知錯誤'));
       } else {
-        const skeleton = window.KolStorywriter.planBeats(state.duration);
+        // 🩹 v1.9:骨架改用【現有卡片】,不要重產一份空的。
+        //   ★ 舊寫法的病:mergeExpandResult 裡有一段「AI 沒回就保留原本 s.shotDesc」
+        //     的保護,但傳進去的一定是全新空骨架 → 那段保護【從來沒生效過】。
+        //     以前沒人踩到是因為卡片只能由 AI 生;開放自己打之後就會咬人。
+        const skeleton = state.beats.length ? state.beats : window.KolStorywriter.planBeats(state.duration);
         state.beats = window.KolStorywriter.mergeExpandResult(skeleton, res.beats, lockedLines, ctx && ctx.persona && ctx.persona.nationality);
       }
     } catch (e) {
@@ -194,16 +221,37 @@
     renderCards();
   }
   function durationChange(v) {
-    state.duration = parseInt(v);
-    state.beats = [];
+    const nv = parseInt(v);
+    if (nv === state.duration) return;
+    if (state.beats.length) syncDom();
+    // 🆕 v1.9:換長度 = 換段數 = 卡片重排,寫好的字會沒。先問。
+    //   ⚠️ 按取消時要把下拉【拉回原值】,否則畫面顯示新長度、實際還是舊的。
+    if (hasContent() && !confirm('換長度會重新排段數,卡片上寫好的內容會清空。\n\n確定要換嗎?')) {
+      const sel = $el('sbp-duration');
+      if (sel) sel.value = String(state.duration);
+      return;
+    }
+    state.duration = nv;
+    state.beats = [];        // 清空 → renderCards 會自動鋪上新段數的空白卡
     unlockIfConfirmed();
     renderCards();
   }
 
   function confirmToggle() {
-    if (!state.beats.length) { alert('請先按「AI 編修」產生分鏡'); return; }
+    if (!state.beats.length) { alert('分鏡卡片還沒準備好,請重選一次長度'); return; }
     if (!state.confirmed) {
       syncDom();
+      // 🆕 v1.9:卡片現在永遠存在,守門要改看【有沒有寫東西】,不是看有沒有卡片。
+      //   ★ 不擋的話會送出一支什麼都沒寫的空片 —— 錢照扣。
+      const _blank = state.beats.filter(b => !(b.shotDesc || '').trim());
+      if (_blank.length === state.beats.length) {
+        alert('分鏡卡片還是空的唷。\n\n你可以自己在「鏡頭」欄寫,或填好上面的大綱按「AI 編修成分鏡」讓 AI 幫你寫。');
+        return;
+      }
+      if (_blank.length) {
+        alert('第 ' + _blank.map(b => b.index).join('、') + ' 段的「鏡頭」還是空的。\n\n空的段落一樣會照秒數生成、照樣扣點,但畫面沒人指揮。請補寫,或改短長度減少段數。');
+        return;
+      }
       // 🆕 v1.5 防呆:任何一段台詞超長(紅字)就擋下確認,不讓超長台詞進生成(超長=引擎趕戲吃字)
       const _over = state.beats.filter(b => b.overflow);
       if (_over.length) {
@@ -224,7 +272,7 @@
     if (!rootEl) return;
     rootEl.innerHTML = `
 <div class="sbp-wrap">
-  <div class="sbp-head">分鏡產生器<span class="sbp-sub">大綱 → AI 編修 → 分鏡卡片</span></div>
+  <div class="sbp-head">分鏡產生器<span class="sbp-sub">自己打 · 或讓 AI 編修</span></div>
   <div class="sbp-row">
     <label class="sbp-label" style="margin:0">長度</label>
     <select id="sbp-duration" class="sbp-select" style="width:auto" onchange="KolStoryboardPanel.durationChange(this.value)">
@@ -297,8 +345,12 @@
     if (!box) return;
     // 🆕 1b:每次重畫都重讀一次商品照(妳在下面商品區加選後,鎖台詞/點縮圖等任何動作都會刷新這排)
     prodCache = (typeof ctx?.getProductImages === 'function') ? (ctx.getProductImages() || []).filter(Boolean) : [];
+    // 🆕 v1.9:沒有卡片就先鋪空白骨架 —— 這是「導演自己打」的入口。
+    //   放在 renderCards 而不是 open(),是因為 mount / open / durationChange
+    //   三個入口都會走到這裡,一處收口就三處同步(場景清單那條教訓)。
+    if (!state.beats.length) state.beats = blankBeats();
     if (!state.beats.length) {
-      box.innerHTML = `<div class="sbp-empty">填好大綱、按「AI 編修」,這裡會出現 ${window.KolStorywriter.planBeats(state.duration).length} 張分鏡卡片</div>`;
+      box.innerHTML = `<div class="sbp-empty">分鏡卡片載入失敗,請重選一次長度</div>`;
       return;
     }
     const multi = state.beats.length > 1;
@@ -306,9 +358,11 @@
       ? (multi
           ? `✅ 已確認 · ${state.beats.length} 段會自動接成 ≈ ${state.duration} 秒長片,挑好設定按生成`
           : '✅ 分鏡已確認 · 單段,挑好設定按生成')
-      : (multi
-          ? `${state.beats.length} 段分鏡 → 按「確認分鏡」後會自動接成 ≈ ${state.duration} 秒長片`
-          : '確認後會鎖定下面設定');
+      : (!hasContent()
+          ? `直接在卡片上寫,或填好上面的大綱按「AI 編修成分鏡」 · 共 ${state.beats.length} 段`
+          : multi
+            ? `${state.beats.length} 段分鏡 → 按「確認分鏡」後會自動接成 ≈ ${state.duration} 秒長片`
+            : '確認後會鎖定下面設定');
     box.innerHTML = state.beats.map(cardHtml).join('') + `
 <div class="sbp-genrow">
   <span class="sbp-note">${note}</span>
@@ -323,5 +377,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v1.8 就緒(確認鎖定/重新編輯 · 雙容器獨立 · 分段綁圖1b · 超長擋確認 · 🆕偏短黃字提醒 · 🧠劇情記憶轉送·現撈不靠快取)');
+  console.log('[KolStoryboardPanel] v1.9 就緒(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
