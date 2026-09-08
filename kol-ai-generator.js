@@ -1551,6 +1551,11 @@ function updateFolderHint() {
   hint.textContent = '🎨 正在幫「' + persona + '」生形象照';
 }
 
+//  🩹 2026-09-08:掛到 window —— kol.html 的 selectKol() 換人之後要叫它重畫標籤。
+//    ⚠️ 跨檔呼叫一律要經 window(IIFE 內的函式外面看不到)。
+//      忘了掛的話 kol.html 那邊會靜默失敗:名字換了、標籤還是舊的,而且不報錯。
+window.updateFolderHint = updateFolderHint;
+
 // ── 新 Persona Modal ──────────────────────────────────────
 //  🩹 2026-09-07:掛到 window —— 形象庫那顆「＋建新角色」要能叫到這支。
 //    ★ 病:系統裡有兩顆名字差一個字的按鈕(「建新角色」vs「建立新角色」),
