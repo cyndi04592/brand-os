@@ -1249,7 +1249,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.61 · 修好選錯人</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.62 · 選人同步二修</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -4104,6 +4104,10 @@ function renderRoster() {
     const go = () => {
       const nm = el.dataset.nophoto || '';
       try {
+        //  ⚠️ 這條路【不能只塞下拉】—— 它繞過 selectKol(),
+        //     S.currentPersonaName 沒被更新,之後切別人時也可能對不回來。
+        //     一定要把狀態也設好,兩條路最後停在同一個地方。
+        S.currentPersonaName = nm;
         const sel = document.getElementById('kai-persona');
         if (sel) {
           if (!Array.from(sel.options).find(o => o.value === nm)) {
@@ -4113,6 +4117,7 @@ function renderRoster() {
           sel.value = nm;
           sel.dispatchEvent(new Event('change'));
         }
+        if (typeof window.updateFolderHint === 'function') window.updateFolderHint();
         const ai = document.getElementById('kai-panel');
         if (ai) {
           ai.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -4472,8 +4477,20 @@ function selectKol(g) {
     const _nm = String((_p && _p.persona_name) || g.name || '').trim();
     if (_nm) {
       S.currentPersonaName = _nm;
+      //  ⚠️ 2026-09-08 第二次修:原本寫成
+      //       if (選項存在) sel.value = _nm;
+      //     —— 選項不存在時【整個跳過】,下拉就停在上一個人(西恩),
+      //     而 kol-ai-generator 的年齡/性別是讀下拉走的 → 一路帶錯人。
+      //     RA 實測:點過西恩之後,不管切到誰都顯示「幫西恩生第一張形象照」。
+      //  ★ 修:選項沒有就【補一個】再設,不要靜靜跳過。
       const sel = document.getElementById('kai-persona');
-      if (sel && Array.from(sel.options).some(o => o.value === _nm)) sel.value = _nm;
+      if (sel) {
+        if (!Array.from(sel.options).some(o => o.value === _nm)) {
+          const o = document.createElement('option');
+          o.value = _nm; o.textContent = _nm; sel.appendChild(o);
+        }
+        sel.value = _nm;
+      }
       if (typeof window.updateFolderHint === 'function') window.updateFolderHint();
     }
   } catch (_) {}
