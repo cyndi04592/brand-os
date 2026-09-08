@@ -90,6 +90,24 @@ const HUMAN_TOUCH =
 '- NATURAL POSE: the gesture must be one a real working person would actually make while serving or presenting — relaxed and purposeful, never a stiff symmetrical open-palm display pose.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
+//  2026-09-07 ★ SCENE_INTEGRATION 場景融合層(全品類通用)
+//    背景:FOOD_CRAFT 裡治「貼上去」的那幾條(統一光場/接觸陰影/邊緣融光)
+//    以前只有餐飲吃得到。但機台放進廠房、律師放進辦公室、美睫客人放進沙龍
+//    —— 全部是同一種合成,同樣會露餡,而且人臉/髮絲邊緣比食物更明顯。
+//    所以抽成通用層:餐飲走 FOOD_CRAFT(更完整),其餘全部走這層。
+//    ⚠️ 螢幕截圖類(screen)不注入 —— 重新打光會把 UI 染色。
+//    ⚠️ 插畫疊加風格不注入 —— 那本來就不是要寫實融合。
+// ═══════════════════════════════════════════════════════════════════════
+const SCENE_INTEGRATION =
+'=== SCENE INTEGRATION (the subject must look genuinely PHOTOGRAPHED INSIDE this environment, never pasted onto a backdrop) ===\n' +
+'- ONE UNIFIED LIGHT FIELD (the single biggest fix for the pasted-on look): RE-LIGHT the subject so its highlight direction, shadow direction, shadow hardness and colour temperature match the new environment EXACTLY. If the room is warm tungsten from the left, the subject must also be warm and lit from the left — never leave it under its original flat studio light on a different-looking background.\n' +
+'- REAL GROUNDING & CONTACT SHADOW: where the subject meets the floor, table or surface, cast a soft realistic contact shadow — darkest and tightest right at the contact line, softening outward with natural penumbra — NOT a hard uniform cut-out drop shadow. On reflective surfaces add a faint believable reflection. The subject must read as having real weight resting on something.\n' +
+'- MATCHED PERSPECTIVE: the camera height, lens length and horizon line of the subject must agree with the background. A subject shot at eye level must not sit in a background shot from above; verticals and the floor plane must line up.\n' +
+'- EDGE INTEGRATION: silhouette edges (product rim, machine housing, shoulders, hair, fabric) pick up gentle ambient and rim light in the environment own colour, so the outline melts into the scene. NO sharp cut-out edge, NO bright halo or fringe, NO visible masking line — hair and fine detail especially must not look scissored out.\n' +
+'- SHARED ATMOSPHERE & GRADE: one consistent colour grade, contrast curve, grain and lens character across subject and background; any haze, dust, steam or bloom in the room also passes in front of the subject.\n' +
+'- DEPTH LAYERING: keep the subject tack-sharp while the background falls into believable optical defocus at the same aperture — the blur must look like real lens depth of field, not a uniform blur filter applied to a flat image.\n\n';
+
+// ═══════════════════════════════════════════════════════════════════════
 //  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
 // ═══════════════════════════════════════════════════════════════════════
 const PRODUCT_SCENES = {
@@ -3942,8 +3960,15 @@ function buildPosterPrompt() {
   // 🩹 2026-09-07 觸發條件修正:原本只認①排版=美食版,但六個 food_ 設計風格
   //   (米其林/粵菜/割烹/台式小吃/廚師上菜/食材特寫)配上別的排版時完全吃不到這段,
   //   於是「統一光場/接觸陰影/前景遮擋」全部沒下,菜色就像貼在背景上。
-  if (SELECTED_LAYOUT === 'food_special' || /^food_/.test(String(SELECTED_FLAVOR || ''))) {
+  var _isFoodScene = (SELECTED_LAYOUT === 'food_special' || /^food_/.test(String(SELECTED_FLAVOR || '')));
+  // 🩹 2026-09-07 場景融合層擴及全品類:機台/律師/美業/課程/命理/旅遊 以前都沒有
+  //   「重新打光、接觸陰影、邊緣融光」的指令,跟小籠包是同一種病。
+  //   螢幕截圖不注入(會把 UI 染色);插畫疊加風格不注入(本來就不求寫實)。
+  var _isIllustrationOverlay = /ILLUSTRATION OVERLAY/i.test(String((flavor && flavor.flavor) || ''));
+  if (_isFoodScene) {
     prompt += FOOD_CRAFT;
+  } else if (SELECTED_PRODTYPE !== 'screen' && !_isIllustrationOverlay) {
+    prompt += SCENE_INTEGRATION;
   }
 
   if (contextTheme.context) {
