@@ -1581,12 +1581,48 @@ async function confirmNewPersona() {
   btn.textContent = '建立中...';
 
   try {
-    const res = await gasPost('ensurePersonaFolder', {
-      brandId: S.currentBrandId,
-      personaName: name,
+    // ══════════════════════════════════════════════════════════════════
+    //  🔴 2026-09-08 · 「建立新角色」原本是一顆空砲(RA 現場抓到)
+    //  ────────────────────────────────────────────────────────────────
+    //  ★ 病:這裡呼叫的是 ensurePersonaFolder ——【那支只建 Google Drive
+    //    資料夾】,而 v4.52 之後新品牌根本不建 Drive 了,Worker 直接:
+    //        console.log('⏭ 新品牌無雲端資料夾,直接放行');
+    //        return { ok: true, skipped: true, no_drive: true };
+    //    → 回 ok、畫面說「已建立角色」,但【kol_personas 一列都沒寫】。
+    //    RA 建了「西恩」,S.personas 查出來只有 3 筆、沒有她。
+    //  ★ 這是新客戶進來按的【第一顆按鈕】,而且已經死了很久 ——
+    //    內部沒發現是因為大家都走「先生照片、再從照片庫建角色」那條路,
+    //    新客戶不知道有那條路,只會按最顯眼的這顆。
+    //  ★ 修:改叫 saveKolPersona(走 D1_WRITERS,真的寫進 kol_personas)。
+    //    欄位照抄 Worker 內 saveKolPhoto 自動建 persona 那段,一字不改 ——
+    //    那段是實際在跑、驗證過的,不要自己另發明一組。
+    //  ⚠️ talking_photo_id 故意留空:那是「綁定照片」才會有的值。
+    //    留空 → 形象庫會把她畫成橘框進度卡「下一步:形象照」。
+    //  ⚠️ ensurePersonaFolder 仍保留呼叫(舊品牌還有照片躺在 Drive 子資料夾),
+    //    但失敗不能擋 —— 它已經不是必要條件了。
+    // ══════════════════════════════════════════════════════════════════
+    const res = await gasPost('saveKolPersona', {
+      data: {
+        persona_name: name,
+        persona_type: 'independent',
+        brand_id: S.currentBrandId,
+        talking_photo_id: '',
+        voice_id: '',
+        background: '',
+        personality: '',
+        speaking_style: '',
+        catchphrases: [],
+        taboo_words: [],
+        signature_topics: [],
+        forbidden_topics: [],
+        role_relationship: '',
+      },
     });
 
     if (!res.ok) throw new Error(res.error || '建立失敗');
+
+    // 舊品牌:順手把 Drive 子資料夾備好(新品牌會直接 skipped,不影響)
+    try { await gasPost('ensurePersonaFolder', { brandId: S.currentBrandId, personaName: name }); } catch (_) {}
 
     // 重新載入 persona 列表
     await syncBrandAndLoadPersonas(S.currentBrandId);
@@ -2190,6 +2226,13 @@ const WRITE_VIA_WORKER = {
   //      因為 kol-character-sheet.js 還在用它 —— 那支改完再讓舊名退休。
   saveAiKolPhotoToDrive: 1,
   saveKolPhoto: 1,
+  //  🔴 2026-09-08:建立新角色改叫 saveKolPersona,【一定要列在這裡】——
+  //    不列的話會走 gasFetch 打去 GAS,而 kol_personas 早就是 D1 正本
+  //    (D1_OWNED 名單裡就有它)。寫進 GAS = 寫進退休的試算表,
+  //    畫面照樣顯示成功,但角色永遠不會出現。
+  //    ★ kol.html 早在 2026-08-04 第1批就把它切走了(kol.html:3029),
+  //      這個檔沒跟上 —— 同一條規則寫在兩個地方,兩邊漂移的典型。
+  saveKolPersona: 1,
 };
 
 // ════════════════════════════════════════════════════════════════════
