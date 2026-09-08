@@ -165,6 +165,30 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .rs-card.rs-unbound .todo{position:absolute;left:0;right:0;top:0;padding:4px 3px;
   font-size:8.5px;text-align:center;font-weight:700;color:#fff;background:#ff4d4d;}
 .rs-card.rs-unbound:hover{transform:translateY(-2px);box-shadow:0 0 0 2px rgba(255,77,77,.4);}
+
+/* 🩹 2026-09-08 · 建角色進度(RA:「從取名字那一瞬間就要有卡」)
+   ★ 病:取完名字之後,角色要走完四步才真的能用 ——
+     ①取名 ②生形象照 ③生多角度 ④補人設。
+     但形象庫只顯示「已經有照片的」,前面幾步完全沒有回饋,
+     客戶以為沒建成功 → 再建一次 → 長出重複角色(RA 現場實測)。
+   ★ 修:一建立就佔位子,卡片上直接顯示還差幾步。
+   ⚠️ 只有【多角度沒生】會擋拍片(影響畫面品質);人設沒填不擋,
+     那只影響講話風格,擋了反而綁手綁腳。 */
+.rs-card.rs-wip{border:2px solid #ff9f43;background:#0d0b08;}
+.rs-card.rs-wip::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 42% 30% at 50% 30%,#1e1a12 0%,#0d0b08 70%);}
+.rs-card.rs-wip .silo{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);
+  font-size:30px;color:#2b2519;line-height:1;}
+.rs-card.rs-wip .nm{color:#ffc078;}
+.rs-card.rs-wip:hover{transform:translateY(-2px);box-shadow:0 0 0 2px rgba(255,159,67,.4);}
+.rs-card .prog{position:absolute;left:0;right:0;top:0;padding:3px 3px 2px;
+  font-size:8px;text-align:center;font-weight:700;color:#0d0b08;background:#ff9f43;letter-spacing:.2px;}
+.rs-card .progbar{position:absolute;left:4px;right:4px;bottom:19px;height:3px;
+  border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden;}
+.rs-card .progbar i{display:block;height:100%;background:#ff9f43;border-radius:2px;
+  transition:width .3s ease;}
+.rs-card .todo2{position:absolute;left:0;right:0;bottom:2px;font-size:7.5px;
+  text-align:center;color:#ffc078;font-weight:600;}
 .rs-new{border-style:dashed;display:flex;align-items:center;justify-content:center;flex-direction:column;
   gap:4px;color:var(--text-dim);font-size:10.5px;text-align:center;padding:4px;}
 .rs-new:hover{color:var(--accent3);border-color:var(--accent3);}
@@ -1220,7 +1244,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.55 · 造型區正名</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.56 · 建角色進度卡</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -3862,6 +3886,31 @@ function rsParseVoice(vs) {
 //  ★ 判斷:素材庫裡有這個名字的照片,但 kol_personas 裡沒有他、
 //    或有他但 talking_photo_id 是空的(= 還沒按「確認創建角色」)。
 // ════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+//  📊 2026-09-08 · 建角色四步進度(唯一收口)
+//  ──────────────────────────────────────────────────────────────────
+//  ① 取名建立   ② 生形象照   ③ 生多角度(3/4+側臉)   ④ 補人設
+//  ★ 為什麼抽成一支:形象庫的卡片要用、之後的引導也會用。
+//    各寫一份的話兩邊遲早不一致 —— 那是踩過五次的坑。
+//  ⚠️ ③ 的判斷直接借用 kolAngleStatus(),跟「擋拍片」同一個標準,
+//    不能各判各的:一邊說完成、一邊擋你拍片是最氣人的組合。
+// ════════════════════════════════════════════════════════════════════
+function kolSetupSteps(personaName, hasPhoto, needPersona) {
+  const nm = String(personaName || '').trim();
+  let ang = { q34: false, profile: false };
+  try { if (typeof kolAngleStatus === 'function') ang = kolAngleStatus(nm); } catch (_) {}
+  const steps = [
+    { key: 'name',   ok: !!nm,                      label: '取名' },
+    { key: 'photo',  ok: !!hasPhoto,                label: '形象照' },
+    { key: 'angle',  ok: !!(ang.q34 && ang.profile), label: '多角度' },
+    { key: 'persona',ok: !needPersona,              label: '人設' },
+  ];
+  const done = steps.filter(x => x.ok).length;
+  const next = steps.find(x => !x.ok);
+  return { steps, done, total: steps.length, next, allDone: done === steps.length };
+}
+window.kolSetupSteps = kolSetupSteps;
+
 function unboundPersonas() {
   try {
     return (S.drivePhotos?.personas || []).filter(x => {
@@ -3955,11 +4004,18 @@ function renderRoster() {
     const per = (S.personas || []).find(p => p.talking_photo_id === id
                  || (pid && p.persona_id === pid));
     const v = rsParseVoice(per && per.voice_style);
-    return `<div class="rs-card${id === curId ? ' on' : ''}" data-kol-id="${escapeHtml(id)}" tabindex="0" title="${escapeHtml(nm.trim())}">
-      ${img ? `<img src="${escapeHtml(_thumb(img, 240))}" alt="" loading="lazy" decoding="async">` : ''}
-      ${v ? `<div class="sig">${v.ax.map(a => `<i class="${a >= 1 ? 'f' : ''}"></i>`).join('')}</div>` : ''}
-      ${needPersona ? `<div class="flag" data-persona-id="${escapeHtml(pid)}">人設未填</div>` : ''}
+    // 🩹 2026-09-08:四步沒走完就顯示進度,走完了才是一張乾淨的卡
+    const _st = kolSetupSteps(nm.trim(), !!img, needPersona);
+    const _wip = !_st.allDone;
+    return `<div class="rs-card${id === curId ? ' on' : ''}${_wip ? ' rs-wip' : ''}" data-kol-id="${escapeHtml(id)}" tabindex="0"
+      title="${escapeHtml(nm.trim())}${_wip ? ' — 還差:' + _st.steps.filter(x => !x.ok).map(x => x.label).join('、') : ''}">
+      ${img ? `<img src="${escapeHtml(_thumb(img, 240))}" alt="" loading="lazy" decoding="async">` : '<div class="silo">👤</div>'}
+      ${_wip ? `<div class="prog">${_st.done}/${_st.total} · 未完成</div>` : ''}
+      ${v && !_wip ? `<div class="sig">${v.ax.map(a => `<i class="${a >= 1 ? 'f' : ''}"></i>`).join('')}</div>` : ''}
+      ${(needPersona && !_wip) ? `<div class="flag" data-persona-id="${escapeHtml(pid)}">人設未填</div>` : ''}
+      ${_wip ? `<div class="progbar"><i style="width:${Math.round(_st.done / _st.total * 100)}%"></i></div>` : ''}
       <div class="nm">${escapeHtml(nm.trim().slice(0, 8))}</div>
+      ${_wip && _st.next ? `<div class="todo2">下一步:${escapeHtml(_st.next.label)}</div>` : ''}
     </div>`;
   }).join('');
 
