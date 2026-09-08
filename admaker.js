@@ -980,13 +980,25 @@ let AM = { w:1080, h:1080, scriptIdx:null };
 const AD_SIZES = [
   { key:'square',       label:'正方形 · 廣告投放 · 1080×1080',        w:1088, h:1088, fal:'square_hd' },
   { key:'ig_portrait',  label:'IG貼文直式 · 1080×1350 · 4:5',          w:1088, h:1360, fal:{width:1088,height:1360} },
+  { key:'portrait_3_4', label:'直式3:4 · 1248×1664 · 電商/印刷',        w:1248, h:1664, fal:{width:1248,height:1664} },
   { key:'reels',        label:'限動REELS · 1080×1920 · 9:16',           w:1088, h:1920, fal:{width:1088,height:1920} },
   { key:'fb_landscape', label:'FB橫式 · 1200×630 · 1.9:1',              w:1200, h:624,  fal:{width:1200,height:624} },
   { key:'landscape',    label:'橫式 · 1920×1080 · 16:9',                w:1920, h:1088, fal:{width:1920,height:1088} },
   { key:'poster_a4',    label:'實體海報A4 · 2416×3424 · 300dpi印刷',    w:2416, h:3424, fal:{width:2416,height:3424} },
 ];
 let SELECTED_AD_SIZE = 'square';   // 預設正方;沒選就是這個
-function onSelAdSize(v){ SELECTED_AD_SIZE = v; }
+function onSelAdSize(v){ SELECTED_AD_SIZE = v; _syncAdPreviewLabel(); }
+// 🩹 2026-09-07 預覽標籤原本寫死「預覽 1080×1080」,選了別的尺寸也不會變 → 客戶以為沒生效。
+function _syncAdPreviewLabel(){
+  try {
+    var lbl = document.getElementById('previewLabel');
+    if (!lbl) return;
+    if (/影片預覽/.test(lbl.textContent || '')) return;   // 影片預覽中不要蓋掉
+    var s = _adSize();
+    lbl.textContent = '預覽 ' + s.w + '×' + s.h;
+  } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', function(){ setTimeout(_syncAdPreviewLabel, 300); });
 // 🩹 2026-09-06 尺寸修正:不要相信 SELECTED_AD_SIZE,直接讀下拉選單當下顯示的值。
 //   病灶:瀏覽器重新整理後會自動把 <select> 還原成上次選的那一項,
 //   但「還原」不會觸發 onchange → 程式裡的 SELECTED_AD_SIZE 還停在舊值/預設。
@@ -4023,6 +4035,7 @@ ${DESIGNER_POLISH}
   var _RATIO_TXT = {
     square:       'square 1:1',
     ig_portrait:  'vertical portrait 4:5',
+    portrait_3_4: 'vertical portrait 3:4',
     reels:        'tall vertical 9:16 full-screen story / Reels',
     fb_landscape: 'wide horizontal 1.91:1',
     landscape:    'horizontal 16:9',
