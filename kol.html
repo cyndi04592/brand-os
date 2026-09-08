@@ -1249,7 +1249,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.60 · 底部按鈕合一</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.61 · 修好選錯人</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -4452,6 +4452,31 @@ function handleKolListClick(e) {
 function selectKol(g) {
   S.selectedKol = g;
   S.availableLooks = g.looks || [];
+
+  // ══════════════════════════════════════════════════════════════════
+  //  🔴 2026-09-08 · 形象庫選人時,AI 生成器完全不知道(RA 現場抓到)
+  //  ────────────────────────────────────────────────────────────────
+  //  ★ 病:S.currentPersonaName 只有三個地方會寫 ——
+  //      ① 建立新角色時  ② AI 生成器【自己的下拉】改變時  ③ 清空時。
+  //    形象庫點卡片走的是這支 selectKol(),【從來沒通知過它】。
+  //    → 那條「🎨 正在幫「XXX」生形象照」永遠停在最後一次建立的角色。
+  //    RA 實測:選了 AA,標籤還寫「正在幫西恩」。
+  //  ★ 而且不只是顯示錯 —— saveKolPhoto 帶的 personaName 就是這個值,
+  //    【照片會真的存到錯的人身上】,而且完全不報錯。
+  //  ★ 修:在唯一的選人收口同步過去,順手把生成器的下拉也對齊。
+  //  ⚠️ 名字要用 persona_name 優先(g.name 可能是顯示用的別名),
+  //    對不上時才退回 g.name —— 存檔比對靠的是 persona_name。
+  // ══════════════════════════════════════════════════════════════════
+  try {
+    const _p = (S.personas || []).find(x => x.talking_photo_id === g.id);
+    const _nm = String((_p && _p.persona_name) || g.name || '').trim();
+    if (_nm) {
+      S.currentPersonaName = _nm;
+      const sel = document.getElementById('kai-persona');
+      if (sel && Array.from(sel.options).some(o => o.value === _nm)) sel.value = _nm;
+      if (typeof window.updateFolderHint === 'function') window.updateFolderHint();
+    }
+  } catch (_) {}
 
   const baseLook = S.availableLooks.find(a => a.id === g.id);
   S.selectedLookId = baseLook?.id || g.id;
