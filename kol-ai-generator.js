@@ -709,13 +709,20 @@ function injectStyle() {
     white-space: nowrap; transition: all .2s;
   }
   .kai-btn-add:hover { background: rgba(124,109,250,0.2); color: #fff; }
+  /* 🩹 2026-09-08:從「將存進素材庫 · KOL · 西恩」這種內部路徑寫法,
+     改成一句話講清楚這一區在幹嘛。字放大、加顏色 ——
+     客戶從形象庫的未完成卡捲下來時,第一眼要知道自己在哪裡。 */
   .kai-folder-hint {
-    font-size: 10.5px; color: rgba(109,250,194,0.75);
-    font-family: 'JetBrains Mono', monospace;
-    margin-bottom: 14px; padding: 6px 10px;
-    background: rgba(109,250,194,0.05);
-    border-left: 2px solid rgba(109,250,194,0.4);
-    border-radius: 0 4px 4px 0;
+    font-size: 13px; font-weight: 800; color: #ffc078; line-height: 1.5;
+    margin-bottom: 14px; padding: 10px 12px;
+    background: rgba(255,159,67,0.09);
+    border-left: 3px solid #ff9f43;
+    border-radius: 0 6px 6px 0;
+  }
+  .kai-folder-hint.idle {
+    color: #8a8a99; font-weight: 600; font-size: 12px;
+    background: rgba(255,255,255,0.03);
+    border-left-color: rgba(255,255,255,0.15);
   }
   .kai-adv {
     border-top: 1px dashed rgba(255,255,255,0.08);
@@ -1012,15 +1019,19 @@ function buildPanelHTML() {
            ★ 只動版面與文案,id 與事件完全不變(kai-persona / kai-btn-new-persona
              在 onPersonaChange、syncBrandAndLoadPersonas、建立流程都有引用)。
            ═══════════════════════════════════════════════════════════ -->
-      <div style="font-size:11.5px;color:#8a8a99;line-height:1.75;margin:-4px 0 12px">
-        建立一位全新的 AI KOL,或幫已經建好的角色再生一張形象照。
-      </div>
-
-      <div style="margin-bottom:12px">
-        <button class="kai-btn-add" id="kai-btn-new-persona"
-                style="width:100%;padding:11px;font-size:13px;font-weight:800;letter-spacing:.5px"
-                title="從零建立一位全新的 AI KOL">＋ 建立新角色</button>
-      </div>
+      <!-- ═══════════════════════════════════════════════════════════
+           🩹 2026-09-08 · 這裡的「＋ 建立新角色」拿掉(RA 拍板)
+           ★ 病:上面的形象庫已經有一顆「＋ 建新角色」,這裡又一顆 ——
+             兩顆長得一樣、名字只差一個字,客戶分不出差別。
+             更糟的是:點形象庫的黑色未完成卡會捲到【這一區】,
+             結果映入眼簾的是另一顆「建立新角色」→ 以為要再建一次。
+           ★ 這一區的職責是【幫已選定的角色生形象照】,不是建角色。
+             入口留一個就好,職責才講得清楚。
+           ⚠️ openNewPersonaModal 仍要保留在 window 上 ——
+             形象庫那顆按鈕靠它開取名字視窗,刪掉會整條斷。
+           ⚠️ id kai-btn-new-persona 一起退場,第 1240 行的事件綁定
+             用了 ?. 所以抓不到也不會報錯,但已一併移除避免留死碼。
+           ═══════════════════════════════════════════════════════════ -->
 
       <!-- ═══════════════════════════════════════════════════════════
            🚫 2026-08-24 隱藏「幫已建立的角色多拍一套造型」
@@ -1237,7 +1248,8 @@ function renderOptions(map, defaultKey) {
 // ── 事件綁定 ──────────────────────────────────────────────
 function bindEvents() {
   // 品牌切換監聽(監聽 kol.html 原生切換)
-  document.getElementById('kai-btn-new-persona')?.addEventListener('click', openNewPersonaModal);
+  //  🩹 2026-09-08:kai-btn-new-persona 已移除(入口統一到形象庫那顆)。
+  //    openNewPersonaModal 仍掛在 window 上給 kol.html 呼叫,不可刪。
   document.getElementById('kai-modal-cancel')?.addEventListener('click', closeModal);
   document.getElementById('kai-modal-confirm')?.addEventListener('click', confirmNewPersona);
 
@@ -1522,17 +1534,21 @@ function updateFolderHint() {
   const brand = S.brands.find(b => b.id === brandId);
   const brandName = brand?.name || brandId || '(未選)';
 
-  // 還沒選到角色 → 整條不顯示(路徑對客戶沒意義,而且會露出內部術語)
-  //   選好角色後才顯示,那時它是有用的資訊:檔案會存到哪。
+  // 🩹 2026-09-08:沒選角色時【也要顯示】,而且要說「請先選一位」——
+  //   舊做法是整條隱藏。但客戶點形象庫的未完成卡會捲到這一區,
+  //   到了卻什麼都沒有,不知道自己該做什麼。
   if (!brandId || !persona) {
-    hint.style.display = 'none';
-    hint.textContent = '';
+    hint.style.display = '';
+    hint.className = 'kai-folder-hint idle';
+    hint.textContent = '⬆️ 請先從上面的 KOL 形象庫選一位角色,再回來生形象照';
     return;
   }
   hint.style.display = '';
-  // ⚠️ 2026-08-22:舊文案印的是 Google 雲端硬碟的資料夾路徑。
-  //   照片從 v4.45 起就直接存進自家素材庫了,那條路徑早就不存在。
-  hint.textContent = '將存進素材庫 · KOL · ' + persona;
+  hint.className = 'kai-folder-hint';
+  // ⚠️ 2026-08-22:舊文案印的是 Google 雲端硬碟的資料夾路徑(早就不存在)。
+  // ⚠️ 2026-09-08:再改一次 —— 「將存進素材庫 · KOL · 西恩」是內部術語,
+  //   客戶看不出這一區在做什麼。改成直接講動作。
+  hint.textContent = '🎨 正在幫「' + persona + '」生形象照';
 }
 
 // ── 新 Persona Modal ──────────────────────────────────────
