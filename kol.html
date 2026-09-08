@@ -1249,7 +1249,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.58 · 新角色即時現身</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.59 · 底部顯示進度</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -1555,6 +1555,12 @@ document.addEventListener('DOMContentLoaded', function(){
       <div class="rs-ab-mini" id="rs-ab-mini"></div>
       <div class="rs-ab-txt">已選定 <b id="rs-ab-name">—</b><br><span id="rs-ab-sub"></span></div>
       <div class="rs-ab-btns">
+        <!-- 🆕 2026-09-08:沒走完四步時出現,點了直接跳到該補的地方。
+             ★ 病:底部只寫「已選定 沐恩」,看不出她還差什麼,
+               而右邊「用這位角色拍片」照樣亮著 = 系統在說「你可以走了」。
+               客戶就真的走了,然後拍出品質差的影片(RA 現場指出)。
+             ★ 只顯示文字不夠 —— 客戶知道差什麼,還是不知道去哪補。 -->
+        <button class="btn btn-sm" id="rs-ab-next" style="display:none;background:#ff9f43;color:#161018;font-weight:700"></button>
         <button class="btn btn-ghost btn-sm" id="rs-ab-edit">編輯人設</button>
         <button class="btn btn-primary btn-sm" onclick="goShootWithKol()">用這位角色拍片 →</button>
       </div>
@@ -4247,9 +4253,56 @@ function renderStageAndDossier() {
     if (mini) mini.innerHTML = img ? `<img src="${escapeHtml(_thumb(img, 160))}" alt="" loading="lazy" decoding="async">` : '';
     document.getElementById('rs-ab-name').textContent = k.name || '未命名';
     const v = rsParseVoice(p.voice_style);
-    document.getElementById('rs-ab-sub').textContent =
-      v ? (v.tag ? v.tag + ' · ' : '') + RS_AX.map((a, i) => a.o[v.ax[i]][1]).join(' / ')
-        : '聲音尚未設定';
+
+    // ══════════════════════════════════════════════════════════════
+    //  🆕 2026-09-08 · 底部列顯示四步進度(跟形象庫卡片同一個標準)
+    //  ★ 用同一支 kolSetupSteps() —— 卡片說 3/4、底部說別的話,
+    //    是最容易讓人不信任系統的組合。
+    //  ⚠️ 「人設未填」的判斷跟卡片一致:看有沒有 needPersona 徽章的來源,
+    //    這裡直接用 personaChip 的邏輯 —— background 空的就算沒填。
+    // ══════════════════════════════════════════════════════════════
+    const _needP = !(String(p.background || '').trim() || String(p.personality || '').trim());
+    const _st = kolSetupSteps(k.name || p.persona_name || '', !!img, _needP);
+    const _sub = document.getElementById('rs-ab-sub');
+    if (_sub) {
+      if (!_st.allDone) {
+        const miss = _st.steps.filter(x => !x.ok).map(x => x.label).join('、');
+        _sub.innerHTML = `<span style="color:#ff9f43;font-weight:700">${_st.done}/${_st.total} · 還差:${escapeHtml(miss)}</span>`;
+      } else {
+        _sub.textContent = v
+          ? (v.tag ? v.tag + ' · ' : '') + RS_AX.map((a, i) => a.o[v.ax[i]][1]).join(' / ')
+          : '聲音尚未設定';
+      }
+    }
+
+    // 下一步按鈕:點了直接跳到該補的地方
+    const nb = document.getElementById('rs-ab-next');
+    if (nb) {
+      if (_st.allDone || !_st.next) {
+        nb.style.display = 'none';
+      } else {
+        nb.style.display = '';
+        nb.textContent = '補' + _st.next.label + ' →';
+        nb.onclick = () => {
+          const key = _st.next.key;
+          if (key === 'persona') { openPersonaEditor(p.persona_id || ''); return; }
+          //  形象照 / 多角度 → 都在下面的 AI 生成器與人物表那一區
+          //  ⚠️ cs-box 與 kai-panel 都是【模組載入時動態建的】,不在 kol.html 的 HTML 裡。
+          //     所以要有退路:抓不到就退回另一個,兩個都沒有才放棄(避免點了完全沒反應)。
+          const el = document.getElementById(key === 'angle' ? 'cs-box' : 'kai-panel')
+                  || document.getElementById('kai-panel')
+                  || document.getElementById('cs-box');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('sbp-recommend');
+            setTimeout(() => el.classList.remove('sbp-recommend'), 2500);
+          } else {
+            toast('請往下捲到「AI 生成角色形象照」那一區', 'warn');
+          }
+        };
+      }
+    }
+
     const eb = document.getElementById('rs-ab-edit');
     if (eb) eb.onclick = () => openPersonaEditor(p.persona_id || '');
   }
