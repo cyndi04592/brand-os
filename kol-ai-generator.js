@@ -1417,6 +1417,39 @@ function onPersonaChange() {
   updateFolderHint();
 }
 
+// ══════════════════════════════════════════════════════════════════
+//  🔴 2026-09-08 · 換人時要走【這一支】,不是自己去設 sel.value
+//  ────────────────────────────────────────────────────────────────
+//  ★ 病:kol.html 的 selectKol() 換人後只做 sel.value = 名字。
+//    但 onPersonaChange 是綁在 change 事件上的,程式設 value【不會觸發】,
+//    所以 applyPersonaDefaults 從來沒被叫到:
+//      年齡 / 性別 / 國籍 / 氣質 / 服裝 / seed 全部停在上一個人。
+//    RA 實測:點過西恩之後,不管切到誰,Console 都印
+//      「已帶入角色設定 · 西恩 · 年齡 NaN」—— 一路帶錯人。
+//  ★ 這不只是顯示:seed 帶錯 = 生出來是別人的臉;
+//    年齡帶錯 = 26 歲角色可能用到兒童參數(未成年閘門那條線)。
+//  ★ 修:對外只暴露一支 selectPersona(name),名字帶進來,
+//    補選項 → 設值 → 呼叫 onPersonaChange。一條路,不會有人漏掉。
+//  ⚠️ 不要改成「dispatchEvent(new Event('change'))」——
+//    那要靠事件綁定存在,而綁定的時機比這支被呼叫的時機晚,
+//    早期呼叫會靜默失效。直接叫函式最穩。
+// ══════════════════════════════════════════════════════════════════
+window.kaiSelectPersona = function (name) {
+  try {
+    const nm = String(name || '').trim();
+    if (!nm) return;
+    const sel = document.getElementById('kai-persona');
+    if (sel) {
+      if (!Array.from(sel.options).some(o => o.value === nm)) {
+        const o = document.createElement('option');
+        o.value = nm; o.textContent = nm; sel.appendChild(o);
+      }
+      sel.value = nm;
+    }
+    onPersonaChange();
+  } catch (_) {}
+};
+
 // ═══════════════════════════════════════════════════════════════
 //  🩹 2026-08-24 選了角色 → 參數跟著帶入(RA 現場提出,這是【兒少風險】不是體驗問題)
 //   病灶:onPersonaChange 舊版只做兩件事 —— 記下名字、更新「存到哪」那行字。
