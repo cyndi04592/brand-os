@@ -1249,7 +1249,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <a href="index.html?openBits=1" title="儲值補給包" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:999px;border:1px solid rgba(124,108,255,.4);background:rgba(124,108,255,.14);font-size:14px;text-decoration:none;">💎</a>
   <span class="nav-bits-chip" id="bitsChip" style="display:none;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(124,108,255,0.18),rgba(255,122,195,0.18));border:1px solid rgba(124,108,255,0.35);font-size:12px;font-weight:900;color:#c9bcff;letter-spacing:0.3px;"><span class="bits-bar-track" style="position:relative;display:inline-block;width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,0.12);overflow:hidden;margin:0 2px;"><span id="bitsBarFill" style="position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#7c6cff,#ff7ac3);transition:width .5s ease,background .3s ease;"></span></span><span id="bitsBalance">—</span></span>
   <span id="navUserEmail" onclick="this.classList.toggle('show-email')" title="目前登入帳號(點擊顯示/收合)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.3);background:rgba(60,200,120,.1);color:#7fe0a8;font-size:12px;white-space:nowrap;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 8L12 13L21 8M5 6H19C20.1 6 21 6.9 21 8V16C21 17.1 20.1 18 19 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="navUserEmailTxt">—</span></span>
-  <div class="topbar-badge" style="margin-left:8px;">v7.57 · 進度卡排版</div>
+  <div class="topbar-badge" style="margin-left:8px;">v7.58 · 新角色即時現身</div>
 </header>
 <script>
 /* 🆕 2026-08-08 手機選單:點了任何選項自動收合 */
@@ -3916,6 +3916,32 @@ function kolSetupSteps(personaName, hasPhoto, needPersona) {
 }
 window.kolSetupSteps = kolSetupSteps;
 
+// ════════════════════════════════════════════════════════════════════
+//  🆕 2026-09-08 · 剛建立、還沒有照片的角色(第三種狀態)
+//  ──────────────────────────────────────────────────────────────────
+//  ★ 病:形象庫的資料來源是 #kol-list,而 loadKolList 第一行就寫著
+//      S.personas.filter(p => p.talking_photo_id && ...)
+//    —— 【只顯示已經綁定照片的角色】。
+//    剛取完名字的角色 talking_photo_id 是空的 → 整個看不見,
+//    客戶以為沒建成功 → 再建一次(RA 現場:建了「西恩」畫面完全沒動靜)。
+//  ★ 而 unboundPersonas() 找的是「有照片但沒角色」—— 剛好【相反】,
+//    所以兩支都漏掉這一種。這裡補第三種。
+//  ⚠️ 三種狀態要分清楚,不要合併:
+//      ① 有照片沒角色 → unboundPersonas() → 黑剪影紅框「點我完成」
+//      ② 有角色沒照片 → 這一支 → 橘框進度卡「下一步:形象照」
+//      ③ 都有         → 正常卡(四步沒走完仍顯示進度)
+// ════════════════════════════════════════════════════════════════════
+function personasWithoutPhoto() {
+  try {
+    return (S.personas || []).filter(p => {
+      const nm = String(p.persona_name || '').trim();
+      if (!nm) return false;
+      return !String(p.talking_photo_id || '').trim();
+    });
+  } catch (_) { return []; }
+}
+window.personasWithoutPhoto = personasWithoutPhoto;
+
 function unboundPersonas() {
   try {
     return (S.drivePhotos?.personas || []).filter(x => {
@@ -4041,8 +4067,55 @@ function renderRoster() {
       </div>`;
     }).join('');
 
-  wrap.innerHTML = cards + _unboundCards +
+  // 🆕 2026-09-08:剛建立、還沒有照片的角色 → 橘框進度卡
+  //   ⚠️ 同樣要排除已經在 cards 或 _unboundCards 裡的,否則同名卡片會出現兩張。
+  const _unboundNames = unboundPersonas().map(u => String(u.persona_name || '').trim());
+  const _noPhotoCards = personasWithoutPhoto()
+    .filter(p => {
+      const nm = String(p.persona_name || '').trim();
+      return _shownNames.indexOf(nm) === -1 && _unboundNames.indexOf(nm) === -1;
+    })
+    .map(p => {
+      const nm = String(p.persona_name || '').trim();
+      const st = kolSetupSteps(nm, false, true);
+      return `<div class="rs-card rs-wip" data-nophoto="${escapeHtml(nm)}" tabindex="0"
+        title="${escapeHtml(nm)} 還差:${st.steps.filter(x => !x.ok).map(x => x.label).join('、')}">
+        <div class="prog">${st.done}/${st.total} · 未完成</div>
+        <div class="silo">👤</div>
+        <div class="progbar"><i style="width:${Math.round(st.done / st.total * 100)}%"></i></div>
+        <div class="nm">${escapeHtml(nm.slice(0, 8))}</div>
+        <div class="todo2">下一步:${escapeHtml(st.next ? st.next.label : '')}</div>
+      </div>`;
+    }).join('');
+
+  wrap.innerHTML = cards + _noPhotoCards + _unboundCards +
     `<div class="rs-card rs-new" id="rs-new-kol" tabindex="0">＋<span>建新角色</span></div>`;
+
+  // 點沒照片的卡 → 捲到 AI 生成器,並把名字帶進去(下一步就是生形象照)
+  wrap.querySelectorAll('.rs-card[data-nophoto]').forEach(el => {
+    const go = () => {
+      const nm = el.dataset.nophoto || '';
+      try {
+        const sel = document.getElementById('kai-persona');
+        if (sel) {
+          if (!Array.from(sel.options).find(o => o.value === nm)) {
+            const o = document.createElement('option');
+            o.value = nm; o.textContent = nm; sel.appendChild(o);
+          }
+          sel.value = nm;
+          sel.dispatchEvent(new Event('change'));
+        }
+        const ai = document.getElementById('kai-panel');
+        if (ai) {
+          ai.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          ai.classList.add('sbp-recommend');
+          setTimeout(() => ai.classList.remove('sbp-recommend'), 2500);
+        }
+      } catch (_) {}
+    };
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
 
   wrap.querySelectorAll('.rs-card[data-unbound]').forEach(el => {
     const go = () => gotoBindPersona(el.dataset.unbound);
