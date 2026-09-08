@@ -102,10 +102,26 @@ const SCENE_INTEGRATION =
 '=== SCENE INTEGRATION (the subject must look genuinely PHOTOGRAPHED INSIDE this environment, never pasted onto a backdrop) ===\n' +
 '- ONE UNIFIED LIGHT FIELD (the single biggest fix for the pasted-on look): RE-LIGHT the subject so its highlight direction, shadow direction, shadow hardness and colour temperature match the new environment EXACTLY. If the room is warm tungsten from the left, the subject must also be warm and lit from the left — never leave it under its original flat studio light on a different-looking background.\n' +
 '- REAL GROUNDING & CONTACT SHADOW: where the subject meets the floor, table or surface, cast a soft realistic contact shadow — darkest and tightest right at the contact line, softening outward with natural penumbra — NOT a hard uniform cut-out drop shadow. On reflective surfaces add a faint believable reflection. The subject must read as having real weight resting on something.\n' +
-'- MATCHED PERSPECTIVE: the camera height, lens length and horizon line of the subject must agree with the background. A subject shot at eye level must not sit in a background shot from above; verticals and the floor plane must line up.\n' +
+'- MATCHED PERSPECTIVE — THE ENVIRONMENT SERVES THE SUBJECT, NEVER THE REVERSE: first read the camera angle of the supplied subject (is it seen from directly above, from a low three-quarter, at eye level?), then BUILD THE WHOLE ENVIRONMENT FROM THAT EXACT SAME CAMERA POSITION. A top-down subject demands a top-down flat-lay scene; a three-quarter subject demands a three-quarter scene. NEVER invent an eye-level room around a top-down subject, and never tilt the surroundings into a perspective the subject was not photographed in.\n' +
 '- EDGE INTEGRATION: silhouette edges (product rim, machine housing, shoulders, hair, fabric) pick up gentle ambient and rim light in the environment own colour, so the outline melts into the scene. NO sharp cut-out edge, NO bright halo or fringe, NO visible masking line — hair and fine detail especially must not look scissored out.\n' +
 '- SHARED ATMOSPHERE & GRADE: one consistent colour grade, contrast curve, grain and lens character across subject and background; any haze, dust, steam or bloom in the room also passes in front of the subject.\n' +
 '- DEPTH LAYERING: keep the subject tack-sharp while the background falls into believable optical defocus at the same aperture — the blur must look like real lens depth of field, not a uniform blur filter applied to a flat image.\n\n';
+
+// ═══════════════════════════════════════════════════════════════════════
+//  2026-09-07 ★ CAMERA_LOCK 視角鎖(FOOD_CRAFT 與 SCENE_INTEGRATION 共用)
+//    病灶(RA 圖2/圖3):商品照是俯拍的,AI 卻在旁邊蓋了一個平視的房間
+//    → 兩個相機打架 = 說不上來的合成感。盤子還糊在漸層裡沒有落地,
+//      菜也沒有把影子投在自己的盤面上,像貼紙。
+//    修法:先讀商品照的相機角度,整個場景照那個角度蓋。
+// ═══════════════════════════════════════════════════════════════════════
+const CAMERA_LOCK =
+'=== CAMERA & GROUND LOCK (read the supplied photo FIRST, then build everything to obey it) ===\n' +
+'- ONE CAMERA ONLY: every prop, surface, wall, window and background element must be drawn from the SAME viewpoint and the same lens as the supplied subject. If the subject reads as photographed from directly overhead, the entire image is an overhead flat-lay — no standing teapots, no vertical screens, no eye-level furniture, no visible far wall. If the subject reads as a three-quarter view, everything is three-quarter. Mixing an overhead subject with an eye-level environment is the single most obvious tell of a fake composite and is forbidden.\n' +
+'- A REAL SURFACE THAT DOES NOT DISSOLVE: the subject rests on a physical surface with visible material and texture that continues to the edge of the frame. The surface may fall out of focus but must never fade into an empty gradient, a coloured void or an undefined dark area beneath the subject.\n' +
+'- SELF-SHADOWING ON ITS OWN SURFACE: every element sitting on the plate, tray, table or platform casts its own shadow ONTO that surface, all falling in the same direction and with the same softness as the scene key light. Items with no shadow on the thing they sit on read as stickers pasted flat.\n' +
+'- FORM SHADOW & SHADING: the subject is shaded by that same key — lit side and shadow side clearly readable, occluded crevices genuinely darker. Not evenly flat-lit while the surroundings are dramatically lit.\n' +
+'- CORRECT RELATIVE SCALE: every prop must be believably sized against the subject (a teacup beside a dinner plate, a hand beside a machine). No toy-sized or giant props, and props further away must shrink correctly with perspective.\n' +
+'- EFFECTS MUST ATTACH: steam, smoke, splash, dust, sparks or falling petals must originate FROM the subject and physically interact with it — rising off the hot surface, curling around the form, lit by the same light. Never a decorative wisp floating in unrelated empty space beside it.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
@@ -3967,8 +3983,10 @@ function buildPosterPrompt() {
   var _isIllustrationOverlay = /ILLUSTRATION OVERLAY/i.test(String((flavor && flavor.flavor) || ''));
   if (_isFoodScene) {
     prompt += FOOD_CRAFT;
+    prompt += CAMERA_LOCK;
   } else if (SELECTED_PRODTYPE !== 'screen' && !_isIllustrationOverlay) {
     prompt += SCENE_INTEGRATION;
+    prompt += CAMERA_LOCK;
   }
 
   if (contextTheme.context) {
