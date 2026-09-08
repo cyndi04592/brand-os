@@ -1607,6 +1607,42 @@ async function confirmNewPersona() {
 
     closeModal();
     showStatus('✅ 已建立角色「' + name + '」', 'ok');   // 🩹 2026-08-23:拿掉「資料夾」(Google 雲端時代的說法)
+
+    // ══════════════════════════════════════════════════════════════════
+    //  🩹 2026-09-08 · 建完角色要讓客戶【看得到、而且已經選好】
+    //  ────────────────────────────────────────────────────────────────
+    //  ★ 病:上面那段只更新了【AI 生成器自己的下拉】(kai-persona),
+    //    完全沒碰 kol.html 的形象庫與右邊舞台 ——
+    //    所以新角色不會出現在形象庫,右邊還停在「從左邊選一位角色」。
+    //    RA 現場實測:打了「西恩」→ 按建立 → 畫面像沒反應。
+    //    客戶會以為失敗 → 再建一次 → 形象庫長出重複角色。
+    //  ★ 修:呼叫 kol.html 的 refreshAll() 重抓,然後點一下那張卡完成選取。
+    //  ⚠️ 為什麼是【點卡片】而不是自己設 S.selectedKol:
+    //    選取後面還接著舞台、人設、造型、多角度…一整串渲染。
+    //    自己設狀態會漏掉其中幾個而且不出聲 —— 重用既有點擊路徑最安全
+    //    (形象庫的卡片自己也是這樣做的:找到 #kol-list 那張,src.click())。
+    //  ⚠️ refreshAll 是 async,而且要等 DOM 畫完卡片才點得到 → 給一點緩衝,
+    //    並且重試幾次(照片清單慢到的話第一次會找不到)。
+    // ══════════════════════════════════════════════════════════════════
+    try {
+      if (typeof window.refreshAll === 'function') await window.refreshAll();
+    } catch (_) {}
+    (function pickNewKol(tries) {
+      try {
+        const cards = document.querySelectorAll('#kol-list .kol-card-v2');
+        for (const c of cards) {
+          const t = (c.textContent || '').replace(/\s+/g, '');
+          if (t.indexOf(name.replace(/\s+/g, '')) !== -1) {
+            c.click();
+            //  ⚠️ rs-roster 是 class 不是 id —— 用 # 會永遠找不到而且不報錯。
+            const rc = document.querySelector('.rs-roster .rs-card[data-kol-id="' + (c.dataset.kolId || '') + '"]');
+            if (rc) rc.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            return;
+          }
+        }
+      } catch (_) {}
+      if (tries > 0) setTimeout(function () { pickNewKol(tries - 1); }, 400);
+    })(6);
   } catch (e) {
     alert('❌ 建立失敗:' + e.message);
   } finally {
