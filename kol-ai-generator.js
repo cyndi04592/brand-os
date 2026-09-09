@@ -1207,7 +1207,11 @@ function buildPanelHTML() {
       <div class="kai-results" id="kai-results" style="display:none">
         <div class="kai-results-head">
           <span id="kai-results-title">生成結果</span>
-          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.4);" id="kai-results-meta"></span>
+          <!-- 🩹 2026-09-09:這格原本印 "3 張 · seed=xxx · 10.7s" ——
+               對客戶來說是引擎雜訊(而且 seed 已自動填回上面的輸入框),
+               現在改成「下一步要做什麼」的指示文字,所以字級/顏色跟著調亮。
+               seed 與耗時改印在 console(除錯用,見 runGenerate)。 -->
+          <span style="font-size:12px;font-weight:600;color:#ffb454;" id="kai-results-meta"></span>
         </div>
         <div class="kai-gallery" id="kai-gallery"></div>
         <div id="kai-status-area"></div>
@@ -2034,7 +2038,9 @@ async function generate() {
       refreshSeedLockLabel();   // 🆕 自動填 seed 後標籤改「🔒 會沿用」,不再卡「未鎖」
     }
 
-    meta.textContent = data.images.length + ' 張 · seed=' + data.seed + ' · ' + latency + 's';
+    // 🩹 2026-09-09:客戶看到的是指示,不是引擎參數。
+    console.log('[kai] 生成完成 ·', data.images.length, '張 · seed =', data.seed, '·', latency + 's');
+    meta.textContent = '👇 請在下方選擇一張你喜歡的臉';
     showStatus('✅ 生成完成,挑一張點「選這張」', 'ok');
 
   } catch (e) {
