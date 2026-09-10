@@ -14,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.5-auto';
+  var VER = 'v1.6-auto';
 
   // ══════════════════════════════════════════════════════════════════
   //  🩹 2026-09-07 · 錯誤訊息講人話
@@ -194,11 +194,34 @@
     //  ⚠️ 順序是「先存新的、成功了才刪舊的」,不能反過來。
     //     反過來(先刪再存)一旦存失敗,客戶手上兩張都沒有 —— 那是照片消失,
     //     比多留一張垃圾嚴重得多。刪失敗只是多一張沒人用的圖。
+    //  ⚠️ 2026-09-10 這裡【不能用 gasPost】—— 現場實測繞了兩圈才確定:
+    //    gasPost 對列在 WRITE_VIA_WORKER 的動作,送出的契約是
+    //      { action:'gas_write', gasAction:'deleteKolPhoto', payload:{...} }
+    //    Worker 收到 gas_write 只會去 D1_WRITERS 那張表找,
+    //    而 deleteKolPhoto 是寫在【最上層路由】的獨立 action → 永遠找不到,
+    //    然後靜靜掉去 GAS(那邊更沒有這支)。前端只看到「沒刪成功」。
+    //  ★ 所以直接打 WORKER_URL,用它原本的契約 { action:'deleteKolPhoto' }。
+    //    這條路 kontext() 與 _csToR2() 早就在走,不是新發明。
     function delOld(assetId) {
       var c = ctx();
       if (!c || !assetId) return Promise.resolve(false);
-      return c.kai.gasPost('deleteKolPhoto', { assetId: assetId, apply: true })
-        .then(function (r) { return !!(r && r.ok && r.applied); })
+      return fetch(c.kai.WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: c.kai.PASSWORD,
+          action: 'deleteKolPhoto',
+          assetId: assetId,
+          apply: true
+        })
+      }).then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (!(r && r.ok && r.applied)) {
+            console.warn('[character-sheet] deleteKolPhoto 回應:', r);
+            return false;
+          }
+          return true;
+        })
         .catch(function (e) {
           console.warn('[character-sheet] 舊圖沒刪掉(新圖已存好,不影響使用):', e);
           return false;
