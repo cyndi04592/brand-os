@@ -14,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.2-friendly';
+  var VER = 'v1.4-auto';
 
   // ══════════════════════════════════════════════════════════════════
   //  🩹 2026-09-07 · 錯誤訊息講人話
@@ -52,6 +52,29 @@
 
   var FRONT = null;
   var RESULTS = { front: null, q34: null, profile: null };
+
+  // ══════════════════════════════════════════════════════════════════
+  //  🗑 2026-09-10 · v1.4「重生 = 覆蓋」的兩個必備零件
+  //  ────────────────────────────────────────────────────────────────
+  //  ① SAVED_IDS:記住每個角度存進素材庫後拿到的 assetId。
+  //     deleteKolPhoto 只吃 assetId —— 傳 brandId+kolName 會把那個 KOL
+  //     的照片【全部】刪光(正臉一起死),絕對不能走那條。
+  //
+  //  ② _stamp():檔名時間戳必須帶到【秒】。
+  //     Worker 的去重是 brand_id + kol_name + file_name 三者相同就
+  //     「回傳既有那張、不存新的」,而且那句查詢【沒有】過濾 visible=1。
+  //     deleteKolPhoto 又是軟刪除(只把 visible 改 0)——
+  //     所以舊檔名會永遠卡住重存。只有日期的話,同一天重生就死在這。
+  // ══════════════════════════════════════════════════════════════════
+  var SAVED_IDS = {};      // { q34: assetId, profile: assetId }
+  var AUTO = false;        // autoRun 進來的那一輪,生成完要自動存
+
+  function _stamp() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return '' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' +
+           p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+  }
 
   var ANGLES = [
     { key: 'q34', label: '3/4',
@@ -146,6 +169,41 @@
     box.appendChild(btnUse);
 
     panel.appendChild(box);
+
+    // 品牌與 persona 的來源順位(btnUse 原本寫在自己裡面,現在三處共用)
+    function ctx() {
+      var kai = K();
+      var brandId = (kai && kai.S && kai.S.currentBrandId) ||
+                    (window.S && window.S.currentBrandId) || '';
+      var persona = PICKED.persona || (kai && kai.S && kai.S.currentPersonaName) || '';
+      if (!kai || !brandId || !persona || typeof kai.gasPost !== 'function') return null;
+      return { kai: kai, brandId: brandId, persona: persona };
+    }
+
+    function saveAngle(angleKey, url) {
+      var c = ctx();
+      if (!c) return Promise.reject(new Error('讀不到品牌/persona'));
+      return c.kai.gasPost('saveKolPhoto', {
+        brandId: c.brandId, personaName: c.persona, imageUrl: url,
+        filename: c.persona + '_sheet_' + angleKey + '_' + _stamp() + '.jpg',
+        outfit: '', toProcessed: true,
+        metadata: { source: 'flux_kontext', angle: angleKey, generated_at: new Date().toISOString() }
+      });
+    }
+
+    //  ⚠️ 順序是「先存新的、成功了才刪舊的」,不能反過來。
+    //     反過來(先刪再存)一旦存失敗,客戶手上兩張都沒有 —— 那是照片消失,
+    //     比多留一張垃圾嚴重得多。刪失敗只是多一張沒人用的圖。
+    function delOld(assetId) {
+      var c = ctx();
+      if (!c || !assetId) return Promise.resolve(false);
+      return c.kai.gasPost('deleteKolPhoto', { assetId: assetId, apply: true })
+        .then(function (r) { return !!(r && r.ok && r.applied); })
+        .catch(function (e) {
+          console.warn('[character-sheet] 舊圖沒刪掉(新圖已存好,不影響使用):', e);
+          return false;
+        });
+    }
 
     function setFront(url) {
       FRONT = url;
@@ -352,7 +410,25 @@
           var ang = ANGLES.filter(function (a) { return a.key === angleKey; })[0];
           rb.textContent = '…生成中'; rb.disabled = true;
           kontext(FRONT, ang.prompt).then(function (url2) {
-            RESULTS[angleKey] = url2; img.src = url2; rb.textContent = '↻ 重生'; rb.disabled = false;
+            RESULTS[angleKey] = url2; img.src = url2;
+
+            var oldId = SAVED_IDS[angleKey];
+            // 還沒存過(手動流程、客戶還沒按「用這組」)→ 只換畫面,照舊
+            if (!oldId) { rb.textContent = '↻ 重生'; rb.disabled = false; return null; }
+
+            rb.textContent = '…存檔中';
+            status.textContent = '💾 新的' + label + '存檔中…';
+            return saveAngle(angleKey, url2).then(function (res) {
+              if (!res || !res.ok) throw new Error((res && res.error) || '存檔失敗');
+              SAVED_IDS[angleKey] = res.assetId || null;
+              return delOld(oldId);
+            }).then(function (delOk) {
+              rb.textContent = '↻ 重生'; rb.disabled = false;
+              status.textContent = delOk
+                ? ('✅ ' + label + '已換新,舊的那張已從素材庫清掉。')
+                : ('✅ ' + label + '已換新 —— 但舊的那張沒刪成功,素材庫會多一張,之後用刪除鍵清。');
+              if (typeof window.refreshAll === 'function') { try { window.refreshAll(); } catch (_) {} }
+            });
           }).catch(function (e) { rb.textContent = '❌ 重試'; rb.disabled = false; status.textContent = '❌ ' + friendlyErr(e); });
         };
         c.appendChild(rb);
@@ -372,9 +448,19 @@
           cards.appendChild(card('正臉(原圖)', RESULTS.front, null));
           cards.appendChild(card('3/4', RESULTS.q34, 'q34'));
           cards.appendChild(card('側臉', RESULTS.profile, 'profile'));
-          status.textContent = '✅ 三角度完成 — 看是不是同一個人、有沒有磨皮。OK 就「用這組」。';
           btnGen.disabled = false; btnGen.style.opacity = 1;
           btnUse.style.display = 'block';
+
+          if (AUTO) {
+            //  🆕 v1.4:自動流程不再問第二次 —— 客戶按「✓ 選這張」的當下就已經
+            //     在三張臉裡挑好了,把關已經發生過。這裡再擋一顆按鈕,
+            //     現場實測的結果是客戶直接走人,角色永遠停在只有正臉、拍不了片。
+            AUTO = false;
+            status.textContent = '💾 三角度完成,存進素材庫中…';
+            btnUse.onclick();
+          } else {
+            status.textContent = '✅ 三角度完成 — 看是不是同一個人、有沒有磨皮。OK 就「用這組」。';
+          }
         })
         .catch(function (e) { status.textContent = '❌ ' + friendlyErr(e); btnGen.disabled = false; btnGen.style.opacity = 1; });
     };
@@ -393,7 +479,8 @@
       btnUse.style.background = '#3a3a4a';
       btnUse.textContent = '💾 存檔中…(0/2)';   // 只存 3/4 與側臉;正臉已在素材庫
 
-      var ts = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      // 🩹 v1.4:檔名時間戳搬進 saveAngle(),並且從「只有日期」升到「帶秒」——
+      //   理由見檔頭 _stamp() 註解(舊檔名會被 Worker 去重永久卡住)。
       // 🩹 2026-08-22 根治「每次生成都有兩張正臉」:
       //   RESULTS.front 就是客戶稍早按「✓ 選這張」存進素材庫的那張原圖 ——
       //   這裡再存一次,等於同一張圖用兩個檔名躺在素材庫裡。
@@ -421,17 +508,14 @@
           return;
         }
         var a = set[i];
-        kai.gasPost('saveKolPhoto', {
-          brandId: brandId,
-          personaName: persona,
-          imageUrl: a.url,
-          filename: persona + '_sheet_' + a.angle + '_' + ts + '.jpg',
-          outfit: '',
-          toProcessed: true,
-          metadata: { source: 'flux_kontext', angle: a.angle, generated_at: new Date().toISOString() }
-        }).then(function (res) {
+        saveAngle(a.angle, a.url).then(function (res) {
           // ⚠️ 2026-08-22 起已無 Drive 編號(file_id 恆為空字串),改記網址才有意義
-          if (res && res.ok) saved.push({ angle: a.angle, url: res.url || res.drive_url || '', filename: res.filename });
+          if (res && res.ok) {
+            saved.push({ angle: a.angle, url: res.url || res.drive_url || '', filename: res.filename });
+            // 🆕 v1.4:記住編號 —— 之後按「↻ 重生」要靠它刪掉這一張
+            SAVED_IDS[a.angle] = res.assetId || null;
+            if (!res.assetId) console.warn('[character-sheet] ⚠ Worker 沒回 assetId(' + a.angle + ')→ 重生時舊圖會刪不掉');
+          }
           btnUse.textContent = '💾 存檔中…(' + (i + 1) + '/2)';   // 只存 3/4 與側臉
           next(i + 1);
         }).catch(function (e) {
@@ -444,10 +528,45 @@
         });
       })(0);
     };
+
+    // ══════════════════════════════════════════════════════════════════
+    //  🆕 2026-09-09 · v1.3 對外自動入口 window.KCS.autoRun(frontUrl)
+    //  ────────────────────────────────────────────────────────────────
+    //  ★ 為什麼要這個:客戶按完「✓ 選這張」之後,①讀取正臉 / ②生成
+    //    這兩顆按鈕其實沒有選擇餘地 —— 正臉只有一張(第 198 行的
+    //    autoPick 早就自動勾了),而多角度是五鎖影片的【必經之路】
+    //    (沒有 sheet_front/q34/profile 就拍不了片)。兩顆儀式性按鈕。
+    //
+    //  ★ 為什麼【不】把存檔(btnUse)也自動化:
+    //    Kontext 轉頭偶爾會歪臉/磨皮。生成可以重按 ② 重來,
+    //    存檔是寫進素材庫、目前清起來很麻煩。
+    //    那顆綠色按鈕是唯一的品質關卡,必須留給人。
+    //
+    //  ★ 這裡【繞過 ① btnLoad】直接 setFront:呼叫端(選這張)手上
+    //    已經有存完的 R2 網址了,再去 DOM 撈一次只會多一個失敗點。
+    //
+    //  ★ 單獨驗證方式(不必改 kol-ai-generator.js):
+    //      window.KCS.autoRun('https://…正臉圖網址…')
+    // ══════════════════════════════════════════════════════════════════
+    window.KCS = window.KCS || {};
+    window.KCS.autoRun = function (frontUrl) {
+      if (!frontUrl) { console.warn('[character-sheet] autoRun:沒給正臉網址'); return false; }
+      // 正在生成中就不要插隊(btnGen 生成期間會被 disable)
+      if (btnGen.disabled && FRONT) { console.warn('[character-sheet] autoRun:上一輪還在生成,略過'); return false; }
+      try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+      SAVED_IDS = {};          // 換人了,上一輪的編號不能留(會刪到別人的照片)
+      AUTO = true;             // 生成完自動接存檔,見 btnGen 成功分支
+      setFront(frontUrl);
+      status.textContent = '🎬 已自動帶入正臉,開始生 3/4 + 側臉…';
+      btnGen.onclick();
+      return true;
+    };
+    // 呼叫端用這個判斷面板建好了沒(build 有可能還在 setTimeout 重試)
+    window.KCS.ready = true;
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
   else build();
 
-  console.log('[character-sheet] 🎬 ' + VER + ' 就緒(Kontext 鎖臉 + 存進素材庫)');
+  console.log('[character-sheet] 🎬 ' + VER + ' 就緒(Kontext 鎖臉 + 存進素材庫 + window.KCS.autoRun 自動入口)');
 })();
