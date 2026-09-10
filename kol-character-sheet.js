@@ -14,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.8-auto';
+  var VER = 'v1.9-auto';
 
   // ══════════════════════════════════════════════════════════════════
   //  🩹 2026-09-07 · 錯誤訊息講人話
@@ -246,8 +246,14 @@
       return listKolPhotos().then(function (rows) {
         var stale = rows.filter(function (r) {
           var fn = String((r && r.file_name) || '');
-          // 🔒 鎖②:只有這兩種角度照進得了射程
-          return /_sheet_(q34|profile)_/i.test(fn) && !keep[String(r.id)];
+          var m = fn.match(/_sheet_(front|q34|profile)_/i);
+          // 🔒 鎖②:只有這三種角度照進得了射程(正臉的 _ai_ 原檔永遠不在內)
+          if (!m) return false;
+          // 🔒 鎖②-b(v1.9 加嚴):【逐角度】判斷 —— 這個角度這次沒存成功,
+          //    就連它的舊檔都不准碰。否則正臉存失敗時,會把舊的 sheet_front
+          //    清掉卻沒有新的補上,角色反而更糟。
+          if (!SAVED_IDS[m[1].toLowerCase()]) return false;
+          return !keep[String(r.id)];
         });
         if (!stale.length) return 0;
         console.log('[character-sheet] 🧹 準備清掉 ' + stale.length + ' 張舊角度照:',
@@ -579,11 +585,31 @@
       //   一個重複,連鎖三個症狀。
       //   ★ 3/4 與側臉是 Kontext 新生成的,素材庫沒有,一定要存。
       //   ⚠️ 正臉仍寫進 KOL_CHARACTER_SHEET(下游要拿它當鎖臉錨點),只是不重複落檔。
+      // ══════════════════════════════════════════════════════════════
+      //  🪪 2026-09-11 · v1.9 正臉也要有名字(RA 現場抓到:正臉沒換)
+      //  ────────────────────────────────────────────────────────────
+      //  ★ 病:pickAnglePhoto() 是靠【檔名】找角度照的 ——
+      //      profile → /sheet_profile/  ·  q34 → /sheet_q34/  ·  front → /sheet_front/
+      //    然後照 created_at 由新到舊排,取第一張。
+      //    3/4 跟側臉都有那個名字,所以永遠拿到最新的;
+      //    但【正臉從來沒存成 sheet_front】—— 找不到就退回
+      //    _kolFrontFromLibrary() 的 procs[0],也就是「清單第一張」。
+      //    角色一旦有第二張 _ai_ 正臉,拿到的就是【陣列順序決定的那張】,
+      //    不是客戶剛挑的那張。Console 那行
+      //      「正臉用素材庫原始形象照頂替(沒有 sheet_front 檔)」
+      //    抱怨的就是這件事。
+      //
+      //  ★ 修法是【補名字】,不是刪舊正臉:
+      //    舊的 _ai_ 正臉可能正是 Look 綁著的主形象,單獨刪掉角色會壞。
+      //    多存一份 sheet_front 沒有生成成本(只是複製既有網址),
+      //    而且讓「看到的 = 拍片用到的」變成必然,不再靠陣列順序。
+      // ══════════════════════════════════════════════════════════════
       var set = [
+        { angle: 'front', url: RESULTS.front },
         { angle: 'q34', url: RESULTS.q34 },
         { angle: 'profile', url: RESULTS.profile }
       ];
-      var saved = [{ angle: 'front', url: RESULTS.front, filename: '(已在素材庫,不重複存)' }];
+      var saved = [];
 
       (function next(i) {
         if (i >= set.length) {
@@ -593,7 +619,7 @@
             drive: saved, ts: Date.now()
           };
           btnUse.style.background = '#0f7a42';
-          btnUse.textContent = '✅ 已存進素材庫 · 人物表鎖定(' + saved.length + '/3)';   // 3 = 正臉(既有)+3/4+側臉
+          btnUse.textContent = '✅ 已存進素材庫 · 人物表鎖定(' + saved.length + '/3)';   // 3 = 正臉+3/4+側臉,v1.9 起三張都真的存
 
           // 🧹 v1.8:先把這個角色的舊角度照清乾淨,再往下走。
           //   手動路徑也做 —— 重複的角度照對誰都是垃圾,不分自動手動。
