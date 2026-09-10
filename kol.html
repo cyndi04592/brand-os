@@ -3965,6 +3965,29 @@ window.unboundPersonas = unboundPersonas;
 // 🩹 2026-09-07:點剪影卡 → 切到照片庫分頁 + 捲到那個人
 function gotoBindPersona(name) {
   try {
+    // ══════════════════════════════════════════════════════════════════
+    //  🔴 2026-09-10 · 點紅卡(還沒建立)不會選中那個人(RA 現場抓到)
+    //  ────────────────────────────────────────────────────────────────
+    //  ★ 病:這支函式【收了 name 卻從頭到尾沒用過】——
+    //    點西恩、點沐恩、點任何一張紅卡,結果一模一樣:
+    //    切頁籤 + 捲畫面。系統不知道你點的是誰,選人狀態停在上一位。
+    //  ★ 危險的不是顯示,是資料:生成器仍指著上一個人,
+    //    接著生圖、按「選這張」→ saveKolPhoto 帶的 personaName 是舊的
+    //    → 【照片存到別人身上,而且不報錯】。跟 9/8 修的是同一種病。
+    //  ★ 修法照抄隔壁 data-nophoto 那條路(第 4109 行)——
+    //    那裡的註解早就寫過「不能只塞下拉,狀態也要設好,
+    //    兩條路最後停在同一個地方」。這支 9/7 寫的時候漏抄了。
+    //  ⚠️ 這裡只對齊【生成器】。右側大圖與底部「已選定」是靠
+    //    S.selectedKol 畫的,而它要從 _kolCache 拿 KOL 物件 ——
+    //    還沒建立的人快取裡沒有。那半要動整條渲染鏈,另案處理。
+    // ══════════════════════════════════════════════════════════════════
+    const _nm = String(name || '').trim();
+    if (_nm) {
+      S.currentPersonaName = _nm;
+      if (typeof window.kaiSelectPersona === 'function') window.kaiSelectPersona(_nm);
+      else if (typeof window.updateFolderHint === 'function') window.updateFolderHint();
+    }
+
     S.rsPhotoShowAll = true; S.rsPhotoUserSet = false;
     const tb = document.querySelector('.rs-tab[data-pane="photo"]');
     if (tb) tb.click();
