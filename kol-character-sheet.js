@@ -14,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.7-auto';
+  var VER = 'v1.8-auto';
 
   // ══════════════════════════════════════════════════════════════════
   //  🩹 2026-09-07 · 錯誤訊息講人話
@@ -195,6 +195,72 @@
     //  ⚠️ 順序是「先存新的、成功了才刪舊的」,不能反過來。
     //     反過來(先刪再存)一旦存失敗,客戶手上兩張都沒有 —— 那是照片消失,
     //     比多留一張垃圾嚴重得多。刪失敗只是多一張沒人用的圖。
+    // ══════════════════════════════════════════════════════════════════
+    //  🧹 2026-09-11 · v1.8 清掉這個角色的「舊角度照」
+    //  ────────────────────────────────────────────────────────────────
+    //  ★ 病(RA 指出):「↻ 重生」會刪舊的,但客戶【重新生一次臉、
+    //    再按選這張】走的是另一條路 —— autoRun 一進來就把 SAVED_IDS
+    //    清空(換人時必須清,否則會刪到別人的照片),清空之後就不知道
+    //    舊的是誰,於是只存新的、舊的原地不動。
+    //    結果:同一個角色兩組 3/4、兩組側臉,越玩越多。
+    //    而客戶【沒有刪除介面】(RA 拍板不給,怕他們刪刪減減把角色弄壞),
+    //    所以系統自己不長垃圾是唯一的解。
+    //
+    //  ★ 做法不是「事先記舊編號」,而是存完之後回頭問一次:
+    //    這個角色現在有哪些角度照 → 不是剛剛存的那兩張就清掉。
+    //    附帶好處:過去累積的歷史垃圾,下次跑到這裡會自動清乾淨。
+    //
+    //  ★ 三道安全鎖(順序不能動):
+    //    ① keep 是空的就什麼都不做 —— 存檔失敗時絕不能開始刪
+    //    ② 只碰 _sheet_q34_ / _sheet_profile_ ——
+    //       正臉是 _ai_ 開頭,永遠不在射程內;sheet_front 也不碰
+    //    ③ 一張一張點名刪(assetId),不用 brandId+kolName 那條
+    //       (那條會把這個 KOL 的照片全刪光,正臉一起死)
+    // ══════════════════════════════════════════════════════════════════
+    function listKolPhotos() {
+      var c = ctx();
+      if (!c) return Promise.resolve([]);
+      // 不帶 apply → 試算模式,只回清單不刪東西
+      return fetch(c.kai.WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: c.kai.PASSWORD, action: 'deleteKolPhoto',
+          brandId: c.brandId, kolName: c.persona
+        })
+      }).then(function (r) { return r.json(); })
+        .then(function (d) { return (d && d.rows) || []; })
+        .catch(function (e) { console.warn('[character-sheet] 讀照片清單失敗:', e); return []; });
+    }
+
+    function purgeStaleSheets() {
+      var keep = {};
+      Object.keys(SAVED_IDS).forEach(function (k) {
+        if (SAVED_IDS[k]) keep[String(SAVED_IDS[k])] = 1;
+      });
+      // 🔒 鎖①:不知道新的是誰,就一張都不准刪
+      if (!Object.keys(keep).length) {
+        console.warn('[character-sheet] 這次沒拿到 assetId → 跳過清理(寧可留垃圾,不能刪錯)');
+        return Promise.resolve(0);
+      }
+      return listKolPhotos().then(function (rows) {
+        var stale = rows.filter(function (r) {
+          var fn = String((r && r.file_name) || '');
+          // 🔒 鎖②:只有這兩種角度照進得了射程
+          return /_sheet_(q34|profile)_/i.test(fn) && !keep[String(r.id)];
+        });
+        if (!stale.length) return 0;
+        console.log('[character-sheet] 🧹 準備清掉 ' + stale.length + ' 張舊角度照:',
+          stale.map(function (r) { return r.id + ' ' + r.file_name; }));
+        var done = 0;
+        return stale.reduce(function (chain, r) {
+          return chain.then(function () {
+            return delOld(r.id).then(function (ok) { if (ok) done++; });
+          });
+        }, Promise.resolve()).then(function () { return done; });
+      });
+    }
+
     //  ⚠️ 2026-09-10 這裡【不能用 gasPost】—— 現場實測繞了兩圈才確定:
     //    gasPost 對列在 WRITE_VIA_WORKER 的動作,送出的契約是
     //      { action:'gas_write', gasAction:'deleteKolPhoto', payload:{...} }
@@ -528,6 +594,23 @@
           };
           btnUse.style.background = '#0f7a42';
           btnUse.textContent = '✅ 已存進素材庫 · 人物表鎖定(' + saved.length + '/3)';   // 3 = 正臉(既有)+3/4+側臉
+
+          // 🧹 v1.8:先把這個角色的舊角度照清乾淨,再往下走。
+          //   手動路徑也做 —— 重複的角度照對誰都是垃圾,不分自動手動。
+          btnUse.textContent = '🧹 清理舊角度照…';
+          purgeStaleSheets().then(function (_n) {
+            if (_n > 0) console.log('[character-sheet] 🧹 已清掉 ' + _n + ' 張舊角度照');
+            _afterSave(_n);
+          });
+          return;
+        }
+
+        // 存檔 + 清理都完成之後才走到這 —— 拆出來是因為上面要等 Promise
+        function _afterSave(purged) {
+          btnUse.textContent = '✅ 已存進素材庫 · 人物表鎖定(' + saved.length + '/3)';
+          if (purged > 0) {
+            status.textContent = '🧹 順手清掉 ' + purged + ' 張舊的角度照,這位只留最新的一組。';
+          }
 
           // ══════════════════════════════════════════════════════════
           //  🤖 v1.7:自動流程的最後一哩 —— 順手把角色建立完成
