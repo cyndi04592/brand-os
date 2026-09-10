@@ -14,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.6-auto';
+  var VER = 'v1.7-auto';
 
   // ══════════════════════════════════════════════════════════════════
   //  🩹 2026-09-07 · 錯誤訊息講人話
@@ -68,6 +68,7 @@
   // ══════════════════════════════════════════════════════════════════
   var SAVED_IDS = {};      // { q34: assetId, profile: assetId }
   var AUTO = false;        // autoRun 進來的那一輪,生成完要自動存
+  var AUTO_BIND = false;   // 存完之後還要自動「完成建立角色」(只有 autoRun 那條路)
 
   function _stamp() {
     var d = new Date();
@@ -527,6 +528,46 @@
           };
           btnUse.style.background = '#0f7a42';
           btnUse.textContent = '✅ 已存進素材庫 · 人物表鎖定(' + saved.length + '/3)';   // 3 = 正臉(既有)+3/4+側臉
+
+          // ══════════════════════════════════════════════════════════
+          //  🤖 v1.7:自動流程的最後一哩 —— 順手把角色建立完成
+          //  ────────────────────────────────────────────────────────
+          //  ★ 病:v1.6 跑到這裡就結束了。照片全都在,但 talking_photo_id
+          //    還是空的 → 卡片永遠紅著「還沒建立·點我完成」,
+          //    而客戶根本不知道要回上面勾照片、按綠鈕。
+          //  ★ 只在 autoRun 那條路做(AUTO_BIND)。手動按 ①②③ 的人
+          //    自己會按綠鈕,不要替他決定。
+          //  ★ 只綁正臉(RESULTS.front)—— 側臉不能當口播造型。
+          //  ★ 失敗不吞:文字明講還差什麼、怎麼手動補,不能讓客戶
+          //    以為完成了。
+          // ══════════════════════════════════════════════════════════
+          if (AUTO_BIND) {
+            AUTO_BIND = false;
+            if (typeof window.autoBindPersona === 'function') {
+              btnUse.textContent = '🤖 完成建立角色中…';
+              status.textContent = '🤖 最後一步:完成建立角色…';
+              window.autoBindPersona(persona, RESULTS.front).then(function (r) {
+                if (r && r.ok) {
+                  btnUse.textContent = r.skipped
+                    ? '✅ 已存進素材庫 · 人物表鎖定(3/3)'
+                    : '🎉 角色已建立完成(3/3)';
+                  status.textContent = r.skipped
+                    ? '✅ 全部完成。'
+                    : '🎉 「' + persona + '」已建立完成 —— 可以拿去拍片了。';
+                } else {
+                  btnUse.textContent = '✅ 照片已存好 · 角色尚未建立';
+                  status.textContent = '⚠️ 照片都存好了,但最後的建立沒成功:' +
+                    ((r && r.error) || '未知') +
+                    ' —— 回上面勾一張正臉,按綠色按鈕即可完成。';
+                  console.warn('[character-sheet] autoBindPersona 回應:', r);
+                }
+                if (typeof window.refreshAll === 'function') { try { window.refreshAll(); } catch (e) {} }
+              });
+              return;
+            }
+            console.warn('[character-sheet] 找不到 window.autoBindPersona —— kol.html 需 2026-09-10 後版本');
+          }
+
           if (typeof window.refreshAll === 'function') { try { window.refreshAll(); } catch (e) {} }
           return;
         }
@@ -602,6 +643,7 @@
       try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
       SAVED_IDS = {};          // 換人了,上一輪的編號不能留(會刪到別人的照片)
       AUTO = true;             // 生成完自動接存檔,見 btnGen 成功分支
+      AUTO_BIND = true;        // 存完再自動完成建立,見 btnUse 收口
       setFront(frontUrl);
       status.textContent = '🎬 已自動帶入正臉,開始生 3/4 + 側臉…';
       btnGen.onclick();
