@@ -5555,6 +5555,35 @@ async function autoBindPersona(personaName, frontUrl) {
       loadDrivePhotos(S.currentBrandId, true),
     ]);
 
+    // ══════════════════════════════════════════════════════════════
+    //  👁 2026-09-10 · 建立完成後自動選中他(RA 現場提出)
+    //  ────────────────────────────────────────────────────────────
+    //  ★ 病:自動流程剛把角色建好,右側大面板卻是空的,只寫
+    //    「← 從左邊選一位角色」。客戶剛完成的東西當場消失,
+    //    看起來像沒成功 —— 而他其實只差被點一下。
+    //  ★ 不另寫一套選取邏輯:直接【重用 #kol-list 的點擊路徑】,
+    //    跟第 4141 行的 rs-card 處理同一個做法。那條路已經包含
+    //    selectKol()、造型清單、照片庫、多角度卡的完整重畫。
+    //  ⚠️ 一定要在上面三個 load*(…, true) 跑完之後 ——
+    //    _kolCache 是 loadKolList 填的,而它的 key 是 talking_photo_id。
+    //    早一步做,快取裡還沒有這個人,會靜靜點不到。
+    //  ★ 點不到就退回直接呼叫 selectKol(快取有、DOM 還沒畫好的情況)。
+    // ══════════════════════════════════════════════════════════════
+    try {
+      if (_gid) {
+        const _src = document.querySelector('#kol-list [data-kol-id="' + CSS.escape(_gid) + '"]');
+        if (_src) {
+          _src.click();
+        } else if (window._kolCache && window._kolCache[_gid]) {
+          selectKol(window._kolCache[_gid]);
+        } else {
+          console.warn('[autoBind] 建好了但選不中(快取還沒到):', _gid);
+        }
+      }
+    } catch (e) {
+      console.warn('[autoBind] 自動選中失敗(角色已建立,不影響):', e);
+    }
+
     return { ok: true, group_id: _gid, action: res.action };
   } catch (e) {
     return { ok: false, error: String((e && e.message) || e) };
