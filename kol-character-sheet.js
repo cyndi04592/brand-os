@@ -14,7 +14,7 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.4-auto';
+  var VER = 'v1.5-auto';
 
   // ══════════════════════════════════════════════════════════════════
   //  🩹 2026-09-07 · 錯誤訊息講人話
@@ -551,8 +551,31 @@
     window.KCS = window.KCS || {};
     window.KCS.autoRun = function (frontUrl) {
       if (!frontUrl) { console.warn('[character-sheet] autoRun:沒給正臉網址'); return false; }
+
+      // ══════════════════════════════════════════════════════════════
+      //  🚧 v1.5 出門前先檢查 —— 三道全部在【花錢之前】
+      //  ────────────────────────────────────────────────────────────
+      //  ★ 病:v1.4 的檢查只長在 btnUse(存檔)裡。等走到那裡,
+      //    Kontext 已經生了兩張圖、錢已經付掉,才跳「讀不到 persona」。
+      //    2026-09-10 現場實測就這樣白花了一次。
+      //    要擋就要擋在最前面,不能等結帳才驗身分。
+      // ══════════════════════════════════════════════════════════════
+      if (!/^https?:\/\//i.test(String(frontUrl))) {
+        console.warn('[character-sheet] autoRun:這不是網址 →', frontUrl); return false;
+      }
+      var _c0 = ctx();
+      if (!_c0) {
+        console.warn('[character-sheet] autoRun:讀不到品牌/persona,先在生成器選角色 —— 這次不生,免得白花錢');
+        try { status.textContent = '⚠️ 讀不到品牌/persona —— 先在生成器選好角色。(還沒生成,沒有扣款)'; } catch (_) {}
+        return false;
+      }
       // 正在生成中就不要插隊(btnGen 生成期間會被 disable)
       if (btnGen.disabled && FRONT) { console.warn('[character-sheet] autoRun:上一輪還在生成,略過'); return false; }
+
+      //  🖼 素材庫右鍵複製到的一律是 cdn-cgi 縮圖(width=400)——
+      //     縮圖絕不能餵引擎(鐵律),自動還原成原圖網址。
+      frontUrl = String(frontUrl).replace(/\/cdn-cgi\/image\/[^/]*\//i, '/');
+
       try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
       SAVED_IDS = {};          // 換人了,上一輪的編號不能留(會刪到別人的照片)
       AUTO = true;             // 生成完自動接存檔,見 btnGen 成功分支
