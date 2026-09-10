@@ -5471,6 +5471,97 @@ function _collectPersonaPhotos(persona) {
   return out;
 }
 
+// ══════════════════════════════════════════════════════════════════════
+//  🤖 2026-09-10 · 自動完成建立(RA 拍板)
+//  ────────────────────────────────────────────────────────────────────
+//  ★ 病:自動多角度上線後,流程變成
+//      選這張 → 自動生 3/4+側臉 → 自動存 →【然後就沒了】。
+//    照片全都在,但 talking_photo_id 還是空的 → 卡片永遠紅著
+//    「還沒建立·點我完成」,而客戶根本不知道要回上面勾照片、按綠鈕。
+//    路鋪到最順的地方突然斷掉,比一開始就沒鋪還糟。
+//
+//  ★ 為什麼另開一支,不重用 confirmDrivePhotos():
+//    ① 那支靠【DOM 勾選】組照片清單(.drive-photo.selected)——
+//       自動流程去模擬勾選,就是今天早上「兩個 S 對不上」那種坑。
+//    ② 那支有 confirm()「這個動作無法復原」,是 2026-08-19 為了防誤觸
+//       特地加的。自動路徑不該彈框,但那道保護對手動路徑必須留著。
+//    → 兩條路各自乾淨,好過硬塞一個 isAuto 參數進去到處長 if。
+//
+//  ★ 只綁【正臉】一張:
+//    _collectPersonaPhotos 的註解寫得很清楚 —— 已處理/多角度那區不進 Look,
+//    側臉不能當口播造型,綁進去只會多出廢卡片。
+//
+//  ★ 重複呼叫是安全的:Worker v4.76 起 existingGroupId 有值就沿用
+//    (action='added_looks'),不會再產一組。HeyGen 早就拆掉了,
+//    這支不再有任何外部付費呼叫 —— 舊註解裡那些 ☠️ 警告已經過期。
+//
+//  ★ 單獨驗證(不必改別的檔案、不花錢):
+//      await window.autoBindPersona('西恩', '正臉圖網址')
+// ══════════════════════════════════════════════════════════════════════
+async function autoBindPersona(personaName, frontUrl) {
+  const persona = String(personaName || '').trim();
+  const url = String(frontUrl || '').trim();
+  if (!persona) return { ok: false, error: '沒給角色名字' };
+  if (!/^https?:\/\//i.test(url)) return { ok: false, error: '正臉網址不合法:' + url };
+  if (!S.currentBrandId) return { ok: false, error: '讀不到品牌' };
+
+  try {
+    let personaData = (S.personas || []).find(x => x.persona_name === persona);
+
+    // 已經綁好了就不要再動 —— 自動流程可能被重跑,這裡是唯一的擋板
+    if (personaData && String(personaData.talking_photo_id || '').trim()) {
+      return { ok: true, skipped: true, reason: '已經建立過了' };
+    }
+
+    // 角色列還不存在(照片先進來、人設後補)→ 先補一筆
+    if (!personaData) {
+      if (S._personasLoading === true) return { ok: false, error: '人設載入中,稍後再試' };
+      const cr = await gasPost('saveKolPersona', {
+        data: { persona_name: persona, brand_id: S.currentBrandId, persona_type: 'independent' },
+      });
+      if (!cr || !cr.ok) return { ok: false, error: (cr && cr.error) || '建立角色失敗' };
+      await loadPersonas(S.currentBrandId, true);   // 強制重抓,略過 20 秒快取
+      personaData = (S.personas || []).find(x => x.persona_name === persona);
+      if (!personaData) return { ok: false, error: '角色已建立但讀不回來' };
+      if (String(personaData.talking_photo_id || '').trim()) {
+        return { ok: true, skipped: true, reason: '補建時已順帶綁定' };
+      }
+    }
+
+    const res = await gasPost('createKolLookFromDrive', {
+      personaId: personaData.persona_id,
+      personaName: personaData.persona_name,
+      brandId: S.currentBrandId,
+      fileIds: [],
+      imageUrls: [url],
+    });
+    if (!res || !res.ok) return { ok: false, error: (res && res.error) || '綁定失敗' };
+
+    // 🩹 照抄 confirmDrivePhotos 的接縫處理:id 由前台寫回 D1,不依賴 GAS
+    const _gid = res.group_id || res.talking_photo_id || '';
+    if (_gid && String(personaData.talking_photo_id || '').trim() !== _gid) {
+      try {
+        await gasPost('saveKolPersona', { data: { ...personaData, talking_photo_id: _gid } });
+      } catch (e) {
+        return { ok: true, warning: '已建立,但綁定記錄寫入失敗:' + e.message, group_id: _gid };
+      }
+    }
+
+    // ⚠️ 一律帶 true 強制重抓 —— 人設清單有快取,不帶會讀到「建立前」的舊資料,
+    //    畫面停在「還沒建立」→ 客戶以為失敗 → 再按一次。
+    await loadPersonas(S.currentBrandId, true);
+    await Promise.all([
+      loadKolList(S.currentBrandId, true),
+      loadDrivePhotos(S.currentBrandId, true),
+    ]);
+
+    return { ok: true, group_id: _gid, action: res.action };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+}
+window.autoBindPersona = autoBindPersona;
+
 async function confirmDrivePhotos(personaArg) {
   const persona = personaArg || S.selectedPersonaForDrive;
   if (!persona) { toast('請先點選這位角色的照片', 'warn'); return; }
