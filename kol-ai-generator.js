@@ -2205,6 +2205,37 @@ async function saveKolImageToLibrary(idx) {
 
     showStatus('✅ 已存進雲端倉庫:' + res.filename + ' — 左欄 Gallery 請點「重新載入」', 'ok');
 
+    // ══════════════════════════════════════════════════════════════════
+    //  🎬 2026-09-10 · 選完正臉 → 自動接多角度(RA 拍板)
+    //  ────────────────────────────────────────────────────────────────
+    //  ★ 病:多角度在畫面下方,長得像一段說明文字。現場實測客戶
+    //    生完臉就走人 —— 而沒有 sheet_q34 / sheet_profile 的角色
+    //    【拍不了片】(五鎖要臉參考表)。等於花錢生了一張永遠不會
+    //    變成營收的臉,形象庫裡一張橘框 1/4 的卡。
+    //
+    //  ★ 為什麼不再問一次「要不要生多角度」:
+    //    客戶按「✓ 選這張」的當下,已經在三張候選臉裡挑過了 ——
+    //    把關已經發生。再擋一顆按鈕只會讓他走掉。
+    //
+    //  ★ 掛在【存檔成功之後】,而且包 try/catch:
+    //    autoRun 出任何事都不能影響正臉,那張已經穩穩在倉庫裡了。
+    //    自己的檢查不過(沒 persona / 不是網址)會回 false 並印原因。
+    //
+    //  ★ 傳 res.url(素材庫永久網址)優先於 img.url ——
+    //    候選圖網址是暫時的,多角度要用不會過期的那個。
+    // ══════════════════════════════════════════════════════════════════
+    try {
+      if (window.KCS && typeof window.KCS.autoRun === 'function') {
+        const _front = res.url || res.drive_url || img.url;
+        const _ok = window.KCS.autoRun(_front);
+        if (!_ok) console.warn('[kai] 多角度沒自動啟動(原因見上一行),正臉已存好,可手動走 ①②');
+      } else {
+        console.warn('[kai] 找不到 window.KCS.autoRun —— kol-character-sheet.js 需 v1.3 以上');
+      }
+    } catch (e) {
+      console.warn('[kai] 自動接多角度失敗(正臉不受影響):', e);
+    }
+
     // 嘗試自動刷新左欄(如果 kol.html 有暴露)
     if (typeof window.refreshAll === 'function') {
       try {
