@@ -183,9 +183,32 @@
       //    ⚠️ 兩張是【同一件的兩個角度】,不是兩件商品 —— 這句一定要寫,
       //      否則模型會當成兩件不同的衣服,把正反面的特徵混在一起(logo 正反都有、肩帶多一條)。
       //    只有真的給了第二張才寫,沒給不要提,免得模型自己想像一個背面。
+      //  🧵 2026-09-11 · 補「材質行為」(RA 現場抓到:內衣拿起來像硬板子)
+      //    ★ 病:這條從頭到尾只講【不准變形】——shape / proportions / color /
+      //      fabric and lace pattern / never mirrored or flipped,全是約束,
+      //      沒有一個字講「它是軟的」。模型收到「照著畫、不准變形」之後,
+      //      最安全的解法就是畫成一塊硬板 —— 因為軟的東西會變形,
+      //      而「不准變形」是它唯一收到的鐵律。
+      //    ★ 隔壁模式早就有這句了,只有 innerwear 漏掉:
+      //        worn → 'it has real weight and sits naturally against her'
+      //        hero → 'it has real weight and sits solidly on the floor, obeying gravity'
+      //    ★ 放在保底條(第一條)裡:材質行為是「這是什麼東西」的一部分,
+      //      被砍掉就會退回硬板子。用逗號接,不製造切點。
+      //
+      //  ✂️ 同日 · 補「忽略去背邊緣」(RA 現場抓到:近拍有毛邊)
+      //    ★ 病:全系統沒有任何一句教模型忽略參考圖的去背殘留。
+      //      指令只說「照著 [Image2]、保持一致」,模型就忠實地把白邊、
+      //      鋸齒、半透明殘留像素也當成商品的一部分畫出來。太聽話而已。
+      //    ★ 這句刻意用 '; ' 起頭,讓它獨立成【第二條】——
+      //      重要但不是核心,預算真的爆掉時可以犧牲;排第二則幾乎不會被砍到
+      //      (fitRules 是照順序留到預算用完為止)。
+      //    ⚠️ 目前只掛在 innerwear。毛邊對所有去背商品圖都會發生,
+      //      要不要提升成全模式共用,等這次實測看效果再決定。
       return 'PROP (intimate apparel, worn as the inner layer): keep the product in [Image2] consistent in shape, proportions, color, fabric and lace pattern, never mirrored or flipped'
         + (isYes(prod && prod.showContents) ? ', with [Image3] showing the SAME single garment from the back (same piece, not a second garment) — match its strap routing, back closure and lace seams' : '')
-        + ', and she wears it under her outfit, glimpsed at an open neckline, tasteful and modestly framed';
+        + ', the fabric is soft and lightweight with natural drape, cups and straps yielding and slightly deformable, folding and creasing where held or worn, never stiff, boardlike or molded plastic'
+        + ', and she wears it under her outfit, glimpsed at an open neckline, tasteful and modestly framed'
+        + '; [Image2] is a cutout reference for the garment itself only, so ignore any white halo, ragged matting edge or leftover background pixels around it and render clean natural fabric edges lit by the scene';
     }
     if (mode === 'worn') {
       return 'PROP (a wearable product — feature it being worn or carried): keep the product in [Image2] consistent in shape, proportions, color, material and any logo, never mirrored or flipped, do not distort or morph it; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
@@ -398,5 +421,5 @@
   }
 
   window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.9', resolveMode };
-  console.log('[KolProduct] 🎒 v3.9 就緒 · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  console.log('[KolProduct] 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子)+✂️忽略去背毛邊 · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
