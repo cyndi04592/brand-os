@@ -243,8 +243,38 @@ window.KolStitch = (function () {
       || (window.S && window.S.selectedKol && window.S.selectedKol.persona && window.S.selectedKol.persona.nationality)
       || 'tw';
     const _accent = (typeof window.natToAccent === 'function') ? window.natToAccent(_nat) : 'Taiwanese Mandarin';
+    // ═══════════════════════════════════════════════════════════════
+    //  🫀 2026-09-11 · 生命感層補回 PiAPI 路(RA 現場抓到:眼珠死掉)
+    //  ───────────────────────────────────────────────────────────────
+    //  ★ 病:這條 PiAPI 分支是【瘦身版】,把 fal 版的生命感層整組砍了 ——
+    //    眨眼、視線流轉、手勢、重心轉移、點頭,全部只剩一句
+    //    「Never statue-still」。等於只告訴模型「動就對了」,沒說怎麼動。
+    //    現場症狀:①眼珠像死的/快掉出來 ②跳舞動作僵硬像猴子。
+    //
+    //  ★ 病因查證(2026-09-11 翻 git 歷史,不是推測):
+    //    比對 50f4915c(07-21)· 9b835190(08-21)· dc6b885f(08-23)
+    //    · 87fc1efe(09-05)四個版本 —— PiAPI 這行【從頭到尾都是短的】,
+    //    一字未改。所以它不是被砍掉的,是【從來沒有過】。
+    //    生命感層一直只長在 fal 那條路上。
+    //    → 真正發生的事:v6.9 把預設引擎從 fal 換成 PiAPI 的那一刻,
+    //      生命感層就跟著消失了 —— 換路的時候沒有人把這段文字帶過去。
+    //      RA 記得「以前眼珠有生命」是對的,那些是 fal 生的影片。
+    //  ★ 補回來不會撞牆:2026-09-05 已查證【1700 不是牆】(見下方
+    //    _WALL:實測 2046 字照樣成功,error code 0、點數正常扣),牆是 3000。
+    //
+    //  ★ 補回來的量:整行 277 → 510 字(fal 完整版是 544)。
+    //    沒有照抄 fal 版全文 —— fal 那版前半在講台詞限制,PiAPI 這版
+    //    已經用更短的句子講完了。只補【身體與眼神】那半。
+    //  ★ 另外針對「猴子」補了關節/重心/不准像木偶,fal 版沒有這句 ——
+    //    版本記錄裡的「步態骨骼」在 PiAPI 路上從來沒有過。
+    //
+    //  ⚠️ 已知的另一個洞(這次沒動):整支 _buildVoiceLine 開頭是
+    //    generateAudio !== true 就 return '' —— 也就是【關掉語音時,
+    //    兩條路都完全沒有生命感層】。那要把身體那半搬出這個函式才行,
+    //    動的範圍比較大,另案處理。
+    // ═══════════════════════════════════════════════════════════════
     if ((opts.provider || 'piapi') === 'piapi') {
-      return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still; still moving on the last frame.';
+      return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze with living eyes, joints bending naturally and weight carried through the hips when ' + _pron().s + ' moves or dances, never jerky or puppet-like, moving naturally through the last frame.';
     }
     return 'Voice & body: ' + _pron().s + ' speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) ' + _pron().s + ' stays silent, mouth still, only ambient sound. ' + _pron().S + ' is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
   }
