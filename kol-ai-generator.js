@@ -2350,12 +2350,15 @@ const WRITE_VIA_WORKER = {
   //    ★ kol.html 早在 2026-08-04 第1批就把它切走了(kol.html:3029),
   //      這個檔沒跟上 —— 同一條規則寫在兩個地方,兩邊漂移的典型。
   saveKolPersona: 1,
-  //  🗑 2026-09-10:刪照片【一定要列在這裡】—— 跟 9/08 saveKolPersona 同一種病。
-  //    deleteKolPhoto 是 9/07 直接寫在 Worker 路由上的(action === 'deleteKolPhoto'),
-  //    GAS 那邊從來沒有這支。不列進來就會被 gasPost 送去 GAS →
-  //    刪除永遠失敗,而且失敗得很安靜(前端只看到「沒刪成功」,查不出為什麼)。
-  //  ★ 現場實測 2026-09-10:多角度「↻ 重生」存了新的、舊的刪不掉,病因就是這裡。
-  deleteKolPhoto: 1,
+  //  🚫 2026-09-10:deleteKolPhoto【不要】列進來 —— 我今天先加了一次,錯的。
+  //    這張名單走的是 gasPost 的 gas_write 通道,契約是
+  //      { action:'gas_write', gasAction:<名字>, payload:{...} }
+  //    Worker 收到 gas_write 之後,只會去【D1_WRITERS】那張表找 gasAction。
+  //    而 deleteKolPhoto 是 9/07 寫在【最上層路由】的獨立 action
+  //    (action === 'deleteKolPhoto'),不在 D1_WRITERS 裡 → 永遠找不到。
+  //  ★ 語意上也不該走這條:gas_write 的意思是「寫 D1 + 背景補寫 GAS」,
+  //    但 GAS 根本沒有刪照片這回事。
+  //  ★ 正解:直接打 WORKER_URL,見 kol-character-sheet.js 的 delOld()。
 };
 
 // ════════════════════════════════════════════════════════════════════
