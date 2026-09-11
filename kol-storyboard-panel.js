@@ -44,6 +44,22 @@
    客戶一律把大綱誤認成「Beat 1 的鏡頭欄」(現場已踩過)。
    實際上大綱是【餵給 AI 的素材】,按下編修後會被改寫成下面的分鏡,
    它自己不會出現在影片裡。所以要一眼看得出不是同一種東西。 */
+/* 🪧 2026-09-11 v2.1:整個面板切成【兩個編號階段】——
+   病(客戶持續反映):上一版只把大綱框用虛線框起來,但「AI 幫你寫」跟
+   「你要拍的分鏡」仍然在同一張卡片裡一路往下,中間只有一條細線。
+   客戶看不出哪裡是 AI 區、哪裡是成品區,以為大綱就是第一段。
+   解法:兩個階段各自有底色、編號、標題,第二階段左側加一條強調色直線,
+   視覺上是「兩塊」而不是「一條」。 */
+.sbp-stage{border-radius:12px;padding:12px 14px;margin:12px 0}
+.sbp-stage-a{background:rgba(124,109,250,.07);border:1px dashed rgba(124,109,250,.45)}
+.sbp-stage-b{background:var(--bg-2,#15151c);border:1px solid var(--border,#2c2c38);
+  border-left:3px solid var(--accent,#7c6dfa)}
+.sbp-stage-num{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.5px;
+  padding:2px 8px;border-radius:99px;margin-bottom:6px}
+.sbp-stage-a .sbp-stage-num{background:rgba(124,109,250,.22);color:#c4b8ff}
+.sbp-stage-b .sbp-stage-num{background:rgba(124,109,250,.18);color:#a99bff}
+.sbp-stage-t{font-size:13px;font-weight:700;margin-bottom:2px}
+.sbp-stage-d{font-size:11px;color:var(--text-dim,#8a8a99);line-height:1.55;margin-bottom:8px}
 .sbp-outline-box{border:1px dashed var(--border,#33334a);border-radius:10px;
   padding:10px 12px;margin:10px 0 4px;background:rgba(124,109,250,.05)}
 .sbp-outline-box .sbp-label{margin-top:0}
@@ -290,6 +306,10 @@
       ${DURATIONS.map(d => `<option value="${d}" ${d === state.duration ? 'selected' : ''}>${d} 秒 · ${window.KolStorywriter.planBeats(d).length} beat</option>`).join('')}
     </select>
   </div>
+  <div class="sbp-stage sbp-stage-a">
+    <span class="sbp-stage-num">STEP 1</span>
+    <div class="sbp-stage-t">🤖 AI 幫你寫腳本</div>
+    <div class="sbp-stage-d">這一區是【給 AI 看的】。寫完按按鈕,AI 會把它拆成下面 STEP 2 的分鏡。<br>不想用 AI 就整區跳過,直接到下面自己打字。</div>
   <div class="sbp-outline-box">
     <div class="sbp-outline-title">📝 給 AI 的素材 · 這不是第一段</div>
     <textarea id="sbp-outline" class="sbp-textarea" rows="3"
@@ -300,8 +320,14 @@
       <button id="sbp-expand-btn" class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.expand()">AI 編修成分鏡</button>
     </div>
   </div>
-  <div class="sbp-arrow">↓ 以下才是真正會拍出來的分鏡 ↓</div>
-  <div id="sbp-cards"></div>
+  </div>
+
+  <div class="sbp-stage sbp-stage-b">
+    <span class="sbp-stage-num">STEP 2</span>
+    <div class="sbp-stage-t">🎬 真正會拍出來的分鏡</div>
+    <div class="sbp-stage-d">影片只拍下面這些卡片的內容。可以直接改,也可以自己從頭打。</div>
+    <div id="sbp-cards"></div>
+  </div>
 </div>`;
     renderCards();
   }
@@ -392,5 +418,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v2.0 就緒 · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
+  console.log('[KolStoryboardPanel] v2.1 就緒 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
