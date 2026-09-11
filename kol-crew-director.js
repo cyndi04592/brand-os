@@ -465,6 +465,56 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
     + 'same items, same count, same colours and models, resting in the same places; '
     + 'the setting is one continuous unchanged space, only the camera angle changes');
 
+  // ═══════════════════════════════════════════════════════════════
+  //  🧍 2026-09-11 · 公共場所要有人(RA 拍板)
+  //  ───────────────────────────────────────────────────────────────
+  //  ★ 病:咖啡廳、店面、街上空無一人 = 打烊或樣品屋,一眼就假。
+  //    RA 給的真實參考照(鞋店/咖啡館)裡都有客人與店員在做自己的事。
+  //  ★ 為什麼不是在九宮格加人:九宮格是【空間資產】,參考圖裡有人的話
+  //    每一格的人都不一樣,一致性直接崩,而且會跟 KOL 打架。
+  //    → 資產保持乾淨,生活由【影片這一層】加上去。
+  //  ★ 寫法用【正面描述】,不用否定句:本檔 541 行的教訓
+  //    「影片模型對否定句極不敏感,點名即召喚」。所以不是說「不要有人」
+  //    或「要有人」,而是寫死他們【長什麼樣、在哪、在幹嘛】:
+  //    遠、失焦、背對或側身、做自己的事、不看鏡頭。
+  //
+  //  ★ 三種情境,判斷順序不能換:
+  //    ① 客戶實景照 → 一個人都不加。那條路的鐵律是
+  //       「Invent NOTHING that is not in the source photograph」——
+  //       憑空生出員工是最嚴重的 invent,客戶會問「這些人是誰」。
+  //    ② 公共場所(有選地標,或場景文字含店家/街道字眼)→ 加遠景路人。
+  //    ③ 其他(家裡等私人空間)→ 只有她一個人。
+  //
+  //  ★ 🚫 不加寵物(RA 拍板):寵物【沒有資產】—— 人有人物表、商品有商品照、
+  //    場景有九宮格,只有寵物每次都是模型即興:這集橘貓下集賓士貓,
+  //    毛長、品種、花色全會變,而且會動、會搶焦點,比路人更難控。
+  //    沒有資產的東西就不要讓它進畫面。
+  // ═══════════════════════════════════════════════════════════════
+  const _hasRealShot = !!String(opts.sceneImageUrl || '').trim();
+  if (!_hasRealShot) {
+    const _envTxt = String((ctx.scene && (ctx.scene.setting || ctx.scene.env_prompt)) || '').toLowerCase();
+    const _hasLandmark = !!(ctx.locationId && ctx.locationId !== 'none');
+    //  ⚠️ 私人字眼【優先判定】,而且要先擋假陽性:
+    //     「living room with a coffee table」含 coffee → 會被誤判成咖啡廳,
+    //     結果客戶家裡憑空冒出路人。先把家具名裡的陷阱字消掉再比對。
+    const _envSafe = _envTxt
+      .replace(/coffee\s*table/g, ' ')      // 茶几不是咖啡廳
+      .replace(/bar\s*stool/g, ' ')         // 吧檯椅不是酒吧
+      .replace(/kitchen\s*island/g, ' ');   // 中島不是店面
+    const _privateWords = /(home|house|apartment|flat|bedroom|living room|kitchen|bathroom|balcony|study|dorm|indoor.{0,12}home)/;
+    const _publicWords = /(cafe|caf\u00e9|coffee shop|coffee bar|shop|store|market|supermarket|mall|restaurant|diner|street|sidewalk|plaza|station|salon|gym|clinic|office|lobby|bookstore|bakery|arcade)/;
+    if (_privateWords.test(_envSafe)) {
+      tail.push('she is the only person in frame throughout');
+    } else if (_hasLandmark || _publicWords.test(_envSafe)) {
+      tail.push('this is a working public place during opening hours, so a few other people are present in the deep background — '
+        + 'customers seated at far tables and a staff member behind the counter, all small, softly out of focus, '
+        + 'seen from behind or in profile, absorbed in their own business, never looking at the camera, '
+        + 'never approaching her and never blocking her; they read as quiet ambient life, not as characters');
+    } else {
+      tail.push('she is the only person in frame throughout');
+    }
+  }
+
   // 5️⃣ 道具師其餘子句 —— 形狀鎖、尺寸鎖、接地、正面朝鏡頭…有多少放多少
   pushIfNonEmpty(tail, _prodRest);
 
@@ -672,5 +722,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.32-pron 就緒 · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
