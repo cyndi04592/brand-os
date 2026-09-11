@@ -21,6 +21,23 @@
   // 🆕 v2.1 物理錨:有重量、與手/桌面真實接觸、遵守重力 → 殺「魔術漂浮」。
   //   刻意不寫「握緊/不准動」,所以拋球、放下、遞出等動作不會被卡死
   //   (飛出去也是「有重量的拋物線」,不是飄)。
+  // ══════════════════════════════════════════════════════════════════
+  //  ✂️ 2026-09-11 · 去背毛邊(公版 —— RA 拍板:不是只有內衣)
+  //  ────────────────────────────────────────────────────────────────
+  //  ★ 病:全系統沒有任何一句教模型忽略參考圖的去背殘留。
+  //    每個模式都在說「keep the product in [Image2] consistent」,
+  //    模型就忠實地把白邊、鋸齒、半透明殘留像素也當成商品的一部分
+  //    畫出來 —— 近拍特別明顯。不是渲染爛,是它太聽話。
+  //  ★ 客戶上傳的商品圖【幾乎都是去背過的】(電商主圖慣例),
+  //    所以這是所有模式的共同問題,不該只補在某一種。
+  //  ★ 掛在 contribute() 的【唯一出口】:16 種新模式 + 舊 type 邏輯
+  //    全部從那裡回傳,一處掛全部,不用改 16 個地方。
+  //  ★ 用 '; ' 接成獨立子句 → fitRules 會當成一條可切的規則。
+  //    它排在最後,預算真的爆掉時第一個被犧牲 —— 這是刻意的:
+  //    毛邊難看,但比不上「商品被畫成別的東西」嚴重。
+  // ══════════════════════════════════════════════════════════════════
+  var CUTOUT_EDGE = 'the product reference is a cutout of the item itself only, so ignore any white halo, ragged matting edge, drop shadow or leftover background pixels around it and render clean natural edges lit by the scene';
+
   var GROUNDED = 'the product has real weight and makes genuine physical contact with her hand or the surface it rests on, obeying gravity so it never floats, drifts or looks weightlessly pasted onto the scene';
   function isYes(v) { return /^(是|有|y|yes|true|1)/i.test(String(v || '').trim()); }
   function findProduct(ctx) {
@@ -207,8 +224,7 @@
       return 'PROP (intimate apparel, worn as the inner layer): keep the product in [Image2] consistent in shape, proportions, color, fabric and lace pattern, never mirrored or flipped'
         + (isYes(prod && prod.showContents) ? ', with [Image3] showing the SAME single garment from the back (same piece, not a second garment) — match its strap routing, back closure and lace seams' : '')
         + ', the fabric is soft and lightweight with natural drape, cups and straps yielding and slightly deformable, folding and creasing where held or worn, never stiff, boardlike or molded plastic'
-        + ', and she wears it under her outfit, glimpsed at an open neckline, tasteful and modestly framed'
-        + '; [Image2] is a cutout reference for the garment itself only, so ignore any white halo, ragged matting edge or leftover background pixels around it and render clean natural fabric edges lit by the scene';
+        + ', and she wears it under her outfit, glimpsed at an open neckline, tasteful and modestly framed';
     }
     if (mode === 'worn') {
       return 'PROP (a wearable product — feature it being worn or carried): keep the product in [Image2] consistent in shape, proportions, color, material and any logo, never mirrored or flipped, do not distort or morph it; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
@@ -366,7 +382,19 @@
     return null;
   }
 
+  //  ✂️ 公版出口包一層:所有回傳值都補上去背指令(見 CUTOUT_EDGE 註解)
+  function _withEdge(line) {
+    var t = String(line || '').trim();
+    if (!t) return t;                                  // 沒有商品就不談邊緣
+    if (t.indexOf('cutout') !== -1) return t;          // 已經講過就不重複
+    return t.replace(/[;.\s]+$/, '') + '; ' + CUTOUT_EDGE;
+  }
+
   function contribute(ctx) {
+    return _withEdge(_contributeInner(ctx));
+  }
+
+  function _contributeInner(ctx) {
     const prod = findProduct(ctx);
     if (!prod) {
       return 'PROP (a supporting object she is holding — keep it subtle, do NOT overpower the subject): keep the product in [Image2] consistent in shape, proportions and color, never mirrored or flipped, at a believable real-world scale, do not distort or morph it; ' + GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it';
@@ -421,5 +449,5 @@
   }
 
   window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.9', resolveMode };
-  console.log('[KolProduct] 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子)+✂️忽略去背毛邊 · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  console.log('[KolProduct] 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
