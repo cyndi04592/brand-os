@@ -39,6 +39,17 @@
 .sbp-select,.sbp-textarea{width:100%;background:var(--bg-2,#15151c);color:var(--text,#e8e8ef);
   border:1px solid var(--border,#2c2c38);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
 .sbp-textarea{resize:vertical;line-height:1.55}
+/* 🧾 2026-09-11:大綱區跟分鏡卡【視覺分家】——
+   病:兩者用同一個 .sbp-textarea、同一塊底色、緊貼在一起,
+   客戶一律把大綱誤認成「Beat 1 的鏡頭欄」(現場已踩過)。
+   實際上大綱是【餵給 AI 的素材】,按下編修後會被改寫成下面的分鏡,
+   它自己不會出現在影片裡。所以要一眼看得出不是同一種東西。 */
+.sbp-outline-box{border:1px dashed var(--border,#33334a);border-radius:10px;
+  padding:10px 12px;margin:10px 0 4px;background:rgba(124,109,250,.05)}
+.sbp-outline-box .sbp-label{margin-top:0}
+.sbp-outline-title{font-size:12px;font-weight:700;color:#a99bff;margin-bottom:2px}
+.sbp-outline-note{font-size:11px;color:var(--text-dim,#8a8a99);line-height:1.5;margin-top:6px}
+.sbp-arrow{text-align:center;font-size:11px;color:var(--text-dim,#8a8a99);margin:8px 0 2px}
 .sbp-actions{margin-top:10px}
 .sbp-card{background:var(--bg-2,#15151c);border:1px solid var(--border,#2c2c38);
   border-radius:12px;padding:12px 14px;margin-top:12px}
@@ -279,13 +290,17 @@
       ${DURATIONS.map(d => `<option value="${d}" ${d === state.duration ? 'selected' : ''}>${d} 秒 · ${window.KolStorywriter.planBeats(d).length} beat</option>`).join('')}
     </select>
   </div>
-  <label class="sbp-label">大綱(可留空,AI 自己想)</label>
-  <textarea id="sbp-outline" class="sbp-textarea" rows="3"
-    placeholder="例:健一在日本富士山的登山步道休息,隨身帶著防熊噴霧,最近日本熊出沒新聞變多..."
-    oninput="KolStoryboardPanel.outlineInput(this.value)">${esc(state.outline)}</textarea>
-  <div class="sbp-actions">
-    <button id="sbp-expand-btn" class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.expand()">AI 編修成分鏡</button>
+  <div class="sbp-outline-box">
+    <div class="sbp-outline-title">📝 給 AI 的素材 · 這不是第一段</div>
+    <textarea id="sbp-outline" class="sbp-textarea" rows="3"
+      placeholder="用一兩句話講這支影片想說什麼就好,例:健一在登山步道休息,隨身帶著防熊噴霧,最近熊出沒新聞變多..."
+      oninput="KolStoryboardPanel.outlineInput(this.value)">${esc(state.outline)}</textarea>
+    <div class="sbp-outline-note">按下面的按鈕之後,這段話會被 AI 改寫成下面的分鏡卡 —— 它自己不會出現在影片裡。<br>可以留空,AI 會自己想;想自己寫分鏡的話,直接跳過這格、在下面的卡片上打字。</div>
+    <div class="sbp-actions" style="margin-top:8px">
+      <button id="sbp-expand-btn" class="btn btn-primary btn-sm" onclick="KolStoryboardPanel.expand()">AI 編修成分鏡</button>
+    </div>
   </div>
+  <div class="sbp-arrow">↓ 以下才是真正會拍出來的分鏡 ↓</div>
   <div id="sbp-cards"></div>
 </div>`;
     renderCards();
@@ -377,5 +392,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v1.9 就緒(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
+  console.log('[KolStoryboardPanel] v2.0 就緒 · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
