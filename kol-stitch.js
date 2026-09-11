@@ -237,6 +237,45 @@ window.KolStitch = (function () {
   //  ★ 抽成函式後可以【提早算長度】,讓預算把它算進去,並【提早插入】到台詞旁邊。
   //  ⚠️ 文字內容一字未改,只改「算的時機」與「站的位置」。
   // ═══════════════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════
+  //  🫀 _lifeLine() 生命感層 · v6.27 · 2026-09-12
+  //  ───────────────────────────────────────────────────────────────
+  //  ★ 為什麼拆出來：2026-09-12 實拍 30 秒二段實測，同一行裡的八個要求，
+  //    【越靠前的越被執行，越靠後的越被無視】：
+  //      照台詞念、對嘴準（最前面）    → ✅ 做到
+  //      手勢（中段）                  → ⚠️ 只有前臂在飄
+  //      眨眼 / 視線 / 眼裡有光（中後段） → ❌ 10 秒零次眨眼、瞳孔不動、眉毛不動
+  //      關節 / 重心過髖（最尾巴）      → ❌ 腳釘死、髖不動
+  //    → 對嘴是【技術規格】，眨眼重心是【表演】，擠在一行必死。拆成兩個區塊。
+  //
+  //  ★ 全面改正面描述：舊版寫 'Never statue-still'、'never jerky or puppet-like'——
+  //    本檔 541 行的教訓寫得很清楚【影片模型對否定句極不敏感，點名即召喚】。
+  //    我們對模型講了兩次 puppet，它就給了一個 puppet。
+  //    → 一個否定字都不留，全部改成【她到底在做什麼】。
+  //
+  //  ★ 寫得可數：'every two to three seconds' 比 'relaxed blinking' 有效。
+  //    模型對【频率數字】有反應，對【形容詞】沒反應。
+  //    2026/9 提示詞邏輯：少寫「AI 已經會的」，多寫「你到底要拍什麼」。
+  //
+  //  ★ 順序：【眼睛在最前面】。RA 的痛點是眼神，而這行尾巴還是會被稀釋，
+  //    所以最想要的排第一句。身體/重心排後面。
+  //
+  //  ⚠️ 尚未修的洞（原注解已記，本次不動）：_buildVoiceLine 開頭
+  //     generateAudio !== true 就 return ''，代表【關掉聲音時連生命感層也沒了】。
+  //     要治得把 _lifeLine() 搬到該 return 之前的共用層，動到呼叫端，另案。
+  // ════════════════════════════════════════════════════════════════
+  function _lifeLine() {
+    const P = _pron();
+    return 'Performance: ' + P.p + ' eyes carry the shot — a soft blink every two to three seconds, '
+      + 'the gaze drifting between the lens and whatever ' + P.p + ' hands are doing and settling back, '
+      + 'eyebrows lifting and relaxing with the meaning of each sentence, '
+      + 'the small muscles around ' + P.p + ' eyes creasing when ' + P.s + ' smiles, '
+      + 'a wet catchlight that moves as ' + P.p + ' head turns. '
+      + P.S + ' keeps ' + P.p + ' weight on one leg and lets it transfer to the other while ' + P.s + ' talks, '
+      + 'shoulders and ribcage following that transfer, elbows and wrists bending as ' + P.p + ' hands move, '
+      + 'and ' + P.s + ' is still in motion on the last frame.';
+  }
+
   function _buildVoiceLine(opts) {
     if (!opts || opts.generateAudio !== true) return '';
     const _nat = opts.nationality
@@ -282,9 +321,9 @@ window.KolStitch = (function () {
     //    動的範圍比較大,另案處理。
     // ═══════════════════════════════════════════════════════════════
     if ((opts.provider || 'piapi') === 'piapi') {
-      return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze with living eyes, joints bending naturally and weight carried through the hips whenever ' + _pron().s + ' shifts or turns, never jerky or puppet-like, moving naturally through the last frame.';
+      return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only.\n' + _lifeLine();
     }
-    return 'Voice & body: ' + _pron().s + ' speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) ' + _pron().s + ' stays silent, mouth still, only ambient sound. ' + _pron().S + ' is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
+    return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) ' + _pron().s + ' stays silent, mouth still, only ambient sound.\n' + _lifeLine();
   }
 
   function buildMultiShotPrompt(beats, totalSec, shared, continuityFrom) {
@@ -1146,7 +1185,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  _dbg('[KolStitch] 🎬 v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  _dbg('[KolStitch] 🎬 v6.27 🫀生命感層拆行(眨眼/視線/眉毛/重心從對嘴行搬出成獨立Performance區塊·治「上半臉凍結」)+🚫拔光否定句(statue-still/puppet-like→正面可數描述·治點名即召喚) · v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
