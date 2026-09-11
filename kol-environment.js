@@ -410,7 +410,13 @@ const LOCATIONS = {
           'Panel 9: wider context of the same room. ' +
           '★ Invent NOTHING that is not in the source photograph — do not add, remove, restyle or recolour ' +
           'any furniture, monitor, keyboard, plant or decoration. Keep the count of every object identical across panels. ' +
-          'Photorealistic, consistent, evenly lit, no text overlays, no grid lines drawn on the image.';
+          //  🏚 2026-09-11:這條路【更不能】寫 evenly lit ——
+          //    實景照本身就帶著它真實的光(這也是 crew-director 有實景照時
+          //    刻意略過場景光線描述的理由)。再叫模型打均勻光,
+          //    等於把真照片的光洗掉,自相矛盾。改成「沿用原照片的光」。
+          'Keep the real lighting of the source photograph — same direction, same warmth, same shadows and darker corners; ' +
+          'do not flatten or evenly relight the space. ' +
+          'Photorealistic, consistent, no text overlays, no grid lines drawn on the image.';
         const rR = await evCallWorker('nanobanana_pro', {
           image_urls: [realShot], prompt: realPrompt, aspect_ratio: '1:1', resolution: '2K',
         });
@@ -450,15 +456,42 @@ const LOCATIONS = {
       // ② 依藍圖生九宮格(點名鎖獨立家具,壓漂移)
       const gridPrompt =
         'Use this floor plan as the EXACT spatial layout of the location described as: ' + sceneText + '. ' +
-        'Output ONE image: a clean 3x3 grid of 9 panels, all showing the IDENTICAL empty place (no people, no person), ' +
+        'Output ONE image: a clean 3x3 grid of 9 panels, all showing the IDENTICAL place with no people in frame, ' +
         'the same fixed structures, materials, colours and lighting across every panel. ' +
+        // ═══════════════════════════════════════════════════════════════
+        //  🏚 2026-09-11 · 治「樣品屋感」(RA 現場指出,最高優先)
+        //  ───────────────────────────────────────────────────────────────
+        //  ★ 病:原本這條寫 IDENTICAL empty place + evenly lit + 不准增減家具。
+        //    三個詞疊起來,定義出來的就是【沒人用過、均勻打光、每個角落一樣】
+        //    = 樣品屋。而 RA 的基準片是真實鞋店照(路徑 A),那個空間
+        //    「有人在裡面工作過」—— 鞋放歪、標籤貼著、東西不對稱。
+        //  ★ RA 的用詞要準:不是【雜亂】,是【有人生活過的痕跡】。
+        //    雜亂是隨機,痕跡是有人用過留下的結果 —— 兩者不同。
+        //  ★ 一致性不能丟(九宮格存在的理由就是壓跨段漂移),
+        //    所以痕跡必須【每一格都在同樣位置】:一致 ≠ 乾淨。
+        //  ★ 光:拔掉 evenly lit。均勻光是平面感的元兇,真實空間一定有
+        //    主光方向、有衰減、有暗角。
+        //  ★ 景深:RA 指出 AI 會「把所有東西都打糊」。真實的是前中後三層,
+        //    只有主體清楚,其餘淡淡的、還看得出是什麼。
+        // ═══════════════════════════════════════════════════════════════
+        'LIVED-IN, NOT A SHOWROOM: this place is used by real people every day. ' +
+        'Show honest traces of use — stock or boxes stacked slightly unevenly, a few items left out of alignment, ' +
+        'a cup or personal object left on a surface, cables, small wear and scuffs on floors and edges, ' +
+        'shelves not perfectly filled. Nothing is staged, styled or freshly cleaned. ' +
+        'CRITICAL: these lived-in details are decided ONCE and must appear IDENTICAL, in the same positions, in every panel — ' +
+        'consistent does NOT mean clean. ' +
+        'LIGHT: one dominant directional source (a window or practical lamp) with natural falloff, ' +
+        'darker corners and real shadows; never flat or evenly lit. ' +
+        'DEPTH: build three layers in the wider panels — something in the near foreground partly entering frame, ' +
+        'the main space in the middle, and the far background softly falling off; ' +
+        'only the middle layer is fully sharp, the rest is gently soft but still readable, never blurred into mush. ' +
         'Panel 1: wide front establishing view. Panel 2: left side. Panel 3: right side. ' +
         'Panel 4: reverse angle looking back toward the entrance. Panel 5: high overhead corner view. ' +
         'Panel 6: close view of a key fixture. Panel 7: close view of the central furniture. ' +
         'Panel 8: entrance or doorway view from inside. Panel 9: the top-down floor plan. ' +
         'IMPORTANT — keep every freestanding item identical in shape and count across all panels ' +
         '(same benches, same number of stools or chairs, same tables); do not add, remove or reshape furniture between panels. ' +
-        'Photorealistic, consistent, evenly lit, no text overlays.';
+        'Photorealistic, consistent, no text overlays.';
       const gR = await evCallWorker('nanobanana_pro', {
         image_urls: [bpUrl], prompt: gridPrompt, aspect_ratio: '1:1', resolution: '2K',
       });
@@ -502,5 +535,5 @@ const LOCATIONS = {
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.26 就緒 · 🪣單張場景圖轉存R2(白標·不過期) · 🔒診斷收進KOL_DEBUG · v5.25 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·2K避6000px·durable R2(生一次重用·治524逾時+不重花)·點名鎖家具)');
+  console.log('[KolEnvironment] 🌆 v5.27 就緒 · 🏚九宮格治樣品屋(生活痕跡/方向光/三層景深·痕跡每格一致) · · 🪣單張場景圖轉存R2(白標·不過期) · 🔒診斷收進KOL_DEBUG · v5.25 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·2K避6000px·durable R2(生一次重用·治524逾時+不重花)·點名鎖家具)');
 })();
