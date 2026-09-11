@@ -268,13 +268,21 @@ window.KolStitch = (function () {
     //  ★ 另外針對「猴子」補了關節/重心/不准像木偶,fal 版沒有這句 ——
     //    版本記錄裡的「步態骨骼」在 PiAPI 路上從來沒有過。
     //
+    //  🩹 2026-09-11 當日回修:原本寫 'when she moves or dances' ——
+    //    這行是 shared.voiceLine,【每一段都會帶】。實測 2 beat:
+    //    Beat 2 的分鏡明明寫「慣性停下來、微微喘氣」,結果她又轉了一圈。
+    //    病因:'dances' 被模型當成【要演的動作】,不是條件句。
+    //    跟第 1070 行 v7.1 關掉文字接棒是同一種錯 —— 描述性的字
+    //    寫進 prompt 就會變成指令。改成中性的 'shifts or turns',
+    //    要跳舞由分鏡卡自己講,通則不准指定動作種類。
+    //
     //  ⚠️ 已知的另一個洞(這次沒動):整支 _buildVoiceLine 開頭是
     //    generateAudio !== true 就 return '' —— 也就是【關掉語音時,
     //    兩條路都完全沒有生命感層】。那要把身體那半搬出這個函式才行,
     //    動的範圍比較大,另案處理。
     // ═══════════════════════════════════════════════════════════════
     if ((opts.provider || 'piapi') === 'piapi') {
-      return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze with living eyes, joints bending naturally and weight carried through the hips when ' + _pron().s + ' moves or dances, never jerky or puppet-like, moving naturally through the last frame.';
+      return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only. Never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze with living eyes, joints bending naturally and weight carried through the hips whenever ' + _pron().s + ' shifts or turns, never jerky or puppet-like, moving naturally through the last frame.';
     }
     return 'Voice & body: ' + _pron().s + ' speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) ' + _pron().s + ' stays silent, mouth still, only ambient sound. ' + _pron().S + ' is never statue-still — natural hand gestures, weight shifts, small head nods, relaxed blinking and shifting gaze, moving naturally through the last frame.';
   }
