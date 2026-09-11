@@ -416,7 +416,11 @@ const LOCATIONS = {
           //    等於把真照片的光洗掉,自相矛盾。改成「沿用原照片的光」。
           'Keep the real lighting of the source photograph — same direction, same warmth, same shadows and darker corners; ' +
           'do not flatten or evenly relight the space. ' +
-          'Photorealistic, consistent, no text overlays, no grid lines drawn on the image.';
+          //  📱 同日:這條路的素材本來就是照片,所以只要求【沿用它的拍攝質地】,
+          //    不另外發明手持/雜訊(那會是 invent)。
+          'Match the capture quality of the source photograph itself — same camera feel, same white balance, ' +
+          'same noise and softness; do not clean it up, sharpen it or turn it into a render. ' +
+          'Consistent across panels, no text overlays, no grid lines drawn on the image.';
         const rR = await evCallWorker('nanobanana_pro', {
           image_urls: [realShot], prompt: realPrompt, aspect_ratio: '1:1', resolution: '2K',
         });
@@ -441,11 +445,32 @@ const LOCATIONS = {
       //   這條才需要場景文字(要靠它無中生有);路徑 A 有真照就不需要。
       if (!sceneText) { _evdbg('[KolEnvironment] 沒有場景文字也沒有實景照,跳過九宮格'); return null; }
       // ① 平面藍圖 = 空間骨架
+      // ═══════════════════════════════════════════════════════════════
+      //  📐 2026-09-11 · 藍圖也要「被使用過」(RA 指出·治樣品屋的源頭)
+      //  ───────────────────────────────────────────────────────────────
+      //  ★ 病:舊版寫 Clean / precise / readable,生出來的平面圖是
+      //    【建築師的展示間】——椅子一張一張排整齊、間距相同、全部同方向、
+      //    沒有一張被拉出來過。而九宮格是拿這張當骨架長出八個角度的,
+      //    骨架就是樣品屋,後面再怎麼寫「生活痕跡」都只是在樣品屋上擺杯子。
+      //  ★ 但藍圖【不能畫糊】:它的功能是定義空間骨架,九宮格要靠它讀出
+      //    門在哪、櫃檯在哪。所以改的是【傢俱的擺法】,不是線條品質:
+      //    固定結構(牆/窗/門/櫃檯/層架)仍然精準,
+      //    可移動的桌椅則照真實使用後的樣子擺 —— 角度不一、間距不等、
+      //    有幾張被拉開、有的靠得比較近。
+      //  ★ 這是源頭修正:改這裡,後面八張角度圖全部跟著變。
+      // ═══════════════════════════════════════════════════════════════
       const bpPrompt =
         'Top-down architectural floor-plan blueprint of this location: ' + sceneText + '. ' +
         'Clean black-line blueprint on white. Clearly place and label the main fixed structures ' +
         '(entrance, windows, wall shelving or cabinets, counter) and the freestanding furniture, ' +
-        'with simple text labels. Simple, precise, readable.';
+        'with simple text labels. ' +
+        'IMPORTANT — this is a room that people actually use, not a showroom layout: ' +
+        'the fixed structures (walls, windows, doors, counter, wall shelving) are drawn precisely, ' +
+        'but the movable chairs and tables are placed as they would really be left after use — ' +
+        'rotated at slightly different angles, unevenly spaced, a few chairs pulled out from the table ' +
+        'or turned away, some seats closer together than others, one or two left askew. ' +
+        'Never a perfectly repeating grid of identical chairs all facing the same way. ' +
+        'Lines stay simple, precise and readable.';
       const bpR = await evCallWorker('nanobanana_pro', {
         prompt: bpPrompt, aspect_ratio: '1:1', resolution: '2K',
       });
@@ -475,7 +500,11 @@ const LOCATIONS = {
         //    只有主體清楚,其餘淡淡的、還看得出是什麼。
         // ═══════════════════════════════════════════════════════════════
         'LIVED-IN, NOT A SHOWROOM: this place is used by real people every day. ' +
-        'Show honest traces of use — stock or boxes stacked slightly unevenly, a few items left out of alignment, ' +
+        'Show honest traces of use — a few items left out of alignment, chairs pushed back at different angles, ' +
+        'a used cup or plate not yet cleared, a cloth over a rail, scattered small items on a counter, ' +
+        // ⚠️ 2026-09-11:原本寫 stock or boxes stacked unevenly,模型放大成一堆紙箱,
+        //   整間變成倉庫或還沒開幕的店。改成日常痕跡,紙箱最多一兩個當背景。
+        'at most one or two cardboard boxes tucked out of the way, never a stack dominating the frame, ' +
         'a cup or personal object left on a surface, cables, small wear and scuffs on floors and edges, ' +
         'shelves not perfectly filled. Nothing is staged, styled or freshly cleaned. ' +
         'CRITICAL: these lived-in details are decided ONCE and must appear IDENTICAL, in the same positions, in every panel — ' +
@@ -485,13 +514,32 @@ const LOCATIONS = {
         'DEPTH: build three layers in the wider panels — something in the near foreground partly entering frame, ' +
         'the main space in the middle, and the far background softly falling off; ' +
         'only the middle layer is fully sharp, the rest is gently soft but still readable, never blurred into mush. ' +
+        // ═══════════════════════════════════════════════════════════════
+        //  📱 2026-09-11 · 治「算圖感」—— 描述【怎麼拍出來的】,不是描述結果
+        //  ───────────────────────────────────────────────────────────────
+        //  ★ 病(RA 比對真實照片後指出):加了生活痕跡之後,空間確實有人用過了,
+        //    但整張圖仍然像【建築視覺化算圖】——乾淨、白平衡精準、透視完美。
+        //  ★ 病因:prompt 寫 'Photorealistic'。那是【形容結果】,
+        //    而模型對這個詞的理解就是「高品質 3D 渲染」。
+        //  ★ 正解(RA 提供的業界文章·2026-09):提示詞的重點已經從
+        //    「提高畫質」轉向「製造真實感」——不要再寫電影感/超高清/完美光影,
+        //    要寫【這張照片是怎麼產生的】:誰拍的、用什麼拍、什麼情況下拍。
+        //    對照組:RA 最滿意的真實照片都是手機隨手拍、白平衡不準、色溫打架。
+        //  ★ 混色溫是關鍵:真實室內一定同時有暖燈與窗外冷光,
+        //    AI 會自動把它統一成「好看的暖色」——那正是假的來源。
+        // ═══════════════════════════════════════════════════════════════
+        'SHOT LIKE A REAL PHOTO, NOT A RENDER: these are casual snapshots taken on a phone by someone standing in the room, ' +
+        'an ordinary record of the place, not architectural visualisation and not an interior-design catalogue. ' +
+        'Mixed colour temperature is important — warm indoor lamps and cooler daylight from the window coexist and clash slightly; ' +
+        'white balance is imperfect, never corrected into one pleasing warm tone. ' +
+        'Slight handheld tilt, a little lens distortion at the edges, faint sensor noise in the darker areas. ' +
         'Panel 1: wide front establishing view. Panel 2: left side. Panel 3: right side. ' +
         'Panel 4: reverse angle looking back toward the entrance. Panel 5: high overhead corner view. ' +
         'Panel 6: close view of a key fixture. Panel 7: close view of the central furniture. ' +
         'Panel 8: entrance or doorway view from inside. Panel 9: the top-down floor plan. ' +
         'IMPORTANT — keep every freestanding item identical in shape and count across all panels ' +
         '(same benches, same number of stools or chairs, same tables); do not add, remove or reshape furniture between panels. ' +
-        'Photorealistic, consistent, no text overlays.';
+        'Consistent across panels, no text overlays.';
       const gR = await evCallWorker('nanobanana_pro', {
         image_urls: [bpUrl], prompt: gridPrompt, aspect_ratio: '1:1', resolution: '2K',
       });
@@ -535,5 +583,5 @@ const LOCATIONS = {
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.27 就緒 · 🏚九宮格治樣品屋(生活痕跡/方向光/三層景深·痕跡每格一致) · · 🪣單張場景圖轉存R2(白標·不過期) · 🔒診斷收進KOL_DEBUG · v5.25 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·2K避6000px·durable R2(生一次重用·治524逾時+不重花)·點名鎖家具)');
+  console.log('[KolEnvironment] 🌆 v5.27 就緒 · 🏚九宮格治樣品屋(生活痕跡/方向光/三層景深) · 📱治算圖感(手機隨手拍/混色溫/白平衡不準·紙箱收斂) · 📐藍圖傢俱照使用後擺放(治樣品屋源頭) · · 🪣單張場景圖轉存R2(白標·不過期) · 🔒診斷收進KOL_DEBUG · v5.25 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·2K避6000px·durable R2(生一次重用·治524逾時+不重花)·點名鎖家具)');
 })();
