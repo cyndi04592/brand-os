@@ -7468,11 +7468,47 @@ async function createStitchedVideo(beats) {
   
 
   // 把分鏡秒數夾到 Seedance 合法單段長度(系統現用 5/10/15)
-  const snapDur = (s) => {
+  // ═══════════════════════════════════════════════════════════════════════
+  //  ⏱ 2026-09-12 v7.64:鏡頭長度跟著台詞走(治「沒詞的那幾秒變旁白」)
+  //  ─────────────────────────────────────────────────────────────────────
+  //  ★ 病(RA 2026-09-12 實測 + 頻譜量化):Beat 2 台詞只有 11 秒,
+  //    鏡頭卻硬生 15 秒。多出來那幾秒模型照規則「沒台詞就閉嘴」——
+  //    嘴不動、音軌卻在跑 → 聽起來就是旁白,只是用她的音色;
+  //    畫面上她只剩眼睛能動 → RA 形容的「發呆傻笑」。
+  //    實測 11→20.5 秒有 9.5 秒無人聲,而且靜默被排到 Beat 2 的【開頭】。
+  //  ★ 舊 snapDur 只把秒數 snap 到 5/10/15,完全不看台詞多長。
+  //  ★ 修法(RA 2026-09-12 拍板方向):【不縮時長】。
+  //    客戶是按秒數付費的,收 15 秒卻交 10 秒,畫面再好也會被客訴。
+  //    所以正解不是縮鏡頭遷就台詞,是【讓台詞長到填滿 15 秒】——
+  //    15 秒 × 4.2 字/秒 = 約 63 字。舊的建議值 49 字本身就是病因:
+  //    49 ÷ 4.2 = 11.7 秒,照著寫必定空 3 秒。
+  //    snapDur 在這裡只當安全網:台詞短到離譜(不到選定長度的 45%)才降一階,
+  //    避免一半以上時間沒人講話變成旁白;其餘一律照使用者選的秒數出片。
+  //    再往上取一階(5/10/15),取「使用者選的」與「台詞需要的」之中較小者。
+  //    台詞 11 秒 → 生 15 秒(往上取階)仍會有空檔,所以再加一條:
+  //    若台詞秒數 ≤ 某一階的 0.75,就降一階,寧可短一點也不要留空。
+  //  ★ 為什麼不直接用精確秒數:Seedance 只吃整數,而且段落長度不一
+  //    會讓接片節奏亂;維持 5/10/15 三階,只是選對那一階。
+  //  ★ 沒有台詞的 beat(B-roll 空鏡)不受影響,照使用者選的走。
+  //  ⚠️ STEP2 與 STEP3 各有一份 snapDur,兩份【必須同時改】——
+  //     RA 2026-09-12 鄭重提醒過;兩處定義相同,漏改一處就是半套。
+  // ═══════════════════════════════════════════════════════════════════════
+  const CPS = 4.2;   // KolStorywriter v5.18 實測語速(字/秒)
+  const snapDur = (s, dialogue) => {
+    const TIERS = [5, 10, 15];
     const n = Number(s) || 15;
-    return [5, 10, 15].reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
+    const picked = TIERS.reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
+    const line = String(dialogue || '').replace(/[\s「」『』""]/g, '');
+    if (!line) return picked;                       // 空鏡/無台詞:照使用者選的
+    const need = line.length / CPS;                 // 台詞講完需要幾秒
+    // ⚠️ 只在「短到離譜」時才降階(< 45%),其餘一律照使用者選的長度出片。
+    //    45% 以上代表大半時間有人在講,尾巴一點空白是正常節奏。
+    if (need < picked * 0.45) {
+      const idx = TIERS.indexOf(picked);
+      if (idx > 0) return TIERS[idx - 1];
+    }
+    return picked;
   };
-
   // 每段用自己那張分鏡卡的鏡頭+台詞;第 2 段起加「延續前一段」
   const continueLead = '這一鏡直接延續前一段影片:同一個人、同一張臉,表情情緒自然接下去,不要重來。';
   // 把主推產品接給道具師(原本接片沒帶 product → 道具師沒作用)
@@ -7527,7 +7563,7 @@ async function createStitchedVideo(beats) {
       opts.episode = { situation: sit, product: stitchProduct };
       p = composeSeedancePrompt(
         S.currentBrandId, _sceneForStitch, S.selectedLocationId, null, // 分鏡模式:運鏡交給分鏡卡,不再疊加
-        String(snapDur(b.seconds)), opts
+        String(snapDur(b.seconds, b.dialogue)), opts
       );
       if (!p) p = sit;
       if (!/consistent facial features/i.test(p)) {
@@ -7538,7 +7574,7 @@ async function createStitchedVideo(beats) {
       }
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
-    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
+    return { prompt: p, durationSec: snapDur(b.seconds, b.dialogue), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
   });
 
   const btn = document.getElementById('create-seedance-btn');
@@ -10978,9 +11014,44 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
   const chosenOutfitBrand = (epBrand && epBrand !== 'auto') ? epBrand
     : (S.selectedOutfitBrand && S.selectedOutfitBrand !== 'auto') ? S.selectedOutfitBrand : '';
 
-  const snapDur = (s) => {
+  // ═══════════════════════════════════════════════════════════════════════
+  //  ⏱ 2026-09-12 v7.64:鏡頭長度跟著台詞走(治「沒詞的那幾秒變旁白」)
+  //  ─────────────────────────────────────────────────────────────────────
+  //  ★ 病(RA 2026-09-12 實測 + 頻譜量化):Beat 2 台詞只有 11 秒,
+  //    鏡頭卻硬生 15 秒。多出來那幾秒模型照規則「沒台詞就閉嘴」——
+  //    嘴不動、音軌卻在跑 → 聽起來就是旁白,只是用她的音色;
+  //    畫面上她只剩眼睛能動 → RA 形容的「發呆傻笑」。
+  //    實測 11→20.5 秒有 9.5 秒無人聲,而且靜默被排到 Beat 2 的【開頭】。
+  //  ★ 舊 snapDur 只把秒數 snap 到 5/10/15,完全不看台詞多長。
+  //  ★ 修法(RA 2026-09-12 拍板方向):【不縮時長】。
+  //    客戶是按秒數付費的,收 15 秒卻交 10 秒,畫面再好也會被客訴。
+  //    所以正解不是縮鏡頭遷就台詞,是【讓台詞長到填滿 15 秒】——
+  //    15 秒 × 4.2 字/秒 = 約 63 字。舊的建議值 49 字本身就是病因:
+  //    49 ÷ 4.2 = 11.7 秒,照著寫必定空 3 秒。
+  //    snapDur 在這裡只當安全網:台詞短到離譜(不到選定長度的 45%)才降一階,
+  //    避免一半以上時間沒人講話變成旁白;其餘一律照使用者選的秒數出片。
+  //    再往上取一階(5/10/15),取「使用者選的」與「台詞需要的」之中較小者。
+  //    台詞 11 秒 → 生 15 秒(往上取階)仍會有空檔,所以再加一條:
+  //    若台詞秒數 ≤ 某一階的 0.75,就降一階,寧可短一點也不要留空。
+  //  ★ 為什麼不直接用精確秒數:Seedance 只吃整數,而且段落長度不一
+  //    會讓接片節奏亂;維持 5/10/15 三階,只是選對那一階。
+  //  ★ 沒有台詞的 beat(B-roll 空鏡)不受影響,照使用者選的走。
+  //  ⚠️ STEP2 與 STEP3 各有一份 snapDur,兩份【必須同時改】——
+  //     RA 2026-09-12 鄭重提醒過;兩處定義相同,漏改一處就是半套。
+  // ═══════════════════════════════════════════════════════════════════════
+  const CPS = 4.2;   // KolStorywriter v5.18 實測語速(字/秒)
+  const snapDur = (s, dialogue) => {
+    const TIERS = [5, 10, 15];
     const n = Number(s) || 15;
-    return [5, 10, 15].reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
+    const picked = TIERS.reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
+    const line = String(dialogue || '').replace(/[\s「」『』""]/g, '');
+    if (!line) return picked;                      // 空鏡/無台詞:照使用者選的
+    const CPS = 4.2;                               // KolStorywriter v5.18 實測語速
+    const need = line.length / CPS;                // 台詞講完需要幾秒
+    let fit = TIERS.find(v => v >= need) || 15;    // 往上取一階
+    const idx = TIERS.indexOf(fit);
+    if (idx > 0 && need <= fit * 0.75) fit = TIERS[idx - 1];   // 空太多就降一階
+    return Math.min(picked, fit);                  // 不超過使用者選的長度
   };
 
   const epSeedOn  = document.getElementById('ep-seed-toggle')?.classList.contains('on');
@@ -11038,7 +11109,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
           situation: sit,
         },
       };
-      p = composeSeedancePrompt(S.currentBrandId, sceneId, locationId, null, String(snapDur(b.seconds)), opts);
+      p = composeSeedancePrompt(S.currentBrandId, sceneId, locationId, null, String(snapDur(b.seconds, b.dialogue)), opts);
       if (!p) p = sit;
       if (!/consistent facial features/i.test(p)) {
         p += ', consistent facial features and identity preserved from reference image, same person throughout';
@@ -11048,7 +11119,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       }
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
-    return { prompt: p, durationSec: snapDur(b.seconds), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
+    return { prompt: p, durationSec: snapDur(b.seconds, b.dialogue), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
   });
   S.storyArc = prevArc;
 
