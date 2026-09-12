@@ -103,7 +103,7 @@
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
-  // 🚶 2026-09-12 v5.31 📱手持改「有人拿手機跟拍」(治固定機位15秒=視訊鏡頭) · v5.30 🔍背景柔但讀得懂(治鏡頭一近背景就糊成色塊)+🎥取景不對稱在任何景別都成立(治置中正面像形象照) · v5.29:範圍縮小,不是拿掉。
+  // 🚶 2026-09-12 v5.32 💡光要同方向+眼球映出房間的窗燈形狀+邊緣要被光照到(治割裂/貼上去) · v5.31 📱手持改「有人拿手機跟拍」(治固定機位15秒=視訊鏡頭) · v5.30 🔍背景柔但讀得懂(治鏡頭一近背景就糊成色塊)+🎥取景不對稱在任何景別都成立(治置中正面像形象照) · v5.29:範圍縮小,不是拿掉。
   //   ★ 病:舊寫法 'no crowd, no extra background people' ——
   //     第二半把【所有】背景人物禁死了。而 kol-crew-director 同時在另一層
   //     叫模型加遠景客人 —— 兩層直接對打,禁止那句又短又明確,模型聽它的。
@@ -124,7 +124,17 @@
   //   ★ 改法:主體仍最清楚(不搶焦點的目的保留),但背景要 readable ——
   //     「柔」跟「看不出是什麼」是兩件事,以前混在一起講。
   //   ⚠️ 不寫 bokeh / blur 強度詞,也不碰微觀紋理與邊緣融合(烤肉紋兇手)。
-  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, the subject is the sharpest thing in frame while the background stays gently soft but fully readable, its furniture, fixtures, lights and the street beyond the window all still recognisable, no crowd and nobody close to her or facing the lens, no stylized or exaggerated artificial elements';
+  // 💡 2026-09-12 v5.32:光要【同方向】,不只是同色溫(治「人像貼上去的」)
+  //   ★ 病(RA 同事 2026-09-12):人跟背景像兩層疊上去的。
+  //     放大看:她臉上的光是正面均勻的暖光,背景的暖光卻來自左後方檯燈 ——
+  //     【光源方向對不上】。色溫接近但方向不同,大腦一眼就看得出是兩張圖。
+  //   ★ 舊寫法只鎖 colour temperature + colour grade,沒有鎖【方向】。
+  //     方向比色溫更關鍵:色溫差一點像調色,方向差一點就是兩個空間。
+  //   ★ 同時補上眼球反射 —— 眼睛裡該映出這個房間的窗和燈的【形狀】,
+  //     而不是隨機亮點。這跟 kol-ai-generator v3.44 是同一件事的兩端:
+  //     那邊決定臉圖的光,這邊要求影片把她重新打進場景的光裡。
+  //   ★ 最後一句管邊緣:貼上去的痕跡就在輪廓,要求邊緣是被光照到的,不是切出來的。
+  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the light in this room falls on her the same way it falls on everything else in it — same direction, same colour, the lit side of her face turned toward wherever the light in the room comes from and the shadow side away from it, the windows and lamps of this room reflected in her eyes as the same shapes they really are; she and the background share one colour grade, and where she meets the background the edge is soft and lit, never cut out, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, the subject is the sharpest thing in frame while the background stays gently soft but fully readable, its furniture, fixtures, lights and the street beyond the window all still recognisable, no crowd and nobody close to her or facing the lens, no stylized or exaggerated artificial elements';
 
   // 🔊 音訊反罐頭層 — v5.25 新增(fal 官方 anti-slop:罐頭配樂 = 最大 AI 味來源之一)
   //   只要「這個畫面裡真的會有的聲音」:現場動作音 + 環境底噪 + 乾淨人聲。
