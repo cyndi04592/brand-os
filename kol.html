@@ -7515,7 +7515,7 @@ async function createStitchedVideo(beats) {
     : null;
   const plan = beats.map((b, i) => {
     const sit = (b.shotDesc || '')
-      + (b.dialogue ? `\n她直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${b.dialogue}」` : '');
+      + (b.dialogue ? `\n把這一句完整說完就停,說話的對象是畫面外那個人,不是鏡頭:「${b.dialogue}」` : '');
     let p;
     if (_shared) {
       // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞,不重複、不堆疊
@@ -8048,7 +8048,7 @@ function _storyDigest(beats, who) {
   const last  = bs[bs.length - 1] || {};
   const line  = String(last.dialogue || '').trim();
   let out = shots.join(' → ');
-  if (line) out += `\n${who || '主角'}直視鏡頭自然地說出這一句完整的話,說完立刻停止:「${line}」`;
+  if (line) out += `\n${who || '主角'}把這一句完整說完就停,說話的對象是畫面外那個人,不是鏡頭:「${line}」`;
   return out;
 }
 
@@ -11016,7 +11016,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     : null;
   const plan = beats.map((b) => {
     const sit = (b.shotDesc || '')
-      + (b.dialogue ? `。${persona.persona_name || '主角'}直視鏡頭自然地說:「${b.dialogue}」` : '');
+      + (b.dialogue ? `。${persona.persona_name || '主角'}對著畫面外那個人說:「${b.dialogue}」` : '');
     let p;
     if (_shared) {
       // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞
