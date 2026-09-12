@@ -82,7 +82,19 @@
   //   差別在分鏡卡寫了「中景」之後,模型把人擺回畫面正中央對稱構圖。
   //   ★ 補一句把兩層的分工講明:景別可以由分鏡卡決定,
   //     但【不對稱、不置中、手持漂移】在任何景別下都成立。
-  const CANDID_FRAME = 'framing slightly off-center, tiny handheld drift, not deliberately symmetrical'
+  const CANDID_FRAME = // 📱 2026-09-12 v5.31:手持從「微小漂移」改成【有人拿手機跟拍】
+  //   ★ 病(RA 指出):她要的 iPhone 是「像真人手持、會移動會晃」,
+  //     舊寫法只有 tiny handheld drift(微小漂移),模型理解成「幾乎不動」,
+  //     結果 15 秒固定機位 = 視訊鏡頭。
+  //   ★ 對照基準片(鞋店):鏡頭在移動、被貨架切掉、失焦再對到,
+  //     那是【跟拍】不是【架著微微抖】,差一個量級。
+  //   ★ 改法:第一句先宣告「有人拿手機跟著她拍」——
+  //     跟九宮格 v5.28 同一招:先定類型,再講細節。
+  //   ⚠️ 不寫具體運鏡指令(推軌/環繞/變焦)。Seedance 官方指南明寫
+  //     「只下一個主要運鏡指令」,多條會互相衝突造成畫面抖動變形。
+  'someone is filming her on a phone, walking with her and keeping up \u2014 '
+    + 'the frame breathes and drifts, tilts a little, reframes to catch her, '
+    + 'focus slips for a moment and settles again; she is off-centre and often clipped by the frame edge, never symmetrical'
     + ', this off-centre handheld framing holds at every shot size, close or wide, she is never centred and squared to the lens'
     + ', window light from one side only so one side of her face falls slightly darker, not evenly lit'
     + ', natural skin texture keeping a faint natural sheen, visible pores, small imperfections';
@@ -91,7 +103,7 @@
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
-  // 🚶 2026-09-12 v5.30 🔍背景柔但讀得懂(治鏡頭一近背景就糊成色塊)+🎥取景不對稱在任何景別都成立(治置中正面像形象照) · v5.29:範圍縮小,不是拿掉。
+  // 🚶 2026-09-12 v5.31 📱手持改「有人拿手機跟拍」(治固定機位15秒=視訊鏡頭) · v5.30 🔍背景柔但讀得懂(治鏡頭一近背景就糊成色塊)+🎥取景不對稱在任何景別都成立(治置中正面像形象照) · v5.29:範圍縮小,不是拿掉。
   //   ★ 病:舊寫法 'no crowd, no extra background people' ——
   //     第二半把【所有】背景人物禁死了。而 kol-crew-director 同時在另一層
   //     叫模型加遠景客人 —— 兩層直接對打,禁止那句又短又明確,模型聽它的。
