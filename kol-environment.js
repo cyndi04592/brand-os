@@ -480,9 +480,28 @@ const LOCATIONS = {
 
       // ② 依藍圖生九宮格(點名鎖獨立家具,壓漂移)
       const gridPrompt =
-        'Use this floor plan as the EXACT spatial layout of the location described as: ' + sceneText + '. ' +
-        'Output ONE image: a clean 3x3 grid of 9 panels, all showing the IDENTICAL place with no people in frame, ' +
-        'the same fixed structures, materials, colours and lighting across every panel. ' +
+        // ═══════════════════════════════════════════════════════════════
+        //  📸 2026-09-12 v5.28 · 開場白倒過來(治「算圖感」真正的病根)
+        //  ───────────────────────────────────────────────────────────────
+        //  ★ 病(RA 2026-09-12 比對參考圖指出):v5.27 已經寫了 SHOT LIKE A
+        //    REAL PHOTO / 混色溫 / 白平衡不準 / 手持傾斜 / 噪點,生活痕跡也
+        //    確實出來了,但整張圖仍然像【室內設計效果圖】。
+        //  ★ 病因:舊版的【第一句】是 "Use this floor plan as the EXACT
+        //    spatial layout" —— 一開口就告訴模型「這是一份建築文件」。
+        //    類型在第一句就定了,後面第 80 個詞才出現的「手機隨手拍」蓋不過去。
+        //  ★ 同一條規律今天碰三次:對嘴行尾巴的眨眼被無視、never puppet-like
+        //    點名即召喚、這裡的類型宣告。→【開頭決定類型,尾巴只是裝飾】。
+        //  ★ 修法:第一句改成【這是誰拍的、用什麼拍的】,
+        //    平面圖降級成後面的佈局依據,不再是主詞。
+        // ═══════════════════════════════════════════════════════════════
+        'Nine casual phone snapshots taken by one person walking around inside a real, working ' + sceneText + ', '
+        + 'an ordinary personal record of the place on an ordinary day. '
+        + 'Mixed colour temperature throughout, warm indoor lamps and cooler daylight coexisting and clashing slightly, '
+        + 'white balance imperfect and never corrected into one pleasing tone; '
+        + 'slight handheld tilt, a little lens distortion at the edges, faint sensor noise in the darker areas. '
+        + 'Lay them out as ONE image, a clean 3x3 grid of 9 panels, nobody in frame, '
+        + 'the same room in every panel with the same fixed structures, materials and colours. '
+        + 'The room follows the layout in the attached floor plan. ' +
         // ═══════════════════════════════════════════════════════════════
         //  🏚 2026-09-11 · 治「樣品屋感」(RA 現場指出,最高優先)
         //  ───────────────────────────────────────────────────────────────
@@ -500,7 +519,12 @@ const LOCATIONS = {
         //    只有主體清楚,其餘淡淡的、還看得出是什麼。
         // ═══════════════════════════════════════════════════════════════
         'LIVED-IN, NOT A SHOWROOM: this place is used by real people every day. ' +
-        'Show honest traces of use — a few items left out of alignment, chairs pushed back at different angles, ' +
+        //  🔎 v5.28 痕跡改成【從這個場所的活動推導】,不是通用清單。
+        //     舊版列杯子/布/紙箱/線材/刮痕 —— 那是形容詞層次的痕跡。
+        //     參考組是「地上散落幾十顆乒乓球」:每一樣都在講
+        //     「剛剛有人在這裡做這件事」。跟 relaxed blinking → 每2-3秒眨一次 同一種升級。
+        'Work out what people actually do in this specific place, then show what that activity leaves behind: '
+        + 'the objects it uses, mid-use and not put away, items left out of alignment, chairs pushed back at different angles, ' +
         'a used cup or plate not yet cleared, a cloth over a rail, scattered small items on a counter, ' +
         // ⚠️ 2026-09-11:原本寫 stock or boxes stacked unevenly,模型放大成一堆紙箱,
         //   整間變成倉庫或還沒開幕的店。改成日常痕跡,紙箱最多一兩個當背景。
@@ -533,10 +557,20 @@ const LOCATIONS = {
         'Mixed colour temperature is important — warm indoor lamps and cooler daylight from the window coexist and clash slightly; ' +
         'white balance is imperfect, never corrected into one pleasing warm tone. ' +
         'Slight handheld tilt, a little lens distortion at the edges, faint sensor noise in the darker areas. ' +
-        'Panel 1: wide front establishing view. Panel 2: left side. Panel 3: right side. ' +
-        'Panel 4: reverse angle looking back toward the entrance. Panel 5: high overhead corner view. ' +
-        'Panel 6: close view of a key fixture. Panel 7: close view of the central furniture. ' +
-        'Panel 8: entrance or doorway view from inside. Panel 9: the top-down floor plan. ' +
+        //  📐 v5.28 九格重新分配:舊版是五格中遠景、兩格近景,而且第 5 格
+        //     high overhead 是監視器視角 = 最像算圖的那一格。
+        //     參考組(RA 提供)是一遠三中三近,且有兩格趴在地板高度拍。
+        //     低視角 = 有人蹲下去拍;高俯角 = 機器拍。
+        //     而且近景要拍【痕跡】,不是拍家具 —— 椅子拍得再清楚,
+        //     也不會讓人相信剛剛有人在這裡。
+        'Panel 1: wide establishing view from standing height. Panel 2: mid view of the left side. '
+        + 'Panel 3: mid view of the right side. Panel 4: mid view looking back toward the entrance. '
+        + 'Panel 5: low angle from near floor height, foreground objects large and close to the lens. '
+        + 'Panel 6: close view of the traces of use, whatever was left behind by the activity this place is for. '
+        + 'Panel 7: very close detail on one small everyday object someone left on a surface. '
+        + 'Panel 8: low view from just inside the doorway. '
+        + 'Panel 9: a hand-drawn top-down floor plan of this room, labelled with the name of each zone and each main fixture, '
+        + 'with a dashed line showing the path a visitor walks from the entrance through the space. ' +
         'IMPORTANT — keep every freestanding item identical in shape and count across all panels ' +
         '(same benches, same number of stools or chairs, same tables); do not add, remove or reshape furniture between panels. ' +
         'Consistent across panels, no text overlays.';
@@ -583,5 +617,5 @@ const LOCATIONS = {
     window.CrewDirector.register('environment', window.KolEnvironment);
   }
 
-  console.log('[KolEnvironment] 🌆 v5.27 就緒 · 🏚九宮格治樣品屋(生活痕跡/方向光/三層景深) · 📱治算圖感(手機隨手拍/混色溫/白平衡不準·紙箱收斂) · 📐藍圖傢俱照使用後擺放(治樣品屋源頭) · · 🪣單張場景圖轉存R2(白標·不過期) · 🔒診斷收進KOL_DEBUG · v5.25 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·2K避6000px·durable R2(生一次重用·治524逾時+不重花)·點名鎖家具)');
+  console.log('[KolEnvironment] 🌆 v5.28 就緒 · 📸開場白倒轉(類型宣告排第一·平面圖降級成佈局依據·治算圖感) · 📐九格改一遠三中三近(拔高俯角·補低視角·近景拍痕跡不拍家具) · 🗺平面圖加分區標註+參觀動線 · 🔎痕跡改從場所活動推導 · v5.27 🏚九宮格治樣品屋(生活痕跡/方向光/三層景深) · 📱治算圖感(手機隨手拍/混色溫/白平衡不準·紙箱收斂) · 📐藍圖傢俱照使用後擺放(治樣品屋源頭) · · 🪣單張場景圖轉存R2(白標·不過期) · 🔒診斷收進KOL_DEBUG · v5.25 · ' + Object.keys(LOCATIONS).length + ' 個地標 · 環境光不打臉 + 物理接地 + 濾膚質詞 + 場景參考圖(單張) + 🗺️九宮格(generateSceneGrid·藍圖→8角度空間庫·2K避6000px·durable R2(生一次重用·治524逾時+不重花)·點名鎖家具)');
 })();
