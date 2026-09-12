@@ -461,7 +461,7 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   //     跟「不要想大象」同一個道理,點名即召喚。
   //     ★ 正解:講「畫面裡本來就有的東西」,由模型自己從場景參考圖認定是哪些。
   //   ★ 字數控制在 ~130 字:1700 牆已經很緊(實測 1690),不能再吃太多。
-  //  🚚 v5.34 壓縮成關鍵詞串，意思不變。
+  //  🚚 v5.35 🔇動作描述去引號(治鏡頭欄被念出來) · v5.34 壓縮成關鍵詞串，意思不變。
   tail.push('same objects across all shots, same count, same colours, same places; '
     + 'one continuous space, only the camera angle changes');
 
@@ -578,9 +578,39 @@ function _pronFix(situation) {
   return out;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  🔇 2026-09-12 v5.35 動作描述去引號(治「鏡頭欄被念出來」)
+//  ─────────────────────────────────────────────────────────────────────────
+//  ★ 病(RA 2026-09-12 實拍抓到):分鏡卡鏡頭欄寫
+//      「嘴角微微勾起那種『發現一件對的事』的笑」
+//    結果影片裡她真的把「發現一件對的事」念了出來,而且還念錯成
+//    「發現一對的事」—— 因為那本來就不是給人念的句子。
+//  ★ 病因:parseSituation 已經正確把真台詞拆進 speechLine,
+//    但鏡頭描述裡【那組引號原封不動留在 action 裡】,兩半又被接回同一段文字。
+//    中文引號在影片模型眼裡就是「這是有人在說話」的信號 ——
+//    它看到兩組引號,就念兩句。提示詞寫「只念寫好的台詞」擋不住,
+//    因為模型認的是符號不是規則。
+//  ★ 修法:只拿掉 action 那半的引號【符號】,字一個不刪 ——
+//    「發現一件對的事」的笑 → 發現一件對的事的笑
+//    語意完全不變,但不再是說話信號。speechLine 一個字不動。
+//  ★ 為什麼裝在這裡:composeStitchBeat 是 STEP2 與 STEP3 共同的必經點,
+//    而且在送出生成【之前】—— 跟 _PRON_MAP 同一個收口。
+//    RA 手改過的鏡頭、按鎖的卡片一樣會經過,不會漏。
+//  ★ 不去改 Worker 的分鏡規則叫 AI「不要用引號」:那是靠 AI 自覺,
+//    今天已經證明第 8 條(禁「欸」開頭)AI 根本沒遵守。保險絲要在程式碼裡。
+// ═══════════════════════════════════════════════════════════════════════════
+function _deQuoteAction(t) {
+  //  只拿掉成對的引號符號,不動 ASCII 撇號(don't 之類)
+  return String(t || '').replace(/[「」『』“”]/g, '');
+}
+
 function composeStitchBeat(situation, persona) {
   const { action, speechLine } = parseSituation(_pronFix(situation), persona);
-  return [action, speechLine].filter(Boolean).join('. ');
+  const cleanAction = _deQuoteAction(action);
+  if (cleanAction !== action && typeof window !== 'undefined' && window.KOL_DEBUG === true) {
+    console.log('[CrewDirector] 🔇 動作描述已去引號(防被念出來)');
+  }
+  return [cleanAction, speechLine].filter(Boolean).join('. ');
 }
 window.composeStitchShared = composeStitchShared;
 window.composeStitchBeat   = composeStitchBeat;
