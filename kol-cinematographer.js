@@ -85,7 +85,17 @@
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
-  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, the subject stays in sharp focus while the background falls into soft shallow depth-of-field with reduced detail so all visual attention stays on her, no crowd, no extra background people, no stylized or exaggerated artificial elements';
+  // 🚶 2026-09-12 v5.29:範圍縮小,不是拿掉。
+  //   ★ 病:舊寫法 'no crowd, no extra background people' ——
+  //     第二半把【所有】背景人物禁死了。而 kol-crew-director 同時在另一層
+  //     叫模型加遠景客人 —— 兩層直接對打,禁止那句又短又明確,模型聽它的。
+  //     RA 2026-09-12:「以前早期影片咖啡廳會有其他人、窗外還有車」——
+  //     這句就是後來消失的原因。今天在 crew-director 加了兩輪規則都沒用,
+  //     因為病灶根本不在那個檔案。
+  //   ★ 保留的:不要人擠人(會蓋掉 KOL)、不要有人靠近她或看鏡頭。
+  //   ★ 放行的:遠景、失焦、做自己事的店員與客人。
+  //   ⚠️ 微觀紋理與邊緣融合一個字不動 —— v5.17/v5.19 驗過的烤肉紋兩個兇手。
+  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, the subject stays in sharp focus while the background falls into soft shallow depth-of-field with reduced detail so all visual attention stays on her, no crowd and nobody close to her or facing the lens, no stylized or exaggerated artificial elements';
 
   // 🔊 音訊反罐頭層 — v5.25 新增(fal 官方 anti-slop:罐頭配樂 = 最大 AI 味來源之一)
   //   只要「這個畫面裡真的會有的聲音」:現場動作音 + 環境底噪 + 乾淨人聲。
