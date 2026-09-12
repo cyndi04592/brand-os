@@ -81,7 +81,16 @@ window.KolStitch = (function () {
     workerUrl: 'https://kol-proxy.calm-sunset-6b66.workers.dev',
     password: 'raby2026', // Worker 每個 POST 都驗密碼,少了會被擋「密碼錯誤」
     pollIntervalMs: 5000,
-    pollMaxTries: 240,    // 5s × 240 = 20 分鐘上限
+    pollMaxTries: 240,
+    // ═══════════════════════════════════════════════════════════════
+    //  ⏱ 2026-09-12 v6.34:接片的計時要獨立,不跟生成共用
+    //  ★ 病(RA 2026-09-12 實例):兩段同時送出,第二段跑了 9 分 2 秒,
+    //    接片還沒開始就已經吃掉大半額度;fal 那邊排隊一慢就爆。
+    //    30 秒都這樣,90 秒六段會更嚴重 —— 越長的片越容易在最後一步死掉。
+    //  ★ 修法:接片自己算自己的 10 分鐘(120 × 5s),從接片開始才起算。
+    //    ffmpeg 接片本來就快,10 分鐘綽綽有餘;分開算才不會被生成拖累。
+    // ═══════════════════════════════════════════════════════════════
+    composeMaxTries: 120,    // 5s × 240 = 20 分鐘上限
     pollTask: null,
   };
   function init(options) { Object.assign(cfg, options || {}); return cfg; }
@@ -151,11 +160,12 @@ window.KolStitch = (function () {
     IN_PROGRESS: '生成中…',
     COMPLETED: '收尾中…',
   };
-  async function pollEpisode(reqId, brandId, onTick, endpoint) {
+  async function pollEpisode(reqId, brandId, onTick, endpoint, maxTries) {
     if (!reqId) throw new Error('pollEpisode 缺少 reqId');
     const brand = brandId || 'unknown';
+    const _tries = maxTries || cfg.pollMaxTries;   // ⏱ v6.34:呼叫端可給自己的額度
     let lastReal = '';
-    for (let i = 0; i < cfg.pollMaxTries; i++) {
+    for (let i = 0; i < _tries; i++) {
       try {
         const r = await api('episode_result', { brandId: brand, reqId });
         const st = String(r.status || 'pending').toLowerCase();
@@ -193,7 +203,7 @@ window.KolStitch = (function () {
       }
       await new Promise(res => setTimeout(res, cfg.pollIntervalMs));
     }
-    throw new Error('等待逾時(超過 ' + (cfg.pollMaxTries * cfg.pollIntervalMs / 60000) + ' 分鐘還沒回來)');
+    throw new Error('等待逾時(超過 ' + (_tries * cfg.pollIntervalMs / 60000) + ' 分鐘還沒回來)');
   }
 
   // fal_poll 輪詢 —— 舊路徑/extractLastFrame 用(v5.1 的 i2v 已改 webhook,這條保留不刪)。
@@ -415,7 +425,7 @@ window.KolStitch = (function () {
         + '[Image1] = identity (same face, hair, body proportions, vibe; one person). '
         + prodDecl
         + (_sg
-           ? '[SCENE_IMG] = one location shown from multiple angles; lock its layout, structures, materials and colours — it is an empty reference of the fixed room only, the life inside it is not locked; pull the right camera angle per shot; never draw the grid, panels or dividing lines into the video. '
+           ? '[SCENE_IMG] = one location shown from multiple angles; lock its layout, structures, materials and colours — it is an empty reference of the fixed room only, the life inside it is not locked; read the grid as one room seen from several camera positions, and for each shot stand where that shot needs: wide shots from the panels that show the whole room, closer shots from the panels nearest that part of the room, and once a shot has picked its position, hold it for that whole shot instead of drifting between panels; never draw the grid, panels or dividing lines into the video. '
            : '[SCENE_IMG] = location (same background and layout; do not rearrange; it shows the empty room only, the life inside it is not locked). ')
         + '[OUTFIT_IMG] = outfit (same garment: fabric, pattern, colour, cut; do not restyle). '
         + 'Also keep the product locked: '
@@ -964,7 +974,8 @@ window.KolStitch = (function () {
     if (!Array.isArray(segments) || segments.length < 2)
       throw new Error('composeSegments 至少要 2 段');
     const sub = await api('video_compose', { segments, brandId: brandId });
-    const url = await pollEpisode(sub.requestId, brandId, onTick);
+    // ⏱ v6.34:傳 endpoint(啟動 webhook 掉包救援)+ 用接片自己的計時額度
+    const url = await pollEpisode(sub.requestId, brandId, onTick, sub.endpoint, cfg.composeMaxTries);
     if (!url) throw new Error('接片沒拿到影片 URL');
     return url;
   }
@@ -1267,12 +1278,33 @@ window.KolStitch = (function () {
       concat: '正在合成影片…', encode: '正在輸出影片…', upload: '正在上傳…',
     };
     log('畫面製作完成,正在合成…');
-    let finalUrl = await composeSegments(segments, opts.brandId, function (n, st) {
-      const _k = String(st || '').toLowerCase();
-      let _msg = '';
-      for (const k in _MERGE_STEP) { if (_k.indexOf(k) !== -1) { _msg = _MERGE_STEP[k]; break; } }
-      log(_msg || '正在合成影片…');
-    });
+    // ═══════════════════════════════════════════════════════════════════
+    //  🎁 2026-09-12 v6.34:接片失敗也要把已生成的分段交出去
+    //  ★ 病(RA 2026-09-12 實例):兩段都生成成功、各付 2.64 美元、
+    //    檔案都好好躺在雲端,接片一失敗 → 客戶什麼都拿不到,
+    //    畫面只寫「接片失敗」。客戶會以為錢全白花,實際上東西都在。
+    //  ★ 修法:接片 throw 的時候不要讓它直接往上冒,
+    //    改成回傳第一段當成品,並把所有分段網址一起帶回去,
+    //    呼叫端已經在用 segmentUrls,所以介面拿得到全部分段。
+    //  ★ 只有一段的情況本來就已經處理過(上面 segments.length === 1),
+    //    這裡處理的是「多段生成成功但接不起來」。
+    // ═══════════════════════════════════════════════════════════════════
+    let finalUrl;
+    try {
+      finalUrl = await composeSegments(segments, opts.brandId, function (n, st) {
+        const _k = String(st || '').toLowerCase();
+        let _msg = '';
+        for (const k in _MERGE_STEP) { if (_k.indexOf(k) !== -1) { _msg = _MERGE_STEP[k]; break; } }
+        log(_msg || '正在合成影片…');
+      });
+    } catch (e) {
+      // 🎁 v6.34:接片掛了,但分段都在 —— 交出去,不要讓客戶以為錢白花
+      const _urls = segments.map(function (x) { return x.url; });
+      log('⚠️ 接片沒成功(' + ((e && e.message) || '未知') + '),但 ' + _urls.length + ' 段影片都已生成完成,先給你分段檔');
+      _dbg('[KolStitch] 🎁 接片失敗但保留分段 →', _urls);
+      window._kolStitchRunning = false;
+      return { finalUrl: _urls[0], segmentUrls: _urls, composeFailed: true, composeError: (e && e.message) || '' };
+    }
     log('正在儲存影片…');
     finalUrl = await toR2(finalUrl, opts.brandId, (opts.kolName || 'stitch') + '-' + segments.length + 'seg');
     log('完成!');
@@ -1280,7 +1312,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  _dbg('[KolStitch] 🎬 v6.33 🛟webhook掉包救援(主動問上游拿到成品就直接用·seedance段補endpoint)+🧯缺段續行(allSettled·一段掛掉不再整包毀掉·兩段錢都付了卻拿不到東西) · v6.32 📏字牆3000→3800(PiAPI官方上限4000·留200邊界·治「已驗證的規則被白白丟掉」) · v6.31 🏠空間落地併入表演層(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」)· v6.30 舊(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」) · v6.29 🚶[SCENE_IMG]標註補「只鎖空房間不鎖裡面的生活」(配合 crew v5.36 背景生活赦免) · v6.28 🎭反向表演(表演原則取代微表情清單·大動作藏小反應+反應有先後順序:手停→視線→頭→表情·治「會動的照片」) · v6.27 🫀生命感層拆行(眨眼/視線/眉毛/重心從對嘴行搬出成獨立Performance區塊·治「上半臉凍結」)+🚫拔光否定句(statue-still/puppet-like→正面可數描述·治點名即召喚) · v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  _dbg('[KolStitch] 🎬 v6.34 🗺九宮格角度跟著景別走(不再讓模型隨機挑格)+⏱接片計時獨立10分鐘(不被生成吃掉)+🎁接片失敗仍交出分段(治「兩段都付錢卻拿不到東西」) · v6.33 🛟webhook掉包救援(主動問上游拿到成品就直接用·seedance段補endpoint)+🧯缺段續行(allSettled·一段掛掉不再整包毀掉·兩段錢都付了卻拿不到東西) · v6.32 📏字牆3000→3800(PiAPI官方上限4000·留200邊界·治「已驗證的規則被白白丟掉」) · v6.31 🏠空間落地併入表演層(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」)· v6.30 舊(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」) · v6.29 🚶[SCENE_IMG]標註補「只鎖空房間不鎖裡面的生活」(配合 crew v5.36 背景生活赦免) · v6.28 🎭反向表演(表演原則取代微表情清單·大動作藏小反應+反應有先後順序:手停→視線→頭→表情·治「會動的照片」) · v6.27 🫀生命感層拆行(眨眼/視線/眉毛/重心從對嘴行搬出成獨立Performance區塊·治「上半臉凍結」)+🚫拔光否定句(statue-still/puppet-like→正面可數描述·治點名即召喚) · v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
