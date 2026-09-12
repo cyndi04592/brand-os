@@ -39,7 +39,25 @@
   //   依 DXOMARK iPhone 17 影片特徵寫:自然渲染、中性白平衡、乾淨低噪、微 HDR、
   //   膚色自然(臉安全)。想要電影質感的品牌 → 填 photography_style 選 15 種 look 之一。
   //   想換全站預設,改這一行即可(不需 UI)。
-  const DEFAULT_LOOK = 'Clean modern smartphone video look (iPhone-style): true-to-life natural colours, fairly neutral white balance, bright well-exposed image, gentle natural contrast, subtle HDR pop, crisp low-noise detail, natural healthy skin, authentic short-video UGC feel';
+  // ═══════════════════════════════════════════════════════════════════════
+  //  📱 2026-09-12 v0.5:拿掉「乾淨漂亮」那幾個詞(治整支的廣告感)
+  //  ─────────────────────────────────────────────────────────────────────
+  //  ★ 病(RA 2026-09-12 從 PiAPI 實際收到的提示詞抓到):
+  //    這行是整份提示詞的【第一句】,而它寫的是
+  //    bright well-exposed / subtle HDR pop / crisp low-noise detail ——
+  //    明亮、曝光好、HDR、低噪點。那是【修過的成品感】,不是手機隨手拍。
+  //  ★ 而且它跟 cinematographer 的真實感錨點方向相反:
+  //    那邊要「感光噪點、白平衡不準、手持傾斜」,這邊第一句就先說「乾淨」。
+  //    第一句定調,後面蓋不過去 —— 九宮格那次已經驗證過同一條規律。
+  //  ★ 也跟 RA 的原意不符:她要的 iPhone 是【手持跟拍的臨場感】,
+  //    不是 iPhone 的相片畫質。畫質乾淨反而讓它更像廣告。
+  //  ★ 改法:保留「真實色彩、iPhone 隨手拍」的定位,
+  //    拿掉 bright well-exposed / HDR pop / crisp low-noise,
+  //    換成會讓人相信是隨手拍的字:曝光不完美、暗部有噪點、
+  //    白平衡跟著現場光走而不是被校正過。
+  //  ⚠️ 不寫微觀紋理詞(毛孔/瑕疵)—— v5.17/v5.19 驗過那是烤肉紋兇手。
+  // ═══════════════════════════════════════════════════════════════════════
+  const DEFAULT_LOOK = 'Shot handheld on a phone, everyday footage: true-to-life colours, white balance left as the room actually is rather than corrected, exposure not perfect with highlights allowed to clip and shadows allowed to stay dark and a little noisy, no HDR lift, no polish, the ordinary look of a clip someone recorded and never graded';
 
   // ── 清掉多餘空白(photography_style 是自由文字,保險清一下)──
   function cleanLook(raw) {
@@ -167,5 +185,5 @@
     window.CrewDirector.register('colorboard', window.KolColorboard);
   }
 
-  console.log('[KolColorboard] 🎨 v0.4 就緒 · 品牌 look 讀 brand_packs.photography_style,沒設→預設 iPhone 原生手機色(A案2.0·全自動無需客人選·保險絲 window.KOL_COLORBOARD · 待 stitch 接 front)');
+  console.log('[KolColorboard] 🎨 v0.5 📱預設look去掉「明亮/HDR/低噪點」(治第一句就把畫面定調成廣告) · v0.4 就緒 · 品牌 look 讀 brand_packs.photography_style,沒設→預設 iPhone 原生手機色(A案2.0·全自動無需客人選·保險絲 window.KOL_COLORBOARD · 待 stitch 接 front)');
 })();
