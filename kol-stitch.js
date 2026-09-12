@@ -1,5 +1,12 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.20
+// kol-stitch.js — 自動接片引擎 v6.36
+// v6.36:📐 詞序重排 —— 依「首要渲染機制」把提示詞排成 [主體]+[動作]+[光影/環境]+[末尾抽象]。
+//        舊版 shared.front(抽象風格詞)排第一行,吃掉最高權重,主體被推到上千字後。
+//        本次一個字都沒改,只換位置:文字零風險,純詞序實驗,可用 _testMultiShoe() 免費驗。
+// v6.35:🔒 seed 斷鏈修復 —— 接片端(kol.html)算好的 runSeed 掛在每個 beat 上,
+//        但 chunks 在 else 分支只複製 {beats},seed 被丟掉;opts 也沒帶 seed,
+//        所以 stitchSeed 每次都掉進 Math.random() —— 「填號碼重現舊片」從來沒生效過。
+//        修法:else 分支 push 時把 cur[0].seed 一起帶上;console 加印 seed 來源。
 // v6.20:🧴 防油光「照抄 v5.22 驗過的完整原文」— v6.19 只抄前半(matte/no specular),漏掉後半語意錨
 //        (no beauty filter/no smoothing/no retouching/an ordinary real person not a polished commercial)
 //        =真正壓油光的那半。補完整措辭到 lean 兩條 front,不綁開關。保留自然光(soft diffused)只拔油光。
@@ -420,21 +427,23 @@ window.KolStitch = (function () {
       //   ★ 保險絲反轉:預設開,顯式 window.KOL_SCENEGRID = false 才關。
       const _sg = (typeof window === 'undefined' || window.KOL_SCENEGRID !== false);
       const _fa = (typeof window !== 'undefined' && window.KOL_FACEANGLES === true);  // 🎯 v6.18 多角度臉選配保險絲,預設關(每 beat 臉前綴用)
-      let bodyB = shared.front + '\n'
-        + 'Reference images are LOCKED assets, each the single source of truth for its element — keep identical in every shot: '
+      //  📐 v6.36 詞序重排(黃金公式:[主體]+[動作]+[光影/環境]+[末尾抽象風格])
+      //  ★ 病因:模型有「首要渲染機制」—— 排前面的詞權重高,排後面的被稀釋。
+      //    舊版把 shared.front(真實度/膚質/防油光 = 純抽象風格詞)放【第一行】,
+      //    等於讓抽象詞吃掉最高權重,而主體與動作被推到上千字之後。
+      //  ★ 本次【一個字都沒改】,只換位置 —— 文字內容零風險,純詞序實驗。
+      //    (防油光原文屬 v5.22 鐵律,禁止改寫;搬家不算改寫。)
+
+      // ═══ ① 主體(最前·錨定視覺焦點)═══
+      let bodyB = 'Reference images are LOCKED assets, each the single source of truth for its element — keep identical in every shot: '
         + '[Image1] = identity (same face, hair, body proportions, vibe; one person). '
-        + prodDecl
-        + (_sg
-           ? '[SCENE_IMG] = one location shown from multiple angles; lock its layout, structures, materials and colours — it is an empty reference of the fixed room only, the life inside it is not locked; read the grid as one room seen from several camera positions, and for each shot stand where that shot needs: wide shots from the panels that show the whole room, closer shots from the panels nearest that part of the room, and once a shot has picked its position, hold it for that whole shot instead of drifting between panels; never draw the grid, panels or dividing lines into the video. '
-           : '[SCENE_IMG] = location (same background and layout; do not rearrange; it shows the empty room only, the life inside it is not locked). ')
         + '[OUTFIT_IMG] = outfit (same garment: fabric, pattern, colour, cut; do not restyle). '
-        + 'Also keep the product locked: '
-        + prodRule
-        + 'no change of person, scene, outfit, no crowd.'
-        + (_mc ? ' Match cuts only — same moment, new angle, no re-perform; shots end settled and still.' : '')
+        + prodDecl
+        + (_mc ? 'Match cuts only — same moment, new angle, no re-perform; shots end settled and still. ' : '')
         + '\n\n'
-        + (shared.colorLine ? shared.colorLine + '\n\n' : '')
         + carry;
+
+      // ═══ ② 動作與台詞(緊接主體)═══
       let tb = 0;
       for (let i = 0; i < n; i++) {
         const bSecB = list[i].durationSec || Math.max(1, Math.round(dur / n));
@@ -446,10 +455,22 @@ window.KolStitch = (function () {
         tb = tb1;
       }
       bodyB += '\nThe quoted line is ' + _pron().p + ' COMPLETE and ONLY speech per shot — no extra words or improvised prices after it, only ambient sound.';
-      //  🔊 v6.25 對嘴行搬家:緊貼台詞規則(引號講的就是它),不再排最尾巴。
-      //    超標時被切掉的變成排在後面的品牌調性,不再是對嘴指令。
+      //  🔊 v6.25 對嘴行搬家:緊貼台詞規則(引號講的就是它)。v6.36 維持緊貼不動。
       if (shared.voiceLine) bodyB += '\n' + shared.voiceLine;
+
+      // ═══ ③ 光影與環境(中段·在主體穩定後才建模)═══
+      bodyB += '\n\n'
+        + (_sg
+           ? '[SCENE_IMG] = one location shown from multiple angles; lock its layout, structures, materials and colours — it is an empty reference of the fixed room only, the life inside it is not locked; read the grid as one room seen from several camera positions, and for each shot stand where that shot needs: wide shots from the panels that show the whole room, closer shots from the panels nearest that part of the room, and once a shot has picked its position, hold it for that whole shot instead of drifting between panels; never draw the grid, panels or dividing lines into the video. '
+           : '[SCENE_IMG] = location (same background and layout; do not rearrange; it shows the empty room only, the life inside it is not locked). ')
+        + 'Also keep the product locked: '
+        + prodRule;
+      if (shared.colorLine) bodyB += '\n' + shared.colorLine;
       if (shared.tail) bodyB += '\n' + shared.tail;
+
+      // ═══ ④ 抽象風格(末尾·全局潤色,不干擾主體與光影)═══
+      bodyB += '\n\n' + shared.front
+        + '\nno change of person, scene, outfit, no crowd.';
       return bodyB;
     }
 
@@ -1030,11 +1051,11 @@ window.KolStitch = (function () {
       beatObjs.forEach(function (b) {
         const bSec = b.durationSec || 5;
         if (cur.length && (curSec + bSec > MAX_CHUNK_SEC || cur.length >= MAX_SHOTS)) {
-          chunks.push({ beats: cur }); cur = []; curSec = 0;
+          chunks.push({ beats: cur, seed: (cur[0] && cur[0].seed) }); cur = []; curSec = 0;
         }
         cur.push(b); curSec += bSec;
       });
-      if (cur.length) chunks.push({ beats: cur });
+      if (cur.length) chunks.push({ beats: cur, seed: (cur[0] && cur[0].seed) });
     }
 
     // 🛡️ 90 秒總長硬上限(2026-08-23 新增)
@@ -1094,7 +1115,9 @@ window.KolStitch = (function () {
           ? parseInt(chunks[0].seed)
           : Math.floor(Math.random() * 2000000000));
     // 🩹 seed 是引擎參數,客戶看到只會困惑 → 留在 console,不進進度條
-    console.log('[KolStitch] 本支共用 seed:' + stitchSeed);
+    const _seedSrc = (opts.seed != null && opts.seed !== '') ? 'opts'
+      : ((chunks[0] && chunks[0].seed != null && chunks[0].seed !== '') ? '分鏡卡(沿用接片端)' : '本次新抽');
+    console.log('[KolStitch] 本支共用 seed:' + stitchSeed + ' · 來源:' + _seedSrc);
 
     // 服裝參考圖(整支生一次,當 compose 的輸入之一)
     let outfitImageUrl = opts.outfitImageUrl || null;
