@@ -197,7 +197,14 @@ const BACKBONES = {
     'mostly matte complexion with only faint natural shine in the T-zone, slightly uneven real skin tone, slight natural asymmetry, minimal natural makeup, ' +
     'natural hair with loose flyaway strands, individual real hairs and slight frizz, ' +
     'directional natural light raking across the face from the side, revealing skin pores and texture through gentle real shadows, slightly muted understated film colors, not bright not glossy, ' +
-    'wearing {OUTFIT}, {SCENE}, relaxed candid unposed moment, ' +
+    // 🎯 v3.43 2026-09-12:拔掉【場域】，腦袋改成中性棚背景
+    //   ★ 病（RA 2026-09-12）：建角色選了場域，臉就被生在那個場景裡。
+    //     但臉是【資產】，要能放進咖啡廳、機場、辦公室、倉庫——
+    //     先釘在一個場景裡，后面拍別的場景就會裂。
+    //     而且場景本來就是拍片那一層決定的，人設書已經定義了她是誰。
+    //   ★ 改法：換成中性灰背景（定妝參考板規格），不綁任何場所。
+    //     —— 刺茑星球的人物資產圖也是灰背景、無情境。
+    'wearing {OUTFIT}, standing against a plain neutral grey studio backdrop with nothing else in the frame, relaxed candid unposed moment, ' +
     'strong natural 35mm film grain and Kodak Gold film tonality, raw unedited photo, ' +
     'authentic {NATIONALITY} aesthetic',
 
@@ -630,7 +637,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
+  console.log('[kol-ai-generator v3.43 🎯拔掉場域下拉(臉改中性棚背景·治「臉被釘在一個場景裡」) · v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -997,7 +1004,6 @@ function buildPanelHTML() {
   const perOpts = renderOptions(LABEL.persona, 'girl_next_door');
   const ligOpts = renderOptions(LABEL.lighting, 'window_day');
   const outOpts = renderOptions(LABEL.outfit, 'beige_knit');
-  const scnOpts = renderOptions(LABEL.scene, 'apartment');
 
   return `
     <div class="kai-panel" id="kai-panel">
@@ -1121,13 +1127,7 @@ function buildPanelHTML() {
         </div>
       </div>
 
-      <div class="kai-row">
-        <div class="kai-field">
-          <label class="kai-label">角色場域</label>
-          <select class="kai-select kai-param" data-k="scene">${scnOpts}</select>
-        </div>
-        <div class="kai-field"></div>
-      </div>
+      
 
       <div class="kai-field">
         <label class="kai-label">神韻補充 · <span style="color:#5eead4;font-weight:400">已依人設自動帶入,可直接改</span></label>
@@ -1821,7 +1821,7 @@ function buildPrompt() {
     .replace('{PERSONA}', PERSONA_MAP[params.persona] || PERSONA_MAP.girl_next_door)
     .replace('{LIGHTING}', LIGHTING_MAP[params.lighting] || LIGHTING_MAP.window_day)
     .replace('{OUTFIT}', OUTFIT_MAP[params.outfit] || OUTFIT_MAP.beige_knit)
-    .replace('{SCENE}', SCENE_MAP[params.scene] || SCENE_MAP.apartment);
+    ;   // 🎯 v3.43:場域已移除,臉一律中性棚背景
 
 // v3.18: Korean 反 K-beauty 防護 ──
   //  flux 對「Korean」的訓練資料壓倒性是 K-beauty 玻璃肌/偶像,會把臉拉向塑膠網美。
