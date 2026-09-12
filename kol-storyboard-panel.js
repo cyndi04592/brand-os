@@ -159,7 +159,58 @@
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  //  🗺 2026-09-12 v2.2 場景名保底(治「分鏡 AI 自己編地點」)
+  //  ─────────────────────────────────────────────────────────────────────
+  //  ★ 病(RA 2026-09-12 實測):場景明明選了咖啡廳,AI 卻寫
+  //    「她站在一面落地鏡前,背後的層架虛掉」—— 那是服飾店試衣間,不是咖啡廳。
+  //  ★ 病因:kol.html 第 7160 行 openStoryboardForCine() 把 sceneLabel 寫死成 ''。
+  //    分鏡 AI 完全不知道要拍哪裡,只好自己編一個。
+  //    編出來的地點會跟場景鎖打架 —— 而場景鎖有九宮格參考圖撐腰,
+  //    最後畫面是咖啡廳、台詞動作卻是照試衣間寫的,兩邊對不上。
+  //  ★ 修法放在這裡而不是 kol.html:sceneLabel 是在 expand() 這一刻才讀的,
+  //    而 expand() 是所有呼叫端的必經點。在這裡保底 = 一次修好全部入口,
+  //    包括 STEP2、STEP3 和之後任何新的呼叫端。
+  //  ★ 呼叫端有給就用呼叫端的(不搶),沒給才自己去 window.S 抓當下選中的場景。
+  // ═══════════════════════════════════════════════════════════════════════
+  function _currentSceneLabel() {
+    try {
+      const S = window.S || {};
+      const id = S.selectedSceneId;
+      if (!id) return '';
+      if (typeof window.getScenesForBrand === 'function') {
+        const scenes = window.getScenesForBrand(S.currentBrandId) || {};
+        const sc = scenes[id];
+        const label = (sc && (sc.label || sc.name)) || '';
+        if (label) return String(label).replace(/^[^\u4e00-\u9fffA-Za-z]+/, '').trim();
+      }
+      return String(id);
+    } catch (e) { return ''; }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  🚦 2026-09-12 v2.3 選場景防呆(RA 拍板 A 案)
+  //  ─────────────────────────────────────────────────────────────────────
+  //  ★ 病:RA 的實際操作順序是【先按 AI 編修成分鏡 → 之後才選場景】。
+  //    按下去那一刻 S.selectedSceneId 還是空的,v2.2 的保底抓不到東西,
+  //    分鏡 AI 只好自己編地點(實測編出「落地鏡前、背後層架」= 試衣間)。
+  //    之後才選咖啡廳 → 畫面是咖啡廳、動作台詞照試衣間寫 → 兩邊對不上。
+  //  ★ 為什麼是順序問題:場景是【資產】,它決定空間、光、她能做什麼動作;
+  //    分鏡是【調度】,調度必須建立在已知空間上。
+  //    先寫走位再決定房間,寫出來的走位當然對不上。
+  //  ★ A 案(小改):版面不動,只在這裡擋一下,把順序糾正過來。
+  //    B 案(把場景區塊搬到 STEP1 上面)要動 kol.html 的 DOM,
+  //    kol.html 已 11,412 行遠超紅線,留到 UI 打磨那輪再做。
+  //  ★ 呼叫端有明確給 sceneLabel 的(例:STEP3)一律放行,不擋。
+  // ═══════════════════════════════════════════════════════════════════════
   async function expand() {
+    if (!ctx?.sceneLabel && !_currentSceneLabel()) {
+      const msg = '請先在下面選一個場景,再按「AI 編修成分鏡」——\n分鏡要知道在哪裡拍,才寫得出對的動作與走位。';
+      if (typeof window.toast === 'function') window.toast('請先選場景,再編修分鏡', 'warn');
+      else alert(msg);
+      return;
+    }
+
     if (state.busy) return;
     if (!window.KolStorywriter) { alert('KolStorywriter 未載入'); return; }
     if (typeof api !== 'function') { alert('api() 未載入'); return; }
@@ -177,7 +228,7 @@
       lockedLines,
       persona: ctx?.persona || {},
       product: ctx?.product || {},
-      sceneLabel: ctx?.sceneLabel || '',
+      sceneLabel: ctx?.sceneLabel || _currentSceneLabel(),
       // 🧠 2026-08-23 劇情記憶:ctx.getRecentEpisodes 由 kol.html 掛上(可能沒有 → 空陣列 = 舊行為)
       //   🩹 改 await:取用器現在會「沒有就自己去撈」,不再依賴使用者先逛過劇情記憶頁。
       //      舊寫法只讀快取 → 直接進 STEP2 的人永遠沒有記憶,而且安靜地沒有。
@@ -418,5 +469,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v2.1 就緒 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
+  console.log('[KolStoryboardPanel] v2.3 就緒 · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
