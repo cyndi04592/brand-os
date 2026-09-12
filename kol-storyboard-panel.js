@@ -271,10 +271,14 @@
     const fitEl = $el('sbp-fit-' + idx);
     if (fitEl) {
       const _si = shortInfo(b);
-      fitEl.textContent = `${b.fit.chars} 字 · 約 ${b.fit.estSec} 秒`
-        + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '')
-        + (_si ? ` 台詞偏短,結尾約空 ${_si.gap} 秒(建議補到約 ${_si.target} 字)` : '');
-      fitEl.className = 'sbp-fit' + (b.overflow ? ' over' : (_si ? ' short' : ''));
+      //  🆕 v2.5:完全沒台詞的長段落,卡片上就要紅字講清楚(不要等按確認才發現)
+      const _mute1 = (b.seconds || 0) >= 10 && !String(b.dialogue || '').trim();
+      fitEl.textContent = _mute1
+        ? `沒有台詞 · 這 ${b.seconds} 秒全程沒有人說話(要拍空鏡請把長度改成 5 秒)`
+        : (`${b.fit.chars} 字 · 約 ${b.fit.estSec} 秒`
+           + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '')
+           + (_si ? ` 台詞偏短,結尾約空 ${_si.gap} 秒(建議補到約 ${_si.target} 字)` : ''));
+      fitEl.className = 'sbp-fit' + ((b.overflow || _mute1) ? ' over' : (_si ? ' short' : ''));
     }
   }
   function lock(idx) {
@@ -334,6 +338,25 @@
       const _over = state.beats.filter(b => b.overflow);
       if (_over.length) {
         alert('還不能確認唷:第 ' + _over.map(b => b.index + 1).join('、') + ' 段的台詞太長,講不完會被趕戲。\n\n請把該段台詞刪短一點(看卡片下方的字數提示,變回灰色就 OK),或再按一次「AI 編修」重寫。');
+        return;
+      }
+      // 🆕 v2.5 防呆:長段落完全沒台詞 → 硬擋。
+      //  ★ 病(RA 2026-09-13 實測):Beat 2「收·收尾」被 AI 判成 B-roll,dialogue 整段留空,
+      //    於是 15 秒全是肩帶極特寫、零人聲。客戶付 30 秒的錢,拿到 15 秒說話 + 15 秒空鏡。
+      //  ★ B-roll 本身沒錯,錯在【顆粒】:Worker 第 14 條允許 dialogue 留空且沒有長度上限,
+      //    而 beat 最小單位是 15 秒 → 一判 B-roll 就吃掉半支影片。
+      //  ★ 這裡是【經營 KOL 頻道】的公版:人一直在講,商品偶爾入鏡。
+      //    所以 10 秒以上的段落必須有台詞;真的要拍空鏡,把那一段改成 5 秒。
+      //  ★ 為什麼是硬擋不是黃字:黃字「台詞偏短」早就有了,而客戶照樣按下去(RA 現場驗證)。
+      //    提醒治不了「看不懂分鏡的人」,只有擋得住。
+      const _mute = state.beats.filter(b => (b.seconds || 0) >= 10 && !String(b.dialogue || '').trim());
+      if (_mute.length) {
+        alert('還不能確認唷:第 ' + _mute.map(b => b.index).join('、') + ' 段完全沒有台詞。\n\n'
+          + '這幾段會生成 ' + _mute.map(b => b.seconds).join('、') + ' 秒的純畫面,全程沒有人說話 —— 客戶會覺得影片後半是空的。\n\n'
+          + '三種做法:\n'
+          + '① 直接在台詞欄補上要講的話(建議補到約 ' + Math.round((_mute[0].seconds || 15) * 0.95 * 4.2) + ' 字)\n'
+          + '② 再按一次「AI 編修成分鏡」讓它重寫\n'
+          + '③ 真的要拍商品空鏡,把那一段的長度改成 5 秒就好,不要用整整 ' + (_mute[0].seconds || 15) + ' 秒');
         return;
       }
       state.confirmed = true;
@@ -481,5 +504,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v2.4 就緒 · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
+  console.log('[KolStoryboardPanel] v2.5 就緒 · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
