@@ -327,24 +327,54 @@ const PERSONA_MAP = {
   solo_founder:         'one-person-company founder, self-reliant grounded presence, quietly determined and unpolished, no corporate gloss, natural skin with real texture and faint under-eye shadows',
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  💡 2026-09-12 v3.44:每一種佈光都要講清楚【光從哪裡來】+【眼球反射什麼】
+//  ─────────────────────────────────────────────────────────────────────────
+//  ★ 病(RA 與同事 2026-09-12 指出):眼神很假、人像貼在背景上。
+//    放大比對基準片(鞋店)與我們的片,差別是可量的:
+//      · 鞋店眼球上是【一整片方形的窗光】,左右眼形狀一致 —— 那是環境反射
+//      · 我們的是【兩三個零散小白點】,左右眼形狀還不一樣 —— 像點上去的
+//    高光形狀來自「光源的形狀」。舊 LIGHTING_MAP 全部只寫光的【品質】
+//    (soft / warm / even / dramatic),沒有一項寫【光源是什麼形狀、在哪個方向】,
+//    模型沒有依據,就給你幾個隨機亮點。
+//  ★ 割裂感同源:臉圖的光沒有方向,場景圖的光有方向,兩者疊起來對不上,
+//    看起來就是貼上去的。統一「方向」比統一「色溫」更關鍵。
+//  ★ 改法:每一項補上三件事 —— 光源是什麼(窗/燈/天光)、從哪個方向來、
+//    眼球會反射出什麼形狀。不加任何微觀紋理詞(v5.17/v5.19 的烤肉紋雷)。
+//  ★ 公版:這裡描述的是【光】,不是場所,換成任何場景都成立。
+// ═══════════════════════════════════════════════════════════════════════════
+// 💡 2026-09-12 v3.45:拔掉佈光下拉,臉一律中性光(RA 拍板)
+//  ★ 病:建角色要客戶先猜「以後在什麼光的場景拍」——但一個 KOL 要拍咖啡廳、
+//    賣場、辦公室、戶外,不可能一種光全對得上。臉烤上某種光,換場景就裂。
+//  ★ 正解(對照真人拍片):演員不會為每個場景換一張臉,是現場燈光師打光。
+//    臉 = 中性資產,光交給影片層(cinematographer v5.32 已要求光要同方向)。
+//  ★ 證據:基準片(鞋店 7/11)就是臉在棚裡生、影片層打進賣場的光,
+//    當時完全沒事先對光;它成功是因為那時光學融合的字還在(v5.17 才拔)。
+//  ★ 中性光要無方向、無色偏、無戲劇性,但保留眼球清楚反射(不然眼神會死)。
+//  ⚠️ LIGHTING_MAP 保留不刪 —— 舊 persona 可能存著 lighting 值,避免讀取炸掉。
+const NEUTRAL_LIGHT = 'even neutral daylight with no strong direction and no colour cast, '
+  + 'a large soft source in front of her so both sides of the face are lit the same, '
+  + 'one clear soft catchlight in both eyes, shadows minimal and neutral in colour, '
+  + 'nothing about the light suggesting any particular place or time of day';
+
 const LIGHTING_MAP = {
-  window_day:  'natural daylight from a window, overcast soft diffused lighting',
-  cafe_side:   'golden hour side light from cafe window, warm amber tones',
-  studio_flat: 'soft studio light with gentle directional shadows that reveal skin texture',
-  outdoor_day: 'natural outdoor afternoon sunlight, slight lens flare',
-  indoor_warm: 'warm indoor tungsten lighting, cozy ambient mood',
-  bright_clean:  'bright clean even lighting, fresh crisp and professional',
-  bright_midday: 'bright natural midday sunlight, vivid energetic outdoor light',
-  evening_warm:  'warm evening lamp light, intimate cozy glow',
-  moody_side:    'moody low-key directional side lighting, dramatic shadow falloff',
+  window_day:  'lit by one large window to her left, overcast daylight, the window reflected as a single soft rectangular catchlight in both eyes, shadow side falling gently to her right',
+  cafe_side:   'low golden-hour sun through a window on one side, warm amber on the lit cheek and cool shade on the other, the bright window edge reflected as one clear elongated catchlight in both eyes',
+  studio_flat: 'one large softbox slightly above and to her left, its square shape reflected as a single soft rectangular catchlight in both eyes, gentle shadow under the nose and jaw',
+  outdoor_day: 'open afternoon sky overhead with the sun behind her shoulder, the bright sky reflected as one broad catchlight across the upper eye, warm rim on the hair',
+  indoor_warm: 'warm tungsten lamps off to one side and above, small round lamp shapes reflected as distinct catchlights in both eyes, the far side of the face falling into warm shadow',
+  bright_clean:  'broad even daylight from a wide window in front of her, a wide soft catchlight filling the lower part of both eyes, shadows short and low-contrast',
+  bright_midday: 'hard midday sun from high above, crisp small bright catchlight high in both eyes, defined shadows under the brow and nose',
+  evening_warm:  'a single warm lamp low and to one side, its glow reflected as one small round catchlight in both eyes, the rest of the face falling off into soft darkness',
+  moody_side:    'one narrow light source hard to one side, a thin bright catchlight on the lit edge of each eye, the unlit half of the face deep in shadow',
   // ── 🆕 v3.33 行業佈光 ──
   //   ⚠️ 全部維持「柔、散、無油光」,不加戲劇性硬光 —— 硬光會在臉上打出高光斑,
   //      那正是「AI 油臉」的來源(見 kol-cinematographer 的教訓)。
-  salon_soft:    'soft even beauty-salon lighting from a large diffused source, clean shadowless falloff, flattering but not glamorous',
-  clinic_white:  'clean bright clinical lighting, neutral white balance, even and reassuring with no harsh shadows',
-  classroom_day: 'bright natural daylight filling a studio classroom, soft and open with gentle directional falloff',
-  candle_warm:   'low warm candle and lamp light, intimate hushed glow, gentle shadows with no hard specular highlights',
-  office_day:    'plain office daylight from a nearby window, neutral and unglamorous, soft even fill on the face',
+  salon_soft:    'large diffused panel directly in front and slightly above, a wide even catchlight across both eyes, shadows soft and almost absent, flattering but not glamorous',
+  clinic_white:  'long ceiling strip lights above, their linear shape reflected as a horizontal bar catchlight in both eyes, neutral white balance, even and reassuring',
+  classroom_day: 'a wall of windows along one side, the window band reflected as a wide rectangular catchlight in both eyes, light falling off gently toward the far wall',
+  candle_warm:   'candle and low lamp close by and below, tiny flickering points reflected as small warm catchlights low in both eyes, everything beyond falling into darkness',
+  office_day:    'plain daylight from a window to one side, the window reflected as one rectangular catchlight in both eyes, neutral and unglamorous with a soft shadow on the far cheek',
 };
 
 const OUTFIT_MAP = {
@@ -637,7 +667,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.43 🎯拔掉場域下拉(臉改中性棚背景·治「臉被釘在一個場景裡」) · v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
+  console.log('[kol-ai-generator v3.45 💡拔掉佈光下拉(臉=中性資產·光交給影片層) · v3.44 💡佈光補上光源方向與眼球反射形狀(治眼神假+人貼在背景上) · v3.43 🎯拔掉場域下拉(臉改中性棚背景·治「臉被釘在一個場景裡」) · v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1002,7 +1032,6 @@ function buildPanelHTML() {
   const ageOpts = renderOptions(LABEL.age, 'standard');
   const natOpts = renderOptions(LABEL.nationality, 'tw');
   const perOpts = renderOptions(LABEL.persona, 'girl_next_door');
-  const ligOpts = renderOptions(LABEL.lighting, 'window_day');
   const outOpts = renderOptions(LABEL.outfit, 'beige_knit');
 
   return `
@@ -1117,10 +1146,6 @@ function buildPanelHTML() {
       </div>
 
       <div class="kai-row">
-        <div class="kai-field">
-          <label class="kai-label">佈光氛圍</label>
-          <select class="kai-select kai-param" data-k="lighting">${ligOpts}</select>
-        </div>
         <div class="kai-field">
           <label class="kai-label">服裝</label>
           <select class="kai-select kai-param" data-k="outfit">${outOpts}</select>
@@ -1819,7 +1844,7 @@ function buildPrompt() {
     .replace(/\{NATIONALITY\}/g, NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw)
     .replace('{GENDER}', _age ? _age.noun : (params.age === 'kid' ? (params.gender === 'male' ? 'boy' : 'girl') : (GENDER_MAP[params.gender] || GENDER_MAP.female)))
     .replace('{PERSONA}', PERSONA_MAP[params.persona] || PERSONA_MAP.girl_next_door)
-    .replace('{LIGHTING}', LIGHTING_MAP[params.lighting] || LIGHTING_MAP.window_day)
+    .replace('{LIGHTING}', NEUTRAL_LIGHT)   // 💡 v3.45:固定中性光
     .replace('{OUTFIT}', OUTFIT_MAP[params.outfit] || OUTFIT_MAP.beige_knit)
     ;   // 🎯 v3.43:場域已移除,臉一律中性棚背景
 
