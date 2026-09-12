@@ -264,13 +264,50 @@ window.KolStitch = (function () {
   //     generateAudio !== true 就 return ''，代表【關掉聲音時連生命感層也沒了】。
   //     要治得把 _lifeLine() 搬到該 return 之前的共用層，動到呼叫端，另案。
   // ════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  🏠 _groundLine() 空間落地 · v6.30 · 2026-09-12
+  //  ─────────────────────────────────────────────────────────────────────────
+  //  ★ 病(RA 2026-09-12 實測,她講了三次我才聽懂):
+  //    同一支 30 秒,第 1 段 75 分、第 2 段 10 分。第 2 段是「殭屍視訊鏡頭」——
+  //    正面、置中、臉佔滿畫面、背景糊成一團。
+  //  ★ 本機把兩段真正送出的字組出來對照:2364 字 vs 2351 字,
+  //    2200 多字【一模一樣】(front/資產標記/Voice/Performance/tail 全同),
+  //    唯一差別是那一行分鏡中文。逐詞量化:
+  //        空間物件  第1段 4(座位/桌面/窗/杯)  第2段 0
+  //        身體接觸  第1段 3(撐/托/坐)        第2段 0
+  //        臉部細節  第1段 2                   第2段 5
+  //        景別      中遠景                     特寫
+  //  ★ 所以【資產每段都有帶,但第2段沒有任何一句去調用它】。
+  //    RA 的口訣第二句就是答案:資產負責穩定,【標註負責調用】,提示詞負責鏡頭。
+  //    場景圖給了,沒有話叫它去用,模型就只能照 [Image1] 那張正面臉照畫。
+  //  ★ 而且這是結構性的,不是運氣:「收尾」那格本來就在寫反應與表情,
+  //    寫臉就不寫空間 → 不寫空間就退回臉照。90 秒六段會連爛五次。
+  //  ★ 修法放共用層:STEP2 與 STEP3 共用 buildMultiShotPrompt,
+  //    寫在這裡 = 第 1 到第 6 段每一段都有,不用抽取、不用傳遞、不會漏。
+  //  ★ 公版原則(RA 指正過兩次,務必守住):
+  //    ① 不指定場景 —— 咖啡廳/辦公室/湖邊/機場/操場 都要成立,
+  //       所以只講「跟現場真實存在的東西有接觸」,不寫「窗邊」這種咖啡廳答案。
+  //    ② 不指定位置 —— 她可以走動、換位子,走路也算接觸(腳踩在地上、經過旁邊)。
+  //    ③ 不帶動作過去 —— 只講靜態關係,不帶上一段的動詞,
+  //       否則踩 storywriter v5.18 那個雷(接棒句造成後段重演)。
+  //    ④ 商品沿用既有機制 —— 第 11 條已管狀態進度(拿出來只能一次),
+  //       這裡只說「已經在手上/桌上的就維持著」,不叫她重新拿。
+  // ═══════════════════════════════════════════════════════════════════════════
+  function _groundLine() { return ''; }   // v6.31:已併入 _lifeLine,保留空殼避免外部呼叫出錯
+
+  // 🏠 v6.31:Grounding 與 Performance 合併成一塊。
+  //   兩者重疊(都在講她的身體與手上的東西),分開寫多花 175 字,
+  //   而那 175 字剛好把【背景生活】那條規則擠出預算 —— 那條是今天剛驗證
+  //   路人回來的功臣,不能為了新規則犧牲舊戰果。合併後意思一字不減。
   function _lifeLine() {
     const P = _pron();
-    return 'Performance: ' + P.S + ' is already busy with something ordinary in ' + P.p + ' hands, '
-      + 'and the feeling shows inside that action, not as a separate gesture. '
+    return 'Performance: ' + P.s + ' is inside the location, never floating in front of it \u2014 '
+      + 'part of ' + P.p + ' body touches something really there (sitting, leaning, an arm on it, holding it, walking past), '
+      + 'visible in frame with ' + P.o + '; even in the tightest close-up keep a piece of the place beside ' + P.o + '. '
+      + 'Never planted centre-frame squared to the lens. '
+      + 'The feeling shows inside what ' + P.p + ' hands are already doing, not as a separate gesture. '
       + 'Reactions arrive in order \u2014 hands settle, then gaze, then head, expression last. '
-      + P.S + ' holds some of it back. A soft blink every two to three seconds, '
-      + 'weight shifting from one leg to the other as ' + P.s + ' talks, still moving on the last frame.';
+      + P.S + ' holds some of it back. A soft blink every two to three seconds, still moving on the last frame.';
   }
 
   function _buildVoiceLine(opts) {
@@ -715,7 +752,24 @@ window.KolStitch = (function () {
       //  ⚠️ 保守設 3000 不是 4000:太長可能稀釋模型注意力(不是被退件)。
       //    若之後實測 3000 仍穩,再往上調;若出現 400,退回 2200 觀察。
       // ═══════════════════════════════════════════════════════════════
-      const _WALL = 3000, _SAFE = 20;
+      // ═══════════════════════════════════════════════════════════════════
+      //  📏 2026-09-12 v6.32:_WALL 3000 → 3800(PiAPI 官方硬上限 4000)
+      //  ───────────────────────────────────────────────────────────────────
+      //  ★ 查證:PiAPI Seedance API 規格明寫 prompt (string, required,
+      //    max 4000 chars)。我們設 3000 是沿用舊估值,平白少了 1000 字。
+      //  ★ 代價:今天(2026-09-12)因為預算不夠,被 fitRules 整條丟掉的有
+      //    「背景生活的移動許可」「商品尺度鎖」「品牌色板」——
+      //    那些都是已經驗證有效的規則,丟掉純粹是浪費。
+      //  ★ 留 200 字安全邊界(3800 而非 4000):@imageN 佔位符會被 Worker
+      //    替換成實際編號,長度會變動;超過上限是整則被拒,不是截斷。
+      //  ⚠️ 但這只是止血,不是治療:官方寫法建議是 60–100 個英文字
+      //     (約 400–700 字元),我們送 2900+ 已是建議值的四到五倍。
+      //     今天實測三次「寫了但被無視」(對嘴行的眨眼、路人規則、
+      //     CANDID_FRAME 被一行中文蓋掉)——那不是被丟掉,是注意力不夠。
+      //     放寬讓我們「別再丟掉寫好的」,治不了重點稀釋。
+      //     真正的解法是砍到 100 字級距,那是公版重構的事。
+      // ═══════════════════════════════════════════════════════════════════
+      const _WALL = 3800, _SAFE = 20;
       const _rawTail = String((opts.shared && opts.shared.tail) || '');
       let _useFront = _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
@@ -788,7 +842,7 @@ window.KolStitch = (function () {
     // ═══════════════════════════════════════════════════════════════════
     if (_dbgOn()) {
       try {
-        const _WALL_SHOW = 3000;   // 與 _WALL 同步(探針在外層,取不到區塊內常數)
+        const _WALL_SHOW = 3800;   // 與 _WALL 同步(探針在外層,取不到區塊內常數)
         const _over = prompt.length - _WALL_SHOW;
         //  五鎖骨架 = probe 扣掉開場白、扣掉分鏡文字後剩下的固定結構
         //  🩹 2026-09-05:voiceLine 現在包含在 probe 裡,要扣掉,否則「五鎖骨架」
@@ -1182,7 +1236,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  _dbg('[KolStitch] 🎬 v6.29 🚶[SCENE_IMG]標註補「只鎖空房間不鎖裡面的生活」(配合 crew v5.36 背景生活赦免) · v6.28 🎭反向表演(表演原則取代微表情清單·大動作藏小反應+反應有先後順序:手停→視線→頭→表情·治「會動的照片」) · v6.27 🫀生命感層拆行(眨眼/視線/眉毛/重心從對嘴行搬出成獨立Performance區塊·治「上半臉凍結」)+🚫拔光否定句(statue-still/puppet-like→正面可數描述·治點名即召喚) · v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  _dbg('[KolStitch] 🎬 v6.32 📏字牆3000→3800(PiAPI官方上限4000·留200邊界·治「已驗證的規則被白白丟掉」) · v6.31 🏠空間落地併入表演層(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」)· v6.30 舊(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」) · v6.29 🚶[SCENE_IMG]標註補「只鎖空房間不鎖裡面的生活」(配合 crew v5.36 背景生活赦免) · v6.28 🎭反向表演(表演原則取代微表情清單·大動作藏小反應+反應有先後順序:手停→視線→頭→表情·治「會動的照片」) · v6.27 🫀生命感層拆行(眨眼/視線/眉毛/重心從對嘴行搬出成獨立Performance區塊·治「上半臉凍結」)+🚫拔光否定句(statue-still/puppet-like→正面可數描述·治點名即召喚) · v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
