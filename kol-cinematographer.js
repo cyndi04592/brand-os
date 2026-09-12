@@ -77,7 +77,13 @@
   //    ⚠️ 絕不寫 oily / specular / shine highlight 這類字,那會把防油光推翻;
   //      「faint natural sheen」是 UGC 圈驗證過的講法:留真皮膚的微光澤,
   //      不是留油光。全平面霧面反而更假(RA 鐵律:只拔油光·別把光全消)。
+  // 🎥 2026-09-12 v5.30:取景是【攝影師的職責】,分鏡卡的景別只決定遠近,
+  //   不決定「正不正」。RA 實測:前 15 秒偏移有生活感,後 15 秒置中正面像形象照 ——
+  //   差別在分鏡卡寫了「中景」之後,模型把人擺回畫面正中央對稱構圖。
+  //   ★ 補一句把兩層的分工講明:景別可以由分鏡卡決定,
+  //     但【不對稱、不置中、手持漂移】在任何景別下都成立。
   const CANDID_FRAME = 'framing slightly off-center, tiny handheld drift, not deliberately symmetrical'
+    + ', this off-centre handheld framing holds at every shot size, close or wide, she is never centred and squared to the lens'
     + ', window light from one side only so one side of her face falls slightly darker, not evenly lit'
     + ', natural skin texture keeping a faint natural sheen, visible pores, small imperfections';
 
@@ -85,7 +91,7 @@
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
-  // 🚶 2026-09-12 v5.29:範圍縮小,不是拿掉。
+  // 🚶 2026-09-12 v5.30 🔍背景柔但讀得懂(治鏡頭一近背景就糊成色塊)+🎥取景不對稱在任何景別都成立(治置中正面像形象照) · v5.29:範圍縮小,不是拿掉。
   //   ★ 病:舊寫法 'no crowd, no extra background people' ——
   //     第二半把【所有】背景人物禁死了。而 kol-crew-director 同時在另一層
   //     叫模型加遠景客人 —— 兩層直接對打,禁止那句又短又明確,模型聽它的。
@@ -95,7 +101,18 @@
   //   ★ 保留的:不要人擠人(會蓋掉 KOL)、不要有人靠近她或看鏡頭。
   //   ★ 放行的:遠景、失焦、做自己事的店員與客人。
   //   ⚠️ 微觀紋理與邊緣融合一個字不動 —— v5.17/v5.19 驗過的烤肉紋兩個兇手。
-  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, the subject stays in sharp focus while the background falls into soft shallow depth-of-field with reduced detail so all visual attention stays on her, no crowd and nobody close to her or facing the lens, no stylized or exaggerated artificial elements';
+  // 🔍 2026-09-12 v5.30:背景不再「減少細節」,改「柔但讀得懂」。
+  //   ★ 病(RA 2026-09-12 兩段對照實測):同一支影片,前 15 秒背景讀得懂
+  //     (木桌、椅子、吊燈、櫃檯、窗外的街)→ 真;後 15 秒鏡頭推近,
+  //     背景糊成色塊 → 假、像形象照。
+  //   ★ 病因就是這句自己下的指令:'shallow depth-of-field with reduced detail'。
+  //     她站得遠時這條作用有限;鏡頭一近,它就全面接管 ——
+  //     把生活痕跡、光的層次、剛放行的背景人物【全部一起糊掉】。
+  //     等於我在同一行前半放行路人,後半又把他們糊成一團。
+  //   ★ 改法:主體仍最清楚(不搶焦點的目的保留),但背景要 readable ——
+  //     「柔」跟「看不出是什麼」是兩件事,以前混在一起講。
+  //   ⚠️ 不寫 bokeh / blur 強度詞,也不碰微觀紋理與邊緣融合(烤肉紋兇手)。
+  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the subject and the background share the same ambient color temperature and one gentle natural color grade so she genuinely belongs inside the scene and never looks pasted on, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, the subject is the sharpest thing in frame while the background stays gently soft but fully readable, its furniture, fixtures, lights and the street beyond the window all still recognisable, no crowd and nobody close to her or facing the lens, no stylized or exaggerated artificial elements';
 
   // 🔊 音訊反罐頭層 — v5.25 新增(fal 官方 anti-slop:罐頭配樂 = 最大 AI 味來源之一)
   //   只要「這個畫面裡真的會有的聲音」:現場動作音 + 環境底噪 + 乾淨人聲。
