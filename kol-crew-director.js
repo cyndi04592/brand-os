@@ -461,9 +461,13 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   //     跟「不要想大象」同一個道理,點名即召喚。
   //     ★ 正解:講「畫面裡本來就有的東西」,由模型自己從場景參考圖認定是哪些。
   //   ★ 字數控制在 ~130 字:1700 牆已經很緊(實測 1690),不能再吃太多。
-  //  🚚 v5.35 🔇動作描述去引號(治鏡頭欄被念出來) · v5.34 壓縮成關鍵詞串，意思不變。
-  tail.push('same objects across all shots, same count, same colours, same places; '
-    + 'one continuous space, only the camera angle changes');
+  //  🚚 v5.37 🌬背景生活改從場所推導(蒸氣/熱氣/光斑/風扇/店員·不再寫死人與車·車明確在玻璃外) · v5.36 🚶背景生活赦免(桌椅照鎖·人與車不受跨段一致性鎖管·治「早期有路人現在沒有」) · v5.35 🔇動作描述去引號(治鏡頭欄被念出來) · v5.34 壓縮成關鍵詞串，意思不變。
+  //  🪑 2026-09-12 v5.36:管轄範圍限定,強度不變。
+  //     舊寫法 'same objects' 太寬 —— 它把「桌椅吧檯」和「窗外的車」
+  //     劃進同一個籃子,模型只好全部鎖死,活的東西一起陪葬。
+  //     ★ 桌椅一顆都不准動,這點一個字不放鬆;只是不再連「人與車」一起管。
+  tail.push('furniture, fixtures, structures, materials and surfaces identical across all shots, '
+    + 'same count, same colours, same places; one continuous space, only the camera angle changes');
 
   // ═══════════════════════════════════════════════════════════════
   //  🧍 2026-09-11 · 公共場所要有人(RA 拍板)
@@ -497,6 +501,9 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
     //  ⚠️ 私人字眼【優先判定】,而且要先擋假陽性:
     //     「living room with a coffee table」含 coffee → 會被誤判成咖啡廳,
     //     結果客戶家裡憑空冒出路人。先把家具名裡的陷阱字消掉再比對。
+    //  🏷 v5.37:抓一個場所名詞當推導錨點(cafe / gym / bakery…),
+    //     讓「這裡會有什麼在動」有依據,而不是套咖啡廳的答案。
+    const _envNoun = (_envTxt.match(/(cafe|caf\u00e9|coffee shop|bakery|restaurant|diner|bar|salon|gym|clinic|office|lobby|bookstore|market|supermarket|shop|store)/) || [])[0] || '';
     const _envSafe = _envTxt
       .replace(/coffee\s*table/g, ' ')      // 茶几不是咖啡廳
       .replace(/bar\s*stool/g, ' ')         // 吧檯椅不是酒吧
@@ -512,9 +519,28 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
       //     → 這就是 RA 2026-09-12 實拍咖啡廳【零個路人】的結構性原因。
       //  ★ 寫法改關鍵詞逗號串（刺茑星球規格：不寫完整句、不堆形容詞），
       //     意思一字不減：遠、失焦、背對或側身、做自己的事、不看鏡頭。
-      tail.push('a few other people deep in the background, far tables and behind the counter, '
-        + 'small, softly out of focus, backs or profiles, busy with their own business, '
-        + 'never near her and never toward the lens, ambient life not characters');
+      //  🚶 v5.36:補上【他們會動】的許可。
+      //     RA 2026-09-12 指出早期影片咖啡廳有客人、窗外有車經過,現在沒有了。
+      //     病因不是這條規則不夠用力,是它在跟三條規則對打而且必輸:
+      //       ① 九宮格參考圖本身是空的(nobody in frame)—— 而且這是對的,
+      //          資產保持乾淨、生活由影片層加,見本檔 472 行。
+      //       ② [SCENE_IMG] 標註叫模型照抄 layout/structures/materials。
+      //       ③ 跨段一致性鎖叫它「only the camera angle changes」。
+      //     一個會走路的客人、一台開過去的車,本身就是「變了」——
+      //     而鎖那邊有一張真的圖當依據,路人這邊只有文字。資產永遠贏過提示詞。
+      //     ★ 所以要明講【這些是唯一允許變動的東西】,把它從鎖裡赦免出來。
+      //  🌬 v5.37 RA 修正:v5.36 把背景生活寫死成「人和車」——
+      //     ① 車是【窗外】的事,跟人寫在同一句會讓模型以為車開進店裡。
+      //     ② 咖啡廳真正會動的遠不止這兩樣:咖啡機的蒸氣、杯口熱氣、
+      //        雲飄過造成地上光斑移動、吊燈輕晃、櫃檯後面有人在忙。
+      //     ③ 寫死「人和車」等於把它綁在咖啡廳 —— 健身房是風扇與毛巾,
+      //        辦公室是螢幕與雲影,夜市是煙與火光。換場景就錯。
+      //     ★ 改成【讓模型自己從這個場所推導】,跟九宮格痕跡那條同一個邏輯:
+      //       先想清楚這裡會有什麼在動,再讓那些東西動起來。
+      tail.push('work out what moves in a working ' + (_envNoun || 'place') + ' and let it move: '
+        + 'steam, heat haze, light shifting as cloud passes, a lamp swaying, staff busy behind the counter, '
+        + 'a few people at far tables, small, soft-focus, backs or profiles, never near her or toward the lens; '
+        + 'outside the glass the street carries on. Only this living movement changes between shots; the room stays fixed');
     } else {
       tail.push('she is the only person in frame throughout');
     }
