@@ -461,9 +461,9 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   //     跟「不要想大象」同一個道理,點名即召喚。
   //     ★ 正解:講「畫面裡本來就有的東西」,由模型自己從場景參考圖認定是哪些。
   //   ★ 字數控制在 ~130 字:1700 牆已經很緊(實測 1690),不能再吃太多。
-  tail.push('whatever objects appear in the environment stay exactly the same across all shots — '
-    + 'same items, same count, same colours and models, resting in the same places; '
-    + 'the setting is one continuous unchanged space, only the camera angle changes');
+  //  🚚 v5.34 壓縮成關鍵詞串，意思不變。
+  tail.push('same objects across all shots, same count, same colours, same places; '
+    + 'one continuous space, only the camera angle changes');
 
   // ═══════════════════════════════════════════════════════════════
   //  🧍 2026-09-11 · 公共場所要有人(RA 拍板)
@@ -506,10 +506,15 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
     if (_privateWords.test(_envSafe)) {
       tail.push('she is the only person in frame throughout');
     } else if (_hasLandmark || _publicWords.test(_envSafe)) {
-      tail.push('this is a working public place during opening hours, so a few other people are present in the deep background — '
-        + 'customers seated at far tables and a staff member behind the counter, all small, softly out of focus, '
-        + 'seen from behind or in profile, absorbed in their own business, never looking at the camera, '
-        + 'never approaching her and never blocking her; they read as quiet ambient life, not as characters');
+      //  🚚 2026-09-12 v5.34：403 字 → ~150 字。本條一直是 tail 裡最肥的，
+      //     而 fitRules 是「放不下的整條跳過」—— 最肥的第一個死。
+      //     對照組：私人空間版只有 42 字，永遠活著；公共版 403 字，永遠被丟。
+      //     → 這就是 RA 2026-09-12 實拍咖啡廳【零個路人】的結構性原因。
+      //  ★ 寫法改關鍵詞逗號串（刺茑星球規格：不寫完整句、不堆形容詞），
+      //     意思一字不減：遠、失焦、背對或側身、做自己的事、不看鏡頭。
+      tail.push('a few other people deep in the background, far tables and behind the counter, '
+        + 'small, softly out of focus, backs or profiles, busy with their own business, '
+        + 'never near her and never toward the lens, ambient life not characters');
     } else {
       tail.push('she is the only person in frame throughout');
     }
@@ -722,5 +727,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
