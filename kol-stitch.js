@@ -1,5 +1,19 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.50
+// kol-stitch.js — 自動接片引擎 v6.53
+// v6.53:🩳 統整去重(RA:不要一直亂加,不然提示詞 10000 行)
+//        ① 拿掉 'Soft diffused natural light' —— 光線混在防油光鐵律裡,正面抵銷 v6.52
+//           的主光/副光規則。膚質五句一字未動。
+//        ② 表演層三句合一;「不准正對鏡頭」刪(Worker 已有三處,跨層重複)
+//        ③ 商品「different shots show the specified products」刪(標註區已說)
+//        🎯 加一句主旨定調:連 AI 都看不出來是生成的 —— 一句話勝過五條規則。
+// v6.52:💡 光源規則升級兩件(RA 攝影專業判讀):
+//        ① 明講「臉圖自帶棚燈,不要複製」—— 實測參考照左右差 46-59 全是右前方打光,
+//           模型照抄過來跟房間光打架,互相抵銷變平光。
+//        ② 單一光源 → 主光/副光混光:主光定明暗、副光只描邊、交界處顏色要過渡,
+//           冷窗側與暖燈側可以同時出現在一張臉上,不准平均成一個色調。
+// v6.51:💡 光源同源接進 lean 路徑 —— v5.33 那 8 條【從來沒進過實際 prompt】,
+//        所以臉一直是完全平光(光差 0.3-0.9,鞋店基準 13.6)。
+//        🧴 讓位不再縮寫防油光鐵律(違反 v5.22「永不縮寫」,是 RA 回報磨皮感的元兇)。
 // v6.50:🎭 把 RA 2026-06「笑要有動機與種類」+ 2026-07「一閃而過的一拍/眼神隨話流動」補回來,
 //        並加上【強情緒同步爆發】。刪掉「反應按順序:手→視線→頭→表情」——
 //        查無出處,而且與「一閃而過」直接打架,是僵硬/機器人感的來源。
@@ -411,10 +425,12 @@ window.KolStitch = (function () {
   //   路人回來的功臣,不能為了新規則犧牲舊戰果。合併後意思一字不減。
   function _lifeLine() {
     const P = _pron();
-    return 'Performance: ' + P.s + ' is inside the location, never floating in front of it \u2014 '
-      + 'part of ' + P.p + ' body touches something really there (sitting, leaning, an arm on it, holding it, walking past), '
-      + 'visible in frame with ' + P.o + '; even in the tightest close-up keep a piece of the place beside ' + P.o + '. '
-      + 'Never planted centre-frame squared to the lens. '
+    //  🩳 v6.53 整併:原本三句講同一件事(在場景裡/碰到東西/特寫留環境)合成一句;
+    //    「Never planted centre-frame squared to the lens」刪除 —— Worker 第10/18條
+    //    已經有三處在管「不准看鏡頭、不准死盯」,跨層重複(RA 要求統整)。
+    return 'Performance: ' + P.s + ' is inside the location, not floating in front of it \u2014 '
+      + 'part of ' + P.p + ' body always touches something really there, and even the tightest close-up '
+      + 'keeps a piece of the place beside ' + P.o + '. '
       //  🎭 v6.49 情緒與眼神(RA 2026-09-13 指正):
       //   ★ 舊版兩條被換掉:
       //     ①「情緒藏在手正在做的事裡」—— 只講【怎麼演】,沒講【演什麼】。
@@ -519,7 +535,7 @@ window.KolStitch = (function () {
 
     if (shared && shared.front) {
       const prodRule = bp.has
-        ? (_pron().s + ' holds the product referenced in each shot at a consistent real-world size and hand-scale; do not zoom or resize it within a shot; different shots show the specified products; ')
+        ? (_pron().s + ' holds the product referenced in each shot at a consistent real-world size and hand-scale; do not zoom or resize it within a shot; ')   /* v6.53:刪「different shots show…」,標註區已說 each shot names the one it uses */
         : (_pron().s + ' holds a product that is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ');
       //  📦 2026-09-05:商品圖【一直沒有在清單裡被宣告】。
       //    實測任務 03c0171d:清單宣告了 Image1=身份 / Image3=服裝 / Image4=場景,
@@ -582,7 +598,13 @@ window.KolStitch = (function () {
 
       // ═══ ④ 抽象風格(末尾·全局潤色,不干擾主體與光影)═══
       bodyB += '\n\n' + shared.front
-        + (_segHasOutfit ? '\nno change of person, scene, outfit, no crowd.' : '\nno change of person, scene, no crowd.');
+        //  🎯 v6.53 主旨句(RA 定調):目標不是「像廣告」,是【連 AI 都分不出來是生成的】。
+        //    放最末尾 = 全局潤色位,不搶主體與光影,但為前面所有規則定調。
+        //    一句話能講完的事就不要寫成五條 —— 模型讀得懂,而且權重不會被稀釋。
+        + '\nThis has to read as real footage somebody actually shot, not as something generated \u2014 '
+        + 'if a viewer or another AI looked closely, nothing should give it away. '
+        + (_segHasOutfit ? 'Same person, same place, same outfit throughout, no crowd.'
+                         : 'Same person, same place throughout, no crowd.');
       return bodyB;
     }
 
@@ -954,7 +976,12 @@ window.KolStitch = (function () {
     //   ⚠️ v6.15:front 現在就是 look(或沒 look 時的 generic);lean 重組直接沿用 _lookFront,不再帶 colorLine。
     if ((opts.provider || 'piapi') === 'piapi' && opts.shared && opts.shared.front) {
       const _leanFront = _lookFront
-        || 'Realistic vertical UGC video. Soft diffused natural light, matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No on-screen text or subtitles, no background music.';
+        || //  🧴 v6.53:拿掉 'Soft diffused natural light,' —— 它是【光線】不是膚質,
+        //    混在防油光鐵律裡是歷史殘留。它給模型一盞通用柔光,正面抵銷 v6.52 的
+        //    「忽略棚燈、用房間的主光副光重新照她」,實測結果就是整張臉平光。
+        //    ⚠️ 膚質五句(matte skin / 照原圖 / no beauty filter / no smoothing /
+        //      no skin retouching / not a polished model)【一字未動】,v5.22 鐵律完整。
+        'Realistic vertical UGC video. Matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No on-screen text or subtitles, no background music.';
       // 🩹 2026-08-23 重大修補:tail 必須跟著重組帶回去。
       //   病灶:這段 lean 重組原本只傳 { front: _leanFront } —— shared.tail 整組被丟掉。
       //   而 tail 裝的不是冗字,是【鐵律】:
@@ -1050,7 +1077,40 @@ window.KolStitch = (function () {
       //    白白浪費 150 字 —— 而那 150 字正是商品鐵律一直不夠用的量。
       const _WALL = 3950, _SAFE = 20;
       const _rawTail = String((opts.shared && opts.shared.tail) || '');
-      let _useFront = _leanFront;
+      //  💡 v6.51 接上光源同源(RA 2026-09-13 實測「臉完全平光、像被磨皮」)
+      //  ★ 病灶(今天最大的一隻):kol-cinematographer.js 的 SCENE_REALISM —— 含 v5.33
+      //    「她只被這個房間裡看得見的燈和窗照亮」那 8 條 —— 【從來沒有進過 piapi 這條路】。
+      //    實測 prompt 裡一個字都找不到。難怪臉左右光差只有 0.3-0.9(鞋店基準 13.6)=
+      //    完全平光,沒有任何規則在告訴模型光從哪裡來。
+      //  ★ 只取【光源同源】那幾句,不整段搬 SCENE_REALISM(它有 1086 字會撐爆牆,
+      //    而且結構鎖那部分九宮格圖已經在做)。
+      //  ★ 放在 front 裡 = 詞序末尾,權重最低但一定送得到 —— 這是抽象風格層該在的位置。
+      //  💡 v6.52 兩個新發現(RA 2026-09-13,她是攝影出身,一眼看出來的):
+      //  ★ 發現①【臉圖自帶一盞棚燈,影片把它繼承下來】
+      //    實測欣怡三張角度照:左右亮度差 46 / 51 / 59,全部是【右前方打光】——
+      //    那是拍參考照時就烤進去的棚燈。模型分不出「這是拍照棚燈」還是「這是現場光」,
+      //    於是照抄過來,不管場景裡的窗在哪一邊。
+      //    結果:棚燈方向與房間光互相打架 → 兩邊抵銷 → 【整張臉變平光】(實測光差 0.6,鞋店 13.6)。
+      //    → 修法:明講「參考照的光是拍攝棚燈,不要複製,改用這個房間的光重新照她」。
+      //  ★ 發現②【現實是混光,規則卻只寫單一光源】
+      //    咖啡廳現場:右前方一大片落地窗(冷、柔、大面積)+ 左後方咖啡機吊燈(暖、小、方向強)。
+      //    舊規則只寫「亮側朝光源、暗側背對」= 一盞燈的邏輯,模型只能二選一,
+      //    兩邊都不敢做就乾脆都不做 → 又是平光。
+      //    → 修法:分【主光 / 副光】。主光決定亮面與明暗;副光只在背對主光那側描邊;
+      //      兩種光交會處(鼻樑、顴骨)顏色要看得出來在過渡 —— 那條交界線就是真實感所在。
+      //  ⚠️ 全程只用光源/方向/顏色詞,不碰 contact shadow / light field / optical depth /
+      //    spilling / microtexture —— 那些是 v5.17 驗過的烤肉紋兇手,禁止復活。
+      const _LIGHT_SOURCE =
+          'The reference photo of her face carries its own studio lighting from the shoot; ignore that direction entirely '
+        + 'and relight her from scratch using only the lamps and windows actually visible in this room. '
+        + 'Read the room first: name the largest, softest source as the key light and any smaller, stronger source as the rim. '
+        + 'The key decides which side of her face is bright and which falls into shadow; '
+        + 'the rim only touches the edge of her hair, shoulder and jaw on the side facing away from the key. '
+        + 'Each source keeps its own colour on her: whatever colour a lamp or window casts on the walls and tables '
+        + 'is the same colour it casts on her skin and clothes, so a cool window side and a warm lamp side can appear on the same face, '
+        + 'meeting and blending across the nose and cheekbone rather than averaging into one flat tone. '
+        + 'No light may appear on her that cannot be traced to something visible in the frame. ';
+      let _useFront = _LIGHT_SOURCE + _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
       let _budget = _WALL - _SAFE - _probe.length;
 
@@ -1077,7 +1137,14 @@ window.KolStitch = (function () {
       if (_budget < _TAIL_FLOOR) {
         _blk.rescued = true;
         _dbg('[KolStitch] 🥇 讓位① front 瘦身:tail 需要 ' + _TAIL_FLOOR + ' 字,目前只有 ' + _budget);
-        _useFront = 'Realistic vertical UGC video. Soft diffused natural light, matte skin, no beauty filter, an ordinary real person.';
+        //  ⚠️ v6.51:舊版這裡把 front 換成【縮寫版】防油光 —— 那直接違反 v5.22 鐵律
+        //    (「照抄完整原文、永不縮寫」,v6.19 抄一半的前科就是臉全油)。
+        //    實測後果:no smoothing / no skin retouching / exactly like the reference photo
+        //    三句被砍掉 → RA 回報「人臉都有被 AI 整個磨皮過」。
+        //  ★ 改法:讓位時只砍【可有可無的開場風格句】,防油光與光源同源一個字都不動。
+        _useFront = _LIGHT_SOURCE + (_lookFront || _leanFront)
+          .replace('Realistic vertical UGC video. ', '')
+          .replace('No on-screen text or subtitles, no background music.', '');
         _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
         _budget = _WALL - _SAFE - _probe.length;
       }
