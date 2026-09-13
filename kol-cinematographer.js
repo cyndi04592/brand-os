@@ -24,6 +24,26 @@
 //     (例如給不懂「刻意拍歪」的審核方看時)。
 //  
 //  📷 攝影師 — 鏡頭、自然光、運鏡、電影寫實
+//
+//  💡 2026-09-13 v5.33:拿掉「那盞不存在的燈」(治割裂感·RA 定調)
+//   ★ 病灶不是色溫差多少,是【光源根本不同源】——
+//     她臉上那層光,在畫面裡找不到任何一盞燈對應得上。
+//     所以不是「站在咖啡廳」,是「被放在咖啡廳前面」。
+//   ★ 兇手是 SCENE_REALISM 第 5 句 'soft diffused natural lighting':
+//     它叫模型【先給她一層通用柔光】,不管房間是什麼光;
+//     第 6、7 句才補「要跟房間一樣」—— 兩句打架,而且第 5 句排在前面權重更高。
+//     結果:她自帶一盞燈,房間的光只在上面刷一下。實測色溫落差 +0.92(鞋店基準 +0.40)。
+//   ★ 修法是【拿掉打架的那一方】,不是再加一條規則(RA 規律)。
+//     改成指定來源:只能被這個房間裡看得見的燈和窗照到,沒有第二組光源,
+//     它們打在牆上桌上的顏色,就是打在她臉上的顏色;
+//     她臉上不該有任何在畫面裡找不到來源的光。
+//   ★ 黃燈就黃燈、白光就白光、夕陽就夕陽 —— 環境是什麼光,人就是什麼光。
+//   ⚠️ 全程只用色彩/光源詞,不碰 contact shadow / light field / optical depth /
+//     spilling —— 那些是 v5.17 驗過的烤肉紋兇手,禁止復活。
+//   ⚠️ 仍有殘留衝突:kol-stitch 的防油光鐵律(v5.22 原文)也含
+//     'soft diffused natural light'。那是鐵律不得改寫 —— 若本版效果不足,
+//     下一步是把鐵律那句【搬到末尾】(詞序法),不是刪字。
+//   ★ 驗收:她臉上的每一塊光,都要能在畫面裡指出是哪個光源造成的。
 //  
 //  v5.26 變更(prompt 減重·打 422):
 //   • 三處瘦身共省 ~300 字元,語意零犧牲:AUDIO_REALISM 濃縮、
@@ -134,7 +154,7 @@
   //     而不是隨機亮點。這跟 kol-ai-generator v3.44 是同一件事的兩端:
   //     那邊決定臉圖的光,這邊要求影片把她重新打進場景的光裡。
   //   ★ 最後一句管邊緣:貼上去的痕跡就在輪廓,要求邊緣是被光照到的,不是切出來的。
-  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look with soft diffused natural lighting, the light in this room falls on her the same way it falls on everything else in it — same direction, same colour, the lit side of her face turned toward wherever the light in the room comes from and the shadow side away from it, the windows and lamps of this room reflected in her eyes as the same shapes they really are; she and the background share one colour grade, and where she meets the background the edge is soft and lit, never cut out, no glossy commercial polish, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, the subject is the sharpest thing in frame while the background stays gently soft but fully readable, its furniture, fixtures, lights and the street beyond the window all still recognisable, no crowd and nobody close to her or facing the lens, no stylized or exaggerated artificial elements';
+  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not a 3D render, not CGI, not a video-game environment, natural everyday documentary look, she is lit only by the lamps and windows that are actually visible in this room and by nothing else, there is no separate light on her alone, whatever colour those lamps and windows cast on the walls tables and floor is the same colour they cast on her face hands and clothes, no light may appear on her that cannot be traced to something visible in the frame, the lit side of her face turned toward wherever the light in the room comes from and the shadow side away from it, the windows and lamps of this room reflected in her eyes as the same shapes they really are; she and the background share one colour grade, and where she meets the background the edge is soft and lit, never cut out, the background layout stays consistent across the whole video with all furniture, windows and fixtures kept in the same fixed positions and not moving appearing or disappearing between shots, the subject is the sharpest thing in frame while the background stays gently soft but fully readable, its furniture, fixtures, lights and the street beyond the window all still recognisable, no crowd and nobody close to her or facing the lens, no stylized or exaggerated artificial elements';
 
   // 🔊 音訊反罐頭層 — v5.25 新增(fal 官方 anti-slop:罐頭配樂 = 最大 AI 味來源之一)
   //   只要「這個畫面裡真的會有的聲音」:現場動作音 + 環境底噪 + 乾淨人聲。
