@@ -169,11 +169,36 @@
       if (lines.length) _memo = lines.join('\n');
     } catch (e) {}
 
+    //  📏 2026-09-13 v5.21 字數規格同步(治「前端建議 72,AI 只寫 50」)
+    //  ★ 病(RA 2026-09-13 實測):前端建議值改成 72 字後,AI 還是只寫 50-53 字。
+    //    因為 AI 看的是 Worker 第 12 條寫死的「15 秒 58-62 字」,
+    //    而那個數字是用【舊語速 4.2】算的 —— 前端改了、Worker 沒改,兩邊規格不一致。
+    //    實測語速是 6.0,58-62 字只講 10 秒,15 秒的片必定發呆 5 秒。
+    //  ★ 修法:不改 Worker(手上那份是舊的,改下去會洗掉別人的規則),
+    //    改走 outline 這條現成通道 —— 合規禁詞(_compBrief)早就是這樣做的,
+    //    註解明寫「不用改 Worker、不用改架構」。字數規格用同一條路帶過去。
+    //  ★ 規格由同一組常數算出:FIT_SWEET / FIT_MAX / SPEAK_RATE,
+    //    所以前端顯示、前端硬擋、AI 被要求的字數,三者永遠同步。
+    const _beatPlan = planBeats(duration);
+    const _specLines = (Array.isArray(_beatPlan) ? _beatPlan : [])
+      .map(function (b) {
+        const sec = (b && (b.seconds || b.durationSec)) || 15;
+        return sec + ' 秒的段落寫 ' + Math.round(sec * FIT_SWEET * SPEAK_RATE)
+          + '-' + Math.round(sec * FIT_MAX * SPEAK_RATE) + ' 字';
+      });
+    const _uniqSpec = _specLines.filter(function (x, i, a) { return a.indexOf(x) === i; });
+    const _charSpec = _uniqSpec.length
+      ? ('\n\n【台詞字數規格 · 必須遵守】每一段的台詞字數:' + _uniqSpec.join('、')
+         + '。這是依實測語速 ' + SPEAK_RATE + ' 字/秒換算的 —— 字數不足的話,'
+         + '影片後段會出現好幾秒沒有人說話的空白,畫面會變成乾等。'
+         + '寧可把事情講得更具體、多給一個細節,也不要讓段落講不滿。')
+      : '';
+
     return {
       recentEpisodes: _memo,   // 🧠 純文字摘要,Worker 端直接貼進提示詞
       durationSec: duration,
-      beats: planBeats(duration),
-      outline: (outline || '') + _compBrief,
+      beats: _beatPlan,
+      outline: (outline || '') + _compBrief + _charSpec,
       lockedLines: Array.isArray(lockedLines) ? lockedLines : [],
       kolName: persona.persona_name || persona.name || '',
       kolBackground: persona.background || '',
@@ -359,5 +384,5 @@
     window.CrewDirector.register('storywriter', window.KolStorywriter);
   }
 
-  console.log('[KolStorywriter] 📖 v5.18 就緒 · 🔁接棒句中性化(治「順著剛才的旋轉」→ 後段重演) ·(語速4.2實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
+  console.log('[KolStorywriter] 📖 v5.21 就緒 · 📏字數規格同步前端↔AI(走 outline 通道·治「建議72字·AI只寫50」) · 🔁接棒句中性化 ·(語速6.0實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
 })();
