@@ -1,5 +1,7 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.64
+// kol-stitch.js — 自動接片引擎 v6.66
+// v6.66:🎨 皮膚【紋理】非毛孔(避免畫成規律毛孔=3D建模感)+ 主旨句與標註區去重 + 服裝標註逐項列舉去重。
+// v6.65:📍 自動空間錨點 —— 第二格起若沒寫位置,程式自動從第一格補上(治「每次都要手改 Beat 2」)。
 // v6.64:🪑 拿掉執行時的 200 字扣除(那是誤解)——改成【設計目標】:規則要寫到留 200 字餘裕。
 // v6.62:🩳 光學段 669→290(只砍解釋性展開,直線/加色兩機制完整保留)
 // v6.61:🩳 光學段壓掉與鐵律重複的部分;直線/加色兩個機制一字不動。
@@ -582,7 +584,7 @@ window.KolStitch = (function () {
       // ═══ ① 主體(最前·錨定視覺焦點)═══
       let bodyB = 'Reference images are LOCKED assets, each the single source of truth for its element — keep identical in every shot: '
         + '[Image1] = identity (same face, hair, body proportions, vibe; one person). '
-        + (_segHasOutfit ? '[OUTFIT_IMG] = outfit (same garment: fabric, pattern, colour, cut; do not restyle). ' : '')
+        + (_segHasOutfit ? '[OUTFIT_IMG] = outfit (same garment throughout; do not restyle). '   /* v6.66:fabric/pattern/colour/cut 逐項列舉與第一句 keep identical in every shot 重複 */ : '')
         + prodDecl
         + (_mc ? 'Match cuts only — same moment, new angle, no re-perform; a shot can cut while she is still moving. ' : '')
         + '\n\n'
@@ -621,8 +623,9 @@ window.KolStitch = (function () {
         //    一句話能講完的事就不要寫成五條 —— 模型讀得懂,而且權重不會被稀釋。
         + '\nThis has to read as real footage somebody actually shot, not as something generated \u2014 '
         + 'if a viewer or another AI looked closely, nothing should give it away. '
-        + (_segHasOutfit ? 'Same person, same place, same outfit throughout, no crowd.'
-                         : 'Same person, same place throughout, no crowd.');
+        //  🩳 v6.66:原本尾巴再說一次「同一人/同一地/同一服裝」——
+        //    標註區第一句已經寫了 'keep identical in every shot',整句重複,只留「不要人群」。
+        + 'No crowd.';
       return bodyB;
     }
 
@@ -631,6 +634,30 @@ window.KolStitch = (function () {
       + (_segHasOutfit ? 'wearing the exact outfit of [OUTFIT_IMG], naturally holding and showing the product.\n\n'
                        : 'naturally holding and showing the product.\n\n')
       + carry;
+    //  📍 v6.65 自動空間錨點(RA:Beat 2 每次都要手動補,6 段會錯 5 次,客戶不可能自己改)
+    //  ★ 病:Worker v4.81 規定「每一格都要交代她在空間的位置」,但【AI 只對第一格照做】,
+    //    實測連續三支片都是 Beat 1 有、Beat 2 沒有。靠模型自律不可靠。
+    //  ★ 後果:每一格是分開生成的,第二格不知道她坐哪、光從哪來 → 只能給均勻光,
+    //    實測臉部明暗差 段1=31 / 段2=1.8(完全平光,就是「像塗一層粉」的來源)。
+    //  ★ 修法:程式自動補。從第一格抽出【位置片語】,第二格起若自己沒寫位置就自動前綴。
+    //    抽不到就退回通用句(位置不變、光源方向不變),至少不會讓模型重新想像。
+    //  ★ 成本:每格約 10-25 字,6 段也只有 150 字 —— 比讓客戶每次手改便宜太多。
+    const _POS_RE = /[^,,。;;]*(?:位置|靠[在著]|窗邊|邊上|採光|光源|面向|正對|背對|旁邊|角落)[^,,。;;]*/;
+    let _anchor = '';
+    try {
+      //  ⚠️ 先切掉景別前綴(「中景:」),否則會把它一起抓進錨點,變成
+      //    「她仍在中景:她側著身子靠在窗邊的位置」(2026-09-13 自測抓到)。
+      //  ⚠️ 不重組句子(試過「她仍在」+片語 → 變成「她仍在側著身子靠在窗邊」不通順)。
+      //    直接把第一格的位置片語原句照抄當前綴,前面加「位置不變:」。
+      const _b0 = String((list[0] && list[0].prompt) || '').replace(/^[^::]{1,6}[::]/, '');
+      const _m0 = _b0.match(_POS_RE);
+      if (_m0) {
+        const _pos = _m0[0].replace(/^[,,、]+/, '').trim();
+        if (_pos && _pos.length <= 26) _anchor = '位置不變(' + _pos + '),';
+      }
+    } catch (_) {}
+    if (!_anchor) _anchor = '位置不變,光源方向不變,';
+
     let t = 0;
     for (let i = 0; i < n; i++) {
       const bSec = list[i].durationSec || Math.max(1, Math.round(dur / n));
@@ -642,7 +669,14 @@ window.KolStitch = (function () {
       body += '[00:' + pad(t0) + '-00:' + pad(t1) + '] ' + marker
         + (_segHasOutfit ? ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME background, wearing [OUTFIT_IMG]. '
                          : ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME background. ')
-        + (list[i].prompt || '') + _prodA + '\n';
+        + (function () {
+            const _raw = String(list[i].prompt || '');
+            //  第一格本來就有位置;第二格起自己沒寫位置才補
+            if (i === 0 || _POS_RE.test(_raw)) return _raw;
+            //  補在景別之後(「中景:」「特寫:」),讓句子仍然通順
+            const _mk = _raw.match(/^([^::]{1,6}[::])/);
+            return _mk ? (_mk[1] + _anchor + _raw.slice(_mk[1].length)) : (_anchor + _raw);
+          })() + _prodA + '\n';
       t = t1;
     }
     body += '\nGlobal: the same ' + _pron().noun + ' [Image1], the same location [SCENE_IMG], '
@@ -1191,7 +1225,13 @@ window.KolStitch = (function () {
         + 'and whatever stands between casts its shadow onto her. '
         + 'Light adds \u2014 two sources overlapping on her blend into a third colour, and nearby surfaces bounce '
         + 'their own colour back onto her skin. '
-        + 'Her face was not lit or made up for a camera; this is her own depth of tone and her own condition. ';
+        + //  🧴 v6.66 皮膚【紋理】而非【毛孔】(RA 2026-09-13 定調)
+        //   ★ 不能寫 pores:那是【具體物件】,模型會去畫 → 畫出規律均勻的毛孔 →
+        //     變成 3D 建模/遊戲角色的皮膚,比磨皮更假(RA 原話:太誇張就是 AI 遊戲)。
+        //   ★ 改寫 texture:那是【表面性質】,模型只會【保留】不會編造。
+        //     實測毛孔細節:原圖 17.1 → 成品 10.0(真人 12.4-14.7),磨皮感從 90% 降到 30%。
+        'Her face was not lit or made up for a camera; this is her own depth of tone and her own condition, '
+        + 'her skin carrying its own texture rather than reading as one smooth film. ';
       let _useFront = _LIGHT_SOURCE + _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
       let _budget = _WALL - _SAFE - _probe.length;
