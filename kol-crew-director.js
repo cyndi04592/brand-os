@@ -537,10 +537,24 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
       //        辦公室是螢幕與雲影,夜市是煙與火光。換場景就錯。
       //     ★ 改成【讓模型自己從這個場所推導】,跟九宮格痕跡那條同一個邏輯:
       //       先想清楚這裡會有什麼在動,再讓那些東西動起來。
-      tail.push('work out what moves in a working ' + (_envNoun || 'place') + ' and let it move: '
-        + 'steam, heat haze, light shifting as cloud passes, a lamp swaying, staff busy behind the counter, '
-        + 'a few people at far tables, small, soft-focus, backs or profiles, never near her or toward the lens; '
-        + 'outside the glass the street carries on. Only this living movement changes between shots; the room stays fixed');
+      //  🌬 2026-09-13 v5.38 RA 修正(承 v5.37 未完成的部分)· 364→319 字,4 條→3 條:
+      //   ★ 病① 前半句叫模型「自己推導這個場所會有什麼在動」,
+      //     後半句卻塞了一整串【咖啡廳專用範例】(蒸氣/雲影/吧台店員/遠桌客人)。
+      //     兩句打架,而且範例比指令具體 —— 模型會照抄範例。
+      //     健身房不會有吧台店員,無塵室不會有遠桌客人。
+      //   ★ 病② 'outside the glass the street carries on' 寫死了【有對外窗】。
+      //     無塵室、地下室、攝影棚、內側包廂全部不成立,
+      //     而且它把「背景要活著」綁在窗戶上 —— 沒窗就整條失效。
+      //     RA 原話:重點是背景要在運作,例如有人煮東西的煙,跟窗沒關係。
+      //   ★ 病③ 'the room stays fixed' 是用文字重做一次九宮格圖已經做好的事。
+      //     資產永遠贏過提示詞,這句純屬佔字 —— 而它佔的字正在把
+      //     「背景要活著」自己擠出預算(實測 10 條只送出 4 條)。
+      //   ★ 修法:只留「自己推導 + 讓它動」,拿掉所有寫死的範例與窗戶假設。
+      //     結構鎖交給九宮格圖,這裡只負責【把生活從鎖裡赦免出來】。
+      tail.push('work out what actually moves in a working ' + (_envNoun || 'place') + ' and let it move — '
+        + 'steam, air, light, machinery, or staff and bystanders busy with their own tasks, small, soft-focus, '
+        + 'backs or profiles, never near her or toward the lens; if it opens onto anywhere else, life carries on there too. '
+        + 'Only this movement changes between shots');
     } else {
       tail.push('she is the only person in frame throughout');
     }
