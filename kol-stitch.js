@@ -1,5 +1,7 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.53
+// kol-stitch.js — 自動接片引擎 v6.54
+// v6.54:🧴 補漏 —— 色板路徑(_lookFront)也有那盞衝突的柔光,v6.53 只改到 _leanFront。
+//        綁色板的品牌走的是色板路徑,所以前一版對他們等於沒生效。
 // v6.53:🩳 統整去重(RA:不要一直亂加,不然提示詞 10000 行)
 //        ① 拿掉 'Soft diffused natural light' —— 光線混在防油光鐵律裡,正面抵銷 v6.52
 //           的主光/副光規則。膚質五句一字未動。
@@ -959,7 +961,11 @@ window.KolStitch = (function () {
           _look = _look.slice(0, _capLen).replace(/\S*$/, '').trim();   // 切到最後一個完整字,不砍半字
           _dbg('[KolStitch] 🎨 look 過長,截到 ' + _look.length + ' 字(避 1700 牆)');
         }
-        if (_look) _lookFront = _look + ' Soft diffused natural light, matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
+        //  🧴 v6.54:這條【色板路徑】的 front 也有那盞衝突的柔光 —— v6.53 只改到 _leanFront,
+        //    而綁了色板的品牌(如 LACEZ)走的是這一條,所以柔光照樣送出去、繼續抵銷主光/副光規則。
+        //    ⚠️ 教訓:同一句話存在兩份,只改一份等於沒改(今天第三次踩同一種坑)。
+        //    膚質五句一字未動,只拿掉 'Soft diffused natural light,'。
+        if (_look) _lookFront = _look + ' Matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
       } catch (_) {}
     }
     // look 當 front:兩路都吃 opts.shared.front(Seedance 完整敘述路 & piapi lean 路)
