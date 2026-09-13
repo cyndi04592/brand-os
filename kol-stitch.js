@@ -1,5 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.57
+// kol-stitch.js — 自動接片引擎 v6.58
+// v6.58:💡 光源規則改寫成【物理】:加色法混色 + 環境反彈染色。
+//        舊版「每個光源保持自己的顏色」物理上是錯的(光重疊本來就會混成第三色),
+//        而且完全沒有環境反彈 —— 那才是「像塗一層粉/AI 油光」的上游。
 // v6.57:🌐 公版鐵律全面掃描(RA:我從頭到尾都說公版)——
 //        送出的提示詞裡不准出現寫死的具體名詞:
 //        room/cafe/window/lamp/table/street/kitchen → 一律 scene / space / location
@@ -1113,11 +1116,24 @@ window.KolStitch = (function () {
       //  ★ 而且寫死「room / window / lamp」—— 戶外、夜市、車上、無塵室全部不成立。
       //  ★ 改寫成【機制】:她身上的光要對應場景自己的光源(方向+色溫),
       //    模型自然知道要去看場景圖;四個病(平光/混光/棚燈繼承/不知道去哪看)全都還在治。
+      //  💡 v6.58 改寫成【光學物理】(RA 是攝影+繪畫專業,2026-09-13 指正)
+      //  ★ 舊版寫「each source keeps its own colour rather than averaging into one flat tone」
+      //    —— 那在物理上是【錯的】。光是加色法:兩個光源重疊的地方本來就會混成第三種顏色
+      //    (黃光 R+G 疊綠光 G = R+2G,偏亮的黃綠),不是各佔一邊互不相干。
+      //    我為了治平光而矯枉過正,叫模型把光分開,它反而不知道交界怎麼處理。
+      //  ★ 更關鍵的是舊版【完全沒有環境反彈】:真實的人會被周圍的表面染色 ——
+      //    木檯面反黃到下巴、有色牆面反到臉頰、她自己的衣服反色到脖子。
+      //    實測:鞋店那支(RA 評 100 分)膚色色相散布 2.348,我們的成品只有 1.692,
+      //    而高光佔比兩者幾乎相同(16.0% vs 16.4%)——
+      //    所以「像塗一層粉」不是沒光澤,是【所有反光都同一個顏色】。
+      //    再誇張一點就變成 RA 說的 AI 油光感。上游只有一個:光沒有分開的來源。
+      //  ★ 驗收:膚色色相散布 1.69 → 2.3;膚色與環境的色偏差 1.02 → 0.4。
+      //  ⚠️ 只用光學/顏色詞,不碰 contact shadow / light field / optical depth / spilling。
       const _LIGHT_SOURCE =
-          'Her lighting answers to the scene itself: read whatever light sources this location actually has '
-        + '\u2014 their direction and their colour temperature \u2014 and let them fall on her exactly as they fall '
-        + 'on everything else in it, each source keeping its own colour on her face rather than averaging into one flat tone. '
-        + 'Ignore whatever lighting is baked into the reference photo \u2014 it belongs to that shoot, not to this scene. ';
+          'Light adds: where two sources overlap on her they blend into a third colour, and where one reaches her alone '
+        + 'that side carries its own colour. Nearby surfaces bounce their colour back onto her \u2014 a table top, a coloured wall, '
+        + 'her own clothing tint the skin closest to them \u2014 so her skin is the sum of what surrounds her, never one even tone. '
+        + 'Read the light this location actually has and let it reach her the same way it reaches everything else in frame. ';
       let _useFront = _LIGHT_SOURCE + _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
       let _budget = _WALL - _SAFE - _probe.length;
