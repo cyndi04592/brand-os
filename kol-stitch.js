@@ -1,5 +1,18 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.55
+// kol-stitch.js — 自動接片引擎 v6.57
+// v6.57:🌐 公版鐵律全面掃描(RA:我從頭到尾都說公版)——
+//        送出的提示詞裡不准出現寫死的具體名詞:
+//        room/cafe/window/lamp/table/street/kitchen → 一律 scene / space / location
+//        studio lighting → whatever lighting is baked in(不預設是棚拍,可能手機自拍/外拍)
+//        人物一律 the subject / she(依 _pron),不寫死身分。
+//        ⚠️ 以後新增任何句子,先問:這句放到夜市、車上、無塵室還成立嗎?
+// v6.56:🩳 照 RA 的原則全面重寫:【講機制,不寫流水帳】。
+//        RA 原話:走路到一中,不要寫成「出門拿背包、忘鑰匙、去超商買牛奶」。
+//        光源 902→170(且不再寫死 room/window/lamp,戶外夜市車上都成立)
+//        表演 932→300 · 場景 349→160 · 商品鎖 162→60 · 標註/台詞鐵律再壓 ~120
+//        🚧 硬牆補上最後一道:縮四輪仍超標就整組拿掉商品鐵律,絕不送出超標內容。
+//           (舊版縮不下去就放棄、照樣送出 → 400 退貨,保險絲燒斷卻讓電流通過)
+//        ⚠️ 機制一個都沒少,砍的全是「被別句涵蓋」與「解釋性贅述」。
 // v6.55:🩹 修 ReferenceError: fitRules is not defined —— v6.46 硬牆重算在 fitRules 的
 //        作用域外面呼叫它,整支片直接生不出來(點數未扣)。改由 _capCtx 帶函式出去。
 // v6.54:🧴 補漏 —— 色板路徑(_lookFront)也有那盞衝突的柔光,v6.53 只改到 _leanFront。
@@ -432,36 +445,21 @@ window.KolStitch = (function () {
     //  🩳 v6.53 整併:原本三句講同一件事(在場景裡/碰到東西/特寫留環境)合成一句;
     //    「Never planted centre-frame squared to the lens」刪除 —— Worker 第10/18條
     //    已經有三處在管「不准看鏡頭、不准死盯」,跨層重複(RA 要求統整)。
-    return 'Performance: ' + P.s + ' is inside the location, not floating in front of it \u2014 '
-      + 'part of ' + P.p + ' body always touches something really there, and even the tightest close-up '
-      + 'keeps a piece of the place beside ' + P.o + '. '
-      //  🎭 v6.49 情緒與眼神(RA 2026-09-13 指正):
-      //   ★ 舊版兩條被換掉:
-      //     ①「情緒藏在手正在做的事裡」—— 只講【怎麼演】,沒講【演什麼】。
-      //       刺蝟星球那套是:笑要分大笑/竊笑/微笑/發自內心的笑,而且要說明【為什麼笑】
-      //       (例:因為告白成功而微笑)。指名情緒 + 給動機,模型才演得準。
-      //     ②「反應按順序:手→視線→頭→表情」—— 專案文件裡查無出處,RA 也不記得談過,砍。
-      //   ★ 眨眼那條整條換掉:「每 2-3 秒眨一次」是機械計時器,演出來像機器人。
-      //     改用 RA 自己打磨過的【眼神流動】版本 —— 它原本躺在 kol-engine-kling.js
-      //     (Kling 已停用)裡沒被用到,live 路徑反而用著比較差的機械版。
-      //     核心:想事情時視線飄開、再回到說話的對象身上;重音字時眼睛變亮。
-      //  ★ 三個機制,缺一不可(RA 2026-06-15 與 2026-07-11 已定案,今天只是補回來):
-      //    ① 指名情緒+動機:笑分微笑/奸笑/誇張笑/發自內心的淺淺微笑,而且要講【為什麼笑】。
-      //       RA 原話:笑有動機、有種類,KOL 才有靈魂,不是讀稿機。
-      //    ② 反浮誇定格:情緒只以【一閃而過的一拍】出現,同一個驚訝或睜大眼不超過約一秒。
-      //       這條是 RA 當初解掉「很誇張浮誇的笑變得很 AI」的核心。
-      //    ③ 強情緒【同步爆發】,不是分解動作。
-      //       ⚠️ 舊版有一條「Reactions arrive in order — hands, then gaze, then head, expression last」,
-      //       專案文件查無出處,而且【直接跟①②打架】:真人中獎那一瞬間眼睛嘴巴手同時炸開,
-      //       排序等於叫模型演分解動作 —— 那正是 RA 說的機器人感/僵硬感來源。已刪,禁止復活。
-      + 'Name the exact feeling and what caused it, not just happy \u2014 which kind of smile and why '
-      + '(a small private smile because the answer landed, a sly one, a grin ' + P.s + ' cannot hold back). '
-      + 'Any delight or surprise is a brief passing beat that moves straight into the next word or action, '
-      + 'never a held exaggerated grin, and the same wide-eyed look never lasts more than about a second. '
-      + 'When the feeling is strong it arrives all at once \u2014 eyes, mouth, hands and body together in the same instant, '
-      + 'never as a sequence of separate staged reactions. '
-      + 'Eyes catchlit, brightening on the words ' + P.s + ' stresses; natural blinking, micro-expressions, '
-      + 'gaze drifts away while ' + P.s + ' thinks and comes back to the person ' + P.s + ' is talking to, never a fixed stare at one point.';
+    //  🎭 v6.56 表演(同一個原則:講機制,不逐條展開)
+    //  ★ 舊版 932 字寫了六句:接地/指名情緒/一閃而過/同步爆發/眼裡有光/視線飄開。
+    //    其中「一閃而過」與「同步爆發」是同一件事的兩面,眼神那兩句可以併成一句。
+    //  ★ 保留的機制一個都沒少:
+    //    ① 在場景裡不漂浮 ② 情緒要有理由(哪一種、為什麼)
+    //    ③ 來得快去得快、不准掛著同一個表情 ④ 強情緒同時發生不是分解動作
+    //    ⑤ 眼神跟著話走、想事情時飄開再回到對方
+    //  ⚠️ ③④ 是 RA 2026-07 打磨出來的反浮誇機制,⑤ 是反眼神空洞,不准再砍。
+    return 'Performance: ' + P.s + ' is inside the location, not in front of it \u2014 '
+      + 'part of ' + P.p + ' body always touches something really there, and even the tightest close-up keeps a piece of the place beside ' + P.o + '. '
+      + 'Every expression needs a reason \u2014 which kind of smile and what caused it \u2014 and it arrives and passes quickly, '
+      + 'all at once across eyes, mouth and hands rather than as separate staged reactions, '
+      + 'never held as one fixed expression for the whole shot. '
+      + 'Eyes catchlit and brightening on the words ' + P.s + ' stresses, gaze drifting away while ' + P.s + ' thinks '
+      + 'and returning to the person ' + P.s + ' is talking to.';
   }
 
   function _buildVoiceLine(opts) {
@@ -509,7 +507,7 @@ window.KolStitch = (function () {
     //    動的範圍比較大,另案處理。
     // ═══════════════════════════════════════════════════════════════
     if ((opts.provider || 'piapi') === 'piapi') {
-      return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue word for word in natural ' + _accent + ' — no improvising, changing words, numbers or prices; accurate lip-sync. Shots with no line: silent, mouth still, ambient only.\n' + _lifeLine();
+      return 'Voice & lip-sync: ' + _pron().s + ' speaks the written dialogue word for word in natural ' + _accent + ', nothing added or changed, accurate lip-sync; shots with no line stay silent, mouth still.\n' + _lifeLine();
     }
     return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) ' + _pron().s + ' stays silent, mouth still, only ambient sound.\n' + _lifeLine();
   }
@@ -539,7 +537,7 @@ window.KolStitch = (function () {
 
     if (shared && shared.front) {
       const prodRule = bp.has
-        ? (_pron().s + ' holds the product referenced in each shot at a consistent real-world size and hand-scale; do not zoom or resize it within a shot; ')   /* v6.53:刪「different shots show…」,標註區已說 each shot names the one it uses */
+        ? ('the product stays the same real-world size in ' + _pron().p + ' hands and is never zoomed or resized within a shot; ')   /* v6.56:shape/proportions 已在標註區,這裡只留「鏡頭內不准變大小」*/   /* v6.53:刪「different shots show…」,標註區已說 each shot names the one it uses */
         : (_pron().s + ' holds a product that is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ');
       //  📦 2026-09-05:商品圖【一直沒有在清單裡被宣告】。
       //    實測任務 03c0171d:清單宣告了 Image1=身份 / Image3=服裝 / Image4=場景,
@@ -549,7 +547,7 @@ window.KolStitch = (function () {
       //    ★ [Image1] 固定是臉,商品從 [Image2] 起算(見 collectBeatProducts),
       //      所以這裡宣告 [Image2] 一定對得上。
       const prodDecl = bp.has
-        ? '[Image2] onward = the products (each shot names the one it uses; keep each product\'s shape, proportions, colour, material and any logo identical). '
+        ? '[Image2] onward = the products (each shot names the one it uses; keep every detail of each identical). '
         : '[Image2] = the product (keep its shape, proportions, colour, material and any logo identical; never mirrored or flipped). ';
       const _mc = (typeof window !== 'undefined' && window.KOL_MATCHCUT === true);  // 🎬 v6.16 結尾停+硬切(match cut)保險絲,預設關
       // 🗺️ 場景九宮格 —— 2026-08-23 改為【預設開】。
@@ -593,8 +591,8 @@ window.KolStitch = (function () {
       // ═══ ③ 光影與環境(中段·在主體穩定後才建模)═══
       bodyB += '\n\n'
         + (_sg
-           ? '[SCENE_IMG] = one location shown from several camera positions; lock its layout, structures, materials and colours, but not the life inside it; wide shots use the panels showing the whole room, closer shots the panels nearest that part of it, and each shot holds its chosen position throughout; never draw the grid or its dividing lines into the video. '
-           : '[SCENE_IMG] = location (same background and layout; do not rearrange; it shows the empty room only, the life inside it is not locked). ')
+           ? '[SCENE_IMG] = one location seen from several camera positions; lock its layout, materials and colours but not the life inside it; each shot picks the panel matching its shot size and holds that position throughout; never draw the grid lines into the video. '
+           : '[SCENE_IMG] = location (same background and layout; do not rearrange; it shows the empty space only, the life inside it is not locked). ')
         + 'Also keep the product locked: '
         + prodRule;
       if (shared.colorLine) bodyB += '\n' + shared.colorLine;
@@ -1108,16 +1106,18 @@ window.KolStitch = (function () {
       //      兩種光交會處(鼻樑、顴骨)顏色要看得出來在過渡 —— 那條交界線就是真實感所在。
       //  ⚠️ 全程只用光源/方向/顏色詞,不碰 contact shadow / light field / optical depth /
       //    spilling / microtexture —— 那些是 v5.17 驗過的烤肉紋兇手,禁止復活。
+      //  💡 v6.56 光源(RA 重寫原則:講機制,不寫流水帳;不准寫死場所)
+      //  ★ 舊版 902 字,七句話把「先讀房間→最大最柔當主光→主光決定明暗→副光只碰髮緣→
+      //    每個光源保持顏色→冷暖在鼻樑交會→不准有來源不明的光」一步一步寫,
+      //    等於 RA 說的「走路到一中卻寫成出門拿背包、忘鑰匙、去超商」的流水帳。
+      //  ★ 而且寫死「room / window / lamp」—— 戶外、夜市、車上、無塵室全部不成立。
+      //  ★ 改寫成【機制】:她身上的光要對應場景自己的光源(方向+色溫),
+      //    模型自然知道要去看場景圖;四個病(平光/混光/棚燈繼承/不知道去哪看)全都還在治。
       const _LIGHT_SOURCE =
-          'The reference photo of her face carries its own studio lighting from the shoot; ignore that direction entirely '
-        + 'and relight her from scratch using only the lamps and windows actually visible in this room. '
-        + 'Read the room first: name the largest, softest source as the key light and any smaller, stronger source as the rim. '
-        + 'The key decides which side of her face is bright and which falls into shadow; '
-        + 'the rim only touches the edge of her hair, shoulder and jaw on the side facing away from the key. '
-        + 'Each source keeps its own colour on her: whatever colour a lamp or window casts on the walls and tables '
-        + 'is the same colour it casts on her skin and clothes, so a cool window side and a warm lamp side can appear on the same face, '
-        + 'meeting and blending across the nose and cheekbone rather than averaging into one flat tone. '
-        + 'No light may appear on her that cannot be traced to something visible in the frame. ';
+          'Her lighting answers to the scene itself: read whatever light sources this location actually has '
+        + '\u2014 their direction and their colour temperature \u2014 and let them fall on her exactly as they fall '
+        + 'on everything else in it, each source keeping its own colour on her face rather than averaging into one flat tone. '
+        + 'Ignore whatever lighting is baked into the reference photo \u2014 it belongs to that shoot, not to this scene. ';
       let _useFront = _LIGHT_SOURCE + _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
       let _budget = _WALL - _SAFE - _probe.length;
@@ -1233,6 +1233,13 @@ window.KolStitch = (function () {
     //    每輪重算都會重新 fitRules,所以砍掉的一定是排最後的那幾條。
     const _HARD_CAP = 3980;            // PiAPI 硬限 4000,留 20 字安全邊距
     let _capRounds = 0;
+    //  🚧 v6.56:拿掉 _capCtx 條件 —— 它只有 lean 路徑會填,綁色板的品牌走另一條路,
+    //    等於硬牆【只裝在一半的線上】,LACEZ 送出 4590 字直接被退貨(RA 2026-09-13 實測 400)。
+    //    改成:只要有上下文就重算;沒有上下文也至少印警告,不會靜悄悄超標。
+    if (!_capCtx && prompt.length > _HARD_CAP) {
+      _dbg('[KolStitch] 🚧 ⚠️ 超過硬牆 ' + prompt.length + '/' + _HARD_CAP
+        + ' 但這條路徑沒有重算上下文 —— 送出去會被退貨,請檢查固定區塊長度');
+    }
     while (_capCtx && prompt.length > _HARD_CAP && _capRounds < 4) {
       _capRounds++;
       const _over2 = prompt.length - _HARD_CAP;
@@ -1251,6 +1258,21 @@ window.KolStitch = (function () {
         const _vl2 = _buildVoiceLine(opts);
         if (_vl2) prompt += '\n' + _vl2;
       }
+    }
+    //  🚧 v6.56 最後一道:四輪縮 tail 還壓不下去 → 直接砍掉整個 tail 再組一次。
+    //  ★ 病(RA 2026-09-13 實測 400):硬牆只會縮 tail,縮到 0 仍不夠時就放棄,
+    //    然後【照樣把 4590 字送出去】被退貨,整支片生不出來。
+    //    保險絲燒斷了卻讓電流通過,等於沒裝。
+    //  ★ 寧可少幾條商品鐵律,也不要整支片失敗 —— 失敗是 0 分,少規則還有 80 分。
+    if (_capCtx && prompt.length > _HARD_CAP) {
+      _dbg('[KolStitch] 🚧 四輪仍超標(' + prompt.length + '),改為整組拿掉商品鐵律再組一次');
+      prompt = buildMultiShotPrompt(beats, totalSec,
+        { front: _capCtx.front, tail: '', voiceLine: _capCtx.voice }, opts.continuityFrom);
+      if (opts.generateAudio === true && !/lip-sync/i.test(prompt)) {
+        const _vl3 = _buildVoiceLine(opts);
+        if (_vl3) prompt += '\n' + _vl3;
+      }
+      _blk.tailSent = 0; _blk.tailKept = 0;
     }
     if (_capCtx && prompt.length > _HARD_CAP) {
       //  四輪還壓不下去 → 連 tail 全砍都不夠,問題在前面的固定區塊。
