@@ -1,5 +1,9 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.39
+// kol-stitch.js — 自動接片引擎 v6.40
+// v6.40:👗 沒有服裝參考圖時,prompt 完全不提 [OUTFIT_IMG](治「LACEZ 影片裡她只穿內衣」)。
+//        病根:服裝圖生成失敗被 catch 靜默吞掉,但四句「wearing [OUTFIT_IMG]」照寫 ——
+//        模型找不到那張圖不會放棄,改抓場上唯一剩下的參考:商品照(內衣)。
+//        順修:服裝圖失敗改成會喊(console + 畫面提示),不再默默過去。
 // v6.39:🛑 提交失敗即中止後續段落(段2送不進去就不送段3 —— 那筆錢必定白花)
 //        🕳 缺任何一段【完全不接片】,改交出已生成的分段檔(RA:少一段接起來牛頭不對馬尾)
 //        ⏱ 提交間隔 1.5s→10s、退避 3/8/20s→10/30/60s(RA 實測定案)
@@ -405,6 +409,17 @@ window.KolStitch = (function () {
     return 'Voice & lip-sync: ' + _pron().s + ' speaks ONLY the written dialogue, word for word in natural ' + _accent + ' — never improvise, add, drop, repeat or change any words, numbers or prices; clear articulation, accurate lip-sync, natural conversational pace. In any shot with no written line (eating, tasting, holding or showing the product, reacting) ' + _pron().s + ' stays silent, mouth still, only ambient sound.\n' + _lifeLine();
   }
 
+  //  👗 v6.40 服裝鎖旗標 —— 沒有服裝參考圖時,prompt 裡【完全不出現 [OUTFIT_IMG]】。
+  //  ★ 病(RA 2026-09-13 實測·LACEZ 內衣品牌):服裝參考圖沒生出來(1192 行的 catch 把錯誤吞了),
+  //    outfitImageUrl = null,但 prompt 照樣寫了四句「wearing the exact outfit of [OUTFIT_IMG]」。
+  //    模型讀到「穿著〔指向空無的東西〕」不會放棄,它會自己找一張圖來填 ——
+  //    而身上唯一剩下的參考是商品照,商品照就是內衣,於是她在咖啡廳只穿內衣。
+  //  ★ 為什麼不是補一句「請穿外衣」:那是加規則。懸空的指令比沒有指令更危險,
+  //    正解是【拿掉打架的那一方】—— 沒有服裝圖就別提服裝,讓臉圖決定她穿什麼(臉圖裡她穿著衣服)。
+  //  ★ 旗標在 generateSegment 開頭設定;prompt 是同步組的,不會跨段互相污染,
+  //    而且整支片共用同一個 outfitImageUrl,即使同時組也是同一個值。
+  let _segHasOutfit = true;
+
   function buildMultiShotPrompt(beats, totalSec, shared, continuityFrom) {
     const list = beats.map(function (b) { return (typeof b === 'string') ? { prompt: b } : b; });
     const n = Math.max(1, list.length);
@@ -448,7 +463,7 @@ window.KolStitch = (function () {
       // ═══ ① 主體(最前·錨定視覺焦點)═══
       let bodyB = 'Reference images are LOCKED assets, each the single source of truth for its element — keep identical in every shot: '
         + '[Image1] = identity (same face, hair, body proportions, vibe; one person). '
-        + '[OUTFIT_IMG] = outfit (same garment: fabric, pattern, colour, cut; do not restyle). '
+        + (_segHasOutfit ? '[OUTFIT_IMG] = outfit (same garment: fabric, pattern, colour, cut; do not restyle). ' : '')
         + prodDecl
         + (_mc ? 'Match cuts only — same moment, new angle, no re-perform; shots end settled and still. ' : '')
         + '\n\n'
@@ -481,13 +496,14 @@ window.KolStitch = (function () {
 
       // ═══ ④ 抽象風格(末尾·全局潤色,不干擾主體與光影)═══
       bodyB += '\n\n' + shared.front
-        + '\nno change of person, scene, outfit, no crowd.';
+        + (_segHasOutfit ? '\nno change of person, scene, outfit, no crowd.' : '\nno change of person, scene, no crowd.');
       return bodyB;
     }
 
     let body = 'candid realistic vertical UGC video.\n'
       + ('Use [Image1] for the ' + _pron().noun + "'s face and identity. " + _pron().S + ' is in the exact location of [SCENE_IMG], ')
-      + 'wearing the exact outfit of [OUTFIT_IMG], naturally holding and showing the product.\n\n'
+      + (_segHasOutfit ? 'wearing the exact outfit of [OUTFIT_IMG], naturally holding and showing the product.\n\n'
+                       : 'naturally holding and showing the product.\n\n')
       + carry;
     let t = 0;
     for (let i = 0; i < n; i++) {
@@ -498,11 +514,15 @@ window.KolStitch = (function () {
       const _tagA = bp.tagOf(list[i].productUrl);
       const _prodA = _tagA ? (' ' + _pron().S + ' is holding ' + _tagA + ' — this exact product in this shot.') : '';
       body += '[00:' + pad(t0) + '-00:' + pad(t1) + '] ' + marker
-        + ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME background, wearing [OUTFIT_IMG]. '
+        + (_segHasOutfit ? ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME background, wearing [OUTFIT_IMG]. '
+                         : ': the SAME woman [Image1] in the SAME location [SCENE_IMG] with the SAME background. ')
         + (list[i].prompt || '') + _prodA + '\n';
       t = t1;
     }
-    body += '\nGlobal: the same ' + _pron().noun + ' [Image1], the same location [SCENE_IMG], the same background and outfit [OUTFIT_IMG] across all shots; steady camera; do not change ' + _pron().p + ' face, the location, the background or the outfit; no different person, no crowd.';
+    body += '\nGlobal: the same ' + _pron().noun + ' [Image1], the same location [SCENE_IMG], '
+      + (_segHasOutfit ? 'the same background and outfit [OUTFIT_IMG] across all shots' : 'the same background across all shots')
+      + '; steady camera; do not change ' + _pron().p + ' face, the location, the background'
+      + (_segHasOutfit ? ' or the outfit' : '') + '; no different person, no crowd.';
     if (shared && shared.colorLine) body += '\n' + shared.colorLine;
     return body;
   }
@@ -520,6 +540,7 @@ window.KolStitch = (function () {
     const bp = collectBeatProducts(fake);
     const shared = { front: 'TEST realism anchor.' };
     if (colorLine) shared.colorLine = colorLine;
+    _segHasOutfit = true;   // v6.40:免費探針維持原行為(假設有服裝圖)
     const p = buildMultiShotPrompt(fake, 15, shared);
     console.log('=== 送 Seedance 的商品圖順序([Image1]=臉,之後才是商品)===');
     bp.urls.forEach(function (u, i) { console.log('  [Image' + (i + 2) + '] = ' + u); });
@@ -689,6 +710,13 @@ window.KolStitch = (function () {
   }
 
   async function generateSegment(opts, onTick) {
+    //  👗 v6.40:本段有沒有服裝參考圖 —— 決定 prompt 要不要提 [OUTFIT_IMG]。
+    //    同步設定、同步組 prompt,不會跨段污染(整支片共用同一個 outfitImageUrl)。
+    _segHasOutfit = !!opts.outfitImageUrl;
+    if (!_segHasOutfit) {
+      console.warn('[KolStitch] 👗 本段沒有服裝參考圖 → prompt 已自動移除所有 [OUTFIT_IMG] 指令,'
+        + '服裝將由臉圖決定。若成品服裝不受控,請先確認 KOL 的造型(LOOK)資料是否齊全。');
+    }
     // 🆕 v6.6:kolImageUrl 是「Seedance 的 [Image1] 臉錨」前置條件,不是通用條件。
     //   攝影師② Kling 走 kolFaceDriveId(Drive 多角度 sheet → R2 乾淨原圖),不需要 kolImageUrl。
     //   ⚠️ 檢查若擋在分流之前,Kling 永遠走不進去(D 接片測試就是死在這裡)。
@@ -1189,7 +1217,13 @@ window.KolStitch = (function () {
         log('正在準備服裝造型…');
         outfitImageUrl = await window.KolWardrobe.generateOutfitRefImage(outfitCtx);
       }
-    } catch (e) { outfitImageUrl = null; }
+    } catch (e) {
+      //  👗 v6.40:舊版這裡是 `catch (e) { outfitImageUrl = null; }` —— 錯誤被整個吞掉,
+      //    沒有 log、沒有警告、沒有中斷,照樣生片。RA 因此看不出服裝鎖從頭到尾沒上。
+      outfitImageUrl = null;
+      console.warn('[KolStitch] 👗 服裝參考圖生成失敗,這支片不會鎖服裝:', (e && e.message) || e);
+      try { log('⚠️ 服裝參考圖沒生出來,這支影片的服裝將由人物照決定(不受控)'); } catch (_e2) {}
+    }
 
     // 場景參考圖(整支生一次,當 compose 的輸入之一)
     // 🔬 診斷開關:Console 設 window.KOL_DROP_SCENE = true → 這支不帶場景圖。
