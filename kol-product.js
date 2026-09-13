@@ -27,6 +27,9 @@
   //  ★ 每個模式真正獨有的只有「她怎麼跟它互動」那半句,以及該品類要特別讀對的細節
   //    (印刷文字 / 布料花紋 / logo / 表面處理 / 標籤),那些保留。
   //  ★ 實測 tail 1216 字 → 約 600,而且一條規則都沒刪。
+  //  ★ v3.51:補掉另外兩條漏網的同款重複 —— 包裝模式(435)與通用 fallback(454)。
+  //    ⚠️ 教訓:同一句話在這個檔裡有【八份】,只清六份等於沒清乾淨。
+  //    改任何字串前先 grep 數量,今天已經因為「只改一份」踩過三次。
   // 🆕 v2.1 物理錨:有重量、與手/桌面真實接觸、遵守重力 → 殺「魔術漂浮」。
   //   刻意不寫「握緊/不准動」,所以拋球、放下、遞出等動作不會被卡死
   //   (飛出去也是「有重量的拋物線」,不是飄)。
@@ -432,7 +435,7 @@
       const desc = [(prod.packShape || '').trim(), (prod.productLook || '').trim()].filter(Boolean).join('、');
       bits.push(desc
         ? 'the packaged product in [Image2] is ' + desc + ', keep its packaging shape, color and label consistent and undistorted, its printed brand text reading correctly and never mirrored, reversed or flipped, matching [Image2] exactly'
-        : 'keep the packaging in [Image2] consistent in shape, proportions, color and label, printed text never mirrored or flipped, do not distort or morph it');
+        : 'its printed label reads correctly and is never mirrored');
       //  🐛 2026-09-05 修靜默失效:原條件是「勾了顯示內容物 AND 填了內容物長相」,
       //    兩個都要成立 [Image3] 才會被點名。客戶勾了卻沒填描述時 ——
       //    第二張圖照樣送進引擎,但在提示詞裡【沒有名字】,模型不知道那是什麼。
@@ -451,7 +454,7 @@
 
     // object
     const look = (prod.productLook || '').trim();
-    bits.push('keep the product in [Image2] consistent in shape, proportions and color' + (look ? ' (' + look + ')' : '') + ', never mirrored or flipped, do not distort or morph it');
+    bits.push('the product reads correctly and is never mirrored' + (look ? ' (' + look + ')' : ''));   /* v3.51:一致性已由資產標註區負責,這裡不再重複 */
     if (scale) bits.push('the product is ' + scale + ', shown at that true size');
     bits.push(GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it');
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
