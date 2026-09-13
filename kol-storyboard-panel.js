@@ -276,7 +276,7 @@
       fitEl.textContent = _mute1
         ? `沒有台詞 · 這 ${b.seconds} 秒全程沒有人說話(要拍空鏡請把長度改成 5 秒)`
         : (`${b.fit.chars} 字 · 約 ${b.fit.estSec} 秒`
-           + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '')
+           + (b.overflow ? (' ⚠️ 太長,塞不進 ' + b.seconds + ' 秒(最多約 ' + ((b.fit && b.fit.maxChars) || 0) + ' 字)') : '')
            + (_si ? ` 台詞偏短,結尾約空 ${_si.gap} 秒(建議補到約 ${_si.target} 字)` : ''));
       fitEl.className = 'sbp-fit' + ((b.overflow || _mute1) ? ' over' : (_si ? ' short' : ''));
     }
@@ -354,7 +354,7 @@
         alert('還不能確認唷:第 ' + _mute.map(b => b.index).join('、') + ' 段完全沒有台詞。\n\n'
           + '這幾段會生成 ' + _mute.map(b => b.seconds).join('、') + ' 秒的純畫面,全程沒有人說話 —— 客戶會覺得影片後半是空的。\n\n'
           + '三種做法:\n'
-          + '① 直接在台詞欄補上要講的話(建議補到約 ' + Math.round((_mute[0].seconds || 15) * 0.95 * 4.2) + ' 字)\n'
+          + '① 直接在台詞欄補上要講的話(建議補到約 ' + Math.round((_mute[0].seconds || 15) * 0.80 * 4.2) + ' 字)\n'
           + '② 再按一次「AI 編修成分鏡」讓它重寫\n'
           + '③ 真的要拍商品空鏡,把那一段的長度改成 5 秒就好,不要用整整 ' + (_mute[0].seconds || 15) + ' 秒');
         return;
@@ -410,7 +410,9 @@
   function shortInfo(b) {
     if (!b?.fit || b.overflow || !b.seconds) return null;
     const est = +b.fit.estSec || 0;
-    if (est >= b.seconds - 3) return null;                    // 空窗 3 秒內可接受(留收尾動作)
+    //  v2.7:甜蜜區本來就留約 3 秒呼吸,容忍放寬到 4 秒 ——
+    //  否則剛好寫到建議值的人還是會看到「偏短」,等於永遠有黃字。
+    if (est >= b.seconds - 4) return null;
     const gap = Math.max(1, Math.round(b.seconds - est - 1)); // 估空秒(扣 1 秒開場呼吸)
     // ═══════════════════════════════════════════════════════════════════
     //  📏 2026-09-12 v2.4:建議字數 0.78 → 0.95(治「台詞天生就短 3 秒」)
@@ -424,7 +426,13 @@
     //  ★ 0.95 而非 1.0:留 5% 給換氣與尾音收束,15 秒 → 60 字。
     //    (0.78 → 49 字、0.95 → 60 字,兩者差 11 字 ≈ 2.6 秒空白)
     // ═══════════════════════════════════════════════════════════════════
-    const target = Math.round(b.seconds * 0.95 * 4.2);
+    //  📏 v2.7:建議值不再自己算 —— 直接用 checkDialogueFit 回傳的 sweetChars。
+    //    舊寫法 0.95 算出 60 字,但硬擋線是 seconds×0.90 = 57 字
+    //    → 【照著建議寫必定被紅字擋下,按不了確認】(RA 2026-09-13 實測)。
+    //    而 Worker 第 12 條規定「15 秒寫 58-62 字」,整個區間全被前端擋掉,
+    //    所以 AI 每次只能寫 42-48 字 —— 不是它不聽話,是寫對了送不出去。
+    //    現在建議與硬擋共用 kol-storywriter 的 FIT_SWEET / FIT_MAX,不可能再打架。
+    const target = (b.fit && b.fit.sweetChars) || Math.round(b.seconds * 0.80 * 4.2);
     return { gap, target };
   }
 
@@ -445,7 +453,7 @@
   function cardHtml(b) {
     const overCls = b.overflow ? ' over' : '';
     const fitTxt = b.dialogue
-      ? `${b.fit?.chars ?? 0} 字 · 約 ${b.fit?.estSec ?? 0} 秒` + (b.overflow ? ' ⚠️ 太長,塞不進 15 秒' : '') + (shortInfo(b) ? ` 台詞偏短,結尾約空 ${shortInfo(b).gap} 秒(建議補到約 ${shortInfo(b).target} 字)` : '')
+      ? `${b.fit?.chars ?? 0} 字 · 約 ${b.fit?.estSec ?? 0} 秒` + (b.overflow ? (' ⚠️ 太長,塞不進 ' + b.seconds + ' 秒(最多約 ' + ((b.fit && b.fit.maxChars) || 0) + ' 字)') : '') + (shortInfo(b) ? ` 台詞偏短,結尾約空 ${shortInfo(b).gap} 秒(建議補到約 ${shortInfo(b).target} 字)` : '')
       : '';
     return `
 <div class="sbp-card">
@@ -504,5 +512,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v2.5 就緒 · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
+  console.log('[KolStoryboardPanel] v2.7 就緒 · 📏建議值與硬擋線統一(治「叫你補到60字·補到59又說太長」) · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
