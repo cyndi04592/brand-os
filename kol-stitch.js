@@ -1,5 +1,15 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.58
+// kol-stitch.js — 自動接片引擎 v6.60
+// v6.60:🪆 去木偶化(RA 嚴查:提示詞反而在叫 AI 做木偶)
+//        ① 拿掉 'Matte skin with no oily specular sheen' —— matte=霧面消光=塑膠/蠟像。
+//           真皮膚油水共存、會反光;RA 看鞋店那支時親口說「額頭鼻樑有自然油光,不要修」,
+//           這句正好在禁止它。AI 油光(整片均勻塑膠反光)與真人油光(局部不規則)是兩件事,
+//           這句沒分辨,把兩個一起殺掉。其餘鐵律(照原圖/不濾鏡/不平滑/不修圖/非廣告模特兒)一字未動。
+//        ② 'shots end settled and still' → 每顆鏡頭都停在靜止 = 木偶定格,真人不會剛好在切點不動。
+//        ③ 'steady camera' 拿掉 —— 與同系統的「手持 iPhone vlog、對焦會晃」直接矛盾。
+// v6.59:💡 光改成【物理法則】(直線前進/朝向亮/背對暗/擋住投影)取代「不准亮在鼻樑」的列舉;
+//        臉改成【定義】(這就是她天生的皮膚、她自己的深淺與膚況)取代「不准磨皮」的禁令。
+//        治:AI 固定在鼻樑顴骨額頭打修飾光、磨皮、膚色被統一成韓系混血。
 // v6.58:💡 光源規則改寫成【物理】:加色法混色 + 環境反彈染色。
 //        舊版「每個光源保持自己的顏色」物理上是錯的(光重疊本來就會混成第三色),
 //        而且完全沒有環境反彈 —— 那才是「像塗一層粉/AI 油光」的上游。
@@ -571,7 +581,7 @@ window.KolStitch = (function () {
         + '[Image1] = identity (same face, hair, body proportions, vibe; one person). '
         + (_segHasOutfit ? '[OUTFIT_IMG] = outfit (same garment: fabric, pattern, colour, cut; do not restyle). ' : '')
         + prodDecl
-        + (_mc ? 'Match cuts only — same moment, new angle, no re-perform; shots end settled and still. ' : '')
+        + (_mc ? 'Match cuts only — same moment, new angle, no re-perform; a shot can cut while she is still moving. ' : '')
         + '\n\n'
         + carry;
 
@@ -634,7 +644,7 @@ window.KolStitch = (function () {
     }
     body += '\nGlobal: the same ' + _pron().noun + ' [Image1], the same location [SCENE_IMG], '
       + (_segHasOutfit ? 'the same background and outfit [OUTFIT_IMG] across all shots' : 'the same background across all shots')
-      + '; steady camera; do not change ' + _pron().p + ' face, the location, the background'
+      + '; do not change ' + _pron().p + ' face, the location, the background'
       + (_segHasOutfit ? ' or the outfit' : '') + '; no different person, no crowd.';
     if (shared && shared.colorLine) body += '\n' + shared.colorLine;
     return body;
@@ -968,7 +978,7 @@ window.KolStitch = (function () {
         //    而綁了色板的品牌(如 LACEZ)走的是這一條,所以柔光照樣送出去、繼續抵銷主光/副光規則。
         //    ⚠️ 教訓:同一句話存在兩份,只改一份等於沒改(今天第三次踩同一種坑)。
         //    膚質五句一字未動,只拿掉 'Soft diffused natural light,'。
-        if (_look) _lookFront = _look + ' Matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
+        if (_look) _lookFront = _look + ' Keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
       } catch (_) {}
     }
     // look 當 front:兩路都吃 opts.shared.front(Seedance 完整敘述路 & piapi lean 路)
@@ -990,7 +1000,7 @@ window.KolStitch = (function () {
         //    「忽略棚燈、用房間的主光副光重新照她」,實測結果就是整張臉平光。
         //    ⚠️ 膚質五句(matte skin / 照原圖 / no beauty filter / no smoothing /
         //      no skin retouching / not a polished model)【一字未動】,v5.22 鐵律完整。
-        'Realistic vertical UGC video. Matte skin with no oily specular sheen, keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No on-screen text or subtitles, no background music.';
+        'Realistic vertical UGC video. Keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No on-screen text or subtitles, no background music.';
       // 🩹 2026-08-23 重大修補:tail 必須跟著重組帶回去。
       //   病灶:這段 lean 重組原本只傳 { front: _leanFront } —— shared.tail 整組被丟掉。
       //   而 tail 裝的不是冗字,是【鐵律】:
@@ -1129,11 +1139,29 @@ window.KolStitch = (function () {
       //    再誇張一點就變成 RA 說的 AI 油光感。上游只有一個:光沒有分開的來源。
       //  ★ 驗收:膚色色相散布 1.69 → 2.3;膚色與環境的色偏差 1.02 → 0.4。
       //  ⚠️ 只用光學/顏色詞,不碰 contact shadow / light field / optical depth / spilling。
+      //  💡 v6.59 光=物理法則 + 臉=天生的(RA 2026-09-13,攝影/繪畫專業判讀)
+      //  ★ 為什麼不列禁令:舊版想寫「高光不准落在鼻樑/顴骨/額頭」——
+      //    那是【列舉】不是法則,模型換個角度就改亮在下巴,一樣是修飾光。
+      //    RA:那三個點是棚拍技巧(打亮鼻樑讓鼻子挺、顴骨讓臉立體),不是自然現象。
+      //    改成講【光走直線】:朝向光的亮、背對的暗、中間擋住的投影 ——
+      //    物理會自己算出正確答案,包括她轉頭時亮的位置自己換、髮絲會投影、
+      //    低頭時額頭暗。一條法則取代所有列舉。
+      //  ★ 臉的部分同理:不寫「不准磨皮」(那是禁令,模型要猜到什麼程度算違規),
+      //    改成【定義】:這就是她天生的皮膚。RA 指出 Kling/Seedance 都會磨皮,
+      //    因為訓練資料裡的人臉幾乎都修過 —— 所以要把來源講死,不是下禁令。
+      //    實測:成品毛孔細節 8.5,真人照片 12.8(RA 提供五張),差 40%。
+      //  ★ 膚色不准變成「韓系混血」:每個人本來就有自己的深淺與膚況。
+      //  ⚠️ 'casts that shadow' 是物理投影,不是 v5.17 拔掉的 contact shadow
+      //    (那個是叫模型【合成】接觸處細微陰影 → 烤肉紋)。兩者不同,不碰雷區。
+      //  ★ 驗收:色偏差 ≤0.45(真人 0.23-0.50)· 光差隨鏡頭變動而非固定 · 膚色不被統一化。
       const _LIGHT_SOURCE =
-          'Light adds: where two sources overlap on her they blend into a third colour, and where one reaches her alone '
-        + 'that side carries its own colour. Nearby surfaces bounce their colour back onto her \u2014 a table top, a coloured wall, '
-        + 'her own clothing tint the skin closest to them \u2014 so her skin is the sum of what surrounds her, never one even tone. '
-        + 'Read the light this location actually has and let it reach her the same way it reaches everything else in frame. ';
+          'Light travels in straight lines from wherever it is in this place: surfaces turned toward it are bright, '
+        + 'surfaces turned away fall into shadow, and anything in between blocks it and casts that shadow onto her. '
+        + 'Light adds \u2014 where two sources overlap on her they blend into a third colour, where one reaches her alone '
+        + 'that side carries its own colour \u2014 and nearby surfaces bounce their colour back onto her, so her skin '
+        + 'is the sum of what surrounds her rather than one even tone. '
+        + 'Her face was not lit or made up for a camera and no one has retouched it: this is simply the skin she has, '
+        + 'her own depth of tone and her own condition, keeping whatever texture it came with. ';
       let _useFront = _LIGHT_SOURCE + _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
       let _budget = _WALL - _SAFE - _probe.length;
