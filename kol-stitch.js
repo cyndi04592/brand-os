@@ -1,5 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.43
+// kol-stitch.js — 自動接片引擎 v6.44
+// v6.44:🛡 商品鐵律預算保障下限 900 字 + 牆 3800→3950。
+//        病:預算 = 總牆 − 前面全部,商品鐵律吃剩菜 → 前面一長它就餓死,
+//        砍別的地方也沒用(砍 315 字,預算反而 708→677)。實測 10 條只送 3 條。
 // v6.43:🏷 白牌文案 —— 客戶畫面上的「上游」改成「算力」。
 //        白牌鐵律:客戶不該知道我們背後接了誰,也不該看到工程術語。
 //        註解與 _dbg 內部訊息不動(客戶看不到,KOL_DEBUG 預設關)。
@@ -970,17 +973,27 @@ window.KolStitch = (function () {
       //     放寬讓我們「別再丟掉寫好的」,治不了重點稀釋。
       //     真正的解法是砍到 100 字級距,那是公版重構的事。
       // ═══════════════════════════════════════════════════════════════════
-      const _WALL = 3800, _SAFE = 20;
+      //  📏 v6.44:牆 3800 → 3950。PiAPI 硬上限 4000,舊版留 200 邊界過度保守,
+      //    白白浪費 150 字 —— 而那 150 字正是商品鐵律一直不夠用的量。
+      const _WALL = 3950, _SAFE = 20;
       const _rawTail = String((opts.shared && opts.shared.tail) || '');
       let _useFront = _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
       let _budget = _WALL - _SAFE - _probe.length;
 
-      if (_budget < 120) {
-        //  空間太小 → 連 front 都要瘦。front 是膚質光影冗字,參考圖本來就扛得住;
-        //  tail 是商品鐵律,參考圖扛不住 —— 兩者相衝時,先砍 front。
+      //  🛡 v6.44 保障下限(治「不管砍多少字,商品鐵律永遠只拿 677」):
+      //  ★ 病(RA 2026-09-13 實測):預算是「總牆 − 前面全部」,商品鐵律【最後才分配,
+      //    吃前面吃剩的】。所以前面任何一塊變長,它就變短 —— 今天砍了 315 字,
+      //    預算反而從 708 掉到 677,因為省下的字被別的區塊補回去了。
+      //    結果是不管怎麼調,被犧牲的永遠是同一塊(而且裡面正是「背景要活著」那組)。
+      //  ★ 修法:給它一個【保障下限】。不夠就讓 front 瘦身把空間讓出來,
+      //    而不是讓它自己餓死。門檻從 120 拉到 _TAIL_FLOOR。
+      //  ★ 為什麼犧牲 front:front 是膚質光影形容詞,參考圖本來就扛得住;
+      //    tail 是商品鐵律(形狀/材質/logo/穿戴方式),參考圖扛不住。
+      const _TAIL_FLOOR = 900;
+      if (_budget < _TAIL_FLOOR) {
         _blk.rescued = true;
-        _dbg('[KolStitch] 🩳 空間不足(' + _budget + ' 字),front 讓位給商品鐵律');
+        _dbg('[KolStitch] 🩳 商品鐵律預算不足(' + _budget + ' < ' + _TAIL_FLOOR + '),front 讓位');
         _useFront = 'Realistic vertical UGC video. Soft diffused natural light, matte skin, no beauty filter, an ordinary real person.';
         _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
         _budget = _WALL - _SAFE - _probe.length;
