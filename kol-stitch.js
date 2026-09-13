@@ -1,5 +1,13 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.36
+// kol-stitch.js — 自動接片引擎 v6.39
+// v6.39:🛑 提交失敗即中止後續段落(段2送不進去就不送段3 —— 那筆錢必定白花)
+//        🕳 缺任何一段【完全不接片】,改交出已生成的分段檔(RA:少一段接起來牛頭不對馬尾)
+//        ⏱ 提交間隔 1.5s→10s、退避 3/8/20s→10/30/60s(RA 實測定案)
+// v6.38:🕳 缺口不跨接 —— 中間段掉了,不再把前後硬接在一起(缺尾巴是短了,缺中間是壞了)。
+//        只接到第一個缺口為止;缺口後已生成的段落仍列在 segmentUrls,不會不見。
+// v6.37:🕒 提交節流(1.5 秒)+ 429 退避重試(3s/8s/20s)—— 治「45 秒三段有一段 429 直接被放棄,
+//        客戶付 45 秒拿到 30 秒」。429 是暫時性錯誤,不該判死。段數越多越需要(90 秒 6 段)。
+//        順修錯誤抽取:JSON 後面接中文會讓 JSON.parse 爆掉,真正的失敗原因印不出來。
 // v6.36:📐 詞序重排 —— 依「首要渲染機制」把提示詞排成 [主體]+[動作]+[光影/環境]+[末尾抽象]。
 //        舊版 shared.front(抽象風格詞)排第一行,吃掉最高權重,主體被推到上千字後。
 //        本次一個字都沒改,只換位置:文字零風險,純詞序實驗,可用 _testMultiShoe() 免費驗。
@@ -124,7 +132,10 @@ window.KolStitch = (function () {
         var _s = String(data.error || '');
         var _at = _s.indexOf('{');
         if (_at >= 0) {
-          var _pi = JSON.parse(_s.slice(_at));
+          //  🩹 v6.37:舊寫法 slice(_at) 會把 JSON 後面的中文(如「(本次消耗的點數已自動退還)」)
+          //    一起丟進 JSON.parse → SyntaxError → 真正的失敗原因印不出來(RA 2026-09-13 踩到)。
+          var _endAt = _s.lastIndexOf('}');
+          var _pi = JSON.parse(_endAt > _at ? _s.slice(_at, _endAt + 1) : _s.slice(_at));
           var _d = (_pi && _pi.data) || {};
           console.log('%c[KolStitch] 🔬 生成服務回傳的原因 logs =', 'color:#e11;font-weight:bold', _d.logs);
           console.log('[KolStitch] 🔬 detail =', _d.detail, '· code =', _pi.code, '· status =', _d.status);
@@ -624,8 +635,55 @@ window.KolStitch = (function () {
     return out;
   }
 
+  //  🕒 v6.37 提交節流 + 429 退避重試(治「段數一多就有段拿不到」)
+  //  ★ 病(RA 2026-09-13 實測 45 秒三段):第 1 段 PiAPI 回 429 Too many requests,
+  //    系統把它當永久失敗 → 直接放棄那一段、退 900 點 → 只接出 2 段 30 秒。
+  //    客戶付 45 秒的錢,拿到 30 秒。段數越多越容易踩(90 秒 6 段風險最高)。
+  //  ★ 429 是【暫時性】錯誤,等幾秒再送就會過 —— 不該判死。
+  //  ★ 兩道一起上:
+  //     ① 節流:兩次提交之間至少隔 _SUBMIT_GAP_MS,一開始就不要去撞限流
+  //     ② 退避:真的撞到 429 就等一下重送,三次都不過才算失敗
+  //  ★ 重試放在序列化鏈【裡面】,所以重試期間不會跟別段的提交重疊,不會越retry越擠。
+  //  📐 v6.39 參數改由 RA 實測定案:間隔拉到 10 秒,退避 10s→30s→60s。
+  //    1.5 秒太急 —— 第 1 段才剛送出,第 2 段就跟著撞上去。
+  const _SUBMIT_GAP_MS = 10000;                   // 兩次提交最小間隔(10 秒)
+  const _RETRY_DELAYS  = [10000, 30000, 60000];   // 429 退避:10s → 30s → 60s
+  let _lastSubmitAt = 0;
+  //  🛑 v6.39 提交失敗就中止後面的段:
+  //    ★ 病(RA 2026-09-13):第 2 段送不進去,系統不理它、繼續送第 3 段。
+  //      但缺口不跨接(v6.38)本來就不會用到第 3 段 —— 那筆錢 100% 白花。
+  //    ★ 修法:任何一段【提交】最終失敗,後面的段直接不送,連 API 都不呼叫。
+  let _submitAborted = null;
+  function _sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function _isRateLimited(e) {
+    const m = String((e && e.message) || '');
+    return /\b429\b/.test(m) || /too\s*many\s*requests/i.test(m) || /rate.?limit/i.test(m);
+  }
   function queuedSubmit(fn) {
-    const p = _submitChain.then(function () { return fn(); });
+    const p = _submitChain.then(async function () {
+      if (_submitAborted) {                       // 前面已經有段送不進去 → 不燒這筆錢
+        throw new Error('前一段提交失敗,已中止後續段落的提交(' + _submitAborted + ')');
+      }
+      for (let attempt = 0; ; attempt++) {
+        const gap = _SUBMIT_GAP_MS - (Date.now() - _lastSubmitAt);
+        if (gap > 0) await _sleep(gap);
+        try {
+          _lastSubmitAt = Date.now();
+          return await fn();
+        } catch (e) {
+          if (!_isRateLimited(e) || attempt >= _RETRY_DELAYS.length) {
+            _submitAborted = String((e && e.message) || '未知原因').slice(0, 80);
+            _dbg('[KolStitch] 🛑 提交失敗,中止後續段落的提交 · ' + _submitAborted);
+            throw e;
+          }
+          const wait = _RETRY_DELAYS[attempt];
+          _dbg('[KolStitch] 🕒 上游忙碌(429),' + (wait / 1000) + ' 秒後重送(第 '
+            + (attempt + 1) + '/' + _RETRY_DELAYS.length + ' 次)');
+          await _sleep(wait);
+          _lastSubmitAt = Date.now();
+        }
+      }
+    });
     _submitChain = p.then(function () {}, function () {});   // 一段送出失敗也不卡住後面那幾段
     return p;
   }
@@ -1026,6 +1084,7 @@ window.KolStitch = (function () {
   async function runStitchFlow(plan, opts) {
     opts = opts || {};
     window._kolStitchRunning = true;
+    _submitAborted = null;      // v6.39:每次重跑都重置中止旗標
     const log = opts.onProgress || function () {};
     const kolImg = opts.kolImageUrl || opts.startImageUrl;
     // 🆕 v6.6:同上 — 只有 Seedance 需要 kolImageUrl 當每段錨點;Kling 用 resolveKolSheet 的 driveId。
@@ -1276,16 +1335,26 @@ window.KolStitch = (function () {
       const _why = (_settled[0] && _settled[0].reason && _settled[0].reason.message) || '未知原因';
       throw new Error('全部段落都沒生成成功:' + _why);
     }
+    //  🕳 v6.39 不完整就不接片(RA 2026-09-13 定案,取代 v6.38 的「接到缺口為止」)
+    //  ★ RA 原話:「FAL 一定要有完整三段才接片,不然接出來的也不對,牛頭不對馬尾。」
+    //  ★ 缺任何一段 → 【不呼叫 fal 接片】,直接把已生成的分段交出去讓 RA 自己判斷。
+    //    理由:少一段的成品一定是錯的,交出去就是交一支不能用的片給客戶;
+    //    但已經付錢生成的段落也不能人間蒸發 —— 所以交檔案,不交成品。
+    //  ★ 跟 v6.38 的差別:v6.38 會接出「前面連續的那幾段」,v6.39 完全不接。
+    const _allUrls = segments.map(function (x) { return x.url; });
     if (_lostIdx.length) {
-      log('⚠️ 第 ' + _lostIdx.join('、') + ' 段沒回來,先用已完成的 ' + segments.length + ' 段接片');
-      _dbg('[KolStitch] 🧯 缺段但續行 · 缺:', _lostIdx, '· 可用:', segments.length);
+      log('⚠️ 第 ' + _lostIdx.join('、') + ' 段沒生成成功,這支不接片。'
+        + '缺一段接出來的影片故事會斷掉,寧可不出。'
+        + '已完成的 ' + segments.length + ' 段分段檔在下面,沒生成的那幾段點數已自動退還。');
+      _dbg('[KolStitch] 🕳 缺段不接片 · 缺:', _lostIdx, '· 可用分段:', segments.length);
+      return { finalUrl: null, incomplete: true, lostSegments: _lostIdx, segmentUrls: _allUrls };
     }   // 順序照 plan 保留
 
     if (segments.length === 1) {
       log('正在儲存影片…');
       const only = await toR2(segments[0].url, opts.brandId, (opts.kolName || 'stitch') + '-1seg');
       log('完成!');
-      return { finalUrl: only, segmentUrls: [segments[0].url] };
+      return { finalUrl: only, segmentUrls: _allUrls.length ? _allUrls : [segments[0].url] };
     }
 
     // 🩹 2026-08-23:合成階段回報真實階段名。
