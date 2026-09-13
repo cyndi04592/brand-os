@@ -1,5 +1,13 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.40
+// kol-stitch.js — 自動接片引擎 v6.42
+// v6.42:🚪 併發閘門 —— 同時最多 N 段(預設 2),沒位子就不送,不再送出去被 429 拒。
+//        要等的是「前面跑完」(5-6 分鐘),不是「送完」—— 拉長提交間隔治不了。
+//        計數用我們自己的輪詢(送出+1 / 輪詢結束-1):PiAPI 的 active_tasks 端點
+//        實測【不含 seedance】,靠不住。上限可用 window.KOL_MAX_INFLIGHT 臨時覆寫。
+// v6.41:⏳ 429 改成【排隊】而非放棄 —— 退避階梯 100 秒 → 約 12 分鐘。
+//        病根:位子要等前面段落跑完(5-6 分鐘)才會空,但舊階梯 100 秒就放棄。
+//        429 不扣點,多等沒成本;放棄卻讓前面已付費的段落整支報廢。
+//        排隊訊息改成畫面可見(原本藏在 KOL_DEBUG 裡,客戶只會看到一片空白)。
 // v6.40:👗 沒有服裝參考圖時,prompt 完全不提 [OUTFIT_IMG](治「LACEZ 影片裡她只穿內衣」)。
 //        病根:服裝圖生成失敗被 catch 靜默吞掉,但四句「wearing [OUTFIT_IMG]」照寫 ——
 //        模型找不到那張圖不會放棄,改抓場上唯一剩下的參考:商品照(內衣)。
@@ -667,14 +675,66 @@ window.KolStitch = (function () {
   //  ★ 重試放在序列化鏈【裡面】,所以重試期間不會跟別段的提交重疊,不會越retry越擠。
   //  📐 v6.39 參數改由 RA 實測定案:間隔拉到 10 秒,退避 10s→30s→60s。
   //    1.5 秒太急 —— 第 1 段才剛送出,第 2 段就跟著撞上去。
+  //  ⏳ v6.41 排隊而不是放棄(RA 2026-09-13 實測 45 秒三段)
+  //  ★ 病:退避階梯 10s+30s+60s = 總共只等 100 秒就放棄第 3 段。
+  //    但前兩段要【跑 5-6 分鐘】才會釋出位子 —— 等於排隊排了一分半,
+  //    發現沒位子就走人,而再等四分鐘位子就空了。參數比現實小了三倍以上。
+  //  ★ 而且 429 不扣錢(每次都自動退點),多等【沒有任何成本】,
+  //    放棄卻讓前兩段已付的錢整支報廢。重試不是錯誤處理,是【排隊】。
+  //  ★ 新階梯總長約 12 分鐘,跨得過前面段落的生成時間。
   const _SUBMIT_GAP_MS = 10000;                   // 兩次提交最小間隔(10 秒)
-  const _RETRY_DELAYS  = [10000, 30000, 60000];   // 429 退避:10s → 30s → 60s
+  const _RETRY_DELAYS  = [20000, 40000, 60000, 90000, 120000, 120000, 120000, 120000];
   let _lastSubmitAt = 0;
   //  🛑 v6.39 提交失敗就中止後面的段:
   //    ★ 病(RA 2026-09-13):第 2 段送不進去,系統不理它、繼續送第 3 段。
   //      但缺口不跨接(v6.38)本來就不會用到第 3 段 —— 那筆錢 100% 白花。
   //    ★ 修法:任何一段【提交】最終失敗,後面的段直接不送,連 API 都不呼叫。
   let _submitAborted = null;
+  let _uiLog = null;            // v6.41:runStitchFlow 會把 onProgress 掛進來,讓排隊訊息看得到
+
+  //  🚪 v6.42 併發閘門 —— 不要送出去被拒,而是【沒位子就不送】。
+  //  ★ 病(RA 2026-09-13 實測):前兩段秒過,第三段三次全撞 429。
+  //    原因不是送太快,是【前兩段還在跑】—— 任務送出去之後會佔位 5-6 分鐘,
+  //    所以拉長提交間隔沒用,要等的是「跑完」不是「送完」。
+  //  ★ 本來想用 PiAPI 的 GET /account/active_tasks 問「現在跑幾個」,
+  //    但實測回傳只有 music-u / luma / kling / flux / midjourney —— 【沒有 seedance】。
+  //    所以改用我們自己的計數:送出 +1、輪詢到結果 -1,比外部端點更準也更即時。
+  //  ★ 上限先設 2(七批任務歷史全是兩兩成對 + 今天第三段必撞)。
+  //    客服確認後改這個數字就好,不用動邏輯。Console 可臨時覆寫:window.KOL_MAX_INFLIGHT = 3
+  //  ★ 這層做好之後,429 幾乎不會再發生;v6.41 的退避退居備用保險。
+  const _MAX_INFLIGHT_DEFAULT = 2;
+  let _inFlight = 0;
+  function _maxInflight() {
+    const v = (typeof window !== 'undefined') ? window.KOL_MAX_INFLIGHT : null;
+    return (typeof v === 'number' && v > 0) ? v : _MAX_INFLIGHT_DEFAULT;
+  }
+  //  ⚠️ 必須是【檢查 + 佔位同一個同步區塊】。
+  //    第一版寫成「等位子」和「佔位」分開,中間隔著 await(送出請求),
+  //    結果六段在還沒有人佔位之前就全部通過檢查,一起衝出去 —— 閘門等於不存在。
+  //    JS 單執行緒,只要 while 跳出後【不 await 就 +1】,就是原子的。
+  async function _acquireSlot(tag) {
+    let waited = 0, told = false;
+    while (_inFlight >= _maxInflight()) {
+      if (!told) {
+        told = true;
+        const _m = '上游同時只能跑 ' + _maxInflight() + ' 段,' + (tag || '這一段')
+          + '排隊中…前面跑完會自動接上(不會扣點)';
+        try { if (_uiLog) _uiLog('⏳ ' + _m); } catch (_e) {}
+        _dbg('[KolStitch] 🚪 ' + _m);
+      }
+      await _sleep(3000);
+      waited += 3000;
+      if (waited % 60000 === 0) {
+        try { if (_uiLog) _uiLog('⏳ 仍在排隊…已等 ' + (waited / 60000) + ' 分鐘'); } catch (_e2) {}
+      }
+    }
+    _inFlight++;                       // ← 跳出迴圈後立刻佔位,中間不能有 await
+    _dbg('[KolStitch] 🚪 佔位 +1 → 目前在跑 ' + _inFlight + '/' + _maxInflight());
+  }
+  function _releaseSlot() {
+    _inFlight = Math.max(0, _inFlight - 1);
+    _dbg('[KolStitch] 🚪 釋放 -1 → 目前在跑 ' + _inFlight + '/' + _maxInflight());
+  }
   function _sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function _isRateLimited(e) {
     const m = String((e && e.message) || '');
@@ -698,8 +758,11 @@ window.KolStitch = (function () {
             throw e;
           }
           const wait = _RETRY_DELAYS[attempt];
-          _dbg('[KolStitch] 🕒 上游忙碌(429),' + (wait / 1000) + ' 秒後重送(第 '
-            + (attempt + 1) + '/' + _RETRY_DELAYS.length + ' 次)');
+          //  v6.41:這是「請稍候」訊息,不是工程細節 —— 改用畫面 log,不要藏在 KOL_DEBUG 裡。
+          const _msg = '上游忙碌,排隊中…' + (wait / 1000) + ' 秒後自動重送(第 '
+            + (attempt + 1) + '/' + _RETRY_DELAYS.length + ' 次,不會扣點)';
+          try { if (_uiLog) _uiLog('⏳ ' + _msg); } catch (_e3) {}
+          _dbg('[KolStitch] 🕒 ' + _msg);
           await _sleep(wait);
           _lastSubmitAt = Date.now();
         }
@@ -1048,6 +1111,9 @@ window.KolStitch = (function () {
         }
       } catch (e) { console.warn('[KolStitch] 多角度臉選配略過(退單張正臉):', e.message); _faceDriveIds = []; }
     }
+    //  🚪 v6.42:先取得位子才送。佔位涵蓋【提交 + 輪詢】整段,失敗也會在 finally 釋放。
+    await _acquireSlot(opts.kolName ? ('「' + opts.kolName + '」的這一段') : null);
+    try {
     const sub = await queuedSubmit(function () { return api('seedance_submit', {
       kolImageUrl: opts.kolImageUrl,                                       // → [Image1] 臉錨(整支同一張身份臉錨·v6.12鎖臉)
       productImageUrls: _segProducts.has ? _segProducts.urls : (Array.isArray(opts.productImageUrls) ? opts.productImageUrls : []),
@@ -1073,6 +1139,7 @@ window.KolStitch = (function () {
     const videoUrl = await pollEpisode(sub.requestId, opts.brandId, onTick, sub.endpoint);
     if (!videoUrl) throw new Error('reference-to-video 沒拿到影片 URL');
     return videoUrl;
+    } finally { _releaseSlot(); }
   }
 
   // 接片：多段 → 一條(webhook,不變)
@@ -1113,6 +1180,8 @@ window.KolStitch = (function () {
     opts = opts || {};
     window._kolStitchRunning = true;
     _submitAborted = null;      // v6.39:每次重跑都重置中止旗標
+    _uiLog = opts.onProgress || null;   // v6.41:排隊訊息顯示到畫面上
+    _inFlight = 0;                      // v6.42:重置併發計數
     const log = opts.onProgress || function () {};
     const kolImg = opts.kolImageUrl || opts.startImageUrl;
     // 🆕 v6.6:同上 — 只有 Seedance 需要 kolImageUrl 當每段錨點;Kling 用 resolveKolSheet 的 driveId。
