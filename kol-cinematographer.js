@@ -204,7 +204,7 @@
       label: '🔄 環繞鏡頭',
       hint: '360° 氛圍',
       duration_suggest: 10,
-      fallback: 'smooth orbital camera movement around subject, 180-degree arc, subject remains relatively centered',
+      fallback: 'smooth orbital camera movement around subject, 180-degree arc, subject stays in frame but off-centre',
     },
     pullback_reveal: {
       label: '↖️ 拉鏡揭示',
