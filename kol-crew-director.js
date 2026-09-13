@@ -566,7 +566,37 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   // 6️⃣ 品牌調性 —— RA 拍板:色板/調性可犧牲,排最後
   pushIfNonEmpty(tail, C.brandSoul?.contribute(ctx));
 
-  return { front: front.filter(Boolean).join('. '), tail: tail.filter(Boolean).join('. ') };
+  //  🥇 2026-09-13 v5.39 tail 優先序(RA:根治「永遠砍同一條」)
+  //  ★ 病:kol-stitch 的 fitRules 是【從第一條開始塞,塞不下就整條跳過】,
+  //    所以 tail 的【推入順序 = 優先級】。而「背景要活著」原本排第 5,
+  //    前面吃完才輪到它 —— 實測連兩支片「保留 3/9」「4/10」,
+  //    被丟掉的每次都包含這組,等於它從來沒有真正送出去過。
+  //  ★ 為什麼不直接把 tail.push 搬到前面:那段用到 _envNoun,
+  //    而 _envNoun 宣告在後面的 if 區塊【裡面】—— 搬過去會 ReferenceError,
+  //    整支片生不出來(2026-09-13 差點踩到)。
+  //  ★ 正解:不動程式碼位置,只在【出口】依關鍵字重排,作用域完全不受影響。
+  //  ★ 排序理由:
+  //    ① 合規/法律(內衣安全鎖)— 出事成本最高
+  //    ② 商品定義(PROP/HERO…)— 沒有它後面的子句失去主詞
+  //    ③ 背景要活著 — 唯一防「死背板」的規則,而且最常被砍
+  //    ④ 無字幕 — 只有 58 字,CP 值最高
+  //    ⑤ 其餘結構鎖 — 九宮格圖已經在扛一部分
+  const _TAIL_RANK = [
+    /fully dressed in everyday outerwear|no exposed undergarments/i,   // ① 合規
+    /^(PROP|HERO PRODUCT|PRODUCT IN USE|NO PHYSICAL PRODUCT)/i,        // ② 商品定義
+    /work out what actually moves|life carries on there too|Only this movement/i, // ③ 背景要活著
+    /no subtitles|no captions|no on-screen text/i,                     // ④ 無字幕
+  ];
+  function _tailRank(t) {
+    for (let i = 0; i < _TAIL_RANK.length; i++) if (_TAIL_RANK[i].test(t)) return i;
+    return _TAIL_RANK.length;                                          // 其餘維持原相對順序
+  }
+  const _tailSorted = tail.filter(Boolean)
+    .map(function (t, i) { return { t: t, r: _tailRank(t), i: i }; })
+    .sort(function (a, b) { return (a.r - b.r) || (a.i - b.i); })
+    .map(function (x) { return x.t; });
+
+  return { front: front.filter(Boolean).join('. '), tail: _tailSorted.join('. ') };
 }
 
 // 每段只放「這一格獨一無二」的靈魂:動作+payoff(原封不動,絕不砍)+ 台詞
