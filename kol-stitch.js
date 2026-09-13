@@ -1,5 +1,25 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.45
+// kol-stitch.js — 自動接片引擎 v6.50
+// v6.50:🎭 把 RA 2026-06「笑要有動機與種類」+ 2026-07「一閃而過的一拍/眼神隨話流動」補回來,
+//        並加上【強情緒同步爆發】。刪掉「反應按順序:手→視線→頭→表情」——
+//        查無出處,而且與「一閃而過」直接打架,是僵硬/機器人感的來源。
+// v6.49:🎭 情緒指名+動機、眼神流動(RA 指正)。
+//        砍:「反應按順序 手→視線→頭→表情」(查無出處)、「每2-3秒眨一次眼」(機械計時=機器人感)。
+//        換上 RA 自己打磨過的眼神塊 —— 它原本擱在已停用的 kol-engine-kling.js 裡沒被使用。
+// v6.48:🩳 瘦身 ~590 字(RA:4000 上限是所有人一樣的,差別在規則佔多少)。
+//        實測拆解:4000 字裡只有 7% 在講「她要做什麼」,93% 是規則。
+//        ① SCENE_IMG 789→345:功能子句一條不少,只砍解釋性贅述
+//        ② 台詞封鎖行 124 字整條刪:與對嘴行前半完全重複
+//        ③ 「She holds some of it back」26 字:無法執行的抽象詞
+//        ⚠️ 沒有動:資產標註、商品鐵律、v5.33 光源同源、九宮格挑格規則(v6.34 已驗證有效)
+// v6.47:🏷 白牌清洗器 _scrub() —— 失敗彈窗的「技術訊息」不再洩漏供應商。
+//        PiAPI / Seedance / fal / Kling / Anthropic / 內部網址一律抹成「算力機」。
+//        錯誤碼保留(工程師要用),但客戶看不到我們接了誰、用什麼模型。
+// v6.46:🚧 最終硬牆 3980 —— 組完 prompt 後量【真實長度】,超過就重算並縮 tail(最多四輪)。
+//        病:v6.45 的預算用 _probe 估算,但 prompt 組完後還會追加對嘴行等區塊,
+//        漏算幾百字;語速修好後台詞 44→67 字,兩個一疊就送出 5139 字,
+//        PiAPI 直接回 400 Invalid input(prompt exceeds 4000)。
+//        教訓:預算用估算值推就一定會漏,要用組完後的真實長度守門。
 // v6.45:🥇 全域權重讓位 —— tail 需要多少就給多少(上限1400),不夠就依詞序法反序讓位:
 //        ① front(抽象風格)瘦身 → ② colorLine 退出。動作/台詞/標註/對嘴行永不犧牲。
 //        治「前面照吃、tail 吃剩菜」,讓 3950 字內的規則真的全部送得進去。
@@ -144,7 +164,7 @@ window.KolStitch = (function () {
     });
     let data;
     try { data = await res.json(); }
-    catch (e) { throw new Error(`[${action}] 回應不是 JSON（HTTP ${res.status}）`); }
+    catch (e) { throw new Error(_scrub(`[${action}] 回應不是 JSON（HTTP ${res.status}）`)); }
     if (data && data.ok === false) {
       // 🔬 v6.12.5 診斷:把 PiAPI 真正的原因(logs/detail)「單獨抽出來印一行」。
       //   之前 error 字串太長(含整段 prompt),logs 被擠到後面看不到 → 抽出來就短、會完整顯示。
@@ -163,12 +183,36 @@ window.KolStitch = (function () {
         }
       } catch (_e) { console.log('[KolStitch] 🔬 抽取失敗原因失敗(把上面完整錯誤物件截圖即可):', _e); }
       try { _dbg('[KolStitch] 🔬 r2Refs(實際抓到的參考圖) =', data.r2Refs); } catch (_e2) {}
-      throw new Error(`[${action}] ${data.error || '未知錯誤'}`);
+      throw new Error(_scrub(`[${action}] ${data.error || '未知錯誤'}`));
     }
     return data;
   }
 
   // 從任意回傳撈 URL：fal_poll 對不同任務用不同欄位（videoUrl / imageUrl / rawResult）
+  // ═══════════════════════════════════════════════════════════════════
+  //  🏷 v6.47 白牌清洗器(RA 2026-09-13:技術訊息也不准出現供應商名稱)
+  //  ★ 病:失敗彈窗的「技術訊息」直接把上游原文貼出來 ——
+  //    「PiAPI 提交失敗 [400]: {...seedance-2-fast-less-restriction...}」
+  //    等於把我們接了誰、用什麼模型、webhook 網址全部給客戶看。
+  //  ★ 一律改稱【算力機】。錯誤碼保留(工程師要用),供應商與模型名稱一律抹掉。
+  //  ★ 這是最後一道關:不管上游回什麼、不管哪一層丟出來,只要會顯示給人看就先過這裡。
+  // ═══════════════════════════════════════════════════════════════════
+  function _scrub(t) {
+    try {
+      return String(t == null ? '' : t)
+        .replace(/https?:\/\/[^\s"'\\)]+/gi, '(內部位址)')
+        .replace(/seedance[-\w.]*/gi, '算力機')
+        .replace(/\bpiapi\b/gi, '算力機')
+        .replace(/\bfal(\.ai|_\w+|\.media)?\b/gi, '算力機')
+        .replace(/\bkling\b/gi, '算力機')
+        .replace(/\bheygen\b/gi, '算力機')
+        .replace(/\bbytedance\b/gi, '算力機')
+        .replace(/\banthropic\b|\bclaude[-\w.]*/gi, '文案引擎')
+        .replace(/\bphotoroom\b/gi, '去背服務')
+        .replace(/(算力機\s*){2,}/g, '算力機 ');
+    } catch (_) { return String(t || ''); }
+  }
+
   function pickUrl(r) {
     if (!r) return null;
     var u = r.videoUrl || r.imageUrl ||
@@ -371,9 +415,33 @@ window.KolStitch = (function () {
       + 'part of ' + P.p + ' body touches something really there (sitting, leaning, an arm on it, holding it, walking past), '
       + 'visible in frame with ' + P.o + '; even in the tightest close-up keep a piece of the place beside ' + P.o + '. '
       + 'Never planted centre-frame squared to the lens. '
-      + 'The feeling shows inside what ' + P.p + ' hands are already doing, not as a separate gesture. '
-      + 'Reactions arrive in order \u2014 hands settle, then gaze, then head, expression last. '
-      + P.S + ' holds some of it back. A soft blink every two to three seconds, still moving on the last frame.';
+      //  🎭 v6.49 情緒與眼神(RA 2026-09-13 指正):
+      //   ★ 舊版兩條被換掉:
+      //     ①「情緒藏在手正在做的事裡」—— 只講【怎麼演】,沒講【演什麼】。
+      //       刺蝟星球那套是:笑要分大笑/竊笑/微笑/發自內心的笑,而且要說明【為什麼笑】
+      //       (例:因為告白成功而微笑)。指名情緒 + 給動機,模型才演得準。
+      //     ②「反應按順序:手→視線→頭→表情」—— 專案文件裡查無出處,RA 也不記得談過,砍。
+      //   ★ 眨眼那條整條換掉:「每 2-3 秒眨一次」是機械計時器,演出來像機器人。
+      //     改用 RA 自己打磨過的【眼神流動】版本 —— 它原本躺在 kol-engine-kling.js
+      //     (Kling 已停用)裡沒被用到,live 路徑反而用著比較差的機械版。
+      //     核心:想事情時視線飄開、再回到說話的對象身上;重音字時眼睛變亮。
+      //  ★ 三個機制,缺一不可(RA 2026-06-15 與 2026-07-11 已定案,今天只是補回來):
+      //    ① 指名情緒+動機:笑分微笑/奸笑/誇張笑/發自內心的淺淺微笑,而且要講【為什麼笑】。
+      //       RA 原話:笑有動機、有種類,KOL 才有靈魂,不是讀稿機。
+      //    ② 反浮誇定格:情緒只以【一閃而過的一拍】出現,同一個驚訝或睜大眼不超過約一秒。
+      //       這條是 RA 當初解掉「很誇張浮誇的笑變得很 AI」的核心。
+      //    ③ 強情緒【同步爆發】,不是分解動作。
+      //       ⚠️ 舊版有一條「Reactions arrive in order — hands, then gaze, then head, expression last」,
+      //       專案文件查無出處,而且【直接跟①②打架】:真人中獎那一瞬間眼睛嘴巴手同時炸開,
+      //       排序等於叫模型演分解動作 —— 那正是 RA 說的機器人感/僵硬感來源。已刪,禁止復活。
+      + 'Name the exact feeling and what caused it, not just happy \u2014 which kind of smile and why '
+      + '(a small private smile because the answer landed, a sly one, a grin ' + P.s + ' cannot hold back). '
+      + 'Any delight or surprise is a brief passing beat that moves straight into the next word or action, '
+      + 'never a held exaggerated grin, and the same wide-eyed look never lasts more than about a second. '
+      + 'When the feeling is strong it arrives all at once \u2014 eyes, mouth, hands and body together in the same instant, '
+      + 'never as a sequence of separate staged reactions. '
+      + 'Eyes catchlit, brightening on the words ' + P.s + ' stresses; natural blinking, micro-expressions, '
+      + 'gaze drifts away while ' + P.s + ' thinks and comes back to the person ' + P.s + ' is talking to, never a fixed stare at one point.';
   }
 
   function _buildVoiceLine(opts) {
@@ -497,14 +565,15 @@ window.KolStitch = (function () {
         bodyB += '[00:' + pad(tb0) + '-00:' + pad(tb1) + '] ' + markerB + ': ' + ((_fa && list[i].angle && String(list[i].angle).toLowerCase() !== 'front') ? ('[FACE_' + String(list[i].angle).toUpperCase().replace(/[^A-Z0-9]/g, '') + ']') : '[Image1]') + ' ' + (list[i].prompt || '') + _prodB + '\n';
         tb = tb1;
       }
-      bodyB += '\nThe quoted line is ' + _pron().p + ' COMPLETE and ONLY speech per shot — no extra words or improvised prices after it, only ambient sound.';
+      //  🩳 v6.48:這句與對嘴行前半完全重複(兩句都在講「只講寫好的台詞、不准即興、不准編價格」),
+      //    而對嘴行那份還多帶了口音與「沒台詞就閉嘴」。留一份就好,省 124 字。
       //  🔊 v6.25 對嘴行搬家:緊貼台詞規則(引號講的就是它)。v6.36 維持緊貼不動。
       if (shared.voiceLine) bodyB += '\n' + shared.voiceLine;
 
       // ═══ ③ 光影與環境(中段·在主體穩定後才建模)═══
       bodyB += '\n\n'
         + (_sg
-           ? '[SCENE_IMG] = one location shown from multiple angles; lock its layout, structures, materials and colours — it is an empty reference of the fixed room only, the life inside it is not locked; read the grid as one room seen from several camera positions, and for each shot stand where that shot needs: wide shots from the panels that show the whole room, closer shots from the panels nearest that part of the room, and once a shot has picked its position, hold it for that whole shot instead of drifting between panels; never draw the grid, panels or dividing lines into the video. '
+           ? '[SCENE_IMG] = one location shown from several camera positions; lock its layout, structures, materials and colours, but not the life inside it; wide shots use the panels showing the whole room, closer shots the panels nearest that part of it, and each shot holds its chosen position throughout; never draw the grid or its dividing lines into the video. '
            : '[SCENE_IMG] = location (same background and layout; do not rearrange; it shows the empty room only, the life inside it is not locked). ')
         + 'Also keep the product locked: '
         + prodRule;
@@ -559,7 +628,7 @@ window.KolStitch = (function () {
     if (colorLine) shared.colorLine = colorLine;
     _segHasOutfit = true;   // v6.40:免費探針維持原行為(假設有服裝圖)
     const p = buildMultiShotPrompt(fake, 15, shared);
-    console.log('=== 送 Seedance 的商品圖順序([Image1]=臉,之後才是商品)===');
+    console.log('=== 送算力機的商品圖順序([Image1]=臉,之後才是商品)===');
     bp.urls.forEach(function (u, i) { console.log('  [Image' + (i + 2) + '] = ' + u); });
     console.log('=== 生成的 prompt(' + p.length + ' 字' + (colorLine ? ' · 含色板' : ' · 無色板') + ')===\n' + p);
     return { productUrls: bp.urls, prompt: p, length: p.length };
@@ -763,7 +832,7 @@ window.KolStitch = (function () {
           return await fn();
         } catch (e) {
           if (!_isRateLimited(e) || attempt >= _RETRY_DELAYS.length) {
-            _submitAborted = String((e && e.message) || '未知原因').slice(0, 80);
+            _submitAborted = _scrub(String((e && e.message) || '未知原因')).slice(0, 80);
             _dbg('[KolStitch] 🛑 提交失敗,中止後續段落的提交 · ' + _submitAborted);
             throw e;
           }
@@ -878,6 +947,7 @@ window.KolStitch = (function () {
     const _blk = { front: 0, probe: 0, beats: 0, tailBudget: 0, tailSent: 0,
                    tailKept: 0, tailTotal: 0, voice: 0, before: 0, rescued: false };
     let prompt = buildMultiShotPrompt(beats, totalSec, opts.shared, opts.continuityFrom);
+    let _capCtx = null;   // v6.46:硬牆重算用的上下文,由 lean 路徑填入
 
     // 🩳 v6.10 PiAPI 硬上限修正:realism 冗字散在多模組 → shared.front 太長會撞 PiAPI prompt 上限。
     //   對 piapi 路線改用「精簡骨架」:五鎖錨 + 分鏡台詞 + 一句真實度;長篇 realism 交給參考圖扛。fal 路線維持完整敘述不動。
@@ -1051,8 +1121,11 @@ window.KolStitch = (function () {
       prompt = buildMultiShotPrompt(beats, totalSec,
         { front: _useFront, tail: _fit.text, voiceLine: _voiceLine }, opts.continuityFrom);
       _blk.voice = _voiceLine.length;   // 📊 已提早插入,探針直接記長度
+      //  v6.46:把重算硬牆時需要的三個值帶到外層(這個區塊結束後就取不到了)
+      _capCtx = { rawTail: _rawTail, front: _useFront, voice: _voiceLine };
     }
 
+    //  v6.46:硬牆重算需要的上下文(lean 路徑才會填;其他路徑維持 null → 不觸發重算)
     // 🔒 口音 + 口型鐵律(v6.4):開語音時,只有「有台詞的鏡頭」才說話+對嘴;
     //   沒台詞的鏡頭(吃/咀嚼/拿商品/純反應)→ 不講話、嘴不動、只有環境音 → 解決「邊吃邊有人聲」desync。
     _blk.before = prompt.length;
@@ -1068,6 +1141,44 @@ window.KolStitch = (function () {
     var _provNow = (typeof window !== 'undefined' && window.KOL_PROVIDER) ? window.KOL_PROVIDER : (opts.provider || 'piapi');
     _dbg('[KolStitch] 🔀 本段引擎 =', _provNow);
     if (!_blk.voice) _blk.voice = prompt.length - _blk.before;
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  🚧 v6.46 最終硬牆(RA 2026-09-13:PiAPI 回 400 — 送出 5139 字,超過 4000)
+    //  ★ 病:v6.45 把預算改成「tail 需要多少給多少」,但預算是用 _probe 的長度推算的,
+    //    而【prompt 組完之後還會再追加東西】(對嘴行等),probe 沒算到那幾百字。
+    //    再加上語速修好後台詞從 44 字變 67 字,分鏡區塊同時變長 —— 兩個一疊就爆 4000。
+    //    PiAPI 直接回 400 Invalid input,整支片生不出來(點數有退)。
+    //  ★ 教訓:預算用「估算值」推,就一定會有漏算的區塊。
+    //    正解是【組完之後量真的長度】,超過就重算 —— 不管漏算的是誰都攔得住。
+    //  ★ 砍的順序照詞序法權重反序:tail 最低優先的規則先讓,內容(動作/台詞)永不動。
+    //    每輪重算都會重新 fitRules,所以砍掉的一定是排最後的那幾條。
+    const _HARD_CAP = 3980;            // PiAPI 硬限 4000,留 20 字安全邊距
+    let _capRounds = 0;
+    while (_capCtx && prompt.length > _HARD_CAP && _capRounds < 4) {
+      _capRounds++;
+      const _over2 = prompt.length - _HARD_CAP;
+      const _newBudget = Math.max(0, (_blk.tailBudget || 0) - _over2 - 8);
+      const _fit2 = fitRules(_capCtx.rawTail, _newBudget);
+      _dbg('[KolStitch] 🚧 超過硬牆 ' + prompt.length + '/' + _HARD_CAP
+        + ' → 第 ' + _capRounds + ' 輪縮減:商品鐵律預算 ' + _blk.tailBudget + ' → ' + _newBudget
+        + '(保留 ' + _fit2.kept + '/' + _fit2.total + ' 條)');
+      _blk.tailBudget = _newBudget;
+      _blk.tailSent = _fit2.text.length;
+      _blk.tailKept = _fit2.kept;
+      _blk.tailTotal = _fit2.total;
+      prompt = buildMultiShotPrompt(beats, totalSec,
+        { front: _capCtx.front, tail: _fit2.text, voiceLine: _capCtx.voice }, opts.continuityFrom);
+      if (opts.generateAudio === true && !/lip-sync/i.test(prompt)) {
+        const _vl2 = _buildVoiceLine(opts);
+        if (_vl2) prompt += '\n' + _vl2;
+      }
+    }
+    if (_capCtx && prompt.length > _HARD_CAP) {
+      //  四輪還壓不下去 → 連 tail 全砍都不夠,問題在前面的固定區塊。
+      //  寧可明講也不要送出去被 400 打回來(那會讓整支片失敗)。
+      _dbg('[KolStitch] 🚧 ⚠️ 四輪縮減後仍有 ' + prompt.length + ' 字,超過硬牆 '
+        + (prompt.length - _HARD_CAP) + ' 字 —— 固定區塊本身過長,需要人工處理');
+    }
     // ═══════════════════════════════════════════════════════════════════
     //  📊 v6.24 字數分項盤點探針(window.KOL_DEBUG = true 才印)
     //  ★ 只讀不寫:所有數字都是已經算好的變數,一個字都沒改 prompt。
