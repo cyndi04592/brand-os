@@ -33,6 +33,13 @@
 
 (function () {
   'use strict';
+  //  🎨 2026-09-13 v0.6 飽和度校正(RA 2026-09-13 用真實短影音比對抓到)
+  //  ★ 病:預設 look 寫 'true-to-life colours' —— 對模型而言「真實的顏色」= 飽和討喜的顏色,
+  //    它不知道手機隨手拍其實是【偏淡偏灰】的。
+  //  ★ 實測飽和度:我們的成品 33.5% / 真實手機短影音 19.4% 與 24.3% / 鞋店(RA 100分) 26.7%
+  //    —— 高了 40-70%,一眼就是「調過色」。
+  //    對比度反而四支幾乎一樣(185-198),所以 RA 感覺到的「對比高」其實是飽和度造成的。
+  //  ★ 改成 muted / understated / nothing boosted,明講【沒有被加強過】。
 
   // ── 預設 look(客人沒設 / 品牌沒填 / 沒綁定時的 fallback)──
   //   iPhone 原生手機色:短影音 UGC 觀眾眼裡「真實網紅拍的」的樣子。
@@ -57,7 +64,7 @@
   //    白平衡跟著現場光走而不是被校正過。
   //  ⚠️ 不寫微觀紋理詞(毛孔/瑕疵)—— v5.17/v5.19 驗過那是烤肉紋兇手。
   // ═══════════════════════════════════════════════════════════════════════
-  const DEFAULT_LOOK = 'Shot handheld on a phone, everyday footage: true-to-life colours, white balance left as the room actually is rather than corrected, exposure not perfect with highlights allowed to clip and shadows allowed to stay dark and a little noisy, no HDR lift, no polish, the ordinary look of a clip someone recorded and never graded';
+  const DEFAULT_LOOK = 'Shot handheld on a phone, everyday footage: muted understated colours straight out of the phone, nothing boosted, white balance left as the place actually is rather than corrected, exposure not perfect with highlights allowed to clip and shadows allowed to stay dark and a little noisy, no HDR lift, no polish, the ordinary look of a clip someone recorded and never graded';
 
   // ── 清掉多餘空白(photography_style 是自由文字,保險清一下)──
   function cleanLook(raw) {
