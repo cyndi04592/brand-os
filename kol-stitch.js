@@ -1,5 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.44
+// kol-stitch.js — 自動接片引擎 v6.45
+// v6.45:🥇 全域權重讓位 —— tail 需要多少就給多少(上限1400),不夠就依詞序法反序讓位:
+//        ① front(抽象風格)瘦身 → ② colorLine 退出。動作/台詞/標註/對嘴行永不犧牲。
+//        治「前面照吃、tail 吃剩菜」,讓 3950 字內的規則真的全部送得進去。
 // v6.44:🛡 商品鐵律預算保障下限 900 字 + 牆 3800→3950。
 //        病:預算 = 總牆 − 前面全部,商品鐵律吃剩菜 → 前面一長它就餓死,
 //        砍別的地方也沒用(砍 315 字,預算反而 708→677)。實測 10 條只送 3 條。
@@ -990,14 +993,34 @@ window.KolStitch = (function () {
       //    而不是讓它自己餓死。門檻從 120 拉到 _TAIL_FLOOR。
       //  ★ 為什麼犧牲 front:front 是膚質光影形容詞,參考圖本來就扛得住;
       //    tail 是商品鐵律(形狀/材質/logo/穿戴方式),參考圖扛不住。
-      const _TAIL_FLOOR = 900;
+      //  🥇 v6.45 全域權重讓位(RA:「3950 內都要收得進去,不是只有 tail 內部排序」)
+      //  ★ 病:舊版是「前面照吃、tail 吃剩菜」,只在 tail【內部】有優先級,
+      //    整體分配則是純粹的先來後到 —— 前面一長,tail 就餓死,
+      //    而 tail 裡放的是商品鐵律與「背景要活著」,恰恰是最不能少的。
+      //  ★ 修法:下限不再是拍腦袋的 900,而是【tail 實際需要多少就給多少】(上限 1400)。
+      //    不夠就依【詞序法的權重反序】讓位 —— 抽象風格最先犧牲,內容永不犧牲:
+      //      第 1 段:front(真實度/膚質形容詞)瘦身 —— 抽象詞,參考圖本來就扛得住
+      //      第 2 段:colorLine(品牌色板)退出 —— 有品牌圖與商品圖在扛
+      //    動作、台詞、資產標註、對嘴行【永遠不動】,那是內容不是規則。
+      //  ★ 兩段讓位都會在 console 明講,不會再有「默默被砍」的情況。
+      const _TAIL_FLOOR = Math.min(_rawTail.length + 8, 1400);
       if (_budget < _TAIL_FLOOR) {
         _blk.rescued = true;
-        _dbg('[KolStitch] 🩳 商品鐵律預算不足(' + _budget + ' < ' + _TAIL_FLOOR + '),front 讓位');
+        _dbg('[KolStitch] 🥇 讓位① front 瘦身:tail 需要 ' + _TAIL_FLOOR + ' 字,目前只有 ' + _budget);
         _useFront = 'Realistic vertical UGC video. Soft diffused natural light, matte skin, no beauty filter, an ordinary real person.';
         _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
         _budget = _WALL - _SAFE - _probe.length;
       }
+      if (_budget < _TAIL_FLOOR && opts.shared && opts.shared.colorLine) {
+        //  色板退出:品牌調性由品牌圖與商品圖承擔,文字版是加分項不是必需品。
+        _blk.colorDropped = true;
+        _dbg('[KolStitch] 🥇 讓位② 色板行退出:tail 仍差 ' + (_TAIL_FLOOR - _budget) + ' 字');
+        opts = Object.assign({}, opts, { shared: Object.assign({}, opts.shared, { colorLine: '' }) });
+        _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
+        _budget = _WALL - _SAFE - _probe.length;
+      }
+      _dbg('[KolStitch] 🥇 tail 需要 ' + _TAIL_FLOOR + ' 字 · 實得 ' + _budget + ' 字 '
+        + (_budget >= _TAIL_FLOOR ? '✅ 全部收得進去' : '⚠️ 仍不足,會砍最低優先的幾條'));
 
       const _fit = fitRules(_rawTail, Math.max(0, _budget));
       _blk.front = _useFront.length;
