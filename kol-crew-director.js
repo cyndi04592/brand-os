@@ -151,8 +151,9 @@
   const CONTACT_CHAIN =
     'whenever the product is picked up or used, always show the exact contact points: name which hand and which fingers hold it and where on the product they grip it; ' +
     'the object reacts to real gravity and material — soft things bend under their own weight, liquid visibly shifts inside a container, heavy things make the wrist dip; ' +
-    'movement is continuous and never teleports — the product travels visibly from the surface, into the hand, then to its destination, staying in contact with the fingers the whole way; ' +
-    'when it is put down, its base touches the surface first and only then do the fingers release it';
+    //  🩳 v5.40:原本 182 字把「從桌面→手上→目的地→手指全程接觸→放下時底部先碰再放手」
+  //    一步一步寫成流水帳。機制只有一個:物件移動要連續、接觸要真實。
+  'the product never teleports \u2014 it travels visibly and stays in contact with the hand the whole way, and is set down before the fingers release it';
 
   function composePrompt(brandId, sceneId, locationId, movementId, duration, opts) {
     opts = opts || {};
