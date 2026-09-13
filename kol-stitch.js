@@ -1,5 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.42
+// kol-stitch.js — 自動接片引擎 v6.43
+// v6.43:🏷 白牌文案 —— 客戶畫面上的「上游」改成「算力」。
+//        白牌鐵律:客戶不該知道我們背後接了誰,也不該看到工程術語。
+//        註解與 _dbg 內部訊息不動(客戶看不到,KOL_DEBUG 預設關)。
 // v6.42:🚪 併發閘門 —— 同時最多 N 段(預設 2),沒位子就不送,不再送出去被 429 拒。
 //        要等的是「前面跑完」(5-6 分鐘),不是「送完」—— 拉長提交間隔治不了。
 //        計數用我們自己的輪詢(送出+1 / 輪詢結束-1):PiAPI 的 active_tasks 端點
@@ -717,8 +720,9 @@ window.KolStitch = (function () {
     while (_inFlight >= _maxInflight()) {
       if (!told) {
         told = true;
-        const _m = '上游同時只能跑 ' + _maxInflight() + ' 段,' + (tag || '這一段')
-          + '排隊中…前面跑完會自動接上(不會扣點)';
+        //  🏷 v6.43 白牌:客戶畫面不得出現「上游」「供應商」等字眼,一律講「算力」。
+        const _m = '算力同時只能處理 ' + _maxInflight() + ' 段,' + (tag || '這一段')
+          + '排隊中…前面完成後會自動接上(不會扣點)';
         try { if (_uiLog) _uiLog('⏳ ' + _m); } catch (_e) {}
         _dbg('[KolStitch] 🚪 ' + _m);
       }
@@ -759,7 +763,7 @@ window.KolStitch = (function () {
           }
           const wait = _RETRY_DELAYS[attempt];
           //  v6.41:這是「請稍候」訊息,不是工程細節 —— 改用畫面 log,不要藏在 KOL_DEBUG 裡。
-          const _msg = '上游忙碌,排隊中…' + (wait / 1000) + ' 秒後自動重送(第 '
+          const _msg = '算力忙碌中,排隊等待…' + (wait / 1000) + ' 秒後自動重試(第 '
             + (attempt + 1) + '/' + _RETRY_DELAYS.length + ' 次,不會扣點)';
           try { if (_uiLog) _uiLog('⏳ ' + _msg); } catch (_e3) {}
           _dbg('[KolStitch] 🕒 ' + _msg);
