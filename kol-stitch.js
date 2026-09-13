@@ -1,5 +1,7 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.54
+// kol-stitch.js — 自動接片引擎 v6.55
+// v6.55:🩹 修 ReferenceError: fitRules is not defined —— v6.46 硬牆重算在 fitRules 的
+//        作用域外面呼叫它,整支片直接生不出來(點數未扣)。改由 _capCtx 帶函式出去。
 // v6.54:🧴 補漏 —— 色板路徑(_lookFront)也有那盞衝突的柔光,v6.53 只改到 _leanFront。
 //        綁色板的品牌走的是色板路徑,所以前一版對他們等於沒生效。
 // v6.53:🩳 統整去重(RA:不要一直亂加,不然提示詞 10000 行)
@@ -1195,7 +1197,11 @@ window.KolStitch = (function () {
         { front: _useFront, tail: _fit.text, voiceLine: _voiceLine }, opts.continuityFrom);
       _blk.voice = _voiceLine.length;   // 📊 已提早插入,探針直接記長度
       //  v6.46:把重算硬牆時需要的三個值帶到外層(這個區塊結束後就取不到了)
-      _capCtx = { rawTail: _rawTail, front: _useFront, voice: _voiceLine };
+      //  🩹 v6.55:fitRules 宣告在這個 if 區塊【裡面】,而 v6.46 的硬牆重算在區塊【外面】,
+      //    直接呼叫會 ReferenceError: fitRules is not defined → 整支片生不出來(RA 2026-09-13 踩到)。
+      //    ⚠️ node --check 只驗語法,抓不到這種跨作用域問題 —— 今天第二次踩(前一次是 _envNoun)。
+      //    修法:把函式本身也放進 _capCtx 帶出去,不要跨作用域抓。
+      _capCtx = { rawTail: _rawTail, front: _useFront, voice: _voiceLine, fit: fitRules };
     }
 
     //  v6.46:硬牆重算需要的上下文(lean 路徑才會填;其他路徑維持 null → 不觸發重算)
@@ -1231,7 +1237,7 @@ window.KolStitch = (function () {
       _capRounds++;
       const _over2 = prompt.length - _HARD_CAP;
       const _newBudget = Math.max(0, (_blk.tailBudget || 0) - _over2 - 8);
-      const _fit2 = fitRules(_capCtx.rawTail, _newBudget);
+      const _fit2 = _capCtx.fit(_capCtx.rawTail, _newBudget);
       _dbg('[KolStitch] 🚧 超過硬牆 ' + prompt.length + '/' + _HARD_CAP
         + ' → 第 ' + _capRounds + ' 輪縮減:商品鐵律預算 ' + _blk.tailBudget + ' → ' + _newBudget
         + '(保留 ' + _fit2.kept + '/' + _fit2.total + ' 條)');
