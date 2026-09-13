@@ -1,5 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.60
+// kol-stitch.js — 自動接片引擎 v6.64
+// v6.64:🪑 拿掉執行時的 200 字扣除(那是誤解)——改成【設計目標】:規則要寫到留 200 字餘裕。
+// v6.62:🩳 光學段 669→290(只砍解釋性展開,直線/加色兩機制完整保留)
+// v6.61:🩳 光學段壓掉與鐵律重複的部分;直線/加色兩個機制一字不動。
 // v6.60:🪆 去木偶化(RA 嚴查:提示詞反而在叫 AI 做木偶)
 //        ① 拿掉 'Matte skin with no oily specular sheen' —— matte=霧面消光=塑膠/蠟像。
 //           真皮膚油水共存、會反光;RA 看鞋店那支時親口說「額頭鼻樑有自然油光,不要修」,
@@ -1094,7 +1097,19 @@ window.KolStitch = (function () {
       // ═══════════════════════════════════════════════════════════════════
       //  📏 v6.44:牆 3800 → 3950。PiAPI 硬上限 4000,舊版留 200 邊界過度保守,
       //    白白浪費 150 字 —— 而那 150 字正是商品鐵律一直不夠用的量。
+      //  🪑 v6.63 固定預留劇情空位(RA 2026-09-13)
+      //  ★ 病:舊版把牆用到滿(3950),規則剛好塞得下 —— 但【客戶的大綱不是固定的】。
+      //    大綱寫長一點 → 分鏡動作+台詞變長 → 直接撞 4000 被退貨(今天實測 400 過兩次)。
+      //  ★ RA 要求:固定留 200 字空位給劇情,不是每次算剛好。
+      //    所以有效牆 = 3950 − 200 = 3750,規則只能在這個範圍內分配;
+      //    多出來的 200 字永遠留給分鏡動作與台詞浮動。
       const _WALL = 3950, _SAFE = 20;
+      //  ⚠️ v6.64:曾加過 _STORY_HEADROOM = 200 在執行時扣除 —— RA 指正那是誤解。
+      //    執行時扣除反而讓 tail 被砍更兇(實測 tail 1103 → 903)。
+      //    RA 的意思是【設計目標】:規則本身要寫到「總長還剩 200 字餘裕」的程度,
+      //    不是加一道門檻去卡它。所以扣除拿掉,改成驗收標準寫在註解裡:
+      //    ★ 驗收:一般情境(2 段)組完 prompt 應 ≤ 3780,亦即離 3980 硬牆至少留 200 字。
+      //      超過就代表規則又寫肥了,回頭砍重複,不是調門檻。
       const _rawTail = String((opts.shared && opts.shared.tail) || '');
       //  💡 v6.51 接上光源同源(RA 2026-09-13 實測「臉完全平光、像被磨皮」)
       //  ★ 病灶(今天最大的一隻):kol-cinematographer.js 的 SCENE_REALISM —— 含 v5.33
@@ -1154,14 +1169,29 @@ window.KolStitch = (function () {
       //  ⚠️ 'casts that shadow' 是物理投影,不是 v5.17 拔掉的 contact shadow
       //    (那個是叫模型【合成】接觸處細微陰影 → 烤肉紋)。兩者不同,不碰雷區。
       //  ★ 驗收:色偏差 ≤0.45(真人 0.23-0.50)· 光差隨鏡頭變動而非固定 · 膚色不被統一化。
+      //  💡 v6.61 壓掉重複,兩個機制一字不動(RA 2026-09-13)
+      //  ★ 病:v6.59 把光學物理塞進 front,開場區塊 113 → 1054 字(+941),
+      //    把 tail 的預算從 955 擠到 451 → 商品鐵律只保留 2/6,
+      //    被丟掉的是結構鎖、單一連續空間、去背邊。又是「我加的把別人擠出去」。
+      //  ★ RA 指正:直線是【物理現象】、加色是【顏色】,兩者不同,不准合併。→ 兩句都完整保留。
+      //  ★ 真正該砍的是【與 front 鐵律整句重複】的那段:
+      //    我寫的「no one has retouched it / keeping whatever texture it came with」
+      //    跟鐵律的「no skin retouching / keep her skin exactly like the reference photo」
+      //    是同一件事講兩次。只留鐵律沒有的部分:沒為鏡頭打光上妝、她自己的深淺與膚況。
+      //  💡 v6.62 壓到 290 字(RA:tail 被擠到只剩 2/6 條)
+      //  ★ 兩個機制【完全保留】,RA 指正過:直線是物理現象、加色是顏色,不同的東西不准合併。
+      //  ★ 砍的是每句裡的【解釋性展開】:
+      //    「from wherever it is in this place」「anything in between blocks it and」
+      //    「where one reaches her alone that side carries its own colour」
+      //    「so her skin is the sum of what surrounds her rather than one even tone」
+      //    —— 這些是把法則再講一遍白話,模型本來就懂物理,不需要教學。
+      //  ★ 膚質那句與 front 鐵律重複的部分已在 v6.61 移除,這裡只留鐵律沒有的。
       const _LIGHT_SOURCE =
-          'Light travels in straight lines from wherever it is in this place: surfaces turned toward it are bright, '
-        + 'surfaces turned away fall into shadow, and anything in between blocks it and casts that shadow onto her. '
-        + 'Light adds \u2014 where two sources overlap on her they blend into a third colour, where one reaches her alone '
-        + 'that side carries its own colour \u2014 and nearby surfaces bounce their colour back onto her, so her skin '
-        + 'is the sum of what surrounds her rather than one even tone. '
-        + 'Her face was not lit or made up for a camera and no one has retouched it: this is simply the skin she has, '
-        + 'her own depth of tone and her own condition, keeping whatever texture it came with. ';
+          'Light travels in straight lines: surfaces facing it are bright, surfaces facing away fall into shadow, '
+        + 'and whatever stands between casts its shadow onto her. '
+        + 'Light adds \u2014 two sources overlapping on her blend into a third colour, and nearby surfaces bounce '
+        + 'their own colour back onto her skin. '
+        + 'Her face was not lit or made up for a camera; this is her own depth of tone and her own condition. ';
       let _useFront = _LIGHT_SOURCE + _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
       let _budget = _WALL - _SAFE - _probe.length;
@@ -1185,7 +1215,13 @@ window.KolStitch = (function () {
       //      第 2 段:colorLine(品牌色板)退出 —— 有品牌圖與商品圖在扛
       //    動作、台詞、資產標註、對嘴行【永遠不動】,那是內容不是規則。
       //  ★ 兩段讓位都會在 console 明講,不會再有「默默被砍」的情況。
-      const _TAIL_FLOOR = Math.min(_rawTail.length + 8, 1400);
+      //  🛡 v6.62:下限跟著 tail 實際需求走(上限拉到 1500)。
+      //  ★ RA 2026-09-13 實測:tail 需要 955,只拿到 451 → 商品鐵律 2/6,
+      //    被丟掉的是結構鎖、單一連續空間、去背邊 —— 全是影片層必需的。
+      //    舊上限 1400 沒問題,問題是【讓位只做了一段】(front 瘦身),
+      //    瘦完仍不夠就直接放棄。現在補第三段:色板行退出。
+      //    優先序照詞序法反序:抽象風格 → 色板 → (內容永不動)。
+      const _TAIL_FLOOR = Math.min(_rawTail.length + 8, 1500);
       if (_budget < _TAIL_FLOOR) {
         _blk.rescued = true;
         _dbg('[KolStitch] 🥇 讓位① front 瘦身:tail 需要 ' + _TAIL_FLOOR + ' 字,目前只有 ' + _budget);
@@ -1197,6 +1233,14 @@ window.KolStitch = (function () {
         _useFront = _LIGHT_SOURCE + (_lookFront || _leanFront)
           .replace('Realistic vertical UGC video. ', '')
           .replace('No on-screen text or subtitles, no background music.', '');
+        _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
+        _budget = _WALL - _SAFE - _probe.length;
+      }
+      //  讓位②:色板行退出(品牌調性有品牌圖與商品圖在扛;走實景照時場景光線本來就已略過)
+      if (_budget < _TAIL_FLOOR && _lookFront) {
+        _blk.lookDropped = true;
+        _dbg('[KolStitch] 🛡 讓位② 色板行退出:tail 仍差 ' + (_TAIL_FLOOR - _budget) + ' 字');
+        _useFront = _LIGHT_SOURCE + 'Keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
         _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
         _budget = _WALL - _SAFE - _probe.length;
       }
