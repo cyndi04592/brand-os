@@ -18,6 +18,15 @@
 // 🆕 v2.1:物理錨 GROUNDED — 給商品重量+真實接觸+重力 → 殺「魔術漂浮」,且不卡拋/放/遞動作
 (function () {
   'use strict';
+  //  🩳 2026-09-13 v3.50 去重(RA:提示詞快滿 4000,客戶多打兩個字就爆)
+  //  ★ 病:七個商品模式【每一個都重寫一次】同一句
+  //    「keep the product in [Image2] consistent in shape, proportions, color, material
+  //     and any logo, never mirrored or flipped, do not distort or morph it」(約 140 字),
+  //    而這句跟 kol-stitch 資產標註區的「keep every detail of each identical」完全重複 ——
+  //    標註區已經在鎖一致性,這裡等於同一件事講了八遍。
+  //  ★ 每個模式真正獨有的只有「她怎麼跟它互動」那半句,以及該品類要特別讀對的細節
+  //    (印刷文字 / 布料花紋 / logo / 表面處理 / 標籤),那些保留。
+  //  ★ 實測 tail 1216 字 → 約 600,而且一條規則都沒刪。
   // 🆕 v2.1 物理錨:有重量、與手/桌面真實接觸、遵守重力 → 殺「魔術漂浮」。
   //   刻意不寫「握緊/不准動」,所以拋球、放下、遞出等動作不會被卡死
   //   (飛出去也是「有重量的拋物線」,不是飄)。
@@ -184,7 +193,7 @@
   function contributeNewMode(prod, mode, scale) {
     const sz = scale ? '; it is ' + scale + ', at that true size' : '';
     if (mode === 'held') {
-      return 'PROP (a small product she is holding — keep it subtle and natural, do NOT overpower the subject): keep the product in [Image2] consistent in shape, proportions, color and any printed text, never mirrored or flipped, do not distort or morph it' + sz + '; ' + GROUNDED + ', its front kept toward the camera and recognizable while held; it may also rest naturally on a clean surface, never scattered messily';
+      return 'PROP (a small product she is holding — keep it subtle and natural, do NOT overpower the subject): its printed text reads correctly' + sz + '; ' + GROUNDED + ', its front kept toward the camera and recognizable while held; it may also rest naturally on a clean surface, never scattered messily';
     }
     // ══ 🆕 v3.7 貼身衣物:唯一講清楚「內層」的模式 ══
     //   為什麼要獨立一條:通用 'worn' 說的是「清楚看得出穿在身上」,
@@ -221,21 +230,21 @@
       //      (fitRules 是照順序留到預算用完為止)。
       //    ⚠️ 目前只掛在 innerwear。毛邊對所有去背商品圖都會發生,
       //      要不要提升成全模式共用,等這次實測看效果再決定。
-      return 'PROP (intimate apparel, worn as the inner layer): keep the product in [Image2] consistent in shape, proportions, color, fabric and lace pattern, never mirrored or flipped'
+      return 'PROP (intimate apparel, worn as the inner layer): its fabric and pattern read correctly'
         + (isYes(prod && prod.showContents) ? ', with [Image3] showing the SAME single garment from the back (same piece, not a second garment) — match its strap routing, back closure and lace seams' : '')
         + ', the fabric is soft and lightweight with natural drape, cups and straps yielding and slightly deformable, folding and creasing where held or worn, never stiff, boardlike or molded plastic'
         + ', and she wears it under her outfit, glimpsed at an open neckline, tasteful and modestly framed';
     }
     if (mode === 'worn') {
-      return 'PROP (a wearable product — feature it being worn or carried): keep the product in [Image2] consistent in shape, proportions, color, material and any logo, never mirrored or flipped, do not distort or morph it; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
+      return 'PROP (a wearable product — feature it being worn or carried): its logo reads correctly; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
     }
     if (mode === 'hero') {
       const big = sizeToScaleLarge(prod.realSize);
       const bigSz = big ? '; it is ' + big : '';
-      return 'HERO PRODUCT (the product is the star of the shot — feature it prominently): keep the product in [Image2] consistent in shape, proportions, color, material and finish, never mirrored or flipped, do not distort or morph it; show it large, complete and prominent from flattering angles, and she interacts with it naturally (sits on, opens, operates, touches or stands beside it as fits)' + bigSz + '; it has real weight and sits solidly on the floor in the scene, obeying gravity, never floating or pasted on';
+      return 'HERO PRODUCT (the product is the star of the shot — feature it prominently): its finish reads correctly; show it large, complete and prominent from flattering angles, and she interacts with it naturally (sits on, opens, operates, touches or stands beside it as fits)' + bigSz + '; it has real weight and sits solidly on the floor in the scene, obeying gravity, never floating or pasted on';
     }
     if (mode === 'demo') {
-      return 'PRODUCT IN USE (the product is shown doing its job — the act of using it is the point): keep the product in [Image2] consistent in shape, proportions, color and label, never mirrored or flipped, do not distort or morph it; she actively uses it as intended (applies, sprays, operates, installs or demonstrates) and the visible effect of using it is shown' + sz + '; ' + GROUNDED + ', kept recognizable and front-to-camera during use';
+      return 'PRODUCT IN USE (the product is shown doing its job — the act of using it is the point): its label reads correctly; she actively uses it as intended (applies, sprays, operates, installs or demonstrates) and the visible effect of using it is shown' + sz + '; ' + GROUNDED + ', kept recognizable and front-to-camera during use';
     }
     // ══ 🆕 v3.2 服務成果:畫面主角是「做完的樣子」,不是任何商品 ══
     if (mode === 'service') {
@@ -397,7 +406,7 @@
   function _contributeInner(ctx) {
     const prod = findProduct(ctx);
     if (!prod) {
-      return 'PROP (a supporting object she is holding — keep it subtle, do NOT overpower the subject): keep the product in [Image2] consistent in shape, proportions and color, never mirrored or flipped, at a believable real-world scale, do not distort or morph it; ' + GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it';
+      return 'PROP (a supporting object she is holding — keep it subtle, do NOT overpower the subject): at a believable real-world scale; ' + GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it';
     }
     // 🆕 v3.0:有明設 productMode → 走新模式;沒設(海苔等舊商品)→ 往下走 v2.2 原本邏輯,一字不變
     const mode = resolveMode(prod);
