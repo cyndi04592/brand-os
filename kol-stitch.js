@@ -1,5 +1,9 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.69
+// kol-stitch.js — 自動接片引擎 v6.70
+// v6.70:🛑 商品接觸鏈停用(保險絲 window.KOL_CONTACT_CHAIN,預設關)
+//        v6.68 把它搬到商品互動區 → 權重拉高 → 模型很用力演手指抓握 → 手部姿勢異常
+//        而內衣這類穿著型商品根本不拿在手上,這組規則用不到卻一直在干擾
+//        恢復時要改成「這一格真的有商品在手上才注入」,不是整支無條件送
 // v6.69:🔁 算力機【內部錯誤 code 10000】也自動重送(舊版只認 429 → 一次內部錯誤整支不接片、
 //        客戶得自己按重來;RA 手動重送一次就過,證明是暫時性的。內部錯誤不扣點,成本是時間)
 //        同時涵蓋 5xx / gateway / timeout / socket
@@ -391,8 +395,21 @@ window.KolStitch = (function () {
   //     同一句話搬到低權重區,等於悄悄降權,看起來有寫其實沒份量。
   //   ★ 抓拍框感則相反:那是全局調性,留在末尾 front 是對的。
   //  ═══════════════════════════════════════════════════════════════
+  //  ═══════════════════════════════════════════════════════════════
+  //  🛑 v6.70(2026-09-14)接觸鏈【停用】—— 保險絲 window.KOL_CONTACT_CHAIN(預設關)
+  //   病灶(RA 2026-09-14 實測):v6.68 把這句從被覆蓋的 front 搬到【商品互動區】,
+  //     權重整個拉高。它要求模型「點名哪隻手、哪幾根手指、抓在商品的哪個位置」——
+  //     模型於是很用力去演手指的抓握,身體姿勢跟著扭曲,出現這之前從沒發生過的手部異常。
+  //   ★ 更關鍵的是【今天的商品根本不拿在手上】(內衣是穿的),
+  //     這組規則對這類商品完全用不到,卻還佔著高權重位置在干擾畫面。
+  //   ★ RA 鐵律:人本來就會拿東西,不需要教。寫了反而讓它去「處理手」。
+  //   ★ 未來要恢復,正確做法是【這一格真的有商品在手上時才注入】,
+  //     而不是整支片無條件送。
+  //  ═══════════════════════════════════════════════════════════════
   const _CONTACT_CHAIN =
-    'when she handles it, show which hand and fingers grip it and where; it answers to gravity and its material, travels visibly in her hand, and is set down before released; ';
+    (typeof window !== 'undefined' && window.KOL_CONTACT_CHAIN === true)
+      ? 'when she handles it, it answers to gravity and its material, travels visibly in her hand, and is set down before released; '
+      : '';
 
   function collectBeatProducts(beats) {
     const list = (beats || []).map(function (b) { return (typeof b === 'string') ? {} : (b || {}); });
