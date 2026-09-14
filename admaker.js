@@ -42,20 +42,20 @@ const CAM_FREEZE = 'Shot on Nikon Z9 using its fast electronic shutter (1/8000s 
 
 // ★ v11.1 設計師工法層 (DESIGNER_POLISH) — 具體反 AI 指紋版(相機/佈光 + 品類 + 單一促銷 + 真材質),風格分流、不碰選定風格
 const DESIGNER_POLISH =
-'Output must look like REAL human-made work, never an AI render. ' +
-'For PHOTOGRAPHIC styles: render as real professional photography — shot on a professional body (Nikon Z9) with fast NIKKOR Z S-line prime lenses — 35mm or 50mm for scenes, 85mm for portraits, 105mm macro for food and product detail — at a real wide aperture (f/1.4–f/2.8) with genuine shallow depth of field and creamy bokeh, ISO 100–200, professional lighting (softbox key plus natural fill), true-to-life materials and micro-texture; strictly avoid the over-glossy, over-smooth, over-symmetrical AI-render sheen. ' +
-'For ILLUSTRATION, ink or graphic styles: execute in the authentic medium (real ink, paint, print, collage texture) with a human designer hand, not slick AI gradients. ' +
-'Decoration must fit the product category logically (seaweed uses ocean / wave / seaweed motifs, NOT wheat or coffee; tech uses clean studio; food uses real ingredients) — no off-category or meaningless symbols. ' +
-'Keep only ONE primary promotional message; never repeat the same discount or event across multiple badges. ' +
-'All text must be real, meaningful and correctly spelled; supporting icons form ONE cohesive set with identical weight and detail. ' +
-'ONE clear focal hierarchy on a deliberate grid, intentional and edited, never over-filled.';
+'Real human-made commercial work. ' +
+'PHOTOGRAPHIC styles: real professional photography on a Nikon Z9 with fast NIKKOR Z S-line primes — 35mm or 50mm for scenes, 85mm for portraits, 105mm macro for food and product detail — at f/1.4–f/2.8 with genuine shallow depth of field and creamy bokeh, ISO 100–200, softbox key plus natural fill. Surfaces carry real micro-texture: fine grain, slight asymmetry, honest material imperfection, matte finish. ' +
+'ILLUSTRATION, ink or graphic styles: executed in the authentic medium — real ink bleed, paint body, print registration, collage tooth — with the visible hand of a human designer. ' +
+'Decoration is drawn from the product own category (seaweed uses ocean and wave motifs, tech uses clean studio, food uses real ingredients). ' +
+'Exactly ONE promotional message appears, in exactly one place. ' +
+'All text is real, meaningful and correctly spelled; supporting icons form ONE cohesive set of identical weight and detail. ' +
+'ONE clear focal hierarchy on a deliberate grid, intentional and edited, with generous breathing space.';
 
 // 🆕 v11.6 情境質感準則:台灣精緻電商 + 韓日質感,避開大陸俗豔。只在有選情境時注入。
 const CONTEXT_QUALITY =
 '=== AESTHETIC QUALITY STANDARD (applies to the promotional / seasonal context above) ===\n' +
-'Render the context with a refined, restrained, editorial sensibility — a premium Taiwan e-commerce aesthetic elevated with Korean and Japanese quality: clean, calm, tasteful, high-end, with generous breathing space. ' +
-'STRICTLY AVOID the tacky mainland-China mass-market look — NO garish red-and-gold explosions, NO giant screaming price numerals stacked across the frame, NO cluttered pile-up of discount badges, NO over-saturated loud clashing colours. ' +
-'Even sale and festival contexts must stay elegant, breathable, well-composed and genuinely high-end.\n\n';
+'Render the context with a refined, restrained, editorial sensibility — premium Taiwan e-commerce elevated with Korean and Japanese quality: clean, calm, tasteful, high-end, generous breathing space. ' +
+'Keep the palette to the brand colours plus ONE modest festive accent. Any price or discount is set small and typographically integrated, appearing once. Festival cues arrive through material, light and a single well-chosen object rather than through massed ornament. ' +
+'Sale and festival contexts stay elegant, breathable and well-composed.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  v11.4 ★ FOOD_CRAFT 餐飲呈現準則 —— 只在食物場景(SELECTED_FLAVOR 以 food_ 開頭)注入
@@ -64,14 +64,14 @@ const CONTEXT_QUALITY =
 //    不碰其他品類;非食物場景不觸發。
 // ═══════════════════════════════════════════════════════════════════════
 const FOOD_CRAFT =
-'=== FOOD PLATING CRAFT (food & beverage — the dish MUST look genuinely photographed INSIDE the scene, never pasted onto a backdrop) ===\n' +
-'- ONE UNIFIED LIGHT FIELD (the #1 fix for the pasted-on look): RE-LIGHT the dish so its highlights, shadows and colour temperature match the new background EXACTLY. If the scene is warm amber tungsten, the food itself must also glow warm amber — never leave the dish under its original flat studio light on a moody dark background.\n' +
-'- REAL GROUNDING & CONTACT SHADOW: where the plate meets the surface, cast a soft realistic contact shadow — darkest and tightest right under the rim, fading outward with natural penumbra — NOT a hard uniform cut-out drop shadow. On glossy surfaces (marble, lacquered wood, glass, metal) add a faint reflection beneath the dish. The plate must read as having real weight resting ON the table.\n' +
-'- FOREGROUND OCCLUSION for real depth: place a few OUT-OF-FOCUS foreground elements (herbs, a sauce dish, chopsticks, rising steam, scattered spices) partially overlapping the lower or side edge of frame, so the hero dish is nestled BETWEEN a soft blurred foreground and a soft blurred background — this near/far layering seats it into believable 3D space instead of floating on a flat wall.\n' +
-'- EDGE INTEGRATION: let the rim of the plate and edges of the food pick up a gentle ambient / rim light in the scene own colour (warm gold, candle glow, window light), so the silhouette melts into the environment rather than cutting out with a sharp hard edge.\n' +
-'- SHALLOW DEPTH OF FIELD: hero dish tack-sharp, background dissolving into creamy bokeh, consistent with the foreground blur above.\n' +
-'- ABUNDANT IN-CATEGORY PROPS softly out of focus — warm and generous like reference HUALUXE / InterContinental / Michelin hotel-dining editorials, never sparse, never floating on empty tabletop.\n' +
-'- RESTAURANT ATMOSPHERE: warm directional key with soft falloff, deep but not pure-black shadows, faint appetizing steam where it fits — cinematic and mouth-watering, never a flat evenly-lit product shot.\n\n';
+'=== FOOD PLATING CRAFT (the dish was photographed INSIDE this room) ===\n' +
+'- ONE UNIFIED LIGHT FIELD (the decisive one): RE-LIGHT the dish so its highlights, shadows and colour temperature are produced by this room own light. Warm amber tungsten room → the dish itself glows warm amber, its shadows falling the same way as everything else in frame.\n' +
+'- REAL GROUNDING: where the plate meets the surface, a soft contact shadow sits darkest and tightest right under the rim and softens outward with natural penumbra. On marble, lacquer, glass or metal a faint reflection appears beneath the dish. The plate rests with real weight.\n' +
+'- FOREGROUND OCCLUSION: a few out-of-focus elements (herbs, a sauce dish, chopsticks, rising steam, scattered spice) overlap the lower or side edge of frame, seating the hero dish between a soft blurred foreground and a soft blurred background in believable 3D space.\n' +
+'- EDGE INTEGRATION: the plate rim and the edges of the food pick up gentle ambient and rim light in the room own colour — warm gold, candle glow, window light — so the silhouette melts into the environment.\n' +
+'- SHALLOW DEPTH OF FIELD: hero dish tack-sharp, background dissolving into creamy bokeh consistent with the foreground blur.\n' +
+'- ABUNDANT IN-CATEGORY PROPS softly out of focus, warm and generous like HUALUXE / InterContinental / Michelin hotel-dining editorials.\n' +
+'- RESTAURANT ATMOSPHERE: warm directional key with soft falloff, deep shadows that still hold detail, faint appetizing steam where it fits — cinematic and mouth-watering.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  2026-09-07 ★ HUMAN_TOUCH 接觸物理層
@@ -80,14 +80,14 @@ const FOOD_CRAFT =
 //    修法:只要場景會出現手/人,就強制寫明接觸點、受力、遮擋、同一光場。
 // ═══════════════════════════════════════════════════════════════════════
 const HUMAN_TOUCH =
-'=== HANDS & PHYSICAL CONTACT (mandatory whenever a hand, arm or person appears) ===\n' +
-'- REAL GRIP, NOT A HOVERING GESTURE: if a hand is presenting a plate, bowl, steamer basket, tray, cup or package, the fingers MUST physically wrap the rim, handle or underside and carry its actual weight. Show the true contact: fingertips and pads slightly flattened and compressed against the surface, nail beds paling under pressure, thumb hooked over the rim while the fingers support from beneath. A hand merely floating near, behind or under the object without touching it is WRONG and must never happen.\n' +
-'- CONTACT SHADOW & OCCLUSION AT EVERY TOUCH POINT: dark tight ambient occlusion exactly where skin meets the object, and the object edge correctly overlapping and hiding the fingers behind it. No glowing gap, no halo, no floating separation between hand and object.\n' +
-'- WEIGHT READS THROUGH THE BODY: tendons and knuckles engaged, wrist angled naturally to balance the load, forearm muscle subtly tensed, sleeve or cuff falling with gravity. The object must look heavy and real, never weightless.\n' +
-'- SAME LIGHT AS THE SCENE: skin is lit by the identical key, fill and colour temperature as the environment, and picks up the same rim light and bounced colour from nearby surfaces. Never leave the hands under separate flat studio light on an atmospheric background.\n' +
-'- REAL HUMAN SKIN: visible pores, fine hairs, knuckle creases, slight redness at joints, natural nail shape, faint veins — living skin, never smooth waxy plastic or mannequin rubber.\n' +
-'- CORRECT ANATOMY: exactly five fingers per hand, correct proportion, correct joint direction, both hands consistent with each other and with the body they belong to; no merged, extra, missing, bent-backwards or boneless fingers.\n' +
-'- NATURAL POSE: the gesture must be one a real working person would actually make while serving or presenting — relaxed and purposeful, never a stiff symmetrical open-palm display pose.\n\n';
+'=== HANDS & PHYSICAL CONTACT (whenever a hand, arm or person appears) ===\n' +
+'- REAL GRIP: a hand presenting a plate, bowl, steamer basket, tray, cup or package has its fingers physically wrapped around the rim, handle or underside, carrying the actual weight — fingertips and pads flattened and compressed against the surface, nail beds paling under pressure, thumb hooked over the rim while the fingers support from beneath.\n' +
+'- CONTACT SHADOW & OCCLUSION: tight ambient occlusion exactly where skin meets the object, and the object edge correctly overlapping and hiding the fingers behind it. Skin and object touch along a continuous shared edge.\n' +
+'- WEIGHT READS THROUGH THE BODY: tendons and knuckles engaged, wrist angled to balance the load, forearm subtly tensed, sleeve or cuff falling with gravity. The object reads as heavy and real.\n' +
+'- SAME LIGHT AS THE SCENE: skin lit by the identical key, fill and colour temperature as the room, picking up the same rim light and bounced colour from nearby surfaces.\n' +
+'- REAL HUMAN SKIN: visible pores, fine hairs, knuckle creases, slight redness at the joints, natural nail shape, faint veins — living skin.\n' +
+'- CORRECT ANATOMY: exactly five fingers on each hand, each with correct joint direction and proportion, both hands consistent with each other and with the body they belong to.\n' +
+'- NATURAL POSE: the gesture is one a real working person makes while serving or presenting — relaxed, purposeful, slightly asymmetric.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  2026-09-07 ★ SCENE_INTEGRATION 場景融合層(全品類通用)
@@ -99,13 +99,13 @@ const HUMAN_TOUCH =
 //    ⚠️ 插畫疊加風格不注入 —— 那本來就不是要寫實融合。
 // ═══════════════════════════════════════════════════════════════════════
 const SCENE_INTEGRATION =
-'=== SCENE INTEGRATION (the subject must look genuinely PHOTOGRAPHED INSIDE this environment, never pasted onto a backdrop) ===\n' +
-'- ONE UNIFIED LIGHT FIELD (the single biggest fix for the pasted-on look): RE-LIGHT the subject so its highlight direction, shadow direction, shadow hardness and colour temperature match the new environment EXACTLY. If the room is warm tungsten from the left, the subject must also be warm and lit from the left — never leave it under its original flat studio light on a different-looking background.\n' +
-'- REAL GROUNDING & CONTACT SHADOW: where the subject meets the floor, table or surface, cast a soft realistic contact shadow — darkest and tightest right at the contact line, softening outward with natural penumbra — NOT a hard uniform cut-out drop shadow. On reflective surfaces add a faint believable reflection. The subject must read as having real weight resting on something.\n' +
-'- MATCHED PERSPECTIVE — THE ENVIRONMENT SERVES THE SUBJECT, NEVER THE REVERSE: first read the camera angle of the supplied subject (is it seen from directly above, from a low three-quarter, at eye level?), then BUILD THE WHOLE ENVIRONMENT FROM THAT EXACT SAME CAMERA POSITION. A top-down subject demands a top-down flat-lay scene; a three-quarter subject demands a three-quarter scene. NEVER invent an eye-level room around a top-down subject, and never tilt the surroundings into a perspective the subject was not photographed in.\n' +
-'- EDGE INTEGRATION: silhouette edges (product rim, machine housing, shoulders, hair, fabric) pick up gentle ambient and rim light in the environment own colour, so the outline melts into the scene. NO sharp cut-out edge, NO bright halo or fringe, NO visible masking line — hair and fine detail especially must not look scissored out.\n' +
+'=== SCENE INTEGRATION (one photograph, taken inside this environment) ===\n' +
+'- ONE UNIFIED LIGHT FIELD (the decisive one): RE-LIGHT the subject so its highlight direction, shadow direction, shadow hardness and colour temperature are produced by this environment own light. Warm tungsten room lit from one side → the subject is warm and lit from that same side.\n' +
+'- REAL GROUNDING: where the subject meets floor, table or surface, a soft contact shadow sits darkest and tightest at the contact line and softens outward with natural penumbra. On reflective surfaces a faint reflection appears beneath. The subject rests with real weight.\n' +
+'- MATCHED PERSPECTIVE — THE ENVIRONMENT SERVES THE SUBJECT: read the camera angle of the supplied subject (seen from directly above, from a low three-quarter, at eye level?), then BUILD THE WHOLE ENVIRONMENT FROM THAT SAME CAMERA POSITION. A top-down subject gets a top-down flat-lay scene; a three-quarter subject gets a three-quarter scene.\n' +
+'- EDGE INTEGRATION: every silhouette edge — product rim, machine housing, shoulders, hair, fabric — picks up gentle ambient and rim light in the environment own colour, so the outline melts into the scene. Individual hairs and fine details catch that light and blend into the tones behind them.\n' +
 '- SHARED ATMOSPHERE & GRADE: one consistent colour grade, contrast curve, grain and lens character across subject and background; any haze, dust, steam or bloom in the room also passes in front of the subject.\n' +
-'- DEPTH LAYERING: keep the subject tack-sharp while the background falls into believable optical defocus at the same aperture — the blur must look like real lens depth of field, not a uniform blur filter applied to a flat image.\n\n';
+'- DEPTH LAYERING: the subject stays tack-sharp while the background falls into believable optical defocus at the same aperture, the blur reading as real lens depth of field with natural bokeh shapes.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  2026-09-07 ★ CAMERA_LOCK 視角鎖(FOOD_CRAFT 與 SCENE_INTEGRATION 共用)
@@ -116,12 +116,12 @@ const SCENE_INTEGRATION =
 // ═══════════════════════════════════════════════════════════════════════
 const CAMERA_LOCK =
 '=== CAMERA & GROUND LOCK (read the supplied photo FIRST, then build everything to obey it) ===\n' +
-'- ONE CAMERA ONLY: every prop, surface, wall, window and background element must be drawn from the SAME viewpoint and the same lens as the supplied subject. If the subject reads as photographed from directly overhead, the entire image is an overhead flat-lay — no standing teapots, no vertical screens, no eye-level furniture, no visible far wall. If the subject reads as a three-quarter view, everything is three-quarter. Mixing an overhead subject with an eye-level environment is the single most obvious tell of a fake composite and is forbidden.\n' +
-'- A REAL SURFACE THAT DOES NOT DISSOLVE: the subject rests on a physical surface with visible material and texture that continues to the edge of the frame. The surface may fall out of focus but must never fade into an empty gradient, a coloured void or an undefined dark area beneath the subject.\n' +
-'- SELF-SHADOWING ON ITS OWN SURFACE: every element sitting on the plate, tray, table or platform casts its own shadow ONTO that surface, all falling in the same direction and with the same softness as the scene key light. Items with no shadow on the thing they sit on read as stickers pasted flat.\n' +
-'- FORM SHADOW & SHADING: the subject is shaded by that same key — lit side and shadow side clearly readable, occluded crevices genuinely darker. Not evenly flat-lit while the surroundings are dramatically lit.\n' +
-'- CORRECT RELATIVE SCALE: every prop must be believably sized against the subject (a teacup beside a dinner plate, a hand beside a machine). No toy-sized or giant props, and props further away must shrink correctly with perspective.\n' +
-'- EFFECTS MUST ATTACH: steam, smoke, splash, dust, sparks or falling petals must originate FROM the subject and physically interact with it — rising off the hot surface, curling around the form, lit by the same light. Never a decorative wisp floating in unrelated empty space beside it.\n\n';
+'- ONE CAMERA ONLY: every prop, surface, wall, window and background element is drawn from the SAME viewpoint and the same lens as the supplied subject. An overhead subject makes the entire image an overhead flat-lay, where props lie flat on the surface and the frame shows the tabletop plane alone. A three-quarter subject makes everything three-quarter.\n' +
+'- A REAL SURFACE: the subject rests on a physical surface whose material and texture continue to the edge of the frame. That surface may fall out of focus while still reading as a real material.\n' +
+'- SELF-SHADOWING: every element sitting on the plate, tray, table or platform casts its own shadow ONTO that surface, all falling in the same direction with the same softness as the scene key light.\n' +
+'- FORM SHADOW & SHADING: the subject is modelled by that same key — lit side and shadow side clearly readable, occluded crevices genuinely darker.\n' +
+'- CORRECT RELATIVE SCALE: every prop is sized to the subject real-world scale (a teacup beside a dinner plate, a hand beside a machine), and props further away shrink correctly with perspective.\n' +
+'- EFFECTS ATTACH: steam, smoke, splash, dust, sparks or falling petals originate FROM the subject and physically interact with it — rising off the hot surface, curling around the form, lit by the same light.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
@@ -2536,7 +2536,7 @@ const PRODTYPE_PROMPT = {
     `=== CRITICAL PRODUCT PRESERVATION (HIGHEST PRIORITY) ===\n` +
     `- The product in the source image MUST be reproduced PIXEL-PERFECT identical\n` +
     `- Preserve exact product shape, proportions, colors, label design, logo, and all packaging typography\n` +
-    `- Do NOT redesign the product, do NOT invent new packaging, do NOT alter brand marks\n` +
+    `- Carry the product across untouched: same silhouette, same materials, same packaging artwork, same brand marks, pixel for pixel\n` +
     `- The product is the hero — build the advertising scene AROUND it\n\n`,
 
   beauty:
@@ -2546,7 +2546,7 @@ const PRODTYPE_PROMPT = {
     `- Match the gender in the source image exactly — men's barbering is a normal part of this trade, never default to a female subject\n` +
     `- The person wearing that result is the hero — build the advertising scene AROUND them, with the salon environment supporting the story\n` +
     `- Reproduce the result PIXEL-PERFECT where it sits on their body; the craft is the selling point\n` +
-    `- Keep skin real: pores, fine hairs and natural texture preserved, never airbrushed into a mannequin\n` +
+    `- Keep skin real: pores, fine hairs and natural texture fully preserved, the way a good beauty editorial retoucher leaves them\n` +
     `- Salon props (lash tray, tweezers, dried flowers, towel, lamp, mirror, styling chair, basin) are welcome as environment — they read as a real working studio\n` +
     `- ⛔ THE ONE HARD RULE: the result must stay ON A LIVING BODY. Never detach it into a sellable object — no false-lash strips on a tray, no press-on nail sets, no wig, no hairpiece, no mannequin head, no bundle of hair extensions laid out (extensions must appear already blended into the client's own hair), no box, bottle, tube or retail packaging. Turning craftsmanship into merchandise misrepresents the business\n\n`,
 
@@ -3830,6 +3830,22 @@ function getBrandContext() {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  2026-09-14 ★ buildPosterPrompt 重排 —— 順序即權重
+//
+//  病灶(RA 抓到的):我三輪修正全部用「往後面加一段」的方式,但
+//    · 品牌包 DNA 整塊站在最前面(第 388 字元起,2400 字元,全場最大)
+//    · 我的修正排在第 9,000 字元之後
+//    兩句話打架,站門口的那句永遠贏 → 補三輪還是每張都像。
+//    (已排除截斷假設:TEXT TO RENDER 在 7,811 字元卻正常出字。)
+//
+//  修法:照生圖業界的詞序原則重排 —— 主體 → 骨架 → 場景 → 光影 → 抽象 → 文字 → 負面。
+//    並把品牌包 DNA「拆開」,每行歸到它該待的那一層,
+//    而不是整塊壓在最前面。於是:
+//      · 場景/光的變化 站在場景層與光影層,不再站在隊伍尾巴
+//      · 品牌的 mood / 色票 退到抽象層(它本來就是抽象詞)
+//      · 輸出尺寸 升到骨架層(畫布是主體的一部分,不是收尾註解)
+// ═══════════════════════════════════════════════════════════════════════
 function buildPosterPrompt() {
   const ctx = getBrandContext();
   const brandPack = detectBrandPack();
@@ -3837,210 +3853,76 @@ function buildPosterPrompt() {
   const flavor = REGIONAL_FLAVORS[SELECTED_FLAVOR] || REGIONAL_FLAVORS.none;
   const contextTheme = CONTEXT_THEMES[SELECTED_CONTEXT] || CONTEXT_THEMES.none;
 
-  const styleDesc = document.getElementById('gptStyleDesc')?.value?.trim() || '';
-  const headline = document.getElementById('gptHeadline')?.value?.trim() || '';
+  const styleDesc   = document.getElementById('gptStyleDesc')?.value?.trim() || '';
+  const headline    = document.getElementById('gptHeadline')?.value?.trim() || '';
   const subHeadline = document.getElementById('gptSubHeadline')?.value?.trim() || '';
 
-  let prompt = '';
-
-  // 🆕 依商品型態換開頭。沒選(舊行為)→ physical,輸出與改版前一字不變。
-  prompt += (PRODTYPE_PROMPT[SELECTED_PRODTYPE] || PRODTYPE_PROMPT.physical);
-
-  // ⚖️ 2026-08-19 合規守門 —— 緊接在型態之後,優先級僅次於「這是什麼」。
-  //   美業:化粧品衛生安全管理法 §10,療效字眼罰 4 萬~500 萬。
-  //   醫美:醫療法,前後對比不得上社群、不得提優惠折扣。
-  //   律師:律師推展業務規範,不得誇大不實。
-  //   ★ 一律寫死負面清單 —— AI 聽名詞不聽形容詞。
-  const _comp = COMPLIANCE_RULES[SELECTED_PRODTYPE];
-  if (_comp) prompt += _comp.prompt;
-
-  // 🩹 2026-08-11 品牌色開關:
-  //   病灶:品牌包的 DNA 把主色寫死(巧福 = deep forest green #3D5A3F),
-  //         所以同一個品牌生一百張,一百張都是同一個綠 —— 客戶會膩,節慶檔期也套不進去。
-  //   修法:加一顆「鎖定品牌色」開關(預設開,維持原行為)。關掉時把 DNA 裡的
-  //         「Primary brand color / Secondary palette」兩行濾掉,並改叫 AI 自己配色,
-  //         但字體、攝影風格、氛圍、構圖習慣、AVOID 全部保留 —— 換色不換品牌個性。
   const _lockColor = (document.getElementById('lockBrandColor')?.checked !== false);
-  // 🩹 2026-08-11 品牌署名 / Logo 開關:
-  //   病灶:同品牌連生六張,每張都是同一顆圓形 logo + 同一條綠色頁腳 + 同一行品牌名。
-  //   Logo 與頁腳其實來自「兩個地方」,只拔一個沒用:
-  //     ① DNA 的 `- Decorative elements:`(寫著「白底綠色圓形 CHIAO FU 標」)
-  //     ② DNA 的 `- Composition habit:`(寫著「底部整條綠色色帶當頁腳、放白色圓標」)
-  //     ③ 另外還有一行 `Brand name to display (small signature)`
-  //   關掉時三個一起拔,再補一句明確禁令,才會真的乾淨。
-  //   附帶效果:拔掉 composition habit 之後構圖不再被綁死,同品牌的圖會自然拉開差異。
-  const _showMark = (document.getElementById('showBrandMark')?.checked !== false);
+  const _showMark  = (document.getElementById('showBrandMark')?.checked !== false);
+  const _noText    = !headline && !subHeadline;
 
-  let _dna = brandPack.dna || '';
-  if (!_lockColor) {
-    _dna = _dna.split('\n')
-      .filter(function (l) { return !/^\s*-\s*(Primary brand color|Secondary palette)\s*:/i.test(l); })
-      .join('\n');
-  }
-  // 🏷 2026-08-11 第三步:AI 從此「永遠不畫」任何品牌標示,不管開關開或關。
-  //   理由:AI 是重新想像不是複製貼上,畫出來的 logo 一定會歪。
-  //   真 logo 由畫布疊上去(compositeBrandLogo),像素級精準。
-  //   所以這兩行 DNA(裝飾元素、構圖習慣)裡寫死的「圓形標 + 底部色帶」一律拔掉,
-  //   免得 AI 畫一個假 logo,我們再疊一個真的上去 → 一張圖兩個標。
-  //   構圖的多樣性由下面的 COMPOSITION VARIATION 補上,不會變單調。
-  _dna = _dna.split('\n')
-    .filter(function (l) { return !/^\s*-\s*(Decorative elements|Composition habit)\s*:/i.test(l); })
-    .join('\n');
+  // ── 品牌包 DNA 拆行歸層 ──────────────────────────────────────────
+  //   以前:整塊原封不動塞在最前面(含場景、光、氛圍、色票、字體、禁令)。
+  //   現在:一行一行分類,交給對應的層去用。
+  const _bag = { colour: [], type: [], photo: [], mood: [], scene: [], avoid: [], other: [] };
+  String(brandPack.dna || '').split('\n').forEach(function (l) {
+    const s = l.trim();
+    if (!s || /^BRAND VISUAL DNA/i.test(s)) return;
+    const m = s.match(/^-\s*([^:]+):\s*(.*)$/);
+    if (!m) { _bag.other.push(s.replace(/^-\s*/, '')); return; }
+    const k = m[1].trim().toLowerCase(), v = m[2].trim();
+    if (!v) return;
+    if (/^(primary brand colou?r|secondary palette|palette)/.test(k)) _bag.colour.push(v);
+    else if (/^typography/.test(k))                                   _bag.type.push(v);
+    else if (/^(photography style|lighting)/.test(k))                 _bag.photo.push(v);
+    else if (/^mood/.test(k))                                         _bag.mood.push(v);
+    else if (/^(background scenes?|scenes?|setting)/.test(k))         _bag.scene.push(v);
+    else if (/^avoid/.test(k))                                        _bag.avoid.push(v);
+    // 裝飾元素 / 構圖習慣:一律丟棄(AI 永不畫 logo、構圖交給版型與變化層)
+    else if (/^(decorative elements|composition habit)/.test(k))      { /* drop */ }
+    else _bag.other.push(m[1].trim() + ': ' + v);
+  });
 
-  // 🩹 2026-08-11 純素材模式的漏洞:主標副標留空時我叫它「不准有文字」,
-  //   但 DNA 的「Typography: 明朝體標題…」還在,等於同時給了一份字體規範 →
-  //   模型讀到「這裡要有標題」,照樣寫上去。沒有字就沒有字體可言,整行拔掉。
-  const _noText = !headline && !subHeadline;
-  if (_noText) {
-    _dna = _dna.split('\n')
-      .filter(function (l) { return !/^\s*-\s*Typography\s*:/i.test(l); })
-      .join('\n');
-  }
+  // 光影行去掉「寫死的方向」—— 17 個品牌包裡有 7 個把光釘在左上/右上,
+  //   場景換了光還是同一邊,看起來仍是同一天拍的。只拔方向,光質與色溫全留。
+  const _photoTxt = _bag.photo.join('; ')
+    .replace(/\bfrom\s+(the\s+)?(upper|top|lower|bottom)[-\s]?(left|right)\s+(window|light|source)\b(\s+at\s+\d+\s*degrees?)?/gi, 'from a single directional $4')
+    .replace(/\bfrom\s+(the\s+)?(upper|top|lower|bottom)[-\s]?(left|right)\b(\s+at\s+\d+\s*degrees?)?/gi, 'from one directional source')
+    .replace(/\bfrom\s+the\s+(left|right)\b/gi, 'from one side')
+    .replace(/\b(upper|top)[-\s](left|right)\s+(window|light)\b/gi, 'side $3')
+    .replace(/\b(upper|top|lower|bottom)[-\s]?(left|right)\b/gi, 'one side')          // 殘留的方向詞一律中性化
+    .replace(/source\s+from\s+one\s+directional\s+source/gi, 'source from one direction')
+    .replace(/from\s+one\s+directional\s+source\s+or\s+one\s+side/gi, 'from one directional source');
 
-  prompt += `=== BRAND STYLE PACK (AMBIENCE ONLY — does NOT define product look) ===\n`;
-  prompt += _dna + '\n';
-  if (!_lockColor) {
-    // 🩹 2026-08-11 加強:光是「不限制品牌色」不夠 —— DNA 裡的 mood / scenes /
-    //   photography style 本身就在暗示顏色(例如「昭和台灣懷舊」「暖色自然日光」
-    //   必然導向米色暖調),模型照著那些線索又走回同一片顏色。
-    //   所以要明講:上面那些只描述「氛圍與場地」,不是配色指定,而且要「刻意選不一樣的」。
-    // 🩹 2026-08-11 第二次修:第一版寫「不要用品牌色、不要照氛圍走」——
-    //   又是否定句,實測完全無效(生出來還是同一片米色暖調)。
-    //   跟今天早上無臉模式「no face」擋不住人臉一模一樣的錯誤。
-    //   改成正面指定:每次隨機給一組「具體的配色方向」,直接告訴它要什麼顏色,
-    //   而不是拜託它不要什麼顏色。模型對「做這個」的服從度遠高於「不要那個」。
-    const _PALETTES = [
-      'cool slate blue, soft ivory and brushed steel grey',
-      'deep plum, dusty blush pink and warm mid grey',
-      'charcoal black, electric tangerine and off-white',
-      'midnight navy, champagne gold and fog grey',
-      'sage green, clay pink and bone white',
-      'burgundy wine, soft cream and antique brass',
-      'deep teal, warm sand and crisp white',
-      'near-monochrome greyscale with a single vivid accent colour',
-      'warm black, amber glow and smoke grey',
-      'powder blue, pale lemon and chalk white',
-    ];
-    const _pal = _PALETTES[Math.floor(Math.random() * _PALETTES.length)];
-    prompt += `=== COLOUR DIRECTION (this OVERRIDES every colour implied above) ===\n`;
-    prompt += `Build this image around the following colour palette: ${_pal}.\n`;
-    prompt += `Apply it to EVERYTHING you control: the background, the surfaces, the props, the lighting temperature, any graphic elements, and — importantly — the colour of ALL typography (headline, subheadline, any caption or label). The headline and subheadline must be coloured from this palette, NOT from the brand's usual colours.\n`;
-    prompt += `This palette is the primary colour decision for this render and takes priority over any colour suggested by the brand mood, scene or photography-style descriptions above — treat those as describing atmosphere and setting only.\n`;
-    prompt += `The product itself keeps its own real colours exactly. Everything else from the brand DNA still applies — photography style, mood, decorative language and the AVOID list.\n\n`;
-  }
-  // ⚠️ 一律送出禁令 —— 不論品牌署名開關的狀態。開關只決定「我們要不要疊真 logo」,
-  //   不決定「AI 要不要畫」。AI 永遠不畫,這條不給例外。
-  prompt += `NO BRANDING: do NOT render any brand logo, brand mark, emblem, circular badge, brand name, company name, signature line, footer colour band, corner tag or watermark anywhere in the image. Do not invent a logo either. The ONLY branding permitted is whatever is physically printed on the product packaging itself, which must be preserved exactly. Compose the layout freely without reserving space for a logo or a footer band.\n`;
-  if (_showMark) {
-    prompt += `Leave one corner of the frame visually calm and uncluttered — a small brand mark will be placed there afterwards by the design system.\n`;
-  }
-  if (ctx.adStyle) prompt += `Additional brand direction note: ${ctx.adStyle}\n`;
-  prompt += '\n';
+  // 場景欄位是不是「刻意留白、交給②設計風格層決定」?
+  //   17 個裡有 5 個這樣寫(巧福/KA/淘金/PROTEX/洳意)。但②設計風格是選填的,
+  //   沒選就沒人補這個洞 → AI 每次自己補一樣的東西 = 每張都像。
+  const _sceneTxt0 = _bag.scene.join('; ');
+  const _sceneDeferred = /left to the regional flavou?r layer|leave (era|the era)[^;.]*to regional|deliberately unspecified|deliberately leave/i.test(_sceneTxt0);
 
-  if (ctx.product || ctx.spec || ctx.feature) {
-    prompt += `=== PRODUCT ESSENCE (HIGH PRIORITY — must be respected) ===\n`;
-    prompt += `This specific product variant has its OWN character that MUST be preserved regardless of brand mood or regional flavor:\n`;
-    if (ctx.product) prompt += `- Product name: "${ctx.product}"\n`;
-    if (ctx.spec)    prompt += `- Product specifications (physical traits — color, material, era, style): ${ctx.spec}\n`;
-    if (ctx.feature) prompt += `- Product features (selling points, positioning, context): ${ctx.feature}\n`;
-    prompt += `IMPORTANT: The product's intrinsic visual character (e.g. "retro brass" stays retro brass, "white minimalist tech" stays white tech) MUST override any conflicting hints from the brand pack ambience or regional flavor. The brand pack only defines AMBIENCE; the product specs define what the product LOOKS LIKE.\n\n`;
-  }
-
-  prompt += `=== LAYOUT FRAMEWORK ===\n`;
-  prompt += `Layout type: ${layout.label}\n`;
-  // 🩹 2026-08-11:版式模板本身就寫著「上方放大標題、下方放副標」——
-  //   純素材模式一定要把這些句子濾掉,否則等於一邊禁止、一邊指示,模型只會照指示做。
-  //   濾掉的是「提到 headline / title / subtitle / caption / text 的整句」,
-  //   其餘構圖描述(留白、比例、視角)全部保留。
-  // 🩹 2026-08-19:五個版式(前後對比/多格展示/大字宣言/重點條列/手持實拍)
-  //   欄位誤寫成 prompt,而這裡只讀 composition —— 等於選了那些版型
-  //   卻完全沒有版面指示,生出來跟極簡海報一樣。欄位已統一,這裡留 fallback 防呆。
-  let _layoutComp = layout.composition || layout.prompt || '';
-  if (_noText) {
-    _layoutComp = _layoutComp
-      .split(/(?<=[.;])\s+/)
-      .filter(function (sent) { return !/\b(headline|sub-?title|subhead|caption|typograph|display title|lettering|text)\b/i.test(sent); })
-      .join(' ')
-      .trim();
-  }
-  prompt += _layoutComp + '\n\n';
-
-  if (flavor.flavor) {
-    prompt += `=== REGIONAL FLAVOR (OVERRIDES brand pack scene hints) ===\n`;
-    prompt += flavor.flavor + '\n';
-    prompt += `CRITICAL OVERRIDE RULE: This regional flavor takes precedence over any scene description, era, or decor hinted by the brand pack. If brand pack says "warm domestic Taiwan" and flavor says "Korean clean pastel" → output MUST be Korean clean pastel (not Taiwan retro). Brand pack only contributes overall mood; flavor decides the actual visual scene.\n\n`;
-  }
-
-  // 🆕 v11.4 餐飲呈現準則:選了「美食版」排版 → 自動注入淺景深融合手法。
-  //    餐廳/小吃客戶只要選美食版就吃到,不用懂設定。非美食版不觸發。
-  // 🩹 2026-09-07 觸發條件修正:原本只認①排版=美食版,但六個 food_ 設計風格
-  //   (米其林/粵菜/割烹/台式小吃/廚師上菜/食材特寫)配上別的排版時完全吃不到這段,
-  //   於是「統一光場/接觸陰影/前景遮擋」全部沒下,菜色就像貼在背景上。
-  var _isFoodScene = (SELECTED_LAYOUT === 'food_special' || /^food_/.test(String(SELECTED_FLAVOR || '')));
-  // 🩹 2026-09-07 場景融合層擴及全品類:機台/律師/美業/課程/命理/旅遊 以前都沒有
-  //   「重新打光、接觸陰影、邊緣融光」的指令,跟小籠包是同一種病。
-  //   螢幕截圖不注入(會把 UI 染色);插畫疊加風格不注入(本來就不求寫實)。
-  var _isIllustrationOverlay = /ILLUSTRATION OVERLAY/i.test(String((flavor && flavor.flavor) || ''));
-  if (_isFoodScene) {
-    prompt += FOOD_CRAFT;
-    prompt += CAMERA_LOCK;
-  } else if (SELECTED_PRODTYPE !== 'screen' && !_isIllustrationOverlay) {
-    prompt += SCENE_INTEGRATION;
-    prompt += CAMERA_LOCK;
-  }
-
-  if (contextTheme.context) {
-    prompt += `=== CONTEXTUAL THEME ===\n`;
-    prompt += contextTheme.context + '\n\n';
-    prompt += CONTEXT_QUALITY;
-  }
-
-  if (styleDesc) {
-    prompt += `=== ADDITIONAL STYLE NOTES ===\n`;
-    prompt += styleDesc + '\n\n';
-  }
-
-  if (headline || subHeadline) {
-    prompt += `=== TEXT TO RENDER ===\n`;
-    prompt += `Render the following Traditional Chinese text with pixel-perfect typography (correct glyphs, proper spacing, professional editorial layout). Match the typography hierarchy specified in the brand DNA above.\n`;
-    if (headline) prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
-    if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
-    // 🩹 2026-08-12 移除「角落品牌署名」:
-    //   病灶:上面第 2030 行的 NO BRANDING 已經無例外禁止任何品牌名 / 署名 / 浮水印,
-    //     這裡卻又specifically 叫它在角落寫品牌名 —— 同一份 prompt 前後矛盾,
-    //     而且這句排在後面又更具體,模型聽後面的 → 右下角固定長出「旺 味 米 香 腸」,
-    //     看起來像浮水印。禁令留著,這句拿掉,整份 prompt 才是同一個意思。
-    //   ⚠️ 品牌識別一律由前端 canvas 疊真 logo 處理,不交給 AI 畫(同 Logo 疊圖原則)。
-    // 🩹 2026-08-12 數字/價格排版規範:
-    //   病灶:整段 TEXT TO RENDER 只交代「繁體中文要漂亮」,對阿拉伯數字一個字都沒說 →
-    //     中文標題走 DNA 的毛筆/明朝體規範,數字則由模型隨手抓一個西文襯線體塞進去,
-    //     兩種字族硬湊在一起(例:濃墨毛筆「年節大禮包」配細襯線「1990」)。
-    //   寫法照 RA 的原則:給模型算得出來的正面規則(同字族/同字重/同基線/倍數上限),
-    //     不寫「數字不要醜」這種它算不出來的否定句。
-    prompt += `NUMERAL & PRICE TYPOGRAPHY (applies to any digits, prices, percentages or dates in the text above):\n`;
-    prompt += `- Set numerals in the SAME type family and the SAME weight as the Chinese headline they belong to: if the headline is brush-calligraphic or Mincho/Serif, use a heavy serif numeral whose stroke contrast matches it; if the headline is bold Sans, use a matching bold Sans numeral.\n`;
-    prompt += `- Treat a price and its Chinese qualifier as ONE typographic unit (e.g. the qualifier and the number together): shared baseline, consistent letter-spacing, and a size ratio no greater than 1.4x between them.\n`;
-    prompt += `- Set qualifier words and currency marks (最低 / 起 / NT$ / %) smaller, and optically align them to the cap-height of the numerals.\n`;
-    prompt += `- Give numerals the same colour and material finish as the headline (gold-foil headline means gold-foil numerals), so they read as one designed system.\n`;
-    prompt += `- Reserve clean quiet space around the price so it reads instantly at thumbnail size.\n`;
-    prompt += `Typography must be crisp, readable, and integrated naturally into the layout.\n\n`;
-  } else {
-    // 🩹 2026-08-11 純素材模式(CLEAN PLATE):主標與副標都留空 = 客戶有美編,要自己上字。
-    //   ⚠️ 不能只是「不寫文字要求」就算了 —— 這支 prompt 通篇在講「advertising poster」,
-    //      模型會自作主張補上假標題、假標語、亂碼中文。必須明確要求「不准有任何文字」,
-    //      而且要主動預留放字的留白,美編拿到才是真正能用的底圖。
-    prompt += `=== TEXT TO RENDER ===\n`;
-    prompt += `Render NO text of any kind. Do not add any headline, subheadline, tagline, slogan, caption, price tag, badge, sticker, watermark or decorative lettering anywhere in the image. Do not invent brand names or Chinese characters.\n`;
-    prompt += `This is a CLEAN PLATE: a finished background/product composition that a human graphic designer will open in Photoshop and set the typography on afterwards.\n`;
-    prompt += `Therefore: deliberately reserve a large calm area of negative space where a headline would normally sit (upper third, or one clean vertical side), keep that area visually quiet — even tone, no busy texture, no competing detail — so type can be placed on it later with good contrast.\n`;
-    prompt += `The ONLY text permitted is text that is physically printed on the product packaging itself, which must be preserved exactly.\n\n`;
-  }
-
-  // 🩹 2026-08-11 破解「同品牌每張都長一樣」:
-  //   病灶:品牌包 DNA 把構圖習慣寫死 → 巧福連生六張,標題位置、留白比例、頁腳全部一模一樣。
-  //   修法:每次生成隨機挑一個「構圖傾向」。這只動鏡位與版面配置,
-  //   不碰品牌顏色、字體、氛圍與 AVOID 清單 —— 還是同一個品牌,只是不再像複製貼上。
-  //   ⚠️ 刻意寫成「在選定版式之內變化」,才不會跟客戶選的①排版打架。
+  // ── 這次抽到的場景與光(站在場景層/光影層,不再排在隊伍尾巴)──────
+  const _SCENE_VARIATIONS = [
+    'a quiet corner of the room rather than the centre of a table — against a wall, beside a doorway, on the floor next to furniture',
+    'a windowsill or a narrow ledge, with the outside world softly visible and out of focus behind',
+    'just beyond the threshold — a porch, a balcony, a courtyard step, a garden edge',
+    'a close still-life on a bare surface with almost no props at all — restraint over abundance',
+    'against a plain painted wall or a flat single-tone backdrop, the surrounding room implied rather than shown',
+    'a working corner that shows use — a shelf with everyday objects, a cabinet top, a side table already lived on',
+    'low at floor level, with the floor material (terrazzo, tile, parquet, stone, woven mat) carrying much of the frame',
+    'a narrow deeper space — a hallway, a stairwell landing, a gap between furniture — so the background recedes',
+    'a textile surface — linen, woven mat, folded cloth, rug — instead of a wooden tabletop',
+    'a room at rest with nobody there, the furniture arranged as people actually leave it',
+  ];
+  const _LIGHT_VARIATIONS = [
+    'Key light comes from the RIGHT side.',
+    'Backlit: the source sits behind the subject, a soft rim wrapping the silhouette.',
+    'Light falls from high above, close to overhead, with short shadows below.',
+    'Flat overcast light with almost no visible shadow direction.',
+    'Late-afternoon low sun, long raking shadows across the surface.',
+    'Early-morning light, cooler and cleaner, shadows still crisp.',
+    'Indoor lamp light after sunset is the key, the window behind going deep blue.',
+    'A single hard shaft of light cuts across part of the frame, the rest falling into soft shade.',
+  ];
   const _COMPOSITION_VARIATIONS = [
     'Place the product slightly off-centre to the right, leaving a tall calm column of empty space on the left.',
     'Compose low: the product sits in the lower third with generous airy space above it.',
@@ -4053,28 +3935,34 @@ function buildPosterPrompt() {
     'Split the frame: product occupying one clean half, an uninterrupted flat area of colour or surface in the other half.',
     'Layer the shot with an out-of-focus object in the foreground so the viewer feels present in the scene.',
   ];
-  const _cv = _COMPOSITION_VARIATIONS[Math.floor(Math.random() * _COMPOSITION_VARIATIONS.length)];
-  prompt += `=== COMPOSITION VARIATION (applies to THIS render only, within the chosen layout above) ===\n`;
-  prompt += _cv + '\n';
-  prompt += `Vary the typographic treatment too — the size, weight and placement of the text should not repeat the most obvious arrangement every time — while staying faithful to the brand's typography style.\n\n`;
+  const _pick = function (a) { return a[Math.floor(Math.random() * a.length)]; };
+  const _sv = _pick(_SCENE_VARIATIONS);
+  const _lv = _pick(_LIGHT_VARIATIONS);
+  const _cv = _pick(_COMPOSITION_VARIATIONS);
 
-  // 🩹 2026-09-07 只要這張圖會出現手或人,就補上接觸物理層(治「假手、沒真的拿東西」)
-  var _sceneTxt = [_layoutComp, (flavor && flavor.flavor) || '', (contextTheme && contextTheme.context) || '', styleDesc || '']
-    .join(' ')
-    .replace(/hand-?(draw|drawn|drawing|made|make|craft|crafted|write|written|letter|lettered|lettering|paint|painted|painting|print|printed)\w*/gi, '')
-    .replace(/designer hand/gi, '');
-  if (/\b(hands?|holding|holds|grip|gripping|presenting|presents|carrying|carries|pouring|serving|chef|barista|waiter|waitress|technician|unboxing)\b/i.test(_sceneTxt)) {
-    prompt += HUMAN_TOUCH;
+  let prompt = '';
+
+  // ═════ ① 主體層 —— 這是什麼、必須保留什麼 ═════════════════════════
+  prompt += (PRODTYPE_PROMPT[SELECTED_PRODTYPE] || PRODTYPE_PROMPT.physical);
+
+  const _comp = COMPLIANCE_RULES[SELECTED_PRODTYPE];
+  if (_comp) prompt += _comp.prompt;
+
+  if (ctx.product || ctx.spec || ctx.feature || _bag.other.length) {
+    prompt += `=== PRODUCT ESSENCE (HIGH PRIORITY — must be respected) ===\n`;
+    prompt += `This specific product variant has its OWN character that MUST be preserved regardless of brand mood or regional flavor:\n`;
+    if (ctx.product) prompt += `- Product name: "${ctx.product}"\n`;
+    if (ctx.spec)    prompt += `- Product specifications (physical traits — color, material, era, style): ${ctx.spec}\n`;
+    if (ctx.feature) prompt += `- Product features (selling points, positioning, context): ${ctx.feature}\n`;
+    _bag.other.forEach(function (o) { prompt += `- ${o}\n`; });
+    prompt += `The product's own visual character always wins: brand ambience defines the WORLD around it, while these specs define what the product itself LOOKS LIKE.\n\n`;
   }
 
-  prompt += `=== ART DIRECTOR CRAFT (INTENT — must NOT override the chosen style above) ===
-${DESIGNER_POLISH}
+  prompt += `BRAND MARKS: the only emblem or lettering anywhere in this image is what is physically printed on the product packaging itself, reproduced exactly as it appears. Every other surface in the frame is plain and unmarked, and the layout runs freely to all four edges.\n`;
+  if (_showMark) prompt += `Leave one corner of the frame visually calm and uncluttered — a small brand mark will be placed there afterwards by the design system.\n`;
+  prompt += '\n';
 
-`;
-
-  // 🩹 2026-09-07 輸出規格不再寫死「Square 1:1 / 1080x1080」——
-  //   客戶選 9:16 限動時,畫布是 1088x1920 但 prompt 還在叫模型畫正方形,
-  //   構圖跟畫布互打,才會出現空白帶、主體被擠壓、文字貼邊。
+  // ═════ ② 骨架層 —— 畫布與版面 ════════════════════════════════════
   var _RATIO_TXT = {
     square:       'square 1:1',
     ig_portrait:  'vertical portrait 4:5',
@@ -4085,14 +3973,123 @@ ${DESIGNER_POLISH}
     poster_a4:    'vertical A4 print portrait 1:1.414 at 300dpi'
   };
   var _osz = _adSize();
-  var _ortxt = _RATIO_TXT[_osz.key] || 'square 1:1';
+  prompt += `=== CANVAS & LAYOUT ===\n`;
+  prompt += `Canvas: ${_RATIO_TXT[_osz.key] || 'square 1:1'} orientation, exactly ${_osz.w}x${_osz.h} pixels. Compose natively FOR this aspect ratio: the artwork reaches all four edges, the subject and headline sit comfortably inside the frame with balanced margins, and the whole height of the canvas carries content.\n`;
+  prompt += `Layout type: ${layout.label}\n`;
 
-  prompt += `=== OUTPUT SPECIFICATION ===\n`;
-  prompt += `- ${_ortxt} orientation, exactly ${_osz.w}x${_osz.h} pixels — compose the artwork specifically FOR this aspect ratio: fill the whole canvas edge to edge, never letterbox, never pad with empty bands, never compose a square and crop it, and keep headline and product comfortably inside the frame with balanced margins\n`;
-  prompt += `- High resolution, sharp typography, professional commercial photography quality\n`;
-  prompt += `- Change: background, environment, lighting, decorative graphics, typography, layout composition\n`;
-  prompt += `- Preserve: product identity, product details, brand marks, all text printed on the product itself\n`;
-  prompt += `- Constraints: no watermark, no random extra objects, no logo distortion, no product redesign\n`;
+  let _layoutComp = layout.composition || layout.prompt || '';
+  if (_noText) {
+    _layoutComp = _layoutComp
+      .split(/(?<=[.;])\s+/)
+      .filter(function (sent) { return !/\b(headline|sub-?title|subhead|caption|typograph|display title|lettering|text)\b/i.test(sent); })
+      .join(' ')
+      .trim();
+  }
+  prompt += _layoutComp + '\n';
+  prompt += `Composition for THIS render (within the layout above): ${_cv}\n`;
+  prompt += `Give the typography its own treatment this time — a fresh choice of size, weight and placement within the brand's type style.\n\n`;
+
+  // ═════ ③ 場景層 —— 這張圖發生在哪 ═════════════════════════════════
+  prompt += `=== SCENE (where this photograph happens) ===\n`;
+  if (flavor.flavor) {
+    // 選了②設計風格 → 它是場景的最高權威(維持原本的覆蓋規則)
+    prompt += flavor.flavor + '\n';
+    prompt += `This chosen style decides the actual setting, era and decor. It takes precedence over any scene the brand ambience implies.\n`;
+    prompt += `Within it, place the subject in: ${_sv}.\n`;
+  } else if (_sceneDeferred || !_sceneTxt0) {
+    // 品牌包刻意留白(或根本沒寫)且沒選風格 → 由變化池當家,不要讓 AI 自己補
+    prompt += `The brand deliberately leaves the specific setting open. For THIS render the setting is: ${_sv}.\n`;
+    if (_sceneTxt0) prompt += `Overall atmosphere to respect: ${_sceneTxt0}\n`;
+  } else {
+    prompt += `Brand world: ${_sceneTxt0}\n`;
+    prompt += `The brand lists several possible worlds. For THIS render, work from the one that reads as: ${_sv}. Treat the brand list as a range to move across, and let this render land in a corner of that range the brand rarely shows.\n`;
+  }
+  prompt += `Choose fresh supporting props for this render — objects that belong to this world and to how the product is actually used, different from the ones this brand's images usually carry.\n\n`;
+
+  // ═════ ④ 光影層 —— 光怎麼打、怎麼落地 ═════════════════════════════
+  prompt += `=== LIGHT ===\n`;
+  if (_photoTxt) prompt += `Light quality and colour temperature (brand standard, keep): ${_photoTxt}\n`;
+  prompt += `Direction and time of day for THIS render: ${_lv} Keep the light QUALITY and colour temperature above; only direction and hour change.\n\n`;
+
+  var _isFoodScene = (SELECTED_LAYOUT === 'food_special' || /^food_/.test(String(SELECTED_FLAVOR || '')));
+  var _isIllustrationOverlay = /ILLUSTRATION OVERLAY/i.test(String((flavor && flavor.flavor) || ''));
+  if (_isFoodScene) {
+    prompt += FOOD_CRAFT;
+    prompt += CAMERA_LOCK;
+  } else if (SELECTED_PRODTYPE !== 'screen' && !_isIllustrationOverlay) {
+    prompt += SCENE_INTEGRATION;
+    prompt += CAMERA_LOCK;
+  }
+
+  var _sceneTxt = [_layoutComp, (flavor && flavor.flavor) || '', (contextTheme && contextTheme.context) || '', styleDesc || '']
+    .join(' ')
+    .replace(/hand-?(draw|drawn|drawing|made|make|craft|crafted|write|written|letter|lettered|lettering|paint|painted|painting|print|printed)\w*/gi, '')
+    .replace(/designer hand/gi, '');
+  if (/\b(hands?|holding|holds|grip|gripping|presenting|presents|carrying|carries|pouring|serving|chef|barista|waiter|waitress|technician|unboxing)\b/i.test(_sceneTxt)) {
+    prompt += HUMAN_TOUCH;
+  }
+
+  // ═════ ⑤ 抽象層 —— 氛圍、色彩、情境、工法 ═════════════════════════
+  prompt += `=== MOOD & PALETTE ===\n`;
+  if (_bag.mood.length) prompt += `Mood: ${_bag.mood.join('; ')}\n`;
+  if (_lockColor && _bag.colour.length) {
+    prompt += `Colour: ${_bag.colour.join('; ')}\n`;
+  } else if (!_lockColor) {
+    const _PALETTES = [
+      'cool slate blue, soft ivory and brushed steel grey',
+      'deep plum, dusty blush pink and warm mid grey',
+      'charcoal black, electric tangerine and off-white',
+      'midnight navy, champagne gold and fog grey',
+      'sage green, clay pink and bone white',
+      'burgundy wine, soft cream and antique brass',
+      'deep teal, warm sand and crisp white',
+      'near-monochrome greyscale with a single vivid accent colour',
+      'warm black, amber glow and smoke grey',
+      'powder blue, pale lemon and chalk white',
+    ];
+    prompt += `Colour (OVERRIDES every colour implied by the mood or scene above): build this image around ${_pick(_PALETTES)}.\n`;
+    prompt += `Apply it to the background, surfaces, props, lighting temperature, graphic elements and ALL typography. The product itself keeps its own real colours exactly.\n`;
+  }
+  if (ctx.adStyle) prompt += `Brand direction note: ${ctx.adStyle}\n`;
+  prompt += '\n';
+
+  if (contextTheme.context) {
+    prompt += `=== CONTEXTUAL THEME ===\n`;
+    prompt += contextTheme.context + '\n\n';
+    prompt += CONTEXT_QUALITY;
+  }
+
+  if (styleDesc) {
+    prompt += `=== ADDITIONAL STYLE NOTES ===\n`;
+    prompt += styleDesc + '\n\n';
+  }
+
+  prompt += `=== ART DIRECTOR CRAFT (execution quality, applied within the style chosen above) ===\n${DESIGNER_POLISH}\n\n`;
+
+  // ═════ ⑥ 文字層 ═══════════════════════════════════════════════════
+  if (headline || subHeadline) {
+    prompt += `=== TEXT TO RENDER ===\n`;
+    prompt += `Render the following Traditional Chinese text with pixel-perfect typography (correct glyphs, proper spacing, professional editorial layout).\n`;
+    if (_bag.type.length) prompt += `Typography style: ${_bag.type.join('; ')}\n`;
+    if (headline)    prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
+    if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
+    prompt += `NUMERAL & PRICE TYPOGRAPHY (applies to any digits, prices, percentages or dates above):\n`;
+    prompt += `- Set numerals in the SAME type family and weight as the Chinese headline they belong to.\n`;
+    prompt += `- Treat a price and its Chinese qualifier as ONE typographic unit: shared baseline, consistent letter-spacing, size ratio no greater than 1.4x between them.\n`;
+    prompt += `- Set qualifier words and currency marks (最低 / 起 / NT$ / %) smaller, optically aligned to the cap-height of the numerals.\n`;
+    prompt += `- Give numerals the same colour and material finish as the headline, so they read as one designed system.\n`;
+    prompt += `- Reserve clean quiet space around the price so it reads instantly at thumbnail size.\n\n`;
+  } else {
+    prompt += `=== TEXT TO RENDER ===\n`;
+    prompt += `This is a CLEAN PLATE: a pure photograph of the product in its environment, which a human graphic designer will open in Photoshop and set the typography onto afterwards.\n`;
+    prompt += `The image therefore contains the product and the scene only. The single piece of lettering anywhere in frame is what is physically printed on the product packaging itself, reproduced exactly.\n`;
+    prompt += `Reserve a large calm area of even tone where a headline will later sit — the upper third, or one clean vertical side — keeping that area quiet and low-detail so type placed on it afterwards reads with strong contrast.\n\n`;
+  }
+
+  // ═════ ⑦ 負面層 —— 收尾禁令(負面詞放最後,不佔前段權重)═══════════
+  prompt += `=== AVOID ===\n`;
+  if (_bag.avoid.length) prompt += `${_bag.avoid.join('; ')}\n`;
+  prompt += `The finished frame shows one single subject, reproduced exactly as supplied, in a clean uncluttered scene where every object present has a reason to be there.\n`;
 
   return prompt;
 }
