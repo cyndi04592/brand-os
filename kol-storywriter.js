@@ -1,7 +1,16 @@
 // ⚠️⚠️ 這個檔案的正確檔名是:kol-storywriter.js  (編劇 KolStorywriter)  ⚠️⚠️
 // 上傳前請核對檔名 —— 2026-08-23 曾發生兩檔互相覆蓋
 // ════════════════════════════════════════════════════════════════════
-//  kol-storywriter.js · v5.14
+//  kol-storywriter.js · v5.22
+//  v5.22:🏷 送出 brandId —— AI 分鏡第一次拿得到「這是哪個品牌」。
+//        病:storyboard_expand 的 payload 只有 KOL / 商品 / 場景,沒有品牌。
+//          品牌靈魂書躺在 brand_applications.soulBook,廣告圖那條線早就在讀,
+//          影片線從頭到尾沒讀過 —— 寫劇本的 AI 不知道這間店是什麼個性。
+//        ★ 這一版【只送 id,不送靈魂書內容】:靈魂書由 Worker 自己去 D1 撈,
+//          前端不碰、不摘要、不轉述(摘要等於替 AI 消化,那正是要避免的)。
+//        ★ 取得方式沿用 kol-colorboard 的既有慣例(ctx → window.S),
+//          不新增第二套來源 —— 同一個東西只能有一個出處。
+//        ⚠️ Worker 端尚未接收前,多送這個欄位完全無害(未使用的欄位會被忽略)。
 //
 //  📖 編劇 — 故事弧、情緒基調、分鏡 beat 產生器 + AI 編修前端
 //
@@ -118,6 +127,7 @@
     duration, outline, lockedLines,
     persona = {}, product = {}, sceneLabel = '',
     recentEpisodes = [],   // 🧠 2026-08-23 劇情記憶
+    brandId = '',          // 🏷 v5.22 品牌識別(沒傳 → 下面回退 window.S)
   }) {
     const joinList = (v) => Array.isArray(v) ? v.join('、') : (v || '');
 
@@ -198,6 +208,18 @@
          + '寧可把事情講得更具體、多給一個細節,也不要讓段落講不滿。')
       : '';
 
+    // ═══════════════════════════════════════════════════════════
+    //  🏷 v5.22 品牌識別 —— 唯一出處是 ctx,沒有才回退 window.S
+    //   ★ 跟 kol-colorboard.resolveLookLine 用同一組來源與同一個順序。
+    //     不另外從 DOM 撈、不另外存一份 —— 多一個出處就多一份會不同步的東西。
+    //   ★ 撈不到就送空字串:Worker 收到空的會跳過靈魂書,行為與這版之前一字不差。
+    // ═══════════════════════════════════════════════════════════
+    const _brandId = String(
+      brandId
+      || (typeof window !== 'undefined' && window.S && (window.S.currentBrandId || window.S.selectedBrandId))
+      || ''
+    ).trim();
+
     return {
       recentEpisodes: _memo,   // 🧠 純文字摘要,Worker 端直接貼進提示詞
       durationSec: duration,
@@ -214,6 +236,7 @@
       productName: product.name || '',
       productTag: product.tag || '',
       sceneLabel: sceneLabel || '',
+      brandId: _brandId,   // 🏷 v5.22 Worker 靠它去 D1 撈品牌靈魂書
     };
   }
 
@@ -388,5 +411,5 @@
     window.CrewDirector.register('storywriter', window.KolStorywriter);
   }
 
-  console.log('[KolStorywriter] 📖 v5.21 就緒 · 📏字數規格同步前端↔AI(走 outline 通道·治「建議72字·AI只寫50」) · 🔁接棒句中性化 ·(語速6.0實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
+  console.log('[KolStorywriter] 📖 v5.22 就緒 · 🏷送出brandId(AI分鏡首次拿得到品牌·Worker 端自行撈靈魂書) · v5.21 📏字數規格同步前端↔AI(走 outline 通道·治「建議72字·AI只寫50」) · 🔁接棒句中性化 ·(語速6.0實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
 })();
