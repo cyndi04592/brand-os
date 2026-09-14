@@ -1,5 +1,6 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.70
+// kol-stitch.js — 自動接片引擎 v6.71
+// v6.71:✂️ 抓拍框感四個動詞→兩件事(212→128字)
 // v6.70:🛑 商品接觸鏈停用(保險絲 window.KOL_CONTACT_CHAIN,預設關)
 //        v6.68 把它搬到商品互動區 → 權重拉高 → 模型很用力演手指抓握 → 手部姿勢異常
 //        而內衣這類穿著型商品根本不拿在手上,這組規則用不到卻一直在干擾
@@ -1305,8 +1306,12 @@ window.KolStitch = (function () {
       //     機制(重量與材質要有反應、不准瞬移、放下才鬆手)一條不少。
       //   ★ 單側光不重寫:_LIGHT_SOURCE 的「朝向光的亮、背光的暗」已經是它的物理版。
       //  ═══════════════════════════════════════════════════════════════
+      //  ✂️ v6.71(2026-09-15)抓拍框感:四個詞講「畫面不穩」→ 收成兩件事。
+      //   舊句:drifts / tilts / reframes / focus slipping and settling —— 四個動詞同一件事;
+      //   後半 off-centre / clipped by the edge / never squared to the lens —— 三個詞同一件事。
+      //   機制只有兩件:① 有人拿手機跟著她 ② 她不在正中間、會被邊緣切到。
       const _CANDID_FRAME =
-        'Someone is filming her on a phone and keeping up: the frame drifts, tilts and reframes to catch her, focus slipping and settling; she stays off-centre, often clipped by the frame edge, never squared to the lens. ';
+        'Someone is filming her on a phone and keeping up with her by hand; she sits off-centre and is often clipped by the frame edge. ';
 
       const _LIGHT_SOURCE =
           'Light travels in straight lines: surfaces facing it are bright, surfaces facing away fall into shadow, '
