@@ -1,5 +1,6 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.66
+// kol-stitch.js — 自動接片引擎 v6.67
+// v6.67:🎨 色板截斷 200→400 —— 舊上限把「亮部可過曝/暗部有雜訊/不要HDR/沒調過色」整段切掉,那是壓飽和的關鍵句。
 // v6.66:🎨 皮膚【紋理】非毛孔(避免畫成規律毛孔=3D建模感)+ 主旨句與標註區去重 + 服裝標註逐項列舉去重。
 // v6.65:📍 自動空間錨點 —— 第二格起若沒寫位置,程式自動從第一格補上(治「每次都要手改 Beat 2」)。
 // v6.64:🪑 拿掉執行時的 200 字扣除(那是誤解)——改成【設計目標】:規則要寫到留 200 字餘裕。
@@ -471,8 +472,9 @@ window.KolStitch = (function () {
     //    ③ 來得快去得快、不准掛著同一個表情 ④ 強情緒同時發生不是分解動作
     //    ⑤ 眼神跟著話走、想事情時飄開再回到對方
     //  ⚠️ ③④ 是 RA 2026-07 打磨出來的反浮誇機制,⑤ 是反眼神空洞,不准再砍。
-    return 'Performance: ' + P.s + ' is inside the location, not in front of it \u2014 '
-      + 'part of ' + P.p + ' body always touches something really there, and even the tightest close-up keeps a piece of the place beside ' + P.o + '. '
+    //  🩳 v6.67:「is inside the location, not in front of it」與光學段「光照到她的方式跟照到
+    //    其他東西一樣」講同一件事,刪掉;只留可執行的兩項。省約 70 字。
+    return 'Performance: ' + P.p + ' body always touches something really there, and even the tightest close-up keeps a piece of the place beside ' + P.o + '. '
       + 'Every expression needs a reason \u2014 which kind of smile and what caused it \u2014 and it arrives and passes quickly, '
       + 'all at once across eyes, mouth and hands rather than as separate staged reactions, '
       + 'never held as one fixed expression for the whole shot. '
@@ -555,7 +557,7 @@ window.KolStitch = (function () {
 
     if (shared && shared.front) {
       const prodRule = bp.has
-        ? ('the product stays the same real-world size in ' + _pron().p + ' hands and is never zoomed or resized within a shot; ')   /* v6.56:shape/proportions 已在標註區,這裡只留「鏡頭內不准變大小」*/   /* v6.53:刪「different shots show…」,標註區已說 each shot names the one it uses */
+        ? ('the product is never zoomed or resized within a shot; ')   /* v6.56:shape/proportions 已在標註區,這裡只留「鏡頭內不准變大小」*/   /* v6.53:刪「different shots show…」,標註區已說 each shot names the one it uses */
         : (_pron().s + ' holds a product that is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ');
       //  📦 2026-09-05:商品圖【一直沒有在清單裡被宣告】。
       //    實測任務 03c0171d:清單宣告了 Image1=身份 / Image3=服裝 / Image4=場景,
@@ -1006,10 +1008,20 @@ window.KolStitch = (function () {
     if (window.KOL_COLORBOARD !== false && window.KolColorboard && typeof window.KolColorboard.resolveLookLine === 'function') {
       try {
         let _look = (await window.KolColorboard.resolveLookLine({ brandId: opts.brandId })) || '';
-        const _capLen = (typeof window !== 'undefined' && window.KOL_MATCHCUT === true) ? 150 : 200;  // 🎬 match cut 開啟→look 讓位給交棒句
+        //  🎨 v6.67 截斷上限 200 → 400(RA 2026-09-13 用飽和度量到的)
+        //  ★ 病:色板預設 look 有 360 字,被砍到 193 —— 而且【切在句子中間】:
+        //      「…exposure not.」  ← 原文是「exposure not perfect with highlights allowed
+        //       to clip and shadows allowed to stay dark and a little noisy, no HDR lift,
+        //       no polish, the ordinary look of a clip someone recorded and never graded」
+        //    後半段「亮部可過曝／暗部可暗有雜訊／不要 HDR 提亮／不要修飾／沒調過色」
+        //    全部沒送出去 —— 那正是壓低飽和與對比的關鍵句。
+        //    實測飽和度:我們 30-35% vs 客戶自己拍的真實短影音 18.9-27.7%。
+        //  ★ 而 200 這個數字是為了「避 1700 牆」定的,那是很久以前的上限,現在是 4000。
+        //    又是「同一個數字沒跟著更新」。
+        const _capLen = (typeof window !== 'undefined' && window.KOL_MATCHCUT === true) ? 300 : 400;
         if (_look.length > _capLen) {
           _look = _look.slice(0, _capLen).replace(/\S*$/, '').trim();   // 切到最後一個完整字,不砍半字
-          _dbg('[KolStitch] 🎨 look 過長,截到 ' + _look.length + ' 字(避 1700 牆)');
+          _dbg('[KolStitch] 🎨 look 過長,截到 ' + _look.length + ' 字(上限 400)');
         }
         //  🧴 v6.54:這條【色板路徑】的 front 也有那盞衝突的柔光 —— v6.53 只改到 _leanFront,
         //    而綁了色板的品牌(如 LACEZ)走的是這一條,所以柔光照樣送出去、繼續抵銷主光/副光規則。
