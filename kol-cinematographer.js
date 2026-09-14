@@ -134,10 +134,29 @@
     + 'the frame breathes and drifts, tilts a little, reframes to catch her, '
     + 'focus slips for a moment and settles again; she is off-centre and often clipped by the frame edge, never symmetrical'
     + ', this off-centre handheld framing holds at every shot size, close or wide, she is never centred and squared to the lens'
+    //  💡 v5.27:單側光那句【保留】—— 它是段2平光(光差 0.6)的解藥,
+    //     而且跟 SCENE_REALISM 的「亮側朝向光源」同源,不是重複是同一條鏈的兩端。
+    //     ⚠️ 但 crew-director 裡還有一句 'keep the light on her face soft and even'
+    //        正面否定它(要均勻 vs 要不均勻),那句已在 v6.53/v6.54 被 kol-stitch 殺過兩次,
+    //        crew-director 是第三份 —— 那是【另一個檔】,要一起處理才會生效。
     + ', window light from one side only so one side of her face falls slightly darker, not evenly lit'
-    + ', natural skin texture keeping a faint natural sheen, visible pores, small imperfections';
+    //  🧴 v5.27:刪 'visible pores' —— RA 2026-09-13 定調:毛孔是【具體物件】,
+    //     模型會去【畫】,畫出來規律均勻 → 3D 建模/遊戲角色感(v5.17/v5.19 實測是烤肉紋兇手)。
+    //     只能寫【紋理】(表面性質,模型只會保留),不能寫毛孔。這裡是漏網的那一份。
+    + ', her skin carrying its own texture rather than reading as one smooth film, small imperfections';
 
-  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, soft natural subject edges that blend into the scene, no hard cutout outline, no over-sharpened subject edge, not a pasted-on composited look, gentle low-contrast natural lighting, warm slightly saturated phone-camera color, no studio polish, Taiwanese Mandarin accent, natural lip sync, candid unscripted moments';
+  //  ═══════════════════════════════════════════════════════════════
+  //  🧹 v5.27(2026-09-14)逐句盤點後瘦身 —— 砍的是【打架】與【被別句涵蓋】,機制一條不少。
+  //   ★ 刪 'warm slightly saturated phone-camera color':
+  //     它要求偏暖偏飽和,正面抵銷色板師的 muted understated / nothing boosted。
+  //     RA 實測飽和度 30-35%,客戶真實短影音只有 18.9-27.7% —— 這句是其中一個來源。
+  //   ★ 邊緣四句(soft edges / no hard cutout / no over-sharpened / not pasted-on)
+  //     講的是同一件事,併成一句。
+  //   ★ 'Taiwanese Mandarin accent, natural lip sync' 移除:對嘴行每段都寫一次,
+  //     這裡是第二份(RA 鐵律①:同一件事兩份,改一份等於沒改)。
+  //   ★ 保留不動:照原圖不磨皮那五句(防油光鐵律,RA 2026-09-13 量過證明無罪,不得改寫)。
+  //  ═══════════════════════════════════════════════════════════════
+  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, her edges soft and lit into the scene rather than cut out or sharpened, gentle low-contrast natural lighting, no studio polish, candid unscripted moments';
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
@@ -172,13 +191,26 @@
   //     而不是隨機亮點。這跟 kol-ai-generator v3.44 是同一件事的兩端:
   //     那邊決定臉圖的光,這邊要求影片把她重新打進場景的光裡。
   //   ★ 最後一句管邊緣:貼上去的痕跡就在輪廓,要求邊緣是被光照到的,不是切出來的。
-  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not CGI or a game render, natural everyday documentary look, she is lit only by the lamps and windows that are actually visible in this room and by nothing else, there is no separate light on her alone, whatever colour those lamps and windows cast on the walls tables and floor is the same colour they cast on her face hands and clothes, no light may appear on her that cannot be traced to something visible in the frame, the lit side of her face turned toward wherever the light in the room comes from and the shadow side away from it, the windows and lamps of this room reflected in her eyes as the same shapes they really are; she and the background share one colour grade, and where she meets the background the edge is soft and lit, never cut out, the subject is the sharpest thing in frame while the background stays gently soft but fully readable with everything in it still recognisable, no crowd and nobody close to her or facing the lens, no stylized or exaggerated artificial elements';
+  //  ═══════════════════════════════════════════════════════════════
+  //  💡 v5.27:光學核心【全留】—— 這是 RA 2026-09-13 量出來治「粉感」的那一條鏈:
+  //     光可追溯到畫面裡的光源 → 多光源各自把顏色打在她臉上 → 膚色色相散布上去 → 粉感消失。
+  //     驗收數字:膚色色相散布 1.69 → 2.3(鞋店 2.348);膚色與環境色偏差 1.02 → 0.4。
+  //   ★ 公版化:'in this room' → 'in this place'(RA 拍板 2026-09-14)。
+  //     機制一字未改,只把場所寫死的字換成中性詞 —— 夜市、車上、無塵室都要成立。
+  //   ★ 刪 'the subject is the sharpest thing in frame while the background stays gently soft':
+  //     那是景深描述,kol-stitch 明文禁止寫景深/虛化(寫了會跟攝影設定打架)。同檔兩條互相否定。
+  //   ★ 刪 'no crowd and nobody close to her or facing the lens':tail 已有同義句,第二份。
+  //   ★ 刪 'and where she meets the background the edge is soft and lit, never cut out':
+  //     REALISM_BASE 的邊緣句已涵蓋。
+  //  ═══════════════════════════════════════════════════════════════
+  const SCENE_REALISM = 'a genuine real-world location with authentic materials surfaces and natural imperfections, not CGI or a game render, natural everyday documentary look, she is lit only by the lamps and windows that are actually visible in this place and by nothing else, there is no separate light on her alone, whatever colour those lamps and windows cast on the walls surfaces and floor is the same colour they cast on her face and hands, no light may appear on her that cannot be traced to something visible in the frame, the lit side of her face turned toward wherever the light in this place comes from and the shadow side away from it, the windows and lamps of this place reflected in her eyes as the same shapes they really are; she and the background share one colour grade, no stylized or exaggerated artificial elements';
 
   // 🔊 音訊反罐頭層 — v5.25 新增(fal 官方 anti-slop:罐頭配樂 = 最大 AI 味來源之一)
   //   只要「這個畫面裡真的會有的聲音」:現場動作音 + 環境底噪 + 乾淨人聲。
   //   明確禁配樂 —— 不寫,模型就自動配一首廣告罐頭樂壓在台詞上。
   //   ⚠️ 全域生效;之後若要做純氛圍配樂片,把 contribute() 裡這行拔掉即可。
-  const AUDIO_REALISM = 'only the natural ambient sound of the location, her voice clear and upfront, absolutely no background music, no soundtrack, no jingle';
+  //  🔉 v5.27:'no background music / no soundtrack / no jingle' 是同一件事講三次 → 留一句。
+  const AUDIO_REALISM = 'only the natural ambient sound of the location, her voice clear and upfront, absolutely no background music of any kind';
 
   // 🎥 運鏡元資料
   const CAMERA_MOVEMENTS = {
@@ -283,5 +315,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.26 就緒 · 瘦身版(去重複句·防撞prompt上限) · REALISM_BASE + SCENE_REALISM + AUDIO_REALISM(禁罐頭配樂) + 台灣腔');
+  console.log('[KolCinematographer] 📷 v5.27 就緒 · 🧹逐句瘦身(刪:偏飽和句/毛孔/景深句/重複邊緣句/重複無配樂/重複台灣腔·全是打架或被涵蓋) · 🌏公版化 in this room→in this place · 💡光學核心與防油光鐵律一字未動 · v5.26 · 瘦身版(去重複句·防撞prompt上限) · REALISM_BASE + SCENE_REALISM + AUDIO_REALISM(禁罐頭配樂) + 台灣腔');
 })();
