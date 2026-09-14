@@ -156,7 +156,7 @@
   //     這裡是第二份(RA 鐵律①:同一件事兩份,改一份等於沒改)。
   //   ★ 保留不動:照原圖不磨皮那五句(防油光鐵律,RA 2026-09-13 量過證明無罪,不得改寫)。
   //  ═══════════════════════════════════════════════════════════════
-  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, her edges soft and lit into the scene rather than cut out or sharpened, gentle low-contrast natural lighting, no studio polish, candid unscripted moments';
+  const REALISM_BASE = 'handheld iPhone vlog aesthetic, 35mm equivalent lens, natural available light, keep her skin exactly like the reference photo, absolutely no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial, authentic documentary realism, her edges soft and lit into the scene rather than cut out or sharpened, gentle low-contrast natural lighting, no studio polish, Taiwanese Mandarin accent, candid unscripted moments';
 
   // 🎬 場景落地錨 — 管「場景不假 + 人落進場景 + 統一色調」(⑤ 打背景假假的)
   //   ⚠️ 全程不碰微觀紋理 / 邊緣融合 / 硬光 → 不會長烤肉紋。整合靠「色調+環境色溫」。
@@ -263,7 +263,27 @@
     const _accent = (typeof window !== 'undefined' && window.natToAccent)
       ? window.natToAccent(ctx.persona?.nationality)
       : 'Taiwanese Mandarin';
-    parts.push(REALISM_BASE.replace('Taiwanese Mandarin accent', _accent));
+    //  🗣 v5.28(2026-09-14)口音錨點補回 + 防呆。
+    //   ★ v5.27 的錯:把 'Taiwanese Mandarin accent' 當成「跟對嘴行重複」刪掉了,
+    //     但它不只是一句規則 —— 它同時是【這一行 replace 的掛鉤點】。
+    //     錨點一刪 → replace 找不到目標 → 整條換口音的路【靜默空轉】,
+    //     口音只剩對嘴行那一份在撐。不報錯、看起來正常,正是最難抓的那種壞法。
+    //   ★ RA 鐵律:台灣腔錨點絕不可拔(拔了會掉回大陸腔),預設永遠 Taiwanese Mandarin,
+    //     非台灣的 KOL 是【換成】他的口音,不是【拿掉】錨點。
+    //   ★ 防呆:錨點不在就把口音補在句尾,並在 DEBUG 出聲 —— 以後誰再動 REALISM_BASE,
+    //     都不會再變成安靜地不做事。
+    const _ANCHOR = 'Taiwanese Mandarin accent';
+    let _rb;
+    if (REALISM_BASE.indexOf(_ANCHOR) >= 0) {
+      _rb = REALISM_BASE.replace(_ANCHOR, _accent);
+    } else {
+      _rb = REALISM_BASE + ', ' + _accent;
+      if (typeof window !== 'undefined' && window.KOL_DEBUG === true) {
+        console.log('[KolCinematographer] ⚠️ REALISM_BASE 少了口音錨點「' + _ANCHOR
+          + '」→ 已自動把「' + _accent + '」補在句尾。請把錨點加回去,不要靠這個補丁過日子。');
+      }
+    }
+    parts.push(_rb);
 
     // 🤳 抓拍感取景(v5.27)· 保險絲 window.KOL_CANDID(未設=開)
     //   關掉的方法:Console 打 window.KOL_CANDID = false,或改這支預設值。
@@ -315,5 +335,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.27 就緒 · 🧹逐句瘦身(刪:偏飽和句/毛孔/景深句/重複邊緣句/重複無配樂/重複台灣腔·全是打架或被涵蓋) · 🌏公版化 in this room→in this place · 💡光學核心與防油光鐵律一字未動 · v5.26 · 瘦身版(去重複句·防撞prompt上限) · REALISM_BASE + SCENE_REALISM + AUDIO_REALISM(禁罐頭配樂) + 台灣腔');
+  console.log('[KolCinematographer] 📷 v5.28 就緒 · 🗣口音錨點補回(v5.27 誤刪→換口音整條空轉·預設永遠台灣腔)+ 找不到錨點自動補句尾並出聲 · v5.27 · 🧹逐句瘦身(刪:偏飽和句/毛孔/景深句/重複邊緣句/重複無配樂/重複台灣腔·全是打架或被涵蓋) · 🌏公版化 in this room→in this place · 💡光學核心與防油光鐵律一字未動 · v5.26 · 瘦身版(去重複句·防撞prompt上限) · REALISM_BASE + SCENE_REALISM + AUDIO_REALISM(禁罐頭配樂) + 台灣腔');
 })();
