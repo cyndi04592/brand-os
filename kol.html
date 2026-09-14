@@ -7608,6 +7608,22 @@ async function createStitchedVideo(beats) {
       onSegmentDone: (idx) => _stitchProgress.segDone(idx),
     });
     _stitchProgress.stop();
+    //  ⚠️ 2026-09-15:缺段時【不要跳出播放器】。
+    //   病灶(RA 實測):kol-stitch 缺段時回 finalUrl=null、incomplete=true,
+    //     但這裡沒看那個旗標,直接把 null 塞進 <video> → 跳出一個空的播放器。
+    //     客戶看到播放器會以為成功,點下去才發現是空的 —— 比直接說失敗更糟。
+    //   ★ 改成紅字說明,並照 RA 的用語:對外一律講「算力機」,不出現任何後端服務名。
+    if (!result || !result.finalUrl || result.incomplete) {
+      if (box) box.innerHTML = '<div style="padding:16px;border-radius:10px;background:#2a1215;border:1px solid #ff6b6b44;">'
+      + '<div style="color:#ff6b6b;font-size:14px;font-weight:600;margin-bottom:6px;">⚠️ 這支影片沒有完成</div>'
+      + '<div style="color:#ffb3b3;font-size:13px;line-height:1.7;">'
+      + '算力機目前生成量超載,有一段沒有產出來,工程師正在搶修中。<br>'
+      + '缺一段接出來的故事會斷掉,所以系統沒有幫你接成影片。<br>'
+      + '<b>沒有生成的那幾段點數已經自動退還</b>,請稍後再按一次生成。'
+      + '</div></div>';
+      toast('這支影片沒有完成,點數已退還', 'error');
+      return;
+    }
     if (box) box.innerHTML =
       '<video src="' + result.finalUrl + '" controls autoplay loop '
       + 'style="width:100%;border-radius:10px;background:#000;"></video>'
@@ -11188,6 +11204,20 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     });
     _stitchProgress.stop();   // 🩹 2026-08-23
     const elapsed = Math.round((Date.now() - startTime) / 1000);
+    //  ⚠️ 2026-09-15:缺段時不跳播放器(理由見另一處同樣的判斷)。
+    if (!result || !result.finalUrl || result.incomplete) {
+      if (taskBox) taskBox.innerHTML = '<div style="padding:16px;border-radius:10px;background:#2a1215;border:1px solid #ff6b6b44;">'
+      + '<div style="color:#ff6b6b;font-size:14px;font-weight:600;margin-bottom:6px;">⚠️ 這支影片沒有完成</div>'
+      + '<div style="color:#ffb3b3;font-size:13px;line-height:1.7;">'
+      + '算力機目前生成量超載,有一段沒有產出來,工程師正在搶修中。<br>'
+      + '缺一段接出來的故事會斷掉,所以系統沒有幫你接成影片。<br>'
+      + '<b>沒有生成的那幾段點數已經自動退還</b>,請稍後再按一次生成。'
+      + '</div></div>';
+      toast('這支影片沒有完成,點數已退還', 'error');
+      if (episodeId) apiUpdateEpisodeStatus(episodeId, { video_status: 'failed' }).catch(() => {});
+      setTimeout(() => renderSystemQueue(), 500);
+      return;
+    }
     if (taskBox) taskBox.innerHTML =
       `<div class="seedance-task"><video src="${result.finalUrl}" controls autoplay loop style="width:100%;border-radius:10px;background:#000;"></video>`
       + `<div style="margin-top:6px;"><a href="${result.finalUrl}" target="_blank" style="color:#a78bfa;font-size:12px;word-break:break-all;">↗ 開新分頁 / 下載</a></div></div>`;
