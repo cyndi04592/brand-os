@@ -3877,7 +3877,16 @@ function buildPosterPrompt() {
     else if (/^(photography style|lighting)/.test(k))                 _bag.photo.push(v);
     else if (/^mood/.test(k))                                         _bag.mood.push(v);
     else if (/^(background scenes?|scenes?|setting)/.test(k))         _bag.scene.push(v);
-    else if (/^avoid/.test(k))                                        _bag.avoid.push(v);
+    else if (/^avoid/.test(k)) {
+      // 🩹 2026-09-14 avoid 欄位常被塞進一句正面的產品真相(寫成「Note: …」)。
+      //   那是資訊,不是禁令 —— 留在 AVOID 區等於把它丟到權重最低的位置,
+      //   而且旁邊全是負面詞。抽出來送去主體層(PRODUCT ESSENCE)。
+      const _parts = v.split(/\bNote\s*[:：]\s*/i);
+      if (_parts[0].trim()) _bag.avoid.push(_parts[0].trim().replace(/[.,;]\s*$/, ''));
+      for (let _i = 1; _i < _parts.length; _i++) {
+        if (_parts[_i].trim()) _bag.other.push(_parts[_i].trim());
+      }
+    }
     // 裝飾元素 / 構圖習慣:一律丟棄(AI 永不畫 logo、構圖交給版型與變化層)
     else if (/^(decorative elements|composition habit)/.test(k))      { /* drop */ }
     else _bag.other.push(m[1].trim() + ': ' + v);
