@@ -408,11 +408,26 @@
   //  📌 已知小債:圖會存進 scenegrid/ 資料夾(鍵名 outfit_ 開頭)。
   //     語意不完美但功能正確;之後 Worker 有別的事要改時再一起搬。
   // ═══════════════════════════════════════════════════════════════════════
+  //  ═══════════════════════════════════════════════════════════════════════
+  //  🔖 v5.35(2026-09-15)快取鍵加版本號 —— 照 kol-environment v5.28 的做法。
+  //   病灶(RA 2026-09-14~15 實測,連續四支都白測):
+  //     v5.31 生過一張服裝圖(bra top + leggings)→ 存進 R2 → 之後永遠拿那張。
+  //     v5.32~v5.34 改了三版服裝文字,【一次都沒生效】——
+  //     因為 generateOutfitRefImage() 最前面的「服裝鎖定」在算快取鍵【之前】就 return 了,
+  //     outfitText 變不變根本沒進到鍵裡。RA 貼 window.KOL_OUTFIT_LOCK = false 也沒用,
+  //     那只關掉鎖定判斷,關不掉已經躺在 R2 裡的那張圖。
+  //   ★ 修法(環境師已驗證過的):快取鍵掛上版本號。改服裝文字時把版本 +1 →
+  //     鍵變了 → 自動重生【一次】→ 之後又穩定鎖住,不會每次重生、不會抽卡。
+  //   ⚠️ 以後只要動到 LINGERIE_OUTER / resolveOutfitText 這類會改變服裝文字的東西,
+  //     OUTFIT_VER 就要 +1,否則改了等於沒改(這正是 v5.32~34 白改三次的原因)。
+  //  ═══════════════════════════════════════════════════════════════════════
+  const OUTFIT_VER = 'w535';   // ← 改服裝文字時才 +1(w535 → w536 …)
+
   function _outfitKey(brandId, outfitText) {
     let h = 0;
-    const str = String(brandId || 'b') + '|' + String(outfitText || '');
+    const str = OUTFIT_VER + '|' + String(brandId || 'b') + '|' + String(outfitText || '');
     for (let i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
-    return 'outfit_' + (h >>> 0).toString(36);
+    return 'outfit_' + OUTFIT_VER + '_' + (h >>> 0).toString(36);
   }
 
   async function _toR2(brandId, key, srcUrl) {
@@ -433,12 +448,17 @@
   }
 
   async function generateOutfitRefImage(ctx) {
-    // 🔒 v5.18 服裝鎖定:有釘住的固定服裝圖 → 直接用,不現生
-    const lockedUrl = resolveLockedOutfitUrl(ctx);
+    //  🔒 v5.18 服裝鎖定:有釘住的固定服裝圖 → 直接用,不現生
+    //  🔖 v5.35:強制重生保險絲 —— window.KOL_OUTFIT_FORCE = true 時連鎖定也跳過。
+    //     測試改服裝規則時用這個(比 KOL_OUTFIT_LOCK 更徹底:那個只關鎖定判斷,
+    //     關不掉已經躺在 R2 快取裡的舊圖)。
+    const _force = (typeof window !== 'undefined' && window.KOL_OUTFIT_FORCE === true);
+    const lockedUrl = _force ? null : resolveLockedOutfitUrl(ctx);
     if (lockedUrl) {
       _wdbg('[KolWardrobe] 🔒 服裝鎖定:使用釘住的固定服裝圖(不現生)→', lockedUrl);
       return lockedUrl;
     }
+    if (_force) _wdbg('[KolWardrobe] 🔖 KOL_OUTFIT_FORCE=true → 跳過鎖定與快取,強制重生一張');
 
     const outfitText = resolveOutfitText(ctx);
     if (!outfitText) { _wdbg('[KolWardrobe] 沒有衣服文字,跳過服裝參考圖'); return null; }
@@ -447,8 +467,10 @@
     const _brandId = (ctx && (ctx.brandId || (ctx.brand && ctx.brand.id))) || (window.S && window.S.currentBrandId) || 'b';
     const _key = _outfitKey(_brandId, outfitText);
     try {
-      const hit = await wdCallWorker('scene_grid', { brandId: _brandId, sceneKey: _key });
-      if (hit && hit.ok && hit.url) { _wdbg('[KolWardrobe] 🪣 服裝圖快取命中'); return hit.url; }
+      if (!_force) {
+        const hit = await wdCallWorker('scene_grid', { brandId: _brandId, sceneKey: _key });
+        if (hit && hit.ok && hit.url) { _wdbg('[KolWardrobe] 🪣 服裝圖快取命中(' + _key + ')'); return hit.url; }
+      }
     } catch (_) {}
 
     const prompt =
@@ -493,5 +515,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.34 就緒 · 👙內衣外層改【日常穿得出門的一套】(v5.31「敞開的襯衫/長版針織」實測生出 bra top+leggings=兩件內衣疊穿,或襯衫解扣露內衣=正常人不會這樣穿出門;RA 拍板 A 案:畫面正常優先,商品交給 B-roll 特寫)·尾巴拿掉 no nudity 否定句(點名即召喚) · v5.33 就緒 · 🪣服裝圖轉存R2(白標+不過期)+快取 · v5.31 · 👙內衣外層改可敞開(商品看得見·品牌類型沒設也認得出) · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
+  console.log('[KolWardrobe] 👗 v5.35 就緒 · 🔖快取鍵加版本號 OUTFIT_VER=w535(治「改了等於沒改」——v5.32~34 改三版服裝文字全部沒生效,因為鎖定在算鍵之前就 return,舊圖永遠優先) · 🆕強制重生保險絲 window.KOL_OUTFIT_FORCE=true(跳過鎖定+快取) · v5.34 就緒 · 👙內衣外層改【日常穿得出門的一套】(v5.31「敞開的襯衫/長版針織」實測生出 bra top+leggings=兩件內衣疊穿,或襯衫解扣露內衣=正常人不會這樣穿出門;RA 拍板 A 案:畫面正常優先,商品交給 B-roll 特寫)·尾巴拿掉 no nudity 否定句(點名即召喚) · v5.33 就緒 · 🪣服裝圖轉存R2(白標+不過期)+快取 · v5.31 · 👙內衣外層改可敞開(商品看得見·品牌類型沒設也認得出) · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
