@@ -236,7 +236,22 @@
       return 'PROP (intimate apparel, worn as the inner layer): its fabric and pattern read correctly'
         + (isYes(prod && prod.showContents) ? ', with [Image3] showing the SAME single garment from the back (same piece, not a second garment) — match its strap routing, back closure and lace seams' : '')
         + ', the fabric is soft and lightweight with natural drape, cups and straps yielding and slightly deformable, folding and creasing where held or worn, never stiff, boardlike or molded plastic'
-        + ', and she wears it under her outfit, glimpsed at an open neckline, tasteful and modestly framed';
+        //  ═══════════════════════════════════════════════════════════════
+        //  👗 v5.34(2026-09-14)拿掉「穿在外出服底下、從敞開的領口被瞥見」那一句。
+        //   病灶(RA 2026-09-14 實測,連續兩支):同一份 prompt 裡有兩句在對著幹 ——
+        //     Image3 = outfit (same garment throughout; do not restyle)  ← 照服裝圖穿
+        //     這一句 = 要讓商品從敞開的領口露出來                        ← 要求露
+        //   服裝圖本身又沒有領口可言,模型要同時滿足兩邊,只能【把外層拿掉】,
+        //   於是第一段整件外層消失、只剩商品,第二段才照服裝圖穿 —— 兩段穿著不一致。
+        //   ★ RA 拍板:穿著只有一個來源 = 服裝圖。文字一個字都不要碰穿著。
+        //     這條跟 kol-proxy v4.82「分鏡不寫衣服」是同一條原則,
+        //     只是那條只管到分鏡,這句一直在道具師這邊沒被管到。
+        //   ★ 道具師只負責【商品本身】:材質、形狀、不變大小、去背毛邊。
+        //     「她怎麼穿」是服裝師(kol-wardrobe)＋服裝圖的事。
+        //   ⚠️ 不要因為「商品看不到」就把這句加回來 —— 那正是這個 bug 的起點。
+        //     商品要被看見,靠的是【沒有台詞的 B-roll 特寫】,不是把她的衣服脫掉。
+        //  ═══════════════════════════════════════════════════════════════
+        ;
     }
     if (mode === 'worn') {
       return 'PROP (a wearable product — feature it being worn or carried): its logo reads correctly; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
@@ -461,5 +476,5 @@
   }
 
   window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.9', resolveMode };
-  console.log('[KolProduct] 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  console.log('[KolProduct] 👗 v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
