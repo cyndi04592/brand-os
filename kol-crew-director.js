@@ -643,11 +643,36 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   //    ③ 背景要活著 — 唯一防「死背板」的規則,而且最常被砍
   //    ④ 無字幕 — 只有 58 字,CP 值最高
   //    ⑤ 其餘結構鎖 — 九宮格圖已經在扛一部分
+  //  ═══════════════════════════════════════════════════════════════
+  //  📐 v5.38(2026-09-14)_TAIL_RANK 改依【詞序黃金法則】分類(RA 拍板)
+  //   公式:[主體] + [動作/商品互動] + [中段光影/環境] + [末尾抽象風格]
+  //   ★ 病(RA 原話):「很像收回扣排到前面但破壞了規則。收回扣的人越多,
+  //     後面本該發揮作用的等於沒用。」
+  //     舊表排的是【重要性】:合規 → 商品定義 → 背景要活著(環境) → 無字幕(抽象) → 其餘。
+  //     結果商品群被環境與抽象切成兩半:PROP 在第 2,而同屬商品的去背邊/形狀鎖
+  //     掉到第 5 之後,被稀釋掉一級;抽象的無字幕反而插到商品前面。
+  //   ★ 新表排的是【類別】,同類連在一起、不准被別類切開:
+  //       ① 商品互動(合規鎖 → 商品定義 → 商品其餘子句)
+  //       ② 環境(空間一致 / 背景要活著 / 路人)
+  //       ③ 抽象(無字幕 → 品牌調性,墊底只微調氛圍)
+  //   ⚠️ 這張表同時是【讓位順序】(不夠字時從後面砍)。改完最先被犧牲的
+  //     由「商品其餘子句」變成「無字幕/品牌調性」。現況餘裕 267 不會觸發;
+  //     若哪天常態貼牆,無字幕要移到 kol-stitch 的抽象區(front 永遠送),
+  //     不是搬回中段插隊 —— 插隊就是收回扣。
+  //  ═══════════════════════════════════════════════════════════════
   const _TAIL_RANK = [
-    /fully dressed in everyday outerwear|no exposed undergarments/i,   // ① 合規
-    /^(PROP|HERO PRODUCT|PRODUCT IN USE|NO PHYSICAL PRODUCT)/i,        // ② 商品定義
-    /work out what actually moves|life carries on there too|Only this movement/i, // ③ 背景要活著
-    /no subtitles|no captions|no on-screen text/i,                     // ④ 無字幕
+    // ── ① 商品互動群 ──────────────────────────────────────────
+    /fully dressed in everyday outerwear|no exposed undergarments/i,   // 合規鎖(法律風險,商品群內排最前)
+    /^(PROP|HERO PRODUCT|PRODUCT IN USE|NO PHYSICAL PRODUCT)/i,        // 商品定義
+    /cutout of the item itself|white halo|ragged matting edge/i,       // 去背邊(商品)
+    /never zoomed or resized|same real-world size|hand-scale/i,        // 尺寸/形狀鎖(商品)
+    /which hand and fingers grip|travels visibly in her hand/i,        // 接觸鏈(商品)
+    // ── ② 環境群 ────────────────────────────────────────────
+    /identical across all shots|one continuous space/i,                // 空間一致
+    /work out what actually moves|life carries on there too|Only this movement/i, // 背景要活著
+    /only person in frame|background people|out of focus/i,            // 路人
+    // ── ③ 抽象群(末尾全局潤色)────────────────────────────────
+    /no subtitles|no captions|no on-screen text/i,                     // 無字幕
   ];
   function _tailRank(t) {
     for (let i = 0; i < _TAIL_RANK.length; i++) if (_TAIL_RANK[i].test(t)) return i;
@@ -892,5 +917,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
