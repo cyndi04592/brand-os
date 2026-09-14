@@ -1,5 +1,10 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.67
+// kol-stitch.js — 自動接片引擎 v6.68
+// v6.68:🤳 抓拍框感 + 🤝 商品接觸鏈救回送出路徑(色板一開就被整包覆蓋,從來沒送過)
+//        🎭 表演通則移交 Worker(第18/22條已規定·跨層重複)· 只留接地那條渲染約束
+//        📐 詞序:接觸鏈放【商品互動區】不放末尾風格區(RA 詞序黃金法則·搬到低權重=悄悄降權)
+//        🧹 無字幕重複拿掉一份(tail 有更完整的含 watermark)
+//        ⚠️ 兩段新規則跟 _LIGHT_SOURCE 同級,三層讓位都不犧牲。
 // v6.67:🎨 色板截斷 200→400 —— 舊上限把「亮部可過曝/暗部有雜訊/不要HDR/沒調過色」整段切掉,那是壓飽和的關鍵句。
 // v6.66:🎨 皮膚【紋理】非毛孔(避免畫成規律毛孔=3D建模感)+ 主旨句與標註區去重 + 服裝標註逐項列舉去重。
 // v6.65:📍 自動空間錨點 —— 第二格起若沒寫位置,程式自動從第一格補上(治「每次都要手改 Beat 2」)。
@@ -375,6 +380,17 @@ window.KolStitch = (function () {
   // 🆕 分段綁圖:從 beats 收集「每段各自的商品圖」,去重保序,回傳 url→[ImageN] 對照。
   //   [Image1] 固定是臉 → 商品從 [Image2] 起算,順位 k 的商品 = [Image(k+2)]。
   //   沒有 beat 帶 productUrl → 走原本「全片一個商品」舊路(向後相容)。
+  //  ═══════════════════════════════════════════════════════════════
+  //  🤝 v6.68 商品接觸鏈 —— 位置照【詞序黃金法則】(RA 2026-09-14 拍板)
+  //   ★ 主體最前 → 動作/商品互動 → 光影/環境 → 抽象風格墊底。
+  //     接觸鏈講的是【她怎麼碰這個商品】= 商品互動,不是風格,
+  //     所以它跟商品鐵律(不准變大小)相鄰,不能墊到最末尾跟色板混在一起 ——
+  //     同一句話搬到低權重區,等於悄悄降權,看起來有寫其實沒份量。
+  //   ★ 抓拍框感則相反:那是全局調性,留在末尾 front 是對的。
+  //  ═══════════════════════════════════════════════════════════════
+  const _CONTACT_CHAIN =
+    'when she handles it, show which hand and fingers grip it and where; it answers to gravity and its material, travels visibly in her hand, and is set down before released; ';
+
   function collectBeatProducts(beats) {
     const list = (beats || []).map(function (b) { return (typeof b === 'string') ? {} : (b || {}); });
     const urls = []; const idx = {};
@@ -474,12 +490,21 @@ window.KolStitch = (function () {
     //  ⚠️ ③④ 是 RA 2026-07 打磨出來的反浮誇機制,⑤ 是反眼神空洞,不准再砍。
     //  🩳 v6.67:「is inside the location, not in front of it」與光學段「光照到她的方式跟照到
     //    其他東西一樣」講同一件事,刪掉;只留可執行的兩項。省約 70 字。
-    return 'Performance: ' + P.p + ' body always touches something really there, and even the tightest close-up keeps a piece of the place beside ' + P.o + '. '
-      + 'Every expression needs a reason \u2014 which kind of smile and what caused it \u2014 and it arrives and passes quickly, '
-      + 'all at once across eyes, mouth and hands rather than as separate staged reactions, '
-      + 'never held as one fixed expression for the whole shot. '
-      + 'Eyes catchlit and brightening on the words ' + P.s + ' stresses, gaze drifting away while ' + P.s + ' thinks '
-      + 'and returning to the person ' + P.s + ' is talking to.';
+    //  🎭 v6.68:表演三句壓成機制版(RA 的尺:講機制,不寫流水帳)。
+    //   ★ 舊版 386 字把「表情要有理由→哪一種笑→為什麼→來得快去得快→不是分解動作→
+    //     不准整段同一個表情→眼裡有光→強調字變亮→視線飄開再回來」一步一步寫。
+    //   ★ 機制其實只有兩條:①表情有起因、快來快走、全身同時發生 ②視線跟著話走、有落點。
+    //     模型本來就懂這些詞,不需要被教定義。實測用不到一半的字講同一件事。
+    //   ★ 接地句保留:那是【她】的身體接地,跟商品接觸鏈是兩件事,不是重複。
+    //  🎭 v6.68:表演【通則】移交內容層 —— 只留「接地」這條渲染約束。
+    //   ★ 病(跨層重複):Worker storyboard_expand 第 18 條已規定鏡頭欄要寫微動作鏈、
+    //     情緒用演的不用說的;第 22 條規定有台詞的 beat 要標「怎麼說」。
+    //     而這裡又寫一次「表情要有理由/眼裡有光/視線飄開再回來」—— 同一件事兩層各一份。
+    //   ★ 誰該擁有它:分鏡知道【這一集演什麼】,front 只能寫通則。通則寫在這裡是稀釋,
+    //     而且它佔的字正好是抓拍框感與接觸鏈需要的空間(RA 2026-09-14 拍板:那兩個必須救)。
+    //   ★ 留下的接地句不是表演指導,是【渲染約束】:身體要碰到真的東西、特寫也要留一點環境,
+    //     那治的是「人浮在畫面上」,Worker 管不到。
+    return 'Performance: ' + P.p + ' body always touches something really there, and even the tightest close-up keeps a piece of the place in frame.';
   }
 
   function _buildVoiceLine(opts) {
@@ -557,8 +582,8 @@ window.KolStitch = (function () {
 
     if (shared && shared.front) {
       const prodRule = bp.has
-        ? ('the product is never zoomed or resized within a shot; ')   /* v6.56:shape/proportions 已在標註區,這裡只留「鏡頭內不准變大小」*/   /* v6.53:刪「different shots show…」,標註區已說 each shot names the one it uses */
-        : (_pron().s + ' holds a product that is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ');
+        ? ('the product is never zoomed or resized within a shot; ' + _CONTACT_CHAIN)   /* v6.56:shape/proportions 已在標註區,這裡只留「鏡頭內不准變大小」*/   /* v6.53:刪「different shots show…」,標註區已說 each shot names the one it uses */
+        : (_pron().s + ' holds a product that is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ' + _CONTACT_CHAIN);
       //  📦 2026-09-05:商品圖【一直沒有在清單裡被宣告】。
       //    實測任務 03c0171d:清單宣告了 Image1=身份 / Image3=服裝 / Image4=場景,
       //    但商品是 [Image2],全篇只在最後一句 PROP 出現一次,前面模型完全不知道它是什麼。
@@ -1027,7 +1052,7 @@ window.KolStitch = (function () {
         //    而綁了色板的品牌(如 LACEZ)走的是這一條,所以柔光照樣送出去、繼續抵銷主光/副光規則。
         //    ⚠️ 教訓:同一句話存在兩份,只改一份等於沒改(今天第三次踩同一種坑)。
         //    膚質五句一字未動,只拿掉 'Soft diffused natural light,'。
-        if (_look) _lookFront = _look + ' Keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
+        if (_look) _lookFront = _look + ' Keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial.';   /* 🧹 v6.68:拿掉句尾「No text, subtitles or music.」—— tail 有更完整的一份(含 watermark),這是第二份 */
       } catch (_) {}
     }
     // look 當 front:兩路都吃 opts.shared.front(Seedance 完整敘述路 & piapi lean 路)
@@ -1232,6 +1257,20 @@ window.KolStitch = (function () {
       //    「so her skin is the sum of what surrounds her rather than one even tone」
       //    —— 這些是把法則再講一遍白話,模型本來就懂物理,不需要教學。
       //  ★ 膚質那句與 front 鐵律重複的部分已在 v6.61 移除,這裡只留鐵律沒有的。
+      //  ═══════════════════════════════════════════════════════════════
+      //  🤳 v6.68(2026-09-14)抓拍框感 + 商品接觸鏈 —— 從被覆蓋的那一包救回來。
+      //   ★ 病:這兩段原本住在 kol-crew-director / kol-cinematographer 的 front,
+      //     但 v6.15 起只要品牌有色板,_lookFront 會【整包取代】opts.shared.front,
+      //     所以它們從來沒送進引擎過。RA 2026-09-14:「短影音本來就是這樣跑,我要真實拍攝感」。
+      //   ★ 跟 _LIGHT_SOURCE 同待遇:接在它後面,三層讓位都保,不參與犧牲。
+      //   ★ 壓成機制版(RA 的尺):原文 623 + 476 = 1099 字,這裡各約 200 —— 砍的是
+      //     逐項舉例(soft things bend / liquid shifts / heavy things make the wrist dip),
+      //     機制(重量與材質要有反應、不准瞬移、放下才鬆手)一條不少。
+      //   ★ 單側光不重寫:_LIGHT_SOURCE 的「朝向光的亮、背光的暗」已經是它的物理版。
+      //  ═══════════════════════════════════════════════════════════════
+      const _CANDID_FRAME =
+        'Someone is filming her on a phone and keeping up: the frame drifts, tilts and reframes to catch her, focus slipping and settling; she stays off-centre, often clipped by the frame edge, never squared to the lens. ';
+
       const _LIGHT_SOURCE =
           'Light travels in straight lines: surfaces facing it are bright, surfaces facing away fall into shadow, '
         + 'and whatever stands between casts its shadow onto her. '
@@ -1244,7 +1283,7 @@ window.KolStitch = (function () {
         //     實測毛孔細節:原圖 17.1 → 成品 10.0(真人 12.4-14.7),磨皮感從 90% 降到 30%。
         'Her face was not lit or made up for a camera; this is her own depth of tone and her own condition, '
         + 'her skin carrying its own texture rather than reading as one smooth film. ';
-      let _useFront = _LIGHT_SOURCE + _leanFront;
+      let _useFront = _LIGHT_SOURCE + _CANDID_FRAME + _leanFront;
       let _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
       let _budget = _WALL - _SAFE - _probe.length;
 
@@ -1282,7 +1321,7 @@ window.KolStitch = (function () {
         //    實測後果:no smoothing / no skin retouching / exactly like the reference photo
         //    三句被砍掉 → RA 回報「人臉都有被 AI 整個磨皮過」。
         //  ★ 改法:讓位時只砍【可有可無的開場風格句】,防油光與光源同源一個字都不動。
-        _useFront = _LIGHT_SOURCE + (_lookFront || _leanFront)
+        _useFront = _LIGHT_SOURCE + _CANDID_FRAME + (_lookFront || _leanFront)
           .replace('Realistic vertical UGC video. ', '')
           .replace('No on-screen text or subtitles, no background music.', '');
         _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
@@ -1292,7 +1331,7 @@ window.KolStitch = (function () {
       if (_budget < _TAIL_FLOOR && _lookFront) {
         _blk.lookDropped = true;
         _dbg('[KolStitch] 🛡 讓位② 色板行退出:tail 仍差 ' + (_TAIL_FLOOR - _budget) + ' 字');
-        _useFront = _LIGHT_SOURCE + 'Keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
+        _useFront = _LIGHT_SOURCE + _CANDID_FRAME + 'Keep ' + _pron().p + ' skin exactly like the reference photo, no beauty filter, no smoothing, no skin retouching, an ordinary real person not a polished model or commercial. No text, subtitles or music.';
         _probe = buildMultiShotPrompt(beats, totalSec, { front: _useFront, voiceLine: _voiceLine }, opts.continuityFrom);
         _budget = _WALL - _SAFE - _probe.length;
       }
