@@ -251,6 +251,18 @@
         //   ⚠️ 不要因為「商品看不到」就把這句加回來 —— 那正是這個 bug 的起點。
         //     商品要被看見,靠的是【沒有台詞的 B-roll 特寫】,不是把她的衣服脫掉。
         //  ═══════════════════════════════════════════════════════════════
+        //  👗 v5.35(2026-09-15)把「她身上有外層」這個【事實】補回來,但不指揮怎麼穿。
+        //   RA 回報:內衣穿反這件事【以前六次偶爾一次,拿掉那句之後幾乎每次都發生】。
+        //   ★ 原因想通了:v5.34 拿掉的那句雖然在指揮「怎麼露」(跟服裝圖打架,該拿掉),
+        //     但它同時是【唯一一句宣告「她身上有外層」的話】。拿掉之後,
+        //     整份 prompt 沒有任何一句說她穿著外層 —— 而商品本身就是一件可以穿的衣服,
+        //     模型就把商品當成她身上唯一那件在穿。
+        //   ★ 修法:只留【事實陳述】—— 她穿著服裝參考圖那一套,商品在那一套底下。
+        //     不寫「從領口露出來」「敞開」「被瞥見」這類【指揮怎麼露】的字,
+        //     那些是服裝圖的工作,寫了就會打架(v5.34 的教訓照樣成立)。
+        //   ★ 商品要被看見,還是靠沒有台詞的 B-roll 特寫,不是靠把外層弄開。
+        //  ═══════════════════════════════════════════════════════════════
+        + ', and she is wearing it underneath the outfit shown in the outfit reference image, which stays on her throughout'
         ;
     }
     if (mode === 'worn') {
@@ -285,14 +297,14 @@
         'NEVER leave one side untreated, bare or half-finished. ' +
         'NEVER swap which side is treated between shots — she is a real person who had the whole service done, ' +
         'so every shot shows the same complete result. ' +
-        'Frame it close and flattering with clean even light so the craftsmanship reads clearly.';
+        'Frame it close so the craftsmanship reads clearly.';
     }
     // ══ 設備製程:機台與加工件,不是商品盒 ══
     if (mode === 'equip') {
       return 'EQUIPMENT / PROCESS — this is industrial capability, not a retail product. ' +
         'DO NOT invent any product box, retail package or consumer packaging. ' +
         'The hero is the MACHINE and the MACHINED PART: precision equipment in operation, ' +
-        'the finished component with its true surface finish and tolerances, clean workshop or cleanroom environment. ' +
+        'the finished component with its true surface finish and tolerances. ' +
         //  📦 2026-09-05:這個模式有兩槽(機台 / 加工件),但原本只點名 [Image2],
         //    第二張是無名圖 —— 模型不知道那是「這台機器做出來的東西」。
         'Keep the machine shown in [Image2] exact in shape, proportion, surface and markings, ' +
@@ -333,9 +345,9 @@
       return 'PROFESSIONAL SERVICE — there is no physical product at all. ' +
         'DO NOT invent, draw or place any product, package, box, bottle or branded merchandise anywhere. ' +
         'The subject IS the offering: her expertise, presence and setting carry the message. ' +
-        'Place her in a credible professional environment (office, meeting, consultation, courtroom-adjacent, clinic) ' +
+        'She is already in the place where this work happens ' +
         'with authentic tools of that trade only where natural (documents, screen, notes) and never as a hero object. ' +
-        'Lighting is clean and trustworthy; posture and framing convey competence and calm authority rather than sales energy.';
+        'Posture and framing convey competence and calm authority rather than sales energy.';
     }
     // ══ 🆕 v3.4 行銷代操 / 系統服務:工作現場,不是盒裝軟體 ══
     if (mode === 'agency') {
@@ -346,7 +358,7 @@
         'DO NOT render any comparison layout, versus split, ranking, scoreboard or crossed-out competitor — ' +
         'comparative claims against other agencies or creators are legally restricted. ' +
         'The subject is the working moment: she reviews material, discusses with a client, or presents calmly at a desk. ' +
-        'Ordinary office or studio light, real workspace clutter, credible and unhurried — advisory tone, never sales-floor energy.';
+        'Real workspace clutter, credible and unhurried — advisory tone, never sales-floor energy.';
     }
     // ══ 🆕 v3.3 醫美診所:信任感,不是成果對比 ══
     if (mode === 'medical') {
@@ -354,7 +366,7 @@
         'DO NOT invent any product box, package, ampoule, branded syringe or retail container. ' +
         'DO NOT construct any before/after comparison in the frame — regulation forbids it on social platforms. ' +
         'The subject is the clinic environment, the team, or a calm informational moment: ' +
-        'clean treatment room, consultation desk, honest even lighting, orderly surfaces. ' +
+        'an orderly, unhurried professional space with tidy surfaces. ' +
         'She appears as a credible professional, not a salesperson. Faces stay natural and un-retouched — ' +
         'do not beautify anyone in a way that implies a promised outcome.';
     }
@@ -366,7 +378,7 @@
         'with students visibly at different stages around her. ' +
         'Equipment (mats, instruments, desks, weights) appears only as the natural tools of the practice, never as merchandise. ' +
         'Keep bodies and faces real — genuine effort and real posture, never a rehearsed stock-photo smile. ' +
-        'Real room lighting, wooden floor or studio surfaces reading as an actual place in use.';
+        'Surfaces and materials read as an actual place in use, not a set.';
     }
     // ══ 命理與占卜:諮詢桌面,不是靈異秀 ══
     if (mode === 'mystic') {
@@ -375,8 +387,8 @@
         'DO NOT invent card artwork, chart layouts, glyphs or talisman inscriptions — if a reference image is given, ' +
         'reproduce those objects exactly as supplied. ' +
         'DO NOT depict supernatural effects: no glowing auras, floating objects, light beams, spirits or magical particles. ' +
-        'The subject is her hands at work on the table, or her calm presence in the consultation space. ' +
-        'Low warm directional light, muted contemplative tones, grounded and human — a quiet conversation, not a ritual.';
+        'The subject is her hands at work, or her calm presence while she talks it through. ' +
+        'Muted contemplative tones, grounded and human — a quiet conversation, not a ritual.';
     }
     // ══ 旅遊與行程:地點必須真實 ══
     if (mode === 'travel') {
@@ -458,9 +470,18 @@
       //      勾了 → 一定點名;有描述 → 再補上長相。
       if (isYes(prod.showContents)) {
         const _cl = (prod.contentsLook || '').trim();
+        //  ═══════════════════════════════════════════════════════════════
+        //  🔢 v5.36(2026-09-15)片數照參考圖 —— 拿掉自己放掉數量鎖的那句。
+        //   病灶(RA 2026-09-15 指出):前半寫 keep this count,
+        //     後半又寫 (loose pieces may vary naturally)「散落的片數可以自然變動」——
+        //     一句話裡先鎖再放,模型當然照後半做,結果她手上的片數跟參考圖對不上。
+        //   ★ RA 要的是:【參考圖幾片,畫面就幾片】。這是可驗證的具體要求,
+        //     不是風格偏好,所以直接寫成事實,並給一個對照例子讓它知道尺度。
+        //  ═══════════════════════════════════════════════════════════════
         bits.push('its contents are shown in [Image3]'
           + (_cl ? ' and look like ' + _cl : '')
-          + ', keep this shape, count and texture natural and stable, do not morph (loose pieces may vary naturally)');
+          + ', and the number of pieces on screen matches [Image3] exactly — if the reference shows three pieces, exactly three appear, not a handful and not one'
+          + ', keep this shape, count and texture stable and do not morph');
       }
       if (scale) bits.push('the product is ' + scale + ', shown at that true size against her body');
       bits.push(GROUNDED + ', its printed front and label kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it');
@@ -475,6 +496,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v3.9', resolveMode };
-  console.log('[KolProduct] 👗 v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.37', resolveMode };
+  console.log('[KolProduct] 👗 v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
