@@ -86,7 +86,39 @@
   }
   if (typeof window !== 'undefined') window.natToAccent = natToAccent;
 
-  function parseSituation(raw, persona) {
+  //  ═══════════════════════════════════════════════════════════════
+  //  🗣 v5.36(2026-09-14)台詞【直接傳】,不再從文字裡用正則猜回來
+  //   病灶(RA 現場指出):台詞本來是分鏡卡上的獨立欄位,
+  //     kol.html 卻先把它併成「shotDesc + 『台詞』」一整串,
+  //     這裡再用全域正則把每一組「」掃出來當台詞 —— 結構化資料先壓成文字、再猜回去。
+  //     後果一:鏡頭欄裡【任何】一組引號都會被她唸出來。
+  //       實測 2026-09-14:AI 在鏡頭欄寫了朋友的問句「欸妳那件是…」,
+  //       她就真的把朋友那句也念了一遍。客戶自己在鏡頭欄打引號同理。
+  //     後果二:同一句台詞在 prompt 裡出現兩次(分鏡行 + 對嘴行),白付一次字數。
+  //       實測:兩句台詞 118 字 → 實際吃掉約 240 字,直接把 4000 牆的餘裕吃光。
+  //   ★ 修法:第三個參數 dialogue 傳進來就【只認它】,一個引號都不掃。
+  //   ★ 沒傳 → 完全走舊路(正則掃引號)。kol.html 還沒改之前行為一字不差,
+  //     所以這一版可以單獨部署,不會壞。
+  //   ⚠️ 同源提醒:kol.html 兩處(STEP2 約 7552 / STEP3 約 11089)把台詞併進 sit,
+  //     那兩處改成「不併、改傳第三參數」之後,分鏡行才會真的省下那份字。
+  //  ═══════════════════════════════════════════════════════════════
+  function parseSituation(raw, persona, dialogue) {
+    //  🗣 v5.36:台詞欄直接給了 → 只認這一份,鏡頭欄寫什麼都不會被念出來
+    const _dia = String(dialogue == null ? '' : dialogue).trim();
+    if (_dia) {
+      const action0 = String(raw || '').replace(/\s+/g, ' ').trim();
+      const pronoun0 = persona?.gender === 'male' ? 'He' : 'She';
+      const accent0  = natToAccent(persona?.nationality);
+      const speech0  = `${pronoun0} speaks in natural ${accent0}, clear lip-sync, saying "${_dia}" — these words are spoken aloud as audio only and must never be shown as text; no subtitles, no captions and no on-screen text appear anywhere in the frame. No background music.`;
+      if (typeof window !== 'undefined' && window.KOL_DEBUG === true) {
+        console.log('[CrewDirector] 🗣 台詞走【直傳】路徑(' + _dia.length + ' 字)· 鏡頭欄的引號一律不當台詞');
+      }
+      return { action: action0, speechLine: speech0 };
+    }
+    return _parseSituationByQuotes(raw, persona);
+  }
+
+  function _parseSituationByQuotes(raw, persona) {
     const situation = (raw || '').trim();
     if (!situation) return { action: '', speechLine: '' };
 
@@ -684,8 +716,11 @@ function _deQuoteAction(t) {
   return String(t || '').replace(/[「」『』“”]/g, '');
 }
 
-function composeStitchBeat(situation, persona) {
-  const { action, speechLine } = parseSituation(_pronFix(situation), persona);
+function composeStitchBeat(situation, persona, dialogue) {
+  //  🗣 v5.36:第三參數 dialogue —— kol.html 改成分開傳之後,
+  //     這裡就不會再去掃鏡頭欄的引號(治「她會迸出鏡頭欄裡那句話」)。
+  //     沒傳 → 舊行為不變。發音修正 _pronFix 兩條路都要過。
+  const { action, speechLine } = parseSituation(_pronFix(situation), persona, dialogue ? _pronFix(dialogue) : '');
   const cleanAction = _deQuoteAction(action);
   if (cleanAction !== action && typeof window !== 'undefined' && window.KOL_DEBUG === true) {
     console.log('[CrewDirector] 🔇 動作描述已去引號(防被念出來)');
@@ -837,5 +872,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
