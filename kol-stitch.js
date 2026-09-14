@@ -1,5 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.68
+// kol-stitch.js — 自動接片引擎 v6.69
+// v6.69:🔁 算力機【內部錯誤 code 10000】也自動重送(舊版只認 429 → 一次內部錯誤整支不接片、
+//        客戶得自己按重來;RA 手動重送一次就過,證明是暫時性的。內部錯誤不扣點,成本是時間)
+//        同時涵蓋 5xx / gateway / timeout / socket
 // v6.68:🤳 抓拍框感 + 🤝 商品接觸鏈救回送出路徑(色板一開就被整包覆蓋,從來沒送過)
 //        🎭 表演通則移交 Worker(第18/22條已規定·跨層重複)· 只留接地那條渲染約束
 //        📐 詞序:接觸鏈放【商品互動區】不放末尾風格區(RA 詞序黃金法則·搬到低權重=悄悄降權)
@@ -916,10 +919,27 @@ window.KolStitch = (function () {
     _dbg('[KolStitch] 🚪 釋放 -1 → 目前在跑 ' + _inFlight + '/' + _maxInflight());
   }
   function _sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-  function _isRateLimited(e) {
+  //  ═══════════════════════════════════════════════════════════════════
+  //  🔁 v6.69(2026-09-14)算力機【自己的內部錯誤】也要自動重送。
+  //   病灶(RA 2026-09-14 實測):第 2 段回 {code:10000, "Internal error."},
+  //     跑了 10 分 47 秒才吐錯、consume:0(對方自己退點)。
+  //     但舊版重試只認 429/rate-limit,內部錯誤【不在重試名單】→
+  //     一次失敗整支就不接片,客戶得自己按重來。RA 手動重送一次就過了,
+  //     證明那是暫時性的。
+  //   ★ RA 拍板:那是算力機的錯,系統要自己再送一次,不要丟給客戶。
+  //     客戶頂多覺得這次比較久,而不是看到一支失敗的片。
+  //   ★ 內部錯誤【不扣點】(對方會 restored frozen points),重試成本是時間不是錢。
+  //  ═══════════════════════════════════════════════════════════════════
+  function _isRetryable(e) {
     const m = String((e && e.message) || '');
-    return /\b429\b/.test(m) || /too\s*many\s*requests/i.test(m) || /rate.?limit/i.test(m);
+    return /\b429\b/.test(m) || /too\s*many\s*requests/i.test(m) || /rate.?limit/i.test(m)
+        || /internal\s*error/i.test(m)
+        || /\b10000\b/.test(m)
+        || /\b5\d\d\b/.test(m)
+        || /bad\s*gateway|service\s*unavailable|gateway\s*time/i.test(m)
+        || /timeout|timed\s*out|socket|fetch\s*failed|network/i.test(m);
   }
+  function _isRateLimited(e) { return _isRetryable(e); }
   function queuedSubmit(fn) {
     const p = _submitChain.then(async function () {
       if (_submitAborted) {                       // 前面已經有段送不進去 → 不燒這筆錢
@@ -939,7 +959,7 @@ window.KolStitch = (function () {
           }
           const wait = _RETRY_DELAYS[attempt];
           //  v6.41:這是「請稍候」訊息,不是工程細節 —— 改用畫面 log,不要藏在 KOL_DEBUG 裡。
-          const _msg = '算力忙碌中,排隊等待…' + (wait / 1000) + ' 秒後自動重試(第 '
+          const _msg = '算力機忙碌中,系統自動重送…' + (wait / 1000) + ' 秒後重試(第 '
             + (attempt + 1) + '/' + _RETRY_DELAYS.length + ' 次,不會扣點)';
           try { if (_uiLog) _uiLog('⏳ ' + _msg); } catch (_e3) {}
           _dbg('[KolStitch] 🕒 ' + _msg);
