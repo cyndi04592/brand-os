@@ -48,7 +48,12 @@
   //    它排在最後,預算真的爆掉時第一個被犧牲 —— 這是刻意的:
   //    毛邊難看,但比不上「商品被畫成別的東西」嚴重。
   // ══════════════════════════════════════════════════════════════════
-  var CUTOUT_EDGE = 'the product reference is a cutout of the item itself only, so ignore any white halo, ragged matting edge, drop shadow or leftover background pixels around it and render clean natural edges lit by the scene';
+  //  ✂️ v5.38(2026-09-15)去背毛邊:列四種毛邊 → 一句正面。
+  //   舊句列了 white halo / ragged matting edge / drop shadow / leftover background pixels,
+  //   四個詞等於把四種毛邊的樣子餵給模型(RA 鐵律:點名即召喚,而且清單永遠列不完)。
+  //   正面版本本來就在句尾了(render clean natural edges lit by the scene),留那一句就夠。
+  //   16 個模式共用這條,砍一次全部受惠:199 → 75 字。
+  var CUTOUT_EDGE = 'the product reference is a cutout — render its edges clean and lit by the scene';
 
   var GROUNDED = 'the product has real weight and makes genuine physical contact with her hand or the surface it rests on, obeying gravity so it never floats, drifts or looks weightlessly pasted onto the scene';
   function isYes(v) { return /^(是|有|y|yes|true|1)/i.test(String(v || '').trim()); }
@@ -233,7 +238,10 @@
       //      (fitRules 是照順序留到預算用完為止)。
       //    ⚠️ 目前只掛在 innerwear。毛邊對所有去背商品圖都會發生,
       //      要不要提升成全模式共用,等這次實測看效果再決定。
-      return 'PROP (intimate apparel, worn as the inner layer): its fabric and pattern read correctly'
+      //  ✂️ v5.38:拿掉開頭「its fabric and pattern read correctly」——
+      //    資產標註區已經鎖了形狀/顏色/材質(Image2 = the product, keep every detail identical),
+      //    這句沒有增加任何資訊,是純重複。
+      return 'PROP (intimate apparel, worn as the inner layer)'
         + (isYes(prod && prod.showContents) ? ', with [Image3] showing the SAME single garment from the back (same piece, not a second garment) — match its strap routing, back closure and lace seams' : '')
         + ', the fabric is soft and lightweight with natural drape, cups and straps yielding and slightly deformable, folding and creasing where held or worn, never stiff, boardlike or molded plastic'
         //  ═══════════════════════════════════════════════════════════════
@@ -496,6 +504,6 @@
     return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.37', resolveMode };
-  console.log('[KolProduct] 👗 v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.38', resolveMode };
+  console.log('[KolProduct] 👗 v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
