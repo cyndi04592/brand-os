@@ -193,20 +193,27 @@
   const LINGERIE_BRAND_TYPES = ['fashion_lingerie', 'lingerie', 'underwear'];
 
   // ═══════════════════════════════════════════════════════════════════════
-  //  👙 v5.31 內衣品牌外層:必須是【可以敞開的】
+  //  👙 v5.34(2026-09-14)內衣品牌外層:改成【她本來就會這樣穿出門的一套】
   //  ─────────────────────────────────────────────────────────────────────
-  //  ★ 舊版是安全鎖:'fully dressed in everyday outerwear … no exposed undergarments'。
-  //    它擋住了情色風險,但也把商品擋光了 —— 內衣穿在密不透風的白 T 底下
-  //    = 廣告拍出來看不到商品 = 白拍。2026-09-05 實測:分鏡自己寫「居家T恤與短褲」,
-  //    道具師就算說了「穿在外衣底下」,也沒有任何開口能露出來。
-  //  ★ 新做法:外層改成【敞開的襯衫/罩衫】—— 領口自然露出商品,
-  //    同時保留 modest and tasteful 的分寸。這是「換規則」不是「拿掉規則」。
-  //  ⚠️ 不要在這裡疊否定句。『內衣是內層、不可穿在衣服外面』由道具師
-  //    (kol-product.js innerwear 模式)負責講,這裡只負責【給它一個開口】。
+  //  ★ v5.31 的做法是「給它一個開口」:敞開的襯衫 / 敞開的長版針織。
+  //    實測結果(RA 2026-09-14)是兩種失敗:
+  //      ① 生出來的服裝圖直接是一件 bra top + leggings —— 那等於【內衣外面再穿一件內衣】,
+  //         畫面上是兩件內衣疊穿,不是穿搭。
+  //      ② 就算生出襯衫,也是刻意解開扣子露出內衣的樣子 ——
+  //         RA 原話:「正常人不會這樣穿出門」。那是 model 在展示商品,不是 KOL 在過生活。
+  //  ★ RA 拍板的取捨(A 案):【畫面正常優先,商品交給 B-roll 特寫】。
+  //      畫面正常、商品幾乎看不到 → 商品靠手拿著 / 放桌上 / 拆包裝的特寫鏡頭呈現。
+  //      這也符合韓劇置入原則:商品是她生活裡早就存在的東西,不是她在展示的東西。
+  //  ★ 所以這裡寫的是【她就是這樣穿】,不是【怎麼露出商品】——
+  //    正面描述一套完整、日常、穿得出門的衣服;領口自然一點就好,不刻意設計開口。
+  //    參考 RA 給的正例:合身 V 領上衣、外套裡面有搭上衣;
+  //    反例:襯衫解開露內衣、只穿 bra top。
+  //  ⚠️ 不要在這裡疊否定句(不要寫 no nudity / not revealing 之類)——
+  //    RA 鐵律:點名即召喚,寫了反而把那個畫面叫出來。只描述要的樣子。
   // ═══════════════════════════════════════════════════════════════════════
   const LINGERIE_OUTER = {
-    casual:  'a soft oversized shirt worn unbuttoned and loose over it, relaxed at home',
-    refined: 'a light long cardigan worn open over it, calm and composed',
+    casual:  'a everyday outfit she would actually wear out: a fitted scoop or V-neck top with short sleeves, worn normally over it, paired with jeans or soft trousers',
+    refined: 'a everyday outfit she would actually wear out: a fine-knit top with a light jacket over it, the jacket worn on properly, paired with tailored trousers',
   };
   //  商品名稱後備:品牌類型沒設也能認出貼身衣物(與 kol-product.js 同一組關鍵字)
   const INNER_RE = /內衣|內著|胸罩|內褲|無鋼圈|bra|bralette|lingerie|nubra|nu bra|塑身衣|貼身衣物/i;
@@ -303,9 +310,12 @@
 
     //  👙 v5.31 內衣品牌:外層【覆寫】成可敞開款,商品才看得見。
     //    覆寫而非附加 —— 附加會變成「白T恤 + 敞開的襯衫」兩層互相打架。
+    //  👙 v5.34 內衣品牌:外層【覆寫】成日常穿得出門的一套。
+    //    覆寫而非附加 —— 附加會變成兩層互相打架(v5.31 的教訓)。
+    //    ★ 尾巴不再加 'no nudity' 這種否定句(點名即召喚),改成正面的穿著狀態。
     if (isLingerie) {
       outfitText = (LINGERIE_OUTER[sceneTone(sceneId)] || LINGERIE_OUTER.casual)
-        + ', modest and tasteful, no nudity';
+        + ', the top worn on properly and sitting where it should, an ordinary everyday look';
     }
 
     return 'wearing ' + outfitText;
@@ -483,5 +493,5 @@
     window.CrewDirector.register('wardrobe', window.KolWardrobe);
   }
 
-  console.log('[KolWardrobe] 👗 v5.33 就緒 · 🪣服裝圖轉存R2(白標+不過期)+快取 · v5.31 · 👙內衣外層改可敞開(商品看得見·品牌類型沒設也認得出) · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
+  console.log('[KolWardrobe] 👗 v5.34 就緒 · 👙內衣外層改【日常穿得出門的一套】(v5.31「敞開的襯衫/長版針織」實測生出 bra top+leggings=兩件內衣疊穿,或襯衫解扣露內衣=正常人不會這樣穿出門;RA 拍板 A 案:畫面正常優先,商品交給 B-roll 特寫)·尾巴拿掉 no nudity 否定句(點名即召喚) · v5.33 就緒 · 🪣服裝圖轉存R2(白標+不過期)+快取 · v5.31 · 👙內衣外層改可敞開(商品看得見·品牌類型沒設也認得出) · 服裝鎖定(釘住固定服裝圖→不現生·解抽卡·保險絲 window.KOL_OUTFIT_LOCK)+ 單一真相來源 + persona 後備 + 內衣安全鎖 + 服裝參考圖');
 })();
