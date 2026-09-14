@@ -254,7 +254,17 @@
     pushIfNonEmpty(parts, CrewMembers.wardrobe?.contribute(ctx));
     pushIfNonEmpty(parts, CrewMembers.makeup?.contribute(ctx));
     // 🔦 全域臉光保險:不管場景多硬,臉光一律柔,擋烤肉紋(2026-06 確認硬光是兇手)
-    parts.push('keep the light on her face soft and even regardless of the scene, no harsh overhead glare or hot specular highlights on the skin');
+    //  💡 v5.37(2026-09-14)「均勻光」拿掉,只留「不要死白熱點」。
+    //   ★ 病:這句要求【臉上的光均勻】,正面否定攝影師的
+    //     'window light from one side only so one side of her face falls slightly darker, not evenly lit'
+    //     —— 一句要有方向、一句要抹平,模型每次挑一邊,所以光差時好時壞。
+    //   ★ RA 實測(2026-09-13/14):段1 光差 27-31(有方向)、段2 掉到 0.6-1.8(被抹平),
+    //     而且光沒有方向 → 環境的顏色打不到臉上 → 臉上只剩一種顏色 → 粉感/美圖 App 感。
+    //     驗收:臉左右光差回到 13-21;膚色色相散布 1.69 → 2.3(鞋店 2.348)。
+    //   ★ 同一句話 kol-stitch 已經殺過兩次(v6.53 _leanFront、v6.54 _lookFront),
+    //     這裡是第三份 —— RA 鐵律①:同一件事多份,只改一份等於沒改。
+    //   ★ 保留的是「不要死白熱點」:那治的是油光/過曝,跟「要不要有方向」無關,兩者不衝突。
+    parts.push('no harsh overhead glare and no hot blown-out specular highlights on her skin');
     parts.push(CONTACT_CHAIN);   // 🤝 2026-08-11 公版接觸鏈:單鏡頭/接片這條路以前完全沒有,商品最容易在這裡飄
 
     // 🎬 ⑤ 攝影師接回單鏡頭路徑:運鏡(單支才有 movementId)+ REALISM_BASE + SCENE_REALISM
@@ -444,7 +454,17 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   } else if (ctx.scene?.light) {
     try { console.log('[CrewDirector] 🏢 有實景照 → 略過場景光線描述(避免與真照片競圖)'); } catch (e) {}
   }
-  front.push('keep the light on her face soft and even, no harsh overhead glare or hot specular highlights on the skin');
+  //  💡 v5.37(2026-09-14)「均勻光」拿掉,只留「不要死白熱點」。
+  //   ★ 病:這句要求【臉上的光均勻】,正面否定攝影師的
+  //   'window light from one side only so one side of her face falls slightly darker, not evenly lit'
+  //   —— 一句要有方向、一句要抹平,模型每次挑一邊,所以光差時好時壞。
+  //   ★ RA 實測(2026-09-13/14):段1 光差 27-31(有方向)、段2 掉到 0.6-1.8(被抹平),
+  //   而且光沒有方向 → 環境的顏色打不到臉上 → 臉上只剩一種顏色 → 粉感/美圖 App 感。
+  //   驗收:臉左右光差回到 13-21;膚色色相散布 1.69 → 2.3(鞋店 2.348)。
+  //   ★ 同一句話 kol-stitch 已經殺過兩次(v6.53 _leanFront、v6.54 _lookFront),
+  //   這裡是第三份 —— RA 鐵律①:同一件事多份,只改一份等於沒改。
+  //   ★ 保留的是「不要死白熱點」:那治的是油光/過曝,跟「要不要有方向」無關,兩者不衝突。
+  front.push('no harsh overhead glare and no hot blown-out specular highlights on her skin');
   // ④ 接地真實 + 🤝 公版接觸鏈(2026-08-11:光靠 never floating 這句否定句擋不住,商品照樣飄)
   front.push('soft natural contact shadows where her hands and the product touch surfaces, physically grounded never floating');
   front.push(CONTACT_CHAIN);
@@ -872,5 +892,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
