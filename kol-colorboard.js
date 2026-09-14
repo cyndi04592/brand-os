@@ -64,7 +64,7 @@
   //    白平衡跟著現場光走而不是被校正過。
   //  ⚠️ 不寫微觀紋理詞(毛孔/瑕疵)—— v5.17/v5.19 驗過那是烤肉紋兇手。
   // ═══════════════════════════════════════════════════════════════════════
-  const DEFAULT_LOOK = 'Shot handheld on a phone, everyday footage: muted understated colours straight out of the phone, nothing boosted, white balance left as the place actually is rather than corrected, exposure not perfect with highlights allowed to clip and shadows allowed to stay dark and a little noisy, no HDR lift, no polish, the ordinary look of a clip someone recorded and never graded';
+  const DEFAULT_LOOK = 'Handheld phone footage: muted understated colours straight out of the camera, nothing boosted, white balance left as the place actually is, exposure imperfect with highlights allowed to clip and shadows left dark and a little noisy, no HDR lift, no polish, a clip someone recorded and never graded';
 
   // ── 清掉多餘空白(photography_style 是自由文字,保險清一下)──
   function cleanLook(raw) {
