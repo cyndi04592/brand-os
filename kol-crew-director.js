@@ -501,10 +501,24 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   // 1️⃣ 道具師主句 —— 再長都送(fitRules 保底)
   pushIfNonEmpty(tail, _prodHead);
 
-  // 2️⃣ 內衣安全鎖(只在內衣品牌才存在)—— 法律風險,有就排前面
-  if (['fashion_lingerie', 'lingerie', 'underwear'].includes(ctx.brand?.brand_type || '')) {
-    tail.push('she is fully dressed in everyday outerwear, modest and tasteful, no exposed undergarments, no revealing clothing');
-  }
+  //  ═══════════════════════════════════════════════════════════════
+  //  2️⃣ v5.39(2026-09-15)內衣安全鎖【拿掉】—— 它跟商品本身打架,而且是純禁令。
+  //   舊句:'she is fully dressed in everyday outerwear, modest and tasteful,
+  //         no exposed undergarments, no revealing clothing'(113 字)
+  //   ★ 病灶一(打架):商品【就是內衣】。這句說「不准露出內衣」,
+  //     而道具師那邊又要求商品要被看見 —— 模型要同時滿足兩邊,
+  //     只能把商品當成外衣直接穿在最外層。RA 實測:內衣穿在外面、
+  //     或跟外層融合成一件,連續多支都這樣。
+  //   ★ 病灶二(點名即召喚):兩個 no(no exposed undergarments / no revealing
+  //     clothing)把「露出內衣」「暴露」這兩個畫面直接餵給模型。RA 鐵律。
+  //   ★ 替代方案已經存在,而且更精確:kol-product v5.35 的
+  //     'she is wearing it underneath the outfit shown in the outfit reference
+  //      image, which stays on her throughout'
+  //     —— 正面陳述、指向服裝參考圖、外層全程在身上,同樣擋住風險,
+  //     而且不跟商品衝突。合規由那一句負責,這裡不再疊第二份。
+  //   ⚠️ 不要因為「怕出事」就把舊句加回來 —— 兩份規則各講各的,
+  //     結果是模型兩邊都不照做。要調整就調 kol-product 那一句。
+  //  ═══════════════════════════════════════════════════════════════
 
   // 3️⃣ 無字幕條款 —— 只有 58 字,CP 值最高,絕不能再排最後
   tail.push('no subtitles, no captions, no on-screen text, no watermark');
@@ -528,8 +542,11 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   //     舊寫法 'same objects' 太寬 —— 它把「桌椅吧檯」和「窗外的車」
   //     劃進同一個籃子,模型只好全部鎖死,活的東西一起陪葬。
   //     ★ 桌椅一顆都不准動,這點一個字不放鬆;只是不再連「人與車」一起管。
-  tail.push('furniture, fixtures, structures, materials and surfaces identical across all shots, '
-    + 'same count, same colours, same places; one continuous space, only the camera angle changes');
+  //  ✂️ v5.40(2026-09-15)空間一致:八個詞 → 一句。
+  //   舊句列了 furniture / fixtures / structures / materials / surfaces(五種東西)
+  //   + same count / same colours / same places(三種一致),八個詞講同一件事。
+  //   機制其實只有後半那句:同一個空間,只有機位在動。前半是它的展開,是廢話。
+  tail.push('the place stays exactly as it is between shots; one continuous space, only the camera angle changes');
 
   // ═══════════════════════════════════════════════════════════════
   //  🧍 2026-09-11 · 公共場所要有人(RA 拍板)
@@ -662,7 +679,7 @@ function composeStitchShared(brandId, sceneId, locationId, duration, opts) {
   //  ═══════════════════════════════════════════════════════════════
   const _TAIL_RANK = [
     // ── ① 商品互動群 ──────────────────────────────────────────
-    /fully dressed in everyday outerwear|no exposed undergarments/i,   // 合規鎖(法律風險,商品群內排最前)
+    /wearing it underneath the outfit shown|which stays on her throughout/i,   // v5.39 合規改由 kol-product 的正面陳述負責,排序位置保留
     /^(PROP|HERO PRODUCT|PRODUCT IN USE|NO PHYSICAL PRODUCT)/i,        // 商品定義
     /cutout of the item itself|white halo|ragged matting edge/i,       // 去背邊(商品)
     /never zoomed or resized|same real-world size|hand-scale/i,        // 尺寸/形狀鎖(商品)
@@ -917,5 +934,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
