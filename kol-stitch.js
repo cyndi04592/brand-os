@@ -1,5 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.74
+// kol-stitch.js — 自動接片引擎 v6.75
+// v6.75:📊 併發上限改成照方案查表(PiAPI 官方:Free 2 / Creator 5 / Pro 20 / Enterprise 30)
+//        之前的 2 是從失敗次數猜的,現在有官方依據且實測吻合。
+//        ⚠️ 升級方案後要改 PIAPI_PLAN 那一行,否則升了也沒用。
 // v6.74:🔁 重試分兩套(429排隊 8 次 / 對方壞了 2 次)+ 冪等識別碼 requestId
 //        舊版一律 8 次:對方壞掉時最壞一段卡快兩小時;而且重送沒帶識別碼,
 //        「網路斷但對方其實跑成功」會變成重複生成、重複扣點。
@@ -923,10 +926,21 @@ window.KolStitch = (function () {
   //  ★ 本來想用 PiAPI 的 GET /account/active_tasks 問「現在跑幾個」,
   //    但實測回傳只有 music-u / luma / kling / flux / midjourney —— 【沒有 seedance】。
   //    所以改用我們自己的計數:送出 +1、輪詢到結果 -1,比外部端點更準也更即時。
-  //  ★ 上限先設 2(七批任務歷史全是兩兩成對 + 今天第三段必撞)。
-  //    客服確認後改這個數字就好,不用動邏輯。Console 可臨時覆寫:window.KOL_MAX_INFLIGHT = 3
-  //  ★ 這層做好之後,429 幾乎不會再發生;v6.41 的退避退居備用保險。
-  const _MAX_INFLIGHT_DEFAULT = 2;
+  //  ═══════════════════════════════════════════════════════════════════
+  //  📊 v6.75(2026-09-16)上限改成【照方案查表】—— 官方數字找到了。
+  //   PiAPI 的 Seedance 頁面右側「併發數」欄寫得清清楚楚:
+  //     Free 2 · Creator 5 · Pro 20 · Enterprise 30(任務)
+  //   RA 2026-09-16 實測 Free 就是 2:前兩段秒過,第三段立刻 429 ——
+  //   跟表上完全吻合,所以這張表可信。
+  //   ★ 之前寫 2 是從失敗次數猜的(「七批任務歷史全是兩兩成對」),現在有依據了。
+  //   ★ 升級方案之後【一定要同步改這裡】,否則升了也沒用 —— 閘門會繼續卡在舊數字。
+  //   ★ Console 仍可臨時覆寫:window.KOL_MAX_INFLIGHT = 20
+  //  ═══════════════════════════════════════════════════════════════════
+  const PIAPI_CONCURRENCY = { free: 2, creator: 5, pro: 20, enterprise: 30 };
+  //  ⬇️ 升級方案後改這一行(free → creator → pro → enterprise)
+  //  📈 RA 2026-09-16 已升 Pro:20 併發 → 90 秒(6 段)可以一次全送,不用排隊。
+  const PIAPI_PLAN = 'pro';
+  const _MAX_INFLIGHT_DEFAULT = PIAPI_CONCURRENCY[PIAPI_PLAN] || 2;
   let _inFlight = 0;
   function _maxInflight() {
     const v = (typeof window !== 'undefined') ? window.KOL_MAX_INFLIGHT : null;
