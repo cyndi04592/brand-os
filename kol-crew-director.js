@@ -124,9 +124,15 @@
       //     不必再去管 AI 的中文用詞(對嘴閘可以因此放寬)。
       //  ═══════════════════════════════════════════════════════════════════
       const _sec0  = (typeof window !== 'undefined' && window.__KOL_BEAT_SEC) || 15;
+      //  ⏱ v5.44:台詞的時間段優先用 AI 給的 dialogueTime(例如 "5-15"),
+      //    沒給就退回整格 0-N。格式只認「數字-數字」,其餘一律當沒給。
+      const _dtRaw = (typeof window !== 'undefined' && window.__KOL_DIA_TIME) || '';
+      const _dt    = /^\d{1,2}\s*[-–~]\s*\d{1,2}$/.test(_dtRaw)
+        ? _dtRaw.replace(/\s/g, '').replace(/[–~]/, '-')
+        : ('0-' + _sec0);
       const _who0  = pronoun0 === 'He' ? '他' : '她';
       const _tone0 = _toneOf(action0);
-      const speech0 = '台詞(0-' + _sec0 + '秒,' + _who0 + (_tone0 ? '、' + _tone0 : '') + '):「' + _dia + '」'
+      const speech0 = '台詞(' + _dt + '秒,' + _who0 + (_tone0 ? '、' + _tone0 : '') + '):「' + _dia + '」'
         + ' — spoken aloud in ' + accent0 + ' with accurate lip-sync, audio only;'
         + ' no subtitles, no captions, no on-screen text anywhere in the frame. No background music.';
       if (typeof window !== 'undefined' && window.KOL_DEBUG === true) {
@@ -812,10 +818,25 @@ function _deQuoteAction(t) {
   return String(t || '').replace(/[「」『』“”]/g, '');
 }
 
-function composeStitchBeat(situation, persona, dialogue, seconds) {
-  //  🎬 v5.43:第四參數 seconds —— 原生格式的時間段要寫這一格的【實際秒數】。
-  //    沒傳就用 15(舊呼叫端不會壞)。
-  if (typeof window !== 'undefined') window.__KOL_BEAT_SEC = Number(seconds) || 15;
+function composeStitchBeat(situation, persona, dialogue, seconds, dialogueTime) {
+  //  ═══════════════════════════════════════════════════════════════════
+  //  ⏱ v5.44(2026-09-16)【分時段】改由 AI 分鏡自己寫,這裡不再硬加 0-N 秒。
+  //   RA 2026-09-16 指正:「(0-15秒) 寫在唯一一顆鏡頭上等於沒寫 ——
+  //     分時段的價值是控制【第幾秒發生什麼】」。她要的是這樣:
+  //       (0-3秒)中景:她在桌邊坐著…雙手抱著紙箱
+  //       (3-5秒)她掀開最上面一層氣泡紙,眉頭微微挑起
+  //       (5-15秒)她邊看邊開口,語氣帶著好奇
+  //       台詞(5-15秒):「欸,這個我上禮拜訂的…」
+  //   ★ 這樣引擎就知道語音從第 5 秒才開始 ——
+  //     前 5 秒本來就沒有聲音要對,旁白感從根本消失。
+  //   ★ shotDesc 的分時段由 Worker v5.39 的規則叫 AI 寫;
+  //     台詞的時間段走新的 dialogueTime 欄(例如 "5-15")。
+  //     AI 沒給就退回整格(0-N),行為跟之前一樣。
+  //  ═══════════════════════════════════════════════════════════════════
+  if (typeof window !== 'undefined') {
+    window.__KOL_BEAT_SEC  = Number(seconds) || 15;
+    window.__KOL_DIA_TIME  = String(dialogueTime || '').trim();
+  }
   //  🗣 v5.36:第三參數 dialogue —— kol.html 改成分開傳之後,
   //     這裡就不會再去掃鏡頭欄的引號(治「她會迸出鏡頭欄裡那句話」)。
   //     沒傳 → 舊行為不變。發音修正 _pronFix 兩條路都要過。
@@ -842,11 +863,15 @@ function composeStitchBeat(situation, persona, dialogue, seconds) {
     //    時間段本身就宣告了這一格從第 0 秒開始,所以不必再把台詞硬推到最前面
     //    (v5.42 那招是沒有原生格式時的替代方案,現在由時間段接手)。
     //    現場音留在最後 —— 它是聲音設計,不是畫面內容。
+    //  ⏱ v5.44:AI 分鏡【自己已經分好時段】(開頭有 (0-3秒) 這種標記)就照原樣送,
+    //    這裡不再硬包一層 0-N —— 那等於把它分好的段落又蓋掉。
+    //    只有 AI 沒分段時才補上整格的時間標記,當作最低保障。
     const _sec = (typeof window !== 'undefined' && window.__KOL_BEAT_SEC) || 15;
     const _amb = cleanAction.match(/(現場音[::][^。]*。?)\s*$/);
     const _body = _amb ? cleanAction.slice(0, _amb.index).trim() : cleanAction;
+    const _hasSeg = /[((]\s*\d{1,2}\s*[-–~]\s*\d{1,2}\s*秒?\s*[))]/.test(_body);
     return [
-      '畫面(0-' + _sec + '秒):' + _body,
+      _hasSeg ? _body : ('(0-' + _sec + '秒)' + _body),
       speechLine,
       _amb ? _amb[1] : '',
     ].filter(Boolean).join(' ');
@@ -998,5 +1023,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
