@@ -157,30 +157,20 @@
     if (fuse === false) return '';                          // 明確關閉
     if (typeof fuse === 'string' && fuse) return fuse;      // 手動覆蓋
 
+    //  🚫 v0.8(2026-09-16)【KOL 影片一律用預設 look,不讀品牌】—— RA 早就定調,這裡一直沒改到。
+    //   RA 定調:KOL 是拿她自己的手機拍,不管在幫哪個品牌拍,畫面顏色都是她手機直出的樣子。
+    //   病:v0.7 還在讀 brand_packs.photography_style,又晴(ly)走的是品牌自己填的 171 字,
+    //     淡色預設「手機直出、沒調過色、顏色收斂」從來沒送出去。
+    //     RA 2026-09-16 實測三支片飽和度 30-37%,真人手機目標 19-27%。
+    //   ★ 品牌的視覺調性由品牌圖、商品圖、場景照扛,不靠調色字句。
+    //   ★ 保險絲照舊:KOL_COLORBOARD=false 關閉、KOL_COLORBOARD='字串' 手動覆蓋。
+    //   ★ brand_packs 的讀取函式保留(廣告圖等其他用途可能還要),只是影片不再用它。
     const brandId = ctx.brandId
       || (window.S && (window.S.currentBrandId || window.S.selectedBrandId))
       || '';
-    if (!brandId) {
-      console.log('[KolColorboard] 🎨 沒 brandId → 用預設 look（' + DEFAULT_LOOK.length + ' 字）');
-      return DEFAULT_LOOK;
-    }
-
-    const packs = await loadBrandPacks();
-    const pack = findPackForBrand(brandId, packs);
-    if (!pack) {
-      console.log('[KolColorboard] 🎨 brandId「' + brandId + '」未綁定 pack → 用預設 look'
-        + '（要換品牌 look:去 brand_packs 該列 matchKeywords 補此 brandId）');
-      return DEFAULT_LOOK;
-    }
-
-    const look = buildLookLine(pack);
-    if (!look) {
-      console.log('[KolColorboard] 🎨 品牌「' + brandId + '」pack「' + pack.pack_key
-        + '」photography_style 空 → 用預設 look（要換:填該欄 photography_style）');
-      return DEFAULT_LOOK;
-    }
-    console.log('[KolColorboard] 🎨 品牌「' + brandId + '」→ pack「' + pack.pack_key + '」· look ' + look.length + ' 字');
-    return look;
+    console.log('[KolColorboard] 🎨 KOL 影片一律用預設 look(' + DEFAULT_LOOK.length + ' 字)· 不讀品牌'
+      + (brandId ? '「' + brandId + '」' : '') + '的 photography_style');
+    return DEFAULT_LOOK;
   }
 
   // ── 向下相容別名(stitch v6.14 呼叫 resolveColorLine 不會壞)──
@@ -201,5 +191,5 @@
     window.CrewDirector.register('colorboard', window.KolColorboard);
   }
 
-  console.log('[KolColorboard] 🎨 v0.7 ✂️預設look 297→105字(RA:白平衡/曝光本來就是攝影師照現場調的,不用教;只留它不會自己知道的:手機直出、沒調過色、顏色收斂) · v0.6(八個說法講同一件「沒調過色」,留四個互補的) · v0.5 📱預設look去掉「明亮/HDR/低噪點」(治第一句就把畫面定調成廣告) · v0.4 就緒 · 品牌 look 讀 brand_packs.photography_style,沒設→預設 iPhone 原生手機色(A案2.0·全自動無需客人選·保險絲 window.KOL_COLORBOARD · 待 stitch 接 front)');
+  console.log('[KolColorboard] 🎨 v0.8 🚫KOL 影片一律用預設 look,不讀品牌 photography_style(RA 定調:她用自己手機拍,顏色不跟品牌走;ly 之前走品牌 171 字,淡色預設沒送出去) · v0.7 ✂️預設look 297→105字(RA:白平衡/曝光本來就是攝影師照現場調的,不用教;只留它不會自己知道的:手機直出、沒調過色、顏色收斂) · v0.6(八個說法講同一件「沒調過色」,留四個互補的) · v0.5 📱預設look去掉「明亮/HDR/低噪點」(治第一句就把畫面定調成廣告) · v0.4 就緒 · 品牌 look 讀 brand_packs.photography_style,沒設→預設 iPhone 原生手機色(A案2.0·全自動無需客人選·保險絲 window.KOL_COLORBOARD · 待 stitch 接 front)');
 })();
