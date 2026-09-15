@@ -237,6 +237,12 @@
       productTag: product.tag || '',
       sceneLabel: sceneLabel || '',
       brandId: _brandId,   // 🏷 v5.22 Worker 靠它去 D1 撈品牌靈魂書
+      //  🧪 v5.23(2026-09-15)極簡規則對照實驗的保險絲。
+      //    Console 貼 window.KOL_MINIMAL = true 之後按 AI 編修,
+      //    Worker 會改用極簡版 systemPrompt(約 1200 字,只講系統事實),
+      //    而不是完整版(約 9200 字)。同一個大綱兩套各生一支就能比較。
+      //    ⚠️ 這是實驗用,預設關;重整頁面就失效。
+      minimalRules: (typeof window !== 'undefined' && window.KOL_MINIMAL === true),
     };
   }
 
@@ -411,5 +417,5 @@
     window.CrewDirector.register('storywriter', window.KolStorywriter);
   }
 
-  console.log('[KolStorywriter] 📖 v5.22 就緒 · 🏷送出brandId(AI分鏡首次拿得到品牌·Worker 端自行撈靈魂書) · v5.21 📏字數規格同步前端↔AI(走 outline 通道·治「建議72字·AI只寫50」) · 🔁接棒句中性化 ·(語速6.0實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
+  console.log('[KolStorywriter] 📖 v5.23 就緒 · 🧪極簡規則保險絲(window.KOL_MINIMAL=true → Worker 改用 1200 字的極簡版 systemPrompt,對照完整版 9200 字) · v5.22 就緒 · 🏷送出brandId(AI分鏡首次拿得到品牌·Worker 端自行撈靈魂書) · v5.21 📏字數規格同步前端↔AI(走 outline 通道·治「建議72字·AI只寫50」) · 🔁接棒句中性化 ·(語速6.0實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
 })();
