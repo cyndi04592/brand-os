@@ -448,7 +448,11 @@
     }
     return '';
   }
-  function speakBudget(b) { return Math.round(speakWindow(b) * FILL * SPEAK_RATE); }
+  //  ⏱ v3.0(2026-09-16)兩條線分開 —— 跟 kol-proxy v5.43 同一套:
+  //    甜蜜點(建議寫到這裡,留呼吸) vs 硬線(超過才是真的講不完)。
+  //    用同一個數字當兩條線就會變成「叫你補到60字、補到59又說太長」(v2.7 踩過)。
+  function speakBudget(b) { return Math.round(speakWindow(b) * FILL * SPEAK_RATE); }   // 甜蜜點
+  function speakHard(b)   { return Math.round(speakWindow(b) * 0.95 * SPEAK_RATE); }   // 硬線
   if (typeof window !== 'undefined') { window.KolSpeakWindow = speakWindow; window.KolSpeakBudget = speakBudget; }
 
   // 🆕 v1.6:台詞偏短判斷(對稱防線:紅=太長硬擋,黃=偏短提醒不擋)
@@ -503,7 +507,7 @@
     const overCls = b.overflow ? ' over' : '';
     const fitTxt = b.dialogue
       ? `${b.fit?.chars ?? 0} 字 · 約 ${b.fit?.estSec ?? 0} 秒`
-        + (speakRange(b) ? ` · 🗣 ${speakRange(b)} 秒開口(視窗 ${speakWindow(b)} 秒 · 建議 ${Math.round(speakBudget(b) * 0.9)}–${speakBudget(b)} 字)` : '') + (b.overflow ? (' ⚠️ 太長,塞不進 ' + b.seconds + ' 秒(最多約 ' + ((b.fit && b.fit.maxChars) || 0) + ' 字)') : '') + (shortInfo(b) ? ` 台詞偏短,結尾約空 ${shortInfo(b).gap} 秒(建議補到約 ${shortInfo(b).target} 字)` : '')
+        + (speakRange(b) ? ` · 🗣 ${speakRange(b)} 秒開口(視窗 ${speakWindow(b)} 秒 · 建議 ${Math.round(speakBudget(b) * 0.9)}–${speakBudget(b)} 字${(b.fit?.chars ?? 0) > speakHard(b) ? ` · ⚠️ 超過 ${speakHard(b)} 字就講不完` : ''})` : '') + (b.overflow ? (' ⚠️ 太長,塞不進 ' + b.seconds + ' 秒(最多約 ' + ((b.fit && b.fit.maxChars) || 0) + ' 字)') : '') + (shortInfo(b) ? ` 台詞偏短,結尾約空 ${shortInfo(b).gap} 秒(建議補到約 ${shortInfo(b).target} 字)` : '')
       : '';
     return `
 <div class="sbp-card">
@@ -562,5 +566,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v2.9 就緒 · ⏱說話視窗從 shotDesc 的分時段自己抓(不依賴額外欄位;與 kol-proxy _winOf、crew-director _speakSegOf 同一套) · v2.8 就緒 · ⏱語速對齊 4.2→6.0(面板與 Worker 差 43%,15秒一個算50字一個算72字,所以「建議補到72字」一直失常) · 🗣建議字數改用【說話視窗】(AI 分時段後會給 dialogueTime,5-15 代表只講10秒,用整格算會塞爆語速) · 卡片顯示開口時間與視窗 · v2.7 就緒 · 📏建議值與硬擋線統一(治「叫你補到60字·補到59又說太長」) · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
+  console.log('[KolStoryboardPanel] v3.0 就緒 · 📏兩條線分開(甜蜜點給建議、硬線給警告,跟 kol-proxy v5.43 同一套) · 超過硬線才顯示「講不完」 · v2.9 就緒 · ⏱說話視窗從 shotDesc 的分時段自己抓(不依賴額外欄位;與 kol-proxy _winOf、crew-director _speakSegOf 同一套) · v2.8 就緒 · ⏱語速對齊 4.2→6.0(面板與 Worker 差 43%,15秒一個算50字一個算72字,所以「建議補到72字」一直失常) · 🗣建議字數改用【說話視窗】(AI 分時段後會給 dialogueTime,5-15 代表只講10秒,用整格算會塞爆語速) · 卡片顯示開口時間與視窗 · v2.7 就緒 · 📏建議值與硬擋線統一(治「叫你補到60字·補到59又說太長」) · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
