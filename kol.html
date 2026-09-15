@@ -7562,7 +7562,7 @@ async function createStitchedVideo(beats) {
     let p;
     if (_shared) {
       // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞,不重複、不堆疊
-      p = composeStitchBeat(shot, persona, b.dialogue || '');
+      p = composeStitchBeat(shot, persona, b.dialogue || '', snapDur(b.seconds, b.dialogue));
       if (!p) p = sit;
     } else {
       // A 版(現狀):每段完整 composeSeedancePrompt + 一致性/商品比例鎖
@@ -11117,7 +11117,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     let p;
     if (_shared) {
       // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞
-      p = composeStitchBeat(shot, persona, b.dialogue || '');
+      p = composeStitchBeat(shot, persona, b.dialogue || '', snapDur(b.seconds, b.dialogue));
       if (!p) p = sit;
     } else {
       // A 版(現狀)
