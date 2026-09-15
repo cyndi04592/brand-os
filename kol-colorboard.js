@@ -64,7 +64,16 @@
   //    白平衡跟著現場光走而不是被校正過。
   //  ⚠️ 不寫微觀紋理詞(毛孔/瑕疵)—— v5.17/v5.19 驗過那是烤肉紋兇手。
   // ═══════════════════════════════════════════════════════════════════════
-  const DEFAULT_LOOK = 'Handheld phone footage: muted understated colours straight out of the camera, nothing boosted, white balance left as the place actually is, exposure imperfect with highlights allowed to clip and shadows left dark and a little noisy, no HDR lift, no polish, a clip someone recorded and never graded';
+  //  ✂️ v0.6(2026-09-15)色板 297 → 205 字。
+  //   舊句用八個說法講同一件事:nothing boosted / white balance left as it is /
+  //   exposure imperfect / highlights clip / shadows dark and noisy / no HDR lift /
+  //   no polish / never graded —— 全部都是「沒調過色」。
+  //   RA:「提示詞不是越多越好,如果越多越好 GPT/Seedance 就不會設字數上限了」。
+  //   留下的四個是【互相補不到的】:沒調過色、白平衡照現場、曝光不完美(亮部過曝暗部有噪)、手機直出。
+  //  ✂️ v0.7(2026-09-15)再砍一輪。RA:「白平衡照現場、曝光不完美,那本來就是
+  //    攝影師依照現場去調的啊,你寫這麼多很奇怪」—— 那是攝影常識,不用教。
+  //    留下的只有【它不會自己知道的事】:這是手機直出、沒調過色、顏色是收斂的。
+  const DEFAULT_LOOK = 'Handheld phone footage straight out of the camera, never graded, muted understated colours';
 
   // ── 清掉多餘空白(photography_style 是自由文字,保險清一下)──
   function cleanLook(raw) {
@@ -192,5 +201,5 @@
     window.CrewDirector.register('colorboard', window.KolColorboard);
   }
 
-  console.log('[KolColorboard] 🎨 v0.5 📱預設look去掉「明亮/HDR/低噪點」(治第一句就把畫面定調成廣告) · v0.4 就緒 · 品牌 look 讀 brand_packs.photography_style,沒設→預設 iPhone 原生手機色(A案2.0·全自動無需客人選·保險絲 window.KOL_COLORBOARD · 待 stitch 接 front)');
+  console.log('[KolColorboard] 🎨 v0.7 ✂️預設look 297→105字(RA:白平衡/曝光本來就是攝影師照現場調的,不用教;只留它不會自己知道的:手機直出、沒調過色、顏色收斂) · v0.6(八個說法講同一件「沒調過色」,留四個互補的) · v0.5 📱預設look去掉「明亮/HDR/低噪點」(治第一句就把畫面定調成廣告) · v0.4 就緒 · 品牌 look 讀 brand_packs.photography_style,沒設→預設 iPhone 原生手機色(A案2.0·全自動無需客人選·保險絲 window.KOL_COLORBOARD · 待 stitch 接 front)');
 })();
