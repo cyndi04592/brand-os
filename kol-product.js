@@ -71,6 +71,14 @@
   //   —— 全部都在講同一件事,而且每個模式開頭已經明講「這裡沒有實體商品」。
   //   點名那些容器等於把它們餵給模型(RA 鐵律)。改成一句正面陳述,六處共用。
   var NO_BOX = 'nothing here is boxed or packaged';
+  //  📏 v5.42(2026-09-16)拿掉五份「keep it subtle / do NOT overpower the subject」
+  //   RA 實測:她從箱子拿出來的海苔包比真實尺寸小一截;同一支片裡桌上沒被操作、
+  //   背景模糊的那幾包反而是對的大小。差別只在【手上那包吃到了這句】。
+  //   ★ 「低調、別搶過主體」對模型來說最直接的做法就是把東西縮小。
+  //   ★ 尺寸不靠 realSize(RA:客戶量了公分 AI 也用不上,頭/手當比例尺都試過),
+  //     改成一句正面事實 at its real-life size,讓模型用它自己知道的日常尺寸。
+  //   ★ 五份一起改(held / fallback / dish / packaged / object),只改一份等於沒改。
+  //     worn / hero / demo 本來就沒有這句。
   function isYes(v) { return /^(是|有|y|yes|true|1)/i.test(String(v || '').trim()); }
   function findProduct(ctx) {
     if (ctx && ctx.episode && ctx.episode.product) return ctx.episode.product;
@@ -216,7 +224,7 @@
   function contributeNewMode(prod, mode, scale) {
     const sz = scale ? '; it is ' + scale + ', at that true size' : '';
     if (mode === 'held') {
-      return 'PROP (a small product she is holding — keep it subtle and natural, do NOT overpower the subject): its printed text reads correctly' + sz + '; ' + GROUNDED + ', its front kept toward the camera and recognizable while held; it may also rest naturally on a clean surface, never scattered messily';
+      return 'PROP (a small product she is holding, at its real-life size): its printed text reads correctly' + sz + '; ' + GROUNDED + ', its front kept toward the camera and recognizable while held; it may also rest naturally on a clean surface, never scattered messily';
     }
     // ══ 🆕 v3.7 貼身衣物:唯一講清楚「內層」的模式 ══
     //   為什麼要獨立一條:通用 'worn' 說的是「清楚看得出穿在身上」,
@@ -459,7 +467,7 @@
   function _contributeInner(ctx) {
     const prod = findProduct(ctx);
     if (!prod) {
-      return 'PROP (a supporting object she is holding — keep it subtle, do NOT overpower the subject): at a believable real-world scale; ' + GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it';
+      return 'PROP (an object she is holding, at its real-life size): ' + GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it';
     }
     // 🆕 v3.0:有明設 productMode → 走新模式;沒設(海苔等舊商品)→ 往下走 v2.2 原本邏輯,一字不變
     const mode = resolveMode(prod);
@@ -480,7 +488,7 @@
       bits.push('this plated dish is the finished dish as served — she presents, serves or lightly garnishes it, and it stays on the counter or table away from any heat, never going back into cookware');
       if (scale) bits.push('the plated dish is ' + scale + ', at that true size');
       bits.push('presented appetizing and intact, the plate facing the camera, minimal movement so it stays recognizable');
-      return 'PROP (the plated dish she is presenting — keep it natural, do NOT overpower the subject): ' + bits.join('; ');
+      return 'PROP (the plated dish she is presenting, at its real-life size): ' + bits.join('; ');
     }
 
     if (type === 'packaged') {
@@ -513,13 +521,26 @@
           + (_cl ? ' and look like ' + _cl : '')
           + ', and the number of pieces on screen matches [Image3] exactly'
           + ', their shape and texture staying stable');
+        //  ═══════════════════════════════════════════════════════════════
+        //  📦 v5.42(2026-09-16)袋口的【開口狀態】寫成事實 —— 治「整包被撕裂」
+        //   RA 實測(好滋好滋 45 秒):第 3 段她把整包像拆餅乾一樣撕開攤平。
+        //   ★ 機制:每一段是【獨立生成】,每段收到的商品參考圖都是一包封口的袋子。
+        //     第 1 段拆過,第 3 段的算力機不知道;分鏡又叫她「從包裝裡捏出一片」——
+        //     要拿東西就得先開,而整份 prompt 沒有一句講袋口狀態,模型只好自己發明開法。
+        //   ★ 解法:只要會拿出內容物(showContents),袋口就【已經開著】,
+        //     她從開口伸手進去拿,袋子保持整包的形狀。
+        //   ★ 刻意不寫「撕 / 不要撕破」(點名即召喚),也不寫夾鏈 ——
+        //     公版:不是每種包裝都有夾鏈,客戶可在「包裝外型」自己寫。
+        //   ★ 用 '; ' 成獨立一條,排在內容物後面。
+        //  ═══════════════════════════════════════════════════════════════
+        bits.push('the bag is already open along its top edge, she reaches in through that opening to take a piece, and the bag keeps its whole shape');
       }
       if (scale) bits.push('the product is ' + scale + ', shown at that true size against her body');
       //  ✂️ v5.39:GROUNDED 後面那兩句都是第二份 ——
       //   「正面與標籤朝向鏡頭」上面那句已經在講印刷字要讀得出來;
       //   「自然的重量弧線」GROUNDED 本身就是在講重量與重力。
       bits.push(GROUNDED + ', its printed front kept toward the camera while held');
-      return 'PROP (a supporting product she is holding — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
+      return 'PROP (a product she is holding, at its real-life size): ' + bits.join('; ');
     }
 
     // object
@@ -527,9 +548,9 @@
     bits.push('the product reads correctly and is never mirrored' + (look ? ' (' + look + ')' : ''));   /* v3.51:一致性已由資產標註區負責,這裡不再重複 */
     if (scale) bits.push('the product is ' + scale + ', shown at that true size');
     bits.push(GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it');
-    return 'PROP (the product she is using or showing — keep it subtle and natural, do NOT overpower the subject): ' + bits.join('; ');
+    return 'PROP (the product she is using or showing, at its real-life size): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.38', resolveMode };
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.42', resolveMode };
   console.log('[KolProduct] 👗 v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
