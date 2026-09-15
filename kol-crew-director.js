@@ -109,13 +109,43 @@
       const action0 = String(raw || '').replace(/\s+/g, ' ').trim();
       const pronoun0 = persona?.gender === 'male' ? 'He' : 'She';
       const accent0  = natToAccent(persona?.nationality);
-      const speech0  = `${pronoun0} speaks in natural ${accent0}, clear lip-sync, saying "${_dia}" — these words are spoken aloud as audio only and must never be shown as text; no subtitles, no captions and no on-screen text appear anywhere in the frame. No background music.`;
+      //  ═══════════════════════════════════════════════════════════════════
+      //  🎬 v5.43(2026-09-16)改用 Seedance【原生對白語法】。
+      //   RA 2026-09-16 問「引號是不是開始講話的觸發符號」→ 去查官方寫法,是的。
+      //   官方分鏡格式(火山/即夢 Seedance 2.0 提示詞指南):
+      //     畫面(0-5秒):特寫角色通紅的眼眶,手指死死指著對方…
+      //     台詞1(角色A,哽咽怒吼):「你到底想騙我什麼?」
+      //   —— ①引號是台詞的觸發 ②括號裡寫【語氣】 ③畫面與台詞【配對出現】
+      //      ④超過 8 秒官方建議用【分時段】寫法(0-3秒/3-6秒…)
+      //   ★ 我們原本送的是英文描述句,模型讀得懂但不是原生格式,
+      //     而且它排在兩百多字動作描述的【後面】—— 模型先演動作、第 3~8 秒才開口,
+      //     語音卻從第 0 秒播 → 那幾秒就是旁白(RA 連續實測三支)。
+      //   ★ 改法:用原生格式,時間段本身就宣告「這句話從第 0 秒講到最後」,
+      //     不必再去管 AI 的中文用詞(對嘴閘可以因此放寬)。
+      //  ═══════════════════════════════════════════════════════════════════
+      const _sec0  = (typeof window !== 'undefined' && window.__KOL_BEAT_SEC) || 15;
+      const _who0  = pronoun0 === 'He' ? '他' : '她';
+      const _tone0 = _toneOf(action0);
+      const speech0 = '台詞(0-' + _sec0 + '秒,' + _who0 + (_tone0 ? '、' + _tone0 : '') + '):「' + _dia + '」'
+        + ' — spoken aloud in ' + accent0 + ' with accurate lip-sync, audio only;'
+        + ' no subtitles, no captions, no on-screen text anywhere in the frame. No background music.';
       if (typeof window !== 'undefined' && window.KOL_DEBUG === true) {
         console.log('[CrewDirector] 🗣 台詞走【直傳】路徑(' + _dia.length + ' 字)· 鏡頭欄的引號一律不當台詞');
       }
       return { action: action0, speechLine: speech0 };
     }
     return _parseSituationByQuotes(raw, persona);
+  }
+
+  //  🎭 v5.43:從動作描述裡撈出【語氣】放進台詞的括號 —— 官方格式:台詞(角色,語氣):「…」
+  //    分鏡本來就會寫「語氣是那種剛拆到東西的小興奮」「語氣慢下來、比較篤定」,
+  //    把它搬到括號裡,對白的情緒就有了著落,不用另外要求 AI 多寫什麼。
+  //    撈不到就留空,格式照樣成立。
+  function _toneOf(action) {
+    const m = String(action || '').match(/語氣[是]?([^,,。;;]{2,14})/);
+    if (m) return m[1].replace(/^那種/, '').trim();
+    const m2 = String(action || '').match(/(笑著說|篤定|興奮|小聲|放鬆|認真|無奈|得意|驚訝|不好意思)/);
+    return m2 ? m2[1] : '';
   }
 
   function _parseSituationByQuotes(raw, persona) {
@@ -782,7 +812,10 @@ function _deQuoteAction(t) {
   return String(t || '').replace(/[「」『』“”]/g, '');
 }
 
-function composeStitchBeat(situation, persona, dialogue) {
+function composeStitchBeat(situation, persona, dialogue, seconds) {
+  //  🎬 v5.43:第四參數 seconds —— 原生格式的時間段要寫這一格的【實際秒數】。
+  //    沒傳就用 15(舊呼叫端不會壞)。
+  if (typeof window !== 'undefined') window.__KOL_BEAT_SEC = Number(seconds) || 15;
   //  🗣 v5.36:第三參數 dialogue —— kol.html 改成分開傳之後,
   //     這裡就不會再去掃鏡頭欄的引號(治「她會迸出鏡頭欄裡那句話」)。
   //     沒傳 → 舊行為不變。發音修正 _pronFix 兩條路都要過。
@@ -790,6 +823,33 @@ function composeStitchBeat(situation, persona, dialogue) {
   const cleanAction = _deQuoteAction(action);
   if (cleanAction !== action && typeof window !== 'undefined' && window.KOL_DEBUG === true) {
     console.log('[CrewDirector] 🔇 動作描述已去引號(防被念出來)');
+  }
+  //  ═══════════════════════════════════════════════════════════════════
+  //  ⏱ v5.42(2026-09-16)【說話排到動作前面】—— RA 想出來的做法。
+  //   病灶:送出去的順序是「兩百多字的中文動作描述 → 最後才 She speaks…」。
+  //     模型先讀完一大串動作,最後才知道她在說話 —— 所以它先演動作,
+  //     第 3~8 秒才開口,而語音從第 0 秒就播,那幾秒聽起來就是旁白。
+  //   ★ 之前的解法是去管 AI 的中文用詞(對嘴閘擋「然後說/說到這裡」),
+  //     RA 指出那又是在限制 AI。正解是【改我們自己的組裝順序】:
+  //     說話先講,動作接在後面當成「她講話的同時在做的事」。
+  //     AI 中文怎麼寫都行,送出去的時候說話永遠在最前面。
+  //   ★ 這也符合詞序黃金法則:主體與動作排前面,細節排後面。
+  //  ═══════════════════════════════════════════════════════════════════
+  if (speechLine && cleanAction) {
+    //  🔪 現場音那一句要留在最後 —— 它是聲音設計,不是「她講話時在做的事」。
+    //    景別(中景/特寫…)要留在最前面 —— 那是鏡頭指令,先講才對。
+    //  🎬 v5.43:畫面也用原生格式 —— 官方是【畫面(時間段):… + 台詞(時間段,角色,語氣):「…」】配對出現。
+    //    時間段本身就宣告了這一格從第 0 秒開始,所以不必再把台詞硬推到最前面
+    //    (v5.42 那招是沒有原生格式時的替代方案,現在由時間段接手)。
+    //    現場音留在最後 —— 它是聲音設計,不是畫面內容。
+    const _sec = (typeof window !== 'undefined' && window.__KOL_BEAT_SEC) || 15;
+    const _amb = cleanAction.match(/(現場音[::][^。]*。?)\s*$/);
+    const _body = _amb ? cleanAction.slice(0, _amb.index).trim() : cleanAction;
+    return [
+      '畫面(0-' + _sec + '秒):' + _body,
+      speechLine,
+      _amb ? _amb[1] : '',
+    ].filter(Boolean).join(' ');
   }
   return [cleanAction, speechLine].filter(Boolean).join('. ');
 }
@@ -938,5 +998,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
