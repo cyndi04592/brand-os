@@ -1,5 +1,8 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.73
+// kol-stitch.js — 自動接片引擎 v6.74
+// v6.74:🔁 重試分兩套(429排隊 8 次 / 對方壞了 2 次)+ 冪等識別碼 requestId
+//        舊版一律 8 次:對方壞掉時最壞一段卡快兩小時;而且重送沒帶識別碼,
+//        「網路斷但對方其實跑成功」會變成重複生成、重複扣點。
 // v6.73:🏚 場景標註加一句「這裡有人在用,東西留在上一次被放下的位置」——
 //        舊句只【允許】裡面的生活變動,那是被動的,模型照樣演成樣品屋。
 // v6.72:✂️ 送進算力機那份再瘦身(RA:「提示詞不是越多越好」)——
@@ -979,6 +982,33 @@ window.KolStitch = (function () {
         || /timeout|timed\s*out|socket|fetch\s*failed|network/i.test(m);
   }
   function _isRateLimited(e) { return _isRetryable(e); }
+
+  //  ═══════════════════════════════════════════════════════════════════
+  //  🔁 v6.74(2026-09-15)重試次數【分成兩套】+ 冪等識別碼。
+  //   病灶一(RA 2026-09-15 問「到底重試幾次」時查出來的):
+  //     _RETRY_DELAYS 有 8 筆 → 一段最多送 9 次。那是當初為了對付 429 設的
+  //     (429 只是要排隊,試多次很合理);但 v6.69 把 Internal error / 5xx / timeout
+  //     也納進同一套,結果對方壞掉時也試 9 次 ——
+  //     每次失敗要跑 10 分鐘,最壞一段卡快兩小時,客戶什麼都看不到。
+  //   ★ 修法:429 這種「要排隊」的照舊 8 次;其餘「對方壞了」的只試 2 次。
+  //
+  //   病灶二:重送【沒有帶任何識別碼】。如果失敗的原因是「網路斷了但對方其實跑成功」,
+  //     那 9 次重送就是 9 支片、9 次點數。PiAPI 自己也建議做冪等性。
+  //   ★ 修法:每一段在【重試迴圈之外】產生一個 requestId,重送時帶同一個。
+  //     編號要在迴圈外產生,不然每次重試都變新的,等於沒做。
+  //  ═══════════════════════════════════════════════════════════════════
+  const _RETRY_DELAYS_QUEUE = _RETRY_DELAYS;                    // 429/排隊:照舊 8 次
+  const _RETRY_DELAYS_FAULT = [20000, 60000];                   // 對方壞了:2 次就好
+  function _isQueueError(e) {
+    const m = String((e && e.message) || '');
+    return /\b429\b/.test(m) || /too\s*many\s*requests/i.test(m) || /rate.?limit/i.test(m);
+  }
+  let _reqSeq = 0;
+  function _newRequestId(tag) {
+    _reqSeq += 1;
+    return 'raby-' + Date.now().toString(36) + '-' + _reqSeq + (tag ? ('-' + String(tag).slice(0, 12)) : '');
+  }
+
   function queuedSubmit(fn) {
     const p = _submitChain.then(async function () {
       if (_submitAborted) {                       // 前面已經有段送不進去 → 不燒這筆錢
@@ -991,15 +1021,17 @@ window.KolStitch = (function () {
           _lastSubmitAt = Date.now();
           return await fn();
         } catch (e) {
-          if (!_isRateLimited(e) || attempt >= _RETRY_DELAYS.length) {
+          //  🔁 v6.74:依錯誤種類挑對應的重試表 —— 排隊的可以多等,對方壞了就早點收手。
+          const _tbl = _isQueueError(e) ? _RETRY_DELAYS_QUEUE : _RETRY_DELAYS_FAULT;
+          if (!_isRetryable(e) || attempt >= _tbl.length) {
             _submitAborted = _scrub(String((e && e.message) || '未知原因')).slice(0, 80);
             _dbg('[KolStitch] 🛑 提交失敗,中止後續段落的提交 · ' + _submitAborted);
             throw e;
           }
-          const wait = _RETRY_DELAYS[attempt];
+          const wait = _tbl[attempt];
           //  v6.41:這是「請稍候」訊息,不是工程細節 —— 改用畫面 log,不要藏在 KOL_DEBUG 裡。
           const _msg = '算力機忙碌中,系統自動重送…' + (wait / 1000) + ' 秒後重試(第 '
-            + (attempt + 1) + '/' + _RETRY_DELAYS.length + ' 次,不會扣點)';
+            + (attempt + 1) + '/' + _tbl.length + ' 次,不會扣點)';
           try { if (_uiLog) _uiLog('⏳ ' + _msg); } catch (_e3) {}
           _dbg('[KolStitch] 🕒 ' + _msg);
           await _sleep(wait);
@@ -1608,7 +1640,12 @@ window.KolStitch = (function () {
     //  🚪 v6.42:先取得位子才送。佔位涵蓋【提交 + 輪詢】整段,失敗也會在 finally 釋放。
     await _acquireSlot(opts.kolName ? ('「' + opts.kolName + '」的這一段') : null);
     try {
+    //  🔁 v6.74 冪等識別碼:在【重試迴圈外面】產生,整段的每一次重送都帶同一個。
+    //    放進迴圈裡就會每次都變新的,等於沒做冪等。
+    const _reqId = _newRequestId(opts.kolName || opts.brandId || '');
+    _dbg('[KolStitch] 🔖 本段 requestId = ' + _reqId);
     const sub = await queuedSubmit(function () { return api('seedance_submit', {
+      requestId: _reqId,                                                   // 🔖 v6.74 冪等:重送時帶同一個
       kolImageUrl: opts.kolImageUrl,                                       // → [Image1] 臉錨(整支同一張身份臉錨·v6.12鎖臉)
       productImageUrls: _segProducts.has ? _segProducts.urls : (Array.isArray(opts.productImageUrls) ? opts.productImageUrls : []),
       outfitImageUrl: opts.outfitImageUrl || undefined,                    // → [OUTFIT_IMG]→[ImageN]
