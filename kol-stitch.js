@@ -1,5 +1,10 @@
 // ==========================================================================
-// kol-stitch.js — 自動接片引擎 v6.71
+// kol-stitch.js — 自動接片引擎 v6.73
+// v6.73:🏚 場景標註加一句「這裡有人在用,東西留在上一次被放下的位置」——
+//        舊句只【允許】裡面的生活變動,那是被動的,模型照樣演成樣品屋。
+// v6.72:✂️ 送進算力機那份再瘦身(RA:「提示詞不是越多越好」)——
+//        場景九宮格 252→175、主旨句 166→85、商品尺寸鎖的重複說法收斂。
+//        砍的全是「同一件事用好幾個說法講」,機制一個沒少。
 // v6.71:✂️ 抓拍框感四個動詞→兩件事(212→128字)
 // v6.70:🛑 商品接觸鏈停用(保險絲 window.KOL_CONTACT_CHAIN,預設關)
 //        v6.68 把它搬到商品互動區 → 權重拉高 → 模型很用力演手指抓握 → 手部姿勢異常
@@ -604,7 +609,11 @@ window.KolStitch = (function () {
     if (shared && shared.front) {
       const prodRule = bp.has
         ? ('the product is never zoomed or resized within a shot; ' + _CONTACT_CHAIN)   /* v6.56:shape/proportions 已在標註區,這裡只留「鏡頭內不准變大小」*/   /* v6.53:刪「different shots show…」,標註區已說 each shot names the one it uses */
-        : (_pron().s + ' holds a product that is the exact same object at the same real-world size and hand-scale in every shot — never bigger, smaller, zoomed or resized between cuts; ' + _CONTACT_CHAIN);
+        //  ✂️ v6.72:193 → 115 字。舊句用七個說法講「不變大小」,收成一句。
+        //  ⚠️ 但【hand-scale(手掌當比例尺)一定要留】—— RA 指正:那是當初為了治
+        //    「商品在鏡頭之間亂變大小」特地加的。模型沒有絕對尺寸的概念,
+        //    但它知道手有多大 —— 用手當參照,商品大小才穩得住。
+        : (_pron().s + ' holds the same product at its true size against her hand in every shot, never resized between cuts; ' + _CONTACT_CHAIN);
       //  📦 2026-09-05:商品圖【一直沒有在清單裡被宣告】。
       //    實測任務 03c0171d:清單宣告了 Image1=身份 / Image3=服裝 / Image4=場景,
       //    但商品是 [Image2],全篇只在最後一句 PROP 出現一次,前面模型完全不知道它是什麼。
@@ -657,8 +666,20 @@ window.KolStitch = (function () {
       // ═══ ③ 光影與環境(中段·在主體穩定後才建模)═══
       bodyB += '\n\n'
         + (_sg
-           ? '[SCENE_IMG] = one location seen from several camera positions; lock its layout, materials and colours but not the life inside it; each shot picks the panel matching its shot size and holds that position throughout; never draw the grid lines into the video. '
+           //  ✂️ v6.72:252 → 175 字。「鎖佈局/材質/顏色」與「每顆挑符合景別的那一格並保持不動」併句。
+           //  🏚 v6.73(2026-09-15)加一句【有人在用的痕跡】—— RA 指出舊句只是【允許】
+           //    裡面的生活變動(the life inside it does not stay fixed),那是被動的:
+           //    允許 ≠ 會發生,模型沒被要求就照九宮格那張乾淨的圖演,結果還是像樣品屋。
+           //    ★ 改成一句事實:「東西留在上一次被放下的位置」——
+           //      它同時涵蓋杯子沒收、紙巾揉著、椅子沒推回去、袋子掛在椅背、桌上有水痕,
+           //      但【一個物件都沒點名】。列物件反而會每支片都出現同樣那幾樣,變成新的樣品屋。
+           //    ⚠️ 九宮格【生成端】的生活痕跡在 kol-environment v5.27,這句是補在【影片端】,
+           //      讓它不要把那些痕跡整理掉。
+           ? '[SCENE_IMG] = one location seen from several camera positions; its layout, materials and colours stay fixed while the life inside it does not; the place is in use rather than staged, things sitting where they were last put down; each shot holds the panel matching its size; the grid lines never appear in the video. '
            : '[SCENE_IMG] = location (same background and layout; do not rearrange; it shows the empty space only, the life inside it is not locked). ')
+        //  ✂️ v6.72:商品尺寸鎖 193 → 95 字。舊句用七個說法講「不變大小」:
+        //    exact same object / same real-world size / same hand-scale /
+        //    never bigger / smaller / zoomed / resized —— 講一次就夠。
         + 'Also keep the product locked: '
         + prodRule;
       if (shared.colorLine) bodyB += '\n' + shared.colorLine;
@@ -669,8 +690,8 @@ window.KolStitch = (function () {
         //  🎯 v6.53 主旨句(RA 定調):目標不是「像廣告」,是【連 AI 都分不出來是生成的】。
         //    放最末尾 = 全局潤色位,不搶主體與光影,但為前面所有規則定調。
         //    一句話能講完的事就不要寫成五條 —— 模型讀得懂,而且權重不會被稀釋。
-        + '\nThis has to read as real footage somebody actually shot, not as something generated \u2014 '
-        + 'if a viewer or another AI looked closely, nothing should give it away. '
+        //  ✂️ v6.72:166 → 85 字。三句同義(像真的拍到的 / 不是生成的 / 看也看不出來)收成一句。
+        + '\nThis must hold up as real footage under close inspection, by a viewer or by another AI. '
         //  🩳 v6.66:原本尾巴再說一次「同一人/同一地/同一服裝」——
         //    標註區第一句已經寫了 'keep identical in every shot',整句重複,只留「不要人群」。
         + 'No crowd.';
