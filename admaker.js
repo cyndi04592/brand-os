@@ -43,12 +43,9 @@ const CAM_FREEZE = 'Shot on Nikon Z9 using its fast electronic shutter (1/8000s 
 // ★ v11.1 設計師工法層 (DESIGNER_POLISH) — 具體反 AI 指紋版(相機/佈光 + 品類 + 單一促銷 + 真材質),風格分流、不碰選定風格
 const DESIGNER_POLISH =
 'Real human-made commercial work. ' +
-'PHOTOGRAPHIC styles: real professional photography on a Nikon Z9 with fast NIKKOR Z S-line primes — 35mm or 50mm for scenes, 85mm for portraits, 105mm macro for food and product detail — at f/1.4–f/2.8 with genuine shallow depth of field and creamy bokeh, ISO 100–200, softbox key plus natural fill. Surfaces carry real micro-texture: fine grain, slight asymmetry, honest material imperfection, matte finish. ' +
-'ILLUSTRATION, ink or graphic styles: executed in the authentic medium — real ink bleed, paint body, print registration, collage tooth — with the visible hand of a human designer. ' +
-'Decoration is drawn from the product own category (seaweed uses ocean and wave motifs, tech uses clean studio, food uses real ingredients). ' +
-'Exactly ONE promotional message appears, in exactly one place. ' +
-'All text is real, meaningful and correctly spelled; supporting icons form ONE cohesive set of identical weight and detail. ' +
-'ONE clear focal hierarchy on a deliberate grid, intentional and edited, with generous breathing space.';
+'PHOTOGRAPHIC styles: Nikon Z9 with a fast NIKKOR Z S-line prime suited to the subject (35–50mm scenes, 85mm portraits, 105mm macro for food and detail), f/1.4–f/2.8, ISO 100–200, softbox key plus natural fill; surfaces carry fine grain, slight asymmetry and honest material imperfection in a matte finish. ' +
+'ILLUSTRATION, ink or graphic styles: the authentic medium — real ink bleed, paint body, print registration, collage tooth — with the visible hand of a designer. ' +
+'Decoration comes from the product own category. Exactly ONE promotional message, in one place. All text real, meaningful and correctly spelled; icons form one set of identical weight. ONE focal hierarchy on a deliberate grid, with generous breathing space.';
 
 // 🆕 v11.6 情境質感準則:台灣精緻電商 + 韓日質感,避開大陸俗豔。只在有選情境時注入。
 const CONTEXT_QUALITY =
@@ -64,14 +61,52 @@ const CONTEXT_QUALITY =
 //    不碰其他品類;非食物場景不觸發。
 // ═══════════════════════════════════════════════════════════════════════
 const FOOD_CRAFT =
-'=== FOOD PLATING CRAFT (the dish was photographed INSIDE this room) ===\n' +
-'- ONE UNIFIED LIGHT FIELD (the decisive one): RE-LIGHT the dish so its highlights, shadows and colour temperature are produced by this room own light. Warm amber tungsten room → the dish itself glows warm amber, its shadows falling the same way as everything else in frame.\n' +
-'- REAL GROUNDING: where the plate meets the surface, a soft contact shadow sits darkest and tightest right under the rim and softens outward with natural penumbra. On marble, lacquer, glass or metal a faint reflection appears beneath the dish. The plate rests with real weight.\n' +
-'- FOREGROUND OCCLUSION: a few out-of-focus elements (herbs, a sauce dish, chopsticks, rising steam, scattered spice) overlap the lower or side edge of frame, seating the hero dish between a soft blurred foreground and a soft blurred background in believable 3D space.\n' +
-'- EDGE INTEGRATION: the plate rim and the edges of the food pick up gentle ambient and rim light in the room own colour — warm gold, candle glow, window light — so the silhouette melts into the environment.\n' +
-'- SHALLOW DEPTH OF FIELD: hero dish tack-sharp, background dissolving into creamy bokeh consistent with the foreground blur.\n' +
+'=== FOOD PLATING (in addition to the physical integration above) ===\n' +
+'- FOREGROUND OCCLUSION: a few out-of-focus edibles — herbs, a sauce dish, chopsticks, scattered spice — overlap the lower or side edge, seating the hero dish between soft foreground and soft background.\n' +
 '- ABUNDANT IN-CATEGORY PROPS softly out of focus, warm and generous like HUALUXE / InterContinental / Michelin hotel-dining editorials.\n' +
-'- RESTAURANT ATMOSPHERE: warm directional key with soft falloff, deep shadows that still hold detail, faint appetizing steam where it fits — cinematic and mouth-watering.\n\n';
+'- RESTAURANT ATMOSPHERE: warm directional key with soft falloff, deep shadows that still hold detail, faint appetizing steam rising off the food itself.\n\n';
+
+// ═══════════════════════════════════════════════════════════════════════
+//  2026-09-16 ★ 視覺錨偵測(mood 欄位護欄)
+//    病灶:mood 是品牌包裡最抽象的欄位,卻常被寫進最具體的視覺指定:
+//      · 年代:Showa-era(巧福)、古早味(旺味)
+//      · 參考品牌:lululemon × Aesop(KA)、AAPE / HUMAN MADE(RADESIGN)、
+//                 La Perla / Eres(LACEZ)、IKEA × Fjällräven(MOZ)
+//    品牌名與年代是全場最強的視覺錨,比場景和光都強 —— 寫「lululemon × Aesop」
+//    等於叫模型去複製那三個品牌的官網,換房間換光都跳不出來。
+//    巧福最冤:昭和年代寫在「品牌」層,所以現代捕蚊器也被丟進昭和。
+//    修法(不是刪掉,是搬家):把錨從情緒句抽出來,改成「有條件的品牌淵源參照」,
+//    明講年代與流派由商品本身的規格和②設計風格決定。
+//    ⚠️ 品牌包沒有編輯介面 —— 這道護欄在程式端,以後誰寫、寫什麼都自動保護。
+// ═══════════════════════════════════════════════════════════════════════
+const _MOOD_ERA_RE    = /(Showa[- ]?era|Sh\u014dwa|昭和|古早味|old-time|\b(?:19|20)\d0s\b|mid-century|Edo period|Meiji|Taish[o\u014d]|Victorian|Art Deco)/gi;
+const _MOOD_PARENS_RE = /\s*\(([^)]*[\u00d7x\/][^)]*)\)/g;
+const _MOOD_BRAND_RE  = /\b[A-Z][A-Za-z&'\u2019]*(?:\s+[A-Z][A-Za-z&'\u2019]*){0,3}(?:\s*[\/\u00d7]\s*[A-Z][A-Za-z&'\u2019]*(?:\s+[A-Z][A-Za-z&'\u2019]*){0,3})+/g;
+
+function _splitMoodAnchors(mood) {
+  const anchors = [];
+  let t = String(mood || '');
+  t = t.replace(_MOOD_PARENS_RE, function (m, g) {
+    anchors.push(g.replace(/\s*(feel|style|vibe)\s*$/i, '').trim());
+    return '';
+  });
+  t = t.replace(_MOOD_BRAND_RE, function (m, off, str) {
+    const segs = m.split(/\s*[\/\u00d7]\s*/);
+    if (segs.length < 2) return m;
+    // 尾段後面接小寫字(例:French boudoir editorial)→ 那段不是品牌名,還給文字
+    let keepTail = '';
+    if (/^\s+[a-z]/.test(str.slice(off + m.length)) && segs.length > 2) keepTail = segs.pop();
+    anchors.push(segs.join(' / '));
+    return keepTail;
+  });
+  t = t.replace(_MOOD_ERA_RE, function (m) { anchors.push(m.trim()); return ''; });
+  t = t.replace(/\(\s*[^)]{0,6}\s*\)/g, '')
+       .replace(/\s*,\s*(?=,)/g, '').replace(/,\s*;/g, ';')
+       .replace(/\s{2,}/g, ' ').replace(/\s+([,;.])/g, '$1')
+       .replace(/\b(\w[\w-]*)\b([ ,]+)\1\b/gi, '$1')
+       .replace(/^[\s,;:\u2013\u2014-]+|[\s,;:\u2013\u2014-]+$/g, '').trim();
+  return { emotion: t, anchors: anchors.filter(function (a, i, arr) { return a && a.length > 1 && arr.indexOf(a) === i; }) };
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 //  2026-09-07 ★ HUMAN_TOUCH 接觸物理層
@@ -99,13 +134,16 @@ const HUMAN_TOUCH =
 //    ⚠️ 插畫疊加風格不注入 —— 那本來就不是要寫實融合。
 // ═══════════════════════════════════════════════════════════════════════
 const SCENE_INTEGRATION =
-'=== SCENE INTEGRATION (one photograph, taken inside this environment) ===\n' +
-'- ONE UNIFIED LIGHT FIELD (the decisive one): RE-LIGHT the subject so its highlight direction, shadow direction, shadow hardness and colour temperature are produced by this environment own light. Warm tungsten room lit from one side → the subject is warm and lit from that same side.\n' +
-'- REAL GROUNDING: where the subject meets floor, table or surface, a soft contact shadow sits darkest and tightest at the contact line and softens outward with natural penumbra. On reflective surfaces a faint reflection appears beneath. The subject rests with real weight.\n' +
-'- MATCHED PERSPECTIVE — THE ENVIRONMENT SERVES THE SUBJECT: read the camera angle of the supplied subject (seen from directly above, from a low three-quarter, at eye level?), then BUILD THE WHOLE ENVIRONMENT FROM THAT SAME CAMERA POSITION. A top-down subject gets a top-down flat-lay scene; a three-quarter subject gets a three-quarter scene.\n' +
-'- EDGE INTEGRATION: every silhouette edge — product rim, machine housing, shoulders, hair, fabric — picks up gentle ambient and rim light in the environment own colour, so the outline melts into the scene. Individual hairs and fine details catch that light and blend into the tones behind them.\n' +
-'- SHARED ATMOSPHERE & GRADE: one consistent colour grade, contrast curve, grain and lens character across subject and background; any haze, dust, steam or bloom in the room also passes in front of the subject.\n' +
-'- DEPTH LAYERING: the subject stays tack-sharp while the background falls into believable optical defocus at the same aperture, the blur reading as real lens depth of field with natural bokeh shapes.\n\n';
+'=== PHYSICAL INTEGRATION (one photograph, taken inside this environment) ===\n' +
+'- ONE CAMERA: read the supplied subject viewpoint — overhead, low three-quarter, eye level — and build every prop, surface, wall and window from that same position and lens. An overhead subject makes the whole frame an overhead flat-lay.\n' +
+'- ONE LIGHT FIELD: re-light the subject so its highlight direction, shadow direction, shadow hardness and colour temperature are produced by this room own light, and model it with that key — lit side and shadow side readable, crevices genuinely darker.\n' +
+'- GROUNDED ON A REAL SURFACE: the subject rests on a physical surface whose material continues to the frame edge. Its contact shadow sits darkest and tightest at the contact line and softens outward; reflective surfaces carry a faint reflection beneath.\n' +
+'- SELF-SHADOWING: each element sitting on that plate, tray or table casts its own shadow onto it, all in the same direction and softness as the key.\n' +
+'- EDGE INTEGRATION: silhouette edges — rim, housing, shoulders, hair, fabric — pick up ambient and rim light in the room own colour, fine detail blending into the tones behind it.\n' +
+'- SHARED ATMOSPHERE: one colour grade, contrast curve, grain and lens character across subject and background; room haze, dust or steam also passes in front of the subject.\n' +
+'- TRUE SCALE: every prop sized to the subject real-world scale, shrinking correctly with distance.\n' +
+'- DEPTH: subject tack-sharp, background in believable optical defocus at the same aperture, with natural bokeh shapes.\n' +
+'- EFFECTS ATTACH: steam, smoke, splash, dust or petals originate from the subject, curl around its form and catch the same light.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  2026-09-07 ★ CAMERA_LOCK 視角鎖(FOOD_CRAFT 與 SCENE_INTEGRATION 共用)
@@ -114,14 +152,7 @@ const SCENE_INTEGRATION =
 //      菜也沒有把影子投在自己的盤面上,像貼紙。
 //    修法:先讀商品照的相機角度,整個場景照那個角度蓋。
 // ═══════════════════════════════════════════════════════════════════════
-const CAMERA_LOCK =
-'=== CAMERA & GROUND LOCK (read the supplied photo FIRST, then build everything to obey it) ===\n' +
-'- ONE CAMERA ONLY: every prop, surface, wall, window and background element is drawn from the SAME viewpoint and the same lens as the supplied subject. An overhead subject makes the entire image an overhead flat-lay, where props lie flat on the surface and the frame shows the tabletop plane alone. A three-quarter subject makes everything three-quarter.\n' +
-'- A REAL SURFACE: the subject rests on a physical surface whose material and texture continue to the edge of the frame. That surface may fall out of focus while still reading as a real material.\n' +
-'- SELF-SHADOWING: every element sitting on the plate, tray, table or platform casts its own shadow ONTO that surface, all falling in the same direction with the same softness as the scene key light.\n' +
-'- FORM SHADOW & SHADING: the subject is modelled by that same key — lit side and shadow side clearly readable, occluded crevices genuinely darker.\n' +
-'- CORRECT RELATIVE SCALE: every prop is sized to the subject real-world scale (a teacup beside a dinner plate, a hand beside a machine), and props further away shrink correctly with perspective.\n' +
-'- EFFECTS ATTACH: steam, smoke, splash, dust, sparks or falling petals originate FROM the subject and physically interact with it — rising off the hot surface, curling around the form, lit by the same light.\n\n';
+const CAMERA_LOCK = '';   // 2026-09-16 已併入 SCENE_INTEGRATION,避免同一條物理講兩次
 
 // ═══════════════════════════════════════════════════════════════════════
 //  v10.2 ★ PRODUCT_SCENES (情境生成模式專用,維持 v9.1 原樣)
@@ -3957,18 +3988,30 @@ function buildPosterPrompt() {
   const _comp = COMPLIANCE_RULES[SELECTED_PRODTYPE];
   if (_comp) prompt += _comp.prompt;
 
-  if (ctx.product || ctx.spec || ctx.feature || _bag.other.length) {
-    prompt += `=== PRODUCT ESSENCE (HIGH PRIORITY — must be respected) ===\n`;
-    prompt += `This specific product variant has its OWN character that MUST be preserved regardless of brand mood or regional flavor:\n`;
-    if (ctx.product) prompt += `- Product name: "${ctx.product}"\n`;
-    if (ctx.spec)    prompt += `- Product specifications (physical traits — color, material, era, style): ${ctx.spec}\n`;
-    if (ctx.feature) prompt += `- Product features (selling points, positioning, context): ${ctx.feature}\n`;
-    _bag.other.forEach(function (o) { prompt += `- ${o}\n`; });
-    prompt += `The product's own visual character always wins: brand ambience defines the WORLD around it, while these specs define what the product itself LOOKS LIKE.\n\n`;
+  // 🩹 2026-09-16 只講「這一個商品」:品牌包的 other 常是整本商品目錄
+  //   (拍捕蚊器卻連電蚊拍、復古電風扇都倒進來,而電風扇那行寫著 Showa-modern
+  //    → 昭和從後門爬回來)。用商品名的字詞去篩,篩不到才全留,不會漏資訊。
+  var _otherLines = _bag.other;
+  if (_otherLines.length > 1 && ctx.product) {
+    var _toks = String(ctx.product).toUpperCase().match(/[A-Z0-9]{3,}|[\u4e00-\u9fff]{2,}/g) || [];
+    var _hit = _otherLines.filter(function (o) {
+      var U = o.toUpperCase();
+      return _toks.some(function (t) { return U.indexOf(t) !== -1; });
+    });
+    if (_hit.length) _otherLines = _hit;
+  }
+  if (ctx.product || ctx.spec || ctx.feature || _otherLines.length) {
+    prompt += `=== PRODUCT ESSENCE (HIGH PRIORITY) ===\n`;
+    prompt += `Brand ambience defines the WORLD around the product; the lines below define what the product itself LOOKS LIKE, and they win over any conflicting brand or style hint.\n`;
+    if (ctx.product) prompt += `- Product: "${ctx.product}"\n`;
+    if (ctx.spec)    prompt += `- Physical traits (colour, material, era, style): ${ctx.spec}\n`;
+    if (ctx.feature) prompt += `- Selling points and positioning: ${ctx.feature}\n`;
+    _otherLines.forEach(function (o) { prompt += `- ${o.replace(/^[·・\-\s]+/, '')}\n`; });
+    prompt += '\n';
   }
 
-  prompt += `BRAND MARKS: the only emblem or lettering anywhere in this image is what is physically printed on the product packaging itself, reproduced exactly as it appears. Every other surface in the frame is plain and unmarked, and the layout runs freely to all four edges.\n`;
-  if (_showMark) prompt += `Leave one corner of the frame visually calm and uncluttered — a small brand mark will be placed there afterwards by the design system.\n`;
+  prompt += `BRAND MARKS: the only emblem or lettering in this image is what is physically printed on the packaging, reproduced exactly; every other surface stays plain and the layout runs to all four edges.\n`;
+  if (_showMark) prompt += `Keep one corner calm and low-detail — a real brand mark is placed there afterwards.\n`;
   prompt += '\n';
 
   // ═════ ② 骨架層 —— 畫布與版面 ════════════════════════════════════
@@ -4022,12 +4065,9 @@ function buildPosterPrompt() {
 
   var _isFoodScene = (SELECTED_LAYOUT === 'food_special' || /^food_/.test(String(SELECTED_FLAVOR || '')));
   var _isIllustrationOverlay = /ILLUSTRATION OVERLAY/i.test(String((flavor && flavor.flavor) || ''));
-  if (_isFoodScene) {
-    prompt += FOOD_CRAFT;
-    prompt += CAMERA_LOCK;
-  } else if (SELECTED_PRODTYPE !== 'screen' && !_isIllustrationOverlay) {
-    prompt += SCENE_INTEGRATION;
-    prompt += CAMERA_LOCK;
+  if (SELECTED_PRODTYPE !== 'screen' && !_isIllustrationOverlay) {
+    prompt += SCENE_INTEGRATION;            // 通用物理(相機/光/落地/邊緣/比例/特效)
+    if (_isFoodScene) prompt += FOOD_CRAFT;  // 餐飲再加「食物專屬」那三條
   }
 
   var _sceneTxt = [_layoutComp, (flavor && flavor.flavor) || '', (contextTheme && contextTheme.context) || '', styleDesc || '']
@@ -4040,7 +4080,14 @@ function buildPosterPrompt() {
 
   // ═════ ⑤ 抽象層 —— 氛圍、色彩、情境、工法 ═════════════════════════
   prompt += `=== MOOD & PALETTE ===\n`;
-  if (_bag.mood.length) prompt += `Mood: ${_bag.mood.join('; ')}\n`;
+  if (_bag.mood.length) {
+    const _m = _splitMoodAnchors(_bag.mood.join('; '));
+    if (_m.emotion) prompt += `Emotional register: ${_m.emotion}\n`;
+    prompt += `This sets how the finished image should FEEL. The era, the design movement and the visual school come from the product's own specification above and from the chosen design style — the mood carries the emotion, the product carries the period.\n`;
+    if (_m.anchors.length) {
+      prompt += `Brand heritage reference (${_m.anchors.join('; ')}): draw on this where the product itself genuinely belongs to it. A contemporary product in this brand's range is photographed as a contemporary product.\n`;
+    }
+  }
   if (_lockColor && _bag.colour.length) {
     prompt += `Colour: ${_bag.colour.join('; ')}\n`;
   } else if (!_lockColor) {
@@ -4082,12 +4129,7 @@ function buildPosterPrompt() {
     if (_bag.type.length) prompt += `Typography style: ${_bag.type.join('; ')}\n`;
     if (headline)    prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
     if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
-    prompt += `NUMERAL & PRICE TYPOGRAPHY (applies to any digits, prices, percentages or dates above):\n`;
-    prompt += `- Set numerals in the SAME type family and weight as the Chinese headline they belong to.\n`;
-    prompt += `- Treat a price and its Chinese qualifier as ONE typographic unit: shared baseline, consistent letter-spacing, size ratio no greater than 1.4x between them.\n`;
-    prompt += `- Set qualifier words and currency marks (最低 / 起 / NT$ / %) smaller, optically aligned to the cap-height of the numerals.\n`;
-    prompt += `- Give numerals the same colour and material finish as the headline, so they read as one designed system.\n`;
-    prompt += `- Reserve clean quiet space around the price so it reads instantly at thumbnail size.\n\n`;
+    prompt += `NUMERALS & PRICES: set digits in the same type family, weight, colour and material finish as the Chinese headline they belong to. A price and its qualifier (最低 / 起 / NT$ / %) form one unit — shared baseline, qualifier smaller and optically aligned to the numeral cap-height, size ratio within 1.4x — with quiet space around it so it reads at thumbnail size.\n\n`;
   } else {
     prompt += `=== TEXT TO RENDER ===\n`;
     prompt += `This is a CLEAN PLATE: a pure photograph of the product in its environment, which a human graphic designer will open in Photoshop and set the typography onto afterwards.\n`;
