@@ -464,6 +464,57 @@
     return _withEdge(_contributeInner(ctx));
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  ✋ v5.43(2026-09-17)handProfile —— 【手跟這個商品怎麼互動】由商品模組決定
+  //   RA:「應該要透過商品那個程式碼去針對細節去做變化,例如顧客選餅乾的那項目。」
+  //   ★ 一個檔案一個職責:商品長什麼樣、怎麼被拿、手可不可以做細部操作,都是商品的事,
+  //     不該寫死在 Worker 裡。Worker 只讀這裡給的結果:
+  //       fine = true  → 手的細部動作就是商品本身(操作示範、設備、螢幕、美業、醫美、翻牌…),閘門放行
+  //       fine = false → 一般商品,撕扯捲折翻點戳這類指尖操作由 Worker 的手部閘拿掉
+  //       fact         → 一句中文事實,送給分鏡 AI,讓它【一開始就寫對】,閘門只是保險
+  //   ★ 為什麼要分:AI 抓不準手指跟物體的接觸點和力道 —— 撕扯會撕裂、捲折會變形、
+  //     指尖點一下或翻面東西會浮在空中(RA 2026-09-17 實測海苔像變魔術)。
+  //     整隻手的大動作(拿起、握著、放下、遞出、轉過來給人看)它演得很好。
+  //   ★ fact 只寫事實、不寫禁止(點名即召喚);新增模式時在這裡補一行就好。
+  // ═══════════════════════════════════════════════════════════════
+  const HAND_FACTS = {
+    demo:     [true,  '這個商品要示範怎麼用,她的手做實際的使用動作,動作清楚、節奏放慢讓人看得懂。'],
+    equip:    [true,  '這是設備,她的手實際操作機台上的按鍵、面板或加工件。'],
+    screen:   [true,  '重點是螢幕畫面,她的手指實際在螢幕上操作。'],
+    digital:  [true,  '重點是螢幕畫面,她的手指實際在螢幕上操作。'],
+    service:  [true,  '這是服務,手的細部動作就是服務本身,照實際流程做。'],
+    beauty:   [true,  '這是美業服務,手的細部動作就是服務本身,照實際流程做。'],
+    medical:  [true,  '這是醫美服務,手的動作照實際流程,專業、穩定。'],
+    mystic:   [true,  '這是命理服務,翻牌、排盤這些手上的動作就是服務本身。'],
+    agency:   [true,  '重點是螢幕上的成果,她的手指實際在螢幕上操作。'],
+    held:     [false, '她整隻手握著這個東西,跟著手腕和身體一起移動;要讓人看清楚,就把手舉近或轉過來給朋友看。'],
+    hero:     [false, '這是大件的東西,她站在旁邊,用整隻手扶著、指著或靠著它。'],
+    worn:     [false, '商品穿戴在她身上,跟著她的身體一起動。'],
+    innerwear:[false, '商品穿戴在她身上,跟著她的身體一起動。'],
+    wellness: [false, '她整隻手拿著或戴著它,跟著手腕和身體一起移動。'],
+    course:   [false, '重點是她在做的事,手上的東西整隻手拿著。'],
+    pro:      [false, '重點是她在講的專業,手上的東西整隻手拿著。'],
+    travel:   [false, '重點是她去的地方,手上的東西整隻手拿著。'],
+  };
+  function handProfile(ctx) {
+    try {
+      const prod = (ctx && (ctx.prodName || ctx.productMode || ctx.hasPackaging !== undefined)) ? ctx : findProduct(ctx || {});
+      if (!prod) return { fine: false, fact: '她手上的東西整隻手握著,跟著手腕和身體一起移動。' };
+      const mode = resolveMode(prod);
+      if (mode && HAND_FACTS[mode]) return { fine: HAND_FACTS[mode][0], fact: HAND_FACTS[mode][1], mode: mode };
+      const type = resolveType(prod);
+      if (type === 'dish') return { fine: false, fact: '這是一盤做好的菜,她用整隻手端著盤子,或讓它放在桌上、用手指向它。', mode: 'dish' };
+      if (type === 'packaged') {
+        return isYes(prod.showContents)
+          ? { fine: false, fact: '這包商品的包裝已經打開、維持原本的形狀;她從開口伸手拿出一片,整片穩穩拿在手上給人看。', mode: 'packaged' }
+          : { fine: false, fact: '她整隻手握著這包商品,轉過來讓人看到正面。', mode: 'packaged' };
+      }
+      return { fine: false, fact: '她整隻手握著這個東西,跟著手腕和身體一起移動;要讓人看清楚,就把手舉近或轉過來給朋友看。', mode: mode || type };
+    } catch (e) {
+      return { fine: false, fact: '' };
+    }
+  }
+
   function _contributeInner(ctx) {
     const prod = findProduct(ctx);
     if (!prod) {
@@ -551,6 +602,6 @@
     return 'PROP (the product she is using or showing, at its real-life size): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.42', resolveMode };
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.43', resolveMode, handProfile };
   console.log('[KolProduct] 👗 v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
