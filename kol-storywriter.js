@@ -235,6 +235,16 @@
       kolTabooWords: _taboo,   // ⚖️ 人設禁語 + 行業合規禁詞
       productName: product.name || '',
       productTag: product.tag || '',
+      //  ✋ v5.24(2026-09-17)手跟商品怎麼互動 —— 來源只有 KolProduct.handProfile,這裡不另判。
+      //    productHandsFine:true = 手的細部動作就是商品(Worker 手部閘放行)
+      //    productHandsFact:一句中文事實,讓分鏡 AI 一開始就寫對
+      ...(function () {
+        try {
+          const hp = (window.KolProduct && typeof window.KolProduct.handProfile === 'function')
+            ? window.KolProduct.handProfile(product && Object.keys(product).length ? product : null) : null;
+          return hp ? { productHandsFine: !!hp.fine, productHandsFact: hp.fact || '', productMode: hp.mode || '' } : {};
+        } catch (e) { return {}; }
+      })(),
       sceneLabel: sceneLabel || '',
       brandId: _brandId,   // 🏷 v5.22 Worker 靠它去 D1 撈品牌靈魂書
       //  🧪 v5.23(2026-09-15)極簡規則對照實驗的保險絲。
@@ -417,5 +427,5 @@
     window.CrewDirector.register('storywriter', window.KolStorywriter);
   }
 
-  console.log('[KolStorywriter] 📖 v5.23 就緒 · 🧪極簡規則保險絲(window.KOL_MINIMAL=true → Worker 改用 1200 字的極簡版 systemPrompt,對照完整版 9200 字) · v5.22 就緒 · 🏷送出brandId(AI分鏡首次拿得到品牌·Worker 端自行撈靈魂書) · v5.21 📏字數規格同步前端↔AI(走 outline 通道·治「建議72字·AI只寫50」) · 🔁接棒句中性化 ·(語速6.0實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
+  console.log('[KolStorywriter] 📖 v5.24 就緒 · ✋送出 KolProduct.handProfile(手跟商品怎麼互動:細部動作放不放行＋一句事實給分鏡 AI) · v5.23 就緒 · 🧪極簡規則保險絲(window.KOL_MINIMAL=true → Worker 改用 1200 字的極簡版 systemPrompt,對照完整版 9200 字) · v5.22 就緒 · 🏷送出brandId(AI分鏡首次拿得到品牌·Worker 端自行撈靈魂書) · v5.21 📏字數規格同步前端↔AI(走 outline 通道·治「建議72字·AI只寫50」) · 🔁接棒句中性化 ·(語速6.0實測校準 · 分鏡 + AI 編修前端 · 🧠劇情記憶摘要最多6集·以scenario為主)');
 })();
