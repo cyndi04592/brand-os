@@ -7986,6 +7986,45 @@ function pacePerItem(itemCount, duration){
   var level = sec < 4 ? 'red' : (sec < 6 ? 'warn' : 'ok');
   return { sec: sec, level: level };
 }
+// ═══════════════════════════════════════════════════════════════
+//  🧮 2026-09-16 節奏提醒改成【數商品,不數照片】
+//   病(RA 抓到):好滋好滋一包海苔放了「外包裝 + 內容物」兩張照片,
+//     提醒卻說「2 件 ÷ 10 秒 ≈ 每件約 5 秒,節奏偏擠」。那是同一個商品,只有 1 件。
+//   ★ RA:不能只修海苔 —— 每種商品的槽都不一樣:
+//       包裝=外包裝+內容物、內衣=正面+背面、設備=機台+加工件、螢幕=裝置+截圖、
+//       服務業=成果照/情境照…,以後還會再加。
+//   ★ 所以不寫死任何 role 名稱,改看【槽的位置】:
+//       productSlots() 的第一個槽 = 這件商品本身(主角)
+//       第二個以後的槽 = 同一件商品的補充角度(背面、內容物、加工件、截圖…)→ 永遠不加件數
+//     分槽面板本來就是替【一件商品】開的(getCurrentRotationProduct 只回一件),
+//     新模式只要照 MODE_SLOTS 的慣例把主角放第一格,這裡自動就對。
+//   ★ 第一格放了幾張才算幾件(客戶可能一次選三種口味);
+//     沒標角色或角色不在目前槽裡的照片,面板本來就歸到第一格,這裡照同樣規則算。
+//   ★ 有照片但第一格是空的(只放了補充角度)→ 算 1 件。
+// ═══════════════════════════════════════════════════════════════
+function productItemCount(urls){
+  urls = urls || [];
+  if (!urls.length) return 0;
+  var roles = S.productRefRole || {};
+  var slots = (typeof productSlots === 'function') ? (productSlots() || []) : [];
+  var slotRoles = slots.map(function (x) { return x.role; });
+  if (!slotRoles.length) return urls.length;
+  var primary = slotRoles[0];
+  var n = urls.filter(function (u) {
+    var r = roles[u];
+    return r === primary || !r || slotRoles.indexOf(r) < 0;
+  }).length;
+  return Math.max(1, n);
+}
+function episodeTotalSec(){
+  try {
+    var P = window.KolStoryboardPanel;
+    var bs = P && typeof P.getBeats === 'function' ? P.getBeats() : null;
+    var t = (bs || []).reduce(function (a, b) { return a + (Number(b && b.seconds) || 0); }, 0);
+    if (t > 0) return t;
+  } catch (e) {}
+  return S.episodeParams && S.episodeParams.duration;
+}
 function paceHintHtml(itemCount, duration){
   var p = pacePerItem(itemCount, duration);
   if (p.level === 'ok') return '';
@@ -7995,9 +8034,9 @@ function paceHintHtml(itemCount, duration){
 }
 function refreshPaceHints(){
   var rp = document.getElementById('ref-pace');
-  if (rp) rp.innerHTML = paceHintHtml((S.seedanceProductUrls || []).length, S.seedanceParams && S.seedanceParams.duration);
+  if (rp) rp.innerHTML = paceHintHtml(productItemCount(S.seedanceProductUrls), S.seedanceParams && S.seedanceParams.duration);
   var ep = document.getElementById('ep-pace');
-  if (ep) ep.innerHTML = paceHintHtml((S.episodeProductUrls || []).length, S.episodeParams && S.episodeParams.duration);
+  if (ep) ep.innerHTML = paceHintHtml(productItemCount(S.episodeProductUrls), episodeTotalSec());
 }
 // ───────────────────────────────────────────────────────
 function preGenConfirm(opts) {
@@ -8255,7 +8294,7 @@ async function createFacelessVideo() {
 
 async function createSeedanceVideo() {
   // 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳
-  if (!(await preGenConfirm({ step: 2, pending: S.cineStoryboardPending, itemCount: (S.seedanceProductUrls||[]).length, duration: S.seedanceParams.duration }))) return;
+  if (!(await preGenConfirm({ step: 2, pending: S.cineStoryboardPending, itemCount: productItemCount(S.seedanceProductUrls), duration: S.seedanceParams.duration }))) return;
   // 🆕 無臉模式:跳過 KOL,商品當主角(v5.13-faceless)
   if (document.getElementById('faceless-toggle')?.classList.contains('on')) return createFacelessVideo();
   // 🆕 多段分鏡 → 走接片;單段維持原樣,demo 零風險
@@ -10814,7 +10853,7 @@ async function generateEpisodeV510(mode) {
   }
 
   // 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳;社群貼文(posts)不需要
-  if (mode !== 'posts' && !(await preGenConfirm({ step: 3, pending: S.episodeStoryboardPending, itemCount: (S.episodeProductUrls||[]).length, duration: S.episodeParams.duration }))) return;
+  if (mode !== 'posts' && !(await preGenConfirm({ step: 3, pending: S.episodeStoryboardPending, itemCount: productItemCount(S.episodeProductUrls), duration: episodeTotalSec() }))) return;
 
   saveEpisodeDraft(true);
 
