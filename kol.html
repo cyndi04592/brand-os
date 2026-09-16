@@ -9086,7 +9086,9 @@ function splitSceneFromProducts(urls, existingScene) {
 // 🆕 v3.4(2026-08-19)與廣告圖 ⓪ 九大行業對齊:再加六種。
 //   ⚠️ 這份白名單決定「選了之後走新路還是舊路」——漏放行的值會被當成 productType,
 //      也就是掉回海苔那條舊路,新型態的畫面守則完全不會生效。加型態必改這行。
-const PRODUCT_MODE_NEW = ['held', 'worn', 'hero', 'demo', 'digital', 'service', 'equip', 'screen', 'pro',
+//  🐛 2026-09-17 清查下拉:少了 'innerwear' —— 選「貼身衣物」會被當成 productType 丟回舊路,
+//    商品名沒寫到內衣/胸罩等字時,內衣模式整個不會生效(選了等於沒選)。
+const PRODUCT_MODE_NEW = ['held', 'worn', 'innerwear', 'hero', 'demo', 'digital', 'service', 'equip', 'screen', 'pro',
                           'medical', 'course', 'mystic', 'travel', 'wellness', 'agency'];
 function applyProductModeOverride(prod) {
   if (!prod) return prod;
