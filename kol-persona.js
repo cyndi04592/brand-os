@@ -259,8 +259,50 @@
     return Math.round(filled.length / fields.length * 100);
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  🎙 v5.14(2026-09-17)voiceBaseZh —— 【基礎聲線】中文版,給台詞行直接用
+  //   RA 重大發現:「換了好幾個 KOL,講話方式都一樣」。
+  //   ★ 查到原因:聲音指紋 / 年齡聲線(resolveVoiceFingerprint / resolveAgeVoice)
+  //     只在 contribute() 裡輸出,而【接片流程(kol-stitch 那條)根本沒呼叫 contribute】——
+  //     每個 KOL 送進算力機的台詞行一模一樣:「台詞(8-15秒,她、語氣):「…」」,只差台詞內容。
+  //   ★ 刺蝟星球:角色聲音 = 基礎聲線 + 處境壓力 + 語速 + 音量 + 重音 + 停頓 + 尾音 + 呼吸。
+  //     基礎聲線是人設的事(這裡);其他每一格不同的,由分鏡 AI 寫在「聲音:」那句(Worker v5.56)。
+  //   ★ 用中文、跟台詞放同一行:官方原生對白語法是「台詞(角色,語氣):「…」」,括號裡就是聲音描述。
+  //   ★ 選音色的方式跟聲音指紋同一套(同一個 KOL 每集都一樣、不同 KOL 自動分散)。
+  //   ★ 客戶自己設了 voice_style → 直接用他的,這裡不介入。
+  //   ⚠️ 不寫任何地區/口音字眼 —— 口音由 natToAccent 單獨鎖(又晴變中國腔的教訓)。
+  // ═══════════════════════════════════════════════════════════════
+  function voiceBaseZh(p) {
+    if (!p) return '';
+    let n = parseInt(p.age, 10);
+    if (!Number.isFinite(n)) {
+      const m = String(p.background || '').match(/(\d{1,2})\s*歲/);
+      if (m) n = parseInt(m[1], 10);
+    }
+    const male = /^(m|male|男|man)/i.test(String(p.gender || ''));
+    const who = (Number.isFinite(n) && n > 0 && n < 100 ? n + '歲' : '') + (male ? '男性' : '女性');
+    if (p.voice_style && String(p.voice_style).trim()) return who + ',' + String(p.voice_style).trim();
+
+    const seed = _vHash(p.persona_id || p.persona_name || p.name || 'kol');
+    let timbres;
+    if (Number.isFinite(n) && n <= 12)      timbres = ['聲音輕、帶點空氣感', '聲音明亮清楚', '聲音小小的、有點跳', '聲音柔軟圓潤'];
+    else if (Number.isFinite(n) && n >= 55) timbres = ['聲音溫暖、從胸口出來', '聲音帶一點顆粒感', '聲音柔軟圓潤', '聲音安靜偏乾'];
+    else if (male) timbres = ['聲音溫暖厚實、從胸口出來', '聲音清楚、往前送', '聲音微微沙啞', '聲音低、穩',
+                              '聲音柔軟圓潤', '聲音明亮開闊', '聲音帶一點顆粒感', '聲音平穩乾淨'];
+    else           timbres = ['聲音清楚、往前送', '聲音輕、帶點空氣感', '聲音溫暖圓潤', '聲音明亮清脆',
+                              '聲音柔和、帶一點氣音', '聲音微微沙啞', '聲音平順穩定', '聲音清脆偏細'];
+    const per = String(p.personality || '') + String(p.speaking_style || '');
+    let habit;
+    if (/古靈精怪|活潑|俏皮|跳|鬼靈精/.test(per))      habit = '句尾微微上揚';
+    else if (/務實|直接|理性|冷靜|嚴謹|不拐彎/.test(per)) habit = '句尾平平收住';
+    else if (/溫柔|療癒|沉穩|慢/.test(per))            habit = '長句前先吸一口氣';
+    else habit = ['句尾微微上揚', '句尾往下收', '不急、音高起伏小', '長句前先吸一口氣'][seed % 4];
+    return who + ',' + timbres[seed % timbres.length] + ',' + habit;
+  }
+
   // ─── 導出 + 自動向總導演註冊 ─────────────────────────
   window.KolPersona = {
+    voiceBaseZh,
     contribute,
     resolveAppearance,
     guessAppearance,
@@ -272,5 +314,5 @@
     window.CrewDirector.register('persona', window.KolPersona);
   }
 
-  console.log('[KolPersona] 🎭 v5.13 就緒 · 🎙聲音指紋(人設優先→編號分散·同人跨集穩定) · 年齡聲線細分 10 段');
+  console.log('[KolPersona] 🎭 v5.14 就緒 · 🎙voiceBaseZh 中文基礎聲線(接片流程沒呼叫 contribute,聲音指紋從沒送出去 → 每個 KOL 講話一樣) · v5.13 · 🎙聲音指紋(人設優先→編號分散·同人跨集穩定) · 年齡聲線細分 10 段');
 })();
