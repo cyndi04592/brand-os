@@ -224,7 +224,8 @@
   function contributeNewMode(prod, mode, scale) {
     const sz = scale ? '; it is ' + scale + ', at that true size' : '';
     if (mode === 'held') {
-      return 'PROP (a small product she is holding, at its real-life size): its printed text reads correctly' + sz + '; ' + GROUNDED + ', its front kept toward the camera and recognizable while held; it may also rest naturally on a clean surface, never scattered messily';
+      const _hm = materialOf(prod).pack;   // 🧱 v5.44
+      return 'PROP (a small product she is holding, at its real-life size): its printed text reads correctly' + sz + (_hm ? '; ' + _hm : '') + '; ' + GROUNDED + ', its front kept toward the camera and recognizable while held; it may also rest naturally on a clean surface, never scattered messily';
     }
     // ══ 🆕 v3.7 貼身衣物:唯一講清楚「內層」的模式 ══
     //   為什麼要獨立一條:通用 'worn' 說的是「清楚看得出穿在身上」,
@@ -297,7 +298,8 @@
         ;
     }
     if (mode === 'worn') {
-      return 'PROP (a wearable product — feature it being worn or carried): its logo reads correctly; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + '; it has real weight and sits naturally against her, shown from flattering angles';
+      const _wm = materialOf(prod).pack;   // 🧱 2026-09-17 穿戴也教材質(鞋/包/錶/飾品/衣)
+      return 'PROP (a wearable product — feature it being worn or carried): its logo reads correctly; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + (_wm ? '; ' + _wm : '') + '; it has real weight and sits naturally against her, shown from flattering angles';
     }
     if (mode === 'hero') {
       const big = sizeToScaleLarge(prod.realSize);
@@ -305,7 +307,8 @@
       return 'HERO PRODUCT (the product is the star of the shot — feature it prominently): its finish reads correctly; show it large, complete and prominent from flattering angles, and she interacts with it naturally (sits on, opens, operates, touches or stands beside it as fits)' + bigSz + '; it has real weight and sits solidly on the floor in the scene, obeying gravity, never floating or pasted on';
     }
     if (mode === 'demo') {
-      return 'PRODUCT IN USE (the product is shown doing its job — the act of using it is the point): its label reads correctly; she actively uses it as intended (applies, sprays, operates, installs or demonstrates) and the visible effect of using it is shown' + sz + '; ' + GROUNDED + ', kept recognizable and front-to-camera during use';
+      const _dm = materialOf(prod).pack;   // 🧱 2026-09-17 示範也教材質(噴霧瓶/軟管/瓶罐)
+      return 'PRODUCT IN USE (the product is shown doing its job — the act of using it is the point): its label reads correctly; she actively uses it as intended (applies, sprays, operates, installs or demonstrates) and the visible effect of using it is shown' + sz + (_dm ? '; ' + _dm : '') + '; ' + GROUNDED + ', kept recognizable and front-to-camera during use';
     }
     // ══ 🆕 v3.2 服務成果:畫面主角是「做完的樣子」,不是任何商品 ══
     if (mode === 'service') {
@@ -465,6 +468,60 @@
   }
 
   // ═══════════════════════════════════════════════════════════════
+  //  ✂️ v5.45(2026-09-17)材質句照【不失語意的公版簡化】收短:
+  //    拿掉跟其他句重複的 —— 正面/印刷字(資產標註區與包裝句已講)、重量與被撐著(GROUNDED 已講)、
+  //    「放在包裝裡」(開口句已講)。每句只留 GROUNDED 沒講的:材質＋受力時的樣子。
+  //  🧱 v5.44(2026-09-17)materialOf —— 教算力機【這個東西是什麼材質、手上拿起來會怎樣】
+  //   RA:「後續商品怎麼拿取、形狀等等,kol-product 應該教給她,跟內衣是一樣的方式。」
+  //   ★ 內衣那條早就證明過:只寫「照參考圖、不准變形」→ 模型畫成硬板子;
+  //     補一句「布料軟、會垂墜、拿著的地方會折」→ 立刻像真的。其他商品一直沒有這句。
+  //   ★ RA 2026-09-17 實測:海苔浮在指尖上像變魔術 —— 整份 prompt 沒有一句講
+  //     「一片薄脆的東西怎麼被拿著」,模型只知道要有手、要有海苔。
+  //   ★ 材質從客戶填的欄位抓(包裝外型 packShape、商品外觀 productLook、內容物外觀 contentsLook、
+  //     商品名、分類),照【先具體後通用】的順序比對,抓不到就不猜(回空字串,不亂寫)。
+  //   ★ 只寫事實:材質、重量、受力時的樣子、被什麼撐著。不寫禁止句(點名即召喚)。
+  //   ★ 內容物一律補「被手穩穩拿著或放在包裝裡」—— 治浮空,這句不分品項。
+  //   ⚠️ 新品類在 PACK_MATERIALS / PIECE_MATERIALS 補一行就好,其他地方不用改。
+  // ═══════════════════════════════════════════════════════════════
+  const PACK_MATERIALS = [
+    [/夾鏈|立袋|包裝袋|零食袋|袋|pouch|bag/i, 'the pouch is soft plastic film that gives slightly under her grip'],
+    [/紙盒|禮盒|盒|box/i,                    'the box is firm cardboard that stays square in her hand'],
+    [/軟管|tube/i,                           'the tube is soft plastic that dents slightly under her fingers'],
+    [/玻璃|瓶|glass|bottle/i,                'the bottle is rigid, her hand wrapped around it'],
+    [/鐵罐|鋁罐|罐|can\b|tin\b/i,           'the can is rigid metal, her hand wrapped around it'],
+    [/手機|平板|筆電|耳機|3C|電子|device|phone/i, 'the device is rigid, resting in her palm'],
+    [/A4|影印紙|紙張|卡片|信封|筆記本|書本|paper|card/i, 'the paper is thin and flexible, its free edges bending gently'],
+    [/毛巾|布料|棉|針織|fabric|cloth|towel/i, 'the fabric is soft and drapes, creasing where held'],
+    //  🧱 2026-09-17 清查下拉補齊:口紅/保健品(手持)、鞋包錶飾品(穿戴)、噴霧(示範)、飲品(盛盤)
+    [/口紅|唇膏|lipstick/i,                  'the lipstick is a small rigid tube'],
+    [/保健品|膠囊|錠|藥盒|supplement/i,       'the container is small and rigid'],
+    [/噴霧|噴瓶|spray/i,                     'the spray bottle is rigid, a finger resting on the nozzle'],
+    [/皮革|包包|手提包|托特|後背包|bag|handbag|backpack/i, 'the bag is structured and hangs with real weight'],
+    [/鞋|靴|sneaker|shoe|boot/i,             'the shoes are firm and keep their shape'],
+    [/手錶|錶|手環|戒指|項鍊|耳環|飾品|watch|ring|necklace|earring|bracelet/i, 'the piece is small and rigid, catching small highlights'],
+    [/上衣|外套|洋裝|襯衫|褲|裙|shirt|jacket|dress|pants|skirt/i, 'the fabric drapes and creases with her body'],
+  ];
+  //  🥤 盛盤模式的飲品:杯子與液體的物理(盛盤原本只會講「一盤菜」)
+  const DRINK_RE = /飲|茶|咖啡|拿鐵|果汁|奶昔|酒|湯|drink|tea|coffee|latte|juice|smoothie/i;
+  const PIECE_MATERIALS = [
+    [/脆片|海苔|餅乾|洋芋片|薄片|仙貝|chip|cracker|cookie|seaweed/i, 'each piece is thin, light and crisp, held whole between her thumb and fingers'],
+    [/軟糖|糖果|巧克力|candy|chocolate/i,                            'each piece is small and solid, held between her fingers'],
+    [/堅果|果乾|nut/i,                                               'a few small pieces rest in her palm'],
+  ];
+  function _hay(prod, keys) { return keys.map(k => prod && prod[k]).filter(Boolean).join(' '); }
+  function materialOf(prod) {
+    if (!prod) return { pack: '', piece: '' };
+    const packHay  = _hay(prod, ['packShape', 'productLook', 'prodName', 'name', 'tag']);
+    const pieceHay = _hay(prod, ['contentsLook', 'prodName', 'name', 'tag']);
+    const hit = (table, hay) => { for (const [re, txt] of table) if (hay && re.test(hay)) return txt; return ''; };
+    const piece = hit(PIECE_MATERIALS, pieceHay);
+    return {
+      pack: hit(PACK_MATERIALS, packHay),
+      piece: piece || 'each piece rests securely in her fingers',
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  ✋ v5.43(2026-09-17)handProfile —— 【手跟這個商品怎麼互動】由商品模組決定
   //   RA:「應該要透過商品那個程式碼去針對細節去做變化,例如顧客選餅乾的那項目。」
   //   ★ 一個檔案一個職責:商品長什麼樣、怎麼被拿、手可不可以做細部操作,都是商品的事,
@@ -503,7 +560,11 @@
       const mode = resolveMode(prod);
       if (mode && HAND_FACTS[mode]) return { fine: HAND_FACTS[mode][0], fact: HAND_FACTS[mode][1], mode: mode };
       const type = resolveType(prod);
-      if (type === 'dish') return { fine: false, fact: '這是一盤做好的菜,她用整隻手端著盤子,或讓它放在桌上、用手指向它。', mode: 'dish' };
+      if (type === 'dish') {
+        return DRINK_RE.test(_hay(prod, ['prodName', 'name', 'tag', 'productLook']))
+          ? { fine: false, fact: '這是一杯飲品,她整隻手握著杯子,或讓它放在桌上;杯子跟著手腕穩穩移動。', mode: 'dish' }
+          : { fine: false, fact: '這是一盤做好的菜,她用整隻手端著盤子,或讓它放在桌上、用手指向它。', mode: 'dish' };
+      }
       if (type === 'packaged') {
         return isYes(prod.showContents)
           ? { fine: false, fact: '這包商品的包裝已經打開、維持原本的形狀;她從開口伸手拿出一片,整片穩穩拿在手上給人看。', mode: 'packaged' }
@@ -537,6 +598,8 @@
       //   舊版把「不進鍋/不炒/不煮/不生食/不倒進去/不丟進去/不上爐火」列了一長串,
       //   那是同一件事的七種說法(RA 鐵律:點名即召喚,而且清單列不完)。
       bits.push('this plated dish is the finished dish as served — she presents, serves or lightly garnishes it, and it stays on the counter or table away from any heat, never going back into cookware');
+      //  🥤 2026-09-17:飲品不是盤子 —— 補杯子與液體的物理
+      if (DRINK_RE.test(_hay(prod, ['prodName', 'name', 'tag', 'productLook']))) bits.push('the drink is in a real cup, its liquid staying level');
       if (scale) bits.push('the plated dish is ' + scale + ', at that true size');
       bits.push('presented appetizing and intact, the plate facing the camera, minimal movement so it stays recognizable');
       return 'PROP (the plated dish she is presenting, at its real-life size): ' + bits.join('; ');
@@ -553,6 +616,8 @@
       bits.push(desc
         ? 'the packaged product in [Image2] is ' + desc + ', its printed text staying legible'
         : 'its printed label reads correctly');
+      //  🧱 v5.44:包裝材質 —— 抓不到就不寫
+      { const _m = materialOf(prod); if (_m.pack) bits.push(_m.pack); }
       //  🐛 2026-09-05 修靜默失效:原條件是「勾了顯示內容物 AND 填了內容物長相」,
       //    兩個都要成立 [Image3] 才會被點名。客戶勾了卻沒填描述時 ——
       //    第二張圖照樣送進引擎,但在提示詞裡【沒有名字】,模型不知道那是什麼。
@@ -571,7 +636,8 @@
         bits.push('its contents are shown in [Image3]'
           + (_cl ? ' and look like ' + _cl : '')
           + ', and the number of pieces on screen matches [Image3] exactly'
-          + ', their shape and texture staying stable');
+          + ', their shape and texture staying stable'
+          + ', ' + materialOf(prod).piece);   // 🧱 v5.44:內容物怎麼被拿著(治海苔浮在指尖)
         //  ═══════════════════════════════════════════════════════════════
         //  📦 v5.42(2026-09-16)袋口的【開口狀態】寫成事實 —— 治「整包被撕裂」
         //   RA 實測(好滋好滋 45 秒):第 3 段她把整包像拆餅乾一樣撕開攤平。
@@ -597,11 +663,12 @@
     // object
     const look = (prod.productLook || '').trim();
     bits.push('the product reads correctly and is never mirrored' + (look ? ' (' + look + ')' : ''));   /* v3.51:一致性已由資產標註區負責,這裡不再重複 */
+    { const _m = materialOf(prod); if (_m.pack) bits.push(_m.pack); }   // 🧱 v5.44
     if (scale) bits.push('the product is ' + scale + ', shown at that true size');
     bits.push(GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it');
     return 'PROP (the product she is using or showing, at its real-life size): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.43', resolveMode, handProfile };
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.45', resolveMode, handProfile, materialOf };
   console.log('[KolProduct] 👗 v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
