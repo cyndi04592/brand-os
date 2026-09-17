@@ -44,6 +44,7 @@
 <script src="loader.js"></script>
 <script src="config.js"></script>
 <script src="plans.js"></script>
+<script src="ref-capture.js"></script><!-- 🤝 2026-09-17 推薦碼:網址 ?ref= 自動記住 -->
 <script>
   // ══ 整頁訂閱控制器(渲染重用 plans.js,購買流程自帶,不動 index 彈窗)══
   let _grp = 'small', _cyc = 'month';
@@ -220,6 +221,11 @@
         '<div id="invErr" style="font-size:12px;color:#ff9d9d;margin-top:9px;line-height:1.6;font-weight:700;"></div>' +
         '<div style="font-size:11px;color:rgba(255,255,255,0.38);margin-top:10px;line-height:1.7;">發票於付款完成後自動開立並通知您。開立後統編與載具無法變更。</div>' +
       '</div>' +
+      //  🤝 2026-09-17 推薦碼(選填):點推薦連結進來的會自動帶好,客人什麼都不用打
+      '<div style="text-align:left;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:13px 15px;margin-bottom:16px;">' +
+        '<div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:2px;">推薦碼<span style="font-weight:400;color:rgba(255,255,255,0.45);font-size:11.5px;"> · 選填</span></div>' +
+        '<input id="refCode" maxlength="20" placeholder="有推薦人的話填這裡" value="' + ((window.RabyRef && RabyRef.get()) || '') + '" style="' + box + 'font-family:monospace;letter-spacing:1px;text-transform:uppercase;">' +
+      '</div>' +
       '<div style="text-align:left;background:rgba(255,190,90,0.08);border:1px solid rgba(255,190,90,0.35);border-radius:14px;padding:13px 15px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,0.78);line-height:1.85;">' +
         '<b style="color:#ffce6b;font-size:12.5px;">⚠️ 購買前請確認</b><br>' +
         '本服務為數位內容服務,開通後即可立即使用,<b style="color:#ffce6b;">恕不提供中途退訂或退款</b>。<br>' +
@@ -282,6 +288,13 @@
     return { ok: true, data: { invType: 'email' } };
   }
 
+  //  🤝 2026-09-17 推薦碼:輸入框優先(客人手打的),沒填就用連結帶進來的
+  function _refCollect() {
+    const v = String(((document.getElementById('refCode') || {}).value || '')).trim();
+    if (window.RabyRef) { if (v) RabyRef.set(v); return RabyRef.get() || ''; }
+    return v.toUpperCase();
+  }
+
   function buyPlanEcpay(k) {
     const email = localStorage.getItem('bs_sso_email') || '';
     if (!email) { alert('請先登入再購買'); return; }
@@ -289,7 +302,7 @@
     if (window.showSpaceLoader) showSpaceLoader(root, '正在建立付款'); else root.innerHTML = '<div style="text-align:center;padding:60px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
     const _inv = _invCollect();
     if (!_inv.ok) return;   // 格式沒過:停在原畫面,錯誤訊息已顯示在表單裡
-    _wWrite('createSubOrder', Object.assign({ email, plan: k, cycle: _cyc, method: 'ecpay' }, _inv.data))
+    _wWrite('createSubOrder', Object.assign({ email, plan: k, cycle: _cyc, method: 'ecpay', ref: _refCollect() }, _inv.data))
       .then(j => {
         if (!j.ok) { alert('下單失敗:' + (j.error || '')); renderPage(); return; }
         return fetch(CF_WORKER_URL, {
@@ -327,7 +340,7 @@
     const monthPrice = (p.promo > 0) ? p.promo : p.price;
     const amount = yr ? (p.price * 12) : monthPrice;
     if (!confirm(`確認訂閱「${p.name} 方案 · ${yr ? '年繳' : '月繳'}」?\n\n每月 ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${yr ? '（年）' : '（月）'}（含稅）\n\n下單後依匯款資訊轉帳,我們對帳後為你開通。`)) return;
-    _wWrite('createSubOrder', Object.assign({ email, plan: k, cycle: _cyc }, _inv.data))
+    _wWrite('createSubOrder', Object.assign({ email, plan: k, cycle: _cyc, ref: _refCollect() }, _inv.data))
       .then(j => { if (!j.ok) { alert('下單失敗:' + (j.error || '')); return; } showSubOrderInfo(j); })
       .catch(() => alert('連線錯誤,請重試'));
   }
