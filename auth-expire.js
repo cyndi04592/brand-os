@@ -57,4 +57,27 @@
     return true;
   }
   window.BSAuthExpire = { check: check, show: show, isOurs: isOurs, looksExpired: looksExpired };
+
+  //  🛡 v1.1:自己也掛一層 fetch —— 不依賴各頁攔截器有沒有接上。
+  //   RA 2026-09-18 實測:頁面載到了這支(typeof = object),但 401 還是只跳舊的 alert,
+  //   因為有些請求是繞過頁面攔截器直送的(重試層、各模組自己包的 fetch)。
+  //   這一層掛在最外面,不改請求內容、不擋流程,只「看回應」。
+  try {
+    var _of = window.fetch.bind(window);
+    window.fetch = function (input, init) {
+      var p = _of(input, init);
+      try {
+        var url = (typeof input === 'string') ? input : ((input && input.url) || '');
+        if (isOurs(url)) {
+          p.then(function (resp) {
+            try {
+              if (resp.status === 401) { check(url, 401, null); return; }
+              resp.clone().json().then(function (j) { check(url, resp.status, j); }).catch(function () {});
+            } catch (e) {}
+          }).catch(function () {});
+        }
+      } catch (e) {}
+      return p;
+    };
+  } catch (e) {}
 })();
