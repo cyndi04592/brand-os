@@ -1646,6 +1646,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="tab" onclick="switchTab('staff')">員工管理</div>
   <div class="tab" onclick="switchTab('topup')">儲值管理</div>
   <div class="tab" onclick="switchTab('suborder')">訂閱管理</div>
+  <div class="tab" onclick="switchTab('referral')">推薦分潤</div>
 </div>
 
 <div class="main">
@@ -1868,6 +1869,9 @@ tr:hover td { background: rgba(124,109,250,0.04); }
       <div class="empty-state"><p>載入中...</p></div>
     </div>
   </div>
+
+  <!-- 🤝 2026-09-17 推薦分潤(內容由 admin-referral.js 畫) -->
+  <div class="section" id="sec-referral"><div id="refRoot"></div></div>
 
   <div class="section" id="sec-suborder">
     <div class="section-header">
@@ -2222,7 +2226,7 @@ async function bootAdmin() {
 }
 
 function switchTab(name) {
-  const tabs = ['brands','products','folders','delivers','memory','apply','staff','topup','suborder'];
+  const tabs = ['brands','products','folders','delivers','memory','apply','staff','topup','suborder','referral'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
@@ -2232,6 +2236,7 @@ function switchTab(name) {
   if (name==='apply') loadApply();
   if (name==='topup') loadTopup();
   if (name==='suborder') loadSubOrders();
+  if (name==='referral' && window.RefAdmin) RefAdmin.load();
   _updateSaveHint(name);
 }
 
@@ -3791,6 +3796,6 @@ function setStatus(msg,type) {
 function showLoading(msg) { document.getElementById('loadingMsg').textContent=msg; document.getElementById('loadingOverlay').classList.add('show'); }
 function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
 </script>
+<script src="admin-referral.js"></script><!-- 🤝 2026-09-17 推薦分潤分頁 -->
 </body>
 </html>
-
