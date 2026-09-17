@@ -17,22 +17,44 @@ let _userEmail = null;
 let _isInitializing = false;
 let _systemStarted = false;
 
-// ══ Drive 狀態顯示 ══
+// ══ 素材狀態顯示 ══
+//  🐛 2026-09-18 修兩個 bug(Allan 手機 Safari 回報「素材庫都沒有顯示」):
+//   ① 狀態 class 叫 'empty',撞到 style.css 全站的 .empty { padding: 50px 24px }
+//      → 那顆 7px 小圓點被撐成巨大的綠色橢圓,整個膠囊變形。改用 ds-* 開頭的名字,不再撞名。
+//   ② 「品牌真的沒素材」和「讀取失敗(登入過期 / 沒權限)」顯示同一句「素材載入失敗」,
+//      客人只會覺得系統壞了。現在分開:
+//        none → 這個品牌還沒有素材(正常,去上傳)
+//        fail → 載入失敗 · 點我重試
+//        auth → 登入已過期 · 點我重新登入(Safari 會自動清掉久沒開的網站資料,憑證就不見了)
 function setDriveStatus(state) {
   const dot = document.getElementById('driveDot');
   const lbl = document.getElementById('driveLabel');
-  dot.className = 'drive-dot ' + state;
-  if (state === 'ok') {
-    lbl.textContent = '素材已就緒';
-    lbl.style.color = 'var(--mint)';
-    lbl.classList.remove('drive-warning-text');
-  } else if (state === 'busy') {
-    lbl.textContent = '載入中…';
-    lbl.style.color = 'var(--gold)';
-  } else {
-    lbl.textContent = '· 素材載入失敗';
-    lbl.style.color = 'var(--t3)';
+  const chip = document.getElementById('driveStatusChip');
+  if (!dot || !lbl) return;
+  if (state === 'empty') state = 'none';            // 舊呼叫點相容
+  dot.className = 'drive-dot ds-' + state;
+  dot.style.cssText = 'width:6px;height:6px;padding:0;flex:0 0 6px;border-radius:50%;';
+  const COLOR = { ok: 'var(--accent3)', busy: 'var(--gold)', none: 'var(--t3)', fail: '#ff8a8a', auth: '#ffce6b' };
+  dot.style.background = COLOR[state] || 'var(--t3)';
+  dot.style.boxShadow = state === 'ok' ? '0 0 6px var(--accent3)' : 'none';
+  lbl.style.color = COLOR[state] || 'var(--t3)';
+  lbl.classList.remove('drive-warning-text');
+  lbl.textContent = ({ ok: '素材已就緒', busy: '載入中…', none: '這個品牌還沒有素材',
+                       fail: '載入失敗 · 點我重試', auth: '登入已過期 · 點我重新登入' })[state] || '素材狀態未知';
+  if (chip) {
+    chip.style.cursor = (state === 'fail' || state === 'auth') ? 'pointer' : '';
+    chip.onclick = state === 'fail' ? function () { if (typeof fetchBoth === 'function') fetchBoth(); }
+                 : state === 'auth' ? function () { _reloginAfterExpire(); }
+                 : null;
   }
+}
+//  登入過期 → 不問「確定要登出嗎」,直接清掉殘留、回登入畫面
+function _reloginAfterExpire() {
+  try {
+    ['bs_token', 'bs_email', 'bs_worker_mode', 'bs_auth_token'].forEach(k => sessionStorage.removeItem(k));
+    ['bs_auth_token', 'bs_sso_email'].forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
+  location.reload();
 }
 
 // ══ 初始化 Google Auth ══
