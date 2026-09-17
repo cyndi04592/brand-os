@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>我的推薦 · Brand OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* 🎨 Brand OS 設計語彙(與 admin.html 同一套:紫粉薄荷三色 + Syne / Noto Sans TC / DM Mono) */
+:root{
+  --bg:#0A0A0F;--bg2:#111118;--bg3:#1A1A24;--line:rgba(255,255,255,0.08);
+  --purple:#7C6DFA;--purple-soft:rgba(124,109,250,0.12);--pink:#FA6D9B;--pink-soft:rgba(250,109,155,0.12);--mint:#6DFAC2;--mint-soft:rgba(109,250,194,0.12);
+  --t1:#F0F0F5;--t2:#A0A0B0;--t3:#606070;
+  --grad-main:linear-gradient(135deg,#7C6DFA 0%,#FA6D9B 100%);
+  --grad-bg:radial-gradient(ellipse at 15% 5%,rgba(124,109,250,0.10) 0%,transparent 45%),radial-gradient(ellipse at 85% 90%,rgba(250,109,155,0.08) 0%,transparent 45%),radial-gradient(ellipse at 50% 50%,rgba(109,250,194,0.04) 0%,transparent 70%);
+  --font-display:'Syne',sans-serif;--font-body:'Noto Sans TC',sans-serif;--font-mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body),-apple-system,'Segoe UI',sans-serif;background:var(--bg);background-image:var(--grad-bg);background-attachment:fixed;color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:30px 18px 64px}
+.logo{font-family:var(--font-display);font-weight:800;font-size:20px;background:var(--grad-main);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.5px}
+.card{background:linear-gradient(135deg,rgba(17,17,24,0.8),rgba(26,26,36,0.6));border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.card.hero{border-color:rgba(124,109,250,0.25)}
+.row{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:13px}
+.row:first-of-type{border-top:0}
+.muted{color:var(--t3);font-size:12px;line-height:1.85}
+.h{font-size:14px;font-weight:700;margin-bottom:6px}
+.big{font-family:var(--font-display);font-size:24px;font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:14px}
+.grid .card{margin:0}
+.badge{font-size:11px;border-radius:20px;padding:3px 11px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.b-pend{background:rgba(255,190,90,0.1);color:#ffce6b;border-color:rgba(255,190,90,0.35)}
+.b-done{background:var(--mint-soft);color:#4fd6a8;border-color:rgba(109,250,194,0.4)}
+.b-void{background:rgba(244,67,54,0.1);color:#f44336;border-color:rgba(244,67,54,0.3)}
+.code{font-family:var(--font-mono);background:var(--purple-soft);color:var(--purple);border:1px solid rgba(124,109,250,0.35);border-radius:20px;padding:3px 12px;font-size:12px}
+.link{display:flex;gap:8px;margin-top:10px}
+.link input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--t1);font-family:var(--font-mono);font-size:12.5px}
+button{background:var(--grad-main);color:#fff;border:none;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(124,109,250,0.35);white-space:nowrap}
+.mono{font-family:var(--font-mono)}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<!-- 🤝 ref.html v1.1(2026-09-17)推薦人專屬查看頁 · 🎨 套 Brand OS 設計語彙(紫粉薄荷 + Syne/Noto Sans TC/DM Mono)
+     ・用後台給的專屬連結開(?code=推薦碼&k=查看碼),不用登入
+     ・只看得到自己的:客人 email 已遮罩,看不到別人的資料 -->
+<div class="wrap" id="root"><div class="muted">載入中…</div></div>
+<script>
+(function () {
+  const WORKER = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+  const q = new URLSearchParams(location.search);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money = n => 'NT$' + Math.round(Number(n) || 0).toLocaleString();
+  const ST = { pending: ['計算中', 'b-pend'], settled: ['已結算', 'b-done'], void: ['已作廢(退費)', 'b-void'] };
+  const root = document.getElementById('root');
+  fetch(WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'ref_dashboard', password: 'raby2026', code: q.get('code') || '', key: q.get('k') || '' }) })
+  .then(r => r.json()).then(d => {
+    if (!d.ok) { root.innerHTML = '<div class="card">找不到這個推薦頁,請跟我們確認連結是否正確。</div>'; return; }
+    const link = location.origin + '/?ref=' + d.code;
+    const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+    root.innerHTML = `
+      <div class="logo" style="margin-bottom:18px">Brand OS</div>
+      <div class="muted">我的推薦</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 18px"><span class="big">${esc(d.name || d.code)}</span><span class="code">${esc(d.code)} · ${esc(d.pct)}%</span></div>
+      <div class="card hero">
+        <div class="h">我的推薦連結</div>
+        <div class="muted">分享這個連結,朋友點進來訂閱就會自動算在你名下(不用輸入推薦碼)。也可以請對方結帳時填推薦碼 <b class="mono" style="color:var(--t1)">${esc(d.code)}</b>。</div>
+        <div class="link"><input id="lk" readonly value="${esc(link)}"><button onclick="navigator.clipboard.writeText(document.getElementById('lk').value).then(()=>this.textContent='已複製')">複製</button></div>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="muted">推薦人數</div><div class="big">${d.clients.length}</div></div>
+        <div class="card"><div class="muted">下次結算可領</div><div class="big" style="color:var(--mint)">${money(d.totals.ready)}</div></div>
+        <div class="card"><div class="muted">累計已結算</div><div class="big">${money(d.totals.settled)}</div></div>
+      </div>
+      <div class="card">
+        <div class="muted">還在一個月觀察期內:${money(d.totals.waiting)}。客人付款滿一個月才計入,每月 10 日結算、結算後 7-14 天匯款。個人代扣所得稅與二代健保,公司請開統編發票。</div>
+      </div>
+      <div class="card">
+        <div class="h">我推薦的客人</div>
+        ${d.clients.length ? d.clients.map(c => `<div class="row"><span class="mono">${esc(c.client)}</span><span class="muted">${esc(c.bound_at)} 加入 · 付款 ${c.payments} 次${c.last_paid ? ' · 最近 ' + esc(c.last_paid) : ''}</span></div>`).join('') : '<div class="muted">還沒有客人</div>'}
+      </div>
+      <div class="card">
+        <div class="h">分潤明細</div>
+        ${d.commissions.length ? d.commissions.map(c => { const s = ST[c.status] || [c.status, 'b-pend']; const wait = c.status === 'pending' && c.eligible_at > today; return `<div class="row">
+          <span>${esc(c.paid_at)} · <span class="mono">${esc(c.client)}</span><br><span class="muted">付 ${money(c.amount)} × ${esc(c.pct)}%${c.status === 'pending' ? ' · ' + (wait ? esc(c.eligible_at) + ' 起計入' : '已可結算') : ''}${c.settle_month ? ' · ' + esc(c.settle_month) + ' 結算' : ''}</span></span>
+          <span style="text-align:right"><b>${money(c.commission)}</b><br><span class="badge ${s[1]}">${s[0]}</span></span></div>`; }).join('') : '<div class="muted">還沒有分潤紀錄</div>'}
+      </div>`;
+  }).catch(() => { root.innerHTML = '<div class="card">連線錯誤,請稍後再試</div>'; });
+})();
+</script>
+</body>
+</html>
