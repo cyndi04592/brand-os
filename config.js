@@ -589,6 +589,21 @@ function buildDataFromSheets(data) {
         }
       }
     } catch (e) { /* 夾帶失敗絕不擋請求 */ }
-    return _origFetch(input, init);
+    //  🔑 2026-09-18:回應如果是「登入過期」,交給 auth-expire.js 跳統一視窗。
+    //   舊行為:各功能各自跳自己的錯誤訊息(素材庫直接空白、抓色系跳別的話),
+    //   客人只會以為功能壞了。這裡只「看一眼」回應,不改內容、不擋流程。
+    const _p = _origFetch(input, init);
+    try {
+      const _url = (typeof input === 'string') ? input : ((input && input.url) || '');
+      if (window.BSAuthExpire && window.BSAuthExpire.isOurs(_url)) {
+        _p.then(function (resp) {
+          try {
+            if (resp.status === 401) { window.BSAuthExpire.check(_url, 401, null); return; }
+            resp.clone().json().then(function (j) { window.BSAuthExpire.check(_url, resp.status, j); }).catch(function () {});
+          } catch (e) {}
+        }).catch(function () {});
+      }
+    } catch (e) {}
+    return _p;
   };
 })();

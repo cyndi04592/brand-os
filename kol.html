@@ -2555,6 +2555,14 @@ const _LOG_KIND = {
           .catch(function () {});
       } catch (e) {}
     }
+    //  🔑 2026-09-18:登入過期 → 統一視窗(auth-expire.js)。
+    //   RA 2026-09-18 實測:AI 編修跳「AI 編修失敗:請重新登入」,客人看不懂要做什麼。
+    try {
+      if (window.BSAuthExpire) {
+        if (_resp.status === 401) window.BSAuthExpire.check(_u, 401, null);
+        else _resp.clone().json().then(function (j) { window.BSAuthExpire.check(_u, _resp.status, j); }).catch(function () {});
+      }
+    } catch (e) {}
     if (_billed) {
       try {
         _resp.clone().json().then(function (j) {
@@ -11417,6 +11425,7 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
      ★ 要恢復:把下面那行的註解拿掉即可,檔案沒有刪。
      ⚠️ 恢復前記得先把它裡面的 console.log/warn 關進 window.KOL_DEBUG。 -->
 <!-- <script src="kol-engine-kling.js"></script> -->
+<script src="auth-expire.js"></script><!-- 🔑 2026-09-18 登入過期統一處理 -->
 <script src="mobile-select.js"></script><!-- 手機長下拉挑選層(全站共用·桌機不影響) -->
 <!-- ⛔ v6.4:kol-persona-panel.js 撤回,不再載入。
      v6.3 曾把這支孤兒檔案接上,但那是【錯的判斷】——

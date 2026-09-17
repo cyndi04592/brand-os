@@ -2017,7 +2017,20 @@ if (!_adminKey()) { try { window._setAdminKey(); } catch (e) {} }
       }
     } catch (_) { /* 韌性層出事也絕不擋請求 */ }
 
-    return _origFetch(input, init);
+    //  🔑 2026-09-18:登入過期 → 統一視窗(auth-expire.js),後台跟主站同一套
+    const _pp = _origFetch(input, init);
+    try {
+      const _u2 = (typeof input === 'string') ? input : ((input && input.url) || '');
+      if (window.BSAuthExpire && window.BSAuthExpire.isOurs(_u2)) {
+        _pp.then(function (resp) {
+          try {
+            if (resp.status === 401) { window.BSAuthExpire.check(_u2, 401, null); return; }
+            resp.clone().json().then(function (j) { window.BSAuthExpire.check(_u2, resp.status, j); }).catch(function () {});
+          } catch (e) {}
+        }).catch(function () {});
+      }
+    } catch (e) {}
+    return _pp;
   };
 
   // 把原本的 GAS GET 網址,翻譯成 Worker 的 gas_cached POST
@@ -3796,6 +3809,8 @@ function setStatus(msg,type) {
 function showLoading(msg) { document.getElementById('loadingMsg').textContent=msg; document.getElementById('loadingOverlay').classList.add('show'); }
 function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
 </script>
+<script src="auth-expire.js"></script><!-- 🔑 2026-09-18 登入過期統一處理 -->
 <script src="admin-referral.js"></script><!-- 🤝 2026-09-17 推薦分潤分頁 -->
 </body>
 </html>
+
