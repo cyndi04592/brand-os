@@ -112,6 +112,11 @@ async function autoFetchAssets(brandId) {
   if (!brandId) return;
 
   _hydrateFromLS(brandId);                       // 先看本地快取
+  //  🐛 2026-09-18:舊版失敗時存過「空的快取」—— 空快取不採信,一律回源重抓一次
+  if (_assetCache[brandId]?.loaded && !((_assetCache[brandId].photos || []).length)) {
+    delete _assetCache[brandId];
+    try { _clearAssetCacheLS(brandId); } catch (e) {}
+  }
   if (_assetCache[brandId]?.loaded) {
     window.S.photos   = _assetCache[brandId].photos;
     window.S.videos   = _assetCache[brandId].videos || [];
@@ -133,13 +138,20 @@ async function autoFetchAssets(brandId) {
   if (n === -1) return;                          // 已切走 → 這包不算數
 
   if (_assetReqStale(_req, brandId)) return;     // 🩹 以品牌為準,不用流水號
+  //  🐛 2026-09-18:失敗【不存快取】—— 以前失敗也記成 loaded:true 還寫進 localStorage,
+  //    之後每次都秒回空白,連重新整理都救不回來。
+  if (n === -2) {
+    renderAssets();
+    setDriveStatus(window._assetLoadError === 'auth' ? 'auth' : 'fail');
+    return;
+  }
   if (n > 0) console.log('[assets] 📚 素材庫供圖 ' + n + ' 張');
   else       console.log('[assets] 📚 這個品牌的素材庫是空的');
 
   _assetCache[brandId] = { photos: window.S.photos, videos: [], loaded: true };
   _saveAssetCacheLS(brandId);
   renderAssets();
-  setDriveStatus(n > 0 ? 'ok' : 'empty');
+  setDriveStatus(n > 0 ? 'ok' : 'none');
 }
 
 // 🔁 舊名保留:brands.js 以外若還有人叫這個名字,一律導到上面那支
@@ -194,9 +206,15 @@ async function fetchFromLibrary(brandId, reqId, force) {
       try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; }
       catch (e) { return ''; }
     })();
+    //  🐛 2026-09-18:Safari 會清掉 localStorage,bs_sso_email 不見 → email 送空的 → Worker 回「無此品牌權限」。
+    //    依序退回 sessionStorage 與登入時記下的 _userEmail。
     const em = (function () {
-      try { return localStorage.getItem('bs_sso_email') || ''; } catch (e) { return ''; }
+      try {
+        return localStorage.getItem('bs_sso_email') || sessionStorage.getItem('bs_email')
+          || (typeof _userEmail === 'string' ? _userEmail : '') || '';
+      } catch (e) { return ''; }
     })();
+    if (!tk && !em) { window._assetLoadError = 'auth'; return -2; }
 
     const data = await _retryFetchJson(() => fetch(KOL_URL, {
       method: 'POST',
@@ -207,7 +225,14 @@ async function fetchFromLibrary(brandId, reqId, force) {
       })
     }), 'list_assets');
 
-    if (!data || !data.ok) { console.warn('[assets] 素材庫讀取失敗,改走 Drive:', data && data.error); return 0; }
+    //  🐛 2026-09-18:讀取失敗以前回 0,跟「品牌真的沒素材」分不出來,而且還會被存成快取 → 一直空白。
+    //    現在回 -2,並記下是權限(登入)問題還是其他問題。
+    if (!data || !data.ok) {
+      const err = String((data && data.error) || '');
+      console.warn('[assets] 素材庫讀取失敗:', err);
+      window._assetLoadError = /權限|token|auth|登入|過期|unauthor|forbidden|證/i.test(err) ? 'auth' : 'fail';
+      return -2;
+    }
     if (_assetReqStale(reqId, brandId)) { console.warn('[assets] 已切換品牌,丟棄過期的素材回應(brandId=' + brandId + ')'); return -1; }
     // 🛡 只留這個品牌的:上一個品牌的殘留清掉,否則兩家素材會混在一起
     window.S.photos = (window.S.photos || []).filter(function (x) { return x._src !== 'library'; });
@@ -245,8 +270,9 @@ async function fetchFromLibrary(brandId, reqId, force) {
     _libCache[brandId] = _fresh;
     return n;
   } catch (e) {
-    console.warn('[assets] 素材庫讀取錯誤,改走 Drive:', e.message);
-    return 0;
+    console.warn('[assets] 素材庫讀取錯誤:', e.message);
+    window._assetLoadError = 'fail';
+    return -2;
   }
 }
 
