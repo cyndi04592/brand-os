@@ -800,6 +800,39 @@ upBox.addEventListener('drop', function(ev){
   if(fs && fs.length) _stage(fs);          // 拖進來也一樣先停下來確認分類
 });
 
+// ═══════════════════════════════════════════════════════════════
+//  🗜 2026-09-18 上傳就壓縮 —— RA:「即使我上傳很大的尺寸也要壓縮」
+//   病:原圖直接進 R2。客戶手機/單眼的照片動輒 5504×8256(4500 萬畫素、十幾 MB),
+//     後面每一關都被拖累:上傳慢、素材庫捲動卡、影片引擎還會因為超過 6000px 退件。
+//   ★ 這裡壓的是【送出去的那一份】,超過 2560px 才動手,小圖原樣不動。
+//   ★ 2560 的理由:影片引擎上限 6000,廣告圖輸出最大也才 2K —— 2560 綽綽有餘,
+//     再大只是佔空間。長寬比不變,不裁切。
+//   ★ 只處理瀏覽器打得開的圖(jpg/png/webp);HEIC、PDF、影片一律原樣送。
+//   ★ 壓縮失敗一律送原圖 —— 壓縮是優化,不可以變成上傳失敗的理由。
+const UP_MAX_PX = 2560;
+async function _shrinkForUpload(f){
+  try{
+    if(!f || !/^image\/(jpeg|jpg|png|webp)$/i.test(f.type || '')) return f;
+    if(f.size < 900 * 1024) return f;                    // 小於 0.9MB 不折騰
+    const bmp = await createImageBitmap(f);
+    const w = bmp.width, h = bmp.height;
+    if(Math.max(w, h) <= UP_MAX_PX){ bmp.close && bmp.close(); return f; }
+    const k = UP_MAX_PX / Math.max(w, h);
+    const cw = Math.round(w * k), ch = Math.round(h * k);
+    const cv = document.createElement('canvas');
+    cv.width = cw; cv.height = ch;
+    cv.getContext('2d').drawImage(bmp, 0, 0, cw, ch);
+    bmp.close && bmp.close();
+    const blob = await new Promise(function(res){ cv.toBlob(res, 'image/jpeg', 0.9); });
+    if(!blob) return f;
+    const name = String(f.name || 'image').replace(/\.(png|webp|jpeg|jpg)$/i, '') + '.jpg';
+    const out = new File([blob], name, { type:'image/jpeg' });
+    console.log('[UP] 🗜 ' + f.name + ' ' + w + '×' + h + ' ' + Math.round(f.size/1024) + 'KB → '
+                + cw + '×' + ch + ' ' + Math.round(out.size/1024) + 'KB');
+    return out.size < f.size ? out : f;                  // 壓完反而變大就用原圖
+  }catch(e){ console.warn('[UP] 壓縮略過,送原圖:', e && e.message); return f; }
+}
+
 async function doUpload(files){
   if(!S.brandId){ alert('請先選擇品牌'); return; }
   const cat = $('upCat').value;
@@ -811,12 +844,15 @@ async function doUpload(files){
   let ok = 0, bad = 0;
 
   for(let i = 0; i < files.length; i++){
-    const f = files[i];
+    const f0 = files[i];
     const row = document.createElement('div');
     row.className = 'up-item';
-    row.innerHTML = '<span class="st">⏳</span><span>'+esc(f.name)+'</span>';
+    row.innerHTML = '<span class="st">⏳</span><span>'+esc(f0.name)+'</span>';
     list.appendChild(row);
     try{
+      const f = await _shrinkForUpload(f0);              // 🗜 太大就先縮再送
+      if(f !== f0) row.innerHTML = '<span class="st">⏳</span><span>'+esc(f0.name)+'</span>'
+                                 + '<span style="color:var(--text-dim)"> · 已自動縮小</span>';
       const fd = new FormData();
       fd.append('file', f);
       fd.append('password', PASSWORD);
