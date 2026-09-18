@@ -1663,6 +1663,10 @@ document.addEventListener('DOMContentLoaded', function(){
           <div class="script-wrap">
             <textarea id="cine-situation" placeholder="例:在登山步道休息時,拿出防熊噴霧示範怎麼快速取用、按壓的動作,神情警覺專注" style="min-height:70px"></textarea>
           </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" id="faceless-ai-btn" onclick="aiWriteFacelessSituation()">🫱 AI 幫我寫動作</button>
+            <span class="motion-hint" style="margin:0">依商品與選定的動作自動寫,寫完可以直接改</span>
+          </div>
           <div class="motion-hint">寫了 AI 會照你的情境演,不寫就靠場景自由發揮。這裡只描述「畫面在做什麼」,不是台詞。</div>
         </div>
 
@@ -7104,17 +7108,8 @@ function updateSeedanceCostEstimate() {
   const _allMin = (_plan.all + _slow) / 60;
   const lo = Math.max(2, Math.round(_allMin * 0.7));
   const hi = Math.round(_allMin * 1.4);
-  //  🩹 2026-09-18 估時說明修正(RA 抓到):秒數一直讀畫質區的下拉,不是分鏡卡的長度 ——
-  //   3 段 15 秒的片會顯示成「3 段 × 10s」,客戶算出來的總長跟成品對不上。
-  //   ★ 有分鏡就用分鏡卡自己的秒數,並把總長寫出來(客戶真正想知道的是「45 秒的片要等多久」)。
-  //   ★ 沒有分鏡(單支電影鏡頭)才退回下拉的秒數,行為跟以前一樣。
-  const _bs = ((S.cineStoryboard || []).map(function (b) { return Number(b && b.seconds) || 0; })
-                .filter(function (n) { return n > 0; }));
-  const _total = _bs.reduce(function (a, b) { return a + b; }, 0);
-  const specTxt = (_bs.length > 1)
-    ? `${_bs.length} 段 × ${_bs[0]}s = ${_total}s · ${p.resolution}`
-    : `${p.resolution} × ${seconds}s`;
-  el.textContent = `~ ${lo}-${hi} 分鐘(${specTxt})`;
+  const segTxt = segs > 1 ? `${segs} 段 × ` : '';
+  el.textContent = `~ ${lo}-${hi} 分鐘(${segTxt}${p.resolution} × ${seconds}s)`;
 }
 
 function copySeedancePrompt() {
@@ -8309,6 +8304,44 @@ async function createFacelessVideo() {
 }
 // ───────────────────────────────────────────────────────
 
+//  🫱 2026-09-18 無臉模式:叫 AI 寫「劇情/情境」
+//   RA:有臉的分鏡可以按 AI 編修,無臉只能自己打字,不合理。
+//   ★ 只送商品與選定的動作給 Worker(v5.61 faceless_situation),回來直接填進框裡,
+//     客戶可以再自己改 —— 跟分鏡一樣是「AI 起頭、人收尾」。
+//   ★ 手部細節放不放行照 kol-product 的 handProfile,操作示範類才寫手指動作。
+async function aiWriteFacelessSituation() {
+  const el = document.getElementById('cine-situation');
+  const btn = document.getElementById('faceless-ai-btn');
+  if (!el) return;
+  const action = document.getElementById('faceless-action')?.value || '';
+  if (!action) { toast('請先選「要拍什麼動作」', 'error'); return; }
+  const prod = (typeof getCurrentRotationProduct === 'function' ? getCurrentRotationProduct() : null) || {};
+  let handsFine = false;
+  try {
+    if (window.KolProduct && typeof window.KolProduct.handProfile === 'function') {
+      handsFine = !!(window.KolProduct.handProfile(prod).fine);
+    }
+  } catch (e) {}
+  const hint = String(el.value || '').trim();     // 已經寫了字 → 當成方向給 AI
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ AI 想動作中…'; }
+  try {
+    const r = await api('faceless_situation', {
+      action,
+      productName: prod.prodName || prod.name || '',
+      productTag: prod.prodTag || prod.tag || '',
+      productHandsFine: handsFine,
+      hint,
+      brandId: S.currentBrandId,
+    });
+    if (!r.ok) throw new Error(r.message || r.error || '未知錯誤');
+    el.value = r.situation;
+    toast('AI 寫好了,可以直接改', 'success');
+  } catch (e) {
+    toast('AI 代寫失敗:' + e.message, 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '🫱 AI 幫我寫動作'; }
+}
+
 async function createSeedanceVideo() {
   // 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳
   if (!(await preGenConfirm({ step: 2, pending: S.cineStoryboardPending, itemCount: productItemCount(S.seedanceProductUrls), duration: S.seedanceParams.duration }))) return;
@@ -8523,6 +8556,28 @@ function _taskCode(id) {
   return String(id || '').replace(/-/g, '').slice(0, 8).toUpperCase();
 }
 
+//  ⏳ 2026-09-18 單支生成也給讀取條(RA:無臉模式應該跟有臉一樣看得到進度)
+//   ★ 舊版單支只有「已等 N 秒」,客戶不知道還要多久、也不知道有沒有在動 ——
+//     接片早就有進度條,單支(含無臉)卻沒有,體驗落差很大。
+//   ★ 時間模型沿用接片那一支 window._stitchPlan(1),不另外編數字。
+//   ★ 飽和曲線:越接近預估時間越慢,最高停在 95%,真的完成才跳 100%
+//     (不能讓它衝到 100% 然後卡住,那比沒有進度條更像當機)。
+function _singleEta() {
+  try {
+    const p = (typeof window._stitchPlan === 'function') ? window._stitchPlan(1) : null;
+    if (p && p.all) return p.all;
+  } catch (e) {}
+  return 300;
+}
+function _taskBar(elapsed) {
+  const eta = _singleEta();
+  const pct = Math.min(95, Math.round(100 * (1 - Math.exp(-Math.max(0, elapsed) / (eta * 0.45)))));
+  return `<div style="margin-top:8px;height:6px;border-radius:99px;background:rgba(255,255,255,0.08);overflow:hidden;">
+            <div style="height:100%;width:${pct}%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s ease;"></div>
+          </div>
+          <div style="margin-top:4px;font-size:10.5px;color:var(--text-dim);">${pct}% · 生成中請勿關閉此頁</div>`;
+}
+
 function renderSeedanceTasks() {
   const wrap = document.getElementById('seedance-tasks');
   wrap.innerHTML = S.seedanceTasks.map((t, i) => {
@@ -8536,7 +8591,9 @@ function renderSeedanceTasks() {
       : `<div class="seedance-task-meta">
            <span><span class="lbl">狀態:</span><span class="val">${_taskStatusTW(t.status)}</span></span>
            <span><span class="lbl">已等:</span><span class="val">${elapsed} 秒</span></span>
-         </div>`;
+           <span><span class="lbl">預估:</span><span class="val">約 ${Math.max(1, Math.round(_singleEta() / 60))} 分鐘</span></span>
+         </div>
+         ${_taskBar(elapsed)}`;
 
     return `
       <div class="seedance-task" ${t.url ? `style="cursor:pointer" onclick="showSeedancePreview(S.seedanceTasks[${i}])"` : ''}>
