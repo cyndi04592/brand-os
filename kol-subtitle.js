@@ -1,5 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   🎬 kol-subtitle.js v1.4(2026-09-19)【語音辨識對時間】+【不准用猜的】
+   🎬 kol-subtitle.js v1.6(2026-09-19)秒數對不上時的保險
+   v1.6:RA 實測:分鏡卡 15 秒「5-15 秒開口」,實際片被縮成 10 秒,她 1.8 秒就開口,
+        字幕照分鏡去 5 秒找聲音 → 前 3 秒錯過。(根因在 kol.html snapDur,已另修)
+        ① 卡片秒數 ≠ 實際秒數 → 分鏡的開口時段照比例縮放
+        ② 量音量找開口時,往前多找 2 秒(不再只放寬 0.3 秒)
+   ───────────────────────────────────────────────────────────────────────
+   v1.5 聲音由瀏覽器直接遞給語音辨識
+   v1.5:RA 實測 Console:語音辨識去 cdn 抓影片被擋 403 → 退回量音量。
+        瀏覽器本來就抓得到聲音(量音量成功)→ 抓一次,壓成 16kHz 單聲道 WAV,
+        直接交給語音辨識(Worker v5.79 audioData),繞過被擋的門;量音量也共用同一份。
+   ───────────────────────────────────────────────────────────────────────
+   v1.4【語音辨識對時間】+【不准用猜的】
    v1.4:RA:「環境音有其他聲音呢?你確定聽得懂音軌?」「猜太危險,客人會覺得字幕很爛」
         ★ 第一順位:語音辨識(Worker speech_timing)聽出每個字是第幾秒 →
           跟我們的台詞一個字一個字對齊(字用我們的,只借它的時間;聽錯字、簡體都沒關係)。
@@ -145,15 +156,18 @@
       const dia = String((b && b.dialogue) || '').trim();
       if (dia) {
         const sp = speakSpan(b.shotDesc);
-        let s0 = sp ? Math.min(sp[0], segDur) : 0;
-        let s1 = sp ? Math.min(sp[1], segDur) : segDur;
+        //  v1.6:卡片寫 15 秒、實際出 10 秒 → 分鏡的時段照比例縮
+        const cardSec = Number(b && b.seconds) || segDur;
+        const k = (cardSec > 0 && Math.abs(cardSec - segDur) > 0.5) ? segDur / cardSec : 1;
+        let s0 = sp ? Math.min(sp[0] * k, segDur) : 0;
+        let s1 = sp ? Math.min(sp[1] * k, segDur) : segDur;
         if (s1 - s0 < 1) { s0 = 0; s1 = segDur; }
         const lines = splitLines(dia);
         const totalW = lines.reduce((a, l) => a + weight(l), 0) || 1;
         //  ⏱ v1.2:塞滿開口視窗(起點 +0.5 秒出聲延遲、終點 -0.3 秒收尾),不再照語速算
         const a0 = Math.min(s0 + ONSET, s1 - 1), a1 = Math.max(a0 + 1, s1 - TAIL);
         const talk = a1 - a0;
-        buildCues._wins.push({ beat: i, from: offset + s0, to: offset + s1, segEnd: offset + segDur });
+        buildCues._wins.push({ beat: i, from: offset + s0, to: offset + s1, segStart: offset, segEnd: offset + segDur });
         let t = offset + a0;
         let seg = lines.map(l => {
           const d = talk * weight(l) / totalW;
@@ -194,7 +208,7 @@
       if (!mine.length) return;
       //  ① 真正開始與講完:在開口時段(前後放寬一點)裡找第一個/最後一個在講話的格子
       let st = null, en = null;
-      for (let t = Math.max(0, w.from - 0.3); t <= Math.min(w.segEnd, w.to + 0.2); t += STEP) {
+      for (let t = Math.max(w.segStart, w.from - 2); t <= Math.min(w.segEnd, w.to + 0.2); t += STEP) {   // v1.6 往前多找 2 秒
         if (at(t) > VOICED) { if (st === null) st = t; en = t + STEP; }
       }
       if (st === null || en - st < 1) { mine.forEach(c => out.push(c)); return; }   // 聽不到 → 用算的
@@ -281,34 +295,74 @@
     return out;
   }
 
-  //  抓影片聲音 → 每 0.05 秒的人聲頻段音量。任何一步失敗回 null(外面會退回算的)
-  async function measureVoice(videoUrl) {
+  //  🎧 v1.5 抓影片聲音(同一支只抓一次)→ AudioBuffer;失敗回 null
+  const _audioCache = {};
+  async function loadAudio(videoUrl) {
+    if (_audioCache[videoUrl] !== undefined) return _audioCache[videoUrl];
+    let out = null;
     try {
       const AC = root.OfflineAudioContext || root.webkitOfflineAudioContext;
-      if (!AC || !root.fetch) return null;
-      const res = await fetch(videoUrl, { mode: 'cors' });
-      if (!res.ok) return null;
-      const buf = await res.arrayBuffer();
-      const tmp = new AC(1, 1, 16000);
-      const audio = await tmp.decodeAudioData(buf);
-      const sr = 16000, len = Math.ceil(audio.duration * sr);
-      const ctx = new AC(1, len, sr);
-      const src = ctx.createBufferSource(); src.buffer = audio;
+      if (AC && root.fetch) {
+        const res = await fetch(videoUrl, { mode: 'cors' });
+        if (res.ok) {
+          const buf = await res.arrayBuffer();
+          out = await new AC(1, 1, 16000).decodeAudioData(buf);
+        }
+      }
+    } catch (err) {
+      try { console.warn('[KolSubtitle] 抓不到影片聲音:', err && err.message); } catch (_) {}
+      out = null;
+    }
+    _audioCache[videoUrl] = out;
+    return out;
+  }
+  //  把聲音轉成 16kHz 單聲道(可選擇只留人聲頻段)
+  async function _render(audio, voiceBand) {
+    const AC = root.OfflineAudioContext || root.webkitOfflineAudioContext;
+    const sr = 16000, len = Math.ceil(audio.duration * sr);
+    const ctx = new AC(1, len, sr);
+    const src = ctx.createBufferSource(); src.buffer = audio;
+    let node = src;
+    if (voiceBand) {
       const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 250;
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3500;
-      src.connect(hp); hp.connect(lp); lp.connect(ctx.destination); src.start();
-      const d = (await ctx.startRendering()).getChannelData(0);
-      const w = Math.round(sr * STEP), e = [];
+      src.connect(hp); hp.connect(lp); node = lp;
+    }
+    node.connect(ctx.destination); src.start();
+    return (await ctx.startRendering()).getChannelData(0);
+  }
+  //  每 0.05 秒的人聲頻段音量(dB,0 = 最大聲)
+  async function measureVoice(videoUrl) {
+    try {
+      const audio = await loadAudio(videoUrl);
+      if (!audio) return null;
+      const d = await _render(audio, true);
+      const w = Math.round(16000 * STEP), e = [];
       for (let i = 0; i + w <= d.length; i += w) {
         let q = 0; for (let j = i; j < i + w; j++) q += d[j] * d[j];
         e.push(10 * Math.log10(q / w + 1e-12));
       }
       const mx = Math.max.apply(null, e);
       return e.map(v => v - mx);
-    } catch (err) {
-      try { console.warn('[KolSubtitle] 抓不到影片聲音,改用算的時間:', err && err.message); } catch (_) {}
-      return null;
-    }
+    } catch (err) { return null; }
+  }
+  //  給語音辨識的聲音檔:16kHz 單聲道 16-bit WAV → data URI(10 秒約 300KB)
+  async function audioDataUri(videoUrl) {
+    try {
+      const audio = await loadAudio(videoUrl);
+      if (!audio) return '';
+      const d = await _render(audio, false);
+      const n = d.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+      const str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+      str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, 16000, true); v.setUint32(28, 32000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+      str(36, 'data'); v.setUint32(40, n * 2, true);
+      for (let i = 0; i < n; i++) { const x = Math.max(-1, Math.min(1, d[i])); v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true); }
+      const bytes = new Uint8Array(buf); let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return 'data:audio/wav;base64,' + btoa(bin);
+    } catch (err) { return ''; }
   }
 
   function ts(sec) {
@@ -382,7 +436,8 @@
           //  🎧 v1.4:① 語音辨識 → ② 量音量 → ③ 都不行就不燒、不扣點(不准用猜的)
           let timed = null, how = '';
           try {
-            const st = await S._api('speech_timing', { videoUrl: o.videoUrl, prompt: cues.map(c => c.text).join(',') });
+            const _ad = await audioDataUri(o.videoUrl);   // 🎧 v1.5 聲音直接遞過去(繞過 CDN 擋 403)
+            const st = await S._api('speech_timing', { videoUrl: o.videoUrl, audioData: _ad || undefined, prompt: cues.map(c => c.text).join(',') });
             timed = alignByWords(cues, st && st.chunks);
             if (timed) how = '🎧 語音辨識(' + timed._matched + '/' + timed._total + ' 字對上)';
           } catch (e) { try { console.warn('[KolSubtitle] 語音辨識失敗,改量音量:', e && e.message); } catch (_) {} }
@@ -424,8 +479,8 @@
     }
   }
 
-  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, version: 'v1.4' };
+  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, audioDataUri, version: 'v1.6' };
   root.KolSubtitle = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  try { console.log('[KolSubtitle] v1.4 就緒 · 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
+  try { console.log('[KolSubtitle] v1.6 就緒 · ⏱卡片秒數≠實際秒數時照比例縮放+往前多找2秒 · v1.5 🎧聲音由瀏覽器直接遞給語音辨識(繞過CDN 403) · v1.4 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
 })(typeof window !== 'undefined' ? window : globalThis);
