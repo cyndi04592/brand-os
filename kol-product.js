@@ -312,146 +312,130 @@
     }
     // ══ 🆕 v3.2 服務成果:畫面主角是「做完的樣子」,不是任何商品 ══
     if (mode === 'service') {
-      return 'SERVICE RESULT — there is NO physical product to sell here. ' +
-        NO_BOX + '. ' +
-        'The hero of the shot is the FINISHED RESULT ITSELF shown on a real person: the lashes on the eye, ' +
-        'the nails on the hand, the hair on the head, the skin after treatment, the body after training. ' +
-        'If a reference image is given in [Image2] it IS that finished result — reproduce it faithfully on the person, ' +
-        'never reinterpret it as merchandise. ' +
-        // 🆕 v3.6(2026-08-19)左右對稱鎖 —— 現場實測抓到的:
-        //   美睫師習慣拍「單眼特寫」當成果照,客戶就順手挑那張當參考圖。
-        //   模型很聽話,照著只做那一隻眼睛 → 另一隻眼睛沒接睫毛;
-        //   而且兩段分開生成、沒有左右約束,第二段還換到另一邊。
-        //   在美睫/美甲廣告裡這是致命傷,客戶會直接說「你的 AI 很爛」。
-        //   ★ 關鍵觀念:參考圖是「工藝的樣本」,不是「要做在哪裡的地圖」。
-        //  ✂️ v5.40(2026-09-15)四句收成兩句。舊版:參考圖是樣本不是地圖 /
-        //   必須完整對稱 / NEVER 留一邊沒做 / NEVER 換邊 —— 同一件事講四次。
-        //   改成事實:【她是真人,整套服務做完了】,兩邊完整與不換邊自然都成立。
-        //   ⚠️ 機制保留:「參考圖只拍一隻眼 ≠ 只做一隻眼」是實測踩過的致命傷。
-        'She is a real person who had the whole service done, so it appears complete on both sides in every shot; ' +
+      //  ✂️ v5.47(2026-09-18)照 RA 的方法盤過這一段,五個問題一次解:
+      //   ① 「沒有實體商品要賣」+ NO_BOX 是同一件事講兩次,而且 boxed/packaged
+      //      是點名即召喚 → 改成一句正面事實:成果長在人身上。
+      //   ② 五種工藝(睫毛/指甲/頭髮/皮膚/身材)每次全送 —— 客戶只做一種,
+      //      另外四種是干擾 → 依商品類型只送當下那一種。
+      //   ③ 「never reinterpret it as merchandise」是①的第三份 → 刪。
+      //   ④ 去背毛邊句重複(v5.38 已在出口統一加 _withEdge)→ 刪。
+      //   ⑤ 缺【特徵鎖】—— 只寫「忠實重現」,所以客人要鮑伯頭可能生出龐克頭、
+      //      要法式美甲生出彩繪 → 補一句:形狀、長度、顏色、質感照參考圖。
+      //      這一句美睫、美甲、美髮、醫美一起受惠。
+      //   ⚠️ 保留機制:左右對稱鎖(參考圖只拍一隻眼 ≠ 只做一隻眼)是實測踩過的致命傷。
+      const _craftTxt = String((prod && (prod.prodTag || prod.prodName || prod.name)) || '');
+      const _craft =
+        /睫/.test(_craftTxt)                    ? 'lash extensions on her eyes' :
+        /甲|指彩/.test(_craftTxt)               ? 'nail work on her hands' :
+        /髮|美髮|染|燙|剪髮/.test(_craftTxt)     ? 'hairstyle on her head' :
+        /健身|體態|塑身|重訓/.test(_craftTxt)    ? 'trained body' :
+        /醫美|皮膚|臉部|保養|療程/.test(_craftTxt) ? 'skin after the treatment' :
+        /眉|霧眉|繡眉/.test(_craftTxt)          ? 'brow work on her face' :
+        'finished result';
+      return 'SERVICE RESULT — the hero of this shot is the ' + _craft + ', worn by a real person. ' +
+        '[Image2] is that finished result and it appears on her exactly as photographed — same shape, length, ' +
+        'colour, texture and finish, nothing redesigned. ' +
+        'She had the whole service done, so it reads complete on both sides in every shot; ' +
         'a reference showing one eye, one hand or one side is a sample of the craft, not a map of where to apply it. ' +
-        'Frame it close so the craftsmanship reads clearly.';
+        'Frame it close enough that the craftsmanship reads clearly';
     }
-    // ══ 設備製程:機台與加工件,不是商品盒 ══
+
     if (mode === 'equip') {
-      return 'EQUIPMENT / PROCESS — this is industrial capability, not a retail product. ' +
-        NO_BOX + '. ' +
-        'The hero is the MACHINE and the MACHINED PART: precision equipment in operation, ' +
-        'the finished component with its true surface finish and tolerances. ' +
-        //  📦 2026-09-05:這個模式有兩槽(機台 / 加工件),但原本只點名 [Image2],
-        //    第二張是無名圖 —— 模型不知道那是「這台機器做出來的東西」。
-        'Keep the machine shown in [Image2] exact in shape, proportion, surface and markings, ' +
-        'and the machined part shown in [Image3] is the component this equipment produces — ' +
-        'keep its true surface finish, geometry and markings exact. Engineering parts are ' +
-        'judged on precision, so any distortion destroys credibility. She presents beside the equipment as an expert, ' +
-        'not as a shopper holding merchandise.';
+      //  ✂️ v5.49:拿掉「not a retail product / nothing boxed / not as a shopper holding merchandise」——
+      //   三句否定講同一件事,retail / boxed / merchandise 全是點名。保留機台照與加工件照的鎖。
+      return 'EQUIPMENT AND THE PART IT MAKES — the machine in [Image2] keeps its exact shape, proportion, surface and markings, '
+        + 'and the component in [Image3] is what this machine produces, with its true surface finish, geometry and markings. '
+        + 'Engineering is judged on precision, so both stay dimensionally honest. '
+        + 'She stands beside the running equipment as the expert who operates it';
     }
-    // ══ 螢幕成果:裝置=外包裝,截圖=內容物(沿用海苔邏輯)══
-    // 🖥 2026-08-22:分「有給裝置圖」與「只給截圖」兩種寫法。
-    //   舊寫法一律說「device 是外殼」,但裝置槽是選填的 ——
-    //   客戶只丟截圖時,AI 讀到「要有裝置」就自己生一台筆電,
-    //   而那台筆電的螢幕邊框比例常常是歪的(生出來像玩具)。
-    //   ★ 只給截圖 → 明講「畫面可以直接佔滿鏡頭,不必硬塞一台裝置」。
+
     if (mode === 'screen') {
-      //   ⚠️ 這支函式只拿得到 prod,拿不到實際圖片數量。
-      //     用 hasPackaging 當「有沒有給裝置圖」的旗標 —— 語意剛好對得上:
-      //     screen 模式的「外包裝」就是裝置本體(見上方 v3.2 說明)。
-      //     沒填 = 保守假設沒給裝置圖,寫成「不要自己發明機型」比較安全。
-      const hasDevice = isYes(prod && prod.hasPackaging);
-      const base = 'ON-SCREEN RESULT — the product is software / a website / a digital service. ' +
-        NO_BOX + '. ' +
-        '★ The screen content must come from the supplied reference image and be reproduced faithfully — ' +
-        'DO NOT imagine, redesign or invent any interface, chart, dashboard, logo, number or text on the screen. ' +
-        'The screenshot is treated exactly like the contents of a package: never made up. ' +
-        'Keep the screen legible, undistorted, correctly proportioned and free of moiré or glare. ';
-      return base + (hasDevice
-        //  📦 2026-09-05:兩槽都點名。原本只說「reference」,模型不知道哪張是裝置、哪張是畫面。
-        ? 'The device shown in [Image2] (laptop, phone, tablet or monitor) is the outer shell, ' +
-          'and [Image3] is the SCREEN CONTENT that must appear on that device screen — ' +
-          'reproduce the device shape faithfully too, with correct bezel proportions.'
-        : 'No device reference was supplied, so DO NOT invent a specific laptop or phone model — ' +
-          'either let the supplied screen image fill the frame directly as a clean digital display, ' +
-          'or show it on a plain, generic, softly out-of-focus device whose exact shape is not emphasised.');
+      //  ✂️ v5.49(2026-09-18)照 RA 的方法精簡:五個否定,而且把 imagine / redesign / invent /
+      //   interface / chart / dashboard / logo / moiré / glare 全部點名 —— 點到的東西模型反而會去畫。
+      //   ★ 語意一句沒掉:畫面照參考圖、清楚不變形、沒給機型就用中性裝置或整面填滿。
+      return 'ON-SCREEN RESULT — the interface in [Image2] is the product itself: it appears on the screen exactly as supplied, '
+        + 'same layout, same numbers, same text, legible and square to the lens. '
+        + 'It is the screen that emits it, either filling the frame as a clean display or carried by a plain device left soft in the background';
     }
-    // ══ 專業服務:人與情境,零實體 ══
+
     if (mode === 'pro') {
-      return 'PROFESSIONAL SERVICE — there is no physical product at all. ' +
-        'DO NOT invent, draw or place any product, package, box, bottle or branded merchandise anywhere. ' +
-        'The subject IS the offering: her expertise, presence and setting carry the message. ' +
-        'She is already in the place where this work happens ' +
-        'with authentic tools of that trade only where natural (documents, screen, notes) and never as a hero object. ' +
-        'Posture and framing convey competence and calm authority rather than sales energy.';
+      //  ✂️ v5.49:舊版一句話點名五樣(product/package/box/bottle/merchandise),等於全召喚出來。
+      //   改成正面:主角是她本人與她工作的地方。
+      return 'PROFESSIONAL SERVICE — the subject is her and the room she works in: she is already at the desk or table '
+        + 'where this work happens, with the papers, screen or notes of that trade lying where they are actually used. '
+        + 'Her posture and the framing carry competence and calm rather than sales energy';
     }
-    // ══ 🆕 v3.4 行銷代操 / 系統服務:工作現場,不是盒裝軟體 ══
+
     if (mode === 'agency') {
-      return 'MARKETING SERVICE / PLATFORM — there is NO physical product and NO boxed software. ' +
-        NO_BOX + '. ' +
-        'DO NOT invent any interface, dashboard, chart, graph, metric, number or logo on a screen — ' +
-        'if a screen is visible it must either come from a supplied reference image or stay out of focus and unreadable. ' +
-        'DO NOT render any comparison layout, versus split, ranking, scoreboard or crossed-out competitor — ' +
-        'comparative claims against other agencies or creators are legally restricted. ' +
-        'The subject is the working moment: she reviews material, discusses with a client, or presents calmly at a desk. ' +
-        'Real workspace clutter, credible and unhurried — advisory tone, never sales-floor energy.';
+      //  ✂️ v5.49:舊版五個否定,還把 dashboard / chart / graph / metric / logo /
+      //   versus split / ranking / scoreboard / crossed-out competitor 一路點名 ——
+      //   比較版面就是這樣被叫出來的。法規交給 kol-compliance,這裡只寫畫面。
+      //   ★ 語意保留:螢幕要嘛照參考圖、要嘛糊掉;畫面裡只有她自己的工作,沒有第二方可比。
+      return 'AGENCY AT WORK — the subject is the working moment: she reviews material, talks it through with a client, '
+        + 'or presents at her desk in a real workspace with its ordinary clutter. '
+        + 'Any screen in frame either shows the supplied reference image exactly or sits soft and unreadable behind her. '
+        + 'Everything in frame is her own work, shown on its own. Advisory and unhurried';
     }
-    // ══ 🆕 v3.3 醫美診所:信任感,不是成果對比 ══
+
     if (mode === 'medical') {
-      return 'CLINIC / MEDICAL AESTHETIC — she represents a licensed medical facility. ' +
-        NO_BOX + '. ' +
-        'DO NOT construct any before/after comparison in the frame — regulation forbids it on social platforms. ' +
-        'The subject is the clinic environment, the team, or a calm informational moment: ' +
-        'an orderly, unhurried professional space with tidy surfaces. ' +
-        'She appears as a credible professional, not a salesperson. Faces stay natural and un-retouched — ' +
-        'do not beautify anyone in a way that implies a promised outcome.';
+      //  ⚖️ v5.48(2026-09-18)RA:「法規你不要提醒它什麼能講什麼不行,這樣就跟木偶事件一樣」——
+      //   舊版寫「DO NOT construct any before/after comparison — regulation forbids it」,
+      //   影片模型對否定句不敏感、對名詞敏感 → 讀到 before/after 反而更容易生出前後對比。
+      //   ★ 合規本來就有專屬的一層(kol-compliance 八套行業禁詞,台詞層與畫面層共用)——
+      //     商品層【只負責這一行的畫面長什麼樣】,法規交給合規層。
+      //   ★ 改成單一正面事實:一個安靜、整齊、正在營運的診間,她是專業人員。
+      //     「只有一個當下、沒有兩個時間點」自然排除前後對比,而且沒有點名。
+      return 'CLINIC — a calm, orderly medical space that is genuinely in use: tidy surfaces, equipment where it belongs, '
+        + 'one single moment in that room with nothing compared against anything else. '
+        + 'She is one of the professionals there, explaining something quietly rather than selling; '
+        + 'faces keep their real skin and texture as photographed';
     }
-    // ══ 課程與體驗:教學現場,人是主角 ══
+
     if (mode === 'course') {
-      return 'COURSE / CLASS — the experience is the product, there is NO physical item to sell. ' +
-        NO_BOX + '. ' +
-        'The hero is the teaching moment and the people practising: she demonstrates, guides or corrects, ' +
-        'with students visibly at different stages around her. ' +
-        'Equipment (mats, instruments, desks, weights) appears only as the natural tools of the practice, never as merchandise. ' +
-        'Keep bodies and faces real — genuine effort and real posture, never a rehearsed stock-photo smile. ' +
-        'Surfaces and materials read as an actual place in use, not a set.';
+      //  ⚖️ v5.48:拿掉「there is NO physical item to sell / never as merchandise」——
+      //   兩句否定講同一件事,而且 merchandise 是點名召喚。改成正面:主角是正在發生的課。
+      return 'CLASS IN SESSION — the hero is the teaching itself: she demonstrates, guides or corrects, '
+        + 'with students around her visibly at different stages, some getting it and some still working at it. '
+        + 'Mats, instruments, desks and weights are the tools being used right now. '
+        + 'Bodies show real effort and real posture, and the room shows the wear of a place that is used every day';
     }
-    // ══ 命理與占卜:諮詢桌面,不是靈異秀 ══
+
     if (mode === 'mystic') {
-      return 'DIVINATION / METAPHYSICS — she offers a consultation session, not a spectacle. ' +
-        'DO NOT invent any retail product box, package or merchandise container. ' +
-        'DO NOT invent card artwork, chart layouts, glyphs or talisman inscriptions — if a reference image is given, ' +
-        'reproduce those objects exactly as supplied. ' +
-        'DO NOT depict supernatural effects: no glowing auras, floating objects, light beams, spirits or magical particles. ' +
-        'The subject is her hands at work, or her calm presence while she talks it through. ' +
-        'Muted contemplative tones, grounded and human — a quiet conversation, not a ritual.';
+      //  ✂️ v5.49:舊版六個否定,而且 glowing auras / floating objects / light beams / spirits /
+      //   magical particles 全部點名 —— 那是把特效唸出來給模型聽。
+      //   ★ 改成正面事實:一場安靜的談話,牌與物件照參考圖,光就是屋裡的光。
+      return 'CONSULTATION — a quiet session at a table: her hands lay out the cards or objects from [Image2] exactly as supplied, '
+        + 'artwork, layout and markings unchanged, and she talks it through calmly. '
+        + 'The light is whatever the room has, muted and even, and everything on the table stays a physical object resting on it';
     }
-    // ══ 旅遊與行程:地點必須真實 ══
+
     if (mode === 'travel') {
-      return 'TRAVEL / ITINERARY — the place shown must be REAL. ' +
-        'DO NOT invent, add, relocate or beautify any landmark, building, mountain, coastline, view or facility. ' +
-        'DO NOT invent boxed travel products or retail packaging. ' +
-        'If a reference image is given it IS the actual destination — reproduce its structure faithfully: ' +
-        'the same building, the same skyline, the same room. ' +
-        'She appears within the real location as a traveller or guide, the place clearly readable behind her. ' +
-        'Natural daylight and honest colour — avoid oversaturated postcard grading that misrepresents the place.';
+      //  ⚖️ v5.48:舊版連續三個 DO NOT(invent/relocate/beautify、boxed travel products)——
+      //   「boxed travel products」根本是自己把盒子叫出來。改成正面事實:照片裡那個地方就是那個地方。
+      return 'REAL PLACE — the location in [Image2] is the actual destination and it appears exactly as photographed: '
+        + 'the same building, the same skyline, the same room, the same weather it really has. '
+        + 'She is inside that place as a traveller or a guide, with the place clearly readable behind her; '
+        + 'daylight and colour stay as honest as an ordinary phone photo taken there';
     }
-    // ══ 🔴 養生能量商品:是首飾/居家用品,不是療方 ══
+
     if (mode === 'wellness') {
-      const wsz = scale ? '; it is ' + scale + ', at that true size' : '';
-      return 'WELLNESS / ENERGY GOODS — legally an ORDINARY consumer product, NOT a medical device and NOT a medicine. ' +
-        //  📦 2026-09-05:這個模式有兩槽(商品照 / 配戴擺放照),原本只點名 [Image2]。
-        'Keep the product in [Image2] consistent in shape, bead order, colour, metal fittings and any printed text, ' +
-        'never mirrored or flipped, do not distort or morph it' + wsz + '. ' +
-        (isYes(prod && prod.showContents) ? '[Image3] shows the SAME piece being worn or placed in a real setting (same item, not a second product) — follow it for how it sits and drapes. ' : '') +
-        //  ✂️ v5.40(2026-09-15)三個 DO NOT 收掉,留正面那句。
-        //   舊版點名了 anatomy diagram / body outline / organ / pain-relief symbol /
-        //   glowing auras / light rays / chakra points / meridian lines / white coats /
-        //   stethoscopes / clinical charts —— 十一個畫面全部餵給模型(點名即召喚)。
-        //   合規靠正面陳述(漂亮的首飾/家居品 + 開頭已明講 ORDINARY consumer product)。
-        'She wears or presents it as beautiful jewellery or homeware — material beauty and craftsmanship shown on her body or in her home, never as a remedy and never with any depiction of a bodily or health effect. ' +
-        GROUNDED + '.';
+      //  ⚖️ v5.48:舊版「NOT a medical device and NOT a medicine … never as a remedy,
+      //   never with any depiction of a bodily or health effect」—— 四個否定,而且把
+      //   medical device / medicine / remedy / health effect 全部點名。
+      //   ★ 改成正面:它就是一件工藝品,拍它的材質與做工。合規交給 kol-compliance。
+      return 'CRAFT OBJECT — the piece in [Image2] is jewellery or homeware and is shown for what it is made of: '
+        + 'its stones, beads, grain, metal fittings and any printed text stay exactly as in the photograph, '
+        + 'in the same order and the same direction. '
+        + 'She wears it or sets it down where she lives, and it has real weight, resting on her hand or on the surface under it';
     }
+
     if (mode === 'digital') {
-      return 'NO PHYSICAL PRODUCT — this is a digital product or service: she does NOT hold any physical item and no fake package is invented. She presents it through a device she is using (laptop, phone or tablet) or through the visible real-world outcome and experience it delivers, talking naturally to camera about its value; if a logo or screen is given in [Image2] it appears on the device screen, kept clean, correct and undistorted';
+      //  ✂️ v5.49:舊版三個否定(no physical product / does NOT hold / no fake package)。
+      return 'DIGITAL PRODUCT — she shows it through the device in her hands (laptop, phone or tablet) or through the '
+        + 'real-world outcome it produces, talking to camera about what it does for her. '
+        + 'If a logo or screen is supplied in [Image2] it appears on that device screen, clean, correct and square to the lens';
     }
+
     return null;
   }
 
@@ -687,6 +671,6 @@
     return 'PROP (the product she is using or showing, at its real-life size): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.46', resolveMode, handProfile, materialOf };
-  console.log('[KolProduct] 👗 v5.46:🥿多張商品圖=同一件的不同角度(治兩雙鞋被合成第三雙) · v5.45:🧱 materialOf 材質與拿法(袋/盒/瓶/罐/紙/布/口紅/鞋包/飾品/噴霧/飲品·抓不到就不寫) · ✋ handProfile 手跟商品怎麼互動(細部動作放不放行＋一句事實給分鏡 AI) · v5.42 ✂️拿掉五份「keep it subtle / do NOT overpower」(那句等於叫模型把商品縮小) · v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.49', resolveMode, handProfile, materialOf };
+  console.log('[KolProduct] 👗 v5.49:✂️全模式盤點精簡(螢幕5否定/設備3/專業服務點名五樣/數位3/代操5/命理6→全改正面事實,特效與比較版面不再被唸出來;語意一句沒掉) · v5.48:⚖️受法規行業不再在提示詞裡提醒法規(舊版寫 DO NOT before/after、NOT a medicine、never as merchandise=點名即召喚,跟木偶事件同一個病):醫美/課程/旅遊/養生四個模式全改成正面事實,合規交回 kol-compliance 那一層 · v5.47:✂️服務成果盤點(兩句否定講同一件事→一句正面·五種工藝只送當下那一種·去背句重複刪掉)+🔒特徵鎖(形狀長度顏色質感照參考圖·治鮑伯頭變龐克、法式變彩繪) · v5.46:🥿多張商品圖=同一件的不同角度(治兩雙鞋被合成第三雙) · v5.45:🧱 materialOf 材質與拿法(袋/盒/瓶/罐/紙/布/口紅/鞋包/飾品/噴霧/飲品·抓不到就不寫) · ✋ handProfile 手跟商品怎麼互動(細部動作放不放行＋一句事實給分鏡 AI) · v5.42 ✂️拿掉五份「keep it subtle / do NOT overpower」(那句等於叫模型把商品縮小) · v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
