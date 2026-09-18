@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   🔑 auth-expire.js v1.0(2026-09-18)登入過期 → 全站統一處理
+   🔑 auth-expire.js v1.3(2026-09-18)登入過期 → 全站統一處理
    RA:「先修好,不然要到下一個出現才會改。」
    病:身分證(session token)過期時,每個功能各自跳自己的訊息 ——
       AI 編修跳「AI 編修失敗:請重新登入」、素材庫顯示空白、抓色系跳別的話。
@@ -26,15 +26,35 @@
     if (body.code === 'NEED_LOGIN') return true;
     return /請重新登入|NEED_LOGIN|登入已過期|身分驗證/.test(String(body.error || '') + String(body.message || ''));
   }
+  //  🩹 v1.3(2026-09-18)RA 實測:按了重新登入還是一直跳。
+  //   原因:只清 token 不夠 —— 頁面看到 localStorage 還記著 email(bs_sso_email / 記住登入),
+  //   就當作「已登入」直接開始打 Worker,但手上沒有有效的證 → 又 401 → 又跳視窗,無限循環。
+  //   改成跟正式登出清一樣的東西(含記住登入與品牌快取),再回登入頁重走 Google 登入。
   function clearAndReload() {
     try {
       ['bs_auth_token', 'bs_token', 'bs_email', 'bs_worker_mode'].forEach(function (k) { sessionStorage.removeItem(k); });
-      ['bs_auth_token'].forEach(function (k) { localStorage.removeItem(k); });
+      ['bs_auth_token', 'bs_sso_token', 'bs_sso_email', 'bs_email', 'bs_worker_mode'].forEach(function (k) { localStorage.removeItem(k); });
+      var dead = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && (k.indexOf('bs_brandos_') === 0 || k.indexOf('bs_assets_') === 0)) dead.push(k);
+      }
+      dead.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
     } catch (e) {}
-    location.reload();
+    try { window._driveToken = null; window._workerDriveMode = false; } catch (e) {}
+    //  Google 那邊也放掉,不然瀏覽器會直接用舊的授權靜默登入、又拿不到新的證
+    try { if (window.google && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke('', function () {}); } catch (e) {}
+    //  回主站登入頁(KOL 工作室自己沒有登入畫面)
+    try { location.href = 'index.html'; } catch (e) { location.reload(); }
   }
+  var boxEl = null;
   function show() {
-    if (shown) return;                     // 同一次只跳一個
+    //  🩹 v1.2(2026-09-18)RA 實測「一直閃」:主站有些畫面會整塊重畫,
+    //   把視窗連同 body 內容一起洗掉 → 下一個 401 又貼一次 → 看起來一閃一閃。
+    //   改成:記住這個節點,被洗掉就接回去;還在畫面上就什麼都不做。
+    if (boxEl && boxEl.isConnected) return;
+    if (boxEl && !boxEl.isConnected) { (document.body || document.documentElement).appendChild(boxEl); return; }
+    if (shown && boxEl) return;
     shown = true;
     var box = document.createElement('div');
     box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483000;background:rgba(6,6,12,0.82);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif;');
@@ -44,9 +64,16 @@
       + '<div style="font-size:13px;line-height:1.9;color:#A0A0B0;margin-bottom:18px;">不是功能壞掉,是這台裝置的登入時間到了(手機瀏覽器會自動清除)。<br>重新登入一次就能繼續,剛剛的操作再按一次即可。</div>'
       + '<button id="bsReloginBtn" style="width:100%;padding:12px;border:none;border-radius:11px;font-size:14px;font-weight:800;color:#fff;cursor:pointer;background:linear-gradient(135deg,#7C6DFA,#FA6D9B);">重新登入</button>'
       + '</div>';
+    boxEl = box;
     (document.body || document.documentElement).appendChild(box);
     var btn = document.getElementById('bsReloginBtn');
     if (btn) btn.onclick = clearAndReload;
+    //  被整塊重畫洗掉時自動貼回去(每 1.5 秒看一眼,按下重新登入就停)
+    var keep = setInterval(function () {
+      if (!boxEl) { clearInterval(keep); return; }
+      if (!boxEl.isConnected) { try { (document.body || document.documentElement).appendChild(boxEl); } catch (e) {} }
+    }, 1500);
+    if (btn) btn.addEventListener('click', function () { clearInterval(keep); });
   }
 
   //  給各頁攔截器呼叫:回應是我們的 Worker 且看起來過期 → 跳統一視窗
