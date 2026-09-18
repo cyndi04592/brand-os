@@ -10137,7 +10137,18 @@ async function handleEpisodeProductClick(e) {
         if (!res || res.ok === false || !res.url) {
           throw new Error((res && res.error) || '沒拿到 R2 網址');
         }
-        r2 = res.url;
+        //  🖼 2026-09-18 STEP3 補上尺寸守門員與自動縮圖 —— RA 追問「STEP2 跟 STEP3 有同步嗎」,
+        //   查出來:STEP3【完全沒有這一段】。後果是選到 5504×8256 的大圖會直接送進引擎,
+        //   等 30 秒後才被退件、訊息還是英文;而 STEP2 早在 8/10 就做了。
+        //   ★ 又一次「兩邊各寫一套」—— 同一個動作在兩個地方實作,只改一邊就是漏。
+        const _sz = await _checkRefImageSize(res.url);
+        if (!_sz.ok) {
+          item.classList.remove('selected');
+          toast(_sz.msg, 'error');
+          return;
+        }
+        r2 = _sz.shrunk || res.url;                 // 太大的圖 → 用縮過的網址
+        if (_sz.shrunk) toast('這張原圖很大,已自動縮小後使用', 'ok');
         S.driveFileR2[fileId] = r2;
       }
       S.episodeProductUrls.push(r2);
