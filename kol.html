@@ -8325,6 +8325,23 @@ async function aiWriteFacelessSituation() {
   if (!el) return;
   const action = document.getElementById('faceless-action')?.value || '';
   if (!action) { toast('請先選「要拍什麼動作」', 'error'); return; }
+  //  🚦 2026-09-18 選場景防呆(照 AI 分鏡同一套規則):沒選場景就讓 AI 寫,
+  //   它會自己編一個地點(你選機場、它寫咖啡廳),後面生片又是另一個地方 —— 順序顛倒。
+  //   ★ 場景卡或自家實景照,有一個就放行。
+  if (!S.selectedSceneId && !S.customSceneUrl) {
+    toast('請先挑一個場景,或上傳自家實景照 —— 不然 AI 會自己編地點', 'warn');
+    return;
+  }
+  //  把場景名稱一起送:AI 才知道這支在哪裡拍,不會寫出別的地方
+  let sceneLabel = '';
+  try {
+    if (S.customSceneUrl) sceneLabel = '客戶自己的實景照(照片裡的空間)';
+    else {
+      const _sc = (typeof window.getScenesForBrand === 'function')
+        ? (window.getScenesForBrand(S.currentBrandId) || {})[S.selectedSceneId] : null;
+      sceneLabel = (_sc && (_sc.label || _sc.name)) || S.selectedSceneId || '';
+    }
+  } catch (e) {}
   const prod = (typeof getCurrentRotationProduct === 'function' ? getCurrentRotationProduct() : null) || {};
   //  🧱 2026-09-18:把商品模組算出來的事實一起送(跟有臉那條線同一套規則)
   let handsFine = false, handsFact = '', material = '';
@@ -8348,6 +8365,7 @@ async function aiWriteFacelessSituation() {
       productHandsFine: handsFine,
       productHandsFact: handsFact,
       productMaterial: material,
+      sceneLabel,
       duration: (S.seedanceParams.duration === 'auto') ? 5 : (parseInt(S.seedanceParams.duration, 10) || 5),   // ⏱ 分時段用
       hint,
       brandId: S.currentBrandId,
