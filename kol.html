@@ -2278,7 +2278,7 @@ const PASSWORD = 'raby2026';
 //   ① 所有打 kol-proxy 的 POST 自動補上 email → 後端扣點關卡才吃得到
 //   ② billable 動作的回應統一處理「點數不足彈窗」+「刷新能量條」
 // 改一處,全模組覆蓋,以後新增模組也自動生效。
-const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit','ai_generate_social_posts','ai_generate_script','ai_generate_script_v2','storyboard_expand','ai_generate_persona'];
+const _BILLED_KOL = ['seedance_submit','heygen_create_video','fal_image_submit','ai_generate_social_posts','ai_generate_script','ai_generate_script_v2','storyboard_expand','ai_generate_persona','subtitle_burn'];   // 🔤 2026-09-19 加上字幕
 
 // ═══════════════════════════════════════════════════════════════
 //  🛡 網路抖動免疫層(2026-08-04 實測驅動)
@@ -2351,6 +2351,8 @@ const _LOG_KIND = {
       case 'ai_generate_script_v2':    return 120;
       case 'ai_generate_social_posts': return 120;
       case 'fal_image_submit':         return 96 * (parseInt(o.num_images || 1, 10) || 1);
+      //  🔤 2026-09-19 加上字幕:與 Worker v5.74、kol-subtitle.js costOf 同一個公式(三邊同步)
+      case 'subtitle_burn':            return Math.max(100, Math.ceil(Math.max(1, Math.min(600, Number(o.durationSec) || 60)) / 60 * 100));
       case 'heygen_create_video': {
         const _len = String(o.script || '').length;
         return Math.max(60, Math.round(260 * _len / 3.5 / 60));
@@ -7722,6 +7724,8 @@ async function createStitchedVideo(beats) {
       + '<div style="margin-top:6px;"><a href="' + result.finalUrl
       + '" target="_blank" style="color:#a78bfa;font-size:12px;word-break:break-all;">↗ 開新分頁 / 下載</a></div>';
     toast('接片完成!共 ' + plan.length + ' 段', 'success');
+    //  🔤 2026-09-19 成品下方【加上字幕】(客人自己選·按了才燒·扣點·原片保留)
+    try { if (window.KolSubtitle && box) KolSubtitle.attach(box, { beats, plan, videoUrl: result.finalUrl, brandId: S.currentBrandId }); } catch (e) {}
     saveStitchedToDrive(result.finalUrl);   // 🆕 #3: 影片同步存進品牌 Google Drive
   } catch (e) {
     _stitchProgress.stop();
@@ -11495,6 +11499,8 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       `<div class="seedance-task"><video src="${result.finalUrl}" controls autoplay loop style="width:100%;border-radius:10px;background:#000;"></video>`
       + `<div style="margin-top:6px;"><a href="${result.finalUrl}" target="_blank" style="color:#a78bfa;font-size:12px;word-break:break-all;">↗ 開新分頁 / 下載</a></div></div>`;
     toast(`影片完成!耗時 ${elapsed} 秒`, 'success');   // 🩹 v7.19:不露段數與「接片」
+    //  🔤 2026-09-19 成品下方【加上字幕】(客人自己選·按了才燒·扣點·原片保留)
+    try { if (window.KolSubtitle && taskBox) KolSubtitle.attach(taskBox.querySelector('.seedance-task') || taskBox, { beats, plan, videoUrl: result.finalUrl, brandId: S.currentBrandId }); } catch (e) {}
     if (episodeId) apiUpdateEpisodeStatus(episodeId, {
       video_status: 'done', video_url: result.finalUrl,
       video_cost_usd: +(1.21 * plan.length).toFixed(2), video_elapsed_sec: elapsed,
@@ -11637,6 +11643,7 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
 <script src="kol-storywriter.js"></script>
 <script src="kol-storyboard-panel.js"></script>
 <script src="kol-stitch.js"></script>
+<script src="kol-subtitle.js"></script><!-- 🔤 2026-09-19 加上字幕(成品下方按鈕·扣點·原片保留) -->
 <!-- 🔇 2026-09-05 停止載入 kol-engine-kling.js(檔案保留在 repo,只是不載)
      ★ 原因一(白標):它一載入就 console.log 印出引擎廠商名,
        客戶開 F12 什麼都不用做就看得到。裡面另有 8 條 console.warn 提到
