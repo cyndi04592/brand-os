@@ -5991,10 +5991,25 @@ async function _fetchLibraryProducts() {
   if (window._libProductsCache[ck]) return window._libProductsCache[ck];
   const res = await api('list_assets', { brandId: S.currentBrandId, limit: 300 });
   if (!res || !res.ok) return null;
-  // 只留「商品/服務照」,而且要是圖片(素材庫也放影片)
+  //  🩹 2026-09-18 RA:「旺味的商品圖明明有,這個 BUG 發生好多次了」
+  //   病灶:選圖器只認【商品/服務照】這一個分類,但客戶舊資料(2020-2022)的標籤是
+  //     「照片素材」—— 那是 8/24 分類改名前的收容所,舊資料的標籤從來沒跟著搬。
+  //     結果素材庫裡看得到、KOL 選圖卻是空的,而且每換一個老客戶就再踩一次。
+  //   ★ 修法照「不教客戶做對的事,讓預設就是對的事」:
+  //     除了【人物照(KOL 的臉)】與【LOGO】以外的圖片全部列出來,
+  //     商品/服務照排最前面,其餘(照片素材、場景素材、沒分類)接在後面。
+  //     客戶分類分錯也選得到,不用回頭教他改標籤。
+  //  ⚠️ 用白名單不用黑名單:RA 2026-09-18 跑了全品牌的分類分布,發現還有
+  //    【廣告圖】(cf 64 張、hh 76 張、ff 42 張)—— 那是本系統生出來的成品廣告圖,
+  //    有版面有文字,拿去當商品參考會把廣告感帶進影片,而且數量大到會把真商品照淹掉。
+  //    場景素材有自己的選圖區、KOL 是臉、LOGO 是標誌、短影片不是圖,全部不列。
+  //    →  只收:商品/服務照(排最前)、照片素材(舊收容所)、其他參考照、沒分類的舊資料。
+  const _CAT_OK = ['商品/服務照', '照片素材', '其他參考照', ''];
+  const _catRank = (c) => (String(c || '') === '商品/服務照' ? 0 : 1);
   const files = (res.items || [])
-    .filter(it => String(it.category || '') === '商品/服務照')
+    .filter(it => _CAT_OK.indexOf(String(it.category || '')) !== -1)
     .filter(it => it.url && !/\.(mp4|mov|webm|m4v)(\?|$)/i.test(String(it.url)))
+    .sort((a, b) => _catRank(a.category) - _catRank(b.category))
     .map(it => ({
       // 對齊 renderDriveProducts / renderEpisodeProducts 期待的形狀,
       // 那兩支渲染函式一行都不用改
