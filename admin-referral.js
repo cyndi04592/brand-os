@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   🤝 admin-referral.js v1.1(2026-09-17)後台「推薦分潤」分頁 · 🎨 樣式改用 admin.html 原生 class
+   🤝 admin-referral.js v1.2(2026-09-17)後台「推薦分潤」分頁 · 🎨 樣式改用 admin.html 原生 class
    ・一個檔案一個職責:admin.html 已 3800 行,推薦分潤獨立成這支,admin.html 只掛分頁殼
    ・資料全在 Worker v5.57(D1:ref_referrers / ref_bindings / ref_commissions / ref_settings)
    ・用 admin.html 既有的 workerWrite() 與 ADMIN_USER_EMAIL,權限由 Worker 端 _d1IsStaff 把關
@@ -40,7 +40,7 @@
     $('refRoot').innerHTML = `
       <div class="section-header"><h2>推薦分潤</h2><button class="btn-refresh" onclick="RefAdmin.load()">重新整理</button></div>
       <div style="font-size:12px;color:var(--t3);margin-bottom:18px;line-height:1.9;">
-        客人點推薦連結(或結帳時填推薦碼)下單 → 綁定第一個推薦人,永久有效 → 每次付款開通都記一筆分潤。<br>
+        客人點推薦連結(或結帳時填推薦碼)下單 → 綁定第一個推薦人,永久有效 → 每次付款開通都記一筆分潤。<b>分潤只算新客人</b>,在推薦之前就成交過的舊客人不會綁。<br>
         付款滿一個月才計入(期間退費請按「作廢」)· 每月 10 日結算 · 個人代扣所得稅與二代健保(勞報單),公司不代扣(開統編發票)。
       </div>
 
@@ -76,7 +76,8 @@
               <div class="staff-email">${r.kind === 'company' ? '公司 · 統編 ' + esc(r.tax_id || '未填') : '個人 · ' + esc(r.income_type)} · 推薦 ${r.clients} 位 · 待結 ${money(r.pending)} · 已結 ${money(r.settled)}</div>
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button class="btn-refresh" onclick="RefAdmin.copy('${esc(base)}/?ref=${esc(r.code)}')">🔗 推薦連結</button>
+              <button class="btn-refresh" onclick="RefAdmin.copy('${esc(base)}/onboard.html?ref=${esc(r.code)}')">🔗 新客人連結</button>
+              <button class="btn-refresh" onclick="RefAdmin.copy('${esc(base)}/plans.html?ref=${esc(r.code)}')">💳 方案頁連結</button>
               <button class="btn-refresh" onclick="RefAdmin.copy('${esc(base)}/ref.html?code=${esc(r.code)}&k=${esc(r.view_key)}')">👀 推薦人查看頁</button>
               <button class="btn-refresh" onclick="RefAdmin.edit('${esc(r.code)}')">✎ 編輯</button>
             </div>
