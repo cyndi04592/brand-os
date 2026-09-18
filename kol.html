@@ -6205,6 +6205,7 @@ function renderDriveProducts(files) {
           <div class="drive-product-item ${isSelected ? 'selected' : ''}"
                data-id="${escapeHtml(f.id)}"
                data-hi-res="${escapeHtml(f.hiResUrl)}"
+               data-orig="${escapeHtml(f.url || f.webContentLink || f.thumbnailLink || '')}"
                data-thumb="${escapeHtml(f.thumbnailLink || '')}"
                data-name="${escapeHtml(f.name || '')}"
                title="${escapeHtml(f.name || '')}">
@@ -6263,7 +6264,10 @@ async function handleDriveProductClick(e) {
       //   ★ 素材庫的照片本來就已經在 R2(cdn.raby.com.tw),不需要再搬一次。
       //   ★ 教訓:接一個新來源進舊流程時,要問「這條流程對新來源還成立嗎」——
       //     drive_to_r2 對 Drive 成立,對 R2 原生的素材不但多餘,而且會炸。
-      const _libUrl = String(item.dataset.hiRes || item.dataset.thumb || '');
+      //  ⚡ 用【原圖網址】當基準:dataset.hiRes 是 1200 的轉換網址,
+      //    拿它再轉一次會被擋(不重複包 /cdn-cgi/)→ 等於送 1200 給引擎,
+      //    而且量尺寸時也吃不到格子縮圖的快取。
+      const _libUrl = String(item.dataset.orig || item.dataset.hiRes || item.dataset.thumb || '');
       const res = (String(fileId).indexOf('lib_') === 0 && _libUrl)
         ? { ok: true, url: _libUrl }
         : await api('drive_to_r2', {
@@ -6396,8 +6400,15 @@ function _checkRefImageSize(url) {
     //    量到的就是送出去的那張,判斷更準,而且原圖完全不用碰。
     //  ★ 太小的圖照樣擋得住:轉換不會把圖放大,200px 的圖轉完還是 200px。
     //  ★ 外部網址沒得轉 → 行為跟以前一樣(載原圖量),那條路本來就少用。
+    //  ⚡ 2026-09-18 第二輪:量 2048 那張還是要等 1-2 秒 —— Cloudflare 第一次遇到
+    //    某個尺寸要【現做】,那是網路等待,不是計算慢。
+    //  ★ 改量格子裡【已經載好的 300px 那張】:瀏覽器快取直接命中,不用再連網。
+    //  ★ 網址必須跟格子縮圖一字不差才吃得到快取 —— _thumb 用 quality=80、
+    //    _shrinkRefUrl 用 quality=88,差一個字就是不同網址。所以量測一律呼叫 _thumb。
+    //  ★ 量 300 那張也擋得住太小的圖:轉換不會放大,原圖 200px 轉完還是 200px。
+    //  ★ 真正送出去的仍然是 2048 那張(shrunk),跟量的那張無關。
     const _own = _shrinkRefUrl(url, 2048);
-    const _probe = _own || url;
+    const _probe = _own ? _thumb(url, 300) : url;
     const img = new Image();
     let done = false;
     const finish = (r) => { if (!done) { done = true; resolve(r); } };
@@ -10055,6 +10066,7 @@ function renderEpisodeProducts(files) {
           <div class="ep-product-item ${isSelected ? 'selected' : ''}"
                data-id="${escapeHtml(f.id)}"
                data-hi-res="${escapeHtml(f.hiResUrl)}"
+               data-orig="${escapeHtml(f.url || f.webContentLink || f.thumbnailLink || '')}"
                data-name="${escapeHtml(f.name || '')}"
                title="${escapeHtml(f.name || '')}">
             <img src="${escapeHtml(_thumb(f.thumbnailLink, 300))}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.outerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#6b7a8f></div>'">
@@ -10101,7 +10113,10 @@ async function handleEpisodeProductClick(e) {
       let r2 = cachedR2;
       if (!r2) {
         // 🩹 v7.6:素材庫來的照片跳過 drive_to_r2(理由同 STEP2 那段註解)
-        const _libUrl = String(item.dataset.hiRes || item.dataset.thumb || '');
+        //  ⚡ 用【原圖網址】當基準:dataset.hiRes 是 1200 的轉換網址,
+      //    拿它再轉一次會被擋(不重複包 /cdn-cgi/)→ 等於送 1200 給引擎,
+      //    而且量尺寸時也吃不到格子縮圖的快取。
+      const _libUrl = String(item.dataset.orig || item.dataset.hiRes || item.dataset.thumb || '');
         const res = (String(fileId).indexOf('lib_') === 0 && _libUrl)
           ? { ok: true, url: _libUrl }
           : await api('drive_to_r2', {
