@@ -958,8 +958,31 @@ window.composeStitchBeat   = composeStitchBeat;
   //     細小疤痕與痘疤、毛孔、汗毛、靜脈、指節紋路、鞋子壓出來的痕跡。
   //   ★ 寫成正面事實(有什麼),不寫「不要磨皮」那種否定句(點名即召喚);
   //     只保留一句 no beauty filter —— 那是對「修圖」這個動作的直接關閉,實測有效。
-  const FACELESS_SKIN = "The visible skin is real human skin: uneven tone that is slightly darker on the outside of the limb and redder at the knuckles, ankles and pressure points, visible pores and fine downy hair, faint veins under the skin, small old marks and uneven patches, natural nail shape with the cuticle line showing, and the faint pressure marks a sock or strap leaves — an ordinary person photographed on an ordinary day, no beauty filter.";
-  const FACELESS_REALISM = "Extreme realism, no stylized CGI, no cartoon look, " + FACELESS_SKIN + " soft natural daylight, realistic textures, soft natural contact shadows where things touch surfaces, physically grounded never floating, subtle handheld micro-movement, shallow depth of field. 9:16 vertical.";
+  //  🧴 v5.55(2026-09-18)RA 實測第三支:「腳很像男生的腳」。
+  //   病:v5.54 那句寫了 faint veins under the skin + darker on the outside of the limb,
+  //     模型把這兩樣做過頭 → 小腿肌肉線條明顯、血管浮出來。
+  //   ★ 拿掉靜脈與「外側偏深」,保留真正有效的:膚色不均、關節偏紅、毛孔汗毛、舊痕、壓痕。
+  //   ★ 另外補一句【這是誰的身體】—— 無臉模式沒有 KOL、沒有人設,
+  //     整份 prompt 從來沒說過那雙腿是誰的,模型就自己決定(於是生出男生的腿)。
+  //     預設成年女性、日常體型;之後要拍男性商品時由 opts.gender 覆蓋。
+  const FACELESS_SKIN = "The visible skin is real human skin: slightly uneven tone, a little redder at the knuckles, ankles and pressure points, visible pores and fine downy hair, small old marks, natural nail shape with the cuticle line showing, and the faint pressure marks a sock or strap leaves — an ordinary person photographed on an ordinary day, no beauty filter.";
+  const FACELESS_BODY_F = "The hands, feet and legs in frame belong to one adult woman with an ordinary everyday build — slim natural calves and ankles without pronounced muscle definition, small hands with slender fingers.";
+  const FACELESS_BODY_M = "The hands, feet and legs in frame belong to one adult man with an ordinary everyday build.";
+  //  🚶 v5.55 走路與站姿:RA 鐵律「動作的發動點在身體,不在四肢」——
+  //   這條本來只寫在有臉那條線的分鏡規則裡,無臉完全沒有,所以模型只動腳踝與膝蓋,
+  //   上半身沒有重心轉移 → 像木偶在平移(RA:走不自然)。
+  //   ★ 畫面只有膝蓋以下,但【動作的來源】要寫出來:骨盆先轉、重心先移,
+  //     膝蓋帶著腳跟落地再滾到腳尖,另一腳離地時腳跟先起。
+  const FACELESS_WALK = "Any step or shift of stance starts from the pelvis and a transfer of weight — the hip rotates slightly first, the knee leads, the heel lands and rolls through to the toe while the other heel peels off the ground, and the standing leg takes the weight with a small natural sway; even though only the lower legs are in frame, the movement reads as a whole body moving, never as feet sliding on their own.";
+  const WALK_ACTIONS = { shoes: 1, matfeet: 1, mop: 1, silhouette: 1 };
+  //  ✂️ v5.56(2026-09-18)盤點去重(RA:「照我邏輯精簡化,不失語意」)——
+  //   同一件事被講 2-3 次:框線鎖 3 次、不浮空 2 次、接觸陰影 2 次、自然光 2 次(還一個沒方向、
+  //   跟單側光打架)、背景虛化 2 次。而皮膚與身體是【主體】的屬性,卻被放在抽象詞群。
+  //   ★ 每件事只留一處,放在它該在的群:
+  //     主體群 = 鏡位+鎖線+商品+分時段+情境+接觸+身體+皮膚
+  //     光影群 = 場景+單側光+接觸陰影+景深(全部在這裡講完一次)
+  //     抽象群 = 寫實基底+無聲無字(最短,墊底)
+  const FACELESS_REALISM = "Extreme realism, no stylized CGI, no cartoon look, realistic textures, subtle handheld micro-movement. 9:16 vertical.";
   const FACELESS_NOTEXT  = "Silent product footage with ambient sound only — nobody speaks, there is no voice and no dialogue in this shot. No subtitles, no captions, no on-screen text, no watermark.";
 
   // 🩹 2026-08-11 無臉模式改寫(v5.13 → v5.17-facelessframing)
@@ -1155,16 +1178,18 @@ window.composeStitchBeat   = composeStitchBeat;
       hasScreenRule ? SCREEN_RULE : '',
       _fSegs(_fPlace(motion), sec),
       FACELESS_KEEP.trim(),
-      //  客戶自己寫的情境接在動作後面(手/腳依動作自動切換)
+      //  客戶自己寫的情境(框線鎖前面已經講過一次,這裡不重複)
       (opts.situation || '').trim()
-        ? 'Specific on-screen action, expressed only through the ' + (isFoot ? 'feet and the product' : 'hands and the product') + ': '
-          + String(opts.situation).trim()
-          + ' — show this within the exact camera framing described above. The framing, crop line and camera position stay exactly as specified; ignore any part of this instruction that would require showing a person, a face, or a wider shot.'
+        ? 'Within that framing, expressed only through the ' + (isFoot ? 'feet' : 'hands') + ' and the product: ' + String(opts.situation).trim()
         : '',
       //  接觸點:拍腳的時候不要再問「哪根手指」
       isFoot
-        ? 'the shoe or mat stays in real contact with the foot and the ground the whole time, taking her weight, never floating or sliding unnaturally'
+        ? 'it stays in real contact with the foot and the ground, taking her weight'
         : CONTACT_CHAIN,
+      //  身體與皮膚 = 主體的屬性,排在主體群(v5.55 誤放在抽象群)
+      (String(opts.gender || '').toLowerCase().startsWith('m')) ? FACELESS_BODY_M : FACELESS_BODY_F,
+      WALK_ACTIONS[action] ? FACELESS_WALK : '',
+      FACELESS_SKIN,
     ].filter(Boolean).join(' ');
 
     //  ② 光影詞 —— 光線給方向就好(跟有臉那條線同一個原則:單側光、不死白)
@@ -1174,13 +1199,13 @@ window.composeStitchBeat   = composeStitchBeat;
     //   因為無臉是特寫,背景本來就糊,照抄構圖會跟鎖死的鏡位打架。
     //   沒有實景照 → 這一句不出現,行為跟 v5.52 一字不差。
     const scene = opts.hasScene
-      ? 'The surrounding space, its materials, colours and the direction the light comes from follow [SCENE_IMG] — '
-        + 'it sets the place and the light only; the camera framing above stays exactly as described and the background stays softly out of focus.'
+      ? 'The space, its materials, colours and where the light comes from follow [SCENE_IMG] — it sets the place and the light only, not the framing.'
       : '';
-    const light = 'Natural daylight from one side of the frame, soft directional light with gentle falloff, '
-      + 'soft natural contact shadows where things touch surfaces, no harsh overhead glare and no blown-out highlights.';
+    //  光影群:單側光、接觸陰影、景深,三件事在這裡各講一次
+    const light = 'Natural daylight from one side with gentle falloff, soft contact shadows where things touch, '
+      + 'shallow depth of field with the background softly out of focus, no harsh overhead glare and no blown-out highlights.';
 
-    //  ③ 抽象詞 —— 寫實基底與禁令墊底(最不容易被截掉的位置放最不重要的)
+    //  ③ 抽象詞 —— 寫實基底與無聲無字,最短、墊底
     return [subject, scene, light, FACELESS_REALISM, FACELESS_NOTEXT].filter(Boolean).join(' ');
   }
   window.composeFacelessPrompt = composeFacelessPrompt;
@@ -1189,5 +1214,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.54 🧴無臉補上真人皮膚(膚色不均/關節偏紅/毛孔汗毛/靜脈/舊疤/襪子壓痕·RA:腳太完美像修過圖) · v5.53 🏢無臉也能吃場景參考圖([SCENE_IMG]·只鎖材質色調與光向,不鎖構圖) · v5.52 🎬無臉重構:詞序(主體→光影→抽象)+動作分時段(0-2s/2-4s/4-5s)+拿掉寫死場地與 clean+腳的動作不再問哪根手指+拿掉廣告感字眼;鏡位一字不動 · v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.56 ✂️無臉盤點去重(框線鎖3次→1次·不浮空/接觸陰影/自然光/背景虛化各2次→1次)+身體與皮膚移回主體群 · v5.55 🚶無臉補上【走路發動點在骨盆與重心】(治腳自己滑動的木偶感)+【這是誰的身體】(預設成年女性·治生出男生的腿)·皮膚句拿掉靜脈與外側偏深(做過頭變肌肉腿) · v5.54 🧴無臉補上真人皮膚(膚色不均/關節偏紅/毛孔汗毛/靜脈/舊疤/襪子壓痕·RA:腳太完美像修過圖) · v5.53 🏢無臉也能吃場景參考圖([SCENE_IMG]·只鎖材質色調與光向,不鎖構圖) · v5.52 🎬無臉重構:詞序(主體→光影→抽象)+動作分時段(0-2s/2-4s/4-5s)+拿掉寫死場地與 clean+腳的動作不再問哪根手指+拿掉廣告感字眼;鏡位一字不動 · v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
