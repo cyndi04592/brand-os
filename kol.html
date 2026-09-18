@@ -7104,8 +7104,17 @@ function updateSeedanceCostEstimate() {
   const _allMin = (_plan.all + _slow) / 60;
   const lo = Math.max(2, Math.round(_allMin * 0.7));
   const hi = Math.round(_allMin * 1.4);
-  const segTxt = segs > 1 ? `${segs} 段 × ` : '';
-  el.textContent = `~ ${lo}-${hi} 分鐘(${segTxt}${p.resolution} × ${seconds}s)`;
+  //  🩹 2026-09-18 估時說明修正(RA 抓到):秒數一直讀畫質區的下拉,不是分鏡卡的長度 ——
+  //   3 段 15 秒的片會顯示成「3 段 × 10s」,客戶算出來的總長跟成品對不上。
+  //   ★ 有分鏡就用分鏡卡自己的秒數,並把總長寫出來(客戶真正想知道的是「45 秒的片要等多久」)。
+  //   ★ 沒有分鏡(單支電影鏡頭)才退回下拉的秒數,行為跟以前一樣。
+  const _bs = ((S.cineStoryboard || []).map(function (b) { return Number(b && b.seconds) || 0; })
+                .filter(function (n) { return n > 0; }));
+  const _total = _bs.reduce(function (a, b) { return a + b; }, 0);
+  const specTxt = (_bs.length > 1)
+    ? `${_bs.length} 段 × ${_bs[0]}s = ${_total}s · ${p.resolution}`
+    : `${p.resolution} × ${seconds}s`;
+  el.textContent = `~ ${lo}-${hi} 分鐘(${specTxt})`;
 }
 
 function copySeedancePrompt() {
