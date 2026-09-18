@@ -1,5 +1,28 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   🎬 kol-subtitle.js v1.1(2026-09-19)加上字幕
+   🎬 kol-subtitle.js v1.4(2026-09-19)【語音辨識對時間】+【不准用猜的】
+   v1.4:RA:「環境音有其他聲音呢?你確定聽得懂音軌?」「猜太危險,客人會覺得字幕很爛」
+        ★ 第一順位:語音辨識(Worker speech_timing)聽出每個字是第幾秒 →
+          跟我們的台詞一個字一個字對齊(字用我們的,只借它的時間;聽錯字、簡體都沒關係)。
+        ★ 第二順位:量音量找停頓(v1.3,只在語音辨識失敗時用)。
+        ★ 兩個都拿不到 → 【不燒、不扣點】,告訴客人稍後再試。不再退回推算。
+   ───────────────────────────────────────────────────────────────────────
+   v1.3【聽聲音對時間】
+   v1.3:RA:「燒字幕等於耳朵聽不到?一百支片要對一百次?」
+        ★ 字用我們自己的台詞(不會錯字、不會變簡體),【時間用影片實際的聲音】:
+          按「加上字幕」時先把影片的聲音抓下來,只聽「什麼時候在講、什麼時候停」,
+          ① 每一格:找真正開始講與講完的時間(不再用猜的 +0.5 / -0.3)
+          ② 每一句的換句點:吸到附近真正的停頓(±0.6 秒內最安靜的那一刻)
+        ★ 全自動、免費、在客人的瀏覽器裡做,不動算力機。
+        ★ 抓不到聲音(網路、權限、影片沒聲音)→ 自動退回 v1.2 的算法,照樣能燒。
+        驗證(妞妞露營片):換句點吸到 9.75 / 13.25 秒,結束 14.70 秒,跟實測一致。
+   ───────────────────────────────────────────────────────────────────────
+   v1.2 時間軸改成【塞滿開口視窗】
+   v1.2:RA 實測妞妞那支(15 秒、開口 4-15 秒、58 字):最後一句字幕太早消失。
+        量聲音:她從 4.5 秒講到 14.7 秒 —— 算力機會把台詞【拉長塞滿整個開口視窗】,
+        不是照語速 6 字/秒講完就停(舊算法算到 13.1 秒就結束,差 1.6 秒)。
+        新算法:開口視窗起點 +0.5 秒(真正出聲的延遲)→ 終點 -0.3 秒,照字數比例分配。
+        驗證:預測的換句點 9.65 / 13.20 秒,實測人聲停頓 9.75 / 13.25 秒,誤差 0.1 秒內。
+   v1.1 加上字幕
    v1.1:RA 定案 —— 客人要的是【直接燒好字幕的 MP4】,不要叫他去剪映自己上。
         成品下方給一顆【加上字幕(N 點)】,客人自己選;按了才燒、原片保留、要扣點。
         時間軸照舊在這裡算(台詞＋開口秒數),燒字的是 Worker 的 subtitle_burn(v5.74)。
@@ -44,6 +67,8 @@
   const MIN_PIECE  = 5;     // 太短的片段往後併
   const MIN_HOLD   = 1.2;   // 每行最少停留秒數
   const MERGE_MAX  = 16;    // 為了停留時間合併時,放寬到 16 字
+  const ONSET      = 0.5;   // ⏱ v1.2 實測:時段開始後約 0.5 秒才真正出聲
+  const TAIL       = 0.3;   // ⏱ v1.2 實測:時段結束前約 0.3 秒講完
 
   //  開口起訖(秒)—— ⚠️ 四邊同步:面板 _speakSpan / kol-proxy _winOf / crew-director _speakSegOf
   function speakSpan(shotDesc) {
@@ -110,9 +135,10 @@
     return lines;
   }
 
-  //  所有段落 → 字幕 cue
+  //  所有段落 → 字幕 cue(v1.3:每個 cue 帶 beat 編號,對聲音時要用)
   function buildCues(beats, durations) {
     const cues = [];
+    buildCues._wins = [];
     let offset = 0;
     (beats || []).forEach((b, i) => {
       const segDur = Number(durations && durations[i]) || Number(b && b.seconds) || 15;
@@ -124,8 +150,11 @@
         if (s1 - s0 < 1) { s0 = 0; s1 = segDur; }
         const lines = splitLines(dia);
         const totalW = lines.reduce((a, l) => a + weight(l), 0) || 1;
-        const talk = Math.min(s1 - s0, Math.max(totalW / SPEAK_RATE, lines.length * MIN_HOLD));
-        let t = offset + s0;
+        //  ⏱ v1.2:塞滿開口視窗(起點 +0.5 秒出聲延遲、終點 -0.3 秒收尾),不再照語速算
+        const a0 = Math.min(s0 + ONSET, s1 - 1), a1 = Math.max(a0 + 1, s1 - TAIL);
+        const talk = a1 - a0;
+        buildCues._wins.push({ beat: i, from: offset + s0, to: offset + s1, segEnd: offset + segDur });
+        let t = offset + a0;
         let seg = lines.map(l => {
           const d = talk * weight(l) / totalW;
           const c = { start: t, end: t + d, text: clean(l) };
@@ -142,11 +171,144 @@
         //  最後一行還是太短 → 往後延(不超出這一段)
         const lastC = seg[seg.length - 1];
         if (lastC && lastC.end - lastC.start < MIN_HOLD) lastC.end = Math.min(offset + segDur, lastC.start + MIN_HOLD);
-        seg.filter(c => c.text).forEach(c => cues.push(c));
+        seg.filter(c => c.text).forEach(c => { c.beat = i; c.w = weight(c.text); cues.push(c); });
       }
       offset += segDur;
     });
     return cues;
+  }
+
+  //  ═══ v1.3 聽聲音 ═══════════════════════════════════════════════
+  //  energy:每 STEP 秒一格的人聲頻段音量(dB,已減掉最大值 → 0 是最大聲)
+  const STEP = 0.05;
+  const VOICED = -20;     // 比最大聲小 20 dB 以內算「在講話」
+  const SNAP = 0.6;       // 換句點最多移動 ±0.6 秒去找停頓
+  const PAUSE_DB = -25;   // 比最大聲小 25 dB 以上算安靜
+  const PAUSE_MIN = 0.15; // 連續安靜 0.15 秒以上才算停頓
+  function alignCues(cues, wins, energy) {
+    if (!energy || !energy.length) return cues;
+    const at = (t) => energy[Math.max(0, Math.min(energy.length - 1, Math.round(t / STEP)))];
+    const out = [];
+    wins.forEach(w => {
+      const mine = cues.filter(c => c.beat === w.beat);
+      if (!mine.length) return;
+      //  ① 真正開始與講完:在開口時段(前後放寬一點)裡找第一個/最後一個在講話的格子
+      let st = null, en = null;
+      for (let t = Math.max(0, w.from - 0.3); t <= Math.min(w.segEnd, w.to + 0.2); t += STEP) {
+        if (at(t) > VOICED) { if (st === null) st = t; en = t + STEP; }
+      }
+      if (st === null || en - st < 1) { mine.forEach(c => out.push(c)); return; }   // 聽不到 → 用算的
+      //  ② 照字數比例重排到真正講話的區間
+      const tot = mine.reduce((a, c) => a + c.w, 0) || 1;
+      let t = st;
+      const seg = mine.map(c => { const d = (en - st) * c.w / tot; const r = { start: t, end: t + d, text: c.text }; t += d; return r; });
+      //  ③ 換句點吸到附近【真正的停頓】:連續 ≥0.15 秒都很安靜才算(字跟字之間 0.1 秒的縫不算),
+      //     挑離預測點最近的那個停頓,換句點放在停頓結束、下一句開口的那一刻。
+      const pauses = [];
+      for (let t = st, run = null; t <= en + STEP; t += STEP) {
+        if (at(t) < PAUSE_DB) { if (run === null) run = t; }
+        else if (run !== null) { if (t - run >= PAUSE_MIN) pauses.push({ a: run, b: t }); run = null; }
+      }
+      for (let pass = 0; pass < 2; pass++) for (let k = 0; k < seg.length - 1; k++) {   // 跑兩輪:前一個換句點移動後,後面的空間也會變
+        const b = seg[k].end;
+        let best = null;
+        pauses.forEach(p => {
+          const mid = (p.a + p.b) / 2;
+          if (Math.abs(mid - b) > SNAP) return;
+          if (p.b - seg[k].start < MIN_HOLD * 0.8 || seg[k + 1].end - p.b < MIN_HOLD * 0.8) return;   // 兩邊都要停留夠久(真停頓容許到 1 秒)
+          if (!best || Math.abs(mid - b) < Math.abs((best.a + best.b) / 2 - b)) best = p;
+        });
+        if (best) { seg[k].end = best.b; seg[k + 1].start = best.b; }
+      }
+      seg.forEach(c => out.push(c));
+    });
+    return out;
+  }
+  //  ═══ v1.4 語音辨識對齊 ═══════════════════════════════════════════
+  //  chunks:[{t:'文字', s:開始秒, e:結束秒}](Worker speech_timing 回傳)
+  //  做法:我們的台詞 vs 辨識出的字,用「最長共同子序列」一個字一個字配對,
+  //        配到的字就拿到時間;每句字幕 = 這句第一個配到的字 → 最後一個配到的字。
+  const _PUNC = /[\s,，、。.!！?？;；:：…~～「」『』"“”'’()（）\-—]/;
+  function alignByWords(cues, chunks) {
+    if (!Array.isArray(chunks) || !chunks.length || !cues.length) return null;
+    //  辨識結果攤成一個字一格,每格時間在所屬片段裡平均分
+    const asr = [];
+    chunks.forEach(c => {
+      const ch = Array.from(String(c.t)).filter(x => !_PUNC.test(x));
+      const d = Math.max(0.01, (c.e - c.s) / Math.max(1, ch.length));
+      ch.forEach((x, i) => asr.push({ x: x, s: c.s + d * i, e: c.s + d * (i + 1) }));
+    });
+    //  我們的台詞攤成一個字一格,記住屬於哪一句
+    const ours = [];
+    cues.forEach((c, k) => Array.from(String(c.text)).forEach(x => { if (!_PUNC.test(x)) ours.push({ x: x, k: k }); }));
+    const n = ours.length, m = asr.length;
+    if (!n || !m || n * m > 2e6) return null;
+    //  LCS 表
+    const W = m + 1, L = new Uint16Array((n + 1) * W);
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+      L[i * W + j] = ours[i].x === asr[j].x ? L[(i + 1) * W + j + 1] + 1 : Math.max(L[(i + 1) * W + j], L[i * W + j + 1]);
+    const hit = new Array(n).fill(null);
+    for (let i = 0, j = 0; i < n && j < m;) {
+      if (ours[i].x === asr[j].x) { hit[i] = asr[j]; i++; j++; }
+      else if (L[(i + 1) * W + j] >= L[i * W + j + 1]) i++; else j++;
+    }
+    const matched = hit.filter(Boolean).length;
+    //  配到的字太少(聽不清楚、背景太吵)→ 不採用,交給下一順位
+    if (matched < Math.max(4, n * 0.4)) return null;
+    //  每一句的時間 = 第一個配到的字 → 最後一個配到的字
+    const span = cues.map(() => ({ s: null, e: null }));
+    ours.forEach((o, i) => { const h = hit[i]; if (!h) return; const sp = span[o.k];
+      if (sp.s === null || h.s < sp.s) sp.s = h.s; if (sp.e === null || h.e > sp.e) sp.e = h.e; });
+    //  沒配到任何字的句子:夾在前後兩句中間
+    for (let k = 0; k < span.length; k++) {
+      if (span[k].s !== null) continue;
+      let a = k - 1; while (a >= 0 && span[a].s === null) a--;
+      let b = k + 1; while (b < span.length && span[b].s === null) b++;
+      const from = a >= 0 ? span[a].e : (b < span.length ? span[b].s - 1.5 : 0);
+      const to = b < span.length ? span[b].s : from + 1.5;
+      span[k].s = from; span[k].e = Math.max(from + 0.5, to);
+    }
+    //  組字幕:字跟著嘴出來;停留到下一句開口(中間停很久就先收)
+    const out = cues.map((c, k) => ({ start: Math.max(0, span[k].s - 0.05), end: span[k].e, text: c.text, beat: c.beat }));
+    for (let k = 0; k < out.length; k++) {
+      const nx = out[k + 1];
+      if (nx && nx.start - out[k].end < 1.5) out[k].end = nx.start;
+      else out[k].end = out[k].end + 0.3;
+      if (out[k].end - out[k].start < 0.6) out[k].end = out[k].start + 0.6;
+      if (nx && out[k].end > nx.start) out[k].end = nx.start;
+    }
+    out._matched = matched; out._total = n;
+    return out;
+  }
+
+  //  抓影片聲音 → 每 0.05 秒的人聲頻段音量。任何一步失敗回 null(外面會退回算的)
+  async function measureVoice(videoUrl) {
+    try {
+      const AC = root.OfflineAudioContext || root.webkitOfflineAudioContext;
+      if (!AC || !root.fetch) return null;
+      const res = await fetch(videoUrl, { mode: 'cors' });
+      if (!res.ok) return null;
+      const buf = await res.arrayBuffer();
+      const tmp = new AC(1, 1, 16000);
+      const audio = await tmp.decodeAudioData(buf);
+      const sr = 16000, len = Math.ceil(audio.duration * sr);
+      const ctx = new AC(1, len, sr);
+      const src = ctx.createBufferSource(); src.buffer = audio;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 250;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3500;
+      src.connect(hp); hp.connect(lp); lp.connect(ctx.destination); src.start();
+      const d = (await ctx.startRendering()).getChannelData(0);
+      const w = Math.round(sr * STEP), e = [];
+      for (let i = 0; i + w <= d.length; i += w) {
+        let q = 0; for (let j = i; j < i + w; j++) q += d[j] * d[j];
+        e.push(10 * Math.log10(q / w + 1e-12));
+      }
+      const mx = Math.max.apply(null, e);
+      return e.map(v => v - mx);
+    } catch (err) {
+      try { console.warn('[KolSubtitle] 抓不到影片聲音,改用算的時間:', err && err.message); } catch (_) {}
+      return null;
+    }
   }
 
   function ts(sec) {
@@ -184,8 +346,8 @@
       const beats = o.beats || [];
       const durs = (o.plan || []).map(p => p && p.durationSec);
       const cues = buildCues(beats, durs);
+      const wins = buildCues._wins.slice();
       if (!cues.length) return;   // 整支都沒台詞 → 不顯示按鈕
-      const srt = toSRT(cues);
       const totalSec = durs.reduce((a, d) => a + (Number(d) || 0), 0) || 15;
       const cost = costOf(totalSec);
 
@@ -217,6 +379,26 @@
           out.innerHTML = '<span style="color:#a78bfa;">⏳ 字幕製作中,約 1-2 分鐘,請不要關閉這個頁面(已等 ' + Math.round((Date.now() - t0) / 1000) + ' 秒)</span>';
         }, 1000);
         try {
+          //  🎧 v1.4:① 語音辨識 → ② 量音量 → ③ 都不行就不燒、不扣點(不准用猜的)
+          let timed = null, how = '';
+          try {
+            const st = await S._api('speech_timing', { videoUrl: o.videoUrl, prompt: cues.map(c => c.text).join(',') });
+            timed = alignByWords(cues, st && st.chunks);
+            if (timed) how = '🎧 語音辨識(' + timed._matched + '/' + timed._total + ' 字對上)';
+          } catch (e) { try { console.warn('[KolSubtitle] 語音辨識失敗,改量音量:', e && e.message); } catch (_) {} }
+          if (!timed) {
+            const energy = await measureVoice(o.videoUrl);
+            if (energy) { timed = alignCues(cues, wins, energy); how = '🔊 量音量'; }
+          }
+          if (!timed) {
+            clearInterval(tick);
+            btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+            btn.textContent = '🔤 加上字幕(' + cost + ' 點)';
+            out.innerHTML = '<span style="color:#ffb3b3;">⚠️ 這支影片暫時聽不清楚台詞的時間,為了不讓字幕對不上,這次先不加。<b>沒有扣點</b>,請稍後再按一次。</span>';
+            return;
+          }
+          const srt = toSRT(timed);
+          try { console.log('[KolSubtitle] 時間來源:' + how); } catch (_) {}
           const sub = await S._api('subtitle_burn', {
             videoUrl: o.videoUrl, srt: srt, brandId: o.brandId || 'stitch', durationSec: totalSec,
           });
@@ -242,8 +424,8 @@
     }
   }
 
-  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, version: 'v1.1' };
+  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, version: 'v1.4' };
   root.KolSubtitle = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  try { console.log('[KolSubtitle] v1.1 就緒 · 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
+  try { console.log('[KolSubtitle] v1.4 就緒 · 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
 })(typeof window !== 'undefined' ? window : globalThis);
