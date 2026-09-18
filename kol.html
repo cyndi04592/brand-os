@@ -1958,7 +1958,8 @@ document.addEventListener('DOMContentLoaded', function(){
                   <option value="layflat">平放展示(俯拍看材質)</option>
                   <option value="bag">包包展示(側面 / 開合 / 提起)</option>
                   <option value="shoes">試穿鞋(只有腳)</option>
-                  <option value="wear">手部穿戴(錶 / 手環 / 戒指)</option>
+                  <option value="nails">美甲成果(手 / 指尖特寫)</option>
+              <option value="wear">手部穿戴(錶 / 手環 / 戒指)</option>
                 </optgroup>
                 <optgroup label="🔧 家電 · 工具 · 器材">
                   <option value="press">按開關 / 轉旋鈕(家電面板)</option>
@@ -8234,8 +8235,26 @@ async function createFacelessVideo() {
   const _fSec = (S.seedanceParams.duration === 'auto') ? 5 : (parseInt(S.seedanceParams.duration, 10) || 5);
   //  🏢 2026-09-18 無臉也吃場景參考圖:有實景照就送,沒有就照舊讓模型自己生環境
   const _fScene = String(S.customSceneUrl || '').trim();
+  //  🏢 2026-09-18:沒有自家實景照時,把【場景卡】的文字送進去(公版不生圖,一句話就好)
+  let _fSceneText = '';
+  try {
+    if (!_fScene && S.selectedSceneId) {
+      const _sc = (typeof window.getScenesForBrand === 'function')
+        ? (window.getScenesForBrand(S.currentBrandId) || {})[S.selectedSceneId] : null;
+      _fSceneText = String((_sc && (_sc.setting || _sc.env_prompt || _sc.label)) || S.selectedSceneId || '').slice(0, 140);
+    }
+  } catch (e) {}
   const prompt = window.composeFacelessPrompt
-    ? window.composeFacelessPrompt(action, { situation, duration: _fSec, hasScene: !!_fScene }) : '';
+    ? window.composeFacelessPrompt(action, { situation, duration: _fSec, hasScene: !!_fScene, sceneText: _fSceneText }) : '';
+  //  🔍 2026-09-18 無臉診斷:一按生成就印出「這支到底吃到什麼場景」——
+  //   RA 實測:選了機場場景卡又勾了自家實景照,結果畫面是商品照裡的木地板與窗 ——
+  //   代表實景照沒送出去。以後不用猜,看這一行就知道。
+  try {
+    console.log('[無臉] 場景來源:',
+      _fScene ? ('✅ 自家實景照 ' + _fScene.slice(0, 80)) : (_fSceneText ? ('📝 場景卡文字「' + _fSceneText.slice(0, 40) + '」') : '❌ 沒有場景(走日常室內)'),
+      '· 場景卡 id:', S.selectedSceneId || '(沒選)',
+      '· 商品照', _allProducts.length, '張 · 提示詞', prompt.length, '字');
+  } catch (e) {}
   if (!prompt) { toast('組無臉 prompt 失敗,請確認 crew-director 已更新到 v5.13-faceless', 'error'); return; }
 
   // 只有 1 張商品照 → 還是會落回單張圖那條已知會掛的路。先講白話,讓客戶自己決定。
@@ -8288,6 +8307,7 @@ async function createFacelessVideo() {
       hold: '手持展示', pour: '倒出來', demo: '操作示範', putin: '放進收納',
       hanger: '衣架取下', layflat: '平放展示', bag: '包包展示', shoes: '試穿鞋', wear: '手部穿戴',
       press: '按開關', mop: '拖地', spray: '噴霧展示',
+      nails: '美甲成果',
       mudra: '冥想手勢', matfeet: '瑜珈墊', bowl: '頌缽', silhouette: '舞動剪影',
       sign: '簽署用印', review: '翻閱文件',
       //  🏷 2026-09-18 盤查下拉補齊:數位工作這 6 個沒有中文標籤,
@@ -8333,14 +8353,18 @@ async function aiWriteFacelessSituation() {
     return;
   }
   //  把場景名稱一起送:AI 才知道這支在哪裡拍,不會寫出別的地方
+  //  🐛 2026-09-18:場景卡與實景照【同時有】的時候,以前只送「客戶的實景照」六個字,
+  //   AI 看不到照片內容 → 等於沒給地點 → 自己編(RA 選機場,它寫木地板、鞋盒)。
+  //   ★ 修法:場景卡的名字永遠送,實景照只是補一句「以照片為準」。
+  //   ★ 不是只有機場,所有場景(機場/健身房/量販賣場/農場…)一律同一條規則。
   let sceneLabel = '';
   try {
-    if (S.customSceneUrl) sceneLabel = '客戶自己的實景照(照片裡的空間)';
-    else {
-      const _sc = (typeof window.getScenesForBrand === 'function')
-        ? (window.getScenesForBrand(S.currentBrandId) || {})[S.selectedSceneId] : null;
-      sceneLabel = (_sc && (_sc.label || _sc.name)) || S.selectedSceneId || '';
-    }
+    const _sc = (typeof window.getScenesForBrand === 'function')
+      ? (window.getScenesForBrand(S.currentBrandId) || {})[S.selectedSceneId] : null;
+    const _name = (_sc && (_sc.label || _sc.name)) || S.selectedSceneId || '';
+    if (_name && S.customSceneUrl)      sceneLabel = _name + '(客戶另外上傳了這個場地的實景照,畫面以照片為準)';
+    else if (_name)                      sceneLabel = _name;
+    else if (S.customSceneUrl)           sceneLabel = '客戶自己上傳的實景照裡那個空間';
   } catch (e) {}
   const prod = (typeof getCurrentRotationProduct === 'function' ? getCurrentRotationProduct() : null) || {};
   //  🧱 2026-09-18:把商品模組算出來的事實一起送(跟有臉那條線同一套規則)
