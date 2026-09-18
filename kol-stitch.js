@@ -671,7 +671,7 @@ window.KolStitch = (function () {
 
       // ═══ ③ 光影與環境(中段·在主體穩定後才建模)═══
       bodyB += '\n\n'
-        + (_sg
+        + ((_sg && _sceneMode !== 'photo')   // 🏕 v6.80:客戶原照走下面那句(保留照片裡的人)
            //  ✂️ v6.72:252 → 175 字。「鎖佈局/材質/顏色」與「每顆挑符合景別的那一格並保持不動」併句。
            //  🏚 v6.73(2026-09-15)加一句【有人在用的痕跡】—— RA 指出舊句只是【允許】
            //    裡面的生活變動(the life inside it does not stay fixed),那是被動的:
@@ -718,7 +718,8 @@ window.KolStitch = (function () {
         + '\nThis must hold up as real footage under close inspection, by a viewer or by another AI. '
         //  🩳 v6.66:原本尾巴再說一次「同一人/同一地/同一服裝」——
         //    標註區第一句已經寫了 'keep identical in every shot',整句重複,只留「不要人群」。
-        + 'No crowd.';
+        //  🏕 v6.80:客戶原照裡本來就有人(露營區、店面)→ 不能再說 No crowd,那會把人刪掉
+        + (_sceneMode === 'photo' ? '' : 'No crowd.');
       return bodyB;
     }
 
@@ -775,7 +776,7 @@ window.KolStitch = (function () {
     body += '\nGlobal: the same ' + _pron().noun + ' [Image1], the same location [SCENE_IMG], '
       + (_segHasOutfit ? 'the same background and outfit [OUTFIT_IMG] across all shots' : 'the same background across all shots')
       + '; do not change ' + _pron().p + ' face, the location, the background'
-      + (_segHasOutfit ? ' or the outfit' : '') + '; no different person, no crowd.';
+      + (_segHasOutfit ? ' or the outfit' : '') + (_sceneMode === 'photo' ? '; no different person.' : '; no different person, no crowd.');   // 🏕 v6.80
     if (shared && shared.colorLine) body += '\n' + shared.colorLine;
     return body;
   }
@@ -935,6 +936,9 @@ window.KolStitch = (function () {
   //      但缺口不跨接(v6.38)本來就不會用到第 3 段 —— 那筆錢 100% 白花。
   //    ★ 修法:任何一段【提交】最終失敗,後面的段直接不送,連 API 都不呼叫。
   let _submitAborted = null;
+  //  🏕 v6.80:這一支的場景來源 —— 'photo' = 客戶自己上傳的實景照【原照直送】
+  //   (提示詞才會用「照片裡有什麼就是什麼,包括人」那句,且不加 No crowd)
+  let _sceneMode = '';
   let _uiLog = null;            // v6.41:runStitchFlow 會把 onProgress 掛進來,讓排隊訊息看得到
 
   //  🚪 v6.42 併發閘門 —— 不要送出去被拒,而是【沒位子就不送】。
@@ -1934,7 +1938,18 @@ window.KolStitch = (function () {
         // 🗺️ v6.17 場景九宮格保險絲(預設關):on → 生九宮格(多角度空間庫);失敗或關 → 退回單張場景圖
         // 🗺️ 預設開(見上方 230 行說明)。任何一步失敗都會退回客戶原本那張實景照,
         //   絕不會讓場景消失或被想像的空間蓋掉 —— 這是敢預設開的前提。
-        const _wantGrid = (typeof window === 'undefined' || window.KOL_SCENEGRID !== false);
+        //  🏕 v6.80(2026-09-19)RA 實測妞妞露營片:「照片後面露營的人還是被刪除了,大問題」
+        //   病:客戶上傳實景照 → 下面會拿它生九宮格,而九宮格指令寫
+        //     「IDENTICAL empty place… no people, no person in any panel」(kol-environment)
+        //     → 影片看到的是【已經被清空的九宮格】,不是原照;
+        //     v6.79 那句「照片裡有什麼就是什麼,包括裡面的人」只在九宮格【失敗】時才送,
+        //     九宮格預設開 → 那句從來沒被送出去過,人還是被刪。
+        //   ★ 修法:有客戶實景照 → 直接用原照,不轉九宮格。照片是事實,人也是事實。
+        //   ★ 代價:多段影片的背景少了多角度參考(只剩一張原照)。
+        //     要回到舊行為:Console 設 window.KOL_REALPHOTO_GRID = true。
+        const _photoDirect = !!_userScene && !(typeof window !== 'undefined' && window.KOL_REALPHOTO_GRID === true);
+        const _wantGrid = !_photoDirect && (typeof window === 'undefined' || window.KOL_SCENEGRID !== false);
+        if (_photoDirect) log('使用你上傳的實景照當背景…');
         if (_wantGrid && typeof window.KolEnvironment.generateSceneGrid === 'function') {
           log('正在準備拍攝場景…');
           const _grid = await window.KolEnvironment.generateSceneGrid(sceneCtx);
@@ -1951,6 +1966,8 @@ window.KolStitch = (function () {
       sceneImageUrl = _userScene;
     }
     if (!sceneImageUrl && _userScene) sceneImageUrl = _userScene;   // 雙保險
+    //  🏕 v6.80:最後送出去的就是客戶原照 → 提示詞走「保留照片裡的人」那句
+    _sceneMode = (_userScene && sceneImageUrl === _userScene) ? 'photo' : (sceneImageUrl ? 'generated' : '');
 
     log(`參考圖鎖定完成 ✓ · ${total} 段生成中…(同一張臉 · 同一件衣服 · 同一個場景 · 跨段不飄)`);
 
@@ -2140,7 +2157,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  _dbg('[KolStitch] 🧍 v6.79 實景照裡的人會留著(舊句寫死「只給空的空間」→ 照片有人也被清掉、生出打烊感;照片沒人依舊不會憑空生) 繚 v6.78 排隊文案不露容量(白牌·改說「算力機滿載+預計X分鐘」) 繚 v6.77 訂位制(整支一次要 N 個位子·湊不齊整支等·不先跑一半) 繚 v6.76 共用閘門(位子跟 Worker 要·所有人同一個上限·15分鐘自動釋放·連不上自動退回本機) 繚 v6.34 🗺九宮格角度跟著景別走(不再讓模型隨機挑格)+⏱接片計時獨立10分鐘(不被生成吃掉)+🎁接片失敗仍交出分段(治「兩段都付錢卻拿不到東西」) · v6.33 🛟webhook掉包救援(主動問上游拿到成品就直接用·seedance段補endpoint)+🧯缺段續行(allSettled·一段掛掉不再整包毀掉·兩段錢都付了卻拿不到東西) · v6.32 📏字牆3000→3800(PiAPI官方上限4000·留200邊界·治「已驗證的規則被白白丟掉」) · v6.31 🏠空間落地併入表演層(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」)· v6.30 舊(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」) · v6.29 🚶[SCENE_IMG]標註補「只鎖空房間不鎖裡面的生活」(配合 crew v5.36 背景生活赦免) · v6.28 🎭反向表演(表演原則取代微表情清單·大動作藏小反應+反應有先後順序:手停→視線→頭→表情·治「會動的照片」) · v6.27 🫀生命感層拆行(眨眼/視線/眉毛/重心從對嘴行搬出成獨立Performance區塊·治「上半臉凍結」)+🚫拔光否定句(statue-still/puppet-like→正面可數描述·治點名即召喚) · v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  _dbg('[KolStitch] 🏕 v6.80 客戶實景照原照直送(不轉九宮格·不加No crowd·照片裡的人留著;舊行為 window.KOL_REALPHOTO_GRID=true) 繚 🧍 v6.79 實景照裡的人會留著(舊句寫死「只給空的空間」→ 照片有人也被清掉、生出打烊感;照片沒人依舊不會憑空生) 繚 v6.78 排隊文案不露容量(白牌·改說「算力機滿載+預計X分鐘」) 繚 v6.77 訂位制(整支一次要 N 個位子·湊不齊整支等·不先跑一半) 繚 v6.76 共用閘門(位子跟 Worker 要·所有人同一個上限·15分鐘自動釋放·連不上自動退回本機) 繚 v6.34 🗺九宮格角度跟著景別走(不再讓模型隨機挑格)+⏱接片計時獨立10分鐘(不被生成吃掉)+🎁接片失敗仍交出分段(治「兩段都付錢卻拿不到東西」) · v6.33 🛟webhook掉包救援(主動問上游拿到成品就直接用·seedance段補endpoint)+🧯缺段續行(allSettled·一段掛掉不再整包毀掉·兩段錢都付了卻拿不到東西) · v6.32 📏字牆3000→3800(PiAPI官方上限4000·留200邊界·治「已驗證的規則被白白丟掉」) · v6.31 🏠空間落地併入表演層(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」)· v6.30 舊(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」) · v6.29 🚶[SCENE_IMG]標註補「只鎖空房間不鎖裡面的生活」(配合 crew v5.36 背景生活赦免) · v6.28 🎭反向表演(表演原則取代微表情清單·大動作藏小反應+反應有先後順序:手停→視線→頭→表情·治「會動的照片」) · v6.27 🫀生命感層拆行(眨眼/視線/眉毛/重心從對嘴行搬出成獨立Performance區塊·治「上半臉凍結」)+🚫拔光否定句(statue-still/puppet-like→正面可數描述·治點名即召喚) · v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
