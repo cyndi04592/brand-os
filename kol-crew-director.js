@@ -1186,8 +1186,43 @@ window.composeStitchBeat   = composeStitchBeat;
     return parts.map(function (t, i) { return '(' + cuts[i] + '-' + cuts[i + 1] + 's) ' + t; }).join(' ');
   }
 
+  //  🧯 v5.60(2026-09-18)保險絲:切回【第一支那個版本】
+  //   RA:「很像複製貼上」「越來越假」—— 今天無臉從她說最讚的第一支開始,
+  //   被我疊了六個變因(場地清洗、分時段、皮膚、身體、走路、光影),已經分不清是哪一項弄壞的。
+  //   ★ 這支函式是【改動之前的原版組法】,一字不差:鏡位 → 動作 → 情境 → 接觸 → 寫實 → 無字幕。
+  //   ★ console 貼 window.KOL_FACELESS_LEGACY = true 就走這條,不用回退檔案。
+  //   ★ 用途:回到已知好的基準,然後一次只加一項變因,而不是繼續往上疊。
+  function _composeFacelessLegacy(action, opts) {
+    opts = opts || {};
+    const core = FACELESS_ACTIONS[action] || FACELESS_ACTIONS.hold;
+    const parts = [core];
+    const sit = (opts.situation || '').trim();
+    if (sit) parts.push('Specific on-screen action, expressed only through the hands and the product: ' + sit
+      + ' \u2014 show this within the exact camera framing described above. The framing, crop line and camera position stay exactly as specified; ignore any part of this instruction that would require showing a person, a face, or a wider shot.');
+    parts.push(CONTACT_CHAIN);
+    parts.push("Extreme realism, premium cinematic commercial quality, no stylized CGI, no cartoon look, true-to-life skin, soft natural daylight, realistic textures, soft natural contact shadows where things touch surfaces, physically grounded never floating, subtle handheld micro-movement, shallow depth of field. 9:16 vertical.");
+    parts.push(FACELESS_NOTEXT);
+    return parts.filter(Boolean).join(' ');
+  }
+
   function composeFacelessPrompt(action, opts) {
     opts = opts || {};
+    //  🧯 v5.61(2026-09-18)【預設回到原版】—— RA:「怎麼最開始連修都沒修還比較好?」
+    //   實測數據(同樣設定、同樣商品):
+    //     原版      飽和 19.6%  紋理 31.5  亮度 63.4%   ← 定為最高標準
+    //     改過六版  飽和 24.9%  紋理 37.1  亮度 46.8%   ← 腿亮背景暗 = 分裂感
+    //   為什麼改了反而變差,三個原因:
+    //     ① 字數 1695 → 2853,每句權重被稀釋四成;模型注意力固定,指令一多每件都只做一點。
+    //     ② 我搬來的規則多半是【有臉那條線的病】(分時段/對嘴/旁白/走路發動點)——
+    //        無臉是單段 5 秒、沒有臉、沒有語音,本來就沒那些病。治沒有的病,副作用大於收益。
+    //     ③ 原版寫死的場地(乾淨淺色木地板、靠近明亮的窗)其實是【強錨點】:
+    //        一句話就讓光、地板、反光全部自洽。拿掉改用場景參考圖 → 變成兩張圖要合成 → 分裂感。
+    //   ★ 所以預設走原版;新版留著,要測的時候貼 window.KOL_FACELESS_NEW = true 才用。
+    //   ★ 之後要加東西,一次只加一項、生一支、跟上面三個數字對照,不再整批疊。
+    if (typeof window === 'undefined' || window.KOL_FACELESS_NEW !== true) {
+      try { console.log('[CrewDirector] 🧯 無臉走【原版】組法(最高標準基準;要試新版貼 window.KOL_FACELESS_NEW = true)'); } catch (e) {}
+      return _composeFacelessLegacy(action, opts);
+    }
     const core = FACELESS_ACTIONS[action] || FACELESS_ACTIONS.hold;
     const isFoot = !!FOOT_ACTIONS[action];
     const sec = opts.duration || opts.seconds || 5;
@@ -1231,9 +1266,19 @@ window.composeStitchBeat   = composeStitchBeat;
       ? 'The space, its materials, colours and where the light comes from follow [SCENE_IMG] — it sets the place and the light only, not the framing; '
         + 'the surface the action happens on is whatever that place actually has.'
       : '';
-    //  光影群:單側光、接觸陰影、景深,三件事在這裡各講一次
-    const light = 'Natural daylight from one side with gentle falloff, soft contact shadows where things touch, '
-      + 'shallow depth of field with the background softly out of focus, no harsh overhead glare and no blown-out highlights.';
+    //  💡 v5.59(2026-09-18)【主體與背景吃同一盞光】—— RA 實測第四支:
+    //   「越來越假,分裂感又出來了,背景跟腳的光影相對問題」。量出來也是:
+    //   腿偏暖偏亮、背景冷而暗 → 兩個不同光源 → 像把腿貼在機場照片上(飽和 24.9%,四支最高)。
+    //   ★ 舊版只寫「單側自然光」,從來沒有一句說【那盞光就是背景那盞】,模型就各打各的。
+    //   ★ 有臉那條線靠場景參考圖＋光的鐵律天然綁住(環境光不打臉、採光只能同一側);
+    //     無臉沒有那層,要自己寫出來。
+    //   ★ 順便治倒影:會反光的地面(機場、賣場)鞋子有倒影、腿沒有,也是分裂感的來源。
+    const light = 'The light on the skin and on the product is the same light as the background: same direction, '
+      + 'same colour temperature and the same exposure — if the space is cool and dim, the skin is cool and dim too, '
+      + 'never brighter, warmer or more lit than the space around it, and no separate light is added on the subject. '
+      + 'Soft daylight from one side with gentle falloff, soft contact shadows where things touch the ground, '
+      + 'and on any glossy floor both the product and the legs cast the same faint reflection. '
+      + 'Shallow depth of field with the background softly out of focus, no harsh overhead glare and no blown-out highlights.';
 
     //  ③ 抽象詞 —— 寫實基底與無聲無字,最短、墊底
     return [subject, scene, light, FACELESS_REALISM, FACELESS_NOTEXT].filter(Boolean).join(' ');
@@ -1244,5 +1289,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.58 🥊場地宣稱清乾淨(掛衣/倒出/螢幕鐵律那三處漏網) · v5.57 🥊腳本不再宣稱場地(tabletop/desk/countertop/wardrobe→中性檯面):腳本只管機位與框線,場地一律由場景決定(治「選機場卻生出一張桌子」) · v5.56 ✂️無臉盤點去重(框線鎖3次→1次·不浮空/接觸陰影/自然光/背景虛化各2次→1次)+身體與皮膚移回主體群 · v5.55 🚶無臉補上【走路發動點在骨盆與重心】(治腳自己滑動的木偶感)+【這是誰的身體】(預設成年女性·治生出男生的腿)·皮膚句拿掉靜脈與外側偏深(做過頭變肌肉腿) · v5.54 🧴無臉補上真人皮膚(膚色不均/關節偏紅/毛孔汗毛/靜脈/舊疤/襪子壓痕·RA:腳太完美像修過圖) · v5.53 🏢無臉也能吃場景參考圖([SCENE_IMG]·只鎖材質色調與光向,不鎖構圖) · v5.52 🎬無臉重構:詞序(主體→光影→抽象)+動作分時段(0-2s/2-4s/4-5s)+拿掉寫死場地與 clean+腳的動作不再問哪根手指+拿掉廣告感字眼;鏡位一字不動 · v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.61 🧯無臉【預設回原版】(實測:原版飽和19.6%/亮度63.4% 勝過改六版的24.9%/46.8%;字數1695→2853稀釋權重、搬來的多是有臉的病、寫死場地其實是強錨點)·新版要貼 window.KOL_FACELESS_NEW=true 才走 · v5.60 🧯無臉保險絲:window.KOL_FACELESS_LEGACY=true 切回第一支那個原版組法(一次只加一項變因用) · v5.59 💡主體與背景吃同一盞光(同方向/同色溫/同曝光·反光地面腿與商品都要有倒影)治分裂感 · v5.58 🥊場地宣稱清乾淨(掛衣/倒出/螢幕鐵律那三處漏網) · v5.57 🥊腳本不再宣稱場地(tabletop/desk/countertop/wardrobe→中性檯面):腳本只管機位與框線,場地一律由場景決定(治「選機場卻生出一張桌子」) · v5.56 ✂️無臉盤點去重(框線鎖3次→1次·不浮空/接觸陰影/自然光/背景虛化各2次→1次)+身體與皮膚移回主體群 · v5.55 🚶無臉補上【走路發動點在骨盆與重心】(治腳自己滑動的木偶感)+【這是誰的身體】(預設成年女性·治生出男生的腿)·皮膚句拿掉靜脈與外側偏深(做過頭變肌肉腿) · v5.54 🧴無臉補上真人皮膚(膚色不均/關節偏紅/毛孔汗毛/靜脈/舊疤/襪子壓痕·RA:腳太完美像修過圖) · v5.53 🏢無臉也能吃場景參考圖([SCENE_IMG]·只鎖材質色調與光向,不鎖構圖) · v5.52 🎬無臉重構:詞序(主體→光影→抽象)+動作分時段(0-2s/2-4s/4-5s)+拿掉寫死場地與 clean+腳的動作不再問哪根手指+拿掉廣告感字眼;鏡位一字不動 · v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
