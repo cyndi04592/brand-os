@@ -249,6 +249,37 @@
   /**
    * 產出攝影段落 = 運鏡(有 movementId 才加)+ 寫實基底 + 場景落地錨 + 音訊反罐頭
    */
+  // ═══════════════════════════════════════════════════════════════
+  //  🌙 v5.29(2026-09-18)【真的暗的場景才套】夜景曝光 —— RA 對照真人夜露營影片後定調:
+  //   病:規則裡從來沒有「夜景該有多暗」這件事。攝影師只寫了「只被現場的燈照亮、
+  //     不另外打燈」,但沒說暗部可以暗 → 引擎預設把主角打亮到「看得清楚」為止,
+  //     臉比環境亮一截 = 夜間打光感。而 v5.27 又把 film grain 刪了(白天會變髒),
+  //     夜景反而需要噪點 —— 真人手機夜拍一定有。
+  //   ★ 真人數據(RA 提供的兩支夜露營):主體區亮度 24.6% 與 39.9%,
+  //     AI 這支 40.1% —— 不是全錯,是臉太乾淨、暗部沒層次。
+  //   ★ RA 定調的啟動條件(不能無差別套,不然白天的片會變髒):
+  //     只有【戶外夜晚 / 半夜 / 凌晨 / 沒開燈的室內】才套;
+  //     晚上在室內【有開燈】就不套 —— 那跟白天的曝光是一樣的。
+  //   ★ 寫法照鐵律:只講事實(暗部是暗的、亮的地方只有那幾盞燈、暗處有噪點),
+  //     不寫「不要打光」那種否定句。
+  //  ★ v5.29b RA 修正判準:「辦公室加班到半夜,只有一盞燈也要有噪點,因為【光源不足】」——
+  //    所以判的不是室內室外,是【這個場景的光夠不夠】。
+  const DIM_SCENE = /(夜間|夜晚|晚上|深夜|半夜|凌晨|星空|月光|營火|篝火|燈串|霓虹|檯燈|小夜燈|燭光|螢幕光|只剩一盞|一盞|沒開燈|未開燈|關燈|摸黑|停電|昏暗|微光|night|midnight|dawn|moonlit|candle|lamp-lit)/i;
+  const BRIGHT_SCENE = /(明亮|燈火通明|大燈全開|日光燈|白天|晨光|午後|陽光|正午|採光|bright|daylight|sunlit)/i;
+  function _isDarkScene(ctx) {
+    try {
+      const t = [
+        ctx && ctx.sceneLabel, ctx && ctx.sceneText, ctx && ctx.sceneName,
+        ctx && ctx.scene && (ctx.scene.label || ctx.scene.name || ctx.scene.setting || ctx.scene.env_prompt),
+        ctx && ctx.shotDesc, ctx && ctx.beatText,
+      ].filter(Boolean).join(' ');
+      if (!t) return false;
+      return DIM_SCENE.test(t) && !BRIGHT_SCENE.test(t);
+    } catch (e) { return false; }
+  }
+  //  ★ 一句話講完(RA:「提示詞別寫廢話」):光只有現場那幾盞、臉不比周圍亮、暗處有手機噪點。
+  const NIGHT_LOOK = 'Low light: only the lamps and fire actually in the scene light this, her face no brighter than what is around her, most of the frame left dark, fine phone sensor noise in the shadows.';
+
   function contribute(ctx) {
     const parts = [];
 
@@ -257,6 +288,12 @@
       const movement = ctx.scene?.movements?.[ctx.movementId]
         || CAMERA_MOVEMENTS[ctx.movementId]?.fallback;
       if (movement) parts.push(movement);
+    }
+
+    //  🌙 v5.29:真的暗的場景才加夜景曝光(白天、有燈的室內完全不受影響)
+    if (_isDarkScene(ctx)) {
+      parts.push(NIGHT_LOOK);
+      try { console.log('[Cine] 🌙 夜景曝光已套用(暗部保留 + 手機噪點)'); } catch (e) {}
     }
 
     // 寫實基底(一定加)· 口音吃 nationality(預設台灣腔,守鐵律)
@@ -335,5 +372,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.28 就緒 · 🗣口音錨點補回(v5.27 誤刪→換口音整條空轉·預設永遠台灣腔)+ 找不到錨點自動補句尾並出聲 · v5.27 · 🧹逐句瘦身(刪:偏飽和句/毛孔/景深句/重複邊緣句/重複無配樂/重複台灣腔·全是打架或被涵蓋) · 🌏公版化 in this room→in this place · 💡光學核心與防油光鐵律一字未動 · v5.26 · 瘦身版(去重複句·防撞prompt上限) · REALISM_BASE + SCENE_REALISM + AUDIO_REALISM(禁罐頭配樂) + 台灣腔');
+  console.log('[KolCinematographer] 📷 v5.29 🌙光源不足才套(判的是光夠不夠,不是室內室外:半夜只有一盞燈的辦公室也算;白天/明亮場景不套)·一句話:光只有現場那幾盞、臉不比周圍亮、暗處有手機噪點 · v5.28 就緒 · 🗣口音錨點補回(v5.27 誤刪→換口音整條空轉·預設永遠台灣腔)+ 找不到錨點自動補句尾並出聲 · v5.27 · 🧹逐句瘦身(刪:偏飽和句/毛孔/景深句/重複邊緣句/重複無配樂/重複台灣腔·全是打架或被涵蓋) · 🌏公版化 in this room→in this place · 💡光學核心與防油光鐵律一字未動 · v5.26 · 瘦身版(去重複句·防撞prompt上限) · REALISM_BASE + SCENE_REALISM + AUDIO_REALISM(禁罐頭配樂) + 台灣腔');
 })();
