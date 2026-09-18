@@ -8230,7 +8230,9 @@ async function createFacelessVideo() {
   const action = document.getElementById('faceless-action')?.value || '';
   if (!action) { toast('請先選「要拍什麼動作」—— 吃東西 / 手持展示 / 試穿鞋…', 'error'); return; }
   const situation = document.getElementById('cine-situation')?.value?.trim() || '';
-  const prompt = window.composeFacelessPrompt ? window.composeFacelessPrompt(action, { situation }) : '';
+  //  ⏱ 2026-09-18:把片長也送進去,無臉腳本才知道要切成幾秒幾段(crew-director v5.52)
+  const _fSec = (S.seedanceParams.duration === 'auto') ? 5 : (parseInt(S.seedanceParams.duration, 10) || 5);
+  const prompt = window.composeFacelessPrompt ? window.composeFacelessPrompt(action, { situation, duration: _fSec }) : '';
   if (!prompt) { toast('組無臉 prompt 失敗,請確認 crew-director 已更新到 v5.13-faceless', 'error'); return; }
 
   // 只有 1 張商品照 → 還是會落回單張圖那條已知會掛的路。先講白話,讓客戶自己決定。
@@ -8342,6 +8344,7 @@ async function aiWriteFacelessSituation() {
       productHandsFine: handsFine,
       productHandsFact: handsFact,
       productMaterial: material,
+      duration: (S.seedanceParams.duration === 'auto') ? 5 : (parseInt(S.seedanceParams.duration, 10) || 5),   // ⏱ 分時段用
       hint,
       brandId: S.currentBrandId,
     });
