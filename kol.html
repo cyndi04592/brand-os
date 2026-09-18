@@ -8284,6 +8284,10 @@ async function createFacelessVideo() {
       press: '按開關', mop: '拖地', spray: '噴霧展示',
       mudra: '冥想手勢', matfeet: '瑜珈墊', bowl: '頌缽', silhouette: '舞動剪影',
       sign: '簽署用印', review: '翻閱文件',
+      //  🏷 2026-09-18 盤查下拉補齊:數位工作這 6 個沒有中文標籤,
+      //    任務卡片會顯示「無臉·typing」這種英文,客人看不懂。
+      mouse: '滑鼠操作', typing: '打字', screen: '螢幕畫面', laptop: '掀開筆電',
+      notes: '手寫筆記', handoff: '轉螢幕解說',
     };
     const task = {
       requestId: res.requestId, endpoint: res.endpoint,
@@ -8316,10 +8320,16 @@ async function aiWriteFacelessSituation() {
   const action = document.getElementById('faceless-action')?.value || '';
   if (!action) { toast('請先選「要拍什麼動作」', 'error'); return; }
   const prod = (typeof getCurrentRotationProduct === 'function' ? getCurrentRotationProduct() : null) || {};
-  let handsFine = false;
+  //  🧱 2026-09-18:把商品模組算出來的事實一起送(跟有臉那條線同一套規則)
+  let handsFine = false, handsFact = '', material = '';
   try {
     if (window.KolProduct && typeof window.KolProduct.handProfile === 'function') {
-      handsFine = !!(window.KolProduct.handProfile(prod).fine);
+      const hp = window.KolProduct.handProfile(prod) || {};
+      handsFine = !!hp.fine; handsFact = hp.fact || '';
+    }
+    if (window.KolProduct && typeof window.KolProduct.materialOf === 'function') {
+      const m = window.KolProduct.materialOf(prod) || {};
+      material = [m.pack, m.piece].filter(Boolean).join('; ');
     }
   } catch (e) {}
   const hint = String(el.value || '').trim();     // 已經寫了字 → 當成方向給 AI
@@ -8330,6 +8340,8 @@ async function aiWriteFacelessSituation() {
       productName: prod.prodName || prod.name || '',
       productTag: prod.prodTag || prod.tag || '',
       productHandsFine: handsFine,
+      productHandsFact: handsFact,
+      productMaterial: material,
       hint,
       brandId: S.currentBrandId,
     });
