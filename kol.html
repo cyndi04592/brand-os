@@ -8232,7 +8232,10 @@ async function createFacelessVideo() {
   const situation = document.getElementById('cine-situation')?.value?.trim() || '';
   //  ⏱ 2026-09-18:把片長也送進去,無臉腳本才知道要切成幾秒幾段(crew-director v5.52)
   const _fSec = (S.seedanceParams.duration === 'auto') ? 5 : (parseInt(S.seedanceParams.duration, 10) || 5);
-  const prompt = window.composeFacelessPrompt ? window.composeFacelessPrompt(action, { situation, duration: _fSec }) : '';
+  //  🏢 2026-09-18 無臉也吃場景參考圖:有實景照就送,沒有就照舊讓模型自己生環境
+  const _fScene = String(S.customSceneUrl || '').trim();
+  const prompt = window.composeFacelessPrompt
+    ? window.composeFacelessPrompt(action, { situation, duration: _fSec, hasScene: !!_fScene }) : '';
   if (!prompt) { toast('組無臉 prompt 失敗,請確認 crew-director 已更新到 v5.13-faceless', 'error'); return; }
 
   // 只有 1 張商品照 → 還是會落回單張圖那條已知會掛的路。先講白話,讓客戶自己決定。
@@ -8254,6 +8257,7 @@ async function createFacelessVideo() {
     tier: S.seedanceParams.tier,
     brandId: S.currentBrandId,
     kolName: '無臉_' + action,
+    ...(_fScene ? { sceneImageUrl: _fScene } : {}),   // 🏢 Worker 會把 [SCENE_IMG] 換成真正的 [ImageN]
     // 🩹 2026-08-11 無臉模式改回 fal(RA 指出的關鍵):
     //   歷史:v3.54 為了讓「真人臉」能過,把三處單段路徑統一補上 provider:'piapi'
     //         (fal 的肖像過濾器會 422 擋掉又晴的臉)。無臉模式是其中一處,被順手拖下水。
@@ -8338,7 +8342,7 @@ async function aiWriteFacelessSituation() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ AI 想動作中…'; }
   try {
     const r = await api('faceless_situation', {
-      action,
+      facelessAction: action,   // 🐛 2026-09-18 不能叫 action:會覆蓋掉「要呼叫哪個功能」
       productName: prod.prodName || prod.name || '',
       productTag: prod.prodTag || prod.tag || '',
       productHandsFine: handsFine,
