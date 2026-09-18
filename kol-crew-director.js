@@ -947,7 +947,9 @@ window.composeStitchBeat   = composeStitchBeat;
   //  商品 = 主角([Image1]),不寫臉/妝/衣服/人設。
   //  動作:cooking(做菜手)/ shoes(試穿腳)/ hold(手持展示)
   // ════════════════════════════════════════════════════════════════
-  const FACELESS_REALISM = "Extreme realism, premium cinematic commercial quality, no stylized CGI, no cartoon look, true-to-life skin, soft natural daylight, realistic textures, soft natural contact shadows where things touch surfaces, physically grounded never floating, subtle handheld micro-movement, shallow depth of field. 9:16 vertical.";
+  //  🧹 v5.52(2026-09-18)拿掉 premium cinematic commercial quality —— 那是廣告感字眼,
+  //    跟有臉那條線一路在殺的同一類(「明亮/HDR/低噪點」「質感」)。
+  const FACELESS_REALISM = "Extreme realism, no stylized CGI, no cartoon look, true-to-life skin, soft natural daylight, realistic textures, soft natural contact shadows where things touch surfaces, physically grounded never floating, subtle handheld micro-movement, shallow depth of field. 9:16 vertical.";
   const FACELESS_NOTEXT  = "Silent product footage with ambient sound only — nobody speaks, there is no voice and no dialogue in this shot. No subtitles, no captions, no on-screen text, no watermark.";
 
   // 🩹 2026-08-11 無臉模式改寫(v5.13 → v5.17-facelessframing)
@@ -1065,19 +1067,102 @@ window.composeStitchBeat   = composeStitchBeat;
     handoff:  "Medium close-up at desk height, roughly 55cm away, framing a monitor and two hands entering from the sides. " + SCREEN_RULE + " " + FACELESS_CAMERA + " One hand pivots the monitor so the screen turns toward the camera and its content becomes clearly readable, while the other hand raises and points at one specific area of the interface, holding the gesture there.",
   };
 
+  // ═══════════════════════════════════════════════════════════════
+  //  🎬 v5.52(2026-09-18)無臉模式重構 —— 詞序黃金法則 + 分時段 + 拿掉寫死場地
+  //   RA 盤查後定調:「全部一起改,並且維持目前無臉出片的等級」。
+  //   ★ 保住品質的錨 = 鏡位那一段(機位高度、距離、只框到什麼、鎖死不上搖)一字不動。
+  //     那是無臉片畫面穩定、不會亂跑的原因,動它等於把好東西拆掉。
+  //   ★ 改的是三件事:
+  //     ① 【詞序】主體詞 → 光影詞 → 抽象詞(跟有臉那條線的 tail 排序同一套法則)
+  //        舊版是:鏡位 → 動作 → 情境 → 接觸點 → 寫實 → 無字幕,抽象詞卡在中間。
+  //     ② 【分時段】把動作句拆成 2-3 段並標上秒數(0-2秒 / 2-4秒 / 4-5秒)——
+  //        有臉那條線靠這個治好旁白感;無臉沒有語音,但分時段一樣能控制
+  //        「第幾秒發生什麼」,不會整段都在做同一個動作或急著做完。
+  //     ③ 【拿掉寫死場地】clean table / light wood floor / countertop 這類字 ——
+  //        同一個動作生 10 支會長得一模一樣,而且 clean 正是樣品屋感的來源。
+  //        改成中性的表面描述,場地交給模型照商品與動作自己合理生成。
+  //   ★ 順手拿掉共用寫實句裡的 premium cinematic commercial quality(廣告感字眼),
+  //     並讓接觸點那段認得腳:拍鞋、瑜珈墊時不再叫它交代「哪根手指握住」。
+  //  ═══════════════════════════════════════════════════════════════
+  //  🦶 用腳的動作 —— 接觸點與情境句要改用腳的說法
+  const FOOT_ACTIONS = { shoes: 1, matfeet: 1 };
+  //  🧹 場地去寫死:只換掉「地點名詞」,鏡位的距離與框線一字不動
+  const PLACE_FIX = [
+    [/on a clean light wood floor near a bright window/gi, 'on the floor'],
+    [/a clean light wood floor/gi, 'the floor'],
+    [/a clean table/gi, 'the surface below'],
+    [/a clean surface/gi, 'the surface below'],
+    [/a clean soft-lit background/gi, 'a simple background'],
+    [/an? (?:hot )?frying pan on a countertop/gi, 'a hot pan'],
+    [/on a countertop/gi, 'on the surface below'],
+    [/Countertop macro shot/gi, 'Macro shot at working height'],
+    [/a simmering pot on a stove/gi, 'a simmering pot'],
+    [/a hot wok on a stove/gi, 'a hot wok'],
+    [/an air fryer on a countertop/gi, 'an air fryer'],
+    [/an open wardrobe rail/gi, 'a hanging rail'],
+    [/\ba clean\b/gi, 'a'],
+    [/\bclean /gi, ''],
+  ];
+  function _fPlace(t) { let x = String(t || ''); PLACE_FIX.forEach(function (p) { x = x.replace(p[0], p[1]); }); return x; }
+  //  ⏱ 動作分時段:照原本寫好的動作順序切,不改字、不加戲
+  //    切點用原句既有的「, then」「then」「and then」與分號,切不出來就整段給主時段。
+  function _fSegs(motion, sec) {
+    const n = Math.max(3, parseInt(sec, 10) || 5);
+    const raw = String(motion || '').trim();
+    let parts = raw.split(/,?\s+then\s+|;\s+/i).map(function (x) { return x.trim().replace(/^and\s+/i, ''); }).filter(Boolean);
+    if (parts.length < 2) {
+      parts = raw.split(/,\s+(?=(?:the|one|both|a|an|her|his|it)\b)/i).map(function (x) { return x.trim(); }).filter(Boolean);
+    }
+    //  再切不開就用「, 動名詞」當接點(例:「…toward the lens, turning it slowly…」)
+    if (parts.length < 2) {
+      parts = raw.split(/,\s+(?=\w+ing\b)/i).map(function (x) { return x.trim(); }).filter(Boolean);
+    }
+    if (parts.length < 2) return '(0-' + n + 's) ' + raw;
+    if (parts.length > 3) parts = [parts[0], parts.slice(1, -1).join(', then '), parts[parts.length - 1]];
+    //  前段短、主段長、收尾短 —— 跟真人拍東西的節奏一樣
+    const cuts = parts.length === 2 ? [0, Math.round(n * 0.4), n] : [0, Math.round(n * 0.3), Math.round(n * 0.75), n];
+    return parts.map(function (t, i) { return '(' + cuts[i] + '-' + cuts[i + 1] + 's) ' + t; }).join(' ');
+  }
+
   function composeFacelessPrompt(action, opts) {
     opts = opts || {};
     const core = FACELESS_ACTIONS[action] || FACELESS_ACTIONS.hold;
-    const parts = [core];
-    const sit = (opts.situation || '').trim();
-    // 🩹 2026-08-11:劇情欄的文字很容易夾帶「她說…」這種人物描述,把臉又拉回畫面。
-    //   所以這裡明講:劇情只能改變「手跟商品在做什麼」,不准動攝影機、不准帶人進來。
-    if (sit) parts.push('Specific on-screen action, expressed only through the hands and the product: ' + sit
-      + ' — show this within the exact camera framing described above. The framing, crop line and camera position stay exactly as specified; ignore any part of this instruction that would require showing a person, a face, or a wider shot.');
-    parts.push(CONTACT_CHAIN);   // 🤝 無臉模式主角就是商品,接觸鏈更不能少
-    parts.push(FACELESS_REALISM);
-    parts.push(FACELESS_NOTEXT);
-    return parts.filter(Boolean).join(' ');
+    const isFoot = !!FOOT_ACTIONS[action];
+    const sec = opts.duration || opts.seconds || 5;
+
+    //  鏡位與動作拆開:鏡位在 FACELESS_CAMERA 之前,動作在之後(結尾的 KEEP 另外處理)
+    const idx = core.indexOf(FACELESS_CAMERA);
+    let cam = idx > -1 ? core.slice(0, idx).trim() : core;
+    let motion = idx > -1 ? core.slice(idx + FACELESS_CAMERA.length).trim() : '';
+    const keepIdx = motion.indexOf(FACELESS_KEEP.trim());
+    if (keepIdx > -1) motion = motion.slice(0, keepIdx).trim();
+    const hasScreenRule = core.indexOf(SCREEN_RULE) > -1;
+
+    //  ① 主體詞 —— 拍什麼、在哪個機位、第幾秒做什麼、東西長什麼樣
+    const subject = [
+      _fPlace(cam),
+      FACELESS_CAMERA,
+      hasScreenRule ? SCREEN_RULE : '',
+      _fSegs(_fPlace(motion), sec),
+      FACELESS_KEEP.trim(),
+      //  客戶自己寫的情境接在動作後面(手/腳依動作自動切換)
+      (opts.situation || '').trim()
+        ? 'Specific on-screen action, expressed only through the ' + (isFoot ? 'feet and the product' : 'hands and the product') + ': '
+          + String(opts.situation).trim()
+          + ' — show this within the exact camera framing described above. The framing, crop line and camera position stay exactly as specified; ignore any part of this instruction that would require showing a person, a face, or a wider shot.'
+        : '',
+      //  接觸點:拍腳的時候不要再問「哪根手指」
+      isFoot
+        ? 'the shoe or mat stays in real contact with the foot and the ground the whole time, taking her weight, never floating or sliding unnaturally'
+        : CONTACT_CHAIN,
+    ].filter(Boolean).join(' ');
+
+    //  ② 光影詞 —— 場地交給模型,光線給方向就好(跟有臉那條線同一個原則:單側光、不死白)
+    const light = 'Natural daylight from one side of the frame, soft directional light with gentle falloff, '
+      + 'soft natural contact shadows where things touch surfaces, no harsh overhead glare and no blown-out highlights.';
+
+    //  ③ 抽象詞 —— 寫實基底與禁令墊底(最不容易被截掉的位置放最不重要的)
+    return [subject, light, FACELESS_REALISM, FACELESS_NOTEXT].filter(Boolean).join(' ');
   }
   window.composeFacelessPrompt = composeFacelessPrompt;
   window.FACELESS_ACTIONS = FACELESS_ACTIONS;
@@ -1085,5 +1170,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.52 🎬無臉重構:詞序(主體→光影→抽象)+動作分時段(0-2s/2-4s/4-5s)+拿掉寫死場地與 clean+腳的動作不再問哪根手指+拿掉廣告感字眼;鏡位一字不動 · v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
