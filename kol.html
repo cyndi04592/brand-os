@@ -7588,10 +7588,16 @@ async function createStitchedVideo(beats) {
   //     RA 2026-09-12 鄭重提醒過;兩處定義相同,漏改一處就是半套。
   // ═══════════════════════════════════════════════════════════════════════
   const CPS = 4.2;   // KolStorywriter v5.18 實測語速(字/秒)
-  const snapDur = (s, dialogue) => {
+  const snapDur = (s, dialogue, shotDesc) => {
     const TIERS = [5, 10, 15];
     const n = Number(s) || 15;
     const picked = TIERS.reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
+    //  ⏱ 2026-09-19 分鏡已經【分時段】(例:(0-2秒)…(5-15秒)她一邊說話)→ 秒數就是分鏡卡的秒數,不准再縮。
+    //   病(RA 實測妞妞露營片):卡片 15 秒、寫「5-15 秒開口」,這裡用舊語速 4.2 算出 47 字只要 11 秒
+    //   → 縮成 10 秒 → 算力機拿到「10 秒的片卻說 5-15 秒講話」→ 自己亂排,1.8 秒就開口;
+    //   字幕照分鏡去 5 秒找聲音 → 前 3 秒整段錯過。分時段的秒數是分鏡 AI 算好的,這裡不該再猜。
+    //   ⚠️ STEP2 / STEP3 兩份同時改(同一段文字)。
+    if (/[((]\s*\d{1,2}\s*[-–~]\s*\d{1,2}\s*秒/.test(String(shotDesc || ''))) return picked;
     const line = String(dialogue || '').replace(/[\s「」『』""]/g, '');
     if (!line) return picked;                       // 空鏡/無台詞:照使用者選的
     const need = line.length / CPS;                 // 台詞講完需要幾秒
@@ -7656,7 +7662,7 @@ async function createStitchedVideo(beats) {
     let p;
     if (_shared) {
       // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞,不重複、不堆疊
-      p = composeStitchBeat(shot, persona, b.dialogue || '', snapDur(b.seconds, b.dialogue), b.dialogueTime || '');
+      p = composeStitchBeat(shot, persona, b.dialogue || '', snapDur(b.seconds, b.dialogue, b.shotDesc), b.dialogueTime || '');
       if (!p) p = sit;
     } else {
       // A 版(現狀):每段完整 composeSeedancePrompt + 一致性/商品比例鎖
@@ -7664,7 +7670,7 @@ async function createStitchedVideo(beats) {
       opts.episode = { situation: sit, product: stitchProduct };
       p = composeSeedancePrompt(
         S.currentBrandId, _sceneForStitch, S.selectedLocationId, null, // 分鏡模式:運鏡交給分鏡卡,不再疊加
-        String(snapDur(b.seconds, b.dialogue)), opts
+        String(snapDur(b.seconds, b.dialogue, b.shotDesc)), opts
       );
       if (!p) p = sit;
       if (!/consistent facial features/i.test(p)) {
@@ -7675,7 +7681,7 @@ async function createStitchedVideo(beats) {
       }
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
-    return { prompt: p, durationSec: snapDur(b.seconds, b.dialogue), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
+    return { prompt: p, durationSec: snapDur(b.seconds, b.dialogue, b.shotDesc), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
   });
 
   const btn = document.getElementById('create-seedance-btn');
@@ -11340,10 +11346,16 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
   //     RA 2026-09-12 鄭重提醒過;兩處定義相同,漏改一處就是半套。
   // ═══════════════════════════════════════════════════════════════════════
   const CPS = 4.2;   // KolStorywriter v5.18 實測語速(字/秒)
-  const snapDur = (s, dialogue) => {
+  const snapDur = (s, dialogue, shotDesc) => {
     const TIERS = [5, 10, 15];
     const n = Number(s) || 15;
     const picked = TIERS.reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
+    //  ⏱ 2026-09-19 分鏡已經【分時段】(例:(0-2秒)…(5-15秒)她一邊說話)→ 秒數就是分鏡卡的秒數,不准再縮。
+    //   病(RA 實測妞妞露營片):卡片 15 秒、寫「5-15 秒開口」,這裡用舊語速 4.2 算出 47 字只要 11 秒
+    //   → 縮成 10 秒 → 算力機拿到「10 秒的片卻說 5-15 秒講話」→ 自己亂排,1.8 秒就開口;
+    //   字幕照分鏡去 5 秒找聲音 → 前 3 秒整段錯過。分時段的秒數是分鏡 AI 算好的,這裡不該再猜。
+    //   ⚠️ STEP2 / STEP3 兩份同時改(同一段文字)。
+    if (/[((]\s*\d{1,2}\s*[-–~]\s*\d{1,2}\s*秒/.test(String(shotDesc || ''))) return picked;
     const line = String(dialogue || '').replace(/[\s「」『』""]/g, '');
     if (!line) return picked;                      // 空鏡/無台詞:照使用者選的
     const CPS = 4.2;                               // KolStorywriter v5.18 實測語速
@@ -11394,7 +11406,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
     let p;
     if (_shared) {
       // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞
-      p = composeStitchBeat(shot, persona, b.dialogue || '', snapDur(b.seconds, b.dialogue), b.dialogueTime || '');
+      p = composeStitchBeat(shot, persona, b.dialogue || '', snapDur(b.seconds, b.dialogue, b.shotDesc), b.dialogueTime || '');
       if (!p) p = sit;
     } else {
       // A 版(現狀)
@@ -11412,7 +11424,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
           situation: sit,
         },
       };
-      p = composeSeedancePrompt(S.currentBrandId, sceneId, locationId, null, String(snapDur(b.seconds, b.dialogue)), opts);
+      p = composeSeedancePrompt(S.currentBrandId, sceneId, locationId, null, String(snapDur(b.seconds, b.dialogue, b.shotDesc)), opts);
       if (!p) p = sit;
       if (!/consistent facial features/i.test(p)) {
         p += ', consistent facial features and identity preserved from reference image, same person throughout';
@@ -11422,7 +11434,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
       }
     }
     const _ang = b.angle || _detectAngle(b.shotDesc);
-    return { prompt: p, durationSec: snapDur(b.seconds, b.dialogue), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
+    return { prompt: p, durationSec: snapDur(b.seconds, b.dialogue, b.shotDesc), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
   });
   S.storyArc = prevArc;
 
