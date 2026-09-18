@@ -463,8 +463,26 @@
     return t.replace(/[;.\s]+$/, '') + '; ' + CUTOUT_EDGE;
   }
 
+  //  🥿 v5.46(2026-09-18)【同一件的不同角度】—— 治「兩雙鞋合成第三雙」
+  //   RA 實測:同一個槽放兩雙不同的鞋,模型不知道那是兩雙還是同一雙的兩個角度,
+  //     於是取平均,生出市面上沒有的第三雙。整份 prompt 從來沒有一句講過這件事。
+  //   ★ 一句正面事實:這些參考圖是【同一件】從不同角度拍的,維持成同一件。
+  //   ★ 只在【真的有多張商品圖】時才加(單張不用講,省字數)。
+  //   ⚠️ 這是規則不是閘門:真的放兩雙完全不同的鞋還是可能混。
+  //     原則仍是「一個商品槽只放同一件的不同角度」。
+  function _sameItemLine(ctx) {
+    try {
+      let n = 0;
+      if (ctx && Array.isArray(ctx.productImageUrls)) n = ctx.productImageUrls.length;
+      else if (typeof window !== 'undefined' && typeof window.orderedProductUrls === 'function') n = (window.orderedProductUrls() || []).length;
+      if (n < 2) return '';
+    } catch (e) { return ''; }
+    return 'the product reference images are the SAME single item photographed from different angles, not different items — keep it as one consistent item and never blend features from two of them into a new variant';
+  }
   function contribute(ctx) {
-    return _withEdge(_contributeInner(ctx));
+    const base = _withEdge(_contributeInner(ctx));
+    const same = _sameItemLine(ctx);
+    return same ? (String(base).replace(/[;.\s]+$/, '') + '; ' + same) : base;
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -669,6 +687,6 @@
     return 'PROP (the product she is using or showing, at its real-life size): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.45', resolveMode, handProfile, materialOf };
-  console.log('[KolProduct] 👗 v5.45:🧱 materialOf 材質與拿法(袋/盒/瓶/罐/紙/布/口紅/鞋包/飾品/噴霧/飲品·抓不到就不寫) · ✋ handProfile 手跟商品怎麼互動(細部動作放不放行＋一句事實給分鏡 AI) · v5.42 ✂️拿掉五份「keep it subtle / do NOT overpower」(那句等於叫模型把商品縮小) · v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.46', resolveMode, handProfile, materialOf };
+  console.log('[KolProduct] 👗 v5.46:🥿多張商品圖=同一件的不同角度(治兩雙鞋被合成第三雙) · v5.45:🧱 materialOf 材質與拿法(袋/盒/瓶/罐/紙/布/口紅/鞋包/飾品/噴霧/飲品·抓不到就不寫) · ✋ handProfile 手跟商品怎麼互動(細部動作放不放行＋一句事實給分鏡 AI) · v5.42 ✂️拿掉五份「keep it subtle / do NOT overpower」(那句等於叫模型把商品縮小) · v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
