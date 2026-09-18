@@ -6282,8 +6282,11 @@ async function handleDriveProductClick(e) {
         toast(_sz.msg, 'error');
         return;
       }
-      S.driveFileR2[fileId] = res.url;
-      S.seedanceProductUrls.push(res.url);
+      //  🗜 2026-09-18:太大的圖已自動縮 → 後面一律用縮過的網址(原圖不動)
+      const _useUrl = _sz.shrunk || res.url;
+      if (_sz.shrunk) toast('這張原圖很大,已自動縮小後使用', 'ok');
+      S.driveFileR2[fileId] = _useUrl;
+      S.seedanceProductUrls.push(_useUrl);
       S.productRefRole[res.url] = defaultProductRole();
     } catch (err) {
       item.classList.remove('selected');   // 🆕 B: 搬移失敗 → 撤銷勾勾
@@ -6365,6 +6368,21 @@ function showGenError(rawMsg, r2Refs) {
 // 🖼 2026-08-10 尺寸守門員:量一張圖的真實尺寸,判斷影片引擎收不收。
 //   規則(PiAPI/Seedance):高與寬都必須落在 300px ~ 6000px。
 //   量不到尺寸(跨網域/載入失敗)→ 一律放行,絕不因為量不到就擋住客戶。
+//  🗜 2026-09-18 太大的圖【自己縮】,不要叫客戶去裁切 —— RA:「照片不是都會自動壓縮嗎?」
+//   病:守門員只會擋(5504×8256 的原圖直接回「請先裁切」),但我們本來就有
+//     Cloudflare 的縮圖能力(_thumb 走 /cdn-cgi/image/),只是沒接在這條路上。
+//   ★ 自家 CDN 的圖 → 包一層 width=2048 的轉換網址就好,原圖不動、不佔空間、即時生效。
+//   ★ 2048 是引擎吃得下又看得清楚的尺寸(六千是上限,不是目標)。
+//   ★ 外部網址(客戶貼別人家的圖)沒辦法轉 → 維持原本的提示。
+function _shrinkRefUrl(u, w) {
+  try {
+    const url = new URL(u);
+    if (url.hostname !== 'cdn.raby.com.tw') return '';            // 不是自家的 → 不能轉
+    if (url.pathname.indexOf('/cdn-cgi/') === 0) return '';        // 已經轉過 → 不重複包
+    return url.origin + '/cdn-cgi/image/width=' + (w || 2048) + ',quality=88,format=auto' + url.pathname;
+  } catch (e) { return ''; }
+}
+
 function _checkRefImageSize(url) {
   return new Promise((resolve) => {
     const MIN = 300, MAX = 6000;
@@ -6376,9 +6394,15 @@ function _checkRefImageSize(url) {
       const w = img.naturalWidth, h = img.naturalHeight;
       if (!w || !h) return finish({ ok: true, skipped: 'no-size' });
       if (h > MAX || w > MAX) {
+        //  🗜 先自己縮:自家 CDN 的圖包一層轉換網址就好,不用麻煩客戶
+        const _small = _shrinkRefUrl(url, 2048);
+        if (_small) {
+          try { console.log('[REF] 🗜 原圖 ' + w + '×' + h + ' 太大 → 自動縮到 2048'); } catch (_) {}
+          return finish({ ok: true, w, h, shrunk: _small });
+        }
         return finish({ ok: false, w, h, msg:
           '這張圖太大(' + w + '×' + h + ')—— 影片引擎最多只吃 6000px。\n' +
-          '常見原因:這是「電商長圖」(商品說明那種長條圖)。請改用單張商品照,或先裁切。' });
+          '這張不是存在我們素材庫的圖,沒辦法自動縮。請改用單張商品照,或先裁切。' });
       }
       if (h < MIN || w < MIN) {
         return finish({ ok: false, w, h, msg:
@@ -6548,7 +6572,7 @@ function _scnCurrent(which) {
 
 async function scnPick(which, url) {
   const cur = _scnCurrent(which);
-  const next = (cur === url) ? '' : url;   // 再點一次 = 取消
+  let next = (cur === url) ? '' : url;   // 再點一次 = 取消
   // 🩹 v7.13:實景背景也要過尺寸守門員。
   //   病灶:商品照 2026-08-10 就補了這道(電商長圖高 10000px 會被引擎打回),
   //   但實景背景【兩條路都沒有】—— 貼網址那條從來沒檢查,
@@ -6560,6 +6584,7 @@ async function scnPick(which, url) {
     try {
       const _sz = await _checkRefImageSize(next);
       if (!_sz.ok) { toast(_sz.msg, 'error'); return; }
+      if (_sz.shrunk) { next = _sz.shrunk; toast('這張實景照很大,已自動縮小後使用', 'ok'); }   // 🗜 2026-09-18
     } catch (e) { /* 量不到就放行,不要因為量測失敗擋死正常客戶 */ }
   }
   if (which === 's3') {
@@ -6663,13 +6688,14 @@ window.renderSceneLibrary = renderSceneLibrary;
 async function addCustomScene() {
   const input = document.getElementById('custom-scene-input');
   if (!input) return;
-  const url = input.value.trim();
+  let url = input.value.trim();   // 🗜 2026-09-18:太大的圖會被換成縮過的網址,所以要能重新指派
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) { toast('請貼有效的 http(s) 圖片網址', 'error'); return; }
   // 🩹 v7.13:貼網址這條也要過尺寸守門員(理由同 scnPick)
   try {
     const _sz = await _checkRefImageSize(url);
     if (!_sz.ok) { toast(_sz.msg, 'error'); return; }
+    if (_sz.shrunk) url = _sz.shrunk;                              // 🗜 2026-09-18
   } catch (e) {}
   S.customSceneUrl = url;
   input.value = '';
@@ -6700,13 +6726,14 @@ function renderCustomScene() {
 async function addEpisodeCustomScene() {
   const input = document.getElementById('ep-custom-scene-input');
   if (!input) return;
-  const url = input.value.trim();
+  let url = input.value.trim();   // 🗜 2026-09-18:太大的圖會被換成縮過的網址,所以要能重新指派
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) { toast('請貼有效的 http(s) 圖片網址', 'error'); return; }
   // 🩹 v7.13:STEP3 貼網址同樣補上尺寸守門員
   try {
     const _sz = await _checkRefImageSize(url);
     if (!_sz.ok) { toast(_sz.msg, 'error'); return; }
+    if (_sz.shrunk) url = _sz.shrunk;                              // 🗜 2026-09-18
   } catch (e) {}
   S.episodeCustomSceneUrl = url;
   input.value = '';
