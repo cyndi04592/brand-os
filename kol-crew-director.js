@@ -1135,6 +1135,35 @@ window.composeStitchBeat   = composeStitchBeat;
     [/an open wardrobe rail/gi, 'a hanging rail'],
     [/\ba clean\b/gi, 'a'],
     [/\bclean /gi, ''],
+    //  🥊 v5.57(2026-09-18)腳本與場景打架 —— RA 指出的那一類「兩個檔案各寫一套」:
+    //   腳本的責任是【機位與框線】,場地的責任是【場景】。但腳本裡混了場地名詞
+    //   (tabletop / desk / countertop / wardrobe rail),於是選機場卻生出一張桌子。
+    //   ★ 改成中性的「與桌面同高的檯面」——距離、高度、框線全部保留,只拿掉那是什麼家具的宣稱。
+    //   ★ 地板、鍋、碗、瑜珈墊不動:那是動作本身必要的東西,不是場地宣稱。
+    [/Tabletop macro shot/gi, 'Macro shot at table height'],
+    [/the tabletop and/gi, 'that surface and'],
+    [/only the tabletop/gi, 'only that surface'],
+    [/\btabletop\b/gi, 'surface'],
+    [/the table surface/gi, 'that surface'],
+    [/\ba clean table\b/gi, 'a surface at table height'],
+    [/above a table\b/gi, 'above a surface at table height'],
+    [/on a table\b/gi, 'on a surface at table height'],
+    [/\bthe table\b/gi, 'that surface'],
+    [/directly above a desk/gi, 'directly above a work surface'],
+    [/from a desk\b/gi, 'from a work surface'],
+    [/across a desk\b/gi, 'across a work surface'],
+    [/on a desk\b/gi, 'on a work surface'],
+    [/at desk height/gi, 'at working height'],
+    [/the desk edge/gi, 'the front edge of that surface'],
+    [/the desk immediately around it/gi, 'the surface immediately around it'],
+    [/\bthe desk\b/gi, 'that surface'],
+    [/\ba desk\b/gi, 'a work surface'],
+    [/a hanging rail/gi, 'a hanging rail of clothes'],
+    //  最後四個漏網的:掛衣、倒出、螢幕鐵律裡的桌子
+    [/Wardrobe shot/gi, 'Chest-height shot'],
+    [/at counter height, framing only the countertop/gi, 'at working height, framing only that surface'],
+    [/never a physical object lying on the desk/gi, 'never a physical object lying on a surface'],
+    [/lying on the desk/gi, 'lying on a surface'],
   ];
   function _fPlace(t) { let x = String(t || ''); PLACE_FIX.forEach(function (p) { x = x.replace(p[0], p[1]); }); return x; }
   //  ⏱ 動作分時段:照原本寫好的動作順序切,不改字、不加戲
@@ -1175,7 +1204,7 @@ window.composeStitchBeat   = composeStitchBeat;
     const subject = [
       _fPlace(cam),
       FACELESS_CAMERA,
-      hasScreenRule ? SCREEN_RULE : '',
+      hasScreenRule ? _fPlace(SCREEN_RULE) : '',   // 🥊 螢幕鐵律也要過場地清洗(它自己提到桌子)
       _fSegs(_fPlace(motion), sec),
       FACELESS_KEEP.trim(),
       //  客戶自己寫的情境(框線鎖前面已經講過一次,這裡不重複)
@@ -1199,7 +1228,8 @@ window.composeStitchBeat   = composeStitchBeat;
     //   因為無臉是特寫,背景本來就糊,照抄構圖會跟鎖死的鏡位打架。
     //   沒有實景照 → 這一句不出現,行為跟 v5.52 一字不差。
     const scene = opts.hasScene
-      ? 'The space, its materials, colours and where the light comes from follow [SCENE_IMG] — it sets the place and the light only, not the framing.'
+      ? 'The space, its materials, colours and where the light comes from follow [SCENE_IMG] — it sets the place and the light only, not the framing; '
+        + 'the surface the action happens on is whatever that place actually has.'
       : '';
     //  光影群:單側光、接觸陰影、景深,三件事在這裡各講一次
     const light = 'Natural daylight from one side with gentle falloff, soft contact shadows where things touch, '
@@ -1214,5 +1244,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.56 ✂️無臉盤點去重(框線鎖3次→1次·不浮空/接觸陰影/自然光/背景虛化各2次→1次)+身體與皮膚移回主體群 · v5.55 🚶無臉補上【走路發動點在骨盆與重心】(治腳自己滑動的木偶感)+【這是誰的身體】(預設成年女性·治生出男生的腿)·皮膚句拿掉靜脈與外側偏深(做過頭變肌肉腿) · v5.54 🧴無臉補上真人皮膚(膚色不均/關節偏紅/毛孔汗毛/靜脈/舊疤/襪子壓痕·RA:腳太完美像修過圖) · v5.53 🏢無臉也能吃場景參考圖([SCENE_IMG]·只鎖材質色調與光向,不鎖構圖) · v5.52 🎬無臉重構:詞序(主體→光影→抽象)+動作分時段(0-2s/2-4s/4-5s)+拿掉寫死場地與 clean+腳的動作不再問哪根手指+拿掉廣告感字眼;鏡位一字不動 · v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.58 🥊場地宣稱清乾淨(掛衣/倒出/螢幕鐵律那三處漏網) · v5.57 🥊腳本不再宣稱場地(tabletop/desk/countertop/wardrobe→中性檯面):腳本只管機位與框線,場地一律由場景決定(治「選機場卻生出一張桌子」) · v5.56 ✂️無臉盤點去重(框線鎖3次→1次·不浮空/接觸陰影/自然光/背景虛化各2次→1次)+身體與皮膚移回主體群 · v5.55 🚶無臉補上【走路發動點在骨盆與重心】(治腳自己滑動的木偶感)+【這是誰的身體】(預設成年女性·治生出男生的腿)·皮膚句拿掉靜脈與外側偏深(做過頭變肌肉腿) · v5.54 🧴無臉補上真人皮膚(膚色不均/關節偏紅/毛孔汗毛/靜脈/舊疤/襪子壓痕·RA:腳太完美像修過圖) · v5.53 🏢無臉也能吃場景參考圖([SCENE_IMG]·只鎖材質色調與光向,不鎖構圖) · v5.52 🎬無臉重構:詞序(主體→光影→抽象)+動作分時段(0-2s/2-4s/4-5s)+拿掉寫死場地與 clean+腳的動作不再問哪根手指+拿掉廣告感字眼;鏡位一字不動 · v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
