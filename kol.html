@@ -6389,6 +6389,15 @@ function _shrinkRefUrl(u, w) {
 function _checkRefImageSize(url) {
   return new Promise((resolve) => {
     const MIN = 300, MAX = 6000;
+    //  🐛 2026-09-18 第一次點圖卡好幾秒的真兇(RA 實測):
+    //    量尺寸是用 new Image() 把圖載下來量 —— 對 12MB 的原圖來說,
+    //    等於為了知道它多大,先把整張 4500 萬畫素的圖下載一遍。
+    //  ★ 修法:自家 CDN 的圖【改量縮過的那張】(2048,幾百 KB,秒回)。
+    //    量到的就是送出去的那張,判斷更準,而且原圖完全不用碰。
+    //  ★ 太小的圖照樣擋得住:轉換不會把圖放大,200px 的圖轉完還是 200px。
+    //  ★ 外部網址沒得轉 → 行為跟以前一樣(載原圖量),那條路本來就少用。
+    const _own = _shrinkRefUrl(url, 2048);
+    const _probe = _own || url;
     const img = new Image();
     let done = false;
     const finish = (r) => { if (!done) { done = true; resolve(r); } };
@@ -6397,7 +6406,7 @@ function _checkRefImageSize(url) {
       const w = img.naturalWidth, h = img.naturalHeight;
       if (!w || !h) return finish({ ok: true, skipped: 'no-size' });
       if (h > MAX || w > MAX) {
-        //  🗜 先自己縮:自家 CDN 的圖包一層轉換網址就好,不用麻煩客戶
+        //  🗜 自家 CDN 的圖在上面就已經改量縮過的那張,不會走到這裡
         const _small = _shrinkRefUrl(url, 2048);
         if (_small) {
           try { console.log('[REF] 🗜 原圖 ' + w + '×' + h + ' 太大 → 自動縮到 2048'); } catch (_) {}
@@ -6411,10 +6420,15 @@ function _checkRefImageSize(url) {
         return finish({ ok: false, w, h, msg:
           '這張圖太小(' + w + '×' + h + ')—— 影片引擎最少要 300px。\n請改用大一點的原圖。' });
       }
-      finish({ ok: true, w, h });
+      //  自家 CDN:量的就是縮過的那張 → 直接回傳它當送出用的網址
+      finish({ ok: true, w, h, shrunk: _own || undefined });
     };
-    img.onerror = () => finish({ ok: true, skipped: 'load-error' });   // 載不到 → 放行,交給後端判斷
-    img.src = url;
+    img.onerror = () => {
+      //  轉換網址載不到(例如舊圖還沒進 CDN)→ 退回原圖再量一次,不要擋住客戶
+      if (_own && img.src !== url) { img.src = url; return; }
+      finish({ ok: true, skipped: 'load-error' });
+    };
+    img.src = _probe;
   });
 }
 
