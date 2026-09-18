@@ -6189,7 +6189,10 @@ function renderDriveProducts(files) {
 
   const upgradedFiles = files.map(f => ({
     ...f,
-    hiResUrl: (f.thumbnailLink || '').replace(/=s\d+/, '=s1200'),
+    //  🗜 2026-09-18:大圖預覽也要縮。這行是 Drive 時代寫的 —— Drive 網址才有
+    //    「=s1200」可以換;素材庫的 R2 網址沒有那段,replace 等於沒作用,
+    //    點開預覽就是在載 12MB 的原圖(RA 實測覺得卡)。改走跟縮圖同一套轉換。
+    hiResUrl: _thumb((f.thumbnailLink || '').replace(/=s\d+/, '=s1200'), 1200),
   }));
 
   if (!S.driveFileR2) S.driveFileR2 = {};   // 🆕 fileId → R2 乾淨網址
@@ -10021,7 +10024,10 @@ function renderEpisodeProducts(files) {
 
   const upgradedFiles = files.map(f => ({
     ...f,
-    hiResUrl: (f.thumbnailLink || '').replace(/=s\d+/, '=s1200'),
+    //  🗜 2026-09-18:大圖預覽也要縮。這行是 Drive 時代寫的 —— Drive 網址才有
+    //    「=s1200」可以換;素材庫的 R2 網址沒有那段,replace 等於沒作用,
+    //    點開預覽就是在載 12MB 的原圖(RA 實測覺得卡)。改走跟縮圖同一套轉換。
+    hiResUrl: _thumb((f.thumbnailLink || '').replace(/=s\d+/, '=s1200'), 1200),
   }));
 
   if (!S.driveFileR2) S.driveFileR2 = {};   // fileId → R2 乾淨網址(與 STEP2 共用)
