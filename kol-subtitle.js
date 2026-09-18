@@ -1,5 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   🎬 kol-subtitle.js v1.0(2026-09-19)自動字幕核心
+   🎬 kol-subtitle.js v1.1(2026-09-19)加上字幕
+   v1.1:RA 定案 —— 客人要的是【直接燒好字幕的 MP4】,不要叫他去剪映自己上。
+        成品下方給一顆【加上字幕(N 點)】,客人自己選;按了才燒、原片保留、要扣點。
+        時間軸照舊在這裡算(台詞＋開口秒數),燒字的是 Worker 的 subtitle_burn(v5.74)。
+        不再給客人 .srt 下載按鈕(download() 保留給 Console 除錯用)。
+   ───────────────────────────────────────────────────────────────────────
+   v1.0 自動字幕核心
    ───────────────────────────────────────────────────────────────────────
    職責:只做一件事 —— 把分鏡卡的【台詞 + 開口秒數】變成字幕檔(.srt)。
    ★ 為什麼不用引擎上字幕:引擎上的字會變簡體、字型爛,
@@ -25,8 +31,8 @@
      每行時間 = 照字數比例分配(標點停頓算半個字)
 
    用法(kol.html 成品區呼叫):
-     KolSubtitle.attach(boxEl, { beats, plan, name })
-       → 在播放器下方加一顆「⬇ 下載字幕檔」
+     KolSubtitle.attach(boxEl, { beats, plan, videoUrl, brandId, name })
+       → 在播放器下方加一顆「加上字幕(N 點)」
      KolSubtitle.buildCues(beats, durations) → [{start,end,text}]
      KolSubtitle.toSRT(cues) → 字串
    ═══════════════════════════════════════════════════════════════════════ */
@@ -166,35 +172,78 @@
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
 
-  //  成品區加一顆按鈕。beats = 分鏡卡;plan = 接片計畫(取實際秒數)
+  //  點數:與 Worker v5.74 同一個公式(⚠️ 兩邊同步)—— 60 秒以內 100 點,之後每分鐘 100 點
+  function costOf(sec) { return Math.max(100, Math.ceil(Math.max(1, Math.min(600, Number(sec) || 60)) / 60 * 100)); }
+
+  //  成品區加一顆【加上字幕】。beats = 分鏡卡;plan = 接片計畫(取實際秒數);videoUrl = 成品網址
+  //  ★ 白牌:畫面上只出現「加上字幕」「算力機」,不出現任何後端服務名。
   function attach(boxEl, o) {
     try {
       o = o || {};
-      if (!boxEl) return;
+      if (!boxEl || !o.videoUrl) return;
       const beats = o.beats || [];
       const durs = (o.plan || []).map(p => p && p.durationSec);
       const cues = buildCues(beats, durs);
       if (!cues.length) return;   // 整支都沒台詞 → 不顯示按鈕
       const srt = toSRT(cues);
+      const totalSec = durs.reduce((a, d) => a + (Number(d) || 0), 0) || 15;
+      const cost = costOf(totalSec);
+
       const wrap = document.createElement('div');
-      wrap.style.cssText = 'margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+      wrap.style.cssText = 'margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid #a78bfa33;background:#a78bfa0d;';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.textContent = '⬇ 下載字幕檔(.srt)';
-      btn.style.cssText = 'padding:6px 12px;border-radius:8px;border:1px solid #a78bfa66;background:transparent;color:#a78bfa;font-size:12px;cursor:pointer;';
-      btn.onclick = () => download(srt, o.name);
+      btn.textContent = '🔤 加上字幕(' + cost + ' 點)';
+      btn.style.cssText = 'padding:8px 14px;border-radius:8px;border:none;background:#a78bfa;color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
       const tip = document.createElement('span');
-      tip.textContent = '共 ' + cues.length + ' 句 · 可匯入剪映、CapCut、Premiere';
-      tip.style.cssText = 'color:#888;font-size:11px;';
-      wrap.appendChild(btn); wrap.appendChild(tip);
+      tip.textContent = '繁體中文 · 共 ' + cues.length + ' 句 · 原片會保留';
+      tip.style.cssText = 'color:#999;font-size:12px;';
+      const out = document.createElement('div');
+      out.style.cssText = 'margin-top:8px;font-size:13px;line-height:1.7;';
+      row.appendChild(btn); row.appendChild(tip);
+      wrap.appendChild(row); wrap.appendChild(out);
       boxEl.appendChild(wrap);
+
+      btn.onclick = async function () {
+        if (!confirm('加上繁體中文字幕,會扣 ' + cost + ' 點。\n原本沒有字幕的影片會保留。\n\n確定要加嗎?')) return;
+        const S = root.KolStitch;
+        if (!S || !S._api || !S.pollEpisode) { out.innerHTML = '<span style="color:#ff6b6b;">頁面還沒載入完成,請重新整理後再按一次。</span>'; return; }
+        btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'default';
+        btn.textContent = '字幕製作中…';
+        const t0 = Date.now();
+        const tick = setInterval(function () {
+          out.innerHTML = '<span style="color:#a78bfa;">⏳ 字幕製作中,約 1-2 分鐘,請不要關閉這個頁面(已等 ' + Math.round((Date.now() - t0) / 1000) + ' 秒)</span>';
+        }, 1000);
+        try {
+          const sub = await S._api('subtitle_burn', {
+            videoUrl: o.videoUrl, srt: srt, brandId: o.brandId || 'stitch', durationSec: totalSec,
+          });
+          const url = await S.pollEpisode(sub.requestId, o.brandId || 'stitch', null, sub.endpoint, 72);   // 5 秒 × 72 = 6 分鐘
+          clearInterval(tick);
+          btn.textContent = '✅ 字幕已加上';
+          out.innerHTML = '<div style="color:#8fd694;margin-bottom:6px;">✅ 有字幕的版本做好了(原片在上面,兩支都可以下載)</div>'
+            + '<video src="' + url + '" controls playsinline style="width:100%;border-radius:10px;background:#000;"></video>'
+            + '<div style="margin-top:6px;"><a href="' + url + '" target="_blank" style="color:#a78bfa;font-size:12px;">↗ 開新分頁 / 下載有字幕版</a></div>';
+        } catch (e) {
+          clearInterval(tick);
+          const m = String((e && e.message) || '');
+          btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+          btn.textContent = '🔤 加上字幕(' + cost + ' 點)';
+          if (/INSUFFICIENT|點數不足|Bits 不足/i.test(m)) { out.innerHTML = ''; return; }   // 點數不足的視窗由全站攔截器負責
+          if (/沒有台詞/.test(m)) { out.innerHTML = '<span style="color:#ffb3b3;">這支影片沒有台詞,不需要加字幕。</span>'; return; }
+          out.innerHTML = '<span style="color:#ff6b6b;">⚠️ 字幕沒有加上:算力機目前滿載。<b>本次點數已自動退還</b>,請稍後再按一次。</span>';
+          try { console.warn('[KolSubtitle] 加字幕失敗:', m); } catch (_) {}
+        }
+      };
     } catch (e) {
       try { console.warn('[KolSubtitle] 字幕按鈕略過(不影響影片):', e); } catch (_) {}
     }
   }
 
-  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, version: 'v1.0' };
+  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, version: 'v1.1' };
   root.KolSubtitle = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  try { console.log('[KolSubtitle] v1.0 就緒 · 🎬 台詞+開口秒數 → .srt(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
+  try { console.log('[KolSubtitle] v1.1 就緒 · 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
 })(typeof window !== 'undefined' ? window : globalThis);
