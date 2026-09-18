@@ -1,5 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
-   🔑 auth-expire.js v1.3(2026-09-18)登入過期 → 全站統一處理
+   🔑 auth-expire.js v1.4(2026-09-18)登入過期 → 全站統一處理
+   v1.4:沒有憑證的人【不跳過期視窗】,直接送去登入畫面(治 Allan 手機「點了還是跳來跳去」:
+        手機瀏覽器清掉憑證 = 還沒登入,不是過期;舊版照跳 → 按重新登入 → 清空 → 回首頁
+        → 還是沒登入 → 又 401 → 又跳,無限循環)。另外剛按過重新登入的 10 秒內也不跳。
    RA:「先修好,不然要到下一個出現才會改。」
    病:身分證(session token)過期時,每個功能各自跳自己的訊息 ——
       AI 編修跳「AI 編修失敗:請重新登入」、素材庫顯示空白、抓色系跳別的話。
@@ -31,6 +34,7 @@
   //   就當作「已登入」直接開始打 Worker,但手上沒有有效的證 → 又 401 → 又跳視窗,無限循環。
   //   改成跟正式登出清一樣的東西(含記住登入與品牌快取),再回登入頁重走 Google 登入。
   function clearAndReload() {
+    try { sessionStorage.setItem('bs_relogin_at', String(Date.now())); } catch (e) {}   // 🔑 v1.4 標記:剛按過重新登入
     try {
       ['bs_auth_token', 'bs_token', 'bs_email', 'bs_worker_mode'].forEach(function (k) { sessionStorage.removeItem(k); });
       ['bs_auth_token', 'bs_sso_token', 'bs_sso_email', 'bs_email', 'bs_worker_mode'].forEach(function (k) { localStorage.removeItem(k); });
@@ -47,8 +51,36 @@
     //  回主站登入頁(KOL 工作室自己沒有登入畫面)
     try { location.href = 'index.html'; } catch (e) { location.reload(); }
   }
+  //  🔑 v1.4(2026-09-18)Allan 手機實測:點了「重新登入」還是跳來跳去。
+  //   病灶:【手上根本沒有憑證的人也會被跳視窗】—— 手機瀏覽器(尤其 Safari)
+  //   會自己清掉存的登入資料,那個狀態等於「還沒登入」,不是「登入過期」。
+  //   舊版照樣跳視窗 → 按重新登入 → 清空 → 回首頁 → 還是沒登入 → 打 API → 又 401
+  //   → 又跳 …… 無限循環,客戶只會覺得系統壞掉。
+  //  ★ 修法一:沒有任何憑證 → 不跳視窗,直接把人送到登入畫面(該登入就登入,不要嚇他)。
+  //  ★ 修法二:剛按過「重新登入」的那 10 秒內不跳(清空到回首頁之間會有零星 401)。
+  function _hasCred() {
+    try {
+      var keys = ['bs_auth_token', 'bs_token', 'bs_sso_token'];
+      for (var i = 0; i < keys.length; i++) {
+        if (sessionStorage.getItem(keys[i]) || localStorage.getItem(keys[i])) return true;
+      }
+    } catch (e) { return true; }   // 讀不到就當作有,寧可跳視窗也不要靜默失敗
+    return false;
+  }
+  function _justReloggedIn() {
+    try { return (Date.now() - Number(sessionStorage.getItem('bs_relogin_at') || 0)) < 10000; } catch (e) { return false; }
+  }
   var boxEl = null;
   function show() {
+    //  🔑 v1.4:沒憑證 = 還沒登入(不是過期)→ 不跳視窗,直接帶去登入頁
+    if (!_hasCred()) {
+      try { console.log('[AuthExpire] 沒有登入憑證 → 不跳過期視窗,直接前往登入'); } catch (e) {}
+      try {
+        if (location.pathname.indexOf('index') < 0 && location.pathname !== '/') location.href = 'index.html';
+      } catch (e) {}
+      return;
+    }
+    if (_justReloggedIn()) return;   // 剛按過重新登入,清空過程中的零星 401 不要再跳
     //  🩹 v1.2(2026-09-18)RA 實測「一直閃」:主站有些畫面會整塊重畫,
     //   把視窗連同 body 內容一起洗掉 → 下一個 401 又貼一次 → 看起來一閃一閃。
     //   改成:記住這個節點,被洗掉就接回去;還在畫面上就什麼都不做。
