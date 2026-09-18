@@ -1036,6 +1036,9 @@ window.composeStitchBeat   = composeStitchBeat;
     // ── 穿戴 ─────────────────────────────────────
     shoes:   "Ground-level camera: the camera sits on the floor about 30cm away, lens at ankle height, framing only from the knees down on a clean light wood floor near a bright window. The only things in frame are the shoes, the feet, the lower legs and the floor. " + FACELESS_CAMERA + " The feet wear the exact shoes shown in [Image1]. Natural try-on motion: one foot slides into the shoe, a gentle step forward, a small ankle turn that reveals the side profile of the shoe." + FACELESS_KEEP,
 
+    //  💅 v5.63 美甲/手部服務成果 —— 服務類的手本身就是商品,細部動作放行
+    nails:   "Macro shot of one hand resting on a soft towel at working height, camera about 30cm away, framing only the hand, the towel and the second pair of hands working on it. " + FACELESS_CAMERA + " The working hands hold the client's finger steady and apply or finish the nail shown in [Image1] with small precise movements, then wipe and turn the hand so the finished nails catch the light." + FACELESS_KEEP,
+
     wear:    "Macro shot of hands and wrists only, camera about 30cm away, framing from the mid-forearm to the fingertips against a clean soft-lit background. " + FACELESS_CAMERA + " The hands put on and adjust the exact item shown in [Image1] — a watch, bracelet, ring or glove — fingers fastening or sliding it into place, then the wrist turns slowly so the light travels across the material." + FACELESS_KEEP,
 
     // ══ 包裝 · 開箱(零食 / 鞋盒 / 禮盒)══
@@ -1186,6 +1189,142 @@ window.composeStitchBeat   = composeStitchBeat;
     return parts.map(function (t, i) { return '(' + cuts[i] + '-' + cuts[i + 1] + 's) ' + t; }).join(' ');
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  🧩 v5.64(2026-09-18)無臉【公版】—— RA:「所以我才說你要想一個公版」
+  //   病:36 段腳本各寫各的,每段都把【機位＋場地＋動作細節】混在一起 ——
+  //     所以客戶換一個行業(餐廳、美甲、診所…),我就得補一段腳本,補不完。
+  //   ★ 公版的切法:把 36 段拆成【6 種機位】×【誰在畫面裡】×【要做什麼】
+  //       機位   只講相機在哪、離多遠、框到什麼、鎖死不動 —— 固定不變,是品質的錨
+  //       主體   商品照決定(這是誰的手/腳、拿著什麼)
+  //       動作   客戶的情境或 AI 寫的那三段決定
+  //       場地   有實景照就照照片;沒有就給一個最輕的錨(日常室內、光從一側窗進來)
+  //   ★ 新行業只要挑一個機位就能上,不用再寫腳本。
+  //   ★ 36 個舊選項全部保留,各自對應到一個機位 + 一句動作要點(一行,不是一段)。
+  const CAM = {
+    top:    'Overhead top-down macro shot: the camera is directly above the working surface, roughly 60cm up, framing only that surface, the product and the hands entering from the bottom edge.',
+    table:  'Macro shot at working height: the camera is about 40cm from the product, level with it, framing only that surface, the product and the hands entering from the bottom and side edges. The product fills most of the frame.',
+    ground: 'Ground-level shot: the camera sits on the floor about 30cm away, lens at ankle height, framing only from the knees down and the floor.',
+    chin:   'Close-up cropped from just below the nose down to the collarbone — only the chin, lips and jawline are in frame, with one hand entering from the bottom edge.',
+    chest:  'Chest-height shot: the camera is about 50cm away at chest height, framing only the item, the hands and forearms, against whatever is behind it.',
+    screen: 'Medium close-up slightly off-axis in front of a screen, about 50cm away, framing the screen and the front edge of the surface below it, with one hand entering from the side.',
+  };
+  //  每個動作 = 一個機位 + 一句要點(只講【這個動作看得到什麼】,不講場地、不講光)
+  const ACT = {
+    cut:['top','the hands slice the food from [Image1] with steady cuts, the pieces falling apart to show the inside'],
+    cooking:['top','the hands toss and stir the ingredients from [Image1] in the pan, steam rising toward the lens'],
+    pan:['top','the food from [Image1] sizzles as the tongs turn it, the surface browning'],
+    airfryer:['table','the hands slide the basket out, arrange the food from [Image1] inside, push it closed, then pull it open again with steam and a crisped surface'],
+    soup:['top','the lid lifts with rushing steam, then the ladle stirs and lifts the ingredients from [Image1] through the broth'],
+    taste:['chin','a spoon of the dish from [Image1] comes to the lips, one gentle blow, then a taste and the corner of the mouth lifts'],
+    eat:['chin','the food from [Image1] is lifted to the lips and bitten, the fingers pinching it the whole way, a crisp break with visible texture'],
+    drink:['chin','the drink from [Image1] tilts to the lips, the liquid visibly moving inside, then lowers out of frame'],
+    peteat:['ground','the food from [Image1] is poured into the bowl, then the pet steps in and eats, the pieces clearly visible'],
+    tear:['table','the fingers grip the notch of the package from [Image1] and tear along the seal with real resistance, then part the opening so the contents show'],
+    unbox:['top','the hands open the packaging from [Image1], peel back the seal with real resistance, then lift the contents out and set them down'],
+    boxout:['top','the lid comes off the box from [Image1], the tissue folds back, and the product is lifted out with both hands and set down'],
+    hold:['table','the hands hold and present the product from [Image1] toward the lens, turning it slowly to show its details'],
+    pour:['table','the product from [Image1] tilts with real weight and pours into a cup or bowl, the stream clearly visible, then is set back down'],
+    demo:['table','the hands operate the product from [Image1] — pressing, twisting or adjusting it — every contact point visible and the product responding'],
+    putin:['top','the hands open the case from [Image1], place the item inside and close it, the closure fastening with a real fold or click'],
+    hanger:['chest','the hands lift out the garment from [Image1] on its hanger and hold it up, the fabric falling with its own weight'],
+    layflat:['top','the hands lay the item from [Image1] flat, smooth it with the fingertips and trace a seam so the material reads'],
+    bag:['table','the hands turn the bag from [Image1] to show its side, open the flap or zip, then hold the strap so it hangs with its own weight'],
+    shoes:['ground','the feet put on the shoes from [Image1] — one foot slides in, a step forward, a small ankle turn showing the side profile'],
+    nails:['table','one hand rests still while the working hands finish the nails from [Image1] with small precise movements, then turn the hand so they catch the light'],
+    wear:['chest','the hands put on and adjust the item from [Image1], fastening or sliding it into place, then the wrist turns so light travels across it'],
+    press:['table','a finger presses a button or turns a dial on the product from [Image1], the button depressing and an indicator coming on'],
+    mop:['ground','the tool from [Image1] is pushed and pulled across the floor in steady strokes, leaving a visibly clean track'],
+    spray:['table','the hand grips the product from [Image1] and presses the trigger, a visible mist fanning out and settling on the surface'],
+    mudra:['chest','the hands settle together into a meditation gesture, fingers arriving one by one, the item from [Image1] resting nearby'],
+    matfeet:['ground','the bare feet step onto the mat from [Image1], toes spreading and gripping, the weight shifting from one foot to the other'],
+    bowl:['table','one hand steadies the bowl from [Image1] while the other strikes its rim and circles the mallet, the surface visibly vibrating'],
+    silhouette:['chest','the body reads as a dark silhouette against the light, moving slowly and fluidly, no facial features visible at any point'],
+    sign:['top','one hand steadies the paperwork while the other signs it in smooth strokes, then presses a seal and lifts it to reveal the impression'],
+    review:['top','the hands turn the pages, a fingertip traces a line and taps a key clause twice, then slides the page across'],
+    mouse:['table','the hand glides the mouse a short distance, the index finger clicks twice with a visible press, then rolls the scroll wheel'],
+    typing:['top','the fingers type in a steady rhythm, keys visibly depressing, one hand pauses to tap a single key, then both settle back'],
+    screen:['screen','the interface from [Image1] is live on the display — a cursor travels, a panel opens, content scrolls — while the hand gestures toward one area and holds'],
+    laptop:['screen','the hands lift the laptop lid open in one motion, the screen lighting up with the interface from [Image1], then the fingers settle onto the keys'],
+    notes:['top','one hand writes a short line in the notebook while the interface from [Image1] glows at the top of frame, then the pen taps the page once'],
+    handoff:['screen','one hand pivots the screen toward the camera so the interface from [Image1] reads clearly, while the other points at one area and holds'],
+  };
+  const LOCK = 'Locked camera: it never tilts, pans or widens beyond this framing, and nothing above the crop line enters the frame.';
+  const KEEP = 'The product matches [Image1] exactly in shape, colour, material and label.';
+  const SCREEN_ONLY = 'The interface is emitted by the screen and glows from within the panel — never a printed sheet, never an object lying on a surface, never held in a hand; the bezel stays visible and the layout, colours and proportions stay exactly as in [Image1].';
+  //  沒有實景照時的最輕錨點:只給「這是室內、光從一側窗進來」,不指定家具與房間
+  const ANCHOR = 'An ordinary indoor space with daylight coming in from one side.';
+
+  function _composeFacelessTpl(action, opts) {
+    opts = opts || {};
+    const a = ACT[action] || ACT.hold;
+    const isFoot = (a[0] === 'ground');
+    const sit = String(opts.situation || '').trim();
+    return [
+      CAM[a[0]] || CAM.table,
+      LOCK,
+      a[0] === 'screen' ? SCREEN_ONLY : '',
+      a[1] + '.',
+      KEEP,
+      sit ? ('Within this framing, through the ' + (isFoot ? 'feet' : 'hands') + ' and the product: ' + sit) : '',
+      //  🏢 v5.65(2026-09-18)場景三段式(RA:「機場消失了啊?」)——
+      //   無臉以前只吃客戶自己上傳的實景照;場景卡(機場/健身房/餐廳…)在有臉那條線
+      //   是先生一張場景圖再送,無臉沒接那條 → 等於沒場景,就走「日常室內」的輕錨。
+      //   ★ 公版不生圖,直接用【文字】說那是什麼地方 —— 一句話,零成本,所有場景通用。
+      //   ★ 優先序:自家實景照 > 場景卡文字 > 最輕的錨。
+      opts.hasScene
+        ? 'The place, its surfaces, colours and light follow [SCENE_IMG]; the framing above does not change.'
+        : (String(opts.sceneText || '').trim()
+            ? 'The place is ' + String(opts.sceneText).trim().replace(/\.$/, '') + '; its real surfaces and daylight surround the action, while the framing above does not change.'
+            : ANCHOR),
+      LEAN_CONTACT,
+      LEAN_REALISM,
+      LEAN_NOTEXT,
+    ].filter(Boolean).join(' ');
+  }
+
+  //  ✂️ v5.62(2026-09-18)無臉【精簡版】—— RA:「大刀闊斧,跟我去一中那個舉例一樣」
+  //   原則:每件事只講一次,用最少的字講完,語意一個都不掉。
+  //   ★ 36 段鏡位腳本【一字不動】—— 那是畫面穩定的原因,也是品質的錨。
+  //   ★ 壓縮的是共用句(它們在每一支片都重複出現,最肥):
+  //       鎖鏡頭  183 → 106 字   同一句話講兩遍(不上搖 / 不超出框線)合成一句
+  //       商品一致 107 →  72 字   「不要重新設計」是「完全照 [Image1]」的同義反覆
+  //       接觸點  480 → 128 字   有臉那條線的長版是為了拿商品走動;無臉是定點特寫,用短版
+  //       寫實基底 297 → 168 字   順手拿掉 premium cinematic commercial(廣告感字眼)
+  //       無字幕   190 →  86 字   四種說法講同一件事
+  //       情境模板 240 →  58 字   框線鎖前面已經講過一次,不再重複
+  //   ★ 總計 1695 → 約 1000 字,每句的份量回到最大。
+  //   ★ 要比對:window.KOL_FACELESS_ORIG = true 走一字不改的原版;
+  //            window.KOL_FACELESS_NEW  = true 走加了六項變因的完整版。
+  const LEAN_FIX = [
+    [/Locked camera position[^.]*\.\s*Absolutely nothing above the described crop line ever enters the frame\./gi,
+     'Locked camera: it never tilts, pans or widens beyond this framing, and nothing above the crop line enters the frame.'],
+    [/Keep the product's shape, colour, material, label and proportions identical to \[Image1\][^.]*\./gi,
+     'The product matches [Image1] exactly in shape, colour, material and label.'],
+  ];
+  const LEAN_CONTACT = 'Every contact point is visible — which fingers hold it and where — and it obeys gravity, staying in the hand until it is set down.';
+  const LEAN_REALISM = 'Extreme realism, real skin and real materials, natural daylight from one side, soft contact shadows where things touch, physically grounded, slight handheld movement, shallow depth of field. 9:16 vertical.';
+  const LEAN_NOTEXT  = 'Ambient sound only, nobody speaks. No subtitles, captions, on-screen text or watermark.';
+  function _composeFacelessLean(action, opts) {
+    opts = opts || {};
+    let core = FACELESS_ACTIONS[action] || FACELESS_ACTIONS.hold;
+    LEAN_FIX.forEach(function (f) { core = core.replace(f[0], f[1]); });
+    //  🏢 v5.63(2026-09-18)RA:「那如果我做餐廳呢?做美甲呢?」
+    //   腳本寫死的場地(木地板、窗邊、桌面)是【沒有實景照時】的強錨點 —— 不能拿掉,
+    //   拿掉畫面會散(v5.57 那批的教訓)。但客戶上傳了自家實景照,那句就跟照片打架。
+    //   ★ 所以:有實景照才把場地名詞中性化,並補一句「場地照那張走」;沒實景照一字不動。
+    if (opts.hasScene) core = _fPlace(core);
+    const sit = String(opts.situation || '').trim();
+    const isFoot = !!FOOT_ACTIONS[action];
+    return [
+      core,
+      sit ? ('Within this framing, through the ' + (isFoot ? 'feet' : 'hands') + ' and the product: ' + sit) : '',
+      opts.hasScene ? 'The place, its surfaces, colours and light follow [SCENE_IMG]; the framing above does not change.' : '',
+      LEAN_CONTACT,
+      LEAN_REALISM,
+      LEAN_NOTEXT,
+    ].filter(Boolean).join(' ');
+  }
+
   //  🧯 v5.60(2026-09-18)保險絲:切回【第一支那個版本】
   //   RA:「很像複製貼上」「越來越假」—— 今天無臉從她說最讚的第一支開始,
   //   被我疊了六個變因(場地清洗、分時段、皮膚、身體、走路、光影),已經分不清是哪一項弄壞的。
@@ -1219,9 +1358,17 @@ window.composeStitchBeat   = composeStitchBeat;
     //        一句話就讓光、地板、反光全部自洽。拿掉改用場景參考圖 → 變成兩張圖要合成 → 分裂感。
     //   ★ 所以預設走原版;新版留著,要測的時候貼 window.KOL_FACELESS_NEW = true 才用。
     //   ★ 之後要加東西,一次只加一項、生一支、跟上面三個數字對照,不再整批疊。
-    if (typeof window === 'undefined' || window.KOL_FACELESS_NEW !== true) {
-      try { console.log('[CrewDirector] 🧯 無臉走【原版】組法(最高標準基準;要試新版貼 window.KOL_FACELESS_NEW = true)'); } catch (e) {}
+    if (typeof window !== 'undefined' && window.KOL_FACELESS_ORIG === true) {
+      try { console.log('[CrewDirector] 🧯 無臉走【一字不改的原版】(KOL_FACELESS_ORIG)'); } catch (e) {}
       return _composeFacelessLegacy(action, opts);
+    }
+    if (typeof window !== 'undefined' && window.KOL_FACELESS_LEAN === true) {
+      try { console.log('[CrewDirector] ✂️ 無臉走【精簡版】(舊 36 段腳本壓縮版)'); } catch (e) {}
+      return _composeFacelessLean(action, opts);
+    }
+    if (typeof window === 'undefined' || window.KOL_FACELESS_NEW !== true) {
+      try { console.log('[CrewDirector] 🧩 無臉走【公版】(6 種機位 × 動作要點;精簡版貼 KOL_FACELESS_LEAN=true、原版貼 KOL_FACELESS_ORIG=true)'); } catch (e) {}
+      return _composeFacelessTpl(action, opts);
     }
     const core = FACELESS_ACTIONS[action] || FACELESS_ACTIONS.hold;
     const isFoot = !!FOOT_ACTIONS[action];
@@ -1289,5 +1436,5 @@ window.composeStitchBeat   = composeStitchBeat;
   // 🔥 關鍵:取代 kol.html 裡的 composeSeedancePrompt
   window.composeSeedancePrompt = composePrompt;
 
-  console.log('[CrewDirector] 🎬 v5.61 🧯無臉【預設回原版】(實測:原版飽和19.6%/亮度63.4% 勝過改六版的24.9%/46.8%;字數1695→2853稀釋權重、搬來的多是有臉的病、寫死場地其實是強錨點)·新版要貼 window.KOL_FACELESS_NEW=true 才走 · v5.60 🧯無臉保險絲:window.KOL_FACELESS_LEGACY=true 切回第一支那個原版組法(一次只加一項變因用) · v5.59 💡主體與背景吃同一盞光(同方向/同色溫/同曝光·反光地面腿與商品都要有倒影)治分裂感 · v5.58 🥊場地宣稱清乾淨(掛衣/倒出/螢幕鐵律那三處漏網) · v5.57 🥊腳本不再宣稱場地(tabletop/desk/countertop/wardrobe→中性檯面):腳本只管機位與框線,場地一律由場景決定(治「選機場卻生出一張桌子」) · v5.56 ✂️無臉盤點去重(框線鎖3次→1次·不浮空/接觸陰影/自然光/背景虛化各2次→1次)+身體與皮膚移回主體群 · v5.55 🚶無臉補上【走路發動點在骨盆與重心】(治腳自己滑動的木偶感)+【這是誰的身體】(預設成年女性·治生出男生的腿)·皮膚句拿掉靜脈與外側偏深(做過頭變肌肉腿) · v5.54 🧴無臉補上真人皮膚(膚色不均/關節偏紅/毛孔汗毛/靜脈/舊疤/襪子壓痕·RA:腳太完美像修過圖) · v5.53 🏢無臉也能吃場景參考圖([SCENE_IMG]·只鎖材質色調與光向,不鎖構圖) · v5.52 🎬無臉重構:詞序(主體→光影→抽象)+動作分時段(0-2s/2-4s/4-5s)+拿掉寫死場地與 clean+腳的動作不再問哪根手指+拿掉廣告感字眼;鏡位一字不動 · v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
+  console.log('[CrewDirector] 🎬 v5.65 🏢場景三段式:自家實景照 > 場景卡文字(不用生圖) > 最輕的錨(治「選了機場卻沒出現」) · v5.64 🧩無臉公版(6種機位×38個動作要點·新行業挑機位就能上,不再一個一個寫腳本)·ORIG/LEAN/NEW 三版可切 · v5.63 🏢有實景照才做場地中性化(沒照片時寫死場地是強錨點,不能拿掉)+💅新增美甲動作 · v5.62 ✂️無臉精簡版成為預設(共用句 1695→約1000字·36段鏡位腳本一字不動·拿掉廣告感字眼)·KOL_FACELESS_ORIG/NEW 可切三版對照 · v5.61 🧯無臉【預設回原版】(實測:原版飽和19.6%/亮度63.4% 勝過改六版的24.9%/46.8%;字數1695→2853稀釋權重、搬來的多是有臉的病、寫死場地其實是強錨點)·新版要貼 window.KOL_FACELESS_NEW=true 才走 · v5.60 🧯無臉保險絲:window.KOL_FACELESS_LEGACY=true 切回第一支那個原版組法(一次只加一項變因用) · v5.59 💡主體與背景吃同一盞光(同方向/同色溫/同曝光·反光地面腿與商品都要有倒影)治分裂感 · v5.58 🥊場地宣稱清乾淨(掛衣/倒出/螢幕鐵律那三處漏網) · v5.57 🥊腳本不再宣稱場地(tabletop/desk/countertop/wardrobe→中性檯面):腳本只管機位與框線,場地一律由場景決定(治「選機場卻生出一張桌子」) · v5.56 ✂️無臉盤點去重(框線鎖3次→1次·不浮空/接觸陰影/自然光/背景虛化各2次→1次)+身體與皮膚移回主體群 · v5.55 🚶無臉補上【走路發動點在骨盆與重心】(治腳自己滑動的木偶感)+【這是誰的身體】(預設成年女性·治生出男生的腿)·皮膚句拿掉靜脈與外側偏深(做過頭變肌肉腿) · v5.54 🧴無臉補上真人皮膚(膚色不均/關節偏紅/毛孔汗毛/靜脈/舊疤/襪子壓痕·RA:腳太完美像修過圖) · v5.53 🏢無臉也能吃場景參考圖([SCENE_IMG]·只鎖材質色調與光向,不鎖構圖) · v5.52 🎬無臉重構:詞序(主體→光影→抽象)+動作分時段(0-2s/2-4s/4-5s)+拿掉寫死場地與 clean+腳的動作不再問哪根手指+拿掉廣告感字眼;鏡位一字不動 · v5.51 🗣「從開口捏起」不算說話(三邊同步) · v5.50 🐛發音表對直傳台詞補上(之前只處理引號裡的字,直傳台詞沒引號 → 從沒生效) · 🎙台詞行 = 基礎聲線(KolPersona.voiceBaseZh)+這一格的「聲音:」結構描述(刺蝟星球) · v5.49 🗣發音:韌性→彈性 · v5.48 🗣「開口處」(袋子開口)不算說話(三邊同步) · v5.47 🗣發音:囤→屯、「啦」後面黏字補逗號(治念成上揚ㄌㄚˊ) · v5.46 ⏱台詞時間段改成第一段開口→最後一段還在講(三邊同步) · v5.45 ⏱說話視窗從 shotDesc 自己抓(掃含「開口/說/講」的那一段,不用叫 AI 多填欄位、也不用在提示詞加規則) · ✂️台詞尾巴 162→約40字(無字幕/無配樂 tail 都已經有,每格白付) · v5.44 ⏱分時段改由 AI 分鏡自己寫(RA:「(0-15秒)寫在唯一一顆鏡頭上等於沒寫,分時段是控制第幾秒發生什麼」)。shotDesc 已分段就照原樣送、不再硬包一層;台詞時間走 dialogueTime 欄(例:5-15)→ 引擎知道語音從第5秒才開始,前面本來就安靜 · v5.43 🎬改用 Seedance【原生對白語法】:畫面(0-15秒):… 台詞(0-15秒,她、語氣):「…」(RA 去查官方寫法:引號是台詞觸發符號、括號寫語氣、畫面與台詞配對、超過8秒用分時段)。時間段本身就宣告「從第0秒講到最後」,不必再管 AI 的中文用詞;語氣從動作描述自動擷取 · v5.42 ⏱說話排到動作前面(舊順序是「兩百多字中文動作→最後才 She speaks」,模型先演動作、第3~8秒才開口,語音卻從第0秒播=旁白。改組裝順序比去管 AI 用詞自然,AI 中文怎麼寫都行) · v5.41 🗣發音表加「種類→款式」(實測念成「種雷」) · v5.40 ✂️空間一致八個詞→一句(121→98字·機制只有「同一個空間只有機位在動」,前半是展開) · v5.39 👙拿掉內衣安全鎖 113 字(no exposed undergarments/no revealing clothing —— 商品就是內衣,這句跟「商品要被看見」打架,模型只能把內衣穿到最外層;而且兩個 no 等於點名召喚)。合規改由 kol-product v5.35 的正面陳述負責(穿在服裝參考圖底下·外層全程在身上) · v5.38 📐tail 排序改依詞序黃金法則(商品群→環境群→抽象群·同類不被切開·治「插隊收回扣→後面等於沒用」)· v5.37 💡拿掉「臉上光要均勻」兩份(正面否定攝影師的單側光·治段2平光0.6與粉感·kol-stitch已殺過兩份這是第三份)· v5.36 🗣台詞【直傳】不再掃引號(治「鏡頭欄寫什麼引號她就念什麼」+ 台詞不再重複付兩次字數)·kol.html 未改前自動走舊路 · v5.35 🗣台詞上限 60→95(治「68字台詞被整句忽略→該鏡沒有對嘴指令」·語速6.0後面板放行83) · v5.34 🚚 tail規則壓縮成關鍵詞串(路人403→1xx字·治「最肥的規則永遠第一個被 fitRules 整條丟掉」) · v5.33 就緒 · 🧍公共場所背景有人(實景照不加·無寵物) · · 🗣發音易錯字表(送出前攔截·手改/鎖定台詞也會過) · v5.21-dialogue60 · 🗣台詞上限對齊面板(40→60,治「抓不到台詞→旁白代念」) · 🏢有實景照略過場景光線(不與真照片競圖) · 🩳tail優先序重排(無字幕/跨段道具鎖提前·品牌調性墊底) · 組 prompt 責任已接管 · 無臉模式 prompt 已載入(含💻電腦·數位工作6條+螢幕鐵律)');
 })();
