@@ -48,7 +48,7 @@ const CAM_FREEZE = 'Shot on Nikon Z9 using its fast electronic shutter (1/8000s 
 //   護欄:字一定讀得到、商品絕不被蓋住。
 //   2026-09-27 晚 融會貫通版(同一句重寫,不加句):一句話同時做到
 //     067 圖形─背景(商品是圖,其餘是底)· 152 接近(相關資訊聚成一兩組)
-//     006 對齊(對齊同一條邊,不是全部置中)· 086 古騰堡圖表(標題→價格的閱讀路徑)
+//     006 對齊(對齊同一條邊,不是全部置中)· 086 古騰堡圖表(標題→商品的閱讀路徑)
 //     160 三分 / 183 對稱反用(偏離中心)· 027 閉合(藏到商品後/出框)
 //     170 訊噪比 / 092 恐懼留白 / 148 漸進減法(版型沒要的不加,留白保持安靜)
 //     107 容易識別(字讀得到)
@@ -57,13 +57,13 @@ const DESIGNER_POLISH =
 'Real human-made commercial work. ' +
 'PHOTOGRAPHIC styles: Nikon Z9 with a fast NIKKOR Z S-line prime suited to the subject (35–50mm scenes, 85mm portraits, 105mm macro for food and detail), f/1.4–f/2.8, ISO 100–200, softbox key plus natural fill; surfaces carry fine grain, slight asymmetry and honest material imperfection in a matte finish. ' +
 'ILLUSTRATION, ink or graphic styles: the authentic medium — real ink bleed, paint body, print registration, collage tooth — with the visible hand of a designer. ' +
-'Decoration comes from the product own category. Exactly ONE promotional message, in one place. All text real, meaningful and correctly spelled; icons form one set of identical weight. ONE focal hierarchy, laid out by a human designer rather than a template: the product is the figure and everything else the ground; related text and small info sit together in one or two tight groups aligned to a shared edge, read along a natural path from headline to price; the balance is slightly asymmetric and off-centre, and where the layout allows, the headline or one graphic element tucks partly behind the product or runs off the canvas edge so the eye completes it. Nothing beyond what this layout asks for, the empty space left calm. Every word fully readable, the product never covered.';
+'Decoration comes from the product own category. Exactly ONE promotional message, in one place. All text real, meaningful and correctly spelled; icons form one set of identical weight. ONE focal hierarchy, laid out by a human designer rather than a template: the product is the figure and everything else the ground; related text and small info sit together in one or two tight groups aligned to a shared edge, read along a natural path from the headline to the product; the balance is slightly asymmetric and off-centre, and where the layout allows, the headline or one graphic element tucks partly behind the product or runs off the canvas edge so the eye completes it. Nothing beyond what this layout asks for, the empty space left calm. Every word fully readable, the product never covered.';
 
 // 🆕 v11.6 情境質感準則:台灣精緻電商 + 韓日質感,避開大陸俗豔。只在有選情境時注入。
 const CONTEXT_QUALITY =
 '=== AESTHETIC QUALITY STANDARD (applies to the promotional / seasonal context above) ===\n' +
 'Render the context with a refined, restrained, editorial sensibility — premium Taiwan e-commerce elevated with Korean and Japanese quality: clean, calm, tasteful, high-end, generous breathing space. ' +
-'Keep the palette to the brand colours plus ONE modest festive accent. Any price or discount is set small and typographically integrated, appearing once. Festival cues arrive through material, light and a single well-chosen object rather than through massed ornament. ' +
+'Keep the palette to the brand colours plus ONE modest festive accent. Festival cues arrive through material, light and a single well-chosen object rather than through massed ornament. ' +
 'Sale and festival contexts stay elegant, breathable and well-composed.\n\n';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2086,9 +2086,22 @@ function _measureRegion(ctx, x, y, w, h) {
     const lum = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
     sum += lum; sumSq += lum * lum; n++;
   }
-  if (!n) return { mean: 128, sd: 999 };
+  if (!n) return { mean: 128, sd: 999, edge: 1 };
   const mean = sum / n;
-  return { mean: mean, sd: Math.sqrt(Math.max(0, sumSq / n - mean * mean)) };
+  // 🩹 2026-09-27 邊緣密度:水平相鄰像素亮度差 > 28 的比例。
+  //   細字、小圖示在淺色背景上 sd 很低(被誤判成乾淨),但邊緣密度會明顯偏高。
+  const W = Math.max(1, w | 0), rowLen = W * 4;
+  let edges = 0, cmp = 0;
+  for (let r = 0; r < d.length; r += rowLen * 2) {
+    for (let c = 0; c + 8 < rowLen; c += 8) {
+      const a = r + c, b = a + 4;
+      const la = 0.2126 * d[a] + 0.7152 * d[a + 1] + 0.0722 * d[a + 2];
+      const lb = 0.2126 * d[b] + 0.7152 * d[b + 1] + 0.0722 * d[b + 2];
+      if (Math.abs(la - lb) > 28) edges++;
+      cmp++;
+    }
+  }
+  return { mean: mean, sd: Math.sqrt(Math.max(0, sumSq / n - mean * mean)), edge: cmp ? edges / cmp : 1 };
 }
 
 // 四個角落挑一個最乾淨的
@@ -2105,15 +2118,17 @@ function pickLogoSpot(ctx, boxW, boxH, margin) {
     let m;
     try { m = _measureRegion(ctx, sp.x, sp.y, boxW, boxH); }
     catch (e) { return { x: spots[0].x, y: spots[0].y, useWhite: true, scrim: true, why: 'canvas 被跨網域污染,量不到 → 用預設右下+白 logo+柔光底' }; }
-    // sd 越小越乾淨。右下是廣告慣例,給它一點優先權(sd 打 9 折)
-    const score = m.sd * (sp.key === 'br' ? 0.9 : 1);
-    if (!best || score < best.score) best = { x: sp.x, y: sp.y, key: sp.key, mean: m.mean, sd: m.sd, score: score };
+    // 分數越小越乾淨:明暗起伏(sd)+ 邊緣密度(抓細字、小圖示)。
+    //   🩹 2026-09-27 右下是提示詞指定留白的角 → 優先權加大(打 7 折);
+    //   但 AI 沒照做、右下有字時,邊緣密度會讓它輸給別的角,不會硬壓在字上。
+    const score = (m.sd + m.edge * 400) * (sp.key === 'br' ? 0.7 : 1);
+    if (!best || score < best.score) best = { x: sp.x, y: sp.y, key: sp.key, mean: m.mean, sd: m.sd, edge: m.edge, score: score };
   }
   return {
     x: best.x, y: best.y, key: best.key,
     useWhite: best.mean < 140,      // 背景偏暗 → 白 logo;偏亮 → 黑 logo
     scrim: best.sd > 34,            // 那塊區域太花 → 墊一層柔光底
-    why: best.key + ' · 亮度 ' + best.mean.toFixed(0) + ' · 雜亂度 ' + best.sd.toFixed(0),
+    why: best.key + ' · 亮度 ' + best.mean.toFixed(0) + ' · 雜亂度 ' + best.sd.toFixed(0) + ' · 邊緣 ' + (best.edge * 100).toFixed(0) + '%',
   };
 }
 
@@ -2128,46 +2143,48 @@ async function compositeBrandLogo(ctx) {
     const sizeKey = document.getElementById('logoSize')?.value || 'normal';
     const basePct = LOGO_SIZES[sizeKey] || LOGO_SIZES.normal;
     const margin  = Math.round(AM.w * LOGO_MARGIN);
-    // boxW 先用基礎百分比;真正的寬度會在裁圖後依長寬比補償(見下方 _boxW)
-    const boxW    = Math.round(AM.w * basePct);
-
-    // 先用「方形」估一塊區域來量,實際高度等圖載入後再算
-    const spot = pickLogoSpot(ctx, boxW, boxW, margin);
-
-    // 來源:有分白/黑兩版就照背景挑;否則就用那唯一一個檔(客戶通常只丟一個)
+    // 🩹 2026-09-27 Logo 壓到字(RA 實測):以前先用 152×152 的正方形去量角落,
+    //   實際貼上去的卻是 248×92 的扁長 logo —— 量的範圍跟貼的範圍不一樣。
+    //   改成:先載入 logo、算出實際寬高,再用「實際那一塊」去量四個角。
     const hasPair = !!(urls.white && urls.black);
-    const src = hasPair ? (spot.useWhite ? urls.white : urls.black)
-                        : (urls.mono || urls.color || urls.white || urls.black);
-    if (!src) return;
-
-    const img = await new Promise(function (res, rej) {
-      const im = new Image();
-      im.crossOrigin = 'anonymous';         // 疊完還要能下載,不能污染畫布
-      im.onload = function () { res(im); };
-      im.onerror = function () { rej(new Error('logo 載入失敗')); };
-      im.src = src;
-    });
+    const _loadImg = function (u) {
+      return new Promise(function (res, rej) {
+        const im = new Image();
+        im.crossOrigin = 'anonymous';       // 疊完還要能下載,不能污染畫布
+        im.onload = function () { res(im); };
+        im.onerror = function () { rej(new Error('logo 載入失敗')); };
+        im.src = u;
+      });
+    };
+    const _firstSrc = urls.mono || urls.color || urls.white || urls.black;
+    if (!_firstSrc) return;
+    let img = await _loadImg(_firstSrc);
 
     // ✂️ 先裁掉透明邊,之後的比例、單色偵測、繪製都用裁過的版本
-    const trimmed = _trimTransparent(img) || img;
+    let trimmed = _trimTransparent(img) || img;
     const tW = trimmed.width || trimmed.naturalWidth || 1;
     const tH = trimmed.height || trimmed.naturalHeight || 1;
     const ratio = tH / tW;
 
     // 🩹 2026-08-11 寬形 logo 顯小修正(RA 實測 332×123 的巧福 logo):
-    //   原本是「寬度 = 畫面 14%」。正方形 logo 這樣剛好,但扁長的 logo
-    //   寬 151px、高只有 56px,視覺上小一號。
-    //   改成用「幾何平均」當基準:讓 √(寬×高) 等於目標尺寸,
-    //   等於用「面積感」而不是「寬度」來衡量 —— 扁的自動放寬、瘦高的自動收窄,
-    //   不同形狀的 logo 疊出來視覺份量才一致。
+    //   用「幾何平均」當基準:讓 √(寬×高) 等於目標尺寸 —— 扁的自動放寬、瘦高的自動收窄。
     //   上限鎖 34% 畫面寬,避免極端扁長的 logo 橫貫整張圖。
     const _boxW = Math.min(
       Math.round(AM.w * 0.34),
       Math.round(AM.w * basePct / Math.sqrt(Math.max(0.05, ratio)))
     );
     const boxH  = Math.round(_boxW * ratio);
-    // 高度算出來後,把 y 座標依上/下重新對齊
+
+    // 用實際尺寸(外加一圈安全邊)去量四個角
+    const _pad0 = Math.round(Math.min(_boxW, boxH) * 0.15);
+    const spot = pickLogoSpot(ctx, _boxW + _pad0, boxH + _pad0, Math.max(0, margin - _pad0));
     const y = (spot.key === 'tl' || spot.key === 'tr') ? margin : (AM.h - margin - boxH);
+
+    // 有分白/黑兩版 → 照背景挑那一版(形狀相同,尺寸沿用)
+    if (hasPair) {
+      const _want = spot.useWhite ? urls.white : urls.black;
+      if (_want && _want !== _firstSrc) { img = await _loadImg(_want); trimmed = _trimTransparent(img) || img; }
+    }
 
     // 🔍 模式改成「看圖說話」,不看檔名:
     //   兩版都給 → 直接用設計師調好的版本,不動它
@@ -2194,7 +2211,6 @@ async function compositeBrandLogo(ctx) {
     }
 
     ctx.globalAlpha = 0.92;                 // 稍微透一點,不會像貼紙硬蓋上去
-    // 角落是用 boxW(方形估算)量的;實際寬度變成 _boxW,所以右側/下側要重新對齊邊界
     const _x = (spot.key === 'tr' || spot.key === 'br') ? (AM.w - margin - _boxW) : margin;
     ctx.drawImage(paintSrc, _x, y, _boxW, boxH);
     ctx.globalAlpha = 1;
@@ -3907,26 +3923,55 @@ function getBrandContext() {
 //    修法:組 prompt 時把這類「叫它畫」的句子濾掉(禁令句 ⛔/Do NOT 保留)。
 //    ⚠️ 品牌包沒有編輯介面,護欄放程式端,以後誰寫什麼都自動保護。
 // ═══════════════════════════════════════════════════════════════════════
-const _LOGO_TALK_RE = /\b(logos?|logotype|brand signature|signature mark|brand mark|wordmark|emblem)\b/i;
-const _LOGO_KEEP_RE = /⛔|\bdo not\b|\bdon't\b|\bnever\b|\bno\s+(vendor|company)\b/i;
-function _dropLogoTalk(text) {
+const _LOGO_TALK_RE  = /\b(logos?|logotype|brand signature|signature mark|brand mark|wordmark|emblem)\b/i;
+// 🩹 2026-09-27 價格濾網(RA:後續價格一律不要 —— 客戶價格常變,AI 每張還自己編數字)
+const _PRICE_TALK_RE = /\b(prices?|pricing|price[- ]?tags?|price[- ]?slash\w*|percentage[- ]off|discount\w*)\b|NT\$|售價|定價|價格|特價|原價|優惠價/i;
+const _TALK_KEEP_RE  = /⛔|\bdo not\b|\bdon't\b|\bnever\b|\bno\s+(vendor|company)\b/i;
+// 把「叫 AI 放某樣東西」的描述拿掉:括號清單拿掉那一項、條列行拿掉整行、
+//   一般句子只拿掉提到它的那個逗號子句(整句只剩它才整句拿掉)。禁令句一律保留。
+function _dropTalk(text, re) {
   let t = String(text || '');
-  // 括號裡的清單:只拿掉提到 logo 的那一項,其他用途保留
+  // 「A 或 B」裡只拿掉提到它的那一邊(例:a small price tag or a "限時優惠" badge → a "限時優惠" badge)
+  t = t.replace(/\b(?:a\s+)?(?:small\s+|large\s+)?(price[- ]?tags?|price[- ]?slash\w*|prices?|logos?|brand marks?|wordmarks?)\s+or\s+/gi, '');
+  t = t.replace(/\s+or\s+(?:a\s+)?(?:small\s+|large\s+)?(price[- ]?tags?|price[- ]?slash\w*|prices?|logos?|brand marks?|wordmarks?)\b(?:\s+badges?)?/gi, '');
   t = t.replace(/\(([^)]*)\)/g, function (m, g) {
-    if (!_LOGO_TALK_RE.test(g) || _LOGO_KEEP_RE.test(g)) return m;
-    const items = g.split(/\s*,\s*/).filter(function (i) { return !_LOGO_TALK_RE.test(i); });
+    if (!re.test(g) || _TALK_KEEP_RE.test(g)) return m;
+    const items = g.split(/\s*,\s*/).filter(function (i) { return !re.test(i); });
     return items.length ? '(' + items.join(', ') + ')' : '';
   });
-  // 條列行:整行叫它畫 logo → 整行拿掉
-  t = t.split('\n').filter(function (line) {
-    return !(/^\s*-/.test(line) && _LOGO_TALK_RE.test(line) && !_LOGO_KEEP_RE.test(line));
-  }).join('\n');
-  // 一般句子 / 分號子句:拿掉提到 logo 的那一句
-  t = t.split('\n').map(function (line) {
-    if (!_LOGO_TALK_RE.test(line) || _LOGO_KEEP_RE.test(line)) return line;
-    return line.split(/(?<=[.;])\s+|;\s*/).filter(function (seg) { return !_LOGO_TALK_RE.test(seg); }).join('; ').trim();
-  }).join('\n');
-  return t;
+  const _clauses = function (sent) {
+    const parts = sent.split(/\s*[,;]\s*/).filter(function (c) { return !re.test(c); });
+    if (!parts.length) return '';
+    return parts.join(', ').replace(/[,;\s]+$/, '').trim();
+  };
+  return t.split('\n').map(function (line) {
+    if (!re.test(line) || _TALK_KEEP_RE.test(line)) return line;
+    const bullet = line.match(/^(\s*-\s*)(.*)$/);
+    if (bullet) {
+      // 條列行:冒號前是標題,冒號後的清單只拿掉那一項;整行只剩它才整行拿掉
+      const body = bullet[2], ci = body.indexOf(':');
+      const head = ci > -1 ? body.slice(0, ci + 1) : '', rest = ci > -1 ? body.slice(ci + 1) : body;
+      if (re.test(head)) return null;
+      const kept = _clauses(rest);
+      return kept ? bullet[1] + (head ? head + ' ' : '') + kept : null;
+    }
+    return line.split(/(?<=[.;])\s+/).map(function (sent) {
+      if (!re.test(sent)) return sent;
+      const kept = _clauses(sent);
+      return kept ? kept + '.' : '';
+    }).filter(Boolean).join(' ').trim();
+  }).filter(function (l) { return l !== null; }).join('\n');
+}
+function _dropLogoTalk(text)  { return _dropTalk(text, _LOGO_TALK_RE); }
+function _dropPriceTalk(text) { return _dropTalk(text, _PRICE_TALK_RE); }
+// 商品資料裡夾帶的價格數字(NT$1,980 / 1980元 / 售價:…)直接剝掉
+function _stripPriceFigures(text) {
+  return String(text || '')
+    .replace(/(售價|定價|特價|原價|優惠價|價格)\s*[:：]?\s*(NT\$|\$)?\s*[\d,]+(\.\d+)?\s*(元)?\s*(起)?/g, '')
+    .replace(/(NT\$|\$)\s*[\d,]+(\.\d+)?\s*(元)?\s*(起)?/g, '')
+    .replace(/[\d,]{3,}\s*元\s*(起)?/g, '')
+    .replace(/\s*[,，;；]\s*(?=[,，;；]|$)/g, '')
+    .trim();
 }
 
 function buildPosterPrompt() {
@@ -4063,14 +4108,16 @@ function buildPosterPrompt() {
     prompt += `=== PRODUCT ESSENCE (HIGH PRIORITY) ===\n`;
     prompt += `Brand ambience defines the WORLD around the product; the lines below define what the product itself LOOKS LIKE, and they win over any conflicting brand or style hint.\n`;
     if (ctx.product) prompt += `- Product: "${ctx.product}"\n`;
-    if (ctx.spec)    prompt += `- Physical traits (colour, material, era, style): ${ctx.spec}\n`;
-    if (ctx.feature) prompt += `- Selling points and positioning: ${ctx.feature}\n`;
-    _otherLines.forEach(function (o) { prompt += `- ${o.replace(/^[·・\-\s]+/, '')}\n`; });
+    // 🩹 2026-09-27 商品資料裡的價格數字一律剝掉(價格常變,不進圖)
+    var _spec = _stripPriceFigures(ctx.spec), _feat = _stripPriceFigures(ctx.feature);
+    if (_spec) prompt += `- Physical traits (colour, material, era, style): ${_spec}\n`;
+    if (_feat) prompt += `- Selling points and positioning: ${_feat}\n`;
+    _otherLines.forEach(function (o) { var _o = _stripPriceFigures(o); if (_o) prompt += `- ${_o.replace(/^[·・\-\s]+/, '')}\n`; });
     prompt += '\n';
   }
 
   prompt += `BRAND MARKS: the only emblem or lettering in this image is what is physically printed on the packaging, reproduced exactly; every other surface stays plain and the layout runs to all four edges.\n`;
-  if (_showMark) prompt += `Keep one corner calm and low-detail — a real brand mark is placed there afterwards.\n`;
+  if (_showMark) prompt += `The bottom-right corner — about a quarter of the width and a tenth of the height — stays empty, plain background only, with every word, icon and graphic placed elsewhere; a real brand mark is placed there afterwards.\n`;
   prompt += '\n';
 
   // ═════ ② 骨架層 —— 畫布與版面 ════════════════════════════════════
@@ -4088,7 +4135,7 @@ function buildPosterPrompt() {
   prompt += `Canvas: ${_RATIO_TXT[_osz.key] || 'square 1:1'} orientation, exactly ${_osz.w}x${_osz.h} pixels. Compose natively FOR this aspect ratio: the artwork reaches all four edges, the subject and headline sit comfortably inside the frame with balanced margins, and the whole height of the canvas carries content.\n`;
   prompt += `Layout type: ${layout.label}\n`;
 
-  let _layoutComp = _dropLogoTalk(layout.composition || layout.prompt || '');   // 🩹 2026-09-27 Logo 濾網
+  let _layoutComp = _dropPriceTalk(_dropLogoTalk(layout.composition || layout.prompt || ''));   // 🩹 2026-09-27 Logo + 價格濾網
   if (_noText) {
     _layoutComp = _layoutComp
       .split(/(?<=[.;])\s+/)
@@ -4104,7 +4151,7 @@ function buildPosterPrompt() {
   prompt += `=== SCENE (where this photograph happens) ===\n`;
   if (flavor.flavor) {
     // 選了②設計風格 → 它是場景的最高權威(維持原本的覆蓋規則)
-    prompt += flavor.flavor + '\n';
+    prompt += _dropPriceTalk(flavor.flavor) + '\n';
     prompt += `This chosen style decides the actual setting, era and decor. It takes precedence over any scene the brand ambience implies.\n`;
     prompt += `Within it, place the subject in: ${_sv}.\n`;
   } else if (_sceneDeferred || !_sceneTxt0) {
@@ -4170,7 +4217,7 @@ function buildPosterPrompt() {
 
   if (contextTheme.context) {
     prompt += `=== CONTEXTUAL THEME ===\n`;
-    prompt += contextTheme.context + '\n\n';
+    prompt += _dropPriceTalk(contextTheme.context) + '\n\n';
     prompt += CONTEXT_QUALITY;
   }
 
@@ -4191,7 +4238,7 @@ function buildPosterPrompt() {
     prompt += `CHARACTER PROPORTION: every Chinese character keeps its natural square body — equal width and height, the way a real typeface sets it. To fit a line, change the font size or the line break, keeping each glyph unscaled in either direction.\n`;
     if (headline)    prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
     if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
-    prompt += `NUMERALS & PRICES: set digits in the same type family, weight, colour and material finish as the Chinese headline they belong to. A price and its qualifier (最低 / 起 / NT$ / %) form one unit — shared baseline, qualifier smaller and optically aligned to the numeral cap-height, size ratio within 1.4x — with quiet space around it so it reads at thumbnail size.\n\n`;
+    prompt += `NUMBERS: the only figures in this image are the ones typed in the text above or printed on the packaging itself. When the text above contains digits, set them in the same type family, weight and colour as the headline, sharing its baseline.\n\n`;
   } else {
     prompt += `=== TEXT TO RENDER ===\n`;
     prompt += `This is a CLEAN PLATE: a pure photograph of the product in its environment, which a human graphic designer will open in Photoshop and set the typography onto afterwards.\n`;
