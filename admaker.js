@@ -4024,9 +4024,12 @@ function buildPosterPrompt() {
     'Compose low: the product sits in the lower third with generous airy space above it.',
     'Move in close: the product fills roughly 70% of the frame, cropped confidently, minimal surrounding decoration.',
     'Pull back: shoot the product from a distance so the surrounding environment carries most of the frame, editorial and unhurried.',
-    'Use a top-down flat-lay view looking straight down at the product on a surface.',
+    // 🩹 2026-09-27 拿掉「俯拍平放」與「低角度仰拍」:構圖池只能動位置與距離,不能換相機角度。
+    //   商品照的角度是固定的,SCENE_INTEGRATION 又規定整個場景照商品照的角度蓋 →
+    //   抽到俯拍時,商品平視、地板俯視,落地捕蚊燈看起來像被放倒躺在地上(RA 實測)。
+    'Frame the product through a gap — a doorway, the space between two objects — so it is seen from a natural standing distance.',
     'Place the product on a diagonal axis with a slightly tilted camera for quiet dynamism.',
-    'Shoot from a low angle looking slightly up at the product so it reads as substantial and premium.',
+    'Let the product occupy the space it really lives in, standing or resting exactly as it is used, with the setting receding behind it.',
     'Frame an extreme close-up on one telling detail of the product, with the rest falling into soft focus.',
     'Split the frame: product occupying one clean half, an uninterrupted flat area of colour or surface in the other half.',
     'Layer the shot with an out-of-focus object in the foreground so the viewer feels present in the scene.',
