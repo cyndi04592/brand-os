@@ -41,11 +41,16 @@ const CAM_PROBE = 'Shot on Nikon Z9 with LAOWA 24mm T/14 2x Macro Periprobe — 
 const CAM_FREEZE = 'Shot on Nikon Z9 using its fast electronic shutter (1/8000s up to 1/32000s, zero rolling shutter) together with a Godox AD600 high-speed-sync strobe to freeze splashes, droplets and flying particles razor-sharp, NIKKOR Z 50mm f/1.2 S or MC 105mm macro.';
 
 // ★ v11.1 設計師工法層 (DESIGNER_POLISH) — 具體反 AI 指紋版(相機/佈光 + 品類 + 單一促銷 + 真材質),風格分流、不碰選定風格
+// 🩹 2026-09-27 人味只加在「設計師」這一句(參考《設計的法則200》閉合原則/三分定律)
+//   RA:攝影師、燈光、場景、品牌包、排版、設計風格、情境一律不動 —— 那些是本質;
+//   AI 感的來源是「版面排得太完美」,所以只讓設計師的手變得像人:
+//   不對稱、偏離中心、標題或一個圖形元素局部藏到商品後方或出框,讓眼睛自己補完。
+//   護欄:字一定讀得到、商品絕不被蓋住。
 const DESIGNER_POLISH =
 'Real human-made commercial work. ' +
 'PHOTOGRAPHIC styles: Nikon Z9 with a fast NIKKOR Z S-line prime suited to the subject (35–50mm scenes, 85mm portraits, 105mm macro for food and detail), f/1.4–f/2.8, ISO 100–200, softbox key plus natural fill; surfaces carry fine grain, slight asymmetry and honest material imperfection in a matte finish. ' +
 'ILLUSTRATION, ink or graphic styles: the authentic medium — real ink bleed, paint body, print registration, collage tooth — with the visible hand of a designer. ' +
-'Decoration comes from the product own category. Exactly ONE promotional message, in one place. All text real, meaningful and correctly spelled; icons form one set of identical weight. ONE focal hierarchy on a deliberate grid, with generous breathing space.';
+'Decoration comes from the product own category. Exactly ONE promotional message, in one place. All text real, meaningful and correctly spelled; icons form one set of identical weight. ONE focal hierarchy with generous breathing space, laid out by a human hand rather than a perfect grid: a slightly asymmetric, off-centre balance, and where the layout allows, the headline or one graphic element tucks partly behind the product or runs off the canvas edge so the eye completes it — every word still fully readable, the product never covered.';
 
 // 🆕 v11.6 情境質感準則:台灣精緻電商 + 韓日質感,避開大陸俗豔。只在有選情境時注入。
 const CONTEXT_QUALITY =
