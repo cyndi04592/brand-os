@@ -53,11 +53,14 @@ const CAM_FREEZE = 'Shot on Nikon Z9 using its fast electronic shutter (1/8000s 
 //     170 訊噪比 / 092 恐懼留白 / 148 漸進減法(版型沒要的不加,留白保持安靜)
 //     107 容易識別(字讀得到)
 //   ⚠️ 刻意不寫 wabi-sabi(195 侘寂):AI 會直接變日式禪風,毀掉品牌本質。
+//   2026-09-27 RA:AI 很愛在字前面加小圖示(人類設計師不太這樣做)。
+//     原句「icons form one set of identical weight」預設了圖示存在 → AI 讀到就畫。
+//     改成:特色字用純文字排,靠字級/粗細/間距區分,旁邊不配圖案。
 const DESIGNER_POLISH =
 'Real human-made commercial work. ' +
 'PHOTOGRAPHIC styles: Nikon Z9 with a fast NIKKOR Z S-line prime suited to the subject (35–50mm scenes, 85mm portraits, 105mm macro for food and detail), f/1.4–f/2.8, ISO 100–200, softbox key plus natural fill; surfaces carry fine grain, slight asymmetry and honest material imperfection in a matte finish. ' +
 'ILLUSTRATION, ink or graphic styles: the authentic medium — real ink bleed, paint body, print registration, collage tooth — with the visible hand of a designer. ' +
-'Decoration comes from the product own category. Exactly ONE promotional message, in one place. All text real, meaningful and correctly spelled; icons form one set of identical weight. ONE focal hierarchy, laid out by a human designer rather than a template: the product is the figure and everything else the ground; related text and small info sit together in one or two tight groups aligned to a shared edge, read along a natural path from the headline to the product; the balance is slightly asymmetric and off-centre, and where the layout allows, the headline or one graphic element tucks partly behind the product or runs off the canvas edge so the eye completes it. Nothing beyond what this layout asks for, the empty space left calm. Every word fully readable, the product never covered.';
+'Decoration comes from the product own category. Exactly ONE promotional message, in one place. All text real, meaningful and correctly spelled; feature words are set as plain type, carried by size, weight and spacing alone, with no pictogram beside them. ONE focal hierarchy, laid out by a human designer rather than a template: the product is the figure and everything else the ground; related text and small info sit together in one or two tight groups aligned to a shared edge, read along a natural path from the headline to the product; the balance is slightly asymmetric and off-centre, and where the layout allows, the headline or one graphic element tucks partly behind the product or runs off the canvas edge so the eye completes it. Nothing beyond what this layout asks for, the empty space left calm. Every word fully readable, the product never covered.';
 
 // 🆕 v11.6 情境質感準則:台灣精緻電商 + 韓日質感,避開大陸俗豔。只在有選情境時注入。
 const CONTEXT_QUALITY =
@@ -371,7 +374,7 @@ Reference aesthetic: Pinterest food photography hero shots, premium beverage com
   checklist_info: {
     label: '重點條列型',
     desc: '商品在側,右側條列賣點,像資訊圖',
-    composition: 'CHECKLIST INFO LAYOUT: product anchored on one side, the other side reserved for a vertical stack of 3-5 short benefit lines with small icon or bullet markers. Clean aligned baseline grid, infographic clarity, plenty of breathing room.'
+    composition: 'CHECKLIST INFO LAYOUT: product anchored on one side, the other side reserved for a vertical stack of 3-5 short benefit lines, each led by a simple small bullet dot. Clean aligned baseline grid, infographic clarity, plenty of breathing room.'
   },
   hand_hold: {
     label: '手持實拍型',
@@ -387,7 +390,7 @@ Reference aesthetic: Pinterest food photography hero shots, premium beverage com
 - Single large bold display headline (Serif or strong Sans) at top, 2 lines maximum
 - Subtitle in smaller refined typography below headline
 - Tiny brand logo signature at top-center or bottom-center
-- Very minimal supporting elements: maybe a thin decorative line, a small icon, a price tag
+- Very minimal supporting elements: at most a thin decorative line
 - Bottom: 3-4 short product feature tags separated by middle-dots or thin vertical bars
 - Generous negative space (50%+ empty)
 - Soft natural directional lighting on product
@@ -2088,19 +2091,32 @@ function _measureRegion(ctx, x, y, w, h) {
   }
   if (!n) return { mean: 128, sd: 999, edge: 1 };
   const mean = sum / n;
-  // 🩹 2026-09-27 邊緣密度:水平相鄰像素亮度差 > 28 的比例。
-  //   細字、小圖示在淺色背景上 sd 很低(被誤判成乾淨),但邊緣密度會明顯偏高。
-  const W = Math.max(1, w | 0), rowLen = W * 4;
-  let edges = 0, cmp = 0;
-  for (let r = 0; r < d.length; r += rowLen * 2) {
-    for (let c = 0; c + 8 < rowLen; c += 8) {
-      const a = r + c, b = a + 4;
-      const la = 0.2126 * d[a] + 0.7152 * d[a + 1] + 0.0722 * d[a + 2];
-      const lb = 0.2126 * d[b] + 0.7152 * d[b + 1] + 0.0722 * d[b + 2];
-      if (Math.abs(la - lb) > 28) edges++;
-      cmp++;
+  // 🩹 2026-09-27 邊緣密度(v2):把區域切成 6×3 小格,取「最髒的那一格」的邊緣比例。
+  //   v1 算整塊平均 → 一排小字只佔 logo 區域左下一角,被稀釋成 1%,等於沒偵測到
+  //   (RA 實測:logo 壓到「環保無味」,log 顯示邊緣 1%)。
+  //   用 RA 那張圖驗證:有小字的角 20~49%、空白牆 0%。
+  const W = Math.max(1, w | 0), Hh = Math.max(1, h | 0), rowLen = W * 4;
+  const CX = 6, CY = 3, T = 18;
+  const _lum = function (i) { return 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]; };
+  let worst = 0;
+  for (let cy = 0; cy < CY; cy++) {
+    for (let cx = 0; cx < CX; cx++) {
+      const x0 = Math.floor(cx * W / CX), x1 = Math.floor((cx + 1) * W / CX) - 1;
+      const y0 = Math.floor(cy * Hh / CY), y1 = Math.floor((cy + 1) * Hh / CY) - 1;
+      let e = 0, c = 0;
+      for (let yy = y0; yy < y1; yy++) {
+        for (let xx = x0; xx < x1; xx++) {
+          const i = yy * rowLen + xx * 4;
+          const l = _lum(i);
+          const dd = Math.max(Math.abs(l - _lum(i + 4)), Math.abs(l - _lum(i + rowLen)));
+          if (dd > T) e++;
+          c++;
+        }
+      }
+      if (c && e / c > worst) worst = e / c;
     }
   }
+  const edges = worst, cmp = 1;
   return { mean: mean, sd: Math.sqrt(Math.max(0, sumSq / n - mean * mean)), edge: cmp ? edges / cmp : 1 };
 }
 
@@ -2121,7 +2137,9 @@ function pickLogoSpot(ctx, boxW, boxH, margin) {
     // 分數越小越乾淨:明暗起伏(sd)+ 邊緣密度(抓細字、小圖示)。
     //   🩹 2026-09-27 右下是提示詞指定留白的角 → 優先權加大(打 7 折);
     //   但 AI 沒照做、右下有字時,邊緣密度會讓它輸給別的角,不會硬壓在字上。
-    const score = (m.sd + m.edge * 400) * (sp.key === 'br' ? 0.7 : 1);
+    //   🩹 2026-09-27 v2:最髒小格 > 15% = 那個角有字/圖示 → 直接判定不能放(+1000),
+    //   四個角都有字時才退而求其次,挑相對最乾淨的。
+    const score = (m.sd + m.edge * 200 + (m.edge > 0.15 ? 1000 : 0)) * (sp.key === 'br' ? 0.7 : 1);
     if (!best || score < best.score) best = { x: sp.x, y: sp.y, key: sp.key, mean: m.mean, sd: m.sd, edge: m.edge, score: score };
   }
   return {
@@ -4117,7 +4135,7 @@ function buildPosterPrompt() {
   }
 
   prompt += `BRAND MARKS: the only emblem or lettering in this image is what is physically printed on the packaging, reproduced exactly; every other surface stays plain and the layout runs to all four edges.\n`;
-  if (_showMark) prompt += `The bottom-right corner — about a quarter of the width and a tenth of the height — stays empty, plain background only, with every word, icon and graphic placed elsewhere; a real brand mark is placed there afterwards.\n`;
+  if (_showMark) prompt += `The bottom-right corner — about a quarter of the width and a tenth of the height — stays empty, plain background only — any row of tags or icons along the bottom ends before it, and every word, icon and graphic sits elsewhere; a real brand mark is placed there afterwards.\n`;
   prompt += '\n';
 
   // ═════ ② 骨架層 —— 畫布與版面 ════════════════════════════════════
