@@ -46,11 +46,18 @@ const CAM_FREEZE = 'Shot on Nikon Z9 using its fast electronic shutter (1/8000s 
 //   AI 感的來源是「版面排得太完美」,所以只讓設計師的手變得像人:
 //   不對稱、偏離中心、標題或一個圖形元素局部藏到商品後方或出框,讓眼睛自己補完。
 //   護欄:字一定讀得到、商品絕不被蓋住。
+//   2026-09-27 晚 融會貫通版(同一句重寫,不加句):一句話同時做到
+//     067 圖形─背景(商品是圖,其餘是底)· 152 接近(相關資訊聚成一兩組)
+//     006 對齊(對齊同一條邊,不是全部置中)· 086 古騰堡圖表(標題→價格的閱讀路徑)
+//     160 三分 / 183 對稱反用(偏離中心)· 027 閉合(藏到商品後/出框)
+//     170 訊噪比 / 092 恐懼留白 / 148 漸進減法(版型沒要的不加,留白保持安靜)
+//     107 容易識別(字讀得到)
+//   ⚠️ 刻意不寫 wabi-sabi(195 侘寂):AI 會直接變日式禪風,毀掉品牌本質。
 const DESIGNER_POLISH =
 'Real human-made commercial work. ' +
 'PHOTOGRAPHIC styles: Nikon Z9 with a fast NIKKOR Z S-line prime suited to the subject (35–50mm scenes, 85mm portraits, 105mm macro for food and detail), f/1.4–f/2.8, ISO 100–200, softbox key plus natural fill; surfaces carry fine grain, slight asymmetry and honest material imperfection in a matte finish. ' +
 'ILLUSTRATION, ink or graphic styles: the authentic medium — real ink bleed, paint body, print registration, collage tooth — with the visible hand of a designer. ' +
-'Decoration comes from the product own category. Exactly ONE promotional message, in one place. All text real, meaningful and correctly spelled; icons form one set of identical weight. ONE focal hierarchy with generous breathing space, laid out by a human hand rather than a perfect grid: a slightly asymmetric, off-centre balance, and where the layout allows, the headline or one graphic element tucks partly behind the product or runs off the canvas edge so the eye completes it — every word still fully readable, the product never covered.';
+'Decoration comes from the product own category. Exactly ONE promotional message, in one place. All text real, meaningful and correctly spelled; icons form one set of identical weight. ONE focal hierarchy, laid out by a human designer rather than a template: the product is the figure and everything else the ground; related text and small info sit together in one or two tight groups aligned to a shared edge, read along a natural path from headline to price; the balance is slightly asymmetric and off-centre, and where the layout allows, the headline or one graphic element tucks partly behind the product or runs off the canvas edge so the eye completes it. Nothing beyond what this layout asks for, the empty space left calm. Every word fully readable, the product never covered.';
 
 // 🆕 v11.6 情境質感準則:台灣精緻電商 + 韓日質感,避開大陸俗豔。只在有選情境時注入。
 const CONTEXT_QUALITY =
