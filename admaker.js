@@ -3882,6 +3882,40 @@ function getBrandContext() {
 //      · 品牌的 mood / 色票 退到抽象層(它本來就是抽象詞)
 //      · 輸出尺寸 升到骨架層(畫布是主體的一部分,不是收尾註解)
 // ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+//  2026-09-27 ★ Logo 濾網 —— AI 絕不畫 logo(logo 一律由 compositeBrandLogo 疊真檔)
+//    病灶(RA 實測巧福 × 極簡海報型):左上是程式疊的真 logo,底部正中間卻多一顆
+//    AI 自己畫的綠色圓章 —— 一張圖兩個 logo。三個地方在明文叫 AI 畫:
+//      ① 版型:極簡海報型「Tiny brand logo signature at top-center or bottom-center」
+//         (雜誌封面型、行業版型也有同類「brand signature / brand mark」句)
+//      ② 品牌包 typography:「brand signature is the round CHIAO FU … logo」
+//      ③ 品牌包 primary color:「(used for headlines, … brand circular logo)」
+//    三句叫它畫、BRAND MARKS 一句叫它別畫 → 三句贏。
+//    修法:組 prompt 時把這類「叫它畫」的句子濾掉(禁令句 ⛔/Do NOT 保留)。
+//    ⚠️ 品牌包沒有編輯介面,護欄放程式端,以後誰寫什麼都自動保護。
+// ═══════════════════════════════════════════════════════════════════════
+const _LOGO_TALK_RE = /\b(logos?|logotype|brand signature|signature mark|brand mark|wordmark|emblem)\b/i;
+const _LOGO_KEEP_RE = /⛔|\bdo not\b|\bdon't\b|\bnever\b|\bno\s+(vendor|company)\b/i;
+function _dropLogoTalk(text) {
+  let t = String(text || '');
+  // 括號裡的清單:只拿掉提到 logo 的那一項,其他用途保留
+  t = t.replace(/\(([^)]*)\)/g, function (m, g) {
+    if (!_LOGO_TALK_RE.test(g) || _LOGO_KEEP_RE.test(g)) return m;
+    const items = g.split(/\s*,\s*/).filter(function (i) { return !_LOGO_TALK_RE.test(i); });
+    return items.length ? '(' + items.join(', ') + ')' : '';
+  });
+  // 條列行:整行叫它畫 logo → 整行拿掉
+  t = t.split('\n').filter(function (line) {
+    return !(/^\s*-/.test(line) && _LOGO_TALK_RE.test(line) && !_LOGO_KEEP_RE.test(line));
+  }).join('\n');
+  // 一般句子 / 分號子句:拿掉提到 logo 的那一句
+  t = t.split('\n').map(function (line) {
+    if (!_LOGO_TALK_RE.test(line) || _LOGO_KEEP_RE.test(line)) return line;
+    return line.split(/(?<=[.;])\s+|;\s*/).filter(function (seg) { return !_LOGO_TALK_RE.test(seg); }).join('; ').trim();
+  }).join('\n');
+  return t;
+}
+
 function buildPosterPrompt() {
   const ctx = getBrandContext();
   const brandPack = detectBrandPack();
@@ -3927,6 +3961,10 @@ function buildPosterPrompt() {
     else if (/^(decorative elements|composition habit)/.test(k))      { /* drop */ }
     else _bag.other.push(m[1].trim() + ': ' + v);
   });
+
+  // 🩹 2026-09-27 Logo 濾網:色票與字體欄常夾帶「品牌圓形 logo」→ 濾掉那一項
+  _bag.colour = _bag.colour.map(_dropLogoTalk).filter(Boolean);
+  _bag.type   = _bag.type.map(_dropLogoTalk).filter(Boolean);
 
   // 光影行去掉「寫死的方向」—— 17 個品牌包裡有 7 個把光釘在左上/右上,
   //   場景換了光還是同一邊,看起來仍是同一天拍的。只拔方向,光質與色溫全留。
@@ -4034,7 +4072,7 @@ function buildPosterPrompt() {
   prompt += `Canvas: ${_RATIO_TXT[_osz.key] || 'square 1:1'} orientation, exactly ${_osz.w}x${_osz.h} pixels. Compose natively FOR this aspect ratio: the artwork reaches all four edges, the subject and headline sit comfortably inside the frame with balanced margins, and the whole height of the canvas carries content.\n`;
   prompt += `Layout type: ${layout.label}\n`;
 
-  let _layoutComp = layout.composition || layout.prompt || '';
+  let _layoutComp = _dropLogoTalk(layout.composition || layout.prompt || '');   // 🩹 2026-09-27 Logo 濾網
   if (_noText) {
     _layoutComp = _layoutComp
       .split(/(?<=[.;])\s+/)
@@ -4132,6 +4170,9 @@ function buildPosterPrompt() {
     prompt += `=== TEXT TO RENDER ===\n`;
     prompt += `Render the following Traditional Chinese text with pixel-perfect typography (correct glyphs, proper spacing, professional editorial layout).\n`;
     if (_bag.type.length) prompt += `Typography style: ${_bag.type.join('; ')}\n`;
+    // 🩹 2026-09-27 中文字被壓扁 / 拉成高窄(RA 實測):中文字天生是正方形字身,
+    //   AI 為了塞進版面會橫向或縱向縮放字形。這句只管字的比例,字型/字重/顏色仍照品牌包。
+    prompt += `CHARACTER PROPORTION: every Chinese character keeps its natural square body — equal width and height, the way a real typeface sets it. To fit a line, change the font size or the line break, keeping each glyph unscaled in either direction.\n`;
     if (headline)    prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
     if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
     prompt += `NUMERALS & PRICES: set digits in the same type family, weight, colour and material finish as the Chinese headline they belong to. A price and its qualifier (最低 / 起 / NT$ / %) form one unit — shared baseline, qualifier smaller and optically aligned to the numeral cap-height, size ratio within 1.4x — with quiet space around it so it reads at thumbnail size.\n\n`;
