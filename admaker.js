@@ -2217,15 +2217,17 @@ async function compositeBrandLogo(ctx) {
       // 那塊區域太花 → 墊一層很淡的柔光底(白 logo 墊暗底、黑 logo 墊亮底)
       const pad = Math.round(_boxW * 0.16);
       const _gx = ((spot.key === 'tr' || spot.key === 'br') ? (AM.w - margin - _boxW) : margin) + _boxW / 2;
+      const _gR = Math.max(_boxW, boxH) * 0.85 + pad;   // 漸層淡到 0 的半徑
       const g = ctx.createRadialGradient(
         _gx, y + boxH / 2, Math.min(_boxW, boxH) * 0.2,
-        _gx, y + boxH / 2, Math.max(_boxW, boxH) * 0.85 + pad);
+        _gx, y + boxH / 2, _gR);
       const base = spot.useWhite ? '0,0,0' : '255,255,255';
       g.addColorStop(0, 'rgba(' + base + ',0.34)');
       g.addColorStop(1, 'rgba(' + base + ',0)');
       ctx.fillStyle = g;
-      const _sx = (spot.key === 'tr' || spot.key === 'br') ? (AM.w - margin - _boxW) : margin;
-      ctx.fillRect(_sx - pad, y - pad, _boxW + pad * 2, boxH + pad * 2);
+      // 🩹 2026-09-27 以前只塗 logo 外擴一小圈的方框,漸層還沒淡完就被切掉 →
+      //   留下一塊看得見的方形淡色底,最像「貼上去」(RA 實測)。改成塗滿整個漸層圓。
+      ctx.fillRect(_gx - _gR, y + boxH / 2 - _gR, _gR * 2, _gR * 2);
     }
 
     ctx.globalAlpha = 0.92;                 // 稍微透一點,不會像貼紙硬蓋上去
@@ -4135,7 +4137,7 @@ function buildPosterPrompt() {
   }
 
   prompt += `BRAND MARKS: the only emblem or lettering in this image is what is physically printed on the packaging, reproduced exactly; every other surface stays plain and the layout runs to all four edges.\n`;
-  if (_showMark) prompt += `The bottom-right corner — about a quarter of the width and a tenth of the height — stays empty, plain background only — any row of tags or icons along the bottom ends before it, and every word, icon and graphic sits elsewhere; a real brand mark is placed there afterwards.\n`;
+  if (_showMark) prompt += `Keep one corner calm and low-detail — a real brand mark is placed there afterwards.\n`;
   prompt += '\n';
 
   // ═════ ② 骨架層 —— 畫布與版面 ════════════════════════════════════
@@ -4251,9 +4253,6 @@ function buildPosterPrompt() {
     prompt += `=== TEXT TO RENDER ===\n`;
     prompt += `Render the following Traditional Chinese text with pixel-perfect typography (correct glyphs, proper spacing, professional editorial layout).\n`;
     if (_bag.type.length) prompt += `Typography style: ${_bag.type.join('; ')}\n`;
-    // 🩹 2026-09-27 中文字被壓扁 / 拉成高窄(RA 實測):中文字天生是正方形字身,
-    //   AI 為了塞進版面會橫向或縱向縮放字形。這句只管字的比例,字型/字重/顏色仍照品牌包。
-    prompt += `CHARACTER PROPORTION: every Chinese character keeps its natural square body — equal width and height, the way a real typeface sets it. To fit a line, change the font size or the line break, keeping each glyph unscaled in either direction.\n`;
     if (headline)    prompt += `- Primary headline (large, eye-catching): "${headline}"\n`;
     if (subHeadline) prompt += `- Secondary subheadline (smaller, supporting): "${subHeadline}"\n`;
     prompt += `NUMBERS: the only figures in this image are the ones typed in the text above or printed on the packaging itself. When the text above contains digits, set them in the same type family, weight and colour as the headline, sharing its baseline.\n\n`;
