@@ -2575,11 +2575,17 @@ function _renderContextOptions() {
 }
 
 const PRODTYPE_PROMPT = {
+  // 🩹 2026-09-27 複製貼上感(RA:背景很乾淨、像貼上去的)
+  //   病灶:這段站在 prompt 最前面、最高優先,而且講兩次「PIXEL-PERFECT / pixel for pixel」。
+  //   逐像素不准改 = 連原圖的棚光也不准改 → 後面 SCENE_INTEGRATION 的「依場景重新打光」
+  //   等於違規,AI 只能把商品連同原本的光原封不動貼上去。
+  //   修法:把商品拆成兩件事 —— 長相鎖死(形狀/比例/顏色/材質/標籤/logo/包裝字),
+  //   光交給場景(亮面/暗面/反光/邊緣光由這個場景重畫),像攝影師把同一個商品搬到新地點重拍。
+  //   ⚠️ 只改 physical;其他商品型態等實測有同樣問題再比照。
   physical:
     `=== CRITICAL PRODUCT PRESERVATION (HIGHEST PRIORITY) ===\n` +
-    `- The product in the source image MUST be reproduced PIXEL-PERFECT identical\n` +
-    `- Preserve exact product shape, proportions, colors, label design, logo, and all packaging typography\n` +
-    `- Carry the product across untouched: same silhouette, same materials, same packaging artwork, same brand marks, pixel for pixel\n` +
+    `- The product's IDENTITY is fixed: exact shape, proportions, colours, materials, label design, logo and all packaging typography — nothing redrawn, added or removed\n` +
+    `- The product's LIGHT belongs to this scene: its highlights, shadow side, reflections and edge light are re-rendered by the scene's own light, as when a photographer re-shoots the same object in a new place\n` +
     `- The product is the hero — build the advertising scene AROUND it\n\n`,
 
   beauty:
@@ -4193,7 +4199,7 @@ function buildPosterPrompt() {
   // ═════ ⑦ 負面層 —— 收尾禁令(負面詞放最後,不佔前段權重)═══════════
   prompt += `=== AVOID ===\n`;
   if (_bag.avoid.length) prompt += `${_bag.avoid.join('; ')}\n`;
-  prompt += `The finished frame shows one single subject, reproduced exactly as supplied, in a clean uncluttered scene where every object present has a reason to be there.\n`;
+  prompt += `The finished frame shows one single subject, its identity reproduced exactly as supplied and lit by this scene, in a clean uncluttered scene where every object present has a reason to be there.\n`;
 
   return prompt;
 }
