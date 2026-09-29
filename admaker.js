@@ -2620,7 +2620,7 @@ const PRODTYPE_PROMPT = {
   //   ⚠️ 只改 physical;其他商品型態等實測有同樣問題再比照。
   physical:
     `=== CRITICAL PRODUCT PRESERVATION (HIGHEST PRIORITY) ===\n` +
-    `- The product's IDENTITY is fixed: exact shape, proportions, colours, materials, label design, logo and all packaging typography — nothing redrawn, added or removed\n` +
+    `- The product's IDENTITY is fixed: exact shape, proportions, colours, materials, label design, logo and all packaging typography — nothing redrawn, added or removed; any face of the product the source photo does not show is finished the way this kind of product is actually built, adding no controls, labels or markings\n` +
     `- The product's LIGHT belongs to this scene: its highlights, shadow side, reflections and edge light are re-rendered by the scene's own light, as when a photographer re-shoots the same object in a new place\n` +
     `- The product is the hero — build the advertising scene AROUND it\n\n`,
 
@@ -4095,7 +4095,9 @@ function buildPosterPrompt() {
     'Frame the product through a gap — a doorway, the space between two objects — so it is seen from a natural standing distance.',
     'Place the product on a diagonal axis with a slightly tilted camera for quiet dynamism.',
     'Let the product occupy the space it really lives in, standing or resting exactly as it is used, with the setting receding behind it.',
-    'Frame an extreme close-up on one telling detail of the product, with the rest falling into soft focus.',
+    // 🩹 2026-09-28 特寫只能拍「商品照上看得到」的細節、同一個角度(RA 實測桑拿機 4 張錯 3 張:
+    //   鏡頭跑到照片沒拍到的頂部,AI 在那裡自編控制面板、型號、假品牌 UCOM)。
+    'Frame an extreme close-up on one telling detail already visible in the source photo, seen from that same angle, with the rest falling into soft focus.',
     'Split the frame: product occupying one clean half, an uninterrupted flat area of colour or surface in the other half.',
     'Layer the shot with an out-of-focus object in the foreground so the viewer feels present in the scene.',
   ];
