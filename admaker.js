@@ -4127,7 +4127,15 @@ function buildPosterPrompt() {
   if (ctx.product || ctx.spec || ctx.feature || _otherLines.length) {
     prompt += `=== PRODUCT ESSENCE (HIGH PRIORITY) ===\n`;
     prompt += `Brand ambience defines the WORLD around the product; the lines below define what the product itself LOOKS LIKE, and they win over any conflicting brand or style hint.\n`;
-    if (ctx.product) prompt += `- Product: "${ctx.product}"\n`;
+    // 🩹 2026-09-27 AI 把商品名稱寫到商品身上(RA 實測桑拿機連三張:木頭上緣一排字、
+    //   貼紙般的黑面板、自編品牌 SUNWOOD 的銘牌)。病灶:名稱加引號送進去 = 生圖模型
+    //   「把這串字寫進畫面」的訊號;型號代碼(UC-856A)更容易被抄上去。
+    //   修法:不加引號、剝掉型號代碼,名稱只用來讓 AI 知道這是什麼東西;
+    //   商品身上的標示一律以原照片為準。
+    if (ctx.product) {
+      var _pName = String(ctx.product).replace(/\b[A-Za-z]{1,5}[-\s]?\d{2,6}[A-Za-z]{0,3}\b/g, '').replace(/\s{2,}/g, ' ').trim();
+      if (_pName) prompt += `- What it is: ${_pName} — this tells you what the object is; the product itself carries only the markings already visible on it in the source photo.\n`;
+    }
     // 🩹 2026-09-27 商品資料裡的價格數字一律剝掉(價格常變,不進圖)
     var _spec = _stripPriceFigures(ctx.spec), _feat = _stripPriceFigures(ctx.feature);
     if (_spec) prompt += `- Physical traits (colour, material, era, style): ${_spec}\n`;
