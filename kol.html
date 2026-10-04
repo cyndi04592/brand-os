@@ -6296,7 +6296,14 @@ async function handleDriveProductClick(e) {
       if (_sz.shrunk) toast('這張原圖很大,已自動縮小後使用', 'ok');
       S.driveFileR2[fileId] = _useUrl;
       S.seedanceProductUrls.push(_useUrl);
-      S.productRefRole[res.url] = defaultProductRole();
+      //  🩹 2026-10-04 分槽失靈(RA 實測:目標槽選「內容物」,圖卻全掉進「外包裝」)
+      //   ★ 病灶:9/18 加自動縮圖時,清單改存【縮過的網址 _useUrl】,
+      //     但分槽標記還寫在【原圖網址 res.url】底下 → 兩個網址對不上,
+      //     畫槽時查不到這張圖屬於哪一槽,就一律丟進第一格。
+      //     素材庫的圖在自家 CDN、每張都會走縮圖網址 → 等於每張都中。
+      //   ★ 不只是畫面:送出時 [Image3] 也是靠這個標記排的 → 內容物照永遠沒進 Image3。
+      //   ★ 對照 STEP3(10165 附近)寫的是 productRefRole[r2] —— 對的那邊。又是「兩邊各寫一套」。
+      S.productRefRole[_useUrl] = defaultProductRole();
     } catch (err) {
       item.classList.remove('selected');   // 🆕 B: 搬移失敗 → 撤銷勾勾
       toast('商品照搬移失敗:' + err.message, 'error');
