@@ -2487,9 +2487,14 @@ const _LOG_KIND = {
           kolName: (window.S && window.S.selectedKol && window.S.selectedKol.name) || '',
           sourceAction: 'video_done', provider: row.provider || '',
           email: row.email || '',
+          //  🔐 2026-10-07:這支走 _origFetch(繞過自動夾帶身分證的攔截器)→ 要自己帶 token。
+          //   Worker v5.85 起 video_done_r2 一定要登入;沒帶 → 401 → 影片沒進素材庫。
+          token: (function () { try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch (_) { return ''; } })(),
         }),
-      }).then(function () {
-        console.log('[報到] \u2705 影片完成已存進雲端倉庫:', url);
+      }).then(function (r) {
+        //  🩹 舊版不看回應就印 ✅ → 401 也印「已存進」,失敗完全看不出來
+        if (r && r.ok) console.log('[報到] \u2705 影片完成已存進雲端倉庫:', url);
+        else console.warn('[報到] \u26a0\ufe0f 影片沒存進素材庫(HTTP ' + (r && r.status) + '):', url);
       }).catch(function () {});
     } catch (e) { /* 紀錄永遠不擋生成 */ }
   };
