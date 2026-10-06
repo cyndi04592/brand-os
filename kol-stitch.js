@@ -974,9 +974,42 @@ window.KolStitch = (function () {
           } catch (e) { done(null); }   // 跨網域讀不到像素 → 交給文字判斷
         };
         img.onerror = function () { clearTimeout(timer); done(null); };
-        img.src = url;
+        //  🌙 v6.82:自家 CDN 的縮圖網址(/cdn-cgi/image/…)【沒有跨網域許可】→ 讀不到像素 → 每次都量失敗。
+        //    原圖網址有許可(2026-10-07 實測)→ 量原圖。量的是亮度比例,大小無所謂。
+        img.src = String(url).replace(/\/cdn-cgi\/image\/[^/]+/, '');
       } catch (e) { resolve(null); }
     });
+  }
+  //  🌙 v6.82:暗場景 → 送給算力機的實景照【先壓暗、降飽和】再送。
+  //   ★ 病(RA 2026-10-07 妞妞露營):「夜晚沒照我給的,飽和度都不對」。
+  //     量出來:實景照本身 亮度 0.36 · 暗部 16% · 飽和 0.56(打亮過的露營宣傳照)
+  //            成片         0.25 · 50% · 0.52
+  //            RA 真人夜拍  0.18/0.07 · 72%/91% · 0.41/0.21
+  //     算力機【照著參考圖的曝光拍】—— 文字叫它暗,圖叫它亮,圖贏。成片其實已經比原照暗了,
+  //     是原照本身太亮太飽,文字拉不回來。
+  //   ★ 修法:Cloudflare 縮圖網址本來就能調亮度/飽和(不存新檔、即時生效),
+  //     暗場景時在送出那張上加 brightness / saturation,讓圖跟文字講同一件事。
+  //   ★ 只動【送出去】那張,素材庫原圖不動;外部網址沒得調 → 照舊。
+  //   ⚖️ 同日更正(RA:「你不是有一把尺?」):上面比的是【全畫面】對 9/19 兩張照片,
+  //     用錯尺了。照 9/18 定的量尺【主體區·夜景帶】量這支:飽和 54.4%(帶 40-60)、
+  //     亮度 27.8%(帶 25-40)、紋理 29.4(真人 22-42)、膚色佔比 25.2%(25-40)、
+  //     臉左右光差 18.4 —— 五項全在健康帶。預設壓暗 0.6 會把亮度壓到帶外。
+  //   ★ 所以【預設關閉】,只留開關給 A/B:Console 貼
+  //     window.KOL_NIGHT_GRADE = 'saturation=0.85'   ← 只收飽和、不動亮度
+  //     window.KOL_NIGHT_GRADE = 'brightness=0.8,saturation=0.85'
+  function _nightGradeUrl(u) {
+    try {
+      const grade = window.KOL_NIGHT_GRADE ? String(window.KOL_NIGHT_GRADE) : '';
+      if (!grade) return u;
+      const url = new URL(u);
+      if (url.hostname !== 'cdn.raby.com.tw') return u;
+      const m = url.pathname.match(/^\/cdn-cgi\/image\/([^/]+)(\/.*)$/);
+      if (m) {
+        if (/brightness=|saturation=/.test(m[1])) return u;          // 已經調過 → 不重複
+        return url.origin + '/cdn-cgi/image/' + m[1] + ',' + grade + m[2];
+      }
+      return url.origin + '/cdn-cgi/image/width=2048,quality=88,format=auto,' + grade + url.pathname;
+    } catch (e) { return u; }
   }
   let _uiLog = null;            // v6.41:runStitchFlow 會把 onProgress 掛進來,讓排隊訊息看得到
 
@@ -2023,6 +2056,14 @@ window.KolStitch = (function () {
       }
       _nightMode = !!_dk;
       if (_nightMode) log('夜景:照暗場景的光來拍…');
+      //  🌙 v6.82:暗場景 + 客戶實景照 → 送出去那張先壓暗、降飽和(圖跟文字講同一件事)
+      if (_nightMode && _sceneMode === 'photo' && sceneImageUrl) {
+        const _graded = _nightGradeUrl(sceneImageUrl);
+        if (_graded !== sceneImageUrl) {
+          sceneImageUrl = _graded;
+          try { console.log('[KolStitch] 🌙 夜景:實景照已調色送出(' + window.KOL_NIGHT_GRADE + ')'); } catch (_) {}
+        }
+      }
       _dbg('[KolStitch] 🌙 夜景判斷 → ' + (_nightMode ? '暗場景(補夜景曝光)' : '亮場景'));
     } catch (e) { _nightMode = false; }
 
@@ -2214,7 +2255,7 @@ window.KolStitch = (function () {
     return { finalUrl, segmentUrls: segments.map(function (s) { return s.url; }) };
   }
 
-  _dbg('[KolStitch] 🌙 v6.81 夜景判斷改看實景照亮度＋分鏡文字(攝影師只看場景卡名字,露營營地判成白天→沒噪點)·噪點句加強 繚 🏕 v6.80 客戶實景照原照直送(不轉九宮格·不加No crowd·照片裡的人留著;舊行為 window.KOL_REALPHOTO_GRID=true) 繚 🧍 v6.79 實景照裡的人會留著(舊句寫死「只給空的空間」→ 照片有人也被清掉、生出打烊感;照片沒人依舊不會憑空生) 繚 v6.78 排隊文案不露容量(白牌·改說「算力機滿載+預計X分鐘」) 繚 v6.77 訂位制(整支一次要 N 個位子·湊不齊整支等·不先跑一半) 繚 v6.76 共用閘門(位子跟 Worker 要·所有人同一個上限·15分鐘自動釋放·連不上自動退回本機) 繚 v6.34 🗺九宮格角度跟著景別走(不再讓模型隨機挑格)+⏱接片計時獨立10分鐘(不被生成吃掉)+🎁接片失敗仍交出分段(治「兩段都付錢卻拿不到東西」) · v6.33 🛟webhook掉包救援(主動問上游拿到成品就直接用·seedance段補endpoint)+🧯缺段續行(allSettled·一段掛掉不再整包毀掉·兩段錢都付了卻拿不到東西) · v6.32 📏字牆3000→3800(PiAPI官方上限4000·留200邊界·治「已驗證的規則被白白丟掉」) · v6.31 🏠空間落地併入表演層(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」)· v6.30 舊(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」) · v6.29 🚶[SCENE_IMG]標註補「只鎖空房間不鎖裡面的生活」(配合 crew v5.36 背景生活赦免) · v6.28 🎭反向表演(表演原則取代微表情清單·大動作藏小反應+反應有先後順序:手停→視線→頭→表情·治「會動的照片」) · v6.27 🫀生命感層拆行(眨眼/視線/眉毛/重心從對嘴行搬出成獨立Performance區塊·治「上半臉凍結」)+🚫拔光否定句(statue-still/puppet-like→正面可數描述·治點名即召喚) · v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
+  _dbg('[KolStitch] 🌙 v6.82 量亮度改量原圖(縮圖網址無跨網域許可→以前每次量失敗)+夜景實景照調色開關 window.KOL_NIGHT_GRADE(預設關·量尺五項在帶內)(縮圖網址無跨網域許可→以前每次量失敗) 繚 🌙 v6.81 夜景判斷改看實景照亮度＋分鏡文字(攝影師只看場景卡名字,露營營地判成白天→沒噪點)·噪點句加強 繚 🏕 v6.80 客戶實景照原照直送(不轉九宮格·不加No crowd·照片裡的人留著;舊行為 window.KOL_REALPHOTO_GRID=true) 繚 🧍 v6.79 實景照裡的人會留著(舊句寫死「只給空的空間」→ 照片有人也被清掉、生出打烊感;照片沒人依舊不會憑空生) 繚 v6.78 排隊文案不露容量(白牌·改說「算力機滿載+預計X分鐘」) 繚 v6.77 訂位制(整支一次要 N 個位子·湊不齊整支等·不先跑一半) 繚 v6.76 共用閘門(位子跟 Worker 要·所有人同一個上限·15分鐘自動釋放·連不上自動退回本機) 繚 v6.34 🗺九宮格角度跟著景別走(不再讓模型隨機挑格)+⏱接片計時獨立10分鐘(不被生成吃掉)+🎁接片失敗仍交出分段(治「兩段都付錢卻拿不到東西」) · v6.33 🛟webhook掉包救援(主動問上游拿到成品就直接用·seedance段補endpoint)+🧯缺段續行(allSettled·一段掛掉不再整包毀掉·兩段錢都付了卻拿不到東西) · v6.32 📏字牆3000→3800(PiAPI官方上限4000·留200邊界·治「已驗證的規則被白白丟掉」) · v6.31 🏠空間落地併入表演層(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」)· v6.30 舊(每段強制調用場景·身體要跟現場的東西有接觸·特寫也要帶一角空間·不准正面置中·治「第2段起變殭屍視訊鏡頭」) · v6.29 🚶[SCENE_IMG]標註補「只鎖空房間不鎖裡面的生活」(配合 crew v5.36 背景生活赦免) · v6.28 🎭反向表演(表演原則取代微表情清單·大動作藏小反應+反應有先後順序:手停→視線→頭→表情·治「會動的照片」) · v6.27 🫀生命感層拆行(眨眼/視線/眉毛/重心從對嘴行搬出成獨立Performance區塊·治「上半臉凍結」)+🚫拔光否定句(statue-still/puppet-like→正面可數描述·治點名即召喚) · v6.26 🧱1700假牆→3000(查證PiAPI官方無字數上限·油光/膚色鎖不再被砍)+📦商品圖進參考清單(Image2有身分) · v6.25 🔊對嘴行搬家+預算納入(治旁白) · v6.24 📊字數分項盤點探針+🔒KOL_DEBUG保險絲(客戶端Console全靜音·不再露供應商/引擎/圖片網址) · v6.23 🩳tail丟棄清單可視化(看得出被砍的是哪幾條) · v6.22 🚻代名詞依KOL性別(she/her寫死10處→男性KOL不再收到矛盾指令·預設仍女性) · v6.21 🗂臉參考表優先走素材庫(assets→R2乾淨原圖·零搬運·Drive保底待拆) · v6.20 🧴防油光照抄v5.22完整原文(補回no beauty filter/no smoothing/一個普通真人非精緻廣告=真正壓油那半·不綁開關) · v6.19 護欄永遠在 · v6.18 🎯選配器Phase1b臉角度(保險絲window.KOL_FACEANGLES預設關·讀beats.angle→resolveKolSheet挑角度→kolFaceDriveIds排最後·[FACE_角度]佔位·商品/場景不動·殺抽卡) · v6.17 🗺️場景九宮格接線(保險絲window.KOL_SCENEGRID預設關·開→generateSceneGrid多角度空間庫+標註防畫格線·失敗退單張·測建議走fal路) · v6.16 🎬結尾停+硬切match cut · v6.15 🎨色板師A案2.0 · v6.14 🩳1700牆瘦身(LOCKED/prodRule/語音行/台詞封鎖行精簡·含色板落~1663字·鐵律意思全保留) · v6.13 🎨色板師接線(整體色調傾向品牌色卡·soft/natural·不加對比·brandId直綁brand_packs·保險絲window.KOL_COLORBOARD=false·_testMultiShoe(colorLine)可免費驗) · v6.12.7 🔒鎖臉修正(鎖同一張臉+每段?lockseg=i讓網址不撞·根治PiAPI側門「兩段同網址→重複資產→提交500」·臉一致又能生)· 🔀引擎開關window.KOL_PROVIDER · 場景隔離window.KOL_DROP_SCENE · window.KOL_LOCK_FACE=false退回逐段角度圖(整支共用同一張身份臉錨當[Image1]=第一段角度圖;window.KOL_LOCK_FACE=false退回v6.2逐段角度圖)· v6.11(引擎切換層·🆕provider預設PiAPI畫質主力·可傳provider=fal切回)· 🆕真實狀態顯示(排隊中/生成中·不再只印pending) · 🎫每段印reqId(斷線可撈回免重生) · 🏷進度文案引擎中性化(不露[Image1]/reference-to-video) · kolImageUrl檢查改Seedance專屬(Kling走driveId) · 🎥攝影師分流:opts.engine → window.KolEngines[id](未傳=Seedance原路·零改動)· 📐多角度臉參考表 resolveKolSheet(_sheet_ → driveId 乾淨原圖·不走w400縮圖)· v7.7 · 🩳精簡prompt v6.11(拔光影/膚質浮動形容詞·對齊5秒自然光·相信臉圖·色板師之前的過渡)·📏送出長度探針·修400 prompt exceeds · 多鏡頭 reference-to-video(已驗證五鎖) · 照分鏡秒數切chunk + beat當Shot · 場景圖跨段鎖 + 光向鎖(通用) + 📦商品尺度跨段鎖(同物件同大小·不放大縮小) · 口型綁台詞(沒台詞不講話·只環境音) · 共用seed · 🛡️分鏡防呆 · 🎬精簡敘事B版(shared front/tail·真實度擺最前) · 🫀生命感層(手勢/重心/視線/眨眼/步態骨骼) · 🔗接棒暫關(文字接棒會讓模型重演上一段動作→連貫改靠分鏡順序+視覺鎖定) · 🚦提交序列化(submit一段一段送·根治Worker同物件並發10058·輪詢仍全平行)');
 
   // ---- 對外 ---------------------------------------------------------------
   return {
