@@ -2179,15 +2179,38 @@ async function _adminUserinfo(token) {
   return null;
 }
 
-async function tryAdminSSO() {
-  let token = null;
-  try { token = localStorage.getItem('bs_sso_token'); } catch(e) {}
-  if (!token) return false;
+//  🔑 2026-10-07 後台改先認【Brand OS 自己的登入證】(14 天),Google 票只當備援
+//   ★ 病(Claude 從 RA 的 Chrome 實測):前台、KOL 頁都是登入狀態(Brand OS 證還有 1.3 天),
+//     一點 Admin 卻是「連線逾時或未登入」。因為後台只認 Google 的票(bs_sso_token),
+//     那張票大約 1 小時就過期 —— 所以每隔一小時,老闆和審核員都會被踢出後台一次。
+//   ★ 修法:先拿 Brand OS 證問 Worker「我是誰」(auth_me,Worker 簽章、偽造不了);
+//     問不到才走原本的 Google 票。拿到 email 之後的白名單/角色檢查一字不動。
+async function _adminEmailFromSession() {
+  let t = '';
+  try { t = sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch(e) {}
+  if (!t) return '';
   try {
+    const r = await fetch(WORKER_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'auth_me', password: PASSWORD, token: t }),
+    });
+    const j = await r.json();
+    return (j && j.ok && j.email) ? String(j.email).trim() : '';
+  } catch(e) { return ''; }
+}
+
+async function tryAdminSSO() {
+  let email = await _adminEmailFromSession();
+  if (!email) {
+    let token = null;
+    try { token = localStorage.getItem('bs_sso_token'); } catch(e) {}
+    if (!token) return false;
     const info = await _adminUserinfo(token);
     if (!info) return false;                     // 票過期/無效 → 退回顯示登入畫面
-    const email = (info.email || '').trim();
-    if (!email) return false;
+    email = (info.email || '').trim();
+  }
+  if (!email) return false;
+  try {
     const r = await fetch(`${GAS_URL}?action=checkWhitelist&email=${encodeURIComponent(email)}&password=${PASSWORD}`);
     const j = await r.json();
     const role = (j.role || '').toLowerCase();
