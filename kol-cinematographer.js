@@ -286,7 +286,10 @@
   //   ★ 刪「暗處有細噪點」換成「越暗越沙、天空最沙」;stitch 的「近乎全黑/顏色被暗掉」拿掉
   //     (那是 9/19 用全畫面比照片得出的,用錯尺;主體區夜景帶本來就合格)
   //   ⚠️ kol-stitch.js _NIGHT_LOOK 是同一句,兩邊要一起改(誰先套誰算,另一邊看到 Low light: 就不重複)
-  const NIGHT_LOOK = 'Low light, filmed on a phone: only the lamps and fire in the scene light this, her face no brighter than its surroundings, most of the frame dark. Small phone lens: the lights and tents behind her stay mostly sharp, bulbs as small glaring points. The darker the area, the heavier the grain, the night sky grainiest of all.';
+  //   📏 同日 v5.34 縮回原長度(322→188 字,原句 183):RA 測片 Console 字數盤點顯示總計 3922 超過 3800 牆,
+  //     開場區塊被砍成救援版 → 違反「等量交換」鐵律。意思不變:手機鏡頭小→背景燈是清楚小亮點、越暗越沙。
+  //     (那支片量尺仍合格:天空噪點 1.9→5.8、燈泡變小亮點、主體區 53.6%/24.6% 在夜景帶)
+  const NIGHT_LOOK = 'Low light, phone footage: only the lamps and fire here light this, her face no brighter than its surroundings; small lens, so background lights stay sharp points; the darker, the grainier.';
 
   function contribute(ctx) {
     const parts = [];
@@ -301,7 +304,7 @@
     //  🌙 v5.29:真的暗的場景才加夜景曝光(白天、有燈的室內完全不受影響)
     if (_isDarkScene(ctx)) {
       parts.push(NIGHT_LOOK);
-      try { console.log('[Cine] 🌙 夜景曝光已套用(v5.33 手機鏡頭+越暗越沙)'); } catch (e) {}
+      try { console.log('[Cine] 🌙 夜景曝光已套用(v5.34 手機鏡頭+越暗越沙·188字)'); } catch (e) {}
     }
 
     // 寫實基底(一定加)· 口音吃 nationality(預設台灣腔,守鐵律)
@@ -380,5 +383,5 @@
     window.CrewDirector.register('cinematographer', window.KolCinematographer);
   }
 
-  console.log('[KolCinematographer] 📷 v5.33 🌙夜景句:手機小鏡頭背景清楚+越暗越沙(治單眼散景與噪點反向) · v5.29 🌙光源不足才套(判的是光夠不夠,不是室內室外:半夜只有一盞燈的辦公室也算;白天/明亮場景不套)·一句話:光只有現場那幾盞、臉不比周圍亮、暗處有手機噪點 · v5.28 就緒 · 🗣口音錨點補回(v5.27 誤刪→換口音整條空轉·預設永遠台灣腔)+ 找不到錨點自動補句尾並出聲 · v5.27 · 🧹逐句瘦身(刪:偏飽和句/毛孔/景深句/重複邊緣句/重複無配樂/重複台灣腔·全是打架或被涵蓋) · 🌏公版化 in this room→in this place · 💡光學核心與防油光鐵律一字未動 · v5.26 · 瘦身版(去重複句·防撞prompt上限) · REALISM_BASE + SCENE_REALISM + AUDIO_REALISM(禁罐頭配樂) + 台灣腔');
+  console.log('[KolCinematographer] 📷 v5.34 🌙夜景句縮回原長度(188字·治總長超3800牆) · v5.33 🌙夜景句:手機小鏡頭背景清楚+越暗越沙(治單眼散景與噪點反向) · v5.29 🌙光源不足才套(判的是光夠不夠,不是室內室外:半夜只有一盞燈的辦公室也算;白天/明亮場景不套)·一句話:光只有現場那幾盞、臉不比周圍亮、暗處有手機噪點 · v5.28 就緒 · 🗣口音錨點補回(v5.27 誤刪→換口音整條空轉·預設永遠台灣腔)+ 找不到錨點自動補句尾並出聲 · v5.27 · 🧹逐句瘦身(刪:偏飽和句/毛孔/景深句/重複邊緣句/重複無配樂/重複台灣腔·全是打架或被涵蓋) · 🌏公版化 in this room→in this place · 💡光學核心與防油光鐵律一字未動 · v5.26 · 瘦身版(去重複句·防撞prompt上限) · REALISM_BASE + SCENE_REALISM + AUDIO_REALISM(禁罐頭配樂) + 台灣腔');
 })();
