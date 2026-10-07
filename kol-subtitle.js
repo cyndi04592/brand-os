@@ -1,5 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   🎬 kol-subtitle.js v1.6(2026-09-19)秒數對不上時的保險
+   🎬 kol-subtitle.js v1.7(2026-10-07)語音辨識不再帶台詞當提示
+   v1.7:RA 妞妞露營片:字幕 7.5 秒才出現第一句、中間 11-14 秒空白、最後半秒把四句擠在一起。
+        Claude 從 RA 的 Chrome 對同一支片各跑一次語音辨識比對:
+        【帶台詞當提示】→ 第一句整句沒聽出來(那 4 秒被塞進一個「公」字),
+           而且講完後又把提示「重念一遍」到 22.9 秒(片長才 15.1 秒)→ 對齊被拉到後面。
+        【不帶提示】→ 每個字都聽到、從 1.85 秒到 14.43 秒,一個多的都沒有,53 字對上 49 個。
+        ★ 提示詞是語音辨識幻聽的已知來源;我們只借它的時間、字本來就用自己的 → 不需要提示。
+        ★ 保險:超過影片長度的辨識片段一律丟掉、結束時間不超過片長(再幻聽也拉不壞時間軸)。
+   ───────────────────────────────────────────────────────────────────────
+   v1.6(2026-09-19)秒數對不上時的保險
    v1.6:RA 實測:分鏡卡 15 秒「5-15 秒開口」,實際片被縮成 10 秒,她 1.8 秒就開口,
         字幕照分鏡去 5 秒找聲音 → 前 3 秒錯過。(根因在 kol.html snapDur,已另修)
         ① 卡片秒數 ≠ 實際秒數 → 分鏡的開口時段照比例縮放
@@ -243,8 +252,14 @@
   //  做法:我們的台詞 vs 辨識出的字,用「最長共同子序列」一個字一個字配對,
   //        配到的字就拿到時間;每句字幕 = 這句第一個配到的字 → 最後一個配到的字。
   const _PUNC = /[\s,，、。.!！?？;；:：…~～「」『』"“”'’()（）\-—]/;
-  function alignByWords(cues, chunks) {
+  function alignByWords(cues, chunks, maxSec) {
     if (!Array.isArray(chunks) || !chunks.length || !cues.length) return null;
+    //  🛡 v1.7:片長以外的辨識片段 = 幻聽 → 丟掉;結束時間收在片長內
+    if (maxSec > 0) {
+      chunks = chunks.filter(c => Number(c.s) < maxSec - 0.05)
+        .map(c => ({ t: c.t, s: Number(c.s), e: Math.min(Number(c.e), maxSec) }));
+      if (!chunks.length) return null;
+    }
     //  辨識結果攤成一個字一格,每格時間在所屬片段裡平均分
     const asr = [];
     chunks.forEach(c => {
@@ -437,8 +452,10 @@
           let timed = null, how = '';
           try {
             const _ad = await audioDataUri(o.videoUrl);   // 🎧 v1.5 聲音直接遞過去(繞過 CDN 擋 403)
-            const st = await S._api('speech_timing', { videoUrl: o.videoUrl, audioData: _ad || undefined, prompt: cues.map(c => c.text).join(',') });
-            timed = alignByWords(cues, st && st.chunks);
+            //  🎧 v1.7:不帶台詞當提示(提示會讓辨識漏聽第一句、講完又幻聽重念 → 時間軸整個往後拉)
+            const st = await S._api('speech_timing', { videoUrl: o.videoUrl, audioData: _ad || undefined });
+            const _aud = await loadAudio(o.videoUrl);
+            timed = alignByWords(cues, st && st.chunks, (_aud && _aud.duration) || totalSec || 0);
             if (timed) how = '🎧 語音辨識(' + timed._matched + '/' + timed._total + ' 字對上)';
           } catch (e) { try { console.warn('[KolSubtitle] 語音辨識失敗,改量音量:', e && e.message); } catch (_) {} }
           if (!timed) {
@@ -479,8 +496,8 @@
     }
   }
 
-  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, audioDataUri, version: 'v1.6' };
+  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, audioDataUri, version: 'v1.7' };
   root.KolSubtitle = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  try { console.log('[KolSubtitle] v1.6 就緒 · ⏱卡片秒數≠實際秒數時照比例縮放+往前多找2秒 · v1.5 🎧聲音由瀏覽器直接遞給語音辨識(繞過CDN 403) · v1.4 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
+  try { console.log('[KolSubtitle] v1.7 就緒 · 🎧語音辨識不帶提示(治漏聽第一句+幻聽重念拉歪時間軸)+片長外片段丟掉 · v1.6 ⏱卡片秒數≠實際秒數時照比例縮放+往前多找2秒 · v1.5 🎧聲音由瀏覽器直接遞給語音辨識(繞過CDN 403) · v1.4 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
 })(typeof window !== 'undefined' ? window : globalThis);
