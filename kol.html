@@ -3,6 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* 🤐 2026-10-07 白牌:客人按 F12 看不到內部紀錄(Claude 從 RA 的 Chrome 巡站抓到)
+   ★ 病:各模組載入時印一整串「就緒 · v5.65 …」更新紀錄,裡面有引擎名稱(Seedance)
+     和我們調提示詞的做法 —— 客人按 F12 就看得到。生成過程的診斷早就收進 KOL_DEBUG,
+     但「就緒」那一行與帶供應商名稱的紀錄沒有收。
+   ★ 做法:這支放在所有程式之前,只過濾 console.log / console.info:
+     ① 「[模組名] … 就緒」或帶版本號的模組自我介紹 ② 提到供應商/引擎名稱的訊息
+     其他正常紀錄照印;console.warn / console.error 一律照印(出錯還是看得到)。
+   ★ 要看完整紀錄:Console 貼 window.KOL_DEBUG = true(之後印的都會出現)。 */
+(function () {
+  var MODULE = /^\s*\[[^\]]{1,40}\][^\n]*(就緒|\bv\d+\.\d+)/;
+  var VENDOR = /(seedance|piapi|fal\.ai|fal\.media|\bfal\b|kling|anthropic|claude|photoroom|flux|whisper|gemini|openai|gpt-?\d)/i;
+  function hide(args) {
+    if (window.KOL_DEBUG === true) return false;
+    for (var i = 0; i < args.length; i++) {
+      var a = args[i];
+      if (typeof a !== 'string') continue;
+      if (i === 0 && MODULE.test(a)) return true;
+      if (VENDOR.test(a)) return true;
+    }
+    return false;
+  }
+  ['log', 'info'].forEach(function (k) {
+    var orig = console[k] && console[k].bind(console);
+    if (!orig) return;
+    console[k] = function () { if (!hide(arguments)) orig.apply(null, arguments); };
+  });
+})();
+</script>
 <title>KOL 數字人工作室 — Brand OS v5.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
