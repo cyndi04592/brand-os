@@ -8884,8 +8884,14 @@ async function renderSystemTab() {
   renderBrandSoulCard();
   renderProductRotation();
   // 預設選第一個 persona(若有)
+  // 🩹 2026-10-15 日曆「重整就不見」:重整後一律跳回第一位 KOL,
+  //   但日曆是「每位 KOL 各一本」→ 看起來像資料消失(其實在另一位 KOL 底下)。
+  //   修法:記住上次選的 KOL,重整後先還原;找不到(被刪/換品牌)才退回第一位。
   if (!systemSelectedPersonaId && S.personas.length > 0) {
-    systemSelectedPersonaId = S.personas[0].persona_id;
+    let _lastPid = '';
+    try { _lastPid = localStorage.getItem('kol_last_persona_' + (S.currentBrandId || '')) || ''; } catch (_) {}
+    systemSelectedPersonaId = (_lastPid && S.personas.some(x => x.persona_id === _lastPid))
+      ? _lastPid : S.personas[0].persona_id;
   }
 renderSystemPersonaCard();
   renderSystemCalendar();    // 🆕 v5.10: 真資料日曆
@@ -8975,8 +8981,10 @@ function renderSystemKolSwitcher() {
       const pid = card.dataset.personaId;
       if (pid === systemSelectedPersonaId) return;
       systemSelectedPersonaId = pid;
+      try { localStorage.setItem('kol_last_persona_' + (S.currentBrandId || ''), pid); } catch (_) {}
       renderSystemKolSwitcher();
       renderSystemPersonaCard();
+      renderSystemCalendar();   // 🩹 2026-10-15:漏了這行 → 換 KOL 日曆不跟著換,看起來像資料不見
       renderEpisodeCard();
       renderSystemQueue();   // 🆕 v5.13: 選 KOL 即時刷新劇情記憶(不用等生成影片)
     });
