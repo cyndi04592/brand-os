@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
  *  Brand OS · 方案限制(前端顯示層)plan-limits.js
- *  v1 · 2026-10-16
+ *  v1 · 2026-10-16 · v2 · 2026-10-17 加 KOL 頁(人數上限 / 分鏡長度)、KOL 頁密碼名稱不同的修正
  *
  *  職責(只做這一件事):跟 kol-proxy 讀「我的方案限制」(action: plan_limits),
  *  把畫面上「這個方案用不到」的按鈕變灰、加上「升級解鎖」提示。
@@ -14,8 +14,9 @@
  *  公開 API:
  *    BOSPlan.load()          → Promise<{plan, limits}>(limits = null 代表不限)
  *    BOSPlan.applyBrandOS()  → 主站:文案組數 / 文案長度 / 廣告圖尺寸 / Logo 疊圖
+ *    BOSPlan.applyKOL()      → KOL 頁:「＋建新角色」到上限變灰 / 分鏡長度超過方案秒數變灰
  *    BOSPlan.limits          → 目前讀到的限制(null = 不限)
- *  需要:config.js 先載入(fetch 會自動夾帶登入證、GAS_PASSWORD 在那裡)
+ *  需要:主站 config.js / KOL 頁 kol.html 本身先載入(密碼 + 攔截器);本檔放在頁尾
  * ═══════════════════════════════════════════════════════════════ */
 (function () {
   const WORKER = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
@@ -23,10 +24,23 @@
 
   const BOSPlan = { plan: '', limits: null, loaded: false };
 
+  //  v2:主站用 GAS_PASSWORD(config.js)、KOL 頁用 PASSWORD(kol.html 自己的)—— 兩邊名字不同
+  //   ⚠️ 兩頁的攔截器都是「有 password 才夾帶登入證」→ 密碼空白 = 沒帶證 = 讀不到方案 = 全部不鎖
+  function _pw() {
+    try { if (typeof GAS_PASSWORD !== 'undefined' && GAS_PASSWORD) return GAS_PASSWORD; } catch (_) {}
+    try { if (typeof PASSWORD !== 'undefined' && PASSWORD) return PASSWORD; } catch (_) {}
+    return '';
+  }
+  function _tk() {
+    try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch (_) { return ''; }
+  }
+
   BOSPlan.load = function () {
+    const body = { action: 'plan_limits', password: _pw() };
+    const t = _tk(); if (t) body.token = t;   // 自己也帶一份,不靠攔截器
     return fetch(WORKER, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'plan_limits', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : '') })
+      body: JSON.stringify(body)
     }).then(function (r) { return r.json(); })
       .then(function (j) {
         if (j && j.ok) {
@@ -103,12 +117,84 @@
     }
   };
 
+  // ═══ KOL 數字人頁(kol.html)═══════════════════════════════════
+  //  ① KOL 人數到上限:「＋建新角色」卡變灰;按下去跳提示、不開取名字視窗
+  //  ② 分鏡長度下拉(#sbp-duration):超過方案秒數的選項變灰
+  //   ⚠️ 這兩個東西都是 kol.html 動態畫的(切品牌、開分鏡面板都會重畫)→ 每 1.5 秒補鎖一次
+  function _kolCount() {
+    const S = window.S; if (!S) return 0;
+    const ids = {};
+    const add = function (p) { if (p) { const k = p.persona_id || p.id || p.persona_name; if (k) ids[k] = 1; } };
+    (S.personas || []).forEach(add);
+    const c = S._personaCache || {};
+    Object.keys(c).forEach(function (b) { (c[b] || []).forEach(add); });
+    return Object.keys(ids).length;
+  }
+  function _kolFull() {
+    const L = BOSPlan.limits;
+    const m = L ? Number(L.kol_max || 0) : 0;
+    return m > 0 && _kolCount() >= m ? m : 0;
+  }
+  function _wrapNewPersona() {
+    const f = window.openNewPersonaModal;
+    if (typeof f !== 'function' || f._bosWrapped) return;
+    const w = function () {
+      const m = _kolFull();
+      if (m) {
+        const msg = '🔒 您的方案最多 ' + m + ' 位 KOL,已達上限 · 到價目表升級即可新增';
+        if (typeof window.toast === 'function') window.toast(msg, 'error'); else console.warn(msg);
+        return;
+      }
+      return f.apply(this, arguments);
+    };
+    w._bosWrapped = true;
+    window.openNewPersonaModal = w;
+  }
+  function _scanKOL() {
+    const L = BOSPlan.limits; if (!L) return;
+    _wrapNewPersona();
+    //  ①「＋建新角色」卡
+    const card = document.getElementById('rs-new-kol');
+    if (card) {
+      const m = _kolFull();
+      if (m && !card.getAttribute('data-bos-lock')) {
+        card.setAttribute('data-bos-lock', '1');
+        card.style.opacity = '0.45';
+        card.title = '您的方案最多 ' + m + ' 位 KOL';
+        const sp = card.querySelector('span'); if (sp) sp.textContent = '已達 ' + m + ' 位上限';
+      } else if (!m && card.getAttribute('data-bos-lock')) {
+        card.removeAttribute('data-bos-lock'); card.style.opacity = ''; card.title = '';
+        const sp = card.querySelector('span'); if (sp) sp.textContent = '建新角色';
+      }
+    }
+    //  ② 分鏡長度(面板可能同時掛在兩個地方 → 全部都鎖)
+    const secMax = Number(L.video_sec_max || 0);
+    if (secMax > 0) {
+      document.querySelectorAll('select#sbp-duration').forEach(function (sel, i) {
+        if (sel.getAttribute('data-bos-lock')) return;
+        sel.setAttribute('data-bos-lock', '1');
+        let any = false;
+        Array.prototype.forEach.call(sel.options, function (o) {
+          if (Number(o.value) > secMax) { o.disabled = true; o.textContent += '(升級解鎖)'; any = true; }
+        });
+        if (any) _note(sel, '您的方案單支影片最長 ' + secMax + ' 秒', 'kolSec' + i);
+      });
+    }
+  }
+  BOSPlan.applyKOL = function () {
+    if (!BOSPlan.limits) return;   // 不限
+    _scanKOL();
+    if (!BOSPlan._kolTimer) BOSPlan._kolTimer = setInterval(_scanKOL, 1500);
+  };
+
   //  頁面載入後自動跑:登入證可能晚幾秒才到 → 讀不到就每 4 秒重試,最多 8 次
+  //   哪一頁就跑哪一頁的(看頁面上有沒有 KOL 頁才有的東西)
+  function _isKolPage() { return /\/kol(\.html)?$/i.test(location.pathname); }
   function _boot() {
     let tries = 0;
     (function once() {
       BOSPlan.load().then(function (r) {
-        if (r.ok) { BOSPlan.applyBrandOS(); return; }
+        if (r.ok) { if (_isKolPage()) BOSPlan.applyKOL(); else BOSPlan.applyBrandOS(); return; }
         if (++tries < 8) setTimeout(once, 4000);
       });
     })();
