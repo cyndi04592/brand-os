@@ -48,7 +48,10 @@
 <script src="ref-capture.js"></script><!-- 🤝 2026-09-17 推薦碼:網址 ?ref= 自動記住 -->
 <script>
   // ══ 整頁訂閱控制器(渲染重用 plans.js,購買流程自帶,不動 index 彈窗)══
-  let _grp = 'small', _cyc = 'month';
+  // 💳 2026-10-16:預設先看「首購 · 輕量」(新客第一眼看到 1,490 起,而不是 30,000 起)
+  let _grp = 'start', _cyc = 'month';
+  let _trialCredit = 0;   // 30 天內買過首購體驗 → 升級入門以上可折抵的金額(Worker plan_limits 回傳)
+  const _CREDIT_PLANS = ['entry', 'growth', 'pro', 'ent', 'flag'];   // 輕量不折抵
   let _pendingPlan = '';
 
   function renderPage() {
@@ -56,6 +59,7 @@
     const g = _grp, yr = (_cyc === 'year');
     const grpToggle =
       '<div class="bos-seg grp">' +
+        '<button class="' + (g === 'start' ? 'on' : '') + '" onclick="setGrp(\'start\')">首購 · 輕量</button>' +
         '<button class="' + (g === 'small' ? 'on' : '') + '" onclick="setGrp(\'small\')">小品牌</button>' +
         '<button class="' + (g === 'ent' ? 'on' : '') + '" onclick="setGrp(\'ent\')">企業 · 集團</button>' +
       '</div>';
@@ -64,7 +68,13 @@
         '<button class="' + (!yr ? 'on' : '') + '" onclick="setCyc(\'month\')">月繳</button>' +
         '<button class="' + (yr ? 'on' : '') + '" onclick="setCyc(\'year\')">年繳 <span class="save">送1個月</span></button>' +
       '</div>';
-    const note = '<div class="bos-foot">所有方案功能 100% 全開、沒有閹割;分級只在每月產能與算力檔次。<br>標示價格為含稅價 · 點數每月自動配發、月底歸零回滿 · 加購補給包點數永久保留<br>付款完成後自動開立電子發票(由創捷國際貿易股份有限公司開立)</div>';
+    //  💳 2026-10-16:頁尾依分組說明。舊句「所有方案功能 100% 全開」在首購/輕量上線後就不成立了。
+    const note = (g === 'start')
+      ? '<div class="bos-foot">首購體驗:一次給 5,600 點、30 天內使用,到期未用完的點數歸零 · 一個帳號限購一次<br>'
+        + '30 天內升級入門以上方案,首購的 1,490 元全額折抵 · 輕量方案不折抵首購、不提供補給包<br>'
+        + '首購與輕量為精簡版:文案一次 1 組、廣告圖 1080×1080 正方、不含 Logo 疊圖、素材保存 30 天<br>'
+        + '標示價格為含稅價 · 付款完成後自動開立電子發票(由創捷國際貿易股份有限公司開立)</div>'
+      : '<div class="bos-foot">入門以上功能全開;分級在每月產能、算力檔次與單支影片長度。<br>標示價格為含稅價 · 點數每月自動配發、到期歸零回滿 · 加購補給包點數永久保留<br>付款完成後自動開立電子發票(由創捷國際貿易股份有限公司開立)</div>';
     const legalEN = '<div style="text-align:center;font-size:11.5px;color:rgba(255,206,107,.62);letter-spacing:.5px;margin-top:12px;font-weight:600;">Proprietary patent-pending technology — filed under PCT (WIPO), Taiwan IPO &amp; CNIPA.</div>';
     const _ssoEmail = localStorage.getItem('bs_sso_email') || '';
     const accountLinks = _ssoEmail
@@ -116,16 +126,22 @@
       return;
     }
     const p = findBrandosPlan(k); if (!p) return;
-    const yr = (_cyc === 'year');
+    const once = !!p.once;                      // 首購體驗:一次性,沒有年繳
+    const yr = (_cyc === 'year') && !once;
     const monthPrice = (p.promo > 0) ? p.promo : p.price;
     const amount = yr ? (p.price * 12) : monthPrice;
-    const cycleText = yr ? '年繳（開通13個月）' : '月繳';
+    const cycleText = once ? '一次性(30 天內使用)' : (yr ? '年繳（開通13個月）' : '月繳');
+    const ptsText = once ? ('一次給 ' + p.bits.toLocaleString() + ' 點') : ('每月 ' + p.bits.toLocaleString() + ' 點');
+    const perText = once ? '（一次）' : (yr ? '（年）' : '（月）');
     const bs = 'width:100%;margin-top:10px;padding:15px;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;color:#fff;';
     document.getElementById('planRoot').innerHTML =
       '<div style="text-align:center;max-width:450px;margin:0 auto;padding:20px 0;">' +
         '<div style="font-size:20px;font-weight:900;color:#fff;">' + p.name + ' 方案 · ' + cycleText + '</div>' +
-        '<div style="font-size:14px;color:rgba(255,255,255,0.6);margin:8px 0 4px;">每月 ' + p.bits.toLocaleString() + ' 點 ／ NT$' + amount.toLocaleString() + (yr ? '（年）' : '（月）') + '</div>' +
-        '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:20px;">含稅價</div>' +
+        '<div style="font-size:14px;color:rgba(255,255,255,0.6);margin:8px 0 4px;">' + ptsText + ' ／ NT$' + amount.toLocaleString() + perText + '</div>' +
+        '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:' + (once ? '6' : '20') + 'px;">含稅價</div>' +
+        (once ? '<div style="font-size:12px;color:#ffce6b;margin-bottom:20px;line-height:1.7;">一個帳號限購一次 · 30 天內升級入門以上,1,490 全額折抵</div>' : '') +
+        //  💳 30 天內買過首購體驗 → 這裡會亮出「已折抵」(實際金額以下單時 Worker 算的為準)
+        '<div id="creditLine"></div>' +
         _invoiceFormHtml() +
         '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
         '<button onclick="buyPlanEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">💳 線上刷卡 / ATM（即時開通）</button>' +
@@ -133,6 +149,25 @@
         '<button onclick="renderPage()" style="' + bs + 'background:transparent;color:rgba(255,255,255,0.45);font-weight:500;margin-top:14px;">← 返回方案</button>' +
       '</div>';
     _invSwitch();   // 畫完立刻把預設選項(Email)的卡片點亮
+    _showCredit(k, amount);
+  }
+
+  //  💳 2026-10-16:問 Worker 這個帳號有沒有首購折抵可用(30 天內、還沒折過)
+  function _loadCredit() {
+    return fetch(KOL_WORKER_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'plan_limits', password: GAS_PASSWORD })
+    }).then(r => r.json()).then(j => { _trialCredit = (j && j.ok && Number(j.trialCredit)) || 0; return _trialCredit; })
+      .catch(() => 0);
+  }
+  function _showCredit(k, amount) {
+    if (_CREDIT_PLANS.indexOf(k) === -1) return;
+    _loadCredit().then(c => {
+      const box = document.getElementById('creditLine');
+      if (!box || !c) return;
+      box.innerHTML = '<div style="background:rgba(124,255,178,0.08);border:1px solid rgba(124,255,178,0.4);border-radius:12px;padding:11px 14px;margin:0 0 18px;font-size:13px;color:#cfffe2;line-height:1.7;">'
+        + '🎁 已折抵首購體驗 <b>NT$' + c.toLocaleString() + '</b><br>本次應付 <b style="color:#7CFFB2;font-size:15px;">NT$' + Math.max(1, amount - c).toLocaleString() + '</b></div>';
+    });
   }
 
   // ★ 2026-08-08:訂閱建單改走 Worker(D1 正本),不再直打 GAS。
@@ -305,14 +340,14 @@
     if (!_inv.ok) return;   // 格式沒過:停在原畫面,錯誤訊息已顯示在表單裡
     _wWrite('createSubOrder', Object.assign({ email, plan: k, cycle: _cyc, method: 'ecpay', ref: _refCollect() }, _inv.data))
       .then(j => {
-        if (!j.ok) { alert('下單失敗:' + (j.error || '')); renderPage(); return; }
+        if (!j.ok) { alert('下單失敗:' + (j.message || j.error || '')); renderPage(); return; }
         return fetch(CF_WORKER_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'ecpay_create', password: GAS_PASSWORD,
             orderType: 'sub',
             orderId: j.orderId, amount: j.amount,
-            itemName: `${j.planName}方案 ${j.cycle === 'year' ? '年繳' : '月繳'}`,
+            itemName: (j.planKey === 'trial') ? '首購體驗(一次性)' : `${j.planName}方案 ${j.cycle === 'year' ? '年繳' : '月繳'}`,
             tradeDesc: 'Brand OS 訂閱方案',
             clientBackURL: location.origin + location.pathname + '?paid=' + encodeURIComponent(j.orderId)
           })
@@ -337,18 +372,22 @@
     const p = findBrandosPlan(k); if (!p) return;
     const _inv = _invCollect();
     if (!_inv.ok) return;
-    const yr = (_cyc === 'year');
+    const once = !!p.once;
+    const yr = (_cyc === 'year') && !once;
     const monthPrice = (p.promo > 0) ? p.promo : p.price;
-    const amount = yr ? (p.price * 12) : monthPrice;
-    if (!confirm(`確認訂閱「${p.name} 方案 · ${yr ? '年繳' : '月繳'}」?\n\n每月 ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${yr ? '（年）' : '（月）'}（含稅）\n\n下單後依匯款資訊轉帳,我們對帳後為你開通。`)) return;
+    let amount = yr ? (p.price * 12) : monthPrice;
+    const credit = (_CREDIT_PLANS.indexOf(k) !== -1) ? _trialCredit : 0;
+    if (credit) amount = Math.max(1, amount - credit);
+    const label = once ? '一次性' : (yr ? '年繳' : '月繳');
+    if (!confirm(`確認訂閱「${p.name} 方案 · ${label}」?\n\n${once ? '一次給' : '每月'} ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${once ? '（一次）' : (yr ? '（年）' : '（月）')}（含稅）${credit ? '\n已折抵首購體驗 NT$' + credit.toLocaleString() : ''}\n\n下單後依匯款資訊轉帳,我們對帳後為你開通。`)) return;
     _wWrite('createSubOrder', Object.assign({ email, plan: k, cycle: _cyc, ref: _refCollect() }, _inv.data))
-      .then(j => { if (!j.ok) { alert('下單失敗:' + (j.error || '')); return; } showSubOrderInfo(j); })
+      .then(j => { if (!j.ok) { alert('下單失敗:' + (j.message || j.error || '')); return; } showSubOrderInfo(j); })
       .catch(() => alert('連線錯誤,請重試'));
   }
 
   function showSubOrderInfo(o) {
     const b = o.bank || {};
-    const cycleText = (o.cycle === 'year') ? '年繳（開通13個月）' : '月繳';
+    const cycleText = (o.planKey === 'trial') ? '一次性(30 天內使用)' : ((o.cycle === 'year') ? '年繳（開通13個月）' : '月繳');
     document.getElementById('planRoot').innerHTML = `
       <div style="max-width:480px;margin:0 auto;padding:14px 0;">
         <div style="text-align:center;margin-bottom:18px;">
@@ -359,7 +398,8 @@
         <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,190,90,0.25);border-radius:12px;padding:18px 20px;font-size:13px;line-height:2.1;color:rgba(255,255,255,0.85);">
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">訂單編號</span><b style="font-family:monospace">${o.orderId}</b></div>
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">方案</span><b>${o.planName} · ${cycleText}</b></div>
-          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">每月配點</span><b>${Number(o.monthlyBits).toLocaleString()} 點</b></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">${o.planKey === 'trial' ? '配點(30 天)' : '每月配點'}</span><b>${Number(o.monthlyBits).toLocaleString()} 點</b></div>
+          ${Number(o.discount) > 0 ? `<div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">首購折抵</span><b style="color:#7CFFB2">－NT$${Number(o.discount).toLocaleString()}</b></div>` : ''}
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">應付金額</span><b style="color:#ffce6b">NT$${Number(o.amount).toLocaleString()}（含稅）</b></div>
           <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
           <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.5)">銀行</span><b>${b.bankName || ''} ${b.bankCode || ''}</b></div>
@@ -454,7 +494,8 @@
       .then(j => {
         if (j && j.ok && j.pending && j.desiredPlan) {
           _pendingPlan = j.desiredPlan;
-          _grp = ['ent', 'flag', 'custom'].includes(_pendingPlan) ? 'ent' : 'small';
+          _grp = ['ent', 'flag', 'custom'].includes(_pendingPlan) ? 'ent'
+               : ['trial', 'light'].includes(_pendingPlan) ? 'start' : 'small';
           renderPage();           // 只有真的有待付款才重畫
         }
       })
