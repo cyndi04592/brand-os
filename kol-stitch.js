@@ -257,6 +257,12 @@ window.KolStitch = (function () {
         }
       } catch (_e) { console.log('[KolStitch] 🔬 抽取失敗原因失敗(把上面完整錯誤物件截圖即可):', _e); }
       try { _dbg('[KolStitch] 🔬 r2Refs(實際抓到的參考圖) =', data.r2Refs); } catch (_e2) {}
+      //  💳 2026-10-16:方案限制(PLAN_LIMIT)要讓呼叫端認得出來 —— 不能被當成「Worker 抖動」而退回舊路照跑
+      if (data.code === 'PLAN_LIMIT') {
+        const _pe = new Error(data.message || data.error || '您的方案不支援這個長度,升級方案即可解鎖');
+        _pe.code = 'PLAN_LIMIT';
+        throw _pe;
+      }
       throw new Error(_scrub(`[${action}] ${data.error || '未知錯誤'}`));
     }
     return data;
@@ -2135,7 +2141,15 @@ window.KolStitch = (function () {
         if (t > 0 && t % 6 === 0) { try { if (_uiLog) _uiLog('⏳ 仍在排隊…已等 ' + Math.round(t * 20 / 60) + ' 分鐘,輪到就會自動開始'); } catch (_e) {} }
         await _sleep((r.waitSec || 20) * 1000);
       }
-    } catch (e) { _dbg('[KolStitch] 🍽 訂位失敗,退回逐段模式:' + e.message); }
+    } catch (e) {
+      //  💳 2026-10-16:方案不允許這個長度 → 整支停下來、告訴客人原因(不扣點,還沒送出任何一段)
+      //    ⚠️ 不能退回逐段模式:那等於繞過方案限制,照樣把超長的片拍出來。
+      if (e && e.code === 'PLAN_LIMIT') {
+        try { if (_uiLog) _uiLog('🔒 ' + e.message); } catch (_e) {}
+        throw e;
+      }
+      _dbg('[KolStitch] 🍽 訂位失敗,退回逐段模式:' + e.message);
+    }
 
     const tasks = chunks.map(function (chunk, i) {
       const beats = chunk.beats || [];
