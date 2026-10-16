@@ -578,6 +578,12 @@ body{
   .kol-hero-title{font-size:18px;}
 }
 </style>
+<style>
+/* 📱 2026-10-07 手機巡站:iPhone 遇到字小於 16px 的輸入框/下拉選單,一點下去整頁自動放大、版面跳掉。手機上統一 16px。 */
+@media (max-width: 768px){
+  select, input:not([type=range]):not([type=checkbox]):not([type=radio]), textarea{ font-size:16px !important; }
+}
+</style>
 </head>
 <body>
 

@@ -97,6 +97,22 @@ function clickBrand(id) {
   }
 
   autoFetchAssets(id);
+  _mobileReveal('.sub-brand-row');
+}
+
+//  📱 2026-10-07 手機巡站(Claude 從 RA 的 Chrome 用 390 寬實測):
+//   手機上品牌是橫向滑軌。點了品牌之後,系列和商品是長在【螢幕右邊外面】(實測 x=396、488,螢幕才 390),
+//   畫面看起來什麼都沒變 —— 客人不知道要往右滑,以為點了沒反應。
+//   ★ 修法:手機上點完品牌/系列,自動把下一步要點的東西滑進畫面。桌機完全不動。
+function _mobileReveal(sel) {
+  try {
+    if (!window.matchMedia || !window.matchMedia('(max-width: 768px)').matches) return;
+    setTimeout(function () {
+      var tree = document.getElementById('brandTree') || document;
+      var el = tree.querySelector(sel);
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+    }, 60);
+  } catch (e) {}
 }
 
 function clickSub(brandId, subId) {
@@ -113,6 +129,7 @@ function clickSub(brandId, subId) {
   renderBrandTree();
   renderProds();
   updateCtx();
+  if (window.S.subId) _mobileReveal('.prod-stack');
 }
 
 function clickProd(subId, prodId) {

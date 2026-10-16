@@ -2922,6 +2922,15 @@ details[open] > summary::before { transform: rotate(90deg); }
     width: 168px;
     max-width: none;
   }
+  /* 📱 2026-10-07 手機巡站:商品每列只有 21px 高、字 11px,手指很難點準 → 每列加高到約 38px、字放大。
+     滾輪高度跟著放大,維持「看得到 3 顆半、第 4 顆切一半」的原設計。 */
+  #brandTree .prod-stack { max-height: 150px; }
+  #brandTree .prod-stack .prod-row-inline { padding: 10px 10px !important; margin: 2px 0 !important; }
+  #brandTree .prod-stack .prod-row-inline div[style*="font-size:11px"] { font-size: 13px !important; }
+  /* 系列按鈕也當作橫滑的停靠點 → 自動滑過去時會剛好停在它(不會被品牌卡的停靠點拉走) */
+  #brandTree .sub-brand-row { scroll-snap-align: start; }
+  /* iPhone:輸入框/選單字小於 16px,一點就整頁放大跳版 */
+  select, input:not([type=range]):not([type=checkbox]):not([type=radio]), textarea { font-size: 16px !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════
