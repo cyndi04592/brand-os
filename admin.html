@@ -2383,7 +2383,7 @@ async function loadSubOrders() {
     //   位置放在「方式」後面:manual(銀行轉帳)才需要對帳,兩欄擺一起一眼看完。
     let html = '<table><thead><tr><th>訂單編號</th><th>Email</th><th>方案</th><th>週期</th><th>金額</th><th>月配額</th><th>方式</th><th>後五碼</th><th>發票</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
     j.orders.forEach(o => {
-      const cycleLabel = o.cycle==='year' ? '年繳' : '月繳';
+      const cycleLabel = (o.planKey==='trial') ? '一次性' : (o.cycle==='year' ? '年繳' : '月繳');   // 💳 首購體驗沒有月/年繳
       const st = o.status==='pending' ? '<span style="color:#ffb84d;font-weight:700">● 待確認</span>'
                : o.status==='paid'    ? '<span style="color:#6dfac2;font-weight:700">✓ 已開通</span>'
                :                        '<span style="color:var(--t3)">已取消</span>';
@@ -3077,7 +3077,9 @@ function renderApply() {
     //   ⚠️ KOL 需求也一起顯示:那是要不要幫他建數字人的判斷。
     //   ⚠️ key 必須對齊 plans.js 的 SUB_PLANS(entry/growth/pro/ent/flag/custom)——
     //      寫錯的話標籤會直接印出代碼,而且不會報錯,最難發現。
-    const _PLAN_LABEL = { entry:'入門 NT$30,000/月', growth:'成長 NT$50,000/月',
+    //   💳 2026-10-16:加上首購體驗 / 輕量(Worker v5.86+ 開賣)
+    const _PLAN_LABEL = { trial:'首購體驗 NT$1,490/一次', light:'輕量 NT$5,980/月',
+      entry:'入門 NT$30,000/月', growth:'成長 NT$50,000/月',
       pro:'專業 NT$80,000/月', ent:'企業 NT$150,000/月', flag:'旗艦 NT$250,000/月',
       custom:'客製方案(一對一報價)' };
     const _plan = b.desiredPlan
