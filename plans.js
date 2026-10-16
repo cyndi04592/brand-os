@@ -16,30 +16,49 @@
  *      opts.selectedKey 高亮已選方案(入駐書用)
  *      opts.ctaLabel    function(plan)->字串,自訂按鈕文字
  *
- *  ⚠️ 方案 key(entry/growth/pro/ent/flag)對齊 GAS SUB_PLANS,不可改。
+ *  ⚠️ 方案 key(trial/light/entry/growth/pro/ent/flag)對齊 kol-proxy _SUB_PLANS,不可改。
+ *
+ *  v2 · 2026-10-16
+ *   • 新增 start 組(首購體驗 trial / 輕量 light)。對應 Worker v5.86+。
+ *     ⚠️ 頁面要加「輕鬆開始」切換鈕才看得到(plans.html / index.html 下一步改),
+ *       本檔單獨上線時新卡片不會出現,現有頁面行為完全不變。
+ *   • 每張卡加一列「單支影片 最長 N 秒」(maxSec,對齊 plan_limits.video_sec_max)。
+ *   • once:true = 一次性方案(首購體驗):價格顯示「/ 一次」、不吃年繳、
+ *     點數列寫「一次給 N 點(30 天內使用)」。
+ *   • 產能數字一律「15 秒短影音計」同一把尺(5,600 點 ≈ 6 支;18,000 點 ≈ 20 支)。
  * ═══════════════════════════════════════════════════════════════ */
 
 const BRANDOS_PLAN_MAX = 2083; // 旗艦每月圖量,作為產能條 100%
 
 const BRANDOS_PLANS = {
+  // 💳 v2:先試再買。首購體驗一帳號一次;輕量不可折抵首購
+  start: [
+    { key:'trial', name:'首購體驗', who:'第一次用 · 先拍一檔看看', repText:'先幫你試投一檔廣告',
+      grade:'標準雜誌級', comp:'標準運算佇列', bits:5600, price:1490, promo:0, once:true, maxSec:15,
+      imgs:23, vids:6, kol:'1 位 KOL 角色', badge:'首購限定',
+      note:'一個帳號限購一次 · 30 天內升級入門以上,1,490 全額折抵' },
+    { key:'light', name:'輕量', who:'個人品牌 · 小店起步', rep:'一位兼職小編',
+      grade:'標準雜誌級', comp:'標準運算佇列', bits:18000, price:5980, promo:0, maxSec:30,
+      imgs:75, vids:20, kol:'2 位 KOL 角色' },
+  ],
   small: [
     { key:'entry',  name:'入門', who:'小品牌 · 商品起步', rep:'一組 8 人外拍製作團隊',
       grade:'標準雜誌級', comp:'標準運算佇列', bits:70000,  price:35000, promo:30000,
-      imgs:290,  vids:72,  kol:'1 隻日更 / 3 隻週更 / 12 隻月更' },
+      imgs:290,  vids:72,  kol:'1 隻日更 / 3 隻週更 / 12 隻月更', maxSec:45 },
     { key:'growth', name:'成長', who:'穩定出圖的品牌', rep:'一個 15 人內容部',
       grade:'雜誌級 + 進階修圖', comp:'優先運算佇列', bits:125000, price:50000, promo:0,
-      imgs:416,  vids:104, kol:'2 隻日更 / 5 隻週更 / 18 隻月更' },
+      imgs:416,  vids:104, kol:'2 隻日更 / 5 隻週更 / 18 隻月更', maxSec:90 },
     { key:'pro',    name:'專業', who:'高頻投放 · 多商品線', rep:'一間 25 人製作公司',
       grade:'高階雜誌級 + 商品保真', comp:'高速運算佇列', bits:185000, price:80000, promo:0,
-      imgs:666,  vids:166, kol:'3 隻日更 / 8 隻週更 / 30 隻月更', hot:true },
+      imgs:666,  vids:166, kol:'3 隻日更 / 8 隻週更 / 30 隻月更', hot:true, maxSec:90 },
   ],
   ent: [
     { key:'ent',  name:'企業', who:'多品牌 · 連鎖', rep:'一個 50 人行銷中心',
       grade:'頂級算圖 + 多代理並行', comp:'企業級運算', bits:300000, price:150000, promo:0,
-      imgs:1250, vids:312, kol:'6 隻日更 / 15 隻週更 / 60 隻月更' },
+      imgs:1250, vids:312, kol:'6 隻日更 / 15 隻週更 / 60 隻月更', maxSec:90 },
     { key:'flag', name:'旗艦', who:'國際品牌 · MCN', rep:'一個 100+ 人行銷集團',
       grade:'最高級 + 地端混合運算', comp:'極速專屬佇列', bits:500000, price:250000, promo:0,
-      imgs:2083, vids:520, kol:'10 隻日更 / 26 隻週更 / 100 隻月更', top:true },
+      imgs:2083, vids:520, kol:'10 隻日更 / 26 隻週更 / 100 隻月更', top:true, maxSec:90 },
     { key:'custom', custom:true },
   ]
 };
@@ -82,6 +101,7 @@ function ensureBrandosPlanStyle() {
 .bos-seg.cyc button.on{background:linear-gradient(135deg,var(--bp-amber),var(--bp-gold));color:#13131c;}
 .bos-seg .save{font-size:10px;opacity:.85;}
 .bos-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr);align-items:stretch;}
+.bos-grid.two{grid-template-columns:repeat(2,1fr);max-width:860px;margin:0 auto;}
 @media(max-width:720px){.bos-grid{grid-template-columns:1fr;}}
 .bos-card{position:relative;display:flex;flex-direction:column;background:#16161f;border:1.5px solid var(--bp-line);
   border-radius:16px;padding:22px 18px;transition:transform .18s,border-color .2s;}
@@ -242,8 +262,10 @@ function renderBrandosPlanCards(group, cycle, opts) {
   const ctaLabel = opts.ctaLabel || null;
   const yr = (cycle === 'year');
   const fmt = n => Number(n).toLocaleString();
-  let html = '<div class="bos-grid">';
-  (BRANDOS_PLANS[group] || []).forEach(p => {
+  const _list = BRANDOS_PLANS[group] || [];
+  //  💳 v2:只有兩張卡(輕鬆開始組)→ 兩欄置中,不留一個空洞
+  let html = '<div class="bos-grid' + (_list.length === 2 ? ' two' : '') + '">';
+  _list.forEach(p => {
     if (p.custom) {
       html += '<div class="bos-card bos-custom">'
         + '<div class="bos-who">更大規模 / 專屬需求</div>'
@@ -254,21 +276,25 @@ function renderBrandosPlanCards(group, cycle, opts) {
       return;
     }
     const hot = !!p.hot, top = !!p.top, sel = (selectedKey === p.key);
+    const once = !!p.once;                       // 💳 v2:一次性方案不吃年繳
+    const pyr = yr && !once;
     const monthPrice = p.promo > 0 ? p.promo : p.price;
-    const show = yr ? p.price * 12 : monthPrice;
+    const show = pyr ? p.price * 12 : monthPrice;
     const pct = Math.max(8, Math.round(p.imgs / BRANDOS_PLAN_MAX * 100));
     const badge = hot ? '<div class="bos-badge hot">最多人選</div>'
-                : top ? '<div class="bos-badge top">頂規</div>' : '';
+                : top ? '<div class="bos-badge top">頂規</div>'
+                : p.badge ? '<div class="bos-badge top">' + p.badge + '</div>' : '';
     const cls = (hot ? ' hot' : top ? ' top' : '') + (sel ? ' sel' : '');
-    const promo = (!yr && p.promo > 0) ? '<span class="bos-promo num">NT$' + fmt(p.price) + '</span>' : '';
-    const yhint = yr ? '<div class="bos-yhint">付 12 個月 · 開通 13 個月</div>' : '';
+    const promo = (!pyr && p.promo > 0) ? '<span class="bos-promo num">NT$' + fmt(p.price) + '</span>' : '';
+    const yhint = once ? '<div class="bos-yhint">' + (p.note || '一次性 · 30 天內使用') + '</div>'
+                : pyr ? '<div class="bos-yhint">付 12 個月 · 開通 13 個月</div>' : '';
     const cta = ctaLabel ? ctaLabel(p) : ('選 ' + p.name + ' 方案');
     html += '<div class="bos-card' + cls + '">'
       + badge
       + '<div class="bos-who">' + p.who + '</div>'
       + '<div class="bos-pname">' + p.name + '</div>'
       + '<div class="bos-replbl">這個方案 ≈</div>'
-      + '<div class="bos-rep">取代 ' + p.rep + '</div>'
+      + '<div class="bos-rep">' + (p.repText || ('取代 ' + p.rep)) + '</div>'
       + '<div class="bos-bar"><i style="width:' + pct + '%"></i></div>'
       + '<div class="bos-spec">'
         + '<div class="r"><span class="k">算圖等級</span><span class="vv grade">' + p.grade + '</span></div>'
@@ -278,12 +304,13 @@ function renderBrandosPlanCards(group, cycle, opts) {
         //   但這兩個數字其實是各自單獨算的(配點全拿去生圖 / 全拿去生片),
         //   加起來會超出配點。改成「或」才是真的,數字一個都不用動。
         //   並標明計價基準 —— 影片點數依秒數計,不講清楚客戶算不出來。
-        + '<div class="r"><span class="k">每月產能</span><span class="vv">約 <b class="num">' + fmt(p.imgs) + '</b> 張圖 <span style="opacity:.5">或</span> <b class="num">' + fmt(p.vids) + '</b> 支片<div style="font-size:10.5px;opacity:.45;margin-top:3px;font-weight:400;letter-spacing:.3px">720P · 15 秒短影音計</div></span></div>'
+        + '<div class="r"><span class="k">' + (once ? '可做產能' : '每月產能') + '</span><span class="vv">約 <b class="num">' + fmt(p.imgs) + '</b> 張圖 <span style="opacity:.5">或</span> <b class="num">' + fmt(p.vids) + '</b> 支片<div style="font-size:10.5px;opacity:.45;margin-top:3px;font-weight:400;letter-spacing:.3px">720P · 15 秒短影音計</div></span></div>'
         + '<div class="r"><span class="k">KOL數字人</span><span class="vv">' + p.kol + '</span></div>'
+        + (p.maxSec ? '<div class="r"><span class="k">單支影片</span><span class="vv">最長 <b class="num">' + p.maxSec + '</b> 秒</span></div>' : '')
       + '</div>'
       + '<div class="bos-meta">'
-        + '<div class="bos-mrow"><span>每月點數</span><b class="num">' + fmt(p.bits) + ' 點</b></div>'
-        + '<div class="bos-price">' + promo + '<span class="amt num">NT$' + fmt(show) + '</span><span class="per num"> / ' + (yr ? '年' : '月') + '</span></div>'
+        + '<div class="bos-mrow"><span>' + (once ? '一次給點(30 天)' : '每月點數') + '</span><b class="num">' + fmt(p.bits) + ' 點</b></div>'
+        + '<div class="bos-price">' + promo + '<span class="amt num">NT$' + fmt(show) + '</span><span class="per num"> / ' + (once ? '一次' : (pyr ? '年' : '月')) + '</span></div>'
         + yhint
         + '<button class="bos-cta" onclick="' + selFn + '(\'' + p.key + '\')">' + cta + '</button>'
       + '</div>'
