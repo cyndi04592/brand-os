@@ -112,7 +112,12 @@ function initGoogleAuth() {
           _systemStarted = false;
           await startSystem();
         } else {
-          document.getElementById('loginErr').textContent = '❌ 此帳號無使用權限';
+          //  🪧 2026-10-17 RA 用全新帳號實測:只看到「❌ 此帳號無使用權限」,像是被封鎖、不知道下一步。
+          //   系統本來就是「申請 → 審核 → 才能登入」(RA 拍板全部方案維持人工審核),
+          //   所以這裡改成告訴客人下一步在哪,而不是一句拒絕。文字是寫死的,不含使用者輸入 → innerHTML 安全。
+          document.getElementById('loginErr').innerHTML =
+            '🔒 這個帳號還沒開通<br>' +
+            '<span style="font-weight:400;font-size:12px;opacity:.85;line-height:1.7;">請點下方「申請開通帳號」填寫品牌資料,<br>審核通過後就能用這個 Google 帳號登入。<br>已經申請過了?請等候審核通知。</span>';
           document.getElementById('loginBtn').disabled = false;
           document.getElementById('loginBtn').textContent = '使用 Google 帳號登入';
         }
