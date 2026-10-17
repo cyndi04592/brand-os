@@ -1647,6 +1647,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="tab" onclick="switchTab('topup')">儲值管理</div>
   <div class="tab" onclick="switchTab('suborder')">訂閱管理</div>
   <div class="tab" onclick="switchTab('referral')">推薦分潤</div>
+  <div class="tab" onclick="switchTab('apikey')">API 金鑰</div>
 </div>
 
 <div class="main">
@@ -1872,6 +1873,24 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 
   <!-- 🤝 2026-09-17 推薦分潤(內容由 admin-referral.js 畫) -->
   <div class="section" id="sec-referral"><div id="refRoot"></div></div>
+
+  <div class="section" id="sec-apikey">
+    <div class="section-header">
+      <h2>API 金鑰(串接蝦皮小幫手等外部系統)</h2>
+      <button class="btn-refresh" onclick="loadApiKeys()">重新整理</button>
+    </div>
+    <div style="padding:14px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input id="akLabel" placeholder="用途,例如:蝦皮小幫手" style="padding:8px 10px;min-width:180px">
+      <input id="akTarget" placeholder="客戶 Email(留空=我自己)" style="padding:8px 10px;min-width:220px">
+      <button class="btn-refresh" onclick="createApiKey()">＋ 建立金鑰</button>
+    </div>
+    <div id="akNew" style="display:none;margin:0 0 14px;padding:12px;border:1px solid #6dfac2;border-radius:8px">
+      <div style="font-weight:700;margin-bottom:6px">⚠️ 金鑰只顯示這一次,請立即複製貼到蝦皮小幫手後台「Brand OS 金鑰」</div>
+      <code id="akNewKey" style="user-select:all;word-break:break-all;font-size:15px"></code>
+      <button class="btn-refresh" style="margin-left:8px" onclick="navigator.clipboard.writeText(document.getElementById('akNewKey').textContent)">複製</button>
+    </div>
+    <div class="table-wrap" id="akBody"><div class="empty-state"><p>載入中...</p></div></div>
+  </div>
 
   <div class="section" id="sec-suborder">
     <div class="section-header">
@@ -2262,7 +2281,7 @@ async function bootAdmin() {
 }
 
 function switchTab(name) {
-  const tabs = ['brands','products','folders','delivers','memory','apply','staff','topup','suborder','referral'];
+  const tabs = ['brands','products','folders','delivers','memory','apply','staff','topup','suborder','referral','apikey'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
@@ -2273,6 +2292,7 @@ function switchTab(name) {
   if (name==='topup') loadTopup();
   if (name==='suborder') loadSubOrders();
   if (name==='referral' && window.RefAdmin) RefAdmin.load();
+  if (name==='apikey') loadApiKeys();
   _updateSaveHint(name);
 }
 
@@ -2299,6 +2319,50 @@ function _updateSaveHint(name) {
 }
 
 // 儲值管理:列訂單 + 一鍵確認入帳
+/* ═══ 🔑 API 金鑰(kol-proxy v5.89) ═══ */
+const _AK_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+async function _akCall(action, extra) {
+  const r = await fetch(_AK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({ action: action, password: PASSWORD, token: (window._bsAuthToken ? window._bsAuthToken() : '') }, extra || {})) });
+  return r.json();
+}
+function _akEsc(x) { return String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+async function loadApiKeys() {
+  const box = document.getElementById('akBody');
+  if (!box) return;
+  box.innerHTML = '<div class="empty-state"><p>載入中...</p></div>';
+  try {
+    const j = await _akCall('apikey_list', { all: true });
+    if (!j.ok) { box.innerHTML = '<div class="empty-state"><p>載入失敗:' + _akEsc(j.error || '') + '</p></div>'; return; }
+    if (!j.keys || !j.keys.length) { box.innerHTML = '<div class="empty-state"><p>還沒有金鑰</p></div>'; return; }
+    let h = '<table><thead><tr><th>金鑰開頭</th><th>Email</th><th>用途</th><th>建立</th><th>最後使用</th><th>次數</th><th>狀態</th><th></th></tr></thead><tbody>';
+    j.keys.forEach(k => {
+      const dt = x => x ? new Date(x).toLocaleString('zh-TW', { hour12: false }) : '—';
+      h += '<tr><td><code>' + _akEsc(k.prefix) + '…</code></td><td>' + _akEsc(k.email) + '</td><td>' + _akEsc(k.label) + '</td><td>' + dt(k.created) + '</td><td>' + dt(k.last_used) + '</td><td>' + Number(k.uses || 0) + '</td><td>'
+        + (Number(k.revoked) ? '<span style="color:var(--t3)">已撤銷</span>' : '<span style="color:#6dfac2;font-weight:700">● 使用中</span>')
+        + '</td><td>' + (Number(k.revoked) ? '' : '<button class="btn-refresh" onclick="revokeApiKey(\'' + _akEsc(k.prefix) + '\')">撤銷</button>') + '</td></tr>';
+    });
+    box.innerHTML = h + '</tbody></table>';
+  } catch (e) { box.innerHTML = '<div class="empty-state"><p>載入失敗:' + _akEsc(e.message) + '</p></div>'; }
+}
+async function createApiKey() {
+  const label = (document.getElementById('akLabel').value || '').trim() || '蝦皮小幫手';
+  const target = (document.getElementById('akTarget').value || '').trim();
+  try {
+    const j = await _akCall('apikey_create', { label: label, targetEmail: target });
+    if (!j.ok) { alert('建立失敗:' + (j.error || '')); return; }
+    document.getElementById('akNewKey').textContent = j.key;
+    document.getElementById('akNew').style.display = 'block';
+    loadApiKeys();
+  } catch (e) { alert('建立失敗:' + e.message); }
+}
+async function revokeApiKey(prefix) {
+  if (!confirm('撤銷後,使用這把金鑰的系統會立刻失效。確定撤銷 ' + prefix + '…?')) return;
+  const j = await _akCall('apikey_revoke', { prefix: prefix });
+  if (!j.ok) alert('撤銷失敗:' + (j.error || ''));
+  loadApiKeys();
+}
+
 async function loadTopup() {
   loadHolidayCfg();
   const box = document.getElementById('topupBody');
