@@ -2026,6 +2026,38 @@ document.addEventListener('DOMContentLoaded', function(){
                   <option value="handoff">轉螢幕給對方看 · 指出重點</option>
                 </optgroup>
               </select>
+              <!-- 🎵 2026-10-17 無臉配樂:畫面沒有人講話 → 墊一段純音樂(不講話、不唱歌)。只有無臉模式有,KOL 口播不動 -->
+              <div style="margin-top:8px">
+                <div style="font-size:12px;color:var(--text2,#aaa);margin-bottom:4px">背景配樂(純音樂 · 不講話 · 不唱歌)</div>
+                <select id="faceless-music" style="width:100%;padding:8px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border)">
+                  <optgroup label="流行 · 熱門">
+                    <option value="pop" selected>輕快流行(預設)</option>
+                    <option value="kpop">快節奏 K-POP</option>
+                    <option value="jfresh">日式清新</option>
+                    <option value="citypop">日系 City Pop(復古)</option>
+                    <option value="edm">EDM 電音(高能量)</option>
+                    <option value="hiphop">嘻哈 Hip-hop</option>
+                    <option value="rnb">R&amp;B(慵懶性感)</option>
+                    <option value="rock">搖滾(活力)</option>
+                  </optgroup>
+                  <optgroup label="氛圍 · 質感">
+                    <option value="lofi">Chill lo-fi(放鬆)</option>
+                    <option value="warm">溫暖木吉他(居家 · 生活)</option>
+                    <option value="elegant">優雅鋼琴(質感 · 精品)</option>
+                    <option value="jazz">咖啡廳爵士</option>
+                    <option value="chill">療癒 SPA(身心 · 保養)</option>
+                    <option value="cinematic">電影感管弦(大氣)</option>
+                  </optgroup>
+                  <optgroup label="情境 · 檔期">
+                    <option value="energetic">動感節奏(運動 · 3C)</option>
+                    <option value="tropical">夏日熱帶(海島 · 度假)</option>
+                    <option value="cute">可愛俏皮(童趣 · 寵物)</option>
+                    <option value="chinese">中國風(年節 · 茶飲)</option>
+                    <option value="festive">節慶歡樂(檔期 · 送禮)</option>
+                  </optgroup>
+                  <option value="">不要配樂(只有環境音)</option>
+                </select>
+              </div>
               <!-- 🩹 2026-08-11 無臉模式說明卡:客戶打開後完全不知道規則變了
                    (不用選 KOL、分鏡會被忽略、生成鈕改看商品照)。不講的話
                    只會看到「按鈕按不下去」然後放棄。 -->
@@ -8427,6 +8459,9 @@ async function createFacelessVideo() {
     //   → 無臉模式一律走 fal,不吃 window.KOL_PROVIDER 的全域設定。
     provider: 'fal',
   };
+  //  🎵 2026-10-17 無臉配樂:選了就一定開聲音(Worker v5.90 把「只有環境音」換成指定純音樂)
+  const _fMusic = document.getElementById('faceless-music')?.value || '';
+  if (_fMusic) { payload.music = true; payload.musicStyle = _fMusic; payload.generateAudio = true; }
   if (S.seedanceSeedLocked) {
     const seedVal = (document.getElementById('seed-value')?.value || '').trim();
     if (seedVal) payload.seed = parseInt(seedVal);
@@ -8455,7 +8490,7 @@ async function createFacelessVideo() {
     const task = {
       requestId: res.requestId, endpoint: res.endpoint,
       responseUrl: res.responseUrl, statusUrl: res.statusUrl,
-      label: `無臉·${labels[action] || action} · ${S.seedanceParams.resolution} ${S.seedanceParams.duration}s`,
+      label: `無臉·${labels[action] || action} · ${S.seedanceParams.resolution} ${S.seedanceParams.duration}s${_fMusic ? ' · 配樂' : ''}`,
       status: 'IN_QUEUE', created: new Date().toLocaleTimeString('zh-TW'),
       startTime: Date.now(), url: null, seed: null, fileSize: null,
       r2Refs: res.r2Refs || [], payload: res.payload || {},
