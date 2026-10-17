@@ -37,7 +37,7 @@
   <div class="wrap">
     <div class="eyebrow">BRAND OS · 訂閱方案</div>
     <h1>用一點點人力,<br>做出 <span class="hl">一整間公司的產能</span>。</h1>
-    <p class="sub">全功能開好開滿、沒有閹割版。<br>你選的不是「能用哪些功能」,而是「這個月想把產能,放大成幾個人的團隊」。</p>
+    <p class="sub"><!-- 💳 2026-10-17 舊文案「全功能開好開滿、沒有閹割版」跟首購/輕量有限制矛盾 → 改成分級說法 -->首購、輕量先用基本功能試水溫;入門以上全功能開好開滿。<br>你選的不是「能用哪些功能」,而是「這個月想把產能,放大成幾個人的團隊」。</p>
     <div id="planRoot"></div>
   </div>
 
@@ -142,7 +142,7 @@
         (once ? '<div style="font-size:12px;color:#ffce6b;margin-bottom:20px;line-height:1.7;">一個帳號限購一次 · 30 天內升級入門以上,1,490 全額折抵</div>' : '') +
         //  💳 30 天內買過首購體驗 → 這裡會亮出「已折抵」(實際金額以下單時 Worker 算的為準)
         '<div id="creditLine"></div>' +
-        _invoiceFormHtml() +
+        _invoiceFormHtml(once) +
         '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
         '<button onclick="buyPlanEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">💳 線上刷卡 / ATM（即時開通）</button>' +
         '<button onclick="buyPlanManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">🏦 銀行轉帳（人工開通）</button>' +
@@ -216,7 +216,7 @@
   //   ⚠️ 四選一互斥:綠界規定統編與捐贈不能並存、載具與列印組合也有限制,
   //     選錯組合會直接開立失敗,所以這裡用單選,不讓客戶自由組合。
   // ═══════════════════════════════════════════════════════════
-  function _invoiceFormHtml() {
+  function _invoiceFormHtml(once) {
     const box = 'width:100%;padding:12px 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.35);color:#fff;font-size:14px;margin-top:9px;box-sizing:border-box;';
     // 卡片式選項:選中的會亮邊+底色,一眼看得出目前選了什麼。
     // ⚠️ 舊版用一排灰色小圓點,企業客戶掃過去容易整區跳過 →
@@ -265,7 +265,10 @@
       '<div style="text-align:left;background:rgba(255,190,90,0.08);border:1px solid rgba(255,190,90,0.35);border-radius:14px;padding:13px 15px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,0.78);line-height:1.85;">' +
         '<b style="color:#ffce6b;font-size:12.5px;">⚠️ 購買前請確認</b><br>' +
         '本服務為數位內容服務,開通後即可立即使用,<b style="color:#ffce6b;">恕不提供中途退訂或退款</b>。<br>' +
-        '若對服務內容尚有疑慮,建議先購買「月繳方案」試用,確認符合需求後再升級年繳。' +
+        //  💳 2026-10-17:舊句「建議先買月繳方案試用」—— 現在有真正的試用(首購體驗)了,改指向它
+        (once
+          ? '首購體驗為一次性方案:點數 30 天內使用,到期歸零;30 天內升級入門以上,1,490 全額折抵。'
+          : '若對服務內容尚有疑慮,建議先購買「首購體驗」(NT$1,490 一次)試用;或先月繳,確認符合需求後再升級年繳。') +
       '</div>';
   }
 
