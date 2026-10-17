@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
  *  Brand OS · 方案限制(前端顯示層)plan-limits.js
  *  v1 · 2026-10-16 · v2 · 2026-10-17 加 KOL 頁(人數上限 / 分鏡長度)、KOL 頁密碼名稱不同的修正
+ *  v3 · 2026-10-17 等到「有登入證」才讀方案(修:客人開著頁面超過 30 秒才登入 → 不鎖)
  *
  *  職責(只做這一件事):跟 kol-proxy 讀「我的方案限制」(action: plan_limits),
  *  把畫面上「這個方案用不到」的按鈕變灰、加上「升級解鎖」提示。
@@ -190,12 +191,25 @@
   //  頁面載入後自動跑:登入證可能晚幾秒才到 → 讀不到就每 4 秒重試,最多 8 次
   //   哪一頁就跑哪一頁的(看頁面上有沒有 KOL 頁才有的東西)
   function _isKolPage() { return /\/kol(\.html)?$/i.test(location.pathname); }
+  //  🩹 v3 2026-10-17(RA 實測):客人開著首頁「慢慢登入」(超過 30 秒),8 次重試早就用完 → 這次都不鎖,要重整才鎖。
+  //   修:還沒有登入證時不打 Worker,只每 2 秒看一下登入證到了沒(不花網路);一拿到才開始讀方案。
+  //   換帳號(登入證變了)也會重讀一次。
+  let _lastTk = null;
   function _boot() {
+    (function waitTk() {
+      const t = _tk();
+      if (!t) { setTimeout(waitTk, 2000); return; }
+      if (t === _lastTk) { setTimeout(waitTk, 5000); return; }
+      _lastTk = t;
+      _bootLoad(function () { setTimeout(waitTk, 5000); });
+    })();
+  }
+  function _bootLoad(done) {
     let tries = 0;
     (function once() {
       BOSPlan.load().then(function (r) {
-        if (r.ok) { if (_isKolPage()) BOSPlan.applyKOL(); else BOSPlan.applyBrandOS(); return; }
-        if (++tries < 8) setTimeout(once, 4000);
+        if (r.ok) { if (_isKolPage()) BOSPlan.applyKOL(); else BOSPlan.applyBrandOS(); done && done(); return; }
+        if (++tries < 8) setTimeout(once, 4000); else done && done();
       });
     })();
   }
