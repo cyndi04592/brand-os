@@ -57,6 +57,11 @@ a{color:inherit;text-decoration:none;}
 .tab.t2.gold.on{background:rgba(201,162,39,.18);border-color:rgba(201,162,39,.6);color:#e8c766;box-shadow:none;}
 .badge.gold{background:linear-gradient(135deg,rgba(201,162,39,.9),rgba(232,199,102,.9));border-color:transparent;color:#1a1408;font-weight:700;}
 .card.gold{border-color:rgba(201,162,39,.28);}
+/* 🗑 2026-10-18 AI 成品保存天數:卡片右上角小標 + 頁面上方說明 */
+.exp{position:absolute;right:9px;top:9px;background:rgba(10,10,15,.78);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:20px;padding:3px 9px;font-size:10.5px;color:var(--text-mid);}
+.exp.soon{background:rgba(220,60,60,.92);border-color:transparent;color:#fff;font-weight:700;}
+.ret-note{margin:0 0 14px;padding:10px 14px;border-radius:12px;background:rgba(201,162,39,.08);border:1px solid rgba(201,162,39,.3);font-size:12.5px;line-height:1.7;color:var(--text-mid);}
+.ret-note b{color:#e8c766;}
 .card.gold:hover{border-color:rgba(201,162,39,.65);box-shadow:0 8px 28px rgba(201,162,39,.22);}
 /* ⬆️ 上傳 */
 .up-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;border:none;transition:.2s;white-space:nowrap;}
@@ -481,6 +486,7 @@ async function loadAssets(force){
   if(!force && CACHE[S.brandId]){
     S.items  = CACHE[S.brandId].items;
     S.counts = CACHE[S.brandId].counts;
+    S.retDays = CACHE[S.brandId].retDays || 0;
     renderTabs(); renderGrid();
     return;
   }
@@ -496,7 +502,8 @@ async function loadAssets(force){
     }
     S.items  = res.items || [];
     S.counts = res.counts || {};
-    CACHE[S.brandId] = { items: S.items, counts: S.counts };
+    S.retDays = Number(res.retentionDays || 0);   // 🗑 這個品牌 AI 成品保存幾天(0 = 不刪)
+    CACHE[S.brandId] = { items: S.items, counts: S.counts, retDays: S.retDays };
     try{ localStorage.setItem(LAST_KEY, S.brandId); }catch(e){}
     renderTabs();
     renderGrid();
@@ -604,7 +611,18 @@ function renderGrid(){
     showState('📭','這裡還沒有東西','生成的影片和廣告圖會自動出現在這裡');
     return;
   }
-  $('body').innerHTML = '<div class="grid">' + list.map(function(it,i){
+  //  🗑 2026-10-18 AI 成品到期會真的刪除 → 每張成品標「還剩幾天」,7 天內變紅提醒下載
+  const _rd = Number(S.retDays || 0);
+  const _note = _rd > 0
+    ? '<div class="ret-note">📦 您的方案:<b>AI 生成的廣告圖與短影片保存 '+_rd+' 天</b>,到期會自動刪除,需要長期保存請先下載。您自己上傳的素材不會被刪除。</div>'
+    : '';
+  const _left = function(it){
+    if(!_rd) return null;
+    const t = new Date(it.ts).getTime();
+    if(isNaN(t)) return null;
+    return _rd - Math.floor((Date.now() - t) / 86400000);
+  };
+  $('body').innerHTML = _note + '<div class="grid">' + list.map(function(it,i){
     const vid = isVideo(it.url);
     const nm  = it.name || (vid ? '影片' : '圖片');
     const th  = vid
@@ -613,7 +631,10 @@ function renderGrid(){
     const isAI = GROUPS[1].cats.indexOf(it.category) !== -1;   // 成品 → 金框金標
     const sidx = ((it.name||'')+' '+(it.category||'')+' '+(it.kol_name||'')+' '+fmtDate(it.ts)).toLowerCase();
     return '<div class="card'+(isAI?' gold':'')+'" data-i="'+i+'" data-cat="'+esc(it.category||'')+'" data-kol="'+esc(it.kol_name||'')+'" data-s="'+esc(sidx)+'">'
-      +   '<div class="thumb">'+th+'<div class="badge'+(isAI?' gold':'')+'">'+esc(it.category||'')+'</div></div>'
+      +   '<div class="thumb">'+th+'<div class="badge'+(isAI?' gold':'')+'">'+esc(it.category||'')+'</div>'
+      +     (function(){ if(!isAI) return ''; const d = _left(it); if(d === null) return '';
+                return d <= 7 ? '<div class="exp soon">'+(d <= 0 ? '即將刪除' : d+' 天後刪除')+'</div>' : '<div class="exp">還剩 '+d+' 天</div>'; })()
+      +   '</div>'
       +   '<div class="meta"><div class="nm">'+esc(nm)+'</div><div class="dt">'+fmtDate(it.ts)+'</div></div>'
       + '</div>';
   }).join('') + '</div>';
