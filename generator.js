@@ -218,13 +218,24 @@ async function doGenerate() {
       ).join('\n') + `\n❌ 禁止重複以上方向 ✅ 必須全新切入角度\n`
     : '';
 
+  // 🧾 2026-10-18 商品資料(RA:文案常把「UC-856A」這種型號寫出來,但 iPhone 8 Plus、RTX 5080 Ti 這種客人會搜的型號又要寫)
+  //   ① 商品名照原樣給(拆字會拆壞名字),只在偵測到型號時多給一行,寫不寫交給 AI 依品類判斷
+  //   ② 商品規格 / 特色帶進來(去價格、200 字內)—— 以前文案完全看不到規格
+  const _CODE_RE = /\b[A-Z]{1,5}-\d{2,6}[A-Z]{0,3}\b|\b[A-Z]{2,5}\s?\d{3,6}[A-Z]{0,3}\b/g;
+  const _codes = String(window.S.prod.name || '').match(_CODE_RE) || [];
+  const _noPrice = (t) => String(t || '')
+    .replace(/(售價|價格|定價|特價|原價)?\s*(約|大約)?\s*((NT|HK|US)?\$|HKD|NTD)\s*[\d,]+(\.\d+)?(\s*\/\s*\S{1,2})?/gi, '')
+    .replace(/(售價|價格|定價|特價|原價)?\s*[\d,]+\s*元(\s*\/\s*\S{1,2})?/g, '')
+    .replace(/\s+/g, ' ').trim();
+  const _facts = [_noPrice(window.S.prod.spec), _noPrice(window.S.prod.feature)].filter(Boolean).join('；').slice(0, 200);
+
   const prompt = `你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣。
 
 【品牌】${brandDisplay}
 【品牌靈魂】${soul}
 【廣告風格】${style}
 【商品】${window.S.prod.name}（${window.S.prod.tag}）
-【目標受眾】${aud}
+${_codes.length ? `【型號】商品名裡的「${_codes.join('、')}」是型號 —— 消費者會拿型號搜尋、比較的商品(例:手機、顯示卡、電腦、機械設備)就寫進文案;一般家電、食品、生活用品,文案用品名稱呼就好\n` : ''}${_facts ? `【商品事實】${_facts}(文案裡的規格、數字以這裡為準)\n` : ''}【目標受眾】${aud}
 【Hashtag】${tags}
 【文案規格】${copyLengthGuide}
 ${memoryContext}
