@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · admin.html · v11.3 訂閱管理分頁(listSubOrders/confirmSubOrder/cancelSubOrder)
+   Brand OS · admin.html · v11.4 刪除品牌改真刪除(kol-proxy v6.02 purgeBrand)· v11.3 訂閱管理分頁(listSubOrders/confirmSubOrder/cancelSubOrder)
    2026-04-28: 紫粉薄荷三色 + Syne 字體
    ══════════════════════════════════════════════════════════════ */
 :root {
@@ -3322,7 +3322,39 @@ function renderBrands() {
   }).join('');
 }
 // ★ v11.2: 移除 addBrand — 品牌只能透過品牌進駐問卷進來
-function deleteBrand(i) { if(!confirm(`確定刪除「${DB.brands[i].name}」?\n\n⚠️ 此動作會永久移除此品牌(用於不續約 / 欠款客戶)`))return; DB.brands.splice(i,1); renderBrands(); }
+// 🗑 2026-10-18 真刪除(kol-proxy v6.02 purgeBrand)
+//   舊版只把卡片從畫面拿掉,存檔也不會刪(saveBrandOS 刻意不刪沒送來的品牌)→ 重整就回來。
+//   現在直接叫 Worker 刪 D1 + 雲端檔案;要打對品牌名稱才會刪。只有老闆本人帳號會成功。
+async function deleteBrand(i) {
+  const br = DB.brands[i]; if (!br) return;
+  const name = String(br.name || '').trim();
+  const typed = prompt(`⚠️ 真的刪除「${name}」?\n\n會永久刪掉(救不回來):\n品牌、商品、KOL 角色/集數/日曆、記憶庫、素材庫,以及雲端所有圖片影片\n\n不會刪:訂單、點數、分潤紀錄、帳號\n\n請輸入品牌名稱確認:`);
+  if (typed === null) return;
+  if (typed.trim() !== name) { setStatus('❌ 品牌名稱不符,沒有刪除', 'err'); return; }
+  showLoading('刪除中...(檔案多會比較久)');
+  try {
+    let j = null, n = 0, files = 0;
+    do {
+      j = await workerWrite('purgeBrand', { brandId: br.id, confirmName: name });
+      if (j && j.r2Deleted) files += j.r2Deleted;
+      n++;
+    } while (j && j.ok && j.done === false && n < 20);
+    const gone = j && ((j.ok && j.done) || j.code === 'NOT_FOUND');   // NOT_FOUND = 還沒存過的新卡片
+    if (gone) {
+      const bid = String(br.id || '');
+      DB.brands.splice(i, 1);
+      if (Array.isArray(DB.products)) DB.products = DB.products.filter(p => String(p.brandId || '') !== bid);
+      if (Array.isArray(DB.folders))  DB.folders  = DB.folders.filter(f => String(f.brandId || '') !== bid);
+      renderBrands();
+      setStatus(`✅ 已刪除「${name}」(雲端檔案 ${files} 個)`, 'ok');
+    } else if (j && j.ok && j.done === false) {
+      setStatus('⚠️ 檔案太多還沒刪完,請再按一次刪除', 'err');
+    } else {
+      setStatus('❌ ' + ((j && j.error) || '刪除失敗'), 'err');
+    }
+  } catch (e) { setStatus('❌ 連線失敗,沒有刪除', 'err'); }
+  hideLoading();
+}
 
 function updateFilters() {
   ['filterBrand','deliverFilterBrand'].forEach(id => {
