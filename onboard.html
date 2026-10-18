@@ -523,6 +523,12 @@ body{
 .kol-option-content{flex:1;}
 .kol-option-title{font-size:14px;font-weight:900;color:var(--t1);margin-bottom:4px;}
 .kol-option-desc{font-size:11px;color:var(--t2);line-height:1.7;}
+.opt-more{margin:4px 0 14px;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;}
+.opt-more>summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--t2);list-style:none;}
+.opt-more>summary::-webkit-details-marker{display:none;}
+.opt-more>summary::before{content:'＋ ';color:var(--sky);}
+.opt-more[open]>summary::before{content:'－ ';}
+.opt-more[open]>summary{margin-bottom:10px;}
 .kol-option-detail{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:none;}
 .kol-option.on .kol-option-detail{display:block;}
 
@@ -657,9 +663,9 @@ body{
     <div class="step" id="step2"><div class="step-num">2</div><div class="step-lbl">品牌故事</div></div>
     <div class="step" id="step3"><div class="step-num">3</div><div class="step-lbl">商品資訊</div></div>
     <div class="step" id="step4"><div class="step-num">4</div><div class="step-lbl">風格設定</div></div>
-    <div class="step" id="step45"><div class="step-num">5</div><div class="step-lbl">KOL 數字人</div></div>
-    <div class="step" id="step46"><div class="step-num">6</div><div class="step-lbl">選方案</div></div>
-    <div class="step" id="step5"><div class="step-num">7</div><div class="step-lbl">確認送出</div></div>
+    <div class="step" id="step45" style="display:none"><div class="step-num">5</div><div class="step-lbl">KOL 數字人</div></div>
+    <div class="step" id="step46"><div class="step-num">5</div><div class="step-lbl">選方案</div></div>
+    <div class="step" id="step5"><div class="step-num">6</div><div class="step-lbl">確認送出</div></div>
   </div>
 
   <div class="section active" id="sec1">
@@ -667,15 +673,19 @@ body{
     <div class="field"><label>品牌名稱 *</label><input type="text" id="f_name" placeholder="例:旺味米香腸"></div>
     <div class="field"><label>官方網站 <span style="color:var(--t3);font-weight:400;font-size:9px;">(沒有可不填)</span></label><input type="url" id="f_website" placeholder="https://..."></div>
     <div class="field">
-      <label>社群媒體帳號 <span style="color:var(--sky);font-weight:400;font-size:9px;">· 請盡量填寫,AI 會判斷得更精準</span></label>
+      <label>社群媒體帳號 <span style="color:var(--sky);font-weight:400;font-size:9px;">· 有就貼,沒有可跳過</span></label>
       <div class="social-grid">
         <div class="social-item"><label>Facebook 粉絲頁</label><input type="url" id="f_fb" placeholder="https://www.facebook.com/..."></div>
         <div class="social-item"><label>Instagram</label><input type="url" id="f_ig" placeholder="https://www.instagram.com/..."></div>
+      </div>
+      <details class="opt-more"><summary>還有小紅書、抖音、微信或其他社群?(選填)</summary>
+      <div class="social-grid">
         <div class="social-item"><label>小紅書</label><input type="text" id="f_xiaohongshu" placeholder="小紅書主頁連結或帳號名稱"></div>
         <div class="social-item"><label>抖音</label><input type="text" id="f_douyin" placeholder="抖音主頁連結或帳號名稱"></div>
         <div class="social-item"><label>微信公眾號</label><input type="text" id="f_wechat" placeholder="微信公眾號名稱或連結"></div>
         <div class="social-item"><label>其他社群</label><input type="text" id="f_social_other" placeholder="YouTube / LINE / TikTok..."></div>
       </div>
+      </details>
     </div>
     <div class="field"><label>聯絡人姓名 *</label><input type="text" id="f_contact" placeholder="您的姓名"></div>
     <div class="field">
@@ -703,11 +713,14 @@ body{
     <div class="sec-title">02 · 品牌故事與定位</div>
     <div class="field"><label>為什麼創立這個品牌?*</label><textarea id="f_story" rows="4" placeholder="例:阿公傳下來的古早味配方,想讓更多人吃到真正的台灣米香腸..."></textarea></div>
     <div class="field"><label>品牌核心價值(3個關鍵字)</label><input type="text" id="f_values" placeholder="例:健康、天然、台灣在地"><div class="field-hint">用逗號分隔,這會成為品牌靈魂的核心</div></div>
+    <!-- 🪶 2026-10-18 防呆:第一次用的客人不用一次面對 7 格。只有「為什麼創立」必填,其餘收起來 -->
+    <details class="opt-more"><summary>想讓 AI 更懂你?可以再補充競爭對手、優勢、困擾(選填,可跳過)</summary>
     <div class="field"><label>主要競爭對手名稱</label><input type="text" id="f_competitors" placeholder="例:xxx品牌、yyy品牌"></div>
     <div class="field"><label>競爭對手網址(可多個,換行分隔)</label><textarea id="f_competitorUrls" rows="3" placeholder="例:&#10;https://www.competitor1.com&#10;https://www.competitor2.com"></textarea><div class="field-hint">AI 會分析競爭對手的定位,幫你找出差異化方向</div></div>
     <div class="field"><label>相較競爭對手的優勢</label><textarea id="f_pros" rows="3" placeholder="例:使用100%台灣豬、添加米讓口感更Q彈、無防腐劑..."></textarea></div>
     <div class="field"><label>目前的弱點或挑戰</label><textarea id="f_cons" rows="2" placeholder="例:知名度低、價格比市售高..."></textarea><div class="field-hint">誠實填寫,AI 才能幫你找到突破點</div></div>
     <div class="field"><label>想說但不知道怎麼說的話(廢話也可以)</label><textarea id="f_misc" rows="3" placeholder="任何想表達的想法,什麼都可以寫..."></textarea></div>
+    </details>
     <div class="btn-row"><button class="btn-back" onclick="goStep(1)">← 上一步</button><button class="btn-next" onclick="goStep(3)">下一步 →</button></div>
   </div>
 
@@ -763,10 +776,6 @@ body{
         <label class="check-item"><input type="checkbox" value="線下活動/課程" id="ch_event"><span>線下活動/課程</span></label>
       </div>
     </div>
-    <div class="field-row">
-      <div class="field"><label>商品/服務平均售價</label><input type="text" id="f_price" placeholder="例:NT$280 / NT$15,000/堂"></div>
-      <div class="field"><label>目標客群 *</label><input type="text" id="f_audience" placeholder="例:30-45歲媽媽 / 餐廳主廚、日料店採購 / 水電師傅、工程行"></div>
-    </div>
     <!-- 🧭 2026-10-18 客人類型:B2B 客人(原料廠、漁產批發、水電行)的廣告要對「專業買家」說話,
          不是對一般消費者。這題的答案會跟目標客群一起存進 audience 欄位(格式:類型｜客群),
          靈魂書、KOL 台詞、社群貼文、文案都靠它判斷要對誰說話。 -->
@@ -778,6 +787,10 @@ body{
         <button class="radio-btn" onclick="selectRadio(this,'buyer')">兩者都有</button>
       </div>
       <input type="hidden" id="f_buyer">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>商品/服務平均售價</label><input type="text" id="f_price" placeholder="例:NT$280 / NT$15,000/堂"></div>
+      <div class="field"><label>目標客群 *</label><input type="text" id="f_audience" placeholder="例:30-45歲媽媽 / 餐廳主廚、日料店採購 / 水電師傅、工程行"></div>
     </div>
     <div class="btn-row"><button class="btn-back" onclick="goStep(2)">← 上一步</button><button class="btn-next" onclick="goStep(4)">下一步 →</button></div>
   </div>
@@ -829,13 +842,15 @@ body{
       <div class="drive-notice-title">📁 素材資料夾說明</div>
       <p>審核通過後,系統會為您開通<strong style="color:var(--t1)">專屬素材庫</strong>:<br>商品照、品牌 Logo、KOL 形象照都放這裡,<br>生成好的廣告圖與短影片也會自動收進來。<br>您的素材庫是獨立私人的,不會與其他品牌共用。</p>
     </div>
-    <div class="btn-row"><button class="btn-back" onclick="goStep(3)">← 上一步</button><button class="btn-next" onclick="goStep(45)">下一步 →</button></div>
+    <div class="btn-row"><button class="btn-back" onclick="goStep(3)">← 上一步</button><button class="btn-next" onclick="goStep(46)">下一步 →</button></div>
   </div>
 
   <!-- ══════════════════════════════════════════
        Step 4.5 · KOL 數字人設定
        ══════════════════════════════════════════ -->
-  <div class="section" id="sec45">
+  <!-- 🪶 2026-10-18 KOL 數字人這步拿掉(RA:兩個網紅網址融合沒有接進 KOL 工作室,KOL 一律在後台 KOL 工作室建立)。
+       整段保留但不顯示,f_kolType 固定 none → 審核時不會觸發舊的 GAS 產 KOL 流程 -->
+  <div class="section" id="sec45" style="display:none!important">
     <div class="sec-title sec-title-kol">04.5 · KOL 數字人設定 <span class="kol-hero-badge">進階付費</span></div>
 
     <div class="kol-hero">
@@ -849,7 +864,7 @@ body{
     <div class="kol-option-group">
 
       <!-- 選項 1:獨立 KOL 融合模式 -->
-      <div class="kol-option on" id="kolOpt1" onclick="selectKolOption(1)">
+      <div class="kol-option" id="kolOpt1" onclick="selectKolOption(1)">
         <div class="kol-option-head">
           <div class="kol-option-radio"></div>
           <div class="kol-option-content">
@@ -926,7 +941,7 @@ body{
       </div>
 
       <!-- 選項 3:暫不需要 -->
-      <div class="kol-option" id="kolOpt3" onclick="selectKolOption(3)">
+      <div class="kol-option on" id="kolOpt3" onclick="selectKolOption(3)">
         <div class="kol-option-head">
           <div class="kol-option-radio"></div>
           <div class="kol-option-content">
@@ -940,7 +955,7 @@ body{
 
     </div>
 
-    <input type="hidden" id="f_kolType" value="independent">
+    <input type="hidden" id="f_kolType" value="none"><!-- 🪶 2026-10-18 預設「暫時不需要」:要養 KOL 的人自己點,沒網紅連結的客人不會卡在這步 -->
 
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(4)">← 上一步</button>
@@ -961,7 +976,7 @@ body{
     </div>
     <div id="planPickRoot" style="width:min(1040px,94vw);margin-left:50%;transform:translateX(-50%);"></div>
     <div class="btn-row">
-      <button class="btn-back" onclick="goStep(45)">← 上一步</button>
+      <button class="btn-back" onclick="goStep(4)">← 上一步</button>
       <button class="btn-next" onclick="goStep(5)">下一步 →</button>
     </div>
   </div>
@@ -971,7 +986,7 @@ body{
     <div id="summaryBox" style="background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px;font-size:12px;color:var(--t2);line-height:2;"></div>
     <div class="info-box">
       <div class="info-box-title">⚡ 接下來會發生的事</div>
-      <p>1. 品牌靈魂核分析您的品牌資料(透過雲端安全處理)<br>2. 自動生成「品牌靈魂書」(定位、文案風格、廣告策略)<br>3. 資料送交管理員審核<br>4. 審核通過後,系統開通您的專屬素材庫<br>5. 品牌頁籤 + KOL 數字人將自動建立</p>
+      <p>1. 品牌靈魂核分析您的品牌資料(透過雲端安全處理)<br>2. 自動生成「品牌靈魂書」(定位、文案風格、廣告策略)<br>3. 資料送交管理員審核<br>4. 審核通過後,系統開通您的專屬素材庫<br>5. 品牌頁籤自動建立,之後可在 KOL 工作室建立專屬數字人</p>
     </div>
     <div class="btn-row"><button class="btn-back" onclick="goStep(46)">← 上一步</button><button class="btn-next" id="btnGenerate" onclick="doGenerate()">⚡ 生成品牌靈魂書</button></div>
   </div>
@@ -1189,6 +1204,9 @@ async function grabColors(){
 function selectRadio(btn,group){
   btn.closest('.radio-group').querySelectorAll('.radio-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
   const id={cat:'f_category',style:'f_style',buyer:'f_buyer'}[group];if(id)document.getElementById(id).value=btn.textContent.trim();
+  // 🧭 選了客人類型 → 目標客群的範例跟著換,客人比較知道要寫什麼
+  if(group==='buyer'){const a=document.getElementById('f_audience');const t=btn.textContent.trim();
+    a.placeholder = t==='一般消費者' ? '例:30-45歲媽媽、重視健康的上班族' : t==='企業/店家/專業人士' ? '例:餐廳主廚、日料店採購 / 保健品牌商 / 水電師傅' : '例:一般家庭,也賣給餐廳與團購主';}
 }
 
 function selectKolOption(n){
@@ -1209,7 +1227,7 @@ function goStep(n){
   const target=n===45?'sec45':('sec'+n);
   document.getElementById(target).classList.add('active');
 
-  const stepOrder=[1,2,3,4,45,46,5];
+  const stepOrder=[1,2,3,4,46,5];   // 🪶 2026-10-18 KOL 那步(45)已移除
   const currentIdx=stepOrder.indexOf(n);
   stepOrder.forEach((stepN,i)=>{
     const el=document.getElementById('step'+stepN);
@@ -1245,10 +1263,6 @@ function validateStep(n){
       const bad = lines.find(u => !/^https?:\/\//i.test(u));
       if(bad){alert('競爭對手網址格式怪怪的:「'+bad.slice(0,40)+'」\n每行要以 http:// 或 https:// 開頭,沒有可以整欄留空');return false;}
     }
-    // ★ 軟提示:核心價值沒填,提醒但放行
-    if(!v('f_values')){
-      if(!confirm('還沒填「品牌核心價值(3個關鍵字)」。\n\n這會直接影響靈魂書的精準度,建議回去補一下。\n\n要先跳過、繼續下一步嗎?')) return false;
-    }
   }
 
   if(n===3){
@@ -1269,10 +1283,6 @@ function validateStep(n){
 
   if(n===4){
     // 註:f_ref 允許純文字描述(例「Apple 的簡潔感」),所以不硬擋格式
-    // ★ 軟提示:風格沒選,提醒但放行
-    if(!v('f_style')){
-      if(!confirm('還差一小步:「喜歡的品牌風格」還沒挑\n(溫暖親切、專業質感…那排標籤,跟顏色無關,顏色已經選好了)。\n\n挑 1-2 個,AI 抓品牌調性會更準;不挑也能繼續。\n\n要直接繼續下一步嗎?')) return false;
-    }
   }
 
   if(n===45){
@@ -1317,7 +1327,7 @@ function buildSummary(){
   const _sumHex = (extraColors.length>0)
     ? extraColors.map(function(c){return c.hex;}).join('、')
     : selectedColorHex;
-  document.getElementById('summaryBox').innerHTML=`<b style="color:var(--gold)">品牌名稱:</b>${v('f_name')}<br><b style="color:var(--gold)">聯絡人:</b>${v('f_contact')} ${phoneCode} ${v('f_phone')}<br><b style="color:var(--gold)">官網:</b>${v('f_website')||'未填'}<br><b style="color:var(--gold)">商品類別:</b>${v('f_category')}<br><b style="color:var(--gold)">銷售平台:</b>${platforms}<br><b style="color:var(--gold)">客人類型:</b>${v('f_buyer')||'未選'}<br><b style="color:var(--gold)">目標客群:</b>${v('f_audience')||'未填'}<br><b style="color:var(--gold)">品牌風格:</b>${v('f_style')||'未選'}<br><b style="color:var(--gold)">品牌主色:</b><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${_sumHex};vertical-align:middle;margin:0 4px;"></span>${_sumHex}<br><b style="color:var(--purple)">🎭 KOL 數字人:</b>${kolLabel}${kolDetail}<br><b style="color:var(--gold)">💎 想要的方案:</b>${planLabel}`;
+  document.getElementById('summaryBox').innerHTML=`<b style="color:var(--gold)">品牌名稱:</b>${v('f_name')}<br><b style="color:var(--gold)">聯絡人:</b>${v('f_contact')} ${phoneCode} ${v('f_phone')}<br><b style="color:var(--gold)">官網:</b>${v('f_website')||'未填'}<br><b style="color:var(--gold)">商品類別:</b>${v('f_category')}<br><b style="color:var(--gold)">銷售平台:</b>${platforms}<br><b style="color:var(--gold)">客人類型:</b>${v('f_buyer')||'未選'}<br><b style="color:var(--gold)">目標客群:</b>${v('f_audience')||'未填'}<br><b style="color:var(--gold)">品牌風格:</b>${v('f_style')||'未選'}<br><b style="color:var(--gold)">品牌主色:</b><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${_sumHex};vertical-align:middle;margin:0 4px;"></span>${_sumHex}<br><b style="color:var(--gold)">💎 想要的方案:</b>${planLabel}`;
 }
 
 function v(id){return document.getElementById(id)?.value?.trim()||'';}
