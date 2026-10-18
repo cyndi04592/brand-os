@@ -222,7 +222,16 @@ async function doGenerate() {
   //   ① 商品名照原樣給(拆字會拆壞名字),只在偵測到型號時多給一行,寫不寫交給 AI 依品類判斷
   //   ② 商品規格 / 特色帶進來(去價格、200 字內)—— 以前文案完全看不到規格
   const _CODE_RE = /\b[A-Z]{1,5}-\d{2,6}[A-Z]{0,3}\b|\b[A-Z]{2,5}\s?\d{3,6}[A-Z]{0,3}\b/g;
-  const _codes = String(window.S.prod.name || '').match(_CODE_RE) || [];
+  const _pn = String(window.S.prod.name || '');
+  const _codes = _pn.match(_CODE_RE) || [];
+  //  🔤 2026-10-19 英文系列名(RA 實測:巧福「Twin-Heating Pro 溫感雙癒按摩器」→ 文案照抄英文名)
+  //   中文商品名裡夾的英文字,跟型號一樣交給 AI 判斷;品牌 / 子品牌名本身(巧福、Golden Fox)不算
+  const _brandTxt = String(brandDisplay || '').toLowerCase();
+  const _enNames = /[\u4e00-\u9fff]/.test(_pn)
+    ? (_pn.replace(_CODE_RE, '|').match(/[A-Za-z][A-Za-z\-']*(?:\s+[A-Za-z][A-Za-z\-']*)*/g) || [])
+        .map(t => t.trim()).filter(t => t.length >= 3 && _brandTxt.indexOf(t.toLowerCase()) === -1)
+    : [];
+  const _marks = _codes.concat(_enNames);
   const _noPrice = (t) => String(t || '')
     .replace(/(售價|價格|定價|特價|原價)?\s*(約|大約)?\s*((NT|HK|US)?\$|HKD|NTD)\s*[\d,]+(\.\d+)?(\s*\/\s*\S{1,2})?/gi, '')
     .replace(/(售價|價格|定價|特價|原價)?\s*[\d,]+\s*元(\s*\/\s*\S{1,2})?/g, '')
@@ -235,7 +244,7 @@ async function doGenerate() {
 【品牌靈魂】${soul}
 【廣告風格】${style}
 【商品】${window.S.prod.name}（${window.S.prod.tag}）
-${_codes.length ? `【型號】商品名裡的「${_codes.join('、')}」是型號 —— 消費者會拿型號搜尋、比較的商品(例:手機、顯示卡、電腦、機械設備)就寫進文案;一般家電、食品、生活用品,文案用品名稱呼就好\n` : ''}${_facts ? `【商品事實】${_facts}(文案裡的規格、數字以這裡為準)\n` : ''}【目標受眾】${aud}
+${_marks.length ? `【型號】商品名裡的「${_marks.join('、')}」是型號或英文系列名 —— 消費者會拿來搜尋、比較的商品(例:手機、顯示卡、電腦、機械設備)就寫進文案;一般家電、食品、生活用品,文案只用中文品名稱呼\n` : ''}${_facts ? `【商品事實】${_facts}(文案裡的規格、數字以這裡為準)\n` : ''}【目標受眾】${aud}
 【Hashtag】${tags}
 【文案規格】${copyLengthGuide}
 ${memoryContext}
