@@ -262,6 +262,9 @@ body{
 .check-item{display:flex;align-items:center;gap:6px;cursor:pointer;}
 .check-item input{width:14px;height:14px;accent-color:var(--gold);cursor:pointer;}
 .check-item span{font-size:12px;color:var(--t2);}
+/* 📱 2026-10-20 RWD 巡站:.field label 的「整塊、全大寫、字距 2px」規則也套到勾選項 → 手機上變成擠成一團的白方塊。改成膠囊按鈕,好點、勾了會亮 */
+.field .check-item{display:flex;letter-spacing:0;text-transform:none;margin:0;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03);font-size:12px;font-weight:600;color:var(--t2);}
+.field .check-item:has(input:checked){border-color:var(--gold);background:rgba(232,160,58,.12);}
 
 /* radio */
 .radio-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
@@ -1014,7 +1017,7 @@ body{
   <div class="gen-bar-wrap"><div class="gen-bar-fill" id="genBarFill"></div></div>
 </div>
 
-<script src="plans.js"></script>
+<script src="plans.js?v=20261020"></script>
 <script src="ref-capture.js"></script><!-- 🤝 2026-09-18 推薦碼:業務把進駐頁網址直接給客人時也記得到 -->
 <script src="auth-expire.js"></script><!-- 🔑 2026-09-18 登入過期統一處理 -->
 <script>
