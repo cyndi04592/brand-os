@@ -102,7 +102,7 @@ function ensureBrandosPlanStyle() {
 .bos-seg .save{font-size:10px;opacity:.85;}
 .bos-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr);align-items:stretch;}
 .bos-grid.two{grid-template-columns:repeat(2,1fr);max-width:860px;margin:0 auto;}
-@media(max-width:720px){.bos-grid{grid-template-columns:1fr;}}
+@media(max-width:720px){.bos-grid,.bos-grid.two{grid-template-columns:1fr;}}   /* 📱 2026-10-20:.two 優先權比較高,手機上兩張卡會擠成兩欄 → 一起改成一欄 */
 .bos-card{position:relative;display:flex;flex-direction:column;background:#16161f;border:1.5px solid var(--bp-line);
   border-radius:16px;padding:22px 18px;transition:transform .18s,border-color .2s;}
 .bos-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.18);}
