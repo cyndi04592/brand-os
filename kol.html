@@ -1406,7 +1406,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <!-- ══ 中:舞台 ══════════════════════════════════════════ -->
     <div class="rs-stage">
       <div class="rs-portrait" id="rs-portrait">
-        <div class="rs-empty-stage" id="rs-stage-empty">← 從左邊選一位角色<br>還沒有角色就按「＋ 建新角色」</div>
+        <div class="rs-empty-stage" id="rs-stage-empty">先點選一位角色(電腦在左邊、手機在上方)<br>還沒有角色就按「＋ 建新角色」</div>
       </div>
       <div class="rs-body">
         <div class="rs-tabs">
@@ -1417,7 +1417,7 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="rs-pane on" id="rs-pane-look">
           <div class="rs-hint" id="look-picker-lead">決定這支影片的穿著與場景。點一個當作本次拍攝的造型。</div>
           <div id="selected-kol-banner">
-            <div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>
+            <div class="kol-empty" style="padding:16px">先在 KOL 形象庫點選一位角色</div>
           </div>
           <div class="look-picker" id="look-picker" style="display:none">
             <div class="look-picker-header">
@@ -1663,7 +1663,7 @@ document.addEventListener('DOMContentLoaded', function(){
       <div class="panel">
         <div class="panel-title"><div class="dot" style="background:var(--accent3)"></div>目前選定的 KOL</div>
         <div id="selected-kol-banner-cine">
-          <div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>
+          <div class="kol-empty" style="padding:16px">先在 KOL 形象庫點選一位角色</div>
         </div>
         <div class="look-picker" id="look-picker-cine" style="display:none">
           <div class="look-picker-header">
@@ -3783,8 +3783,8 @@ async function onBrandChange() {
     `已切換到「${brandObj?.name || brandId}」,載入形象庫...`;
 
   // 清空選定狀態
-  document.getElementById('selected-kol-banner').innerHTML = '<div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>';
-  document.getElementById('selected-kol-banner-cine').innerHTML = '<div class="kol-empty" style="padding:16px">← 從左側選擇一個 KOL 形象</div>';
+  document.getElementById('selected-kol-banner').innerHTML = '<div class="kol-empty" style="padding:16px">先在 KOL 形象庫點選一位角色</div>';
+  document.getElementById('selected-kol-banner-cine').innerHTML = '<div class="kol-empty" style="padding:16px">先在 KOL 形象庫點選一位角色</div>';
   document.getElementById('look-picker').style.display = 'none';
   document.getElementById('look-picker-cine').style.display = 'none';
   document.getElementById('create-video-btn').disabled = true;
@@ -4301,7 +4301,7 @@ function renderStageAndDossier() {
   if (!port) return;
 
   if (!k) {
-    port.innerHTML = '<div class="rs-empty-stage" id="rs-stage-empty">← 從左邊選一位角色<br>還沒有角色就按「＋ 建新角色」</div>';
+    port.innerHTML = '<div class="rs-empty-stage" id="rs-stage-empty">先點選一位角色(電腦在左邊、手機在上方)<br>還沒有角色就按「＋ 建新角色」</div>';
     if (pp) pp.style.display = 'none';
     if (vp) vp.style.display = 'none';
     if (bar) bar.classList.remove('show');
