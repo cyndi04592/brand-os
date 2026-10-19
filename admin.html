@@ -1957,7 +1957,10 @@ window._resetAdminKey = function () {
   return window._setAdminKey();
 };
 // 只有「從來沒設定過」才問;設定過就直接用,不再打擾
-if (!_adminKey()) { try { window._setAdminKey(); } catch (e) {} }
+// 🧹 v11.6(2026-10-20):不再自動跳「請輸入管理密碼」。
+//   後台讀取、審核、存檔、白名單都已改走 Worker(Google 登入身分),不需要這把鑰匙;
+//   GAS 只剩 Worker 掛掉時的備援。手機/新裝置不用再按取消。
+//   真的要設定:Console 打 _setAdminKey()。
 
 (function () {
   const _origFetch = window.fetch.bind(window);
