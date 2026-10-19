@@ -1623,7 +1623,7 @@ function buyPlanEcpay(k) {
   if (!email) { alert('請先登入再購買'); return; }
   const grid = document.getElementById('subMenuGrid');
   if (grid) grid.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.6);">建立付款中…</div>';
-  _wWrite('createSubOrder', { email, plan: k, cycle: _subCycle, method: 'ecpay' })
+  _wWrite('createSubOrder', { email, plan: k, cycle: _subCycle, method: 'ecpay', ref: (window.RabyRef && RabyRef.get()) || '' })   // 🤝 2026-10-20 補帶推薦碼:業務連結進來、在主系統訂閱視窗付款的客人原本綁不到推薦人
     .then(j => {
       if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); renderSubGrid(); return; }
       return fetch(CF_WORKER_URL, {
@@ -1668,7 +1668,7 @@ function buyPlanManual(k) {
   const credit = (_SUB_CREDIT_PLANS.indexOf(k) !== -1) ? _subTrialCredit : 0;
   if (credit) amount = Math.max(1, amount - credit);
   if (!confirm(`確認訂閱「${p.name} 方案 · ${once ? '一次性' : (yr?'年繳':'月繳')}」?\n\n${once ? '一次給' : '每月'} ${p.bits.toLocaleString()} 點 ／ NT$${amount.toLocaleString()}${once ? '（一次）' : (yr?'（年）':'（月）')}（含稅）${credit ? '\n已折抵首購體驗 NT$' + credit.toLocaleString() : ''}\n\n下單後依匯款資訊轉帳，我們對帳後為你開通。`)) return;
-  _wWrite('createSubOrder', { email, plan: k, cycle: _subCycle, method: 'manual' })
+  _wWrite('createSubOrder', { email, plan: k, cycle: _subCycle, method: 'manual', ref: (window.RabyRef && RabyRef.get()) || '' })   // 🤝 2026-10-20 同上
     .then(j => { if (!j.ok) { alert(j.message || ('下單失敗:' + (j.error || ''))); return; } showSubOrderInfo(j); })
     .catch(() => alert('連線錯誤,請重試'));
 }
