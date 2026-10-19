@@ -912,8 +912,11 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   gap: 7px;
   margin-top: 11px;
 }
-.apply-info-item { font-size: 10px; color: var(--t4); }
-.apply-info-item span { color: var(--t2); }
+.apply-info-item { font-size: 10px; color: var(--t4); min-width: 0; overflow-wrap: anywhere; }
+/* 🧹 v11.5:客戶填很長(客群一大段、網址一長串)會把卡片撐爆、字疊在一起
+   → 最多顯示 3 行,點一下展開全文;網址只顯示網域 */
+.apply-info-item span { color: var(--t2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.apply-info-item.open span { display: block; -webkit-line-clamp: unset; }
 
 .apply-actions {
   display: flex;
@@ -3158,9 +3161,9 @@ function renderApply() {
           <div class="apply-email">${esc(b.email||'')}</div>
           <div class="apply-meta">類別:${esc(b.category||'-')} · 申請日:${date}</div>
           <div class="apply-info-grid">
-            ${b.website?`<div class="apply-info-item"><span><a href="${esc(b.website)}" target="_blank" style="color:#5BC8E8">${esc(b.website)}</a></span></div>`:''}
-            ${b.platforms?`<div class="apply-info-item"><span>${esc(b.platforms)}</span></div>`:''}
-            ${b.audience?`<div class="apply-info-item"><span>${esc(b.audience)}</span></div>`:''}
+            ${b.website?`<div class="apply-info-item"><span><a href="${esc(b.website)}" target="_blank" title="${esc(b.website)}" style="color:#5BC8E8">${esc((()=>{try{return new URL(b.website).hostname.replace(/^www\./,'')}catch(_){return b.website}})())}</a></span></div>`:''}
+            ${b.platforms?`<div class="apply-info-item" onclick="this.classList.toggle('open')" title="點一下展開/收合"><span>${esc(b.platforms)}</span></div>`:''}
+            ${b.audience?`<div class="apply-info-item" onclick="this.classList.toggle('open')" title="點一下展開/收合"><span>${esc(b.audience)}</span></div>`:''}
             ${b.contact?`<div class="apply-info-item"><span>${esc(b.contact)} ${esc(b.phone||'')}</span></div>`:''}
           </div>
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
