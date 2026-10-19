@@ -752,6 +752,7 @@ body{
         <button class="radio-btn" onclick="selectRadio(this,'cat')">原料/代工製造</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">五金/建材/水電</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">批發/通路</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">汽車/機車</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">其他</button>
       </div>
       <input type="hidden" id="f_category">
@@ -1206,7 +1207,7 @@ function selectRadio(btn,group){
   const id={cat:'f_category',style:'f_style',buyer:'f_buyer'}[group];if(id)document.getElementById(id).value=btn.textContent.trim();
   // 🧭 選了客人類型 → 目標客群的範例跟著換,客人比較知道要寫什麼
   if(group==='buyer'){const a=document.getElementById('f_audience');const t=btn.textContent.trim();
-    a.placeholder = t==='一般消費者' ? '例:30-45歲媽媽、重視健康的上班族' : t==='企業/店家/專業人士' ? '例:餐廳主廚、日料店採購 / 保健品牌商 / 水電師傅' : '例:一般家庭,也賣給餐廳與團購主';}
+    a.placeholder = t==='一般消費者' ? '例:30-45歲媽媽、重視健康的上班族' : t==='企業/店家/專業人士' ? '例:餐廳主廚、日料店採購 / 保健品牌商 / 水電師傅' : '例:一般家庭為主,也賣給餐廳與團購主(主要的寫前面)';}
 }
 
 function selectKolOption(n){
@@ -1274,6 +1275,11 @@ function validateStep(n){
     if(/^(有錢(的)?人|有錢人|大家|所有人|每個人|一般人|都可以|全部|不限|消費者|客人)$/.test(v('f_audience').replace(/[\s,、。.]/g,'')) || v('f_audience').replace(/\s/g,'').length < 4){
       if(!confirm('「目標客群」可以再具體一點嗎?\n\n寫越具體,AI 做的廣告越打中人。可以加上:\n・年齡 / 職業 / 身分(例:40-60歲企業主、餐廳主廚)\n・他們在意什麼(例:面子與品味、穩定供貨)\n\n例:「有錢的人」→「40-60歲企業主、重視品味與送禮面子」\n\n按「取消」回去補寫;按「確定」照目前內容繼續。'))return false;
     }
+    // 🧭 2026-10-20:年齡範圍太寬(例「0到70歲」)→ 不擋,提醒寫主力那一段
+    {const _m=v('f_audience').match(/(\d{1,2})\s*(?:-|~|～|到|至)\s*(\d{1,3})/);
+     if(_m && (Number(_m[1])<12 || Number(_m[2])-Number(_m[1])>=40)){
+      if(!confirm('「目標客群」的年齡範圍有點寬('+_m[0]+')。\n\n寫出【最常買的那一群】,AI 做的廣告才打得中:\n例:「0到70歲」→「30-50歲、試過很多方法都瘦不下來的上班族」\n\n按「取消」回去補寫;按「確定」照目前內容繼續。'))return false;
+     }}
     // ★ 主力商品太短 → 害 AI 抓不到商品本質
     if(v('f_products').length < 4){
       alert('「主力商品/服務」再寫清楚一點。\n一行一個,寫出完整商品名(例:米香腸原味 280g),AI 出圖才抓得準。');
@@ -1350,9 +1356,9 @@ async function doGenerate(){
     ? extraColors.map(function(c){return c.hex;}).join('、')
     : selectedColorHex;
   const _today=new Date(); const _todayStr=_today.getFullYear()+'-'+String(_today.getMonth()+1).padStart(2,'0')+'-'+String(_today.getDate()).padStart(2,'0');   // 🗓 2026-10-18:AI 不知道今年幾年,書名會寫成 2024 → 告訴它今天日期
-  const prompt=`你是一位頂尖的品牌策略師,請根據以下資料生成一份完整的「品牌靈魂書」。\n今天日期:${_todayStr}\n\n【品牌基本資訊】\n品牌名稱:${v('f_name')}\n官網:${v('f_website')}\nFacebook:${v('f_fb')}  Instagram:${v('f_ig')}\n小紅書:${v('f_xiaohongshu')}  抖音:${v('f_douyin')}\n微信公眾號:${v('f_wechat')}  其他:${v('f_social_other')}\n聯絡:${v('f_contact')} ${phoneCode} ${v('f_phone')}\n\n【品牌故事】\n創立原因:${v('f_story')}\n核心價值:${v('f_values')}\n競爭對手:${v('f_competitors')}\n競爭優勢:${v('f_pros')}\n目前挑戰:${v('f_cons')}\n補充:${v('f_misc')}\n\n【商品/服務】\n類別:${v('f_category')}\n主力商品:${v('f_products')}\n銷售平台:${getPlatforms()}\n售價:${v('f_price')}\n客人類型:${v('f_buyer')}\n目標客群:${v('f_audience')}\n\n【品牌風格】\n視覺風格:${v('f_style')}\n品牌主色:${_brandHex}\n參考品牌:${v('f_ref')}\n\n請用繁體中文生成品牌靈魂書,包含:\n1. 品牌定位宣言(一句話)\n2. 品牌靈魂(3-5句)\n3. 目標受眾畫像(詳細,含痛點)\n4. 廣告文案風格指南\n5. 核心廣告主張(3個方向)\n6. 建議Hashtag(10個,含中英文)\n7. 競爭差異化重點\n\n若客人類型是「企業/店家/專業人士」或「兩者都有」:目標受眾畫像要寫出【採購決策者】(職位、在意的規格/品質穩定/供貨/成本),廣告文案風格走專業可信,對採購決策者說話。`;
+  const prompt=`你是一位頂尖的品牌策略師,請根據以下資料生成一份完整的「品牌靈魂書」。\n今天日期:${_todayStr}\n\n【品牌基本資訊】\n品牌名稱:${v('f_name')}\n官網:${v('f_website')}\nFacebook:${v('f_fb')}  Instagram:${v('f_ig')}\n小紅書:${v('f_xiaohongshu')}  抖音:${v('f_douyin')}\n微信公眾號:${v('f_wechat')}  其他:${v('f_social_other')}\n聯絡:${v('f_contact')} ${phoneCode} ${v('f_phone')}\n\n【品牌故事】\n創立原因:${v('f_story')}\n核心價值:${v('f_values')}\n競爭對手:${v('f_competitors')}\n競爭優勢:${v('f_pros')}\n目前挑戰:${v('f_cons')}\n補充:${v('f_misc')}\n\n【商品/服務】\n類別:${v('f_category')}\n主力商品:${v('f_products')}\n銷售平台:${getPlatforms()}\n售價:${v('f_price')}\n客人類型:${v('f_buyer')}\n目標客群:${v('f_audience')}\n\n【品牌風格】\n視覺風格:${v('f_style')}\n品牌主色:${_brandHex}\n參考品牌:${v('f_ref')}\n\n請用繁體中文生成品牌靈魂書,依序 7 段,每段標題用「## 01｜段名」格式:\n1. 品牌定位宣言:一句話\n2. 品牌靈魂:3-5 句\n3. 目標受眾畫像:每個受眾約 150 字,含痛點\n4. 廣告文案風格指南:約 200 字\n5. 核心廣告主張:3 個方向,每個方向一句主標+一句副標\n6. 建議Hashtag:10 個,含中英文,一行列完\n7. 競爭差異化重點:3 點,每點約 50 字\n全書約 2500 字,寫完第 7 段就結束。\n\n客人類型是「企業/店家/專業人士」:目標受眾畫像要寫出【採購決策者】(職位、在意的規格/品質穩定/供貨/成本),廣告文案風格走專業可信,對採購決策者說話。\n客人類型是「兩者都有」:目標受眾畫像照客人寫的目標客群、依他寫的先後排主次;客人寫到的企業/店家,才寫成採購決策者那一段。`;
   try{
-    const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:'raby2026',prompt,max_tokens:2000,token:guestToken,email:userEmail})});
+    const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:'raby2026',prompt,max_tokens:4500,token:guestToken,email:userEmail})});
     const data=await res.json();
     // 🩹 2026-08-22:失敗時不要把錯誤訊息當成靈魂書內容。
     //   舊寫法 data.text || '生成失敗,請重試' —— 那六個字會被一路帶到
