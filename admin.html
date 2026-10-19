@@ -158,6 +158,15 @@ body {
   .btn-save-all { padding: 8px 16px; font-size: 13px; white-space: nowrap; }
   .status-msg { display: none; }                          /* 狀態字太長會擠爆,提示改靠按鈕變色 */
 }
+/* 📱 2026-10-20 手機(<480):標題+回主系統+存檔 擠不下 → 存檔被推出畫面、整頁可以左右滑 */
+@media(max-width: 480px) {
+  .top-bar { padding: 10px 12px; gap: 8px; }
+  .top-bar h1 { font-size: 14px; letter-spacing: 0; }
+  .top-bar a { margin-left: 0 !important; padding: 5px 10px !important; font-size: 11px !important; }
+  .btn-save-all { padding: 7px 12px; font-size: 12px; flex-shrink: 0; }
+  .apply-ftab { padding: 7px 10px; white-space: nowrap; }   /* 「待審核」不要斷成兩行 */
+  .save-hint { display: block; }   /* flex 會把「這一頁/改了就立即生效/…」切成三欄直排 */
+}
 
 .status-msg { font-size: 13px; color: var(--t3); }
 .status-msg.ok { color: var(--mint); }
