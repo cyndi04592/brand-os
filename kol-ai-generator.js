@@ -1,6 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
  *  Brand OS · KOL AI 人像生成器(Tab 3 Phase 1)
- *  v3.46 · 2026-10-21  形象照構圖改成胸口以上、整顆頭入鏡(大頭特寫太近)
  *  v3.17 · 2026-05-25  (= 昨天 v3.16 代理版 + 今天品牌同步修補)
  *
  *  功能:
@@ -191,13 +190,10 @@ const EYE_GUARD =
 const BACKBONES = {
   // 素人 candid:生活感、有瑕疵、親切(食品/生活類/又晴)
   candid:
-    // 📐 v3.46 2026-10-21 構圖寫成事實:胸口以上、整顆頭含頭頂髮與下巴入鏡、臉約佔畫面三分之一高
-    //   病(RA 2026-10-21 齊漁「予安」):後面一長串毛孔/眼神細節把鏡頭拉成大頭特寫(額頭下巴被切掉),
-    //   正臉參考照也跟著太近 → 拍片時臉佔畫面太大、髮型頭型沒資訊。等量交換:拿掉重複的一句細節。
-    'Candid portrait photograph of {AGE} {NATIONALITY} {GENDER} shot on 50mm film, framed from mid-chest up with her whole head in frame — the top of her hair, both ears and her chin all visible with a little space above her head, her face taking up about a third of the frame height, ' +
+    'Candid head-and-shoulders portrait photograph of {AGE} {NATIONALITY} {GENDER} shot on 50mm film, natural framing with the face clearly visible, ' +
     '{PERSONA}, ' +
     'a real ordinary everyday person, natural and relatable, not a polished influencer, ' +
-    'beautiful but completely real raw unretouched skin with clearly visible skin pores and fine pore texture all over the cheeks nose and forehead, strong skin texture and grain, no beauty filter no skin smoothing no airbrushing, natural sub-surface scattering, ' +
+    'beautiful but completely real raw unretouched skin with clearly visible skin pores and fine pore texture all over the cheeks nose and forehead, every fine line and skin detail visible, strong skin texture and grain, no beauty filter no skin smoothing no airbrushing, natural sub-surface scattering, ' +
     'mostly matte complexion with only faint natural shine in the T-zone, slightly uneven real skin tone, slight natural asymmetry, minimal natural makeup, ' +
     'natural hair with loose flyaway strands, individual real hairs and slight frizz, ' +
     'directional natural light raking across the face from the side, revealing skin pores and texture through gentle real shadows, slightly muted understated film colors, not bright not glossy, ' +
@@ -214,7 +210,7 @@ const BACKBONES = {
 
   // 攝影級 editorial:美但真、單側方向光、真皮膚(內衣/Misaki)
   editorial:
-    'Professional editorial studio portrait photograph of {AGE} {NATIONALITY} {GENDER}, framed from mid-chest up with her whole head in frame — the top of her hair, both ears and her chin all visible with a little space above her head, her face taking up about a third of the frame height, ' +   // 📐 v3.46 同上
+    'Professional editorial studio portrait photograph of {AGE} {NATIONALITY} {GENDER}, ' +
     '{PERSONA}, ' +
     'beautiful but completely real raw unretouched skin clearly showing every pore and fine line, strong visible skin texture and grain across the whole face, no beauty filter no skin smoothing no airbrushing, natural sub-surface scattering, ' +
     'bare matte complexion with soft non-shiny cheeks and nose, only very faint natural shine in the T-zone, fine visible skin texture over the cheekbones, slightly uneven real skin tone, light natural makeup, realistic catchlights in the eyes, ' +
