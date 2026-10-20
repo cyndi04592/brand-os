@@ -2398,7 +2398,7 @@ async function bootAdmin() {
   try {
     const r = await fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}&email=${encodeURIComponent(ADMIN_USER_EMAIL||'')}`);
     const j = await r.json();
-    if (j.ok) { DB = j.data; renderAll(); setStatus('✅ 載入完成', 'ok'); }
+    if (j.ok) { DB = j.data; _origSnapAll(); renderAll(); setStatus('✅ 載入完成', 'ok'); }
     else setStatus('❌ ' + j.error, 'err');
   } catch(e) { setStatus('❌ 連線失敗', 'err'); }
   hideLoading();
@@ -2425,7 +2425,8 @@ function switchTab(name) {
 /* ═══ 🆕 2026-08-09 存檔模式提示 ═══
    只有這三頁的內容是「編輯完要按右上存檔才寫進去」;
    其餘分頁(員工/審核/儲值/訂閱/記憶庫/交付表)都是按下去就即時寫入。 */
-const SAVE_TABS = ['brands', 'products', 'folders'];
+//  ✏️ 2026-10-21 品牌/商品/資料夾也改成「改一格就存一格」(kol-proxy v6.20 adminPatch),不再整包存檔 → 沒有要按存檔的分頁了
+const SAVE_TABS = [];
 let _curTab = 'brands';
 function _updateSaveHint(name) {
   _curTab = name || 'brands';
@@ -3016,32 +3017,28 @@ function performSmartAdd(action, nu, dupIndex) {
     DB.products.push({
       brandId: nu.brandId, subId: nu.subId,
       ...subDefaults,
-      prodId: nu.prodId, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature,
+      prodId: nu.prodId, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature, _new: true,
     });
-    setStatus(`已新增「${nu.prodName}」— 記得按右上「存檔」`, 'ok');
+    createProduct(DB.products.length - 1);   // ✏️ 直接寫進系統(不用再按存檔)
   } else if (action === 'overwrite') {
     // 整筆替換
-    DB.products[dupIndex] = {
-      brandId: nu.brandId, subId: nu.subId,
-      ...subDefaults,
-      prodId: nu.prodId, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature,
-    };
-    setStatus(`已覆蓋「${nu.prodName}」— 記得按右上「存檔」`, 'ok');
+    const _o = DB.products[dupIndex];
+    Object.assign(_o, { subName: subDefaults.subName, subColor: subDefaults.subColor, prodName: nu.prodName, prodTag: nu.prodTag, spec: nu.spec, feature: nu.feature });
+    _saveRowFields('products', _o, ['subName', 'subColor', 'prodName', 'prodTag', 'spec', 'feature'], `已覆蓋「${nu.prodName}」`);
   } else if (action === 'merge') {
     // 只補空欄位
-    const old = DB.products[dupIndex];
-    DB.products[dupIndex] = {
-      ...old,
+    const old = Object.assign({}, DB.products[dupIndex]);
+    Object.assign(DB.products[dupIndex], {
       prodTag: old.prodTag || nu.prodTag,
       spec: old.spec || nu.spec,
       feature: old.feature || nu.feature,
-    };
+    });
     const filled = [];
     if (!old.prodTag && nu.prodTag) filled.push('標籤');
     if (!old.spec && nu.spec) filled.push('規格');
     if (!old.feature && nu.feature) filled.push('特色');
     const msg = filled.length ? `已合併補上:${filled.join('、')}` : '沒有空欄位需要補(舊資料完整)';
-    setStatus(msg + ' — 記得按右上「存檔」', 'ok');
+    if (filled.length) _saveRowFields('products', DB.products[dupIndex], ['prodTag', 'spec', 'feature'], msg); else setStatus(msg, 'ok');
   }
 
   document.getElementById('filterBrand').value = nu.brandId;
@@ -3202,7 +3199,7 @@ function confirmEnrichApply() {
   p.feature = feature;
   renderProducts();
   closeEnrichModal();
-  setStatus(`已套用規格/特色 — 記得按右上「存檔」`, 'ok');
+  _saveRowFields('products', p, ['spec', 'feature'], '已套用規格/特色');
 }
 
 // ══ 品牌審核 ══
@@ -3401,13 +3398,13 @@ function renderBrands() {
     return `
     <div class="brand-card">
       <div class="brand-card-header">
-        <input class="brand-icon-input" value="${b.icon||''}" oninput="DB.brands[${i}].icon=this.value" title="ICON(暫用 emoji,LOGO 系統規劃中)">
-        <input class="field-input" style="font-weight:700;font-size:15px" value="${esc(b.name)}" oninput="DB.brands[${i}].name=this.value">
+        <input class="brand-icon-input" value="${b.icon||''}" oninput="DB.brands[${i}].icon=this.value" data-t="brands" data-i="${i}" data-f="icon" title="ICON(暫用 emoji,LOGO 系統規劃中)">
+        <input class="field-input" style="font-weight:700;font-size:15px" value="${esc(b.name)}" oninput="DB.brands[${i}].name=this.value" data-t="brands" data-i="${i}" data-f="name">
       </div>
-      <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(b.id)}" oninput="DB.brands[${i}].id=this.value;renderBrands()" style="font-family:var(--font-mono);font-size:12px"></div>
+      <div class="field-row"><label>品牌ID(代號不能改)</label><input class="field-input" value="${esc(b.id)}" readonly style="font-family:var(--font-mono);font-size:12px;opacity:.6"></div>
 
       <div class="field-row" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">
-        <label style="color:var(--purple)">品牌色票(用於 AI 生圖 / 文案)</label>
+        <label style="color:var(--purple)">品牌色票(目前只供參考,這裡改了不會存;AI 生圖用的是品牌包色票)</label>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
         <div>
@@ -3439,10 +3436,10 @@ function renderBrands() {
 
       <div class="field-row" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">
         <label>品牌靈魂</label>
-        <textarea class="field-textarea" oninput="DB.brands[${i}].soul=this.value">${esc(b.soul)}</textarea>
+        <textarea class="field-textarea" oninput="DB.brands[${i}].soul=this.value" data-t="brands" data-i="${i}" data-f="soul">${esc(b.soul)}</textarea>
       </div>
-      <div class="field-row"><label>廣告風格</label><input class="field-input" value="${esc(b.adStyle)}" oninput="DB.brands[${i}].adStyle=this.value"></div>
-      <div class="field-row"><label>Hashtags</label><input class="field-input" value="${esc(b.hashtags)}" oninput="DB.brands[${i}].hashtags=this.value"></div>
+      <div class="field-row"><label>廣告風格</label><input class="field-input" value="${esc(b.adStyle)}" oninput="DB.brands[${i}].adStyle=this.value" data-t="brands" data-i="${i}" data-f="adStyle"></div>
+      <div class="field-row"><label>Hashtags</label><input class="field-input" value="${esc(b.hashtags)}" oninput="DB.brands[${i}].hashtags=this.value" data-t="brands" data-i="${i}" data-f="hashtags"></div>
       <div class="card-actions"><button class="btn-delete" onclick="deleteBrand(${i})">🗑 刪除品牌</button></div>
     </div>`;
   }).join('');
@@ -3482,6 +3479,64 @@ async function deleteBrand(i) {
   hideLoading();
 }
 
+/* ═══ ✏️ 2026-10-21 一格一格存(kol-proxy v6.20)═══
+   ★ 病:按「存檔」會把整包品牌/商品/資料夾重寫 —— 兩個人同時改,後按的人用舊資料蓋掉前一個人改的,沒人知道。
+   ★ 現在:離開那一格(或換選項)就只存那一格。送出時附上「我打開頁面時讀到的舊值」,
+     如果那格已經被別人改過,Worker 回 CONFLICT → 問你要不要蓋過去,不會默默洗掉。
+   ★ 每一次修改 Worker 都記進修改紀錄(🧯 紀錄 → 修改紀錄),可以一鍵還原。 */
+const _ORIG = new WeakMap();
+function _rowOrigSet(row) { try { _ORIG.set(row, JSON.parse(JSON.stringify(row))); } catch (_) {} }
+function _origSnapAll() { ['brands', 'products', 'folders'].forEach(t => (DB[t] || []).forEach(_rowOrigSet)); }
+function _rowKey(t, r) {
+  if (t === 'brands') return { id: r.id };
+  if (t === 'products') return { brandId: r.brandId || '', subId: r.subId || '', prodId: r.prodId || '' };
+  return { brandId: r.brandId || '' };
+}
+function _flash(el, ok) {
+  if (!el) return;
+  el.style.transition = 'box-shadow .2s';
+  el.style.boxShadow = ok ? '0 0 0 2px rgba(109,250,194,.9)' : '0 0 0 2px rgba(255,77,109,.9)';
+  setTimeout(() => { el.style.boxShadow = ''; }, ok ? 900 : 2500);
+}
+async function _patchOne(t, row, f, el) {
+  const o = _ORIG.get(row) || {};
+  const val = row[f] == null ? '' : String(row[f]);
+  const send = (force) => workerWrite('adminPatch', { email: ADMIN_USER_EMAIL, table: t, key: _rowKey(t, row), field: f, value: val, expect: o[f] == null ? '' : String(o[f]), force: !!force });
+  let j = null; try { j = await send(false); } catch (_) {}
+  if (j && j.code === 'CONFLICT') {
+    const cur = String(j.current || '');
+    if (confirm('這一格剛剛被別人改過了。\n\n現在系統裡是:\n' + (cur.slice(0, 300) || '(空白)') + '\n\n你要改成:\n' + (val.slice(0, 300) || '(空白)') + '\n\n要用你的內容蓋過去嗎?(按「取消」就保留對方的)')) {
+      try { j = await send(true); } catch (_) { j = null; }
+    } else {
+      row[f] = cur; if (el) el.value = cur; o[f] = cur; _ORIG.set(row, o); _flash(el, true);
+      return { ok: true, kept: true };
+    }
+  }
+  if (j && j.ok) { o[f] = val; _ORIG.set(row, o); _flash(el, true); }
+  else { _flash(el, false); setStatus('❌ 沒存進去:' + ((j && (j.message || j.error)) || '連線失敗,請再改一次'), 'err'); }
+  return j || { ok: false };
+}
+async function _saveRowFields(t, row, fields, okMsg) {
+  if (row._new) return;
+  let bad = 0;
+  for (const f of fields) { const r = await _patchOne(t, row, f, null); if (!r || !r.ok) bad++; }
+  if (!bad && okMsg) setStatus('✅ ' + okMsg, 'ok');
+  if (t === 'products') renderProducts();
+}
+document.addEventListener('change', function (e) {
+  const el = e.target && e.target.closest && e.target.closest('[data-t][data-f]');
+  if (!el) return;
+  const t = el.getAttribute('data-t'), f = el.getAttribute('data-f'), i = Number(el.getAttribute('data-i'));
+  const row = (DB[t] || [])[i];
+  if (!row) return;
+  if (t === 'folders') {
+    if (!String(row.brandId || '').trim()) { setStatus('❌ 先填品牌ID', 'err'); return; }
+    delete row._new;   // 資料夾第一次存就會自動建好那一列
+  } else if (row._new) return;
+  row[f] = el.value;
+  _patchOne(t, row, f, el);
+});
+
 function updateFilters() {
   ['filterBrand','deliverFilterBrand'].forEach(id => {
     const sel = document.getElementById(id);
@@ -3500,29 +3555,54 @@ function renderProducts() {
   if (!filtered.length) { tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--t4)">沒有符合的商品</td></tr>'; return; }
   tbody.innerHTML = filtered.map(p => {
     const i = DB.products.indexOf(p);
-    return `<tr>
+    //  ✏️ 2026-10-21 一筆一筆存:代號(系列/商品)是這一筆的身分,存過就不能改;新加的那筆按「✓ 建立」才寫進系統
+    const nw = !!p._new;
+    const A = (f) => nw ? '' : ` data-t="products" data-i="${i}" data-f="${f}"`;
+    const RO = nw ? '' : ' readonly style="min-width:90px;opacity:.6"';
+    return `<tr${nw ? ' style="background:rgba(124,108,255,.08)"' : ''}>
       <td><span class="color-dot color-${p.subColor||'gold'}"></span>${esc(p.brandId)}</td>
-      <td><input class="td-input" value="${esc(p.subId)}" oninput="DB.products[${i}].subId=this.value" style="min-width:90px"></td>
-      <td><input class="td-input" value="${esc(p.subName)}" oninput="DB.products[${i}].subName=this.value" style="min-width:100px"></td>
-      <td><select class="td-input" onchange="DB.products[${i}].subColor=this.value" style="min-width:70px">${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${p.subColor===c?'selected':''}>${c}</option>`).join('')}</select></td>
-      <td><input class="td-input" value="${esc(p.prodId)}" oninput="DB.products[${i}].prodId=this.value" style="min-width:80px"></td>
-      <td><input class="td-input" value="${esc(p.prodName)}" oninput="DB.products[${i}].prodName=this.value" style="min-width:160px"></td>
-      <td><input class="td-input" value="${esc(p.prodTag)}" oninput="DB.products[${i}].prodTag=this.value" style="min-width:80px"></td>
-      <td><input class="td-input" value="${esc(p.spec||'')}" placeholder="如:16吋/復古銅" oninput="DB.products[${i}].spec=this.value" title="${esc(p.spec||'')}" style="min-width:140px"></td>
-      <td><input class="td-input" value="${esc(p.feature||'')}" placeholder="如:嘖嘖募資" oninput="DB.products[${i}].feature=this.value" title="${esc(p.feature||'')}" style="min-width:130px"></td>
+      <td><input class="td-input" value="${esc(p.subId)}" oninput="DB.products[${i}].subId=this.value"${RO || ' style="min-width:90px"'} placeholder="例:cf-fan"></td>
+      <td><input class="td-input" value="${esc(p.subName)}" oninput="DB.products[${i}].subName=this.value"${A('subName')} style="min-width:100px"></td>
+      <td><select class="td-input" onchange="DB.products[${i}].subColor=this.value"${A('subColor')} style="min-width:70px">${['gold','red','mint','purple','sky','brown'].map(c=>`<option value="${c}" ${p.subColor===c?'selected':''}>${c}</option>`).join('')}</select></td>
+      <td><input class="td-input" value="${esc(p.prodId)}" oninput="DB.products[${i}].prodId=this.value"${RO ? ' readonly style="min-width:80px;opacity:.6"' : ' style="min-width:80px"'} placeholder="例:cf-fan-p01"></td>
+      <td><input class="td-input" value="${esc(p.prodName)}" oninput="DB.products[${i}].prodName=this.value"${A('prodName')} style="min-width:160px"></td>
+      <td><input class="td-input" value="${esc(p.prodTag)}" oninput="DB.products[${i}].prodTag=this.value"${A('prodTag')} style="min-width:80px"></td>
+      <td><input class="td-input" value="${esc(p.spec||'')}" placeholder="如:16吋/復古銅" oninput="DB.products[${i}].spec=this.value"${A('spec')} title="${esc(p.spec||'')}" style="min-width:140px"></td>
+      <td><input class="td-input" value="${esc(p.feature||'')}" placeholder="如:嘖嘖募資" oninput="DB.products[${i}].feature=this.value"${A('feature')} title="${esc(p.feature||'')}" style="min-width:130px"></td>
       <td style="white-space:nowrap;">
-        <button class="btn-row-enrich" onclick="openEnrichModal(${i})" title="AI 補規格/特色"></button>
-        <button class="btn-row-del" onclick="deleteProduct(${i})">✕</button>
+        ${nw
+          ? `<button class="btn-refresh" style="padding:4px 10px;font-size:12px;" onclick="createProduct(${i})">✓ 建立</button>
+             <button class="btn-row-del" onclick="deleteProduct(${i})">✕</button>`
+          : `<button class="btn-row-enrich" onclick="openEnrichModal(${i})" title="AI 補規格/特色"></button>
+             <button class="btn-row-del" onclick="deleteProduct(${i})">✕</button>`}
       </td>
     </tr>`;
   }).join('');
 }
 function addProduct() {
   const brandId = document.getElementById('filterBrand').value||(DB.brands[0]?.id||'');
-  DB.products.push({brandId,subId:'',subName:'',subColor:'gold',subSoul:'',subAdStyle:'',subHashtags:'',prodId:'',prodName:'新商品',prodTag:'',spec:'',feature:''});
+  DB.products.push({brandId,subId:'',subName:'',subColor:'gold',subSoul:'',subAdStyle:'',subHashtags:'',prodId:'',prodName:'新商品',prodTag:'',spec:'',feature:'',_new:true});
   renderProducts();
+  setStatus('填好系列代號、商品代號、名稱後,按那一列的「✓ 建立」', 'ok');
 }
-function deleteProduct(i) { if(!confirm(`確定刪除「${DB.products[i].prodName}」?`))return; DB.products.splice(i,1); renderProducts(); }
+//  ✏️ 新的那一筆 → 寫進系統
+async function createProduct(i) {
+  const p = DB.products[i]; if (!p) return;
+  if (!String(p.subId||'').trim() || !String(p.prodId||'').trim() || !String(p.prodName||'').trim()) { setStatus('❌ 系列代號、商品代號、商品名稱都要填', 'err'); return; }
+  const row = {}; ['brandId','subId','prodId','subName','subColor','prodName','prodTag','spec','feature'].forEach(k => row[k] = String(p[k]||'').trim());
+  let j = null; try { j = await workerWrite('adminAddProduct', { email: ADMIN_USER_EMAIL, row }); } catch (_) {}
+  if (!j || !j.ok) { setStatus('❌ ' + ((j && (j.message || j.error)) || '建立失敗'), 'err'); return; }
+  delete p._new; Object.assign(p, row); _rowOrigSet(p); renderProducts();
+  setStatus(`✅ 已建立「${row.prodName}」`, 'ok');
+}
+async function deleteProduct(i) {
+  const p = DB.products[i]; if (!p) return;
+  if (p._new) { DB.products.splice(i,1); renderProducts(); return; }
+  if (!confirm(`確定刪除「${p.prodName}」?\n(刪錯了可以到「🧯 紀錄 → 修改紀錄」還原)`)) return;
+  let j = null; try { j = await workerWrite('adminDeleteProduct', { email: ADMIN_USER_EMAIL, key: _rowKey('products', p) }); } catch (_) {}
+  if (!j || !j.ok) { setStatus('❌ ' + ((j && (j.message || j.error)) || '刪除失敗'), 'err'); return; }
+  DB.products.splice(i,1); renderProducts(); setStatus(`✅ 已刪除「${p.prodName}」`, 'ok');
+}
 
 function renderFolders() {
   const list = document.getElementById('foldersList');
@@ -3534,9 +3614,9 @@ function renderFolders() {
         <span class="folder-brand-badge">${brand?.icon||''} ${brand?.name||f.brandId}</span>
         <button class="btn-delete" onclick="deleteFolder(${i})" style="margin-left:auto">🗑 刪除</button>
       </div>
-      <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(f.brandId)}" oninput="DB.folders[${i}].brandId=this.value"></div>
-      <div class="field-row"><label>照片資料夾 ID</label><input class="field-input" value="${esc(f.photoFolderId)}" oninput="DB.folders[${i}].photoFolderId=this.value"></div>
-      <div class="field-row"><label>影片資料夾 ID</label><input class="field-input" value="${esc(f.videoFolderId)}" oninput="DB.folders[${i}].videoFolderId=this.value"></div>
+      <div class="field-row"><label>品牌ID</label><input class="field-input" value="${esc(f.brandId)}" oninput="DB.folders[${i}].brandId=this.value"${f.brandId && !f._new ? ' readonly style="opacity:.6"' : ''}></div>
+      <div class="field-row"><label>照片資料夾 ID</label><input class="field-input" value="${esc(f.photoFolderId)}" oninput="DB.folders[${i}].photoFolderId=this.value" data-t="folders" data-i="${i}" data-f="photoFolderId"></div>
+      <div class="field-row"><label>影片資料夾 ID</label><input class="field-input" value="${esc(f.videoFolderId)}" oninput="DB.folders[${i}].videoFolderId=this.value" data-t="folders" data-i="${i}" data-f="videoFolderId"></div>
       <div style="margin-top:10px;display:flex;gap:12px;">
         <a href="https://drive.google.com/drive/folders/${f.photoFolderId}" target="_blank" style="font-size:12px;color:var(--purple);text-decoration:none;">開啟照片資料夾 ↗</a>
         <a href="https://drive.google.com/drive/folders/${f.videoFolderId}" target="_blank" style="font-size:12px;color:var(--purple);text-decoration:none;">開啟影片資料夾 ↗</a>
@@ -3544,7 +3624,7 @@ function renderFolders() {
     </div>`;
   }).join('');
 }
-function addFolder() { DB.folders.push({brandId:'',photoFolderId:'',videoFolderId:''}); renderFolders(); }
+function addFolder() { DB.folders.push({brandId:'',photoFolderId:'',videoFolderId:'',_new:true}); renderFolders(); }
 function deleteFolder(i) { if(!confirm('確定刪除?'))return; DB.folders.splice(i,1); renderFolders(); }
 
 async function loadDelivers() {
@@ -4024,7 +4104,7 @@ document.addEventListener('input', function(e){
   // 🆕 2026-08-09 收窄範圍:只有這三個區塊的欄位是「要按存檔」的。
   //   舊版追蹤整個 .main → 在員工/儲值頁打字也會誤判成未存檔,
   //   離開時亂跳確認框,反而讓人不信任這個警示。
-  if (e.target.closest('#sec-brands, #sec-products, #sec-folders')) _markDirty();
+  //  ✏️ 2026-10-21 三頁都改成即時存了,不再標記「未存檔」
 });
 window.addEventListener('beforeunload', function(e){
   if (_hasUnsaved) { e.preventDefault(); e.returnValue = ''; }
