@@ -455,10 +455,13 @@ function doLogout() {
 
 // ══ 後台按鈕 ══
 function goAdmin() {
-  if (_userEmail === ADMIN_EMAIL) {
+  // 🔑 2026-10-20:原本只放行 RA 一個信箱 → 審核員(Allan.C、黃凱翊)按 Admin 都被擋在這裡。
+  //   改成:有登入就開後台,誰能進由 admin.html 自己判斷(白名單 owner / reviewer 才放行),
+  //   後台每個動作 Worker 也會再用登入通行證認一次人 —— 這裡不必、也不該重複判斷。
+  if (_userEmail) {
     window.open('admin.html', '_blank');
   } else {
-    alert('⚠️ 後台僅限管理員\n目前帳號：' + (_userEmail || '未登入'));
+    alert('⚠️ 請先登入');
   }
 }
 
