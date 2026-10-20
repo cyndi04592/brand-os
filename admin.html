@@ -2200,6 +2200,67 @@ function applyRoleUI() {
   const isOwner = ADMIN_USER_ROLE === 'owner';
   document.querySelectorAll('[data-owner-only]').forEach(el => { el.style.display = isOwner ? '' : 'none'; });
   if (!isOwner) document.querySelectorAll('[data-owner-only-opt]').forEach(el => el.remove());
+  try { _balInit(); } catch (_) {}
+}
+
+// ══ 💰 2026-10-20 上游 API 餘額(只有 RA 本人看得到)══
+//   ★ 只認 cyndi04592@gmail.com 這一個信箱,其他 owner / 審核員 / 股東一律不顯示。
+//   ★ 這裡只是不畫按鈕;真正的鎖在 Worker apiBalance(用登入通行證認人,改前端也拿不到資料)。
+const _BAL_OWNER = 'cyndi04592@gmail.com';
+function _balInit() {
+  if (String(ADMIN_USER_EMAIL || '').toLowerCase() !== _BAL_OWNER) return;
+  if (document.getElementById('btnBal')) return;
+  const save = document.getElementById('btnSaveAll');
+  if (!save) return;
+  const b = document.createElement('button');
+  b.id = 'btnBal';
+  b.title = 'fal / PiAPI / Claude 剩多少錢(只有你看得到)';
+  b.style.cssText = 'position:relative;flex-shrink:0;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--t2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;';
+  b.innerHTML = '💰 餘額<span id="balDot" style="display:none;position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#ff4d6d;box-shadow:0 0 0 2px #111118;"></span>';
+  b.onclick = _balOpen;
+  save.parentNode.insertBefore(b, save);
+  _balFetch().then(j => { if (j && j.ok) _balDot(j); }).catch(() => {});
+}
+async function _balFetch() { return await workerWrite('apiBalance', { email: ADMIN_USER_EMAIL }); }
+function _balLow(j) { return !!((j.fal && j.fal.low) || (j.piapi && j.piapi.low) || (j.claude && j.claude.low)); }
+function _balDot(j) { const d = document.getElementById('balDot'); if (d) d.style.display = _balLow(j) ? 'block' : 'none'; }
+async function _balOpen() {
+  let m = document.getElementById('balModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'balModal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    m.onclick = e => { if (e.target === m) m.remove(); };
+    document.body.appendChild(m);
+  }
+  m.innerHTML = '<div style="background:#16161d;border:1px solid #2e2e3a;border-radius:16px;max-width:420px;width:100%;padding:22px;color:#fff;"><div style="font-size:16px;font-weight:900;margin-bottom:12px;">💰 上游 API 餘額</div><div style="color:rgba(255,255,255,.55);font-size:13px;">查詢中…</div></div>';
+  let j = null;
+  try { j = await _balFetch(); } catch (_) {}
+  if (!j || !j.ok) { m.querySelector('div div:last-child').textContent = '查不到:' + ((j && j.error) || '連線失敗'); return; }
+  _balDot(j);
+  const row = (name, ok, main, sub, link) =>
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid rgba(255,255,255,.08);">'
+    + '<div><div style="font-weight:800;font-size:14px;">' + name + '</div><div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-top:3px;">' + sub + '</div></div>'
+    + '<div style="text-align:right;"><div style="font-weight:900;font-size:16px;color:' + (ok ? '#7CFFB2' : '#ff6b8a') + ';">' + main + '</div>'
+    + (link ? '<a href="' + link + '" target="_blank" style="font-size:11px;color:#5BC8E8;">加值 →</a>' : '') + '</div></div>';
+  const f = j.fal || {}, p = j.piapi || {}, c = j.claude || {};
+  const fRow = (f.usd !== undefined)
+    ? row('fal', !f.low, 'US$' + Number(f.usd).toFixed(2), '低於 US$' + f.min + ' 會寄信通知你', 'https://fal.ai/dashboard/billing')
+    : row('fal', false, '查不到', /403/.test(f.error || '') ? '金鑰沒有讀帳單權限,要另外建一把 READONLY 金鑰' : (f.error || '未設定'), 'https://fal.ai/dashboard/billing');
+  const pRow = (p.usd !== undefined)
+    ? row('PiAPI', !p.low, 'US$' + Number(p.usd).toFixed(2), '低於 US$' + p.min + ' 會寄信通知你', 'https://piapi.ai/workspace/billing')
+    : row('PiAPI', false, '查不到', p.error || '未設定', 'https://piapi.ai/workspace/billing');
+  const cOk = !c.low && c.status === '正常';
+  const cRow = row('Claude', cOk, c.status || (c.error ? '查不到' : '—'), 'Claude 沒有公開查餘額的方式;用完會立刻寄信通知', 'https://console.anthropic.com/settings/billing');
+  const t = new Date(j.checkedAt || Date.now());
+  m.innerHTML = '<div style="background:#16161d;border:1px solid #2e2e3a;border-radius:16px;max-width:420px;width:100%;padding:22px;color:#fff;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div style="font-size:16px;font-weight:900;">💰 上游 API 餘額</div>'
+    + '<button onclick="document.getElementById(\'balModal\').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer;">✕</button></div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">只有你看得到 · 查詢時間 ' + t.toLocaleString('zh-TW', { hour12: false }) + '</div>'
+    + fRow + pRow + cRow
+    + '<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:12px;line-height:1.7;">系統每小時自動檢查一次,低於門檻會寄信到你的信箱(同一家 12 小時內只寄一次)。</div>'
+    + '<button onclick="_balOpen()" style="margin-top:12px;width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:transparent;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;">重新查詢</button>'
+    + '</div>';
 }
 
 // ══ B1+: 免二次登入 — 用主站發的 SSO 票自動驗證 ══
