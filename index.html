@@ -1282,7 +1282,7 @@ function buyPack(k) {
       '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin:4px 0 20px;">' + p.bits.toLocaleString() + ' Bits ／ NT$' + p.price.toLocaleString() + '</div>' +
       _invoiceFormHtml() +
       '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
-      '<button onclick="buyPackEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">線上刷卡 / ATM（即時入帳）</button>' +
+      '<button onclick="buyPackEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">💳 信用卡付款（即時入帳）</button>' +
       '<button onclick="renderShopGrid()" style="' + bs + 'background:transparent;color:rgba(255,255,255,0.45);font-weight:500;margin-top:14px;">← 返回</button>' +
     '</div>';
   _invSwitch();   // 畫完立刻把預設選項(Email)的卡片點亮
@@ -1611,8 +1611,8 @@ function buyPlan(k) {
       (once ? '<div style="font-size:12px;color:#ffce6b;margin-bottom:18px;line-height:1.7;">一個帳號限購一次 · 30 天內升級入門以上,1,490 全額折抵</div>' : '') +
       (credit ? '<div style="background:rgba(124,255,178,0.08);border:1px solid rgba(124,255,178,0.4);border-radius:11px;padding:10px 13px;margin-bottom:18px;font-size:13px;color:#cfffe2;line-height:1.7;">🎁 已折抵首購體驗 <b>NT$' + credit.toLocaleString() + '</b><br>本次應付 <b style="color:#7CFFB2;font-size:15px;">NT$' + Math.max(1, amount - credit).toLocaleString() + '</b></div>' : '') +
       '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
-      //  💳 2026-10-20 RA 拍板:首購體驗、輕量只收信用卡(不開 ATM、不開銀行轉帳)
-      '<button onclick="buyPlanEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">' + ((k === 'trial' || k === 'light') ? '信用卡付款（即時開通）' : '線上刷卡 / ATM（即時開通）') + '</button>' +
+      //  💳 2026-10-21 RA 拍板:線上付款一律只收信用卡(不開 ATM;ATM 會自動開通,RA 要親自審核)
+      '<button onclick="buyPlanEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">' + '💳 信用卡付款（即時開通）' + '</button>' +
       //  🏦 2026-10-21 RA 拍板:銀行轉帳只留給「年繳」(金額大,刷卡額度可能不夠);月繳一律線上付款
       (yr ? '<button onclick="buyPlanManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">銀行轉帳（年繳 · 人工開通）</button>' : '') +
       '<button onclick="renderSubGrid()" style="' + bs + 'background:transparent;color:rgba(255,255,255,0.45);font-weight:500;margin-top:14px;">← 返回</button>' +
@@ -1632,7 +1632,7 @@ function buyPlanEcpay(k) {
         body: JSON.stringify({
           action: 'ecpay_create', password: GAS_PASSWORD,
           orderId: j.orderId, amount: j.amount,
-          choosePayment: (j.planKey === 'trial' || j.planKey === 'light') ? 'Credit' : 'ALL',   // 💳 首購/輕量只收信用卡
+          choosePayment: 'Credit',   // 💳 2026-10-21 一律只收信用卡(photoroom-proxy v11.22 後端也強制)
           itemName: (j.planKey === 'trial') ? '首購體驗(一次性)' : `${j.planName}方案 ${j.cycle==='year'?'年繳':'月繳'}`,
           tradeDesc: 'Brand OS 訂閱方案',
           // ★ v3.94 修正:一定要帶 orderType='sub'。
