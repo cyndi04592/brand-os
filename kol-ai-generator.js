@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
  *  Brand OS · KOL AI 人像生成器(Tab 3 Phase 1)
+ *  v3.46 · 2026-10-21  挑形象照時「構圖太近」提醒(只提醒,不動照片與提示詞)
  *  v3.17 · 2026-05-25  (= 昨天 v3.16 代理版 + 今天品牌同步修補)
  *
  *  功能:
@@ -2055,6 +2056,7 @@ async function generate() {
     } catch (_) {}
 
     renderGallery();
+    _kaiFramingCheck();   // 📏 v3.46 背景看構圖,太近的那張加提醒(不動照片、不動提示詞)
 
     // 自動填 seed 到輸入框
     const seedInp = document.getElementById('kai-seed');
@@ -2077,6 +2079,43 @@ async function generate() {
     btn.disabled = false;
     btn.innerHTML = '生成 AI KOL';
   }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  📏 v3.46(2026-10-21)形象照構圖提醒 —— 只提醒,不動照片、不動提示詞
+//  ────────────────────────────────────────────────────────────────
+//  ★ 病(RA 2026-10-21 齊漁「予安」):同一批 3 張有時會出現大頭特寫(頭頂或下巴被切掉),
+//    客人不知道,選了那張 → 拍片時臉太大、髮型頭型沒資訊。
+//  ★ 為什麼不改提示詞:形象照是整個 KOL 寫實感的源頭(RA:這裡不要亂動)。
+//    實測改提示詞也壓不住,反而會碰到寫實感。
+//  ★ 做法:生成完背景請 Worker(kol_framing_check)看構圖,太近的卡片標一行字;
+//    客人照樣可以選,只是知道了。判斷失敗就當沒這回事,絕不擋流程。
+// ══════════════════════════════════════════════════════════════════
+async function _kaiFramingCheck() {
+  try {
+    const batch = (S.lastImages || []).map(im => im && im.url).filter(Boolean);
+    if (!batch.length) return;
+    const res = await fetch(WORKER_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_withAuth({ password: PASSWORD, action: 'kol_framing_check', urls: batch })),
+    });
+    const j = await res.json();
+    if (!j || !j.ok || !Array.isArray(j.results) || !j.results.length) return;
+    //  客人在等判斷的時候又按了生成 → 這批已經不是畫面上那批,結果作廢
+    const now = (S.lastImages || []).map(im => im && im.url);
+    if (now.join('|') !== batch.join('|')) return;
+    j.results.forEach(r => {
+      const im = S.lastImages[r.i];
+      if (im && im.url === r.url) { im.tight = r.tight === true; im.tightReason = r.reason || ''; }
+    });
+    renderGallery();
+    const tightN = S.lastImages.filter(im => im && im.tight).length;
+    if (tightN && tightN === S.lastImages.length) {
+      showStatus('📏 這批都拍得太近(頭頂或下巴被切到),拍片時臉會太大 —— 建議再生成一次', 'warn');
+    } else if (tightN) {
+      showStatus('📏 有 ' + tightN + ' 張拍得太近,卡片上有標示 —— 建議選沒標示的那張', 'warn');
+    }
+  } catch (_) { /* 判斷失敗不影響挑選 */ }
 }
 
 function renderGallery() {
@@ -2107,6 +2146,7 @@ function renderGallery() {
           <span class="kai-img-idx">#${i + 1}</span>
           ${nsfw}
           <img src="${escapeHtml(img.url)}" alt="AI KOL ${i + 1}" loading="lazy" />
+          ${img.tight ? '<div title="' + escapeHtml(img.tightReason || '') + '" style="position:absolute;left:6px;right:6px;bottom:6px;background:rgba(20,20,28,.82);border:1px solid rgba(255,206,107,.7);color:#ffce6b;padding:4px 6px;border-radius:6px;font-size:10.5px;font-weight:700;line-height:1.4;text-align:center;">📏 構圖太近<br><span style="font-weight:500;color:#f5e6c4;">拍片時臉會太大,建議選別張</span></div>' : ''}
         </div>
         <div class="kai-img-actions">
           <button class="kai-img-btn${img.saved ? ' saved' : ''}" data-act="save" data-idx="${i}"
