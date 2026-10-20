@@ -146,7 +146,8 @@
         '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:6px;">選擇付款方式</div>' +
         //  💳 2026-10-20 RA 拍板:首購體驗、輕量只收信用卡(不開 ATM、不開銀行轉帳)
         '<button onclick="buyPlanEcpay(\'' + k + '\')" style="' + bs + 'background:linear-gradient(135deg,#7c6cff,#ff7ac3);">' + ((k === 'trial' || k === 'light') ? '💳 信用卡付款（即時開通）' : '💳 線上刷卡 / ATM（即時開通）') + '</button>' +
-        ((k === 'trial' || k === 'light') ? '' : '<button onclick="buyPlanManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">🏦 銀行轉帳（人工開通）</button>') +
+        //  🏦 2026-10-21 RA 拍板:銀行轉帳只留給「年繳」(金額大,刷卡額度可能不夠);月繳一律線上付款
+        (yr ? '<button onclick="buyPlanManual(\'' + k + '\')" style="' + bs + 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">🏦 銀行轉帳（年繳 · 人工開通）</button>' : '') +
         '<button onclick="renderPage()" style="' + bs + 'background:transparent;color:rgba(255,255,255,0.45);font-weight:500;margin-top:14px;">← 返回方案</button>' +
       '</div>';
     _invSwitch();   // 畫完立刻把預設選項(Email)的卡片點亮
@@ -379,6 +380,7 @@
     if (!_inv.ok) return;
     const once = !!p.once;
     const yr = (_cyc === 'year') && !once;
+    if (!yr) { alert('月繳方案請用線上付款(銀行轉帳只開放年繳)'); return; }   // 🏦 2026-10-21
     const monthPrice = (p.promo > 0) ? p.promo : p.price;
     let amount = yr ? (p.price * 12) : monthPrice;
     const credit = (_CREDIT_PLANS.indexOf(k) !== -1) ? _trialCredit : 0;
