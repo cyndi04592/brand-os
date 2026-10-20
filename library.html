@@ -626,7 +626,7 @@ function renderGrid(){
     const vid = isVideo(it.url);
     const nm  = it.name || (vid ? '影片' : '圖片');
     const th  = vid
-      ? '<video src="'+esc(it.url)+'#t=0.5" preload="metadata" muted playsinline></video><div class="play">▶</div>'
+      ? '<video data-lazy="'+esc(it.url)+'#t=0.5" preload="none" muted playsinline></video><div class="play">▶</div>'   // 🎞 2026-10-21 捲到才載(見下方 _lazyVideos)
       : '<img src="'+esc(thumbUrl(it.url,400))+'" loading="lazy" decoding="async" alt="">';
     const isAI = GROUPS[1].cats.indexOf(it.category) !== -1;   // 成品 → 金框金標
     const sidx = ((it.name||'')+' '+(it.category||'')+' '+(it.kol_name||'')+' '+fmtDate(it.ts)).toLowerCase();
@@ -643,6 +643,24 @@ function renderGrid(){
     c.onclick = function(){ openLb(list[Number(c.dataset.i)]); };
   });
   if(S.cat !== 'all' || S.kol !== 'all' || S.q) applyFilter();
+  _lazyVideos();
+}
+
+/* 🎞 2026-10-21 影片縮圖「捲到才載」
+   病:素材庫一打開,每支影片都先去抓一段當縮圖(12 支影片 → 37 次下載),
+     手機流量吃重、捲動會卡,而且大部分影片客人根本還沒捲到。
+   修:縮圖先不載,卡片進到畫面(前後多算 300px)才開始抓;被分類篩掉、藏起來的卡片不會載。
+   不支援的舊瀏覽器 → 照舊直接載(行為跟以前一樣)。 */
+let _vidObs = null;
+function _lazyVideos(){
+  const vids = $('body').querySelectorAll('video[data-lazy]');
+  const load = function(v){ if(!v.dataset.lazy) return; v.preload = 'metadata'; v.src = v.dataset.lazy; v.removeAttribute('data-lazy'); };
+  if(!('IntersectionObserver' in window)){ Array.prototype.forEach.call(vids, load); return; }
+  if(_vidObs) _vidObs.disconnect();
+  _vidObs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting){ load(e.target); _vidObs.unobserve(e.target); } });
+  }, { rootMargin: '300px 0px' });
+  Array.prototype.forEach.call(vids, function(v){ _vidObs.observe(v); });
 }
 
 function showState(icon, title, sub){
