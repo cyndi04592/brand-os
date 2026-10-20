@@ -2221,6 +2221,50 @@ function _balInit() {
   save.parentNode.insertBefore(b, save);
   _balFetch().then(j => { if (j && j.ok) _balDot(j); }).catch(() => {});
 }
+// ══ 🧹 2026-10-21 清除測試單(只有 RA 本人;入口在 💰 餘額視窗底部)══
+//   ★ 真正的鎖在 Worker purgeTestOrders:只認 RA 本人,只刪 RA/分身帳號的「銀行轉帳」單,
+//     有發票的、處理中的、客人的一律刪不到。這裡只是畫清單、讓你勾選確認。
+function _pgEsc(x) { return String(x == null ? '' : x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const _PG_ST = { paid: '已開通', pending: '待付款', cancelled: '已取消' };
+async function _purgeOpen() {
+  let m = document.getElementById('balModal');
+  if (!m) { _balOpen(); m = document.getElementById('balModal'); }
+  const box = '<div style="background:#16161d;border:1px solid #2e2e3a;border-radius:16px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:20px;color:#fff;">';
+  m.innerHTML = box + '<div style="font-size:16px;font-weight:900;">🧹 清除測試單</div><div style="color:rgba(255,255,255,.55);font-size:13px;margin-top:10px;">讀取中…</div></div>';
+  let j = null;
+  try { j = await workerWrite('purgeTestOrders', { email: ADMIN_USER_EMAIL }); } catch (_) {}
+  if (!j || !j.ok) { m.innerHTML = box + '<div style="font-size:15px;">讀不到清單:' + _pgEsc((j && j.error) || '連線失敗') + '</div><button onclick="_balOpen()" style="margin-top:14px;padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:transparent;color:#fff;cursor:pointer;">← 返回</button></div>'; return; }
+  const list = j.candidates || [];
+  const rows = list.map(r =>
+    '<label style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid rgba(255,255,255,.07);cursor:pointer;">'
+    + '<input type="checkbox" class="pgChk" value="' + _pgEsc(r.orderId) + '" checked style="margin-top:3px;width:16px;height:16px;flex-shrink:0;">'
+    + '<div style="min-width:0;font-size:12.5px;line-height:1.6;"><b>' + _pgEsc(r.item) + '</b> · NT$' + Number(r.amount || 0).toLocaleString() + ' · ' + _pgEsc(_PG_ST[r.status] || r.status)
+    + '<div style="color:rgba(255,255,255,.45);font-size:11px;word-break:break-all;">' + _pgEsc(r.orderId) + ' · ' + _pgEsc(String(r.time || '').slice(0, 10)) + ' · ' + _pgEsc(r.email) + '</div></div></label>').join('');
+  m.innerHTML = box
+    + '<div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-size:16px;font-weight:900;">🧹 清除測試單</div>'
+    + '<button onclick="_balOpen()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;">← 返回</button></div>'
+    + '<div style="font-size:11.5px;color:rgba(255,255,255,.5);margin:8px 0 6px;line-height:1.7;">只會列出你本人與分身帳號的「銀行轉帳」單;客人的單、刷卡單、開過發票的單不會出現,也刪不到。刪除不影響任何點數。<b style="color:#ff8fb1;">刪除後無法復原。</b></div>'
+    + (list.length ? rows : '<div style="padding:18px 0;color:rgba(255,255,255,.55);font-size:13px;">沒有可以清除的測試單 🎉</div>')
+    + (list.length ? '<button id="pgGo" onclick="_purgeGo()" style="margin-top:14px;width:100%;padding:12px;border-radius:10px;border:none;background:#ff4d6d;color:#fff;font-weight:800;cursor:pointer;font-family:inherit;">刪除勾選的 ' + list.length + ' 張</button>' : '')
+    + '</div>';
+  m.querySelectorAll('.pgChk').forEach(c => c.onchange = () => {
+    const k = m.querySelectorAll('.pgChk:checked').length, g = document.getElementById('pgGo');
+    if (g) { g.textContent = '刪除勾選的 ' + k + ' 張'; g.disabled = !k; g.style.opacity = k ? '1' : '.4'; }
+  });
+}
+async function _purgeGo() {
+  const m = document.getElementById('balModal'); if (!m) return;
+  const ids = Array.from(m.querySelectorAll('.pgChk:checked')).map(c => c.value);
+  if (!ids.length) return;
+  if (!confirm('確定永久刪除這 ' + ids.length + ' 張測試單?\n\n刪除後無法復原(點數不受影響)。')) return;
+  const g = document.getElementById('pgGo'); if (g) { g.disabled = true; g.textContent = '刪除中…'; }
+  let j = null;
+  try { j = await workerWrite('purgeTestOrders', { email: ADMIN_USER_EMAIL, confirm: true, ids }); } catch (_) {}
+  if (!j || !j.ok) { alert('刪除失敗:' + ((j && j.error) || '連線失敗')); _purgeOpen(); return; }
+  alert('已刪除 ' + j.deleted + ' 張測試單。');
+  try { if (typeof loadSubOrders === 'function') loadSubOrders(); } catch (_) {}
+  _purgeOpen();
+}
 async function _balFetch() { return await workerWrite('apiBalance', { email: ADMIN_USER_EMAIL }); }
 function _balLow(j) { return !!((j.fal && j.fal.low) || (j.piapi && j.piapi.low) || (j.claude && j.claude.low)); }
 function _balDot(j) { const d = document.getElementById('balDot'); if (d) d.style.display = _balLow(j) ? 'block' : 'none'; }
@@ -2260,6 +2304,7 @@ async function _balOpen() {
     + fRow + pRow + cRow
     + '<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:12px;line-height:1.7;">系統每小時自動檢查一次,低於門檻會寄信到你的信箱(同一家 12 小時內只寄一次)。</div>'
     + '<button onclick="_balOpen()" style="margin-top:12px;width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:transparent;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;">重新查詢</button>'
+    + '<button onclick="_purgeOpen()" style="margin-top:8px;width:100%;padding:11px;border-radius:10px;border:1px solid rgba(255,109,155,.35);background:transparent;color:#ff8fb1;font-weight:700;cursor:pointer;font-family:inherit;">🧹 清除測試單</button>'
     + '</div>';
 }
 
