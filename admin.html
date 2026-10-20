@@ -2398,7 +2398,7 @@ async function bootAdmin() {
   try {
     const r = await fetch(`${GAS_URL}?action=getBrandOS&password=${PASSWORD}&email=${encodeURIComponent(ADMIN_USER_EMAIL||'')}`);
     const j = await r.json();
-    if (j.ok) { DB = j.data; _origSnapAll(); renderAll(); setStatus('✅ 載入完成', 'ok'); }
+    if (j.ok) { DB = j.data; _origSnapAll(); renderAll(); setStatus('✅ 載入完成', 'ok'); try { _updateSaveHint(_curTab); } catch (_) {} }   // ✏️ 一進來就把「存檔」鈕收起來(三頁都即時存了)
     else setStatus('❌ ' + j.error, 'err');
   } catch(e) { setStatus('❌ 連線失敗', 'err'); }
   hideLoading();
