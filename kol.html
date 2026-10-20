@@ -2314,7 +2314,25 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <div class="toast-wrap" id="toast-wrap"></div>
 <script src="loader.js"></script>
-<script src="Errlog.js?v=20261021"></script>   <!-- 🧯 2026-10-21 錯誤紀錄表:客人出錯自動記一筆(只看不改,不擋流程) -->
+<script src="Errlog.js?v=20261021"></script>
+<script>/* 🔁 2026-10-21 同時發出的「同一份讀取」只打一次 Worker(切品牌時資料被抓兩次)。只合併唯讀查詢、只在請求進行中合併,完成就放掉,不做快取 */
+(function(){
+  if (window._bsInflight) return;
+  var RO = /"(?:action|gasAction)"\s*:\s*"(?:list_assets|list_kol_photos_lib|kol_sheet|gas_cached)"/;
+  var M = window._bsInflight = new Map(), F = window.fetch;
+  window.fetch = function(u, i){
+    try {
+      var url = typeof u === 'string' ? u : (u && u.url) || '';
+      var b = i && i.body;
+      if (/kol-proxy/.test(url) && i && String(i.method||'').toUpperCase()==='POST' && typeof b==='string' && RO.test(b) && !i.signal) {
+        var k = url + '\n' + b, p = M.get(k);
+        if (!p) { p = F.apply(this, arguments); M.set(k, p); var d = function(){ M.delete(k); }; p.then(d, d); }
+        return p.then(function(r){ return r.clone(); });
+      }
+    } catch (_) {}
+    return F.apply(this, arguments);
+  };
+})();</script>   <!-- 🧯 2026-10-21 錯誤紀錄表:客人出錯自動記一筆(只看不改,不擋流程) -->
 <script src="voice-modal.js"></script>
 <script src="kol-universal-scenes.js"></script>
 <script src="kol-ai-generator.js"></script>
