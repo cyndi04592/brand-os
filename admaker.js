@@ -17,6 +17,7 @@
 //    [v10.2] ★ 修 bug:setPrMode 切到 gpt_poster 清乾淨靈感鍵選中狀態
 //    [v10.2] ★ UI:風格靈感區改為「版式骨架 + 風土調味」二段式選擇
 //    [v10.1] 8 靈感鍵 + GPT Image 2 edit 模式(保留作備援)
+//    [2026-10-21] 「變 5 秒影片」改成帶客人去 KOL 工作室無臉模式(Kling 版留在 _posterToVideoKling)
 //    [v10.1] 海報→5秒影片 (Kling v2.1)
 //    [v9.1] 字體系統 + 場景擴增
 // ══════════════════════════════════════════════════════════════
@@ -4478,7 +4479,18 @@ async function renderGptPosterCanvas() {
   await compositeBrandLogo(ctx);
 }
 
-async function posterToVideo() {
+//  🎬 2026-10-21 RA 拍板:「變 5 秒影片」照常可以生成,但先跳一句提醒 ——
+//   這裡只是讓廣告圖微微動的基礎影片;要真正的商品影片請到 KOL 工作室開無臉模式。
+//   (齊漁 A5 和牛實測:5 秒幾乎不動,客人會以為我們的影片只有這樣)
+function posterToVideo() {
+  if (!LAST_POSTER_URL) { setPrStatus('⚠️ 請先生成廣告圖', 'var(--red)'); return; }
+  const ok = confirm('這裡是基礎影片:廣告圖動起來,效果有限。\n'
+    + '要商品影片(鏡頭移動、情境、動作),請到 KOL 工作室開「無臉模式」。\n\n'
+    + '確定要繼續生成基礎影片嗎?');
+  if (ok) _posterToVideoKling();
+}
+
+async function _posterToVideoKling() {
   if (!LAST_POSTER_URL) {
     setPrStatus('⚠️ 請先生成廣告圖', 'var(--red)');
     return;
