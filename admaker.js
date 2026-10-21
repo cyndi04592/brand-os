@@ -4474,7 +4474,7 @@ async function generateGptPoster() {
           endpoint: 'openai/gpt-image-2/edit',
           payload: {
             prompt: 'Image 1 is a finished campaign photograph. Image 2 shows the real ' + (_isApp ? 'garment' : 'product') + '. ' +
-              'In image 1, the ' + (_isApp ? 'garment' : 'products') + ' become exact copies of the real ones in image 2: every item shown in image 2 is present, and every label, printed word, logo, embroidery, stitch line, panel and colour matches. ' +
+              'In image 1, the ' + (_isApp ? 'garment' : 'products') + ' become exact copies of the real ones in image 2: every label, printed word, logo, embroidery, stitch line, panel and colour matches the real product it shows. ' +
               'Everything else in image 1 — the background, the headline and other lettering on the background, the light, the shadows, the camera angle, the position and size of the ' + (_isApp ? 'garment, the model\'s face, hair and pose' : 'products') + ' — stays exactly as it is.',
             image_urls: [winner.imageUrl, imageUrl],
             image_size: _sz.fal,
