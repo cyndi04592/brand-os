@@ -4204,7 +4204,14 @@ function buildPosterPrompt() {
 
   // ═════ ③ 場景層 —— 這張圖發生在哪 ═════════════════════════════════
   prompt += `=== SCENE (where this photograph happens) ===\n`;
-  if (flavor.flavor) {
+  // 🩹 2026-10-22 分工(照拍攝現場):版型=攝影師管地點、風格=調色師管光色質感、情境=道具師一樣小物。
+  //   RA 實測 MOZ:白棚+美式復古+開箱 → 風格那句「決定場景、優先於一切」把白棚整個蓋掉,變雜亂復古房。
+  var _layoutOwnsPlace = (SELECTED_LAYOUT === 'white_studio' || SELECTED_LAYOUT === 'minimal_poster');
+  if (_layoutOwnsPlace) {
+    prompt += `The place is the one the layout above describes.\n`;
+    if (flavor.flavor) prompt += _dropPriceTalk(flavor.flavor) + `\nWithin that place, this style shapes the light colour, grade and texture.\n`;
+    prompt += '\n';
+  } else if (flavor.flavor) {
     // 選了②設計風格 → 它是場景的最高權威(維持原本的覆蓋規則)
     prompt += _dropPriceTalk(flavor.flavor) + '\n';
     prompt += `This chosen style decides the actual setting, era and decor. It takes precedence over any scene the brand ambience implies.\n`;
@@ -4217,7 +4224,7 @@ function buildPosterPrompt() {
     prompt += `Brand world: ${_sceneTxt0}\n`;
     prompt += `The brand lists several possible worlds. For THIS render, work from the one that reads as: ${_sv}. Treat the brand list as a range to move across, and let this render land in a corner of that range the brand rarely shows.\n`;
   }
-  prompt += `Choose fresh supporting props for this render — objects that belong to this world and to how the product is actually used, different from the ones this brand's images usually carry.\n\n`;
+  if (!_layoutOwnsPlace) prompt += `Choose fresh supporting props for this render — objects that belong to this world and to how the product is actually used, different from the ones this brand's images usually carry.\n\n`;
 
   // ═════ ④ 光影層 —— 光怎麼打、怎麼落地 ═════════════════════════════
   prompt += `=== LIGHT ===\n`;
@@ -4272,7 +4279,9 @@ function buildPosterPrompt() {
 
   if (contextTheme.context) {
     prompt += `=== CONTEXTUAL THEME ===\n`;
-    prompt += _dropPriceTalk(contextTheme.context) + '\n\n';
+    prompt += _dropPriceTalk(contextTheme.context) + '\n';
+    if (_layoutOwnsPlace) prompt += `In this layout the context appears as one small object beside the product.\n`;
+    prompt += '\n';
     prompt += CONTEXT_QUALITY;
   }
 
