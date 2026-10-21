@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.1 (2026-10-22)
+//  admaker-prompt-lean.js · v2.2 (2026-10-22)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
 //
 //  為什麼:RA 2026-10-22 實測同一張 MOZ 外套照 / 德訓鞋照
@@ -34,7 +34,7 @@
   window._buildPosterPromptOrig = ORIG;
   if (window.AD_LEAN === undefined) window.AD_LEAN = true;
 
-  var LEAN_TYPES   = ['', 'physical', 'apparel', 'apparel_keep'];
+  var LEAN_TYPES   = ['', 'physical', 'apparel', 'apparel_keep', 'physical_reshoot'];
   var LEAN_LAYOUTS = ['', 'white_studio', 'minimal_poster', 'scene_lifestyle', 'magazine_cover', 'hand_hold'];
 
   // 真實光源(一個光源 + 方向),每張抽一個
@@ -186,6 +186,9 @@
     var ctx = getBrandContext();
     var pb = packBits();
     var isReshoot = (pt === 'apparel');            // 服飾:重拍(新模特兒、新姿勢)
+    var isProdReshoot = (pt === 'physical_reshoot'); // 商品:重拍(新場景、新角度)
+    // v2.2 重拍兩種都會在出圖後走「商品校正」第二步(admaker.js 讀這個旗標)
+    window._amReshoot = isReshoot || isProdReshoot;
     var isApparel = (pt === 'apparel_keep');       // 服飾:保留原模特兒(只換光與背景)
     var S = isApparel ? 'the people' : 'the product';
 
@@ -200,6 +203,20 @@
 
     // v2.0 結構:① 拍攝企劃(具體畫面主意,權重最大,放最前)② 主體一句 ③ 構圖一句
     //   ④ 風格+品牌一句 ⑤ 物理法則兩句(保險)⑥ 相機一句 ⑦ 字一句。約 900~1,300 字。
+    if (isProdReshoot) {
+      var fsP = flavorSet(flavor);
+      var bfP = [essence(pb.mood, 80), essence(ctx.adStyle, 70)].filter(Boolean).join('; ');
+      p.push('The product is the real one in this photo' + (name ? ' (' + name + ')' : '') + ': it keeps its exact shape, panels, colours, materials and logos; small labels and lettering stay exactly as photographed, and where a label is too small to read it stays plain.');
+      p.push('A new product campaign photograph: the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its') + '. Low camera at product height, the product fills most of the frame.');
+      if (fsP || bfP) p.push((fsP ? 'Styling: ' + essence(fsP, 120) + '. ' : '') + (bfP ? 'Brand feel: ' + bfP + '.' : ''));
+      if (ctxTheme.context) p.push('Occasion, told through one small real sign: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
+      if (note) p.push('Client note: ' + essence(note, 180));
+      p.push('Light travels in straight lines from its real source: what faces it is bright, what faces away falls into shadow, and whatever stands in its path casts its shadow onto what lies behind. Things that touch rest on each other under gravity and darken where they meet.');
+      p.push('Shot on ' + camFor(SELECTED_FLAVOR, ly, pb.photo + ' ' + pb.mood) + '. Real material texture; ' + sz.w + 'x' + sz.h + ', edge to edge.');
+      if (headline || sub) p.push("Words in the brand's own type style" + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', one compact block on the wall beside the product: ' +
+        (headline ? '"' + headline + '"' : '') + (headline && sub ? ', and a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '') + '.');
+      return p.join('\n');
+    }
     if (isReshoot) {
       var fsR = flavorSet(flavor);
       var bfR = [essence(pb.mood, 80), essence(ctx.adStyle, 70)].filter(Boolean).join('; ');
@@ -265,7 +282,7 @@
     var ly = (typeof SELECTED_LAYOUT !== 'undefined' && SELECTED_LAYOUT) || '';
     var fl = (REGIONAL_FLAVORS[SELECTED_FLAVOR] || {}).flavor || '';
     var use = window.AD_LEAN !== false && LEAN_TYPES.indexOf(pt) !== -1 && LEAN_LAYOUTS.indexOf(ly) !== -1 && !/ILLUSTRATION OVERLAY/i.test(fl);
-    if (!use) return ORIG.apply(this, arguments);
+    if (!use) { window._amReshoot = false; return ORIG.apply(this, arguments); }
     try {
       var out = lean();
       console.log('[AD_LEAN] 精簡提示詞 ' + out.length + ' 字(舊版保險絲:window.AD_LEAN=false)');
@@ -275,5 +292,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.1 精簡廣告圖提示詞已載入');
+  console.log('[AD_LEAN] v2.2 精簡廣告圖提示詞已載入');
 })();
