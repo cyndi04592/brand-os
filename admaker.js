@@ -3860,6 +3860,7 @@ Object.assign(LAYOUT_BY_PRODTYPE, {
   wellness: LAYOUT_BY_PRODTYPE.physical,
   // 🆕 2026-10-21 服飾穿搭(有模特兒):一樣是拍商品,版型沿用商品實拍,差別在人照原圖保留
   apparel: LAYOUT_BY_PRODTYPE.physical,
+  apparel_keep: LAYOUT_BY_PRODTYPE.physical,
 });
 
 // 🆕 2026-10-21 服飾穿搭(模特兒穿著拍)— RA 實測 MOZ 外套:選「商品實拍」時人被重擺姿勢、比例怪
@@ -3873,11 +3874,15 @@ Object.assign(PRODTYPE_PROMPT, {
 });
 
 
+// 🆕 2026-10-22 服飾保留原模特兒:舊版提示詞(保險絲退回時)沿用 apparel 那段
+PRODTYPE_PROMPT.apparel_keep = PRODTYPE_PROMPT.apparel;
+
 // ⓪ 選單本身(索引順序 = 畫面順序)
 const PRODTYPE_OPTIONS = [
   { group: '有實體商品可拍' },
   { value: 'physical', label: '商品實拍 — 食品 / 家電 / 服飾 / 包款 / 家具', highlight: true },
-  { value: 'apparel',  label: '服飾穿搭(有模特兒)— 衣服 / 鞋包 / 配件,真人穿著拍' },
+  { value: 'apparel',      label: '服飾穿搭 · 重拍 — AI 模特兒穿上你的衣服,換姿勢、角度、場景' },
+  { value: 'apparel_keep', label: '服飾穿搭 · 保留原模特兒 — 人照原圖,只換背景與光' },
   { value: 'wellness', label: '養生能量商品 — 水晶 / 串珠 / 能量手環 / 按摩器材' },
   { group: '服務與體驗' },
   { value: 'beauty',  label: '美業服務 — 美睫 / 美甲 / 美髮 / 紋繡 / SPA' },
