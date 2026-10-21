@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.0 (2026-10-22)
+//  admaker-prompt-lean.js · v2.1 (2026-10-22)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
 //
 //  為什麼:RA 2026-10-22 實測同一張 MOZ 外套照 / 德訓鞋照
@@ -34,7 +34,7 @@
   window._buildPosterPromptOrig = ORIG;
   if (window.AD_LEAN === undefined) window.AD_LEAN = true;
 
-  var LEAN_TYPES   = ['', 'physical', 'apparel'];
+  var LEAN_TYPES   = ['', 'physical', 'apparel', 'apparel_keep'];
   var LEAN_LAYOUTS = ['', 'white_studio', 'minimal_poster', 'scene_lifestyle', 'magazine_cover', 'hand_hold'];
 
   // 真實光源(一個光源 + 方向),每張抽一個
@@ -72,6 +72,18 @@
     if (!c) pool = pool.concat(CONCEPTS.cool, CONCEPTS.warm);
     return pick(pool);
   }
+
+  // v2.1 重拍模式(RA 2026-10-22 實測「超屌,就是這個」):服飾 = 商品是衣服,不是原圖的模特兒。
+  //   衣服照原樣,模特兒/姿勢/角度/場景全部重新設計 —— 跟 KOL 線一樣是「重新拍」,不是「改圖」。
+  //   每一則 = 場景 + 姿勢/動作 + 機位 + 光(Pinterest 那種有一個主意的畫面)
+  var RESHOOTS = [
+    'shot from very low, looking up at the model against a clear saturated blue sky with a few white clouds; the model sits on top of a sunlit concrete wall, one knee up, hair blown by the wind, laughing toward the camera; strong direct afternoon sun from the left',
+    'the model reaches one open hand toward the lens, the hand large and soft in the foreground, the face sharp behind it with a confident half-smile; bright midday sun on a city street, shallow depth of field',
+    'the model crouches on a sunny rooftop edge, forearms resting on the knees, looking down into the lens; shot from below against a deep blue sky; hard sun from behind rims the hair',
+    'the model leans against a saturated terracotta wall in hard late-afternoon sun, glancing sideways past the camera; a crisp shadow of the model falls on the wall',
+    'the model walks toward the camera along an empty sunlit street, mid-stride, hair moving, caught candidly on a long lens; golden low sun from behind',
+    'the model sits cross-legged on the floor of a pale yellow seamless studio, one hand in the hair, a hard beam of sunlight from a window cutting across the backdrop and the model',
+  ];
 
   // 沒選風格、品牌也沒寫場景時的實景(都是「一面背景」,人和商品都站得進去)
   var PLACES = [
@@ -173,7 +185,8 @@
     var ctxTheme = (CONTEXT_THEMES[SELECTED_CONTEXT] || {});
     var ctx = getBrandContext();
     var pb = packBits();
-    var isApparel = (pt === 'apparel');
+    var isReshoot = (pt === 'apparel');            // 服飾:重拍(新模特兒、新姿勢)
+    var isApparel = (pt === 'apparel_keep');       // 服飾:保留原模特兒(只換光與背景)
     var S = isApparel ? 'the people' : 'the product';
 
     var headline = val('gptHeadline'), sub = val('gptSubHeadline'), note = val('gptStyleDesc');
@@ -187,6 +200,21 @@
 
     // v2.0 結構:① 拍攝企劃(具體畫面主意,權重最大,放最前)② 主體一句 ③ 構圖一句
     //   ④ 風格+品牌一句 ⑤ 物理法則兩句(保險)⑥ 相機一句 ⑦ 字一句。約 900~1,300 字。
+    if (isReshoot) {
+      var fsR = flavorSet(flavor);
+      var bfR = [essence(pb.mood, 80), essence(ctx.adStyle, 70)].filter(Boolean).join('; ');
+      p.push('The product is the garment in this photo: same cut, fabric, colour, zips, drawstrings and every logo or embroidery exactly as it is.');
+      p.push('A new fashion campaign photograph of a young model wearing this garment: ' + pick(RESHOOTS) + '.');
+      p.push('Everything else the model wears is plain, unbranded everyday basics, so the garment is the only branded piece in the picture.');
+      if (fsR || bfR) p.push((fsR ? 'Styling: ' + essence(fsR, 120) + '. ' : '') + (bfR ? 'Brand feel: ' + bfR + '.' : ''));
+      if (ctxTheme.context) p.push('Occasion, told through one small real sign: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
+      if (note) p.push('Client note: ' + essence(note, 180));
+      p.push('Light travels in straight lines from its real source: what faces it is bright, what faces away falls into shadow, and nearby surfaces bounce their colour onto the model. It is one moment through one lens.');
+      p.push('Shot on ' + pick(CAMS.film.concat(CAMS.clean)) + '. Real skin texture, real fabric folds; ' + sz.w + 'x' + sz.h + ', edge to edge.');
+      if (headline || sub) p.push("Words in the brand's own type style" + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', one compact block on the sky or wall beside the model: ' +
+        (headline ? '"' + headline + '"' : '') + (headline && sub ? ', and a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '') + '.');
+      return p.join('\n');
+    }
     var P = isApparel ? 'their' : 'its';
     var concept;
     if (ly === 'white_studio') concept = 'a smooth warm-white studio wall; hard sun from a tall window on one side draws the window-frame shadow across the wall and across {S}';
@@ -247,5 +275,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.0 精簡廣告圖提示詞已載入');
+  console.log('[AD_LEAN] v2.1 精簡廣告圖提示詞已載入');
 })();
