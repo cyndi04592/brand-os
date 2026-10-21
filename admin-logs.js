@@ -138,13 +138,20 @@
             <td>${esc(tw(r.ts))}</td>
             <td title="${esc(r.email)}">${esc(who(r.email))}</td>
             <td>${esc(r.brand_id || '—')}</td>
-            <td title="${esc(r.prompt)}">${esc(actName(r.action))}</td>
+            <td title="${esc(r.prompt)}" style="white-space:normal;min-width:160px;">${esc(actName(r.action))}${selLine(r.prompt)}</td>
             <td>${esc(r.kol_name || '—')}</td>
             <td style="white-space:normal;min-width:90px;">${okTxt}</td>
             <td>${link}</td>
             <td>${esc(sec(r.ms))}</td>
           </tr>`;
         }).join('') + '</tbody></table>';
+  }
+
+  // 🧾 2026-10-22 廣告圖:顯示客人當時選了什麼(admaker.js 寫在 prompt 第一行「【客人選擇】…」)
+  function selLine(p) {
+    const m = /^【客人選擇】([^\n]*)/.exec(String(p || ''));
+    if (!m) return '';
+    return '<div style="font-size:11px;line-height:1.6;color:var(--t2);margin-top:3px;">' + esc(m[1]) + '</div>';
   }
 
   function brief(v) {
