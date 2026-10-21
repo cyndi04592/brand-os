@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.2 (2026-10-22)
+//  admaker-prompt-lean.js · v2.3 (2026-10-22)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
 //
 //  為什麼:RA 2026-10-22 實測同一張 MOZ 外套照 / 德訓鞋照
@@ -206,8 +206,9 @@
     if (isProdReshoot) {
       var fsP = flavorSet(flavor);
       var bfP = [essence(pb.mood, 80), essence(ctx.adStyle, 70)].filter(Boolean).join('; ');
-      p.push('The product is the real one in this photo' + (name ? ' (' + name + ')' : '') + ': it keeps its exact shape, panels, colours, materials and logos; small labels and lettering stay exactly as photographed, and where a label is too small to read it stays plain.');
-      p.push('A new product campaign photograph: the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its') + '. Low camera at product height, the product fills most of the frame.');
+      // v2.3:實測只剩一雙(原圖兩雙一黑一黃)→ 明講「照片裡的每一件都在,數量、顏色組合一樣」
+      p.push('The products are every item in this photo' + (name ? ' (' + name + ')' : '') + ', all of them present, the same number of items in the same colourways: each keeps its exact shape, panels, colours, materials and logos; small labels and lettering stay exactly as photographed, and where a label is too small to read it stays plain.');
+      p.push('A new product campaign photograph: the products stand on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its') + '. Low camera at product height, the products fill most of the frame.');
       if (fsP || bfP) p.push((fsP ? 'Styling: ' + essence(fsP, 120) + '. ' : '') + (bfP ? 'Brand feel: ' + bfP + '.' : ''));
       if (ctxTheme.context) p.push('Occasion, told through one small real sign: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
       if (note) p.push('Client note: ' + essence(note, 180));
@@ -292,5 +293,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.2 精簡廣告圖提示詞已載入');
+  console.log('[AD_LEAN] v2.3 精簡廣告圖提示詞已載入');
 })();
