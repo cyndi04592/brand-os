@@ -4381,6 +4381,24 @@ async function generateGptPoster() {
     const imageUrl = await uploadToFal(paddedBase64);
 
     const prompt = buildPosterPrompt();
+    // 🧾 2026-10-22 後台「生成紀錄」要看得出客人選了什麼(RA:看不出來等於白做)
+    try {
+      var _lbl = function (m, k) { return (k && m && m[k] && m[k].label) || ''; };
+      var _pt = PRODTYPE_OPTIONS.find(function (o) { return o.value === SELECTED_PRODTYPE; });
+      var _bc = (typeof getBrandContext === 'function') ? (getBrandContext() || {}) : {};
+      window._amLastGen = {
+        prompt: prompt,
+        sel: {
+          類型: (_pt && _pt.label.split(' — ')[0]) || '(沒選)',
+          版型: _lbl(LAYOUT_TEMPLATES, SELECTED_LAYOUT) || '(沒選)',
+          風格: _lbl(REGIONAL_FLAVORS, SELECTED_FLAVOR) || '(沒選)',
+          情境: _lbl(CONTEXT_THEMES, SELECTED_CONTEXT) || '(沒選)',
+          商品: _bc.product || '',
+          尺寸: _sz.w + 'x' + _sz.h,
+          原圖: (window.S && window.S.prod && window.S.prod.name) || ''
+        }
+      };
+    } catch (_) { window._amLastGen = { prompt: prompt, sel: {} }; }
     console.log('[v11.2] 懶人廣告圖 prompt 長度:', prompt.length, '字元 · reqid:', reqid);
 
     setPrStatus('廣告圖生成中(品牌包+版式合成,約 2-4 分鐘)...', 'var(--t3)');
@@ -4709,6 +4727,8 @@ async function registerAdImageSilently(saveRes, kind, reqId) {
 
     const brand = window.BRANDS?.find(b => b.id === brandId);
     const prod  = window.S?.prod;
+    const _lg = (kind === 'poster' || !kind) ? (window._amLastGen || null) : null;
+    const _selTxt = _lg ? Object.keys(_lg.sel).filter(function (k) { return _lg.sel[k]; }).map(function (k) { return k + ':' + _lg.sel[k]; }).join(' · ') : '';
     const g = await _kolPost({
       action: 'gen_log',
       row: {
@@ -4719,7 +4739,9 @@ async function registerAdImageSilently(saveRes, kind, reqId) {
         action:     'admaker_' + (kind || 'poster'),
         kind:       'image',
         provider:   'admaker',
+        prompt:     _lg ? ('【客人選擇】' + _selTxt + '\n\n' + _lg.prompt) : '',
         params:     JSON.stringify({
+                      sel:        _lg ? _lg.sel : null,
                       brand:      brand?.name || '',
                       product:    prod?.name || '',
                       request_id: saveRes.request_id || reqId || '',
