@@ -3861,6 +3861,7 @@ Object.assign(LAYOUT_BY_PRODTYPE, {
   // 🆕 2026-10-21 服飾穿搭(有模特兒):一樣是拍商品,版型沿用商品實拍,差別在人照原圖保留
   apparel: LAYOUT_BY_PRODTYPE.physical,
   apparel_keep: LAYOUT_BY_PRODTYPE.physical,
+  physical_reshoot: LAYOUT_BY_PRODTYPE.physical,
 });
 
 // 🆕 2026-10-21 服飾穿搭(模特兒穿著拍)— RA 實測 MOZ 外套:選「商品實拍」時人被重擺姿勢、比例怪
@@ -3876,11 +3877,13 @@ Object.assign(PRODTYPE_PROMPT, {
 
 // 🆕 2026-10-22 服飾保留原模特兒:舊版提示詞(保險絲退回時)沿用 apparel 那段
 PRODTYPE_PROMPT.apparel_keep = PRODTYPE_PROMPT.apparel;
+PRODTYPE_PROMPT.physical_reshoot = PRODTYPE_PROMPT.physical;
 
 // ⓪ 選單本身(索引順序 = 畫面順序)
 const PRODTYPE_OPTIONS = [
   { group: '有實體商品可拍' },
-  { value: 'physical', label: '商品實拍 — 食品 / 家電 / 服飾 / 包款 / 家具', highlight: true },
+  { value: 'physical_reshoot', label: '商品實拍 · 重拍 — 新場景、新角度,像攝影師重新拍(推薦)', highlight: true },
+  { value: 'physical', label: '商品實拍 · 保留角度 — 照原圖角度,只換背景與光' },
   { value: 'apparel',      label: '服飾穿搭 · 重拍 — AI 模特兒穿上你的衣服,換姿勢、角度、場景' },
   { value: 'apparel_keep', label: '服飾穿搭 · 保留原模特兒 — 人照原圖,只換背景與光' },
   { value: 'wellness', label: '養生能量商品 — 水晶 / 串珠 / 能量手環 / 按摩器材' },
@@ -4458,6 +4461,30 @@ async function generateGptPoster() {
 
     if (!winner) {
       throw new Error(`生成逾時(4分鐘)。圖可能仍在雲端處理,稍後可在「AI生成完成區」找代碼 ${reqid} 的圖`);
+    }
+
+    // 🆕 2026-10-22 重拍模式第二步「商品校正」(RA 實測:重拍畫面好看但鞋舌標籤被 AI 自編;
+    //   第二步把成品+原商品照一起送,只把商品改回原樣,其他畫面不動 →「可以了」)
+    if (window._amReshoot && winner.from === 'fal' && winner.imageUrl) {
+      try {
+        setPrStatus('🔍 商品校正中(把商品細節對回原圖,約 1-2 分鐘)...', 'var(--t3)');
+        const _isApp = (SELECTED_PRODTYPE === 'apparel');
+        const fix = await callWorker({
+          action: 'fal_submit',
+          endpoint: 'openai/gpt-image-2/edit',
+          payload: {
+            prompt: 'Image 1 is a finished campaign photograph. Image 2 shows the real ' + (_isApp ? 'garment' : 'product') + '. ' +
+              'In image 1, the ' + (_isApp ? 'garment' : 'product') + ' becomes an exact copy of the real one: every label, printed word, logo, embroidery, stitch line, panel and colour matches image 2. ' +
+              'Everything else in image 1 — the background, the light, the shadows, the camera angle, the position and size of the ' + (_isApp ? 'garment, the model\'s face, hair and pose' : 'product') + ' — stays exactly as it is.',
+            image_urls: [winner.imageUrl, imageUrl],
+            image_size: _sz.fal,
+            quality: 'high',
+            num_images: 1
+          }
+        });
+        if (fix && fix.ok && fix.imageUrl) winner = { from: 'fal', imageUrl: fix.imageUrl };
+        else console.warn('[商品校正] 失敗,用第一步成品:', fix && fix.error);
+      } catch (e) { console.warn('[商品校正] 例外,用第一步成品:', e.message); }
     }
 
     const finalImg = winner.imageUrl || winner.imageBase64 || winner.download_url;
