@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.4 (2026-10-22)
+//  admaker-prompt-lean.js · v2.6 (2026-10-22)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
 //
 //  為什麼:RA 2026-10-22 實測同一張 MOZ 外套照 / 德訓鞋照
@@ -84,6 +84,7 @@
     'the model walks toward the camera along an empty sunlit street, mid-stride, hair moving, caught candidly on a long lens; golden low sun from behind',
     'the model sits cross-legged on the floor of a pale yellow seamless studio, one hand in the hair, a hard beam of sunlight from a window cutting across the backdrop and the model',
   ];
+
 
   // 沒選風格、品牌也沒寫場景時的實景(都是「一面背景」,人和商品都站得進去)
   var PLACES = [
@@ -207,16 +208,18 @@
       var fsP = flavorSet(flavor);
       var bfP = [essence(pb.mood, 80), essence(ctx.adStyle, 70)].filter(Boolean).join('; ');
       // v2.3:實測只剩一雙(原圖兩雙一黑一黃)→ 明講「照片裡的每一件都在,數量、顏色組合一樣」
-      // v2.4:「照片裡每一件」會連報紙、書這些舊道具一起搬過來 → 構圖變成原圖翻版。改成只指「要賣的商品」
-      p.push('The products are the items for sale in this photo' + (name ? ' (' + name + ')' : '') + ', all of them present, the same number in the same colourways; the paper, books and stands around them belonged to the old set and stay behind. Each product keeps its exact shape, panels, colours, materials and logos; small labels and lettering stay exactly as photographed, and where a label is too small to read it stays plain.');
-      p.push('A new product campaign photograph: the products stand on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its') + '. Low camera at product height, the products fill most of the frame.');
+      // v2.6 回到 v2.2 的寫法(RA:「我要這個版本」—— 鼠尾草綠牆樹影+駝鹿馬克杯那張)。
+      //   v2.3/2.4 加了「照片裡每一件都要在」「舊道具留在原地」→ AI 反而照抄原圖構圖、場景變死板。
+      //   數量交給第二步「商品校正」去補(校正會對著原圖把每一件對回來)。
+      p.push('The product is the real one in this photo' + (name ? ' (' + name + ')' : '') + ': it keeps its exact shape, panels, colours, materials and logos; small labels and lettering stay exactly as photographed, and where a label is too small to read it stays plain.');
+      p.push('A new product campaign photograph: the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its') + '. Low camera at product height, the product fills most of the frame.');
       if (fsP || bfP) p.push((fsP ? 'Styling: ' + essence(fsP, 120) + '. ' : '') + (bfP ? 'Brand feel: ' + bfP + '.' : ''));
       if (ctxTheme.context) p.push('Occasion, told through one small real sign: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
       if (note) p.push('Client note: ' + essence(note, 180));
       p.push('Light travels in straight lines from its real source: what faces it is bright, what faces away falls into shadow, and whatever stands in its path casts its shadow onto what lies behind. Things that touch rest on each other under gravity and darken where they meet.');
       p.push('Shot on ' + camFor(SELECTED_FLAVOR, ly, pb.photo + ' ' + pb.mood) + '. Real material texture; ' + sz.w + 'x' + sz.h + ', edge to edge.');
       // v2.4:實測 AI 在標題上方多畫一個品牌字標 → 明講「加上去的字只有這幾個」(logo 由系統之後疊)
-      if (headline || sub) p.push("The only words added to the photograph are these, in the brand's own type style" + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', one compact block on the wall beside the products: ' +
+      if (headline || sub) p.push("The only words added to the photograph are these, in the brand's own type style" + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', one compact block on the wall beside the product: ' +
         (headline ? '"' + headline + '"' : '') + (headline && sub ? ', and a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '') + '.');
       return p.join('\n');
     }
@@ -295,5 +298,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.4 精簡廣告圖提示詞已載入');
+  console.log('[AD_LEAN] v2.6 精簡廣告圖提示詞已載入');
 })();
