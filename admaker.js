@@ -3858,6 +3858,18 @@ Object.assign(LAYOUT_BY_PRODTYPE, {
   ],
   // 養生能量商品就是拍商品,沿用「商品實拍」的十種版型,差別只在合規段
   wellness: LAYOUT_BY_PRODTYPE.physical,
+  // 🆕 2026-10-21 服飾穿搭(有模特兒):一樣是拍商品,版型沿用商品實拍,差別在人照原圖保留
+  apparel: LAYOUT_BY_PRODTYPE.physical,
+});
+
+// 🆕 2026-10-21 服飾穿搭(模特兒穿著拍)— RA 實測 MOZ 外套:選「商品實拍」時人被重擺姿勢、比例怪
+Object.assign(PRODTYPE_PROMPT, {
+  apparel:
+    `=== FASHION WORN BY MODELS (HIGHEST PRIORITY) ===\n` +
+    `- The garment is the real product: its cut, length, colour, fabric, zips, cords and logo are exactly those in the source photo\n` +
+    `- The people are the client's real models: their pose, gesture, hair movement, face and proportions are the moment the camera caught\n` +
+    `- This is a location re-shoot of that same moment: they stand where they already stand, at true scale, with open floor around them\n` +
+    `- Only the place and its light are new, and that same light falls on the people and the garment\n\n`,
 });
 
 
@@ -3865,6 +3877,7 @@ Object.assign(LAYOUT_BY_PRODTYPE, {
 const PRODTYPE_OPTIONS = [
   { group: '有實體商品可拍' },
   { value: 'physical', label: '商品實拍 — 食品 / 家電 / 服飾 / 包款 / 家具', highlight: true },
+  { value: 'apparel',  label: '服飾穿搭(有模特兒)— 衣服 / 鞋包 / 配件,真人穿著拍' },
   { value: 'wellness', label: '養生能量商品 — 水晶 / 串珠 / 能量手環 / 按摩器材' },
   { group: '服務與體驗' },
   { value: 'beauty',  label: '美業服務 — 美睫 / 美甲 / 美髮 / 紋繡 / SPA' },
@@ -4103,9 +4116,20 @@ function buildPosterPrompt() {
     'Layer the shot with an out-of-focus object in the foreground so the viewer feels present in the scene.',
   ];
   const _pick = function (a) { return a[Math.floor(Math.random() * a.length)]; };
-  const _sv = _pick(_SCENE_VARIATIONS);
+  // 🆕 2026-10-21 服飾穿搭:窗台/層架/牆角那池是給商品的,人會被塞進去重擺 → 換成「有空間站人」的外景/內景
+  const _APPAREL_SCENES = [
+    'an open bright interior with plenty of floor space around the people — a gallery, a loft, a minimal showroom',
+    'an outdoor location with open ground in front of the people — a quiet street, a park path, a plaza',
+    'a natural landscape with the people standing in open space — a meadow, a forest clearing, a lakeside',
+    'a seamless studio backdrop in a colour taken from the brand palette, with a soft floor-to-wall sweep',
+    'an architectural setting with clean lines and open floor — a staircase base, a colonnade, a concrete courtyard',
+  ];
+  const _sv = (SELECTED_PRODTYPE === 'apparel') ? _pick(_APPAREL_SCENES) : _pick(_SCENE_VARIATIONS);
   const _lv = _pick(_LIGHT_VARIATIONS);
-  const _cv = _pick(_COMPOSITION_VARIATIONS);
+  // 服飾穿搭:「貼近裁切 70%」會切到模特兒的頭和腳,這一型不抽它
+  const _cv = _pick(SELECTED_PRODTYPE === 'apparel'
+    ? _COMPOSITION_VARIATIONS.filter(function (c) { return !/^Move in close/.test(c); })
+    : _COMPOSITION_VARIATIONS);
 
   let prompt = '';
 
