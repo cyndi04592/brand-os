@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v1.10 (2026-10-22)
+//  admaker-prompt-lean.js · v2.0 (2026-10-22)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
 //
 //  為什麼:RA 2026-10-22 實測同一張 MOZ 外套照 / 德訓鞋照
@@ -46,6 +46,33 @@
     'morning sun through half-open blinds on the left',
     'sunlight through leaves from the upper left',
   ];
+  // v2.0 拍攝企劃(RA 2026-10-22:法則只能保證不出錯,好照片要「一個具體的畫面主意」放最前面)
+  //   量尺結果(ruler.py):好圖 = 有顏色的中間調背景 + 硬光 → 飽和 25~35;
+  //   壞圖 = 白/灰背景配深色主體 → 飽和 10~20、黑白兩極(明暗範圍 86~91),型錄感。
+  //   {S}=主體、{P}=所有格(their/its)
+  var CONCEPTS = {
+    neutral: [
+      'a warm beige plaster wall; hard late-afternoon sun comes through a window, the window-frame shadow falls across the wall and across {S}, and {P} own shadow lies on the wall beside',
+      'a sand-coloured stucco wall outdoors; low golden sun rakes across its texture and across {S}, drawing long soft-edged shadows',
+      'a pale sage-green painted wall; morning sun through leaves scatters dappled light and shade across the wall and across {S}',
+    ],
+    cool: [
+      'a clear blue sky with a few soft clouds as the only background, seen from slightly below; strong direct sun from the upper left gives {S} crisp highlights and short shadows',
+      'a clear powder-blue painted wall; hard sun from the right throws a crisp shadow of {S} onto the wall',
+    ],
+    warm: [
+      'a terracotta-orange painted wall; hard midday sun from the right throws a crisp shadow of {S} onto the wall',
+      'a soft pink plaster wall; hard sun from the left lays a long shadow of {S} across it',
+    ],
+  };
+  function conceptFor(colourTxt) {
+    var c = String(colourTxt || '').toLowerCase(), pool = CONCEPTS.neutral.slice();
+    if (/blue|navy|sky|teal|nordic|aqua/.test(c)) pool = pool.concat(CONCEPTS.cool);
+    if (/red|pink|orange|coral|terracotta|peach|magenta/.test(c)) pool = pool.concat(CONCEPTS.warm);
+    if (!c) pool = pool.concat(CONCEPTS.cool, CONCEPTS.warm);
+    return pick(pool);
+  }
+
   // 沒選風格、品牌也沒寫場景時的實景(都是「一面背景」,人和商品都站得進去)
   var PLACES = [
     'a plain warm plaster wall with a pale floor',
@@ -60,8 +87,8 @@
   var CAMS = {
     jp:    ['Fujifilm X-T5 with a 35mm f/1.4 lens at f/2, ISO 200, Classic Chrome film simulation: muted teal shadows, soft warm highlights, gentle contrast',
             'Fujifilm GFX 100S with a 63mm lens at f/2.8, ISO 100, Pro Neg Std colour: soft, airy, true-to-life skin'],
-    film:  ['shot on Kodak Portra 400 35mm film with a Contax-style 35mm lens, visible fine grain, warm honest skin tones, slightly lifted blacks',
-            'shot on Kodak Gold 200 35mm film, natural grain, warm golden cast, real film halation in the highlights'],
+    film:  ['Kodak Portra 400 35mm film with a Contax-style 35mm lens, visible fine grain, warm honest skin tones, slightly lifted blacks',
+            'Kodak Gold 200 35mm film, natural grain, warm golden cast, real film halation in the highlights'],
     clean: ['Sony A7R V with an 85mm GM lens at f/1.8, ISO 100, 1/500s: crisp clean commercial colour, smooth creamy background falloff',
             'Sony A7 III with a 55mm f/1.8 lens at f/2, ISO 200: natural everyday colour, true-to-life tones',
             'Canon EOS R5 with an RF 50mm f/1.2 at f/2, ISO 100: clean bright colour, natural skin, gentle separation'],
@@ -158,62 +185,49 @@
     var sz = (typeof _adSize === 'function') ? _adSize() : { w: 1080, h: 1080 };
     var p = [];
 
-    // v1.5 每層寫成「物理/真實世界的法則」(學 KOL kol-stitch _LIGHT_SOURCE 的寫法):
-    //   不列細節、不寫禁令,只講法則,AI 自己推得出正確結果,也涵蓋沒列到的情況。
-    // ① 主體
+    // v2.0 結構:① 拍攝企劃(具體畫面主意,權重最大,放最前)② 主體一句 ③ 構圖一句
+    //   ④ 風格+品牌一句 ⑤ 物理法則兩句(保險)⑥ 相機一句 ⑦ 字一句。約 900~1,300 字。
+    var P = isApparel ? 'their' : 'its';
+    var concept;
+    if (ly === 'white_studio') concept = 'a smooth warm-white studio wall; hard sun from a tall window on one side draws the window-frame shadow across the wall and across {S}';
+    else if (ly === 'minimal_poster') concept = 'a plain backdrop painted in ' + (pb.colour ? essence(pb.colour, 50) : 'one calm colour') + '; hard sun from one side throws a crisp shadow of {S} onto it';
+    else concept = conceptFor(pb.colour);
+    concept = concept.replace(/\{S\}/g, S).replace(/\{P\}/g, P);
+    p.push('A real ' + (isApparel ? 'fashion campaign' : 'product campaign') + ' photograph: ' + concept + '.');
+
+    // ② 主體
     p.push(isApparel
-      ? 'These are the real people from this photo, photographed again in a new place. A person carries their identity with them: face, expression, pose, hair movement and the clothes they wear stay as they are. What changes is how the new light meets them — skin warms and cools with the light around it, and fabric shows its weave wherever light grazes across it.'
-      : 'This is the real product from this photo' + (name ? ' (' + name + ')' : '') + ', photographed again in a new place. An object carries its identity with it: form, proportions, colours, materials and printed markings stay as they are. What changes is how the new light meets its surfaces — matte materials take light softly, glossy ones mirror the room around them, translucent ones glow from within.');
-    if (!isApparel && (spec || feat)) p.push('It is ' + [spec, feat].filter(Boolean).join('; ') + '.');
+      ? 'The people are the real models from this photo: same faces, expressions, pose, hair movement and clothes, now standing in this light.'
+      : 'The product is the real one from this photo' + (name ? ' (' + name + ')' : '') + ': same form, colours, materials and markings' + ((spec || feat) ? ' — ' + essence([spec, feat].filter(Boolean).join('; '), 120) : '') + ', now standing in this light.');
 
-    // ② 骨架
-    p.push('The subject is the reason this photograph exists: ' + (LAYOUT_ESSENCE[ly] || LAYOUT_ESSENCE['']) + '. The eye lands first on the brightest, sharpest point and then travels along lines and light through the frame; the subject holds that first point, and the space around it stays calm enough to let it breathe. ' + sz.w + 'x' + sz.h + ', the photograph filling the whole canvas' + (isApparel ? ', the frame cutting the bodies where the source photo cuts them.' : '.'));
+    // ③ 構圖
+    p.push((LAYOUT_ESSENCE[ly] || LAYOUT_ESSENCE['']).replace(/^./, function (c) { return c.toUpperCase(); }) + '; ' + S + (isApparel ? ' fill' : ' fills') + ' most of the frame' + (isApparel ? ', cropped where the source photo is cropped' : '') + '; ' + sz.w + 'x' + sz.h + ', edge to edge.');
 
-    // ③ 場景
-    var place;
-    if (ly === 'white_studio')        place = 'a smooth warm-white studio wall';
-    else if (ly === 'minimal_poster') place = 'a plain backdrop' + (pb.colour ? ' in a tone from ' + essence(pb.colour, 60) : '');
-    else if (pb.scene && !flavor.flavor) place = essence(pb.scene.split(/,\s*or\s+|\bor\b/)[0], 110);
-    else place = isApparel ? 'a plain warm plaster wall' : pick(PLACES);
+    // ④ 風格 + 品牌
     var fs = flavorSet(flavor);
-    p.push('Place: ' + place + '. A real place is built from real materials — plaster, wood, stone, fabric, paper — each with its own texture and signs of use, and it holds only what would be there for a reason. It has depth: something near, the subject, and space receding behind.');
-    if (fs) p.push('The chosen style is a way of living, and it shows in what the place is made of, what is worn and used there, and the colour of the air: ' + essence(fs, 170) + '.');
+    var brandFeel = [essence(pb.mood, 80), essence(ctx.adStyle, 70), lockColor && pb.colour ? essence(pb.colour, 90) : ''].filter(Boolean).join('; ');
+    if (fs || brandFeel) p.push((fs ? 'Styling: ' + essence(fs, 130) + '. ' : '') + (brandFeel ? 'Brand feel: ' + brandFeel + '.' : ''));
+    if (ctxTheme.context) p.push('Occasion, told through one small real sign: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
+    if (note) p.push('Client note: ' + essence(note, 180));
 
-    // ④ 光影(命脈)—— 光遵守場景的物理,和整個空間、主體成為一體
-    p.push('Light obeys the physics of this place and becomes one with the whole space and ' + S + '. It comes from a real source belonging to the place, strong and directional enough to draw clear shapes of light and shadow' + (pb.photo ? ', ' + essence(pb.photo, 90) : '') +
-      '. It travels in straight lines: surfaces facing it are bright, surfaces facing away fall into shadow, and whatever stands in its path casts its shadow onto what lies behind. Light adds: where lights overlap they blend, and nearby surfaces bounce their colour back onto ' + S + '.');
+    // ⑤ 物理法則(保險,兩句)
+    p.push('Light travels in straight lines from that one source: what faces it is bright, what faces away falls into shadow, and whatever stands in its path casts its shadow onto what lies behind; nearby coloured surfaces bounce their colour onto ' + S + '. ' +
+      (isApparel ? '' : 'Things that touch rest on each other under gravity and darken where they meet. ') +
+      'It is one moment through one lens, everything at its true scale.');
 
-    // ⑤ 一張照片 + 接觸
-    p.push('A camera records one moment through one lens: everything shares one viewpoint and one perspective, focus falls off smoothly with distance from the focal plane, one colour grade and one grain run across the whole frame, and everything stands at its true size beside everything else.' +
-      (isApparel ? '' : ' Things that touch rest on each other under gravity and darken where they meet.'));
+    // ⑥ 相機
+    p.push('Shot on ' + camFor(SELECTED_FLAVOR, ly, pb.photo + ' ' + pb.mood) + ', from where the camera stood in the source photo.');
 
-    // ⑥ 手(只有真的有手)
-    if (ly === 'hand_hold' || /\b(hand|holding|unboxing)\b/i.test(String(ctxTheme.context || ''))) p.push('A hand holding something carries its weight.');
-
-    // ⑦ 氛圍配色
-    // v1.10 補回舊版的「品牌方向」(brand.adStyle,例 MOZ:北歐輕鬆感、顏值日常、戶外露營風…)—— 精簡版漏掉了
-    var mood = [essence(pb.mood, 110), essence(ctx.adStyle, 90)].filter(Boolean).join('; ');
-    if (mood || (lockColor && pb.colour)) p.push('A brand is felt before it is read: its mood and colours run quietly through the surfaces, the light and the objects of this photograph — ' + [mood, lockColor && pb.colour ? essence(pb.colour, 130) : ''].filter(Boolean).join('; ') + '.');
-
-    // ⑧ 情境 / 客人補充
-    if (ctxTheme.context) p.push('An occasion is told through one small, real sign inside the scene, the way it would appear in life: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 120) + '.');
-    if (note) p.push('The client asks: ' + essence(note, 200));
-
-    // ⑨ 攝影師
-    p.push('Every camera and film renders light and colour in its own way; this one is ' + camFor(SELECTED_FLAVOR, ly, pb.photo + ' ' + pb.mood) + '. It stands where it stood in the source photo.');
-
-    // ⑩ 字 + Logo
+    // ⑦ 字
     if (headline || sub) {
-      p.push('Words belong to the brand: they speak in its own type style' + (pb.type ? ' (' + essence(pb.type, 90) + ')' : '') + ' and sit as one compact block on the background beside ' + S + ', placed the way a designer would place them: ' +
-        (headline ? '"' + headline + '"' : '') + (headline && sub ? ', with a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '') + '.');
+      p.push('Words in the brand\'s own type style' + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', one compact block on the background beside ' + S + ': ' +
+        (headline ? '"' + headline + '"' : '') + (headline && sub ? ', and a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '') + '.');
     }
-    // v1.8:提示詞完全不提 logo(RA:系統本來就有壓 logo 的程式 —— compositeBrandLogo 生完圖後
-    //   自己量四個角、挑最乾淨的那角貼真 logo 檔;提示詞一提,AI 就會自己畫一個)
 
     var out = p.join('\n');
     // v1.10 3,000 字牆(KOL 線定的):超過時先收「風格造型」與「客人補充」的細項,整層不拿掉
-    if (out.length > 3000) { out = out.replace(/(and the colour of the air: )([^\n]*)/, function (m, a, b) { return a + essence(b, 90); }); }
-    if (out.length > 3000) { out = out.replace(/(The client asks: )([^\n]*)/, function (m, a, b) { return a + essence(b, 120); }); }
+    if (out.length > 3000) { out = out.replace(/(Styling: )([^\n]*)/, function (m, a, b) { return a + essence(b, 90); }); }
+    if (out.length > 3000) { out = out.replace(/(Client note: )([^\n]*)/, function (m, a, b) { return a + essence(b, 120); }); }
     return out;
   }
 
@@ -233,5 +247,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v1.10 精簡廣告圖提示詞已載入');
+  console.log('[AD_LEAN] v2.0 精簡廣告圖提示詞已載入');
 })();
