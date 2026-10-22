@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.7 (2026-10-22)
+//  admaker-prompt-lean.js · v2.8 (2026-10-22)  v2.8:重拍的字只剩商品印刷+標題(治 AI 自編價格牌)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
 //
 //  為什麼:RA 2026-10-22 實測同一張 MOZ 外套照 / 德訓鞋照
@@ -204,6 +204,13 @@
 
     // v2.0 結構:① 拍攝企劃(具體畫面主意,權重最大,放最前)② 主體一句 ③ 構圖一句
     //   ④ 風格+品牌一句 ⑤ 物理法則兩句(保險)⑥ 相機一句 ⑦ 字一句。約 900~1,300 字。
+    // v2.8 重拍共用:畫面上所有的字只有「商品自己印的」+「客人給的標題」;貨架、招牌、卡片都是素面
+    function _letteringLine(headline, sub, pb, where, subj) {
+      var t = 'All the lettering in the whole photograph is the printing on ' + subj;
+      if (headline || sub) t += ' plus these words, in the brand\'s own type style' + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', ' + where + ': ' +
+        (headline ? '"' + headline + '"' : '') + (headline && sub ? ', and a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '');
+      return t + '. Shelves, signs, cards and props around it are plain, wordless surfaces.';
+    }
     if (isProdReshoot) {
       var fsP = flavorSet(flavor);
       var bfP = [essence(pb.mood, 80), essence(ctx.adStyle, 70)].filter(Boolean).join('; ');
@@ -214,13 +221,14 @@
       p.push('The product is the real one in this photo' + (name ? ' (' + name + ')' : '') + ': it keeps its exact shape, panels, colours, materials and logos; small labels and lettering stay exactly as photographed, and where a label is too small to read it stays plain.');
       p.push('A new product campaign photograph: the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its') + '. Low camera at product height, the product fills most of the frame.');
       if (fsP || bfP) p.push((fsP ? 'Styling: ' + essence(fsP, 120) + '. ' : '') + (bfP ? 'Brand feel: ' + bfP + '.' : ''));
-      if (ctxTheme.context) p.push('Occasion, told through one small real sign: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
+      if (ctxTheme.context) p.push('Occasion, told through one small real detail: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
       if (note) p.push('Client note: ' + essence(note, 180));
       p.push('Light travels in straight lines from its real source: what faces it is bright, what faces away falls into shadow, and whatever stands in its path casts its shadow onto what lies behind. Things that touch rest on each other under gravity and darken where they meet.');
       p.push('Shot on ' + camFor(SELECTED_FLAVOR, ly, pb.photo + ' ' + pb.mood) + '. Real material texture; ' + sz.w + 'x' + sz.h + ', edge to edge.');
       // v2.4:實測 AI 在標題上方多畫一個品牌字標 → 明講「加上去的字只有這幾個」(logo 由系統之後疊)
-      if (headline || sub) p.push("The only words added to the photograph are these, in the brand's own type style" + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', one compact block on the wall beside the product: ' +
-        (headline ? '"' + headline + '"' : '') + (headline && sub ? ', and a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '') + '.');
+      // v2.8:好滋好滋實測,AI 在便利店鐵架上自己畫了「經典原味 $69」價格牌(價格是編的,投出去有風險)
+      //   → 改成講事實:整張照片的字 = 商品本身印的字 + 客人給的標題,周圍道具是素面。
+      p.push(_letteringLine(headline, sub, pb, 'one compact block on the wall beside the product', 'the product'));
       return p.join('\n');
     }
     if (isReshoot) {
@@ -230,12 +238,11 @@
       p.push('A new fashion campaign photograph of a young model wearing this garment: ' + pick(RESHOOTS) + '.');
       p.push('Everything else the model wears is plain, unbranded everyday basics, so the garment is the only branded piece in the picture.');
       if (fsR || bfR) p.push((fsR ? 'Styling: ' + essence(fsR, 120) + '. ' : '') + (bfR ? 'Brand feel: ' + bfR + '.' : ''));
-      if (ctxTheme.context) p.push('Occasion, told through one small real sign: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
+      if (ctxTheme.context) p.push('Occasion, told through one small real detail: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
       if (note) p.push('Client note: ' + essence(note, 180));
       p.push('Light travels in straight lines from its real source: what faces it is bright, what faces away falls into shadow, and nearby surfaces bounce their colour onto the model. It is one moment through one lens.');
       p.push('Shot on ' + pick(CAMS.film.concat(CAMS.clean)) + '. Real skin texture, real fabric folds; ' + sz.w + 'x' + sz.h + ', edge to edge.');
-      if (headline || sub) p.push("The only words added to the photograph are these, in the brand's own type style" + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', one compact block on the sky or wall beside the model: ' +
-        (headline ? '"' + headline + '"' : '') + (headline && sub ? ', and a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '') + '.');
+      p.push(_letteringLine(headline, sub, pb, 'one compact block on the sky or wall beside the model', 'the garment'));
       return p.join('\n');
     }
     var P = isApparel ? 'their' : 'its';
@@ -258,7 +265,7 @@
     var fs = flavorSet(flavor);
     var brandFeel = [essence(pb.mood, 80), essence(ctx.adStyle, 70), lockColor && pb.colour ? essence(pb.colour, 90) : ''].filter(Boolean).join('; ');
     if (fs || brandFeel) p.push((fs ? 'Styling: ' + essence(fs, 130) + '. ' : '') + (brandFeel ? 'Brand feel: ' + brandFeel + '.' : ''));
-    if (ctxTheme.context) p.push('Occasion, told through one small real sign: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
+    if (ctxTheme.context) p.push('Occasion, told through one small real detail: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
     if (note) p.push('Client note: ' + essence(note, 180));
 
     // ⑤ 物理法則(保險,兩句)
@@ -298,5 +305,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.7 精簡廣告圖提示詞已載入');
+  console.log('[AD_LEAN] v2.8 精簡廣告圖提示詞已載入');
 })();
