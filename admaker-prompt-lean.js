@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.6 (2026-10-22)
+//  admaker-prompt-lean.js · v2.7 (2026-10-22)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
 //
 //  為什麼:RA 2026-10-22 實測同一張 MOZ 外套照 / 德訓鞋照
@@ -234,7 +234,7 @@
       if (note) p.push('Client note: ' + essence(note, 180));
       p.push('Light travels in straight lines from its real source: what faces it is bright, what faces away falls into shadow, and nearby surfaces bounce their colour onto the model. It is one moment through one lens.');
       p.push('Shot on ' + pick(CAMS.film.concat(CAMS.clean)) + '. Real skin texture, real fabric folds; ' + sz.w + 'x' + sz.h + ', edge to edge.');
-      if (headline || sub) p.push("Words in the brand's own type style" + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', one compact block on the sky or wall beside the model: ' +
+      if (headline || sub) p.push("The only words added to the photograph are these, in the brand's own type style" + (pb.type ? ' (' + essence(pb.type, 80) + ')' : '') + ', one compact block on the sky or wall beside the model: ' +
         (headline ? '"' + headline + '"' : '') + (headline && sub ? ', and a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '') + '.');
       return p.join('\n');
     }
@@ -298,5 +298,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.6 精簡廣告圖提示詞已載入');
+  console.log('[AD_LEAN] v2.7 精簡廣告圖提示詞已載入');
 })();
