@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════
 //  auth.js — Google登入、Drive授權、白名單、登出
+//  🩹 2026-10-22 半登入根治:換證失敗不再默默放行 + 證過期就清掉記住的身分(治凱翊重登三次)
 // ══════════════════════════════════════════
 //  🔐 2026-08-14 P0 資安·第 4 步:登入改成「跟 Worker 換身分證」
 //   舊做法的兩個問題:
@@ -75,7 +76,16 @@ function initGoogleAuth() {
         //   Worker 異常時自動退回舊路(瀏覽器自己讀 email + checkWhitelist),
         //   登入不會整條壞掉;只有「明確被拒絕」才擋人。
         let ok = false;
-        const a = await _authGoogleLogin(resp.access_token);
+        //  🩹 2026-10-22 凱翊實測「重新登入三次才可以、文案說請重新登入、KOL 3 秒彈回首頁」
+        //   病:Worker 換證偶爾失敗(Google 查證慢/網路抖)時,舊版【默默走退路】放人進去,
+        //   但手上沒有身分證 → 一用生成功能就「請重新登入」、KOL 頁看到沒證就送回首頁。
+        //   修:① 先丟掉舊證 ② 換證自動重試 3 次 ③ 還是拿不到證就不放行,講清楚再按一次。
+        _clearAuthToken();
+        let a = null;
+        for (let _try = 0; _try < 3 && !(a && (a.token || a.denied)); _try++) {
+          if (_try) await new Promise(r => setTimeout(r, 1200));
+          a = await _authGoogleLogin(resp.access_token);
+        }
         if (a && a.ok && a.token) {
           _saveAuthToken(a.token);
           _userEmail = String(a.email || '').toLowerCase();
@@ -84,13 +94,11 @@ function initGoogleAuth() {
           _userEmail = String(a.email || '') || _userEmail || '';
           ok = false;
         } else {
-          // 退路:Worker 沒回應/沒設定 → 沿用原本流程,行為與改版前一致
-          const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: 'Bearer ' + resp.access_token }
-          });
-          const info = await r.json();
-          _userEmail = info.email || '';
-          ok = await checkWhitelist(_userEmail);
+          //  🩹 2026-10-22:不再默默放行沒有身分證的登入(那條退路就是「登入了卻什麼都不能用」的元兇)
+          document.getElementById('loginErr').textContent = '⚠️ 登入連線不穩,請再按一次登入';
+          document.getElementById('loginBtn').disabled = false;
+          document.getElementById('loginBtn').textContent = '使用 Google 帳號登入';
+          return;
         }
         sessionStorage.setItem('bs_email', _userEmail);
         if (ok) {
@@ -480,8 +488,31 @@ function _rememberSession(email) {
     localStorage.setItem('bs_worker_mode', '1');
   } catch (e) {}
 }
+//  🩹 2026-10-22:身分證還有效嗎?(只看到期時間;真偽永遠由 Worker 判斷)
+function _authTokenAlive() {
+  try {
+    const tk = sessionStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY) || '';
+    const parts = tk.split('.');
+    if (parts.length !== 3 || parts[0] !== 'v1') return false;
+    let t = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (t.length % 4) t += '=';
+    const o = JSON.parse(decodeURIComponent(escape(atob(t))));
+    return !!(o && o.x && Date.now() < Number(o.x) - 60000);   // 到期前 1 分鐘就當作過期
+  } catch (e) { return false; }
+}
+//  沒證或證過期,卻還「記得我是誰」→ 這就是半登入狀態:畫面像登入了,一按生成就「請重新登入」。
+//   直接清掉,讓登入畫面出來(正常登入一次就好,不再跳來跳去)。
+function _dropHalfLogin() {
+  try {
+    ['bs_email', 'bs_worker_mode', AUTH_TOKEN_KEY].forEach(k => sessionStorage.removeItem(k));
+    ['bs_email', 'bs_worker_mode', 'bs_sso_email', AUTH_TOKEN_KEY].forEach(k => localStorage.removeItem(k));
+    console.log('[login] 身分證已過期或遺失 → 請重新登入一次');
+  } catch (e) {}
+}
 function _restoreSession() {
   try {
+    const _remembered = sessionStorage.getItem('bs_email') || localStorage.getItem('bs_email') || localStorage.getItem('bs_sso_email');
+    if (_remembered && !_authTokenAlive()) { _dropHalfLogin(); return; }
     if (sessionStorage.getItem('bs_email')) return;              // 這個分頁已有身分 → 不動
     const em = localStorage.getItem('bs_email') || '';
     const wm = localStorage.getItem('bs_worker_mode') || '';
