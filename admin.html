@@ -2166,6 +2166,7 @@ function applyRoleUI() {
   document.querySelectorAll('[data-owner-only]').forEach(el => { el.style.display = isOwner ? '' : 'none'; });
   if (!isOwner) document.querySelectorAll('[data-owner-only-opt]').forEach(el => el.remove());
   try { _balInit(); } catch (_) {}
+  try { _lineChipInit(); } catch (_) {}
 }
 
 // ══ 💰 2026-10-20 上游 API 餘額(只有 RA 本人看得到)══
@@ -2185,6 +2186,40 @@ function _balInit() {
   b.onclick = _balOpen;
   save.parentNode.insertBefore(b, save);
   _balFetch().then(j => { if (j && j.ok) _balDot(j); }).catch(() => {});
+}
+// ══ 🎬 2026-10-24 生成線路(老闆 + 審核員/夥伴都看得到)══
+//   RA:「ADMIN 也要看到幾個位置讓同伴幫我看,但不要寫 PiAPI 跟 fal」
+//   ★ 只寫「影片線路 / 圖片線路」,不出現供應商名字。數字由 Worker gate_status 給(只給管理員)。
+//   ★ 每 30 秒自動更新;滿了變紅。點一下立刻重查。
+//   ★ 圖片線路要等廣告圖接上排隊(admaker.js)才會有數字,在那之前只顯示影片。
+function _lineChipInit() {
+  if (document.getElementById('lineChip')) return;
+  const save = document.getElementById('btnSaveAll');
+  if (!save) return;
+  const c = document.createElement('button');
+  c.id = 'lineChip';
+  c.title = '現在有幾條生成線路在使用中(點一下重新整理)';
+  c.style.cssText = 'flex-shrink:0;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--t2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;';
+  c.textContent = '🎬 線路查詢中…';
+  c.onclick = _lineChipRefresh;
+  save.parentNode.insertBefore(c, save);
+  _lineChipRefresh();
+  setInterval(_lineChipRefresh, 30000);
+}
+async function _lineChipRefresh() {
+  const c = document.getElementById('lineChip');
+  if (!c) return;
+  try {
+    const g = await _gateFetch();
+    if (!g || !g.ok || !g.video) { c.textContent = '🎬 線路查不到'; return; }
+    const v = g.video, i = g.image || {};
+    const vLeft = Math.max(0, (v.limit || 0) - (v.used || 0));
+    let t = '🎬 影片線路 剩 ' + vLeft + '/' + v.limit;
+    if (Number(i.limit) < 999) t += ' · 🖼 圖片線路 剩 ' + Math.max(0, i.limit - (i.used || 0)) + '/' + i.limit;
+    c.textContent = t;
+    c.style.color = vLeft === 0 ? '#ff6b8a' : 'var(--t2)';
+    c.style.borderColor = vLeft === 0 ? 'rgba(255,107,138,.5)' : 'var(--line)';
+  } catch (_) { c.textContent = '🎬 線路查不到'; }
 }
 // ══ 🧹 2026-10-21 清除測試單(只有 RA 本人;入口在 💰 餘額視窗底部)══
 //   ★ 真正的鎖在 Worker purgeTestOrders:只認 RA 本人,只刪 RA/分身帳號的「銀行轉帳」單,
@@ -2243,8 +2278,9 @@ async function _balOpen() {
     document.body.appendChild(m);
   }
   m.innerHTML = '<div style="background:#16161d;border:1px solid #2e2e3a;border-radius:16px;max-width:420px;width:100%;padding:22px;color:#fff;"><div style="font-size:16px;font-weight:900;margin-bottom:12px;">💰 上游 API 餘額</div><div style="color:rgba(255,255,255,.55);font-size:13px;">查詢中…</div></div>';
-  let j = null;
-  try { j = await _balFetch(); } catch (_) {}
+  let j = null, g = null;
+  //  🎛 2026-10-24 RA:「後台能顯示 FAL 位置目前幾個?PiAPI 位置幾個?」→ 跟餘額一起查(閘門 gate_status)
+  try { [j, g] = await Promise.all([_balFetch(), _gateFetch()]); } catch (_) {}
   if (!j || !j.ok) { m.querySelector('div div:last-child').textContent = '查不到:' + ((j && j.error) || '連線失敗'); return; }
   _balDot(j);
   const row = (name, ok, main, sub, link) =>
@@ -2261,17 +2297,35 @@ async function _balOpen() {
     : row('PiAPI', false, '查不到', p.error || '未設定', 'https://piapi.ai/workspace/billing');
   const cOk = !c.low && c.status === '正常';
   const cRow = row('Claude', cOk, c.status || (c.error ? '查不到' : '—'), 'Claude 沒有公開查餘額的方式;用完會立刻寄信通知', 'https://console.anthropic.com/settings/billing');
+  const gv = (g && g.video) || {}, gi = (g && g.image) || {};
+  const gList = ((g && g.rows) || []).map(r => '<div style="font-size:11px;color:rgba(255,255,255,.55);">· ' + (_gatePoolName(r.pool)) + ' ' + esc(r.email || '') + ' ' + esc(r.tag || '') + ' · ' + Math.max(0, Math.round((Date.now() - Number(r.taken_at || 0)) / 60000)) + ' 分鐘前</div>').join('');
+  const gRow = g && g.ok
+    ? '<div style="padding:12px 0;border-top:1px solid rgba(255,255,255,.08);">'
+      + '<div style="font-weight:800;font-size:14px;margin-bottom:6px;">🎛 生成位置(現在使用中)</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:13px;margin:3px 0;"><span>PiAPI · 影片</span><b style="color:' + ((gv.used || 0) >= (gv.limit || 1) ? '#ff6b8a' : '#7CFFB2') + ';">剩 ' + Math.max(0, (gv.limit || 0) - (gv.used || 0)) + ' 個(使用中 ' + (gv.used || 0) + ' / ' + (gv.limit || '—') + ')</b></div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:13px;margin:3px 0;"><span>fal · 圖片</span><b style="color:#7CFFB2;">' + (Number(gi.limit) >= 999 ? '尚未接上計數' : '剩 ' + Math.max(0, gi.limit - (gi.used || 0)) + ' 個(使用中 ' + (gi.used || 0) + ' / ' + gi.limit + ')') + '</b></div>'
+      + (gList ? '<div style="margin-top:6px;">' + gList + '</div>' : '<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;">目前沒有人在生成</div>')
+      + '</div>'
+    : row('生成位置', false, '查不到', (g && g.error) || '連線失敗', '');
   const t = new Date(j.checkedAt || Date.now());
   m.innerHTML = '<div style="background:#16161d;border:1px solid #2e2e3a;border-radius:16px;max-width:420px;width:100%;padding:22px;color:#fff;">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div style="font-size:16px;font-weight:900;">💰 上游 API 餘額</div>'
     + '<button onclick="document.getElementById(\'balModal\').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer;">✕</button></div>'
     + '<div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">只有你看得到 · 查詢時間 ' + t.toLocaleString('zh-TW', { hour12: false }) + '</div>'
-    + fRow + pRow + cRow
+    + fRow + pRow + cRow + gRow
     + '<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:12px;line-height:1.7;">系統每小時自動檢查一次,低於門檻會寄信到你的信箱(同一家 12 小時內只寄一次)。</div>'
     + '<button onclick="_balOpen()" style="margin-top:12px;width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:transparent;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;">重新查詢</button>'
     + '<button onclick="_purgeOpen()" style="margin-top:8px;width:100%;padding:11px;border-radius:10px;border:1px solid rgba(255,109,155,.35);background:transparent;color:#ff8fb1;font-weight:700;cursor:pointer;font-family:inherit;">🧹 清除測試單</button>'
     + '</div>';
 }
+
+//  🎛 閘門狀態(Worker 只把數字給管理員;這裡只在 RA 的餘額視窗裡用)
+async function _gateFetch() {
+  const r = await fetch(KOL_WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: PASSWORD, action: 'gate_status', email: ADMIN_USER_EMAIL }) });
+  return r.json();
+}
+function _gatePoolName(p) { return String(p || '').toLowerCase() === 'image' ? '圖片' : '影片'; }
 
 // ══ B1+: 免二次登入 — 用主站發的 SSO 票自動驗證 ══
 async function _adminUserinfo(token) {
