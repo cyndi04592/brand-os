@@ -3264,7 +3264,7 @@ function renderApply() {
           <button class="btn-approve" onclick="doApprove('${esc(b.id)}')">✅ 核准上線</button>
           <button class="btn-reject-brand" onclick="doReject('${esc(b.id)}')">❌ 拒絕</button>
         `:''}
-        <button class="btn-toggle-soul" onclick="openSoulModal('${esc(b.id)}')" style="color:#a78bfa;border-color:rgba(124,109,250,.5);font-weight:800;">📖 看靈魂書${b.soulBook?'':'(尚無)'}</button>
+        <button class="btn-toggle-soul" onclick="openSoulModal('${esc(b.id)}')" style="margin-left:0;color:#a78bfa;border-color:rgba(124,109,250,.5);font-weight:800;">📖 看靈魂書${b.soulBook?'':'(尚無)'}</button>
         <button class="btn-reject-brand" style="margin-left:auto;border-color:rgba(100,100,100,0.4);color:var(--t3);background:transparent;" onclick="doDeleteBrand('${esc(b.id)}','${esc(b.name||'此品牌')}')">🗑 刪除</button>
       </div>
     </div>`;
