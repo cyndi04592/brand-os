@@ -1754,46 +1754,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     <div id="applyList" class="apply-list">
       <div class="mem-loading">載入中...</div>
     </div>
-    <!-- 🆕 2026-08-09 統整:對齊現行技術棧、全部直達「儲值/帳單」頁。
-         data-owner-only + 預設隱藏:只有 owner(cyndi04592)登入才看得到,
-         員工/審核員進來不會知道 API 從哪儲值。 -->
-    <div class="apply-api-links" data-owner-only style="display:none;">
-      <div class="api-links-title">API 費用快速連結(僅管理員可見)</div>
-      <div class="api-links-grid">
-        <a class="api-link-card" href="https://console.anthropic.com/settings/billing" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">Claude API · 文案</div>
-          <div class="api-link-url">console.anthropic.com</div><div class="api-link-arrow">↗</div>
-        </a>
-        <a class="api-link-card" href="https://fal.ai/dashboard/billing" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">fal.ai · 圖像</div>
-          <div class="api-link-url">fal.ai/dashboard</div><div class="api-link-arrow">↗</div>
-        </a>
-        <a class="api-link-card" href="https://piapi.ai/workspace" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">PiAPI · 影片 Seedance</div>
-          <div class="api-link-url">piapi.ai/workspace</div><div class="api-link-arrow">↗</div>
-        </a>
-        <a class="api-link-card" href="https://app.heygen.com/settings?nav=billing" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">HeyGen · 口播</div>
-          <div class="api-link-url">app.heygen.com</div><div class="api-link-arrow">↗</div>
-        </a>
-        <a class="api-link-card" href="https://dash.cloudflare.com/?to=/:account/billing" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">Cloudflare · 主機/R2/D1</div>
-          <div class="api-link-url">dash.cloudflare.com</div><div class="api-link-arrow">↗</div>
-        </a>
-        <a class="api-link-card" href="https://vendor.ecpay.com.tw" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">綠界 ECPay · 金流</div>
-          <div class="api-link-url">vendor.ecpay.com.tw</div><div class="api-link-arrow">↗</div>
-        </a>
-        <a class="api-link-card" href="https://github.com/cyndi04592/brand-os" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">GitHub · 程式碼</div>
-          <div class="api-link-url">github.com/cyndi04592</div><div class="api-link-arrow">↗</div>
-        </a>
-        <a class="api-link-card" href="https://ai.raby.com.tw/onboard.html" target="_blank">
-          <div class="api-link-icon"></div><div class="api-link-name">品牌進駐問卷</div>
-          <div class="api-link-url">ai.raby.com.tw/onboard.html</div><div class="api-link-arrow">↗</div>
-        </a>
-      </div>
-    </div>
+    <!-- 🧹 2026-10-24 RA:API 費用快速連結整塊拿掉(右上角 💰 餘額已取代,只有 RA 本人看得到)-->
   </div>
 
   <div class="section" id="sec-staff">
@@ -3303,7 +3264,7 @@ function renderApply() {
           <button class="btn-approve" onclick="doApprove('${esc(b.id)}')">✅ 核准上線</button>
           <button class="btn-reject-brand" onclick="doReject('${esc(b.id)}')">❌ 拒絕</button>
         `:''}
-        <button class="btn-toggle-soul" onclick="toggleSoul('${esc(b.id)}')">靈魂書</button>
+        <button class="btn-toggle-soul" onclick="openSoulModal('${esc(b.id)}')" style="color:#a78bfa;border-color:rgba(124,109,250,.5);font-weight:800;">📖 看靈魂書${b.soulBook?'':'(尚無)'}</button>
         <button class="btn-reject-brand" style="margin-left:auto;border-color:rgba(100,100,100,0.4);color:var(--t3);background:transparent;" onclick="doDeleteBrand('${esc(b.id)}','${esc(b.name||'此品牌')}')">🗑 刪除</button>
       </div>
     </div>`;
@@ -3311,6 +3272,54 @@ function renderApply() {
 }
 
 function toggleSoul(id) { document.getElementById('applycard-'+id)?.classList.toggle('expanded'); }
+
+// 📖 2026-10-24 RA:「核准前要點一下就能看到他最終的靈魂書,這樣我才安心」
+//   舊版只在卡片裡展開一個 145px 的小框、還是原始 # ** 符號,看不完也看不清楚。
+//   改成:全螢幕視窗、照標題/粗體/引言排好版,待審核的直接在視窗底部核准或拒絕。
+//   ⚠️ 先整段跳脫(esc)再套格式,客人填的內容不可能變成程式碼。
+function _soulMd(t) {
+  const lines = esc(String(t || '')).split('\n');
+  return lines.map(l => {
+    const bold = x => x.replace(/\*\*(.+?)\*\*/g, '<b style="color:#fff">$1</b>');
+    if (/^---+\s*$/.test(l)) return '<hr style="border:none;border-top:1px solid rgba(255,255,255,.1);margin:16px 0;">';
+    let m;
+    if ((m = l.match(/^#\s+(.*)/)))  return '<div style="font-size:20px;font-weight:900;color:#fff;margin:6px 0 10px;">' + bold(m[1]) + '</div>';
+    if ((m = l.match(/^##\s+(.*)/))) return '<div style="font-size:15px;font-weight:900;color:#a78bfa;margin:18px 0 6px;">' + bold(m[1]) + '</div>';
+    if ((m = l.match(/^###\s+(.*)/))) return '<div style="font-size:14px;font-weight:800;color:#e9e4ff;margin:12px 0 4px;">' + bold(m[1]) + '</div>';
+    if ((m = l.match(/^(?:&gt;|>)\s?(.*)/))) return '<div style="border-left:3px solid #a78bfa;padding:6px 12px;margin:8px 0;color:#e9e4ff;background:rgba(124,109,250,.08);border-radius:6px;">' + bold(m[1]) + '</div>';
+    if ((m = l.match(/^\s*[-*•]\s+(.*)/))) return '<div style="padding-left:16px;position:relative;margin:3px 0;"><span style="position:absolute;left:2px;color:#a78bfa;">•</span>' + bold(m[1]) + '</div>';
+    if (!l.trim()) return '<div style="height:8px;"></div>';
+    return '<div style="margin:3px 0;">' + bold(l) + '</div>';
+  }).join('');
+}
+function openSoulModal(id) {
+  const b = (APPLIES || []).find(x => x.id === id);
+  if (!b) return;
+  document.getElementById('soulModal')?.remove();
+  const pending = b.status === 'pending';
+  const m = document.createElement('div');
+  m.id = 'soulModal';
+  m.setAttribute('style', 'position:fixed;inset:0;z-index:99999;background:rgba(6,6,12,.82);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;');
+  m.innerHTML =
+    '<div style="background:#16161d;border:1px solid #2e2e3a;border-radius:16px;max-width:760px;width:100%;max-height:92vh;display:flex;flex-direction:column;color:#C4C4D0;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2e2e3a;">' +
+        '<div><div style="font-size:16px;font-weight:900;color:#fff;">📖 ' + esc(b.name || '') + ' · 靈魂書</div>' +
+        '<div style="font-size:12px;color:var(--t3,#777);margin-top:2px;">' + esc(b.email || '') + ' · 這是客人填完問卷後 AI 寫好的最終版本,核准後就照這份上線</div></div>' +
+        '<button onclick="document.getElementById(\'soulModal\').remove()" style="background:transparent;border:1px solid #3a3a48;color:#aaa;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;">✕ 關閉</button>' +
+      '</div>' +
+      '<div style="overflow:auto;padding:18px 22px;font-size:13.5px;line-height:1.85;">' +
+        (b.soulBook ? _soulMd(b.soulBook) : '<div style="color:#888;">這個申請還沒有靈魂書(AI 可能還在寫,或問卷沒填完)。</div>') +
+      '</div>' +
+      (pending
+        ? '<div style="display:flex;gap:10px;padding:14px 20px;border-top:1px solid #2e2e3a;">' +
+            '<button class="btn-approve" onclick="document.getElementById(\'soulModal\').remove();doApprove(\'' + esc(b.id) + '\')">✅ 看完了,核准上線</button>' +
+            '<button class="btn-reject-brand" onclick="document.getElementById(\'soulModal\').remove();doReject(\'' + esc(b.id) + '\')">❌ 拒絕</button>' +
+          '</div>'
+        : '') +
+    '</div>';
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+}
 
 async function doApprove(brandId) {
   // ★ ID 防呆:核准前先讓管理員指定有意義的品牌 ID(留空則沿用系統自動產生)
