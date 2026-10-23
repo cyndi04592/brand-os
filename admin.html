@@ -3375,13 +3375,33 @@ function openSoulModal(id) {
   document.body.appendChild(m);
 }
 
+// 🪪 2026-10-24 RA:「代號你能核准自動填?」→ 核准時先幫你填好建議代號,按確定就用,想改再改
+//   規則:品牌名有英文 → 多個英文字取字首(Double W BarberShop → dwb)、單一英文字取整個字(PROTEX → protex,MOZ瑞典駝鹿 → moz)
+//         純中文名 → 用申請信箱 @ 前面的英文字母(pangpanglin0605 → pangpanglin)
+//         跟現有品牌撞號 → 後面加 2、3…
+function _suggestBrandId(app) {
+  const name = String((app && app.name) || '');
+  const words = (name.match(/[A-Za-z][A-Za-z0-9]*/g) || []);
+  let id = '';
+  if (words.length >= 2) id = words.map(w => w[0]).join('');
+  else if (words.length === 1) id = words[0];
+  if (id.length < 2) id = (String((app && app.email) || '').split('@')[0].match(/[a-z]+/i) || [''])[0];
+  id = id.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
+  if (id.length < 2) return '';
+  const taken = new Set(((typeof DB !== 'undefined' && DB.brands) || []).map(b => String(b.id || '').toLowerCase()));
+  let out = id, n = 2;
+  while (taken.has(out)) out = id.slice(0, 11) + (n++);
+  return out;
+}
+
 async function doApprove(brandId) {
-  // ★ ID 防呆:核准前先讓管理員指定有意義的品牌 ID(留空則沿用系統自動產生)
+  // ★ ID 防呆:核准前先讓管理員指定有意義的品牌 ID(已幫你填好建議代號)
+  const _app = (APPLIES || []).find(x => x.id === brandId);
   const customId = prompt(
-    '請為這個品牌指定一個「有意義的代碼 ID」(英文小寫,2-12 字)\n\n' +
-    '例:巧福→cf、空瑪那→ka、PROTEX→protex\n\n' +
-    '⚠️ 一旦核准就不能再改,請想好。\n留空 = 系統自動產生(不建議)',
-    ''
+    '品牌代碼 ID(英文小寫,2-12 字)—— 已幫你填好建議,直接按「確定」就用這個\n\n' +
+    '想改就改掉再按確定。例:巧福→cf、空瑪那→ka、PROTEX→protex\n\n' +
+    '⚠️ 一旦核准就不能再改。',
+    _suggestBrandId(_app)
   );
   // 按取消 → 中止整個核准(不送出)
   if (customId === null) return;
