@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.8 (2026-10-22)  v2.8:重拍的字只剩商品印刷+標題(治 AI 自編價格牌)
+//  admaker-prompt-lean.js · v2.9 (2026-10-24)  v2.9:重拍場景改由「版型×風格×情境」組出來 + 動作/機位/光各自抽(不再只有 6 張)
+//                                     + RA 參考大片手法庫(16 人像/8 靜物)+ 28 個情境全部改成配色/材質/光,不擺節慶道具
+//                                     v2.8:重拍的字只剩商品印刷+標題(治 AI 自編價格牌)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
 //
 //  為什麼:RA 2026-10-22 實測同一張 MOZ 外套照 / 德訓鞋照
@@ -85,6 +87,189 @@
     'the model sits cross-legged on the floor of a pale yellow seamless studio, one hand in the hair, a hard beam of sunlight from a window cutting across the backdrop and the model',
   ];
 
+  // ═══════════════════════════════════════════════════════════════════
+  // v2.9 重拍場景「組出來」,不再從固定 6 張裡抽(RA 2026-10-24:
+  //   「國際品牌 MOZ 過一陣子就會發現永遠都這 6 個;巧福每樣商品都好像一樣」
+  //   「排版、風格、情境怎麼調都沒用?」)
+  //   病:v2.1~2.8 重拍的第一句(權重最大)是固定清單,排版完全沒讀、風格只剩一句 Styling。
+  //   修:照 RA 的分工 —— 版型管構圖(白棚/極簡海報連地點也管)、風格管世界(地點、色、質感)、
+  //       情境只放一個細節;再各自從「機位 × 動作 × 光的時刻」抽 → 組合數上千,
+  //       而且同一個客人換選項,畫面一定跟著換。
+  //   ★ 6 張舊清單(RESHOOTS)保留,只在「沒選風格、品牌也沒寫場景」時當備案。
+  // ═══════════════════════════════════════════════════════════════════
+  // 服飾:模特兒在做什麼(動作的發動點在身體 —— 重心、呼吸、注意力,四肢自己跟上)
+  //   背對鏡頭的動作保留(RA 2026-10-24:「那才是國際質感」)。
+  //   胸前 logo 跑到背後的問題,用一句「布料的事實」解決(見下方 GARMENT_FACT),不寫禁止。
+  var POSES = [
+    'mid-stride toward the camera, weight rolling onto the front foot, hair lifting with the step',
+    'leaning a shoulder against a wall, weight on one hip, glancing past the camera',
+    'sitting on low steps, elbows on knees, leaning toward the lens with a relaxed half-smile',
+    'standing square to the camera, hands in pockets, chin slightly up, calm and sure',
+    'laughing mid-turn, the garment swinging out with the twist of the waist',
+    'crouching low, forearms on knees, looking straight down the lens',
+    'reaching one open hand toward the lens, the hand soft in the foreground, the face sharp behind',
+    'perched on a ledge, one knee drawn up, gazing out of frame into the light',
+    'adjusting the collar with both hands, eyes down, caught between moments',
+    'sitting backwards on a simple chair, arms folded over its back, direct gaze',
+    'stretching tall with arms overhead, the fabric pulling and folding with the body',
+    'stepping off a kerb, one foot in the air, caught candidly on a long lens',
+    'turning back over one shoulder as if someone just called, the body still facing away',
+    'walking away then glancing back over the shoulder, hair swinging',
+    'mid-laugh, one hand pushing hair back, facing the camera in three-quarter view',
+    'sitting on a wide windowsill, legs stretched along it, turned toward the lens',
+  ];
+  // 機位(服飾)
+  var ANGLES_M = [
+    'shot from very low, looking up, sky or ceiling behind',
+    'eye level on a long lens, the background compressed and soft',
+    'slightly above, looking down at the model',
+    'a close half-body crop, the garment filling the frame',
+    'full body with space around, a wide environmental frame',
+    'a three-quarter angle from the side, light raking across the fabric',
+  ];
+  // 機位(商品)—— 低機位是 RA 認可那幾張的做法,所以在清單裡出現兩次(機率較高)
+  var ANGLES_P = [
+    'low camera at product height, the product fills most of the frame',
+    'low camera at product height, the product fills most of the frame',
+    'eye level and close, the product large and sharp, the background melting away',
+    'a three-quarter view from slightly above, showing top and front together',
+    'a tight crop on the product with the setting just readable around it',
+  ];
+  // 商品:站在什麼表面上(風格沒寫表面時用)
+  var SURFACES = [
+    'a slab of pale travertine', 'a weathered oak table', 'a block of raw concrete', 'a fold of washed linen',
+    'a terrazzo step', 'a sun-warmed stone ledge', 'a low plinth painted in the brand colour', 'a polished walnut shelf',
+    'a sheet of ribbed glass over a coloured board', 'a stack of two simple wooden crates',
+  ];
+  // 光的時刻(都是一個真實光源、有方向,硬光為主 —— 量尺好圖都是直射光)
+  var MOMENTS = [
+    'hard late-afternoon sun from one side, long crisp shadows',
+    'bright midday sun straight down, short dark shadows',
+    'low golden-hour sun behind, rim light on the edges',
+    'morning sun through a window, the frame shadow falling across everything',
+    'sun through leaves, dappled light and shade',
+    'sun through half-open blinds, stripes of light across the scene',
+    'soft blue hour outdoors with one warm lamp glowing nearby',
+    'bright overcast sky with one strong break of sun, crisp edges returning to the shadows',
+  ];
+  // 沒選風格時的備案世界(品牌包也沒寫場景時才用)
+  var WORLDS = [
+    'a quiet city street of pale stone buildings', 'a sunny rooftop with a low concrete parapet', 'a small seaside town lane',
+    'a minimalist gallery with white walls and a polished floor', 'an old brick courtyard with climbing plants',
+    'a modern apartment with big windows and a few plants', 'a neighbourhood café terrace', 'a park path lined with trees',
+    'a tiled stairwell with a big window', 'a warm wooden studio with a single coloured wall',
+  ];
+  // 版型 → 構圖(重拍用)。白棚/極簡海報連「地點」也由版型決定(RA:版型管地點與構圖)
+  var LAYOUT_SHOT = {
+    white_studio:    { place: 'on a seamless studio sweep in a soft tone from the brand palette', frame: '', words: 'small and quiet in the empty studio space' },
+    minimal_poster:  { place: 'in front of one plain wall painted in a single colour', frame: 'lots of empty wall around the subject', words: 'set in the empty wall space' },
+    magazine_cover:  { place: '', frame: 'a magazine-cover frame: the subject centred, close and confident, the top third of the frame open', words: 'across the open top of the frame like a cover title' },
+    scene_lifestyle: { place: '', frame: 'a candid moment from real life, the background softly out of focus', words: 'in a calm corner of the frame' },
+    hand_hold:       { place: '', frame: 'a hand bringing the subject toward the camera, the subject sharp up front, the world soft behind', words: 'in a calm corner of the frame' },
+    '':              { place: '', frame: '', words: 'beside the subject' },
+  };
+  // 這個風格自己有沒有寫光(有就不再加光的時刻,免得兩道光打架)
+  // 風格文字裡有沒有寫「地點」(很多風格只寫衣服、色、光 —— 沒地點時補一個真實地點,免得 AI 自己縮回素面棚)
+  function styleHasPlace(t) { return /\b(street|store|shop|caf[eé]|room|interior|studio|wall|beach|sea|park|campus|office|kitchen|garden|shelving|shelves|fixtures|market|alley|rooftop|forest|city|town|home|library|courtyard|terrace|table|counter|restaurant|bar|hotel|temple|field|mountain|desert|pool|gym|salon|window)\b/i.test(String(t || '')); }
+  // 品牌包場景常寫成「A, or B」→ 每次挑其中一個(多一層變化)
+  function oneOf(t) { var parts = String(t || '').split(/\s*(?:;|\bor\b)\s*/i).map(function (x) { return x.replace(/^[,\s]+|[,\s]+$/g, ''); }).filter(function (x) { return x.length > 6; }); return parts.length ? pick(parts) : String(t || ''); }
+
+
+  // ═══════════════════════════════════════════════════════════════════
+  // v2.9 RA 給的參考大片(2026-10-24,17 張:小米、三星、ELLE、VOGUE、Champion、JORYA…)
+  //   不抄品牌,只抽「拍攝手法」:姿勢 × 佈景 × 光,寫成一句完整的拍攝企劃。
+  //   studio:true = 在棚裡/素面牆也成立(白棚、極簡海報版型可用)
+  // ═══════════════════════════════════════════════════════════════════
+  var REF_SHOTS = [
+    { studio: true,  t: 'the model holds one hand up beside the face as if showing something to the lens, chin tilted, a knowing half-smile, hair flying from a fan, against a seamless backdrop' },
+    { studio: true,  t: 'the model leans forward on a tall clear stool, forearms on the knees, one hand resting at the chin, eyes straight into the lens, clean pale seamless backdrop' },
+    { studio: false, t: 'the model peeks around a thick velvet-textured column, one arm wrapped around it, one eye closed in a wink, the column and backdrop in one saturated tone' },
+    { studio: true,  t: 'a head-and-shoulders portrait from slightly above, the model eyes closed and smiling, both hands raised to the head, a large soft circle of colour behind' },
+    { studio: true,  t: 'the model lies across an oversized glossy inflatable cushion, arms folded under the chin, looking at the lens from very close' },
+    { studio: true,  t: 'the model is wedged into a soft padded corner of pastel fabric, the body following the diagonal of the corner, shot from directly above' },
+    { studio: true,  t: 'the model lies on the stomach on a seamless floor, chin on stacked hands, legs crossed up in the air behind, the camera at floor level' },
+    { studio: true,  t: 'the model sits on the floor in the corner of a tonal room, knees drawn up, looking back over the shoulder at the lens' },
+    { studio: false, t: 'the model peers through venetian blinds, one hand parting the slats, hard sun cutting stripes of light and shadow across the face' },
+    { studio: true,  t: 'the model lounges across a row of simple chairs in a set where floor, walls and chairs are one single colour, one arm over the backrest' },
+    { studio: true,  t: 'a profile portrait half hidden behind a pane of reeded glass, one side of the face sharp, the other side refracted into vertical streaks' },
+    { studio: true,  t: 'the model stands hands in pockets before a smooth sky-like gradient backdrop, hard side light raking across the fabric' },
+    { studio: true,  t: 'the whole frame washed in one coloured gel light, the model in profile, the face falling into soft coloured shadow' },
+    { studio: true,  t: 'a tight portrait, the model adjusting sunglasses toward the lens with both gloved hands, direct and confident' },
+    { studio: true,  t: 'a long flowing drape of fabric in one bold colour falls behind the model and pools on the floor, the model standing tall and still beside it' },
+    { studio: true,  t: 'the model points a small retro camcorder at the viewer with one hand, bright clean white seamless background' },
+  ];
+  // 商品(靜物)的參考手法 —— Clarins 紅底金緞帶、護手霜紅緞帶纏繞、單色堆疊…
+  var REF_STILLS = [
+    'the product stands on stacked colour blocks against a backdrop of the very same colour, one tone-on-tone world',
+    'a ribbon of satin winds around the product and runs off the frame, catching the light',
+    'the product stands behind a pane of reeded glass, its edge sharp where it rises above the glass and refracted below',
+    'hard sun through venetian blinds draws stripes of light across the product and the wall behind',
+    'the whole set is washed in one coloured gel light, the product glowing at its edges',
+    'a long fold of fabric in one bold colour sweeps behind and under the product',
+    'the product rises from a plinth against a smooth sky-like colour gradient',
+    'a large soft circle of colour sits behind the product like a halo, everything else clean and pale',
+  ];
+  // 情境的美術設計表(每個情境 2~3 種講法:配色 / 材質 / 光)—— 全部 28 個情境都有,不擺節慶道具
+  var CONTEXT_ART = {
+    jp_direct:        { c: ['crisp white and pale paper tones with one clean accent colour'], m: ['fresh paper, cardboard edges and clean cotton'], l: 'bright clean morning daylight' },
+    jp_drugstore_haul:{ c: ['clean white with one fresh mint or coral accent'], m: ['neat rows of repeated colour blocks behind'], l: 'bright even retail light' },
+    duty_free:        { c: ['cool stone grey, brushed metal and champagne'], m: ['polished marble and mirrored surfaces'], l: 'cool architectural light with long reflections' },
+    limited_stock:    { c: ['deep dark tones around one bright pool of light'], m: ['matte black surfaces'], l: 'one hard spotlight falling away into darkness' },
+    daily_supplement: { c: ['soft morning whites and warm neutrals'], m: ['linen, a glass of water and pale stone'], l: 'early sun through a window' },
+    gift_choice:      { c: ['one rich tone-on-tone colour across the whole set'], m: ['satin ribbon and heavy paper folded around the set'], l: 'a warm soft glow' },
+    summer:           { c: ['saturated sky blue, sun yellow and white'], m: ['glass, water ripples and light cotton'], l: 'hard high midday sun with crisp short shadows' },
+    winter_cozy:      { c: ['warm oatmeal, cream and caramel'], m: ['chunky knit, wool and misted glass'], l: 'a warm low tungsten glow against a cold blue evening' },
+    festive_cny:      { c: ['tone-on-tone lucky red with a touch of gold', 'deep crimson against soft grey'], m: ['flowing red silk drapery and lacquer surfaces'], l: 'clean warm studio light' },
+    back_to_school:   { c: ['fresh autumn navy, ivory and leaf tones'], m: ['paper, canvas and pale wood'], l: 'crisp early-autumn morning sun' },
+    unboxing:         { c: ['the brand colour carried across the backdrop'], m: ['tissue paper and the open inside of a box'], l: 'soft top light, as if a lid has just lifted' },
+    daily_use:        { c: ['natural lived-in home colours'], m: ['real everyday surfaces'], l: 'ordinary daylight from a window' },
+    promo_sale:       { c: ['one bold punchy colour flooding the set'], m: ['glossy colour-blocked plinths'], l: 'bright hard studio light' },
+    gift_giving:      { c: ['a warm tone-on-tone set'], m: ['ribbon and wrapping paper wound around and beneath the product'], l: 'a warm soft glow' },
+    year_end_sale:    { c: ['bold red and gold'], m: ['glossy lacquer blocks'], l: 'bright hard light' },
+    double11:         { c: ['vivid red and magenta colour blocks'], m: ['glossy acrylic blocks'], l: 'hard punchy light' },
+    valentines:       { c: ['blush, rose and deep red tone-on-tone'], m: ['satin and velvet'], l: 'a low candle-warm glow' },
+    zhongyuan_pudu:   { c: ['the warm red and gold of a temple table'], m: ['red cloth and generous stacks of packs'], l: 'warm amber light' },
+    mid_autumn:       { c: ['deep night blue with warm amber'], m: ['wood, silk and paper-lantern glow'], l: 'a soft moonlit night with one warm lamp' },
+    national_day:     { c: ['crisp blue, white and red'], m: ['clean modern surfaces'], l: 'bright clear daylight' },
+    halloween:        { c: ['deep purple and burnt orange'], m: ['velvet and smoke-dark surfaces'], l: 'low warm side light with deep shadows' },
+    black_friday:     { c: ['matte black with one sharp highlight'], m: ['black glossy surfaces'], l: 'a hard directional spotlight' },
+    double12:         { c: ['warm orange and gold'], m: ['glossy colour blocks'], l: 'hard punchy light' },
+    christmas:        { c: ['deep green, red and gold', 'snow white with one red accent', 'an all-red tone-on-tone set'], m: ['satin ribbon, knit wool and soft snow'], l: 'a warm tungsten glow' },
+    nye_countdown:    { c: ['midnight navy with champagne gold'], m: ['sequins and glass'], l: 'sparkling points of light on a dark night' },
+    weiya:            { c: ['warm red and gold'], m: ['banquet linen and lacquer'], l: 'warm festive light' },
+    brand_anniversary:{ c: ['the brand colour with champagne gold'], m: ['satin ribbon and heavy paper'], l: 'clean premium light' },
+  };
+  // ═══════════════════════════════════════════════════════════════════
+  // v2.9 情境的表現方式(RA 2026-10-24:「萬聖節就放南瓜、中秋節就放柚子、聖誕節 —— 只會顯得 AI 很爛」
+  //   她給的 7 張聖誕廣告:同一個節日,有的靠配色(整片紅底、紅綠)、有的靠材質(緞帶繞在商品上、
+  //   雪地、毛線)、有的靠造型(模特兒的穿搭配件)—— 季節是「整張照片的美術設計」,不是旁邊擺一個象徵物。
+  //   做法:從情境描述裡抽出「配色」與「材質」,每張隨機用其中一種方式講;道具名詞(南瓜、柚子、月餅…)不帶進來。
+  // ═══════════════════════════════════════════════════════════════════
+  var COLOUR_RE = /(red|green|gold|golden|silver|white|ivory|cream|blush|rose|pink|purple|orange|amber|navy|blue|teal|burgundy|champagne|black|copper|magenta|pastel|palette|tones?|accents?)/i;
+  var MATERIAL_RE = /(knit|wool|satin|ribbon|velvet|linen|paper|tissue|snow|frost|glass|candle|lantern|fairy-light|light bokeh|petal|silk|felt|wood|marble|confetti)/i;
+  function _occasion(raw, people) {
+    var t = String(raw || ''), name = (t.match(/^([^:]+?)\s+context/i) || [])[1] || '';
+    var art = CONTEXT_ART[(typeof SELECTED_CONTEXT !== 'undefined' && SELECTED_CONTEXT) || ''];
+    if (art) {
+      var w = [];
+      art.c.forEach(function (c) { w.push('the whole set, backdrop and styling are built from ' + c + ', the way a seasonal campaign is art-directed'); });
+      art.m.forEach(function (m) { w.push('the materials of the set itself carry it — ' + m + (people ? ' — woven into the scene and the styling' : ' — around and beneath the product')); });
+      w.push('the light carries it: ' + art.l);
+      if (people) w.push('the model\'s styling and accessories carry it, in ' + art.c[0]);
+      return 'The ' + (name ? name.toLowerCase() : 'occasion') + ' feeling: ' + pick(w) + '.';
+    }
+    var bits = t.replace(/^[^:]*:\s*/, '').replace(/\([^)]*\)/g, '').split(/\s*[,;—]\s*/).filter(function (x) { return !/pair of|two |hands|gesture|card|NOT |keep it/i.test(x); });
+    var colours = bits.filter(function (x) { return COLOUR_RE.test(x) && !/badge|numeral|tag|typography|price|sale/i.test(x); }).slice(0, 2).join(', ');
+    var mats = bits.filter(function (x) { return MATERIAL_RE.test(x) && !COLOUR_RE.test(x); }).map(function (x) { return x.replace(/\b(a|an|the)\s+/gi, '').replace(/\s*(as (a )?props?|textures?|in the background bokeh)\b.*$/i, ''); }).slice(0, 2).join(' and ');
+    var ways = [];
+    if (colours) ways.push('the whole set, backdrop and styling are built from ' + colours + ', the way a seasonal campaign is art-directed');
+    if (mats) ways.push('the materials of the set itself carry it — ' + mats + ' — woven into the scene' + (people ? ' and the styling' : ' and wrapped around or under the product'));
+    if (people) ways.push('the model\'s styling and accessories carry it' + (colours ? ', in ' + colours : ''));
+    if (!ways.length) ways.push('the colour and light of the whole picture carry it');
+    return 'The ' + (name ? name.toLowerCase() : 'occasion') + ' feeling: ' + pick(ways) + '.';
+  }
+  function styleHasLight(t) { return /\b(sun|sunlight|daylight|light|lighting|lamp|neon|glow|shadow)\b/i.test(String(t || '')); }
+
 
   // 沒選風格、品牌也沒寫場景時的實景(都是「一面背景」,人和商品都站得進去)
   var PLACES = [
@@ -121,6 +306,7 @@
   }
 
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function cap(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
   function cut(s, n) { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n).replace(/[,;\s]+\S*$/, '') : s; }
   // v1.10 精華(RA:「不能只抓前面的字,要簡化成大綱/簡介式的精華」)
   //   ① 先拿掉括號裡的補充說明(用途、舉例、對標) ② 去重 ③ 還太長才以「一個完整項目」為單位收,
@@ -211,38 +397,79 @@
         (headline ? '"' + headline + '"' : '') + (headline && sub ? ', and a small line beneath, ' : '') + (sub ? '"' + sub + '"' : '');
       return t + '. Shelves, signs, cards and props around it are plain, wordless surfaces.';
     }
+    // v2.9 重拍的「世界」與「構圖」由客人的選項組出來(詳見上方 POSES/ANGLES/LAYOUT_SHOT 說明)
+    //  回傳一整段「介系詞 + 地點」:版型有地點(白棚/極簡海報)→ 版型的地點 + 風格的色與質感;
+    //  否則 → 風格的世界(風格沒寫地點就補一個真實地點)→ 品牌包場景(挑其中一個)→ 備案
+    //  people=true(服飾):品牌包場景常是「商品擺拍」(flat-lay、木桌…),人站不進去 → 一律用人能待的真實地點
+    //  風格文字裡有些是「平面設計」的詞(字體、疊圖紋理、插畫)—— 那是排版不是攝影,放進場景會被畫成疊圖,拿掉
+    function _photoOnly(t) {
+      t = String(t || ''); var m = t.match(/^([^:]{2,60}):\s*([\s\S]*)$/), head = m ? m[1] : '', body = m ? m[2] : t;
+      var keep = body.split(/\s*,\s*/).filter(function (x) { return !/overlay|serif|sans-serif|font|typograph|mincho|letter|illustrat|graphic|poster|layout/i.test(x); }).join(', ');
+      return head ? head + (keep ? ': ' + keep : '') : keep;
+    }
+    function _world(fs, fallback, people) {
+      var L = LAYOUT_SHOT[ly] || LAYOUT_SHOT[''];
+      var scene = people ? '' : pb.scene;
+      fs = _photoOnly(fs);
+      if (L.place) return L.place + (fs ? ', in the colour and texture of ' + essence(fs, 160) : '');
+      if (fs) return 'in the world of ' + essence(fs, 200) + (styleHasPlace(fs) ? '' : ', on location ' + (scene ? 'in ' + cut(oneOf(scene), 90) : 'in ' + pick(WORLDS)));
+      if (scene) return 'in ' + cut(oneOf(scene), 140);
+      return fallback ? 'in ' + fallback : '';
+    }
+    //  動作要跟地點合得來:棚內/素面牆不放「下路緣、坐台階、坐矮牆」這類戶外動作
+    //  版型跟機位要合得來:極簡海報要留白 → 不用大特寫;雜誌封面要近而有自信 → 不用全身大遠景
+    function _angle(pool) {
+      var bad = ly === 'minimal_poster' ? /close|tight/ : ly === 'magazine_cover' ? /full body|wide/ : null;
+      return pick(bad ? pool.filter(function (x) { return !bad.test(x); }) : pool);
+    }
+    function _pose() { var L = LAYOUT_SHOT[ly] || LAYOUT_SHOT['']; var pool = L.place ? POSES.filter(function (x) { return !/kerb|ledge|steps/.test(x); }) : POSES; return pick(pool); }
+    function _light(fs) { return styleHasLight(fs) ? '' : pick(MOMENTS); }
     if (isProdReshoot) {
       var fsP = flavorSet(flavor);
       var bfP = [essence(pb.mood, 80), essence(ctx.adStyle, 70)].filter(Boolean).join('; ');
-      // v2.3:實測只剩一雙(原圖兩雙一黑一黃)→ 明講「照片裡的每一件都在,數量、顏色組合一樣」
-      // v2.6 回到 v2.2 的寫法(RA:「我要這個版本」—— 鼠尾草綠牆樹影+駝鹿馬克杯那張)。
-      //   v2.3/2.4 加了「照片裡每一件都要在」「舊道具留在原地」→ AI 反而照抄原圖構圖、場景變死板。
-      //   數量交給第二步「商品校正」去補(校正會對著原圖把每一件對回來)。
+      var LP = LAYOUT_SHOT[ly] || LAYOUT_SHOT[''];
+      // v2.6 認可的商品句一字不動(RA:「我要這個版本」);數量交給第二步「商品校正」
       p.push('The product is the real one in this photo' + (name ? ' (' + name + ')' : '') + ': it keeps its exact shape, panels, colours, materials and logos; small labels and lettering stay exactly as photographed, and where a label is too small to read it stays plain.');
-      p.push('A new product campaign photograph: the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its') + '. Low camera at product height, the product fills most of the frame.');
-      if (fsP || bfP) p.push((fsP ? 'Styling: ' + essence(fsP, 120) + '. ' : '') + (bfP ? 'Brand feel: ' + bfP + '.' : ''));
-      if (ctxTheme.context) p.push('Occasion, told through one small real detail: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
+      var lP = _light(fsP);
+      var placeP = (fsP || pb.scene || LP.place)
+        ? 'the product stands on ' + pick(SURFACES) + ' ' + _world(fsP, '') + (lP ? '; ' + lP : '')
+        : 'the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its');
+      if (Math.random() < 0.35) placeP += '; ' + pick(REF_STILLS);
+      p.push('A new product campaign photograph: ' + placeP + '. ' + (LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + _angle(ANGLES_P) : cap(_angle(ANGLES_P))) + '.');
+      if (bfP) p.push('Brand feel: ' + bfP + '.');
+      if (ctxTheme.context) p.push(_occasion(ctxTheme.context, false));
       if (note) p.push('Client note: ' + essence(note, 180));
       p.push('Light travels in straight lines from its real source: what faces it is bright, what faces away falls into shadow, and whatever stands in its path casts its shadow onto what lies behind. Things that touch rest on each other under gravity and darken where they meet.');
       p.push('Shot on ' + camFor(SELECTED_FLAVOR, ly, pb.photo + ' ' + pb.mood) + '. Real material texture; ' + sz.w + 'x' + sz.h + ', edge to edge.');
-      // v2.4:實測 AI 在標題上方多畫一個品牌字標 → 明講「加上去的字只有這幾個」(logo 由系統之後疊)
-      // v2.8:好滋好滋實測,AI 在便利店鐵架上自己畫了「經典原味 $69」價格牌(價格是編的,投出去有風險)
-      //   → 改成講事實:整張照片的字 = 商品本身印的字 + 客人給的標題,周圍道具是素面。
-      p.push(_letteringLine(headline, sub, pb, 'one compact block on the wall beside the product', 'the product'));
+      // v2.8:整張照片的字 = 商品本身印的字 + 客人給的標題,周圍道具是素面(治 AI 自編價格牌)
+      p.push(_letteringLine(headline, sub, pb, 'one compact block ' + LP.words.replace(/the subject/g, 'the product'), 'the product'));
       return p.join('\n');
     }
     if (isReshoot) {
       var fsR = flavorSet(flavor);
       var bfR = [essence(pb.mood, 80), essence(ctx.adStyle, 70)].filter(Boolean).join('; ');
-      p.push('The product is the garment in this photo: same cut, fabric, colour, zips, drawstrings and every logo or embroidery exactly as it is.');
-      p.push('A new fashion campaign photograph of a young model wearing this garment: ' + pick(RESHOOTS) + '.');
+      var LR = LAYOUT_SHOT[ly] || LAYOUT_SHOT[''];
+      p.push('The product is the garment in this photo: same cut, fabric, colour, zips, drawstrings and every logo or embroidery exactly as it is. Each print and embroidery stays on the panel where it sits in the photo, so the camera sees it only when that panel faces the lens.');
+      //  沒選風格、品牌包也沒寫場景、版型也沒指定地點 → 用舊的 6 張完整場景當備案(RA 認可過的等級)
+      if (!fsR && !LR.place && !LR.frame) {
+        p.push('A new fashion campaign photograph of a young model wearing this garment: ' + (Math.random() < 0.5 ? pick(RESHOOTS) : 'in ' + pick(WORLDS) + ', ' + pick(POSES) + '; ' + pick(ANGLES_M) + '; ' + pick(MOMENTS)) + '.');
+      } else {
+        var refPool = LR.place ? REF_SHOTS.filter(function (x) { return x.studio; }) : REF_SHOTS;
+        if (Math.random() < 0.5 && refPool.length) {
+          //  參考大片手法:一整句拍攝企劃(姿勢+佈景+光),風格只給色與質感
+          p.push('A new fashion campaign photograph of a young model wearing this garment: ' + pick(refPool).t + (fsR ? ', in the colour and texture of ' + essence(_photoOnly(fsR), 160) : '') + '.' + (LR.frame ? ' ' + cap(LR.frame.replace(/the subject/g, 'the model')) + '.' : ''));
+        } else {
+          var wR = _world(fsR, pick(WORLDS), true), lR = _light(fsR);
+          p.push('A new fashion campaign photograph of a young model wearing this garment, ' + wR + (lR ? '; ' + lR : '') + '. The model is ' + _pose() + '. ' + (LR.frame ? cap(LR.frame.replace(/the subject/g, 'the model')) + '; ' : '') + cap(_angle(ANGLES_M)) + '.');
+        }
+      }
       p.push('Everything else the model wears is plain, unbranded everyday basics, so the garment is the only branded piece in the picture.');
-      if (fsR || bfR) p.push((fsR ? 'Styling: ' + essence(fsR, 120) + '. ' : '') + (bfR ? 'Brand feel: ' + bfR + '.' : ''));
-      if (ctxTheme.context) p.push('Occasion, told through one small real detail: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
+      if (bfR) p.push('Brand feel: ' + bfR + '.');
+      if (ctxTheme.context) p.push(_occasion(ctxTheme.context, true));
       if (note) p.push('Client note: ' + essence(note, 180));
       p.push('Light travels in straight lines from its real source: what faces it is bright, what faces away falls into shadow, and nearby surfaces bounce their colour onto the model. It is one moment through one lens.');
-      p.push('Shot on ' + pick(CAMS.film.concat(CAMS.clean)) + '. Real skin texture, real fabric folds; ' + sz.w + 'x' + sz.h + ', edge to edge.');
-      p.push(_letteringLine(headline, sub, pb, 'one compact block on the sky or wall beside the model', 'the garment'));
+      p.push('Shot on ' + (fsR ? camFor(SELECTED_FLAVOR, ly, pb.photo + ' ' + pb.mood) : pick(CAMS.film.concat(CAMS.clean))) + '. Real skin texture, real fabric folds; ' + sz.w + 'x' + sz.h + ', edge to edge.');
+      p.push(_letteringLine(headline, sub, pb, 'one compact block ' + LR.words.replace(/the subject/g, 'the model'), 'the garment'));
       return p.join('\n');
     }
     var P = isApparel ? 'their' : 'its';
@@ -265,7 +492,7 @@
     var fs = flavorSet(flavor);
     var brandFeel = [essence(pb.mood, 80), essence(ctx.adStyle, 70), lockColor && pb.colour ? essence(pb.colour, 90) : ''].filter(Boolean).join('; ');
     if (fs || brandFeel) p.push((fs ? 'Styling: ' + essence(fs, 130) + '. ' : '') + (brandFeel ? 'Brand feel: ' + brandFeel + '.' : ''));
-    if (ctxTheme.context) p.push('Occasion, told through one small real detail: ' + essence(typeof _dropPriceTalk === 'function' ? _dropPriceTalk(ctxTheme.context) : ctxTheme.context, 100) + '.');
+    if (ctxTheme.context) p.push(_occasion(ctxTheme.context, isApparel));
     if (note) p.push('Client note: ' + essence(note, 180));
 
     // ⑤ 物理法則(保險,兩句)
@@ -305,5 +532,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.8 精簡廣告圖提示詞已載入');
+  console.log('[AD_LEAN] v2.9 精簡廣告圖提示詞已載入');
 })();
