@@ -285,15 +285,15 @@
       'the product sits on a plinth-like block beside a drink, block and backdrop in one tone'
     ] },
     meat: { s: [
-      'two hands in dark sleeves hold the cut toward the lens against pure black, every line of marbling sharp',
-      'the cut sears and steams on a hot surface, a low backlight catching the rising smoke',
-      'slices fan out on a dark stone plate with fresh herbs, moody side light',
-      'raw slices lie on a wooden board over drifting cold mist, a few small edible flowers',
-      'a single cut on a green marble pedestal against a soft sage backdrop',
-      'shot from overhead on a pale blue table: the cuts on white plates with herbs and little dishes, airy and fresh',
-      'a hand sets the cut onto a white plate on a dark wooden table, warm low light',
-      'thin slices drape and tumble down a stacked tower, caught mid-motion against a warm gradient',
-      'the cut lies on parchment over white linen with cracked pepper and garlic, soft daylight'
+      'two hands in dark sleeves hold the product toward the lens against pure black, every line of marbling sharp',
+      'the product rests on dark slate beside a hot cast-iron pan, a low backlight catching wisps of smoke from the pan',
+      'the product lies on a dark stone plate with fresh herbs, moody side light',
+      'the product lies on a wooden board over drifting cold mist, a few small edible flowers',
+      'the product sits on a green marble pedestal against a soft sage backdrop',
+      'shot from overhead on a pale blue table: the product on a white plate among herbs and little dishes, airy and fresh',
+      'a hand sets the product onto a white plate on a dark wooden table, warm low light',
+      'the product hangs mid-air against a warm gradient, a few herbs falling around it',
+      'the product lies on parchment over white linen with cracked pepper and garlic, soft daylight'
     ] },
     appliance: { s: [
       'the appliance stands on a raw concrete pedestal, a long soft shadow running behind',
@@ -622,7 +622,7 @@
         : 'the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its');
       //  v2.10 品類手法(一半機率):版型沒指定地點 → 品類手法就是整個場景(風格只給色與質感);白棚/極簡海報 → 疊在棚景上
       var catP = CAT_ART[_cat(ctx)], catS = catP && catP.s && !(LP.place && catP.studio === false) ? pick(catP.s) : '', rP = Math.random();
-      if (catS && rP < 0.5) placeP = LP.place ? placeP + '; ' + catS : catS + (fsP ? ', in the colour and texture of ' + essence(_photoOnly(fsP), 160) : '') + (lP ? '; ' + lP : '');
+      if (catS && rP < 0.5) placeP = LP.place ? placeP + '; ' + catS : catS + (fsP ? ', in the colour and texture of ' + essence(_photoOnly(fsP), 160) : '');  // 品類手法自帶光,不再疊第二道光
       else if (rP < 0.675) placeP += '; ' + pick(REF_STILLS);
       p.push('A new product campaign photograph: ' + placeP + '. ' + (LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + _angle(ANGLES_P) : cap(_angle(ANGLES_P))) + '.');
       if (bfP) p.push('Brand feel: ' + bfP + '.');
