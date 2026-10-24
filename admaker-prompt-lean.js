@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.10 (2026-10-24)  v2.10:認品類(餐飲/肉品/家電/手持/睫毛/保健/寵物/親子/戶外/瑜珈/髮型)抽該品類拍法 + 模特兒髮型輪換;v2.9:重拍場景由「版型×風格×情境」組出
+//  admaker-prompt-lean.js · v2.11 (2026-10-24)  v2.11:選了情境 → 配色讓給情境;v2.10:認品類(餐飲/肉品/家電/手持/睫毛/保健/寵物/親子/戶外/瑜珈/髮型)抽該品類拍法 + 模特兒髮型輪換;v2.9:重拍場景由「版型×風格×情境」組出
 //                                     + RA 參考大片手法庫(44 人像/24 靜物,含 Pinterest 2026 MD拍攝)+ 28 個情境全部改成配色/材質/光,不擺節慶道具
 //                                     v2.8:重拍的字只剩商品印刷+標題(治 AI 自編價格牌)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
@@ -590,14 +590,16 @@
     //  風格文字裡有些是「平面設計」的詞(字體、疊圖紋理、插畫)—— 那是排版不是攝影,放進場景會被畫成疊圖,拿掉
     function _photoOnly(t) {
       t = String(t || ''); var m = t.match(/^([^:]{2,60}):\s*([\s\S]*)$/), head = m ? m[1] : '', body = m ? m[2] : t;
-      var keep = body.split(/\s*,\s*/).filter(function (x) { return !/overlay|serif|sans-serif|font|typograph|mincho|letter|illustrat|graphic|poster|layout/i.test(x); }).join(', ');
+      //  v2.11 客人選了情境(節日)→ 配色讓給情境(RA 2026-10-24 測試:首爾工作室的「米灰色」蓋掉了聖誕的紅),風格只留地點、光與質感
+      var palRe = ctxTheme.context ? /palette|colou?r|\btones?\b|\bhues?\b|beige|grey|gray|pastel|monochrom/i : null;
+      var keep = body.split(/\s*,\s*/).filter(function (x) { return !/overlay|serif|sans-serif|font|typograph|mincho|letter|illustrat|graphic|poster|layout/i.test(x) && !(palRe && palRe.test(x)); }).join(', ');
       return head ? head + (keep ? ': ' + keep : '') : keep;
     }
     function _world(fs, fallback, people) {
       var L = LAYOUT_SHOT[ly] || LAYOUT_SHOT[''];
       var scene = people ? '' : pb.scene;
       fs = _photoOnly(fs);
-      if (L.place) return L.place + (fs ? ', in the colour and texture of ' + essence(fs, 160) : '');
+      if (L.place) return L.place + (fs ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(fs, 160) : '');
       if (fs) return 'in the world of ' + essence(fs, 200) + (styleHasPlace(fs) ? '' : ', on location ' + (scene ? 'in ' + cut(oneOf(scene), 90) : 'in ' + pick(WORLDS)));
       if (scene) return 'in ' + cut(oneOf(scene), 140);
       return fallback ? 'in ' + fallback : '';
@@ -622,7 +624,7 @@
         : 'the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its');
       //  v2.10 品類手法(一半機率):版型沒指定地點 → 品類手法就是整個場景(風格只給色與質感);白棚/極簡海報 → 疊在棚景上
       var catP = CAT_ART[_cat(ctx)], catS = catP && catP.s && !(LP.place && catP.studio === false) ? pick(catP.s) : '', rP = Math.random();
-      if (catS && rP < 0.5) placeP = LP.place ? placeP + '; ' + catS : catS + (fsP ? ', in the colour and texture of ' + essence(_photoOnly(fsP), 160) : '');  // 品類手法自帶光,不再疊第二道光
+      if (catS && rP < 0.5) placeP = LP.place ? placeP + '; ' + catS : catS + (fsP ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(_photoOnly(fsP), 160) : '');  // 品類手法自帶光,不再疊第二道光
       else if (rP < 0.675) placeP += '; ' + pick(REF_STILLS);
       p.push('A new product campaign photograph: ' + placeP + '. ' + (LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + _angle(ANGLES_P) : cap(_angle(ANGLES_P))) + '.');
       if (bfP) p.push('Brand feel: ' + bfP + '.');
@@ -642,14 +644,14 @@
       //  沒選風格、品牌包也沒寫場景、版型也沒指定地點 → 用舊的 6 張完整場景當備案(RA 認可過的等級)
       var catR = CAT_ART[_cat(ctx)], catM = catR && catR.m && catR.wear && (catR.studio || !LR.place) ? catR.m : null;  // 只用看得到整件衣服的品類(睫毛大特寫、髮型側臉看不到衣服)
       if (catM && Math.random() < 0.5) {
-        p.push('A new campaign photograph of a young model wearing this garment: ' + pick(catM) + (fsR ? ', in the colour and texture of ' + essence(_photoOnly(fsR), 160) : '') + '.' + (LR.frame ? ' ' + cap(LR.frame.replace(/the subject/g, 'the model')) + '.' : ''));
+        p.push('A new campaign photograph of a young model wearing this garment: ' + pick(catM) + (fsR ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(_photoOnly(fsR), 160) : '') + '.' + (LR.frame ? ' ' + cap(LR.frame.replace(/the subject/g, 'the model')) + '.' : ''));
       } else if (!fsR && !LR.place && !LR.frame) {
         p.push('A new fashion campaign photograph of a young model wearing this garment: ' + (Math.random() < 0.5 ? pick(RESHOOTS) : 'in ' + pick(WORLDS) + ', ' + pick(POSES) + '; ' + pick(ANGLES_M) + '; ' + pick(MOMENTS)) + '.');
       } else {
         var refPool = LR.place ? REF_SHOTS.filter(function (x) { return x.studio; }) : REF_SHOTS;
         if (Math.random() < 0.5 && refPool.length) {
           //  參考大片手法:一整句拍攝企劃(姿勢+佈景+光),風格只給色與質感
-          p.push('A new fashion campaign photograph of a young model wearing this garment: ' + pick(refPool).t + (fsR ? ', in the colour and texture of ' + essence(_photoOnly(fsR), 160) : '') + '.' + (LR.frame ? ' ' + cap(LR.frame.replace(/the subject/g, 'the model')) + '.' : ''));
+          p.push('A new fashion campaign photograph of a young model wearing this garment: ' + pick(refPool).t + (fsR ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(_photoOnly(fsR), 160) : '') + '.' + (LR.frame ? ' ' + cap(LR.frame.replace(/the subject/g, 'the model')) + '.' : ''));
         } else {
           var wR = _world(fsR, pick(WORLDS), true), lR = _light(fsR);
           p.push('A new fashion campaign photograph of a young model wearing this garment, ' + wR + (lR ? '; ' + lR : '') + '. The model is ' + _pose() + '. ' + (LR.frame ? cap(LR.frame.replace(/the subject/g, 'the model')) + '; ' : '') + cap(_angle(ANGLES_M)) + '.');
@@ -725,5 +727,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.10 精簡廣告圖提示詞已載入(品類手法)');
+  console.log('[AD_LEAN] v2.11 精簡廣告圖提示詞已載入(品類手法+情境配色優先)');
 })();
