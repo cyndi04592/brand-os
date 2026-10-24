@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.9 (2026-10-24)  v2.9:重拍場景改由「版型×風格×情境」組出來 + 動作/機位/光各自抽(不再只有 6 張)
-//                                     + RA 參考大片手法庫(16 人像/8 靜物)+ 28 個情境全部改成配色/材質/光,不擺節慶道具
+//  admaker-prompt-lean.js · v2.10 (2026-10-24)  v2.10:認品類(餐飲/肉品/家電/手持/睫毛/保健/寵物/親子/戶外/瑜珈/髮型)抽該品類拍法 + 模特兒髮型輪換;v2.9:重拍場景由「版型×風格×情境」組出
+//                                     + RA 參考大片手法庫(44 人像/24 靜物,含 Pinterest 2026 MD拍攝)+ 28 個情境全部改成配色/材質/光,不擺節慶道具
 //                                     v2.8:重拍的字只剩商品印刷+標題(治 AI 自編價格牌)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
 //
@@ -197,6 +197,35 @@
     { studio: true,  t: 'a tight portrait, the model adjusting sunglasses toward the lens with both gloved hands, direct and confident' },
     { studio: true,  t: 'a long flowing drape of fabric in one bold colour falls behind the model and pools on the floor, the model standing tall and still beside it' },
     { studio: true,  t: 'the model points a small retro camcorder at the viewer with one hand, bright clean white seamless background' },
+    // ── 2026-10-24 第二批:RA 指定 Pinterest「2026 MD拍攝」整頁看過抽出的手法 ──
+    { studio: true,  t: 'the model leaps onto a giant flat cut-out prop of a rocking horse, caught mid-air with one knee lifted, against a pale blue seamless backdrop' },
+    { studio: true,  t: 'the model sits cross-legged on the studio floor among a casual still life of books, fruit and a paper bag, one hand propping the cheek, a playful sideways glance' },
+    { studio: true,  t: 'the model sits on a low stack of books holding a vintage film camera at chest height, glasses on, looking over the camera at the lens' },
+    { studio: true,  t: 'the model sits backwards on a simple white chair, a coffee cup held at the chin with both hands, outfit and backdrop in the same soft tone' },
+    { studio: true,  t: 'the model leans over a piece of office equipment, hair blown sideways by a fan, one hand pressing something flat on its glass' },
+    { studio: false, t: 'the model strides across a styled living room in front of a soft sofa, one bright colour accent at the socks, caught mid-step' },
+    { studio: true,  t: 'the model leans on a round table that is the same saturated colour as the floor and wall, a curved set cut-out behind, chin on hand' },
+    { studio: true,  t: 'the model sits in an office chair with one knee drawn up, a corded retro telephone at the ear, grey seamless behind' },
+    { studio: true,  t: 'the model playfully tugs a long strand of yarn toward the lens, a ball of yarn on the floor, weight thrown back' },
+    { studio: true,  t: 'a symmetrical frame: the model sits centred behind a long white table, a neat row of small objects running toward the lens' },
+    { studio: true,  t: 'the model sits on the floor beside a retro boombox and scattered photos, legs folded to one side, pastel set' },
+    { studio: true,  t: 'a close half-body portrait against a warm orange gradient, the model hugging a bag under one arm, looking off to the side' },
+    { studio: true,  t: 'a wide-angle shot with the model\'s open hand thrust toward the lens, exaggerated perspective, the face laughing just behind' },
+    { studio: true,  t: 'the model squats on a small stool in a set where floor and wall are one saturated colour, elbows on knees, direct stare' },
+    { studio: true,  t: 'the model sits on a wooden chair in a two-tone grey studio, one leg crossed high, a painted floor line running past' },
+    { studio: true,  t: 'the model stands beside a giant sculptural paper flower taller than the body, arms lifted lightly, on a pale reflective floor' },
+    { studio: false, t: 'the model reclines on a bench sunk among blooming flowers in a lush garden, looking straight at the lens' },
+    { studio: true,  t: 'a huge length of bright fabric billows out behind the model like a wing against a single-colour backdrop' },
+    { studio: true,  t: 'the model kneels among retro objects — an old television, a typewriter, a rotary phone — head tilted, magazine-editorial calm' },
+    { studio: true,  t: 'a shower of confetti falls around the model in front of a saturated backdrop, the model laughing with arms spread' },
+    { studio: true,  t: 'the model sits on a clear acrylic chair on a blue seamless set, paper planes caught mid-flight around her' },
+    { studio: true,  t: 'shot from directly overhead, the model looking up into the lens, hair spread out, the floor colour filling the frame' },
+    { studio: true,  t: 'the model stands with one foot up on an office chair, an oversized blazer falling open, grey seamless behind' },
+    { studio: false, t: 'the model stands in a dark doorway beside a vase of flowers, window light falling across one side of the body' },
+    { studio: true,  t: 'a dark room, one coloured gel light grazing the side of the face, the rest falling into shadow' },
+    { studio: true,  t: 'behind-the-scenes framing: light stands and a tripod visible at the edge of the frame, the model relaxed between shots' },
+    { studio: false, t: 'shot from street level looking up, the model framed against tall city buildings and sky' },
+    { studio: true,  t: 'the model holds an object up over one eye with one hand, the other eye looking straight at the lens, deep green backdrop' },
   ];
   // 商品(靜物)的參考手法 —— Clarins 紅底金緞帶、護手霜紅緞帶纏繞、單色堆疊…
   var REF_STILLS = [
@@ -208,7 +237,164 @@
     'a long fold of fabric in one bold colour sweeps behind and under the product',
     'the product rises from a plinth against a smooth sky-like colour gradient',
     'a large soft circle of colour sits behind the product like a halo, everything else clean and pale',
+    // ── 2026-10-24 第二批:Pinterest「產品攝影 創意 2026」抽出的靜物手法 ──
+    'the product balances on top of a playful tower of everyday objects — a teacup, a fork, a ball of yarn — stacked against a pale backdrop',
+    'the product rises from a burst of ruffled ribbon on a glass shelf, sculptural and soft',
+    'everyday objects float mid-air around the product above a coloured table, frozen in a single instant',
+    'the product rests on smooth sculpted white forms like soft rock, lit by a soft window glow',
+    'a hand presses the product against a bare shoulder, skin as the backdrop, warm soft light',
+    'the product is held up in front of one eye by a hand, the face behind softly in shadow',
+    'the product leans against large geometric letter-like shapes and arches in bold flat colours',
+    'the product stands on rugged raw rock, a tiny landscape built around it',
+    'the product sits on a saturated table among sculptural tableware, strong colour blocks in red and green',
+    'a satin ribbon loops through the air above the product, drawing a shape against a pale backdrop',
+    'the product leans on a folded paper triangle backdrop with spools and beads scattered at its feet',
+    'the product sits inside a dark glossy set with a precise mechanical rig above it, one sharp beam of light',
+    'the product stands among stacks of coloured discs and blocks, playful and graphic',
+    'the product is presented on a vintage silver cake stand, slightly raised like a jewel',
+    'the product rests on curved, layered sheets of bent paper casting soft shadows',
+    'the product sits on a plush fur surface next to a single lit candle, warm and tactile',
   ];
+  // ═══════════════════════════════════════════════════════════════════
+  // v2.10 品類手法(2026-10-24,RA 給的 11 個 Pinterest 品類頁:餐飲、生鮮肉品、家電、手持、睫毛、
+  //   保健品、寵物、親子、戶外、瑜珈、髮型)—— 看品牌名/商品名/規格認品類,抽該品類的拍法
+  //   s = 商品(靜物)手法;m = 有人(模特兒)的手法;studio:false 的品類在白棚/極簡海報版型不用;wear:true = 服飾重拍也能用(看得到整件衣服)
+  // ═══════════════════════════════════════════════════════════════════
+  var CAT_RULES = [
+    ['meat',       /和牛|漁|牛排|牛肉|豬肉|雞肉|羊肉|肉品|生鮮|海鮮|魚|蝦|蟹|wagyu|beef|pork|steak|lamb|seafood|salmon|fish/i],
+    ['pet',        /寵物|貓|狗|犬|毛孩|飼料|pet|dog|cat\b|puppy|kitten/i],
+    ['lash',       /睫毛|眼線|眉|彩妝|美妝|化妝|唇|lash|mascara|brow|makeup|cosmetic|lipstick/i],
+    ['hair',       /美髮|髮|理髮|剪髮|barber|hair|salon/i],
+    ['yoga',       /瑜珈|瑜伽|皮拉提斯|健身|運動內衣|yoga|pilates|fitness|gym|leggings/i],
+    ['outdoor',    /戶外|露營|登山|野餐|outdoor|camping|hiking|trail/i],
+    ['family',     /親子|兒童|童裝|寶寶|嬰|幼|媽媽|kids?\b|baby|toddler|family/i],
+    ['supplement', /保健|益生菌|膠原|維他命|維生素|魚油|葉黃素|錠|膠囊|supplement|vitamin|probiotic|collagen|capsule/i],
+    ['appliance',  /家電|電器|吹風機|吸塵|電鍋|快煮壺|水壺|風扇|清淨機|烤箱|氣炸|果汁機|appliance|vacuum|kettle|blender|fryer|purifier|dryer/i],
+    ['food',       /食|餐|麵|飯|甜點|蛋糕|麵包|茶|咖啡|飲|醬|零食|餅|巧克力|果|food|snack|coffee|tea\b|cake|bakery|sauce|chocolate|drink/i],
+    ['handheld',   /保養|精華|乳液|面霜|香水|護手|身體乳|serum|cream|lotion|perfume|skincare|fragrance/i]
+  ];
+  var CAT_ART = {
+    food: { s: [
+      'shot from directly overhead on a red cloth, hands reaching in to serve, the table set around the product',
+      'a dark moody tabletop with one low side light, deep shadows, every surface of the food glistening',
+      'hard sun through window blinds lays stripes of light across the table and the product',
+      'a spoon lifts one bite toward the lens, the rest of the table soft behind it',
+      'chopsticks lift a portion up into the air against a solid orange backdrop',
+      'an overhead table setting where plates, glasses and linen share one warm colour story',
+      'the product with a glass of wine and one candle beside it, soft drapery behind, evening warmth',
+      'the product sits on a plinth-like block beside a drink, block and backdrop in one tone'
+    ] },
+    meat: { s: [
+      'two hands in dark sleeves hold the cut toward the lens against pure black, every line of marbling sharp',
+      'the cut sears and steams on a hot surface, a low backlight catching the rising smoke',
+      'slices fan out on a dark stone plate with fresh herbs, moody side light',
+      'raw slices lie on a wooden board over drifting cold mist, a few small edible flowers',
+      'a single cut on a green marble pedestal against a soft sage backdrop',
+      'shot from overhead on a pale blue table: the cuts on white plates with herbs and little dishes, airy and fresh',
+      'a hand sets the cut onto a white plate on a dark wooden table, warm low light',
+      'thin slices drape and tumble down a stacked tower, caught mid-motion against a warm gradient',
+      'the cut lies on parchment over white linen with cracked pepper and garlic, soft daylight'
+    ] },
+    appliance: { s: [
+      'the appliance stands on a raw concrete pedestal, a long soft shadow running behind',
+      'arched cut-outs in bold flat colours frame the appliance like a stage',
+      'the appliance caught in use, its moment of action frozen mid-air — steam, a pour, a breeze',
+      'the appliance stands at home in a sunlit living room among real furniture, the light warm and low',
+      'the appliance stands on a black glossy floor, its mirror reflection lying beneath it',
+      'the appliance sits in a real kitchen, fresh ingredients soft and blurred in the foreground'
+    ], m: [
+      'a model lounges beside the appliance in a colour-blocked set, at ease, the appliance in clear view'
+    ], studio: true },
+    handheld: { s: [
+      'an elegant hand holds the product lightly at the fingertips against a clean backdrop',
+      'a hand holds the product up from below into warm light, rising into the frame',
+      'the product floats on a diagonal across the frame, its soft shadow far below',
+      'the product lies on a fold of draped satin that catches the light',
+      'the product rests on a soft snow-white surface under open sky'
+    ] },
+    lash: { s: [
+      'the product held up beside one eye, the lashes in sharp macro just behind it',
+      'a thin streak of light falls across the product and the eyes behind it, the rest in soft shadow'
+    ], m: [
+      'an extreme close-up of one eye, every lash sharp, the skin texture real',
+      'the face lies upside down in the frame, eyes open and looking at the lens',
+      'the wand held just at the lashes, the eye looking up past it',
+      'a thin streak of light falls across the eyes, the rest of the face in soft shadow'
+    ], studio: true },
+    supplement: { s: [
+      'hard sun through blinds lays stripes over the product and the table',
+      'a hand pulls one sachet out of a canvas tote',
+      'the product floats among rising bubbles in clear water',
+      'the product rests in shallow water, rings of ripple spreading around it',
+      'a few capsules spill out beside the product under dappled leaf shadow',
+      'the product is packed into a gym bag beside a towel and a water bottle',
+      'the product stands beside fresh fruit and a glass of water in clear morning light'
+    ] },
+    pet: { s: [
+      'a dog\'s nose leans into the frame toward the product, curious',
+      'a cat sits calmly beside the product on a low pedestal',
+      'a small dog in sunglasses lies beside the product on a pink backdrop',
+      'a minimal set, one small dog sitting still beside the product'
+    ], m: [
+      'the model and a dog face to face, noses almost touching',
+      'a dog leaps mid-air toward a treat in the model\'s raised hand',
+      'the model sits on the floor with a cat curled in the lap, both looking at the lens'
+    ], studio: true, wear: true },
+    family: { s: [
+      'small hands reach in toward the product on a sunny table'
+    ], m: [
+      'a family dressed in one coordinated colour against a single-colour backdrop',
+      'shot from directly above: the family lying in a circle on the floor, heads together, laughing',
+      'a child hangs from a parent\'s arms, both laughing',
+      'parent and child cooking together in a sunny kitchen',
+      'mother and child sit on the floor, the child leaning in close'
+    ], studio: true, wear: true },
+    outdoor: { s: [
+      'the product sits on a rock in a high mountain meadow under open sky',
+      'the product lies on a picnic blanket in long grass, the sun flaring at the edge'
+    ], m: [
+      'the model sits on a wooden fence in a high meadow, wind in the hair',
+      'shot from low in the grass, the model against a deep blue sky',
+      'the model lies in long grass among wildflowers, one arm over the eyes, sun on the face',
+      'a garden sprinkler arcs water behind the model in a green lawn',
+      'the model steps across sea rocks, a bright coastline behind',
+      'the model reclines on a sweep of bright fabric spread over a field',
+      'the model sits in a small rowing boat on a lake, mountains behind'
+    ], studio: false, wear: true },
+    yoga: { s: [
+      'the product rests on a rolled mat in a sunlit studio, a long window shadow across the floor'
+    ], m: [
+      'the model holds a long stretch on a pilates reformer in a pale minimal studio',
+      'hard sun throws the shadow of the pose onto a warm wall',
+      'the model stretches over a large white exercise ball',
+      'a balanced handstand on a pale blue curved set',
+      'the model sits side-on on the mat, calm profile, a few small bottles before her',
+      'the model leans on a white wall holding a water bottle, soft daylight',
+      'a deep lunge in front of a dark teal wall, warm side light'
+    ], studio: true, wear: true },
+    hair: { s: [
+      'the product held beside a glossy head of hair, the strands sharp in the light'
+    ], m: [
+      'a tight profile portrait, the shape of the cut sharp against a plain grey backdrop',
+      'the hair flying from a fan while the face stays calm',
+      'one hand runs through the hair, its gloss catching the light',
+      'a hand holds the hair back to show the shape of the cut, soft white backdrop',
+      'a bold red colour block behind, the hair crisp against it'
+    ], studio: true }
+  };
+  // 模特兒髮型(RA:「目前還有髮型!」)—— 每次換一種,同一品牌的模特兒不會永遠同一顆頭
+  var HAIRS = [
+    'a sleek blunt bob with heavy bangs', 'a slicked-back wet-look style', 'a low sleek bun at the nape',
+    'loose voluminous curls', 'a short tousled crop', 'long straight glossy hair tucked behind one ear',
+    'a high ponytail with face-framing strands', 'a soft wavy shoulder-length cut', 'short tight curls',
+    'a messy half-up bun', 'a sharp asymmetric short cut', 'long hair blown across the face by a fan'
+  ];
+  function _cat(ctx) {
+    var t = [ctx.brand, ctx.subBrand, ctx.product, ctx.spec, ctx.feature].join(' ');
+    for (var i = 0; i < CAT_RULES.length; i++) if (CAT_RULES[i][1].test(t)) return CAT_RULES[i][0];
+    return '';
+  }
+
   // 情境的美術設計表(每個情境 2~3 種講法:配色 / 材質 / 光)—— 全部 28 個情境都有,不擺節慶道具
   var CONTEXT_ART = {
     jp_direct:        { c: ['crisp white and pale paper tones with one clean accent colour'], m: ['fresh paper, cardboard edges and clean cotton'], l: 'bright clean morning daylight' },
@@ -434,7 +620,10 @@
       var placeP = (fsP || pb.scene || LP.place)
         ? 'the product stands on ' + pick(SURFACES) + ' ' + _world(fsP, '') + (lP ? '; ' + lP : '')
         : 'the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its');
-      if (Math.random() < 0.35) placeP += '; ' + pick(REF_STILLS);
+      //  v2.10 品類手法(一半機率):版型沒指定地點 → 品類手法就是整個場景(風格只給色與質感);白棚/極簡海報 → 疊在棚景上
+      var catP = CAT_ART[_cat(ctx)], catS = catP && catP.s && !(LP.place && catP.studio === false) ? pick(catP.s) : '', rP = Math.random();
+      if (catS && rP < 0.5) placeP = LP.place ? placeP + '; ' + catS : catS + (fsP ? ', in the colour and texture of ' + essence(_photoOnly(fsP), 160) : '') + (lP ? '; ' + lP : '');
+      else if (rP < 0.675) placeP += '; ' + pick(REF_STILLS);
       p.push('A new product campaign photograph: ' + placeP + '. ' + (LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + _angle(ANGLES_P) : cap(_angle(ANGLES_P))) + '.');
       if (bfP) p.push('Brand feel: ' + bfP + '.');
       if (ctxTheme.context) p.push(_occasion(ctxTheme.context, false));
@@ -451,7 +640,10 @@
       var LR = LAYOUT_SHOT[ly] || LAYOUT_SHOT[''];
       p.push('The product is the garment in this photo: same cut, fabric, colour, zips, drawstrings and every logo or embroidery exactly as it is. Each print and embroidery stays on the panel where it sits in the photo, so the camera sees it only when that panel faces the lens.');
       //  沒選風格、品牌包也沒寫場景、版型也沒指定地點 → 用舊的 6 張完整場景當備案(RA 認可過的等級)
-      if (!fsR && !LR.place && !LR.frame) {
+      var catR = CAT_ART[_cat(ctx)], catM = catR && catR.m && catR.wear && (catR.studio || !LR.place) ? catR.m : null;  // 只用看得到整件衣服的品類(睫毛大特寫、髮型側臉看不到衣服)
+      if (catM && Math.random() < 0.5) {
+        p.push('A new campaign photograph of a young model wearing this garment: ' + pick(catM) + (fsR ? ', in the colour and texture of ' + essence(_photoOnly(fsR), 160) : '') + '.' + (LR.frame ? ' ' + cap(LR.frame.replace(/the subject/g, 'the model')) + '.' : ''));
+      } else if (!fsR && !LR.place && !LR.frame) {
         p.push('A new fashion campaign photograph of a young model wearing this garment: ' + (Math.random() < 0.5 ? pick(RESHOOTS) : 'in ' + pick(WORLDS) + ', ' + pick(POSES) + '; ' + pick(ANGLES_M) + '; ' + pick(MOMENTS)) + '.');
       } else {
         var refPool = LR.place ? REF_SHOTS.filter(function (x) { return x.studio; }) : REF_SHOTS;
@@ -463,6 +655,7 @@
           p.push('A new fashion campaign photograph of a young model wearing this garment, ' + wR + (lR ? '; ' + lR : '') + '. The model is ' + _pose() + '. ' + (LR.frame ? cap(LR.frame.replace(/the subject/g, 'the model')) + '; ' : '') + cap(_angle(ANGLES_M)) + '.');
         }
       }
+      if (Math.random() < 0.6) p.push('Hair: ' + pick(HAIRS) + '.');
       p.push('Everything else the model wears is plain, unbranded everyday basics, so the garment is the only branded piece in the picture.');
       if (bfR) p.push('Brand feel: ' + bfR + '.');
       if (ctxTheme.context) p.push(_occasion(ctxTheme.context, true));
@@ -532,5 +725,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.9 精簡廣告圖提示詞已載入');
+  console.log('[AD_LEAN] v2.10 精簡廣告圖提示詞已載入(品類手法)');
 })();
