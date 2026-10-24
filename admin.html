@@ -1660,6 +1660,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   <div class="tab" onclick="switchTab('suborder')">訂閱管理</div>
   <div class="tab" onclick="switchTab('referral')">推薦分潤</div>
   <div class="tab" onclick="switchTab('apikey')">API 金鑰</div>
+  <div class="tab" onclick="switchTab('pron')">發音詞彙</div>
   <div class="tab" onclick="switchTab('logs')">🧯 紀錄</div>
 </div>
 
@@ -1864,6 +1865,26 @@ tr:hover td { background: rgba(124,109,250,0.04); }
       <button class="btn-refresh" style="margin-left:8px" onclick="navigator.clipboard.writeText(document.getElementById('akNewKey').textContent)">複製</button>
     </div>
     <div class="table-wrap" id="akBody"><div class="empty-state"><p>載入中...</p></div></div>
+  </div>
+
+  <!-- 🗣 2026-10-24 發音詞彙:KOL 影片台詞念錯的字,在這裡自己加替換(像 iPhone 文字替換) -->
+  <div class="section" id="sec-pron">
+    <div class="section-header">
+      <h2>發音詞彙(KOL 影片念錯字自己修)</h2>
+      <button class="btn-refresh" onclick="loadPron()">重新整理</button>
+    </div>
+    <div style="font-size:12px;color:var(--t3);line-height:1.8;margin:6px 0 12px">
+      影片裡 KOL 把某個詞念錯了,就在這裡加一條:台詞裡的「原本的詞」送給 AI 時,會改寫成「改成這樣念」。<b>畫面上的字不會變</b>,只影響念法。<br>
+      訣竅:換成同音、常見、不會念錯的字(例:蝦皮 → 蝦啤)。KOL 工作室和蝦皮小幫手一起生效,約 2 分鐘後、重新整理頁面就會套用。
+    </div>
+    <div style="padding:4px 0 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input id="prWord" placeholder="原本的詞(例:蝦皮)" style="padding:8px 10px;width:150px">
+      <span>→</span>
+      <input id="prSay" placeholder="改成這樣念(例:蝦啤)" style="padding:8px 10px;width:150px">
+      <input id="prNote" placeholder="備註(例:念成蝦版)" style="padding:8px 10px;min-width:180px">
+      <button class="btn-refresh" onclick="savePron()">＋ 加入／更新</button>
+    </div>
+    <div class="table-wrap" id="prBody"><div class="empty-state"><p>載入中...</p></div></div>
   </div>
 
   <!-- 🧯 2026-10-21 錯誤紀錄 / 生成紀錄(內容由 admin-logs.js 畫) -->
@@ -2421,7 +2442,7 @@ async function bootAdmin() {
 }
 
 function switchTab(name) {
-  const tabs = ['brands','products','folders','delivers','memory','apply','staff','topup','suborder','referral','apikey','logs'];
+  const tabs = ['brands','products','folders','delivers','memory','apply','staff','topup','suborder','referral','apikey','pron','logs'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
@@ -2433,6 +2454,7 @@ function switchTab(name) {
   if (name==='suborder') loadSubOrders();
   if (name==='referral' && window.RefAdmin) RefAdmin.load();
   if (name==='apikey') loadApiKeys();
+  if (name==='pron') loadPron();
   if (name==='logs' && window.AdminLogs) AdminLogs.load();
   _updateSaveHint(name);
 }
@@ -2498,6 +2520,44 @@ async function createApiKey() {
     loadApiKeys();
   } catch (e) { alert('建立失敗:' + e.message); }
 }
+/* ═══ 🗣 發音詞彙(kol-proxy v6.33) ═══ */
+function _prRender(j) {
+  const box = document.getElementById('prBody');
+  if (!j || !j.ok) { box.innerHTML = '<div class="empty-state"><p>載入失敗:' + _akEsc((j && j.error) || '') + '</p></div>'; return; }
+  const mine = j.rows || [], mineWords = mine.map(r => r.word);
+  let h = '<table><thead><tr><th>原本的詞</th><th>改成這樣念</th><th>備註</th><th>來源</th><th></th></tr></thead><tbody>';
+  mine.forEach(r => {
+    h += '<tr><td><b>' + _akEsc(r.word) + '</b></td><td>' + _akEsc(r.say) + '</td><td>' + _akEsc(r.note || '') + '</td><td>你加的</td>'
+      + '<td><button class="btn-refresh" data-w="' + _akEsc(r.word) + '" onclick="delPron(this.dataset.w)">刪除</button></td></tr>';
+  });
+  (j.builtin || []).forEach(p => {
+    const over = mineWords.indexOf(p[0]) !== -1;
+    h += '<tr style="opacity:.55"><td>' + _akEsc(p[0]) + '</td><td>' + _akEsc(p[1]) + '</td><td></td><td>系統內建' + (over ? '(已被你的設定取代)' : '') + '</td><td></td></tr>';
+  });
+  if (!mine.length && !(j.builtin || []).length) h += '<tr><td colspan="5">還沒有詞彙</td></tr>';
+  box.innerHTML = h + '</tbody></table>';
+}
+async function loadPron() {
+  const box = document.getElementById('prBody'); if (!box) return;
+  box.innerHTML = '<div class="empty-state"><p>載入中...</p></div>';
+  try { _prRender(await _akCall('pron_list')); } catch (e) { _prRender({ ok: false, error: e.message }); }
+}
+async function savePron() {
+  const w = (document.getElementById('prWord').value || '').trim(), s2 = (document.getElementById('prSay').value || '').trim();
+  if (!w || !s2) { alert('兩格都要填:原本的詞、改成這樣念'); return; }
+  if (w === s2) { alert('「改成這樣念」要跟原本的詞不一樣'); return; }
+  try {
+    const j = await _akCall('pron_save', { word: w, say: s2, note: (document.getElementById('prNote').value || '').trim() });
+    if (!j.ok) { alert('存不進去:' + (j.error || '')); return; }
+    ['prWord', 'prSay', 'prNote'].forEach(id => { document.getElementById(id).value = ''; });
+    _prRender(j);
+  } catch (e) { alert('存不進去:' + e.message); }
+}
+async function delPron(w) {
+  if (!confirm('刪除「' + w + '」這條?')) return;
+  try { _prRender(await _akCall('pron_del', { word: w })); } catch (e) { alert('刪不掉:' + e.message); }
+}
+
 async function revokeApiKey(prefix) {
   if (!confirm('撤銷後,使用這把金鑰的系統會立刻失效。確定撤銷 ' + prefix + '…?')) return;
   const j = await _akCall('apikey_revoke', { prefix: prefix });
