@@ -14,7 +14,11 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.9-auto';
+  var VER = 'v2.0-relight';
+  //  🧴 v2.0(2026-10-24)舊臉重新打光:防油光規則是後來才加進 KOL 產生器的,之前生的臉照(例:欣怡 6/30)
+  //   本身就是強烈陽光+油亮高光;影片規則是「皮膚照參考照原樣」→ 臉照油,影片就油。
+  //   這顆按鈕用 Kontext 只換光、不換人,換完再照常生 3/4 + 側臉、用這組存回素材庫(舊的自動清掉)。
+  var RELIGHT_PROMPT = 'Re-photograph this exact same person with the light changed and nothing else: identical face, facial features, bone structure, hair, expression, clothing, head angle and framing. The new light is soft overcast daylight from a nearby window on an ordinary day, low contrast, so the skin reads matte with its own fine texture and only a faint natural sheen at the tip of the nose; the forehead, nose bridge and cheeks carry no bright highlight patches. Lighter everyday makeup with a natural lip colour close to their own. An ordinary phone snapshot exposure with neutral white balance.';
 
   // ══════════════════════════════════════════════════════════════════
   //  🩹 2026-09-07 · 錯誤訊息講人話
@@ -156,6 +160,10 @@
     var picked = el('div', 'font-size:12px;color:#7ee0a0;margin-bottom:10px;min-height:16px;');
     box.appendChild(picked);
 
+    // 🧴 v2.0 舊臉重新打光(臉不變,只換成柔光霧面)
+    var btnRelight = el('button', btnCss('#8a5a1a', true), '先把這張正臉重新打光(臉不變·去油光)');
+    btnRelight.disabled = true; btnRelight.style.opacity = .5; btnRelight.style.marginBottom = '8px';
+    box.appendChild(btnRelight);
     var btnGen = el('button', btnCss('#6c4cf0', true), '② 生成 3/4 + 側臉(鎖臉轉頭)');
     btnGen.disabled = true; btnGen.style.opacity = .5;
     box.appendChild(btnGen);
@@ -305,7 +313,22 @@
       FRONT = url;
       picked.textContent = url ? '✅ 已選正臉:…' + url.slice(-26) : '';
       btnGen.disabled = !url; btnGen.style.opacity = url ? 1 : .5;
+      btnRelight.disabled = !url; btnRelight.style.opacity = url ? 1 : .5;
     }
+    btnRelight.onclick = function () {
+      if (!FRONT) return;
+      var before = FRONT;
+      btnRelight.disabled = true; btnRelight.style.opacity = .5;
+      status.textContent = '重新打光中…(約 10–20 秒,只換光、不換人)';
+      kontext(before, RELIGHT_PROMPT).then(function (u) {
+        setFront(u);
+        cards.innerHTML = '';
+        cards.appendChild(card('打光前', before, null));
+        cards.appendChild(card('打光後', u, null));
+        btnUse.style.display = 'none';
+        status.textContent = '✅ 打光好了 —— 確認是同一個人、不油了,再按 ②;不滿意可以再按一次重打。';
+      }).catch(function (e) { status.textContent = '❌ ' + friendlyErr(e); btnRelight.disabled = false; btnRelight.style.opacity = 1; });
+    };
 
     // 🔧 v0.6:Drive 圖先轉 R2 乾淨網址再當正臉(縮圖只有 w400、fal 抓不動 Drive 網址)
     //   走 Worker 現成的 drive_to_r2(商品照同一條,service account 抓原始全解析度)
