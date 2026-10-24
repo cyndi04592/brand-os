@@ -2334,7 +2334,9 @@ document.addEventListener('DOMContentLoaded', function(){
   };
 })();</script>   <!-- 🧯 2026-10-21 錯誤紀錄表:客人出錯自動記一筆(只看不改,不擋流程) -->
 <script src="voice-modal.js"></script>
-<script src="kol-universal-scenes.js"></script>
+<!-- 🍳 2026-10-24 KOL 影片食譜(13 支 kol-*.js)搬進 kol-proxy,只剩一份:KOL 工作室與蝦皮小幫手用同一份。
+     以後改提示詞改 kol-proxy 檔尾的 _KOL_RECIPE,GitHub 上那幾支 kol-*.js 已不再載入。 -->
+<script src="https://kol-proxy.calm-sunset-6b66.workers.dev/recipe.js"></script>
 <script src="kol-ai-generator.js"></script>
 <script src="kol-character-sheet.js"></script>
 
@@ -11455,26 +11457,7 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
   //  ⚠️ STEP2 與 STEP3 各有一份 snapDur,兩份【必須同時改】——
   //     RA 2026-09-12 鄭重提醒過;兩處定義相同,漏改一處就是半套。
   // ═══════════════════════════════════════════════════════════════════════
-  const CPS = 4.2;   // KolStorywriter v5.18 實測語速(字/秒)
-  const snapDur = (s, dialogue, shotDesc) => {
-    const TIERS = [5, 10, 15];
-    const n = Number(s) || 15;
-    const picked = TIERS.reduce((best, v) => Math.abs(v - n) < Math.abs(best - n) ? v : best, 15);
-    //  ⏱ 2026-09-19 分鏡已經【分時段】(例:(0-2秒)…(5-15秒)她一邊說話)→ 秒數就是分鏡卡的秒數,不准再縮。
-    //   病(RA 實測妞妞露營片):卡片 15 秒、寫「5-15 秒開口」,這裡用舊語速 4.2 算出 47 字只要 11 秒
-    //   → 縮成 10 秒 → 算力機拿到「10 秒的片卻說 5-15 秒講話」→ 自己亂排,1.8 秒就開口;
-    //   字幕照分鏡去 5 秒找聲音 → 前 3 秒整段錯過。分時段的秒數是分鏡 AI 算好的,這裡不該再猜。
-    //   ⚠️ STEP2 / STEP3 兩份同時改(同一段文字)。
-    if (/[((]\s*\d{1,2}\s*[-–~]\s*\d{1,2}\s*秒/.test(String(shotDesc || ''))) return picked;
-    const line = String(dialogue || '').replace(/[\s「」『』""]/g, '');
-    if (!line) return picked;                      // 空鏡/無台詞:照使用者選的
-    const CPS = 4.2;                               // KolStorywriter v5.18 實測語速
-    const need = line.length / CPS;                // 台詞講完需要幾秒
-    let fit = TIERS.find(v => v >= need) || 15;    // 往上取一階
-    const idx = TIERS.indexOf(fit);
-    if (idx > 0 && need <= fit * 0.75) fit = TIERS[idx - 1];   // 空太多就降一階
-    return Math.min(picked, fit);                  // 不超過使用者選的長度
-  };
+  // 🍳 2026-10-24 snapDur 搬進食譜 KolRecipe.snapDur(STEP3 與蝦皮小幫手共用同一支)
 
   const epSeedOn  = document.getElementById('ep-seed-toggle')?.classList.contains('on');
   const epSeedRaw = (document.getElementById('ep-seed-value')?.value || '').trim();
@@ -11492,59 +11475,14 @@ async function runEpisodeStitch(persona, beats, product, sceneId, movementId, to
   _P3.step(0, '正在取得 KOL 乾淨素材 (3/3 側面)…');
   _angleUrls.profile = await resolveKolImageUrl(persona.persona_name, kolImageUrl, 'profile');
   _P3.step(1, '素材就緒,正在鎖定服裝與場景參考圖…');
-  const _detectAngle = (t) => {
-    t = t || '';
-    if (/側臉|側面|側拍|profile/i.test(t)) return 'profile';
-    if (/3\/4|3-4|斜側|斜角|three.?quarter/i.test(t)) return 'q34';
-    return 'front';
-  };
 
   const prevArc = { ...S.storyArc };
   S.storyArc = { ...S.storyArc, tone };
-  // B 版精簡敘事(預設·唯一路徑):組真實度共用區塊一次 + 每段只放靈魂(動作+台詞)
-  const _shared = (typeof composeStitchShared === 'function')
-    ? composeStitchShared(S.currentBrandId, sceneId, locationId, '15',
-        { outfitBrand: chosenOutfitBrand || undefined, episode: { persona, product },
-          sceneImageUrl: S.episodeCustomSceneUrl || '' })   // 🏢 2026-08-23:同 STEP2,兩邊一起改
-    : null;
-  const plan = beats.map((b) => {
-    //  🗣 2026-09-14:台詞直傳,不再併進鏡頭文字(理由與 STEP2 同一處註解)。
-    //   ⚠️ 這兩處必須一起改 —— 只改一邊,另一條路就還會把鏡頭欄的引號念出來。
-    const shot = (b.shotDesc || '');
-    const sit = shot
-      + (b.dialogue ? `。${persona.persona_name || '主角'}對著畫面外那個人說:「${b.dialogue}」` : '');
-    let p;
-    if (_shared) {
-      // B 版:真實度/商品/服裝全鎖在 shared,這裡只放這一格的動作+台詞
-      p = composeStitchBeat(shot, persona, b.dialogue || '', snapDur(b.seconds, b.dialogue, b.shotDesc), b.dialogueTime || '');
-      if (!p) p = sit;
-    } else {
-      // A 版(現狀)
-      const opts = {
-        outfitBrand: chosenOutfitBrand || undefined,
-        forceSingleShot: true,
-        episode: {
-          persona: {
-            persona_name: persona.persona_name, gender: persona.gender, nationality: persona.nationality,
-            background: persona.background, personality: persona.personality, speaking_style: persona.speaking_style,
-            role_relationship: persona.role_relationship, signature_topics: persona.signature_topics,
-            taboo_words: persona.taboo_words, forbidden_topics: persona.forbidden_topics,
-          },
-          product,
-          situation: sit,
-        },
-      };
-      p = composeSeedancePrompt(S.currentBrandId, sceneId, locationId, null, String(snapDur(b.seconds, b.dialogue, b.shotDesc)), opts);
-      if (!p) p = sit;
-      if (!/consistent facial features/i.test(p)) {
-        p += ', consistent facial features and identity preserved from reference image, same person throughout';
-      }
-      if (!/relative to her face/i.test(p)) {
-        p += ', the product package is a small real-world snack item no taller than the length of her hand; keep it at this small size and the same scale relative to her face in every shot; it rests on the desk or is held loosely in one hand, never lifted toward the camera, never enlarged to fill the frame, never occupying more than a small part of the frame, and its size never changes between shots';
-      }
-    }
-    const _ang = b.angle || _detectAngle(b.shotDesc);
-    return { prompt: p, durationSec: snapDur(b.seconds, b.dialogue, b.shotDesc), seed: runSeed, kolImageUrl: (_angleUrls[_ang] || _angleUrls.front), _angle: _ang, nationality: persona.nationality || 'tw', productUrl: b.productUrl || '' };   // 🆕 1b:把每段綁的商品照帶進接片
+  // 🍳 2026-10-24 分鏡卡 → plan 改由食譜(kol-proxy /recipe.js 的 KolRecipe)組,蝦皮小幫手伺服器用的是同一支
+  const { shared: _shared, plan } = KolRecipe.buildEpisodePlan({
+    beats, persona, product, brandId: S.currentBrandId, sceneId, locationId,
+    outfitBrand: chosenOutfitBrand, sceneImageUrl: S.episodeCustomSceneUrl || '',
+    angleUrls: _angleUrls, seed: runSeed,
   });
   S.storyArc = prevArc;
 
@@ -11750,21 +11688,9 @@ async function runPostsGeneration(persona, product, situation, sceneId, movement
   
 </script>
 
-<script src="kol-crew-director.js"></script>
-<script src="kol-brand-soul.js"></script>
 <!-- ⚖️ 2026-08-19 合規守門:必須在 kol-storywriter.js 之前載入
      (storywriter 打包台詞請求時會讀 window.KolCompliance) -->
-<script src="kol-compliance.js"></script>
-<script src="kol-product.js"></script>
-<script src="kol-environment.js"></script>
-<script src="kol-cinematographer.js"></script>
-<script src="kol-makeup.js"></script>
-<script src="kol-wardrobe.js"></script>
-<script src="kol-colorboard.js"></script>
-<script src="kol-persona.js"></script>
-<script src="kol-storywriter.js"></script>
 <script src="kol-storyboard-panel.js"></script>
-<script src="kol-stitch.js"></script>
 <script src="kol-subtitle.js"></script><!-- 🔤 2026-09-19 加上字幕(成品下方按鈕·扣點·原片保留) -->
 <!-- 🔇 2026-09-05 停止載入 kol-engine-kling.js(檔案保留在 repo,只是不載)
      ★ 原因一(白標):它一載入就 console.log 印出引擎廠商名,
