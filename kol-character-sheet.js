@@ -14,7 +14,12 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.0-relight';
+  var VER = 'v2.1-matte';
+  //  🧴 v2.1(2026-10-24)轉頭改用 nano-banana-2(Worker 現成的 nanobanana_compose,不動 Worker)
+  //   病(實測欣怡):正臉打光後已經霧面,但 Kontext 一轉頭就把油光加回臉頰、額頭、鼻子 ——
+  //   換了四種講法(同光、霧面、蜜粉、陰天)都只是時好時壞;同一張正臉餵 nano-banana-2 連三次都是霧面、同一人、側臉夠側。
+  //   所以油光在「建立 KOL 時」就擋住:新客戶建角色走的 autoRun 也是這顆按鈕,一樣吃新引擎。
+  //   打光(🧴)仍用 Kontext —— 它只換光、正臉實測穩定。
   //  🧴 v2.0(2026-10-24)舊臉重新打光:防油光規則是後來才加進 KOL 產生器的,之前生的臉照(例:欣怡 6/30)
   //   本身就是強烈陽光+油亮高光;影片規則是「皮膚照參考照原樣」→ 臉照油,影片就油。
   //   這顆按鈕用 Kontext 只換光、不換人,換完再照常生 3/4 + 側臉、用這組存回素材庫(舊的自動清掉)。
@@ -81,11 +86,14 @@
            p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
   }
 
+  //  v2.1 轉頭提示詞:講「同一場拍攝」的事實 —— 同光、同霧面皮膚、同衣服背景,只有頭的角度不同。
+  //   (舊版寫 woman → 男 KOL 也被叫成女的;寫 do NOT smooth → 模型反而把皮膚做得更亮更油)
+  var SAME_SHOOT = 'Same person, same photo session: identical face, facial features, hair, makeup, accessories, clothing and background, the same soft overcast window light and the same matte skin with fine pores as in the photo. An ordinary real photograph, same framing and size.';
   var ANGLES = [
     { key: 'q34', label: '3/4',
-      prompt: 'Turn this exact same woman to a three-quarter view, her head rotated about 35 degrees to the side, keeping her identical face, identical facial features, identical hair and identical skin texture — only change the head angle, do NOT beautify or smooth the skin, keep it photographic and real' },
+      prompt: 'Show this exact person from a three-quarter view, the head turned about 35 degrees to the side. ' + SAME_SHOOT },
     { key: 'profile', label: '側臉',
-      prompt: 'Rotate this exact same woman to a TRUE 90-degree side profile, her face turned fully to the side so we see only one side of her face, the bridge and tip of her nose forming a clear silhouette against the background, only the near eye and cheek visible, NOT a three-quarter view — keep her identical face, identical facial features, identical hair and identical skin texture, do NOT beautify or smooth the skin, keep it photographic and real' }
+      prompt: 'Show this exact person in a true 90-degree side profile, the face turned fully sideways so the far eye is hidden and the nose forms a clear silhouette against the background. ' + SAME_SHOOT }
   ];
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -130,6 +138,18 @@
       return _csToR2(d.images[0].url);   // 🪣 顯示之前先轉存自家 R2
     });
   }
+  // 🧴 v2.1 轉頭專用:nano-banana-2 edit(皮膚維持霧面,見檔頭說明);一樣轉存自家 R2
+  function turnHead(imageUrl, prompt) {
+    var kai = K();
+    return fetch(kai.WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: kai.PASSWORD, action: 'nanobanana_compose', image_urls: [imageUrl], prompt: prompt, num_images: 1 })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.ok || !d.images || !d.images.length) throw new Error(d.error || '轉頭失敗');
+      return _csToR2(d.images[0].url);
+    });
+  }
 
   function el(tag, css, html) { var e = document.createElement(tag); if (css) e.style.cssText = css; if (html != null) e.innerHTML = html; return e; }
   function btnCss(bg, big) {
@@ -144,7 +164,7 @@
 
     var box = el('div', 'margin-top:18px;padding:14px;border:1px solid #2e2e3a;border-radius:12px;background:#16161d;');
     box.id = 'cs-box';
-    box.appendChild(el('div', 'font-weight:700;color:#cdb4ff;margin-bottom:4px;', '🎬 多角度人物表 <span style="font-size:11px;color:#888;">Kontext 鎖臉 · ' + VER + '</span>'));
+    box.appendChild(el('div', 'font-weight:700;color:#cdb4ff;margin-bottom:4px;', '🎬 多角度人物表 <span style="font-size:11px;color:#888;">鎖臉轉頭 · ' + VER + '</span>'));
     box.appendChild(el('div', 'font-size:12px;color:#9a9aa8;line-height:1.6;margin-bottom:10px;',
       '挑一張滿意的<b>正臉</b> → 一鍵用 Kontext「鎖臉轉頭」生 3/4 + 側臉。<br>是<b>編輯真圖換角度</b>、不是重生成 → 不磨皮、不換人。「用這組」會把三張<b>存進素材庫</b>(永久,不怕網址過期)。'));
 
@@ -196,7 +216,7 @@
         brandId: c.brandId, personaName: c.persona, imageUrl: url,
         filename: c.persona + '_sheet_' + angleKey + '_' + _stamp() + '.jpg',
         outfit: '', toProcessed: true,
-        metadata: { source: 'flux_kontext', angle: angleKey, generated_at: new Date().toISOString() }
+        metadata: { source: angleKey === 'front' ? 'flux_kontext' : 'nano_banana_2', angle: angleKey, generated_at: new Date().toISOString() }
       });
     }
 
@@ -528,7 +548,7 @@
         rb.onclick = function () {
           var ang = ANGLES.filter(function (a) { return a.key === angleKey; })[0];
           rb.textContent = '…生成中'; rb.disabled = true;
-          kontext(FRONT, ang.prompt).then(function (url2) {
+          turnHead(FRONT, ang.prompt).then(function (url2) {
             RESULTS[angleKey] = url2; img.src = url2;
 
             var oldId = SAVED_IDS[angleKey];
@@ -558,11 +578,11 @@
     btnGen.onclick = function () {
       if (!FRONT) return;
       btnGen.disabled = true; btnGen.style.opacity = .5;
-      status.textContent = '🎬 Kontext 鎖臉轉頭中…(約 10–20 秒)';
+      status.textContent = '🎬 鎖臉轉頭中…(約 15–30 秒)';
       cards.innerHTML = ''; btnUse.style.display = 'none';
       btnUse.disabled = false; btnUse.style.background = '#1f9d57'; btnUse.textContent = '✅ 用這組當人物表(存進素材庫)';
       RESULTS = { front: FRONT, q34: null, profile: null };
-      Promise.all(ANGLES.map(function (a) { return kontext(FRONT, a.prompt).then(function (u) { RESULTS[a.key] = u; }); }))
+      Promise.all(ANGLES.map(function (a) { return turnHead(FRONT, a.prompt).then(function (u) { RESULTS[a.key] = u; }); }))
         .then(function () {
           cards.appendChild(card('正臉(原圖)', RESULTS.front, null));
           cards.appendChild(card('3/4', RESULTS.q34, 'q34'));
