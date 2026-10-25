@@ -28,7 +28,8 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.1';
+  var VER = 'v2.2';
+  //  v2.2:畫面有人的廣告圖(服飾穿搭、美業…)改用「模特兒運鏡」4 種:轉身回頭、走兩步、由下往上、穿搭細節(RA 2026-10-25)
   //  v2.1(RA 選「兩個都做」,實測後調整):
   //   · 客人在視窗裡的商品照上「點一下 logo」(可跳過)→ 從原圖以那一點為中心切兩張(近、中)→ 分鏡拍品牌標時指名照那張
   //   · 沒點 → 退回 v1.8 四格裁切
@@ -140,6 +141,59 @@
     }
     return { status: 'TIMEOUT' };
   }
+
+  // ── v2.2 模特兒運鏡(畫面有人時用)───────────────────────────────
+  var MOVES_MD = [
+    { key: 'md_turn', label: '轉身回頭(推薦)', hint: '她慢慢轉身,再回頭看鏡頭',
+      s10: [
+        '[00:00-00:03] Her full outfit in frame from a slightly tilted angle, the camera easing slowly toward her as she stands relaxed.',
+        '[00:03-00:06] She turns slowly away from the camera, the clothing swinging and settling with the turn.',
+        '[00:06-00:10] She looks back over her shoulder toward the camera with a calm, easy expression, the camera rolling smoothly to level and settling at a mid shot.'
+      ],
+      s15: [
+        '[00:00-00:04] Her full outfit in frame from a slightly tilted angle, the camera easing slowly toward her as she stands relaxed.',
+        '[00:04-00:08] She turns slowly away from the camera, the clothing swinging and settling with the turn.',
+        '[00:08-00:11] {{DETAIL}}',
+        '[00:11-00:15] She looks back over her shoulder toward the camera with a calm, easy expression, the camera rolling smoothly to level and settling at a mid shot.'
+      ] },
+    { key: 'md_walk', label: '走兩步', hint: '她朝鏡頭走兩步,衣服跟著動',
+      s10: [
+        '[00:00-00:04] She walks two unhurried steps toward the camera, the fabric moving with each step, the camera gliding backward ahead of her.',
+        '[00:04-00:07] She stops at a mid shot and shifts her weight onto one leg.',
+        '[00:07-00:10] The camera eases around her to a slight side angle, light sliding across the fabric.'
+      ],
+      s15: [
+        '[00:00-00:05] She walks a few unhurried steps toward the camera, the fabric moving with each step, the camera gliding backward ahead of her.',
+        '[00:05-00:08] She stops at a mid shot and shifts her weight onto one leg.',
+        '[00:08-00:11] {{DETAIL}}',
+        '[00:11-00:15] The camera eases around her to a slight side angle, light sliding across the fabric.'
+      ] },
+    { key: 'md_tilt', label: '由下往上', hint: '從鞋子慢慢往上搖到臉',
+      s10: [
+        '[00:00-00:03] Close on her shoes and the hem of her clothes.',
+        '[00:03-00:07] The camera tilts slowly up along her outfit, the fabric texture crisp as it passes.',
+        '[00:07-00:10] It arrives at her face as she glances toward the camera, settling on a portrait framing.'
+      ],
+      s15: [
+        '[00:00-00:04] Close on her shoes and the hem of her clothes.',
+        '[00:04-00:09] The camera tilts slowly up along her outfit, the fabric texture crisp as it passes.',
+        '[00:09-00:11] {{DETAIL}}',
+        '[00:11-00:15] It arrives at her face as she glances toward the camera, settling on a portrait framing.'
+      ] },
+    { key: 'md_detail', label: '穿搭細節', hint: '拉近看布料和品牌細節,再退回全身',
+      s10: [
+        '[00:00-00:03] A mid shot of her outfit, the camera easing in.',
+        '[00:03-00:07] {{DETAIL}}',
+        '[00:07-00:10] The camera pulls back to her full outfit as she shifts her weight and adjusts a sleeve.'
+      ],
+      s15: [
+        '[00:00-00:04] A mid shot of her outfit, the camera easing in.',
+        '[00:04-00:07] An extreme close-up glides across the fabric weave and stitching.',
+        '[00:07-00:11] {{DETAIL}}',
+        '[00:11-00:15] The camera pulls back to her full outfit as she shifts her weight and adjusts a sleeve.'
+      ] }
+  ];
+  function movesFor(people) { return people ? MOVES_MD : MOVES; }
 
   // ── 小工具 ────────────────────────────────────────────────────────
   function el(tag, css, html) { var e = document.createElement(tag); if (css) e.style.cssText = css; if (html != null) e.innerHTML = html; return e; }
@@ -282,6 +336,7 @@
     var nProd = (refs.orig || 0) + ((refs.details && refs.details.length) || 0) + (refs.crops || 0) + (refs.extra || 0);
     var _dl = (refs && refs.details) || [], _br = _dl.filter(function (d) { return d.kind === 'brand'; })[0] || _dl[0];
     var detail = (A_STYLE && _br) ? ('A close detail of its ' + (_br.kind === 'brand' ? 'brand mark' : (_br.label || 'signature detail')) + ', exactly as in [Image' + (2 + (refs.orig ? 1 : 0) + _dl.indexOf(_br)) + '], held steady.')
+      : (A_STYLE && people) ? 'A close detail of the fabric and the logo on the clothing, held steady.'
       : A_STYLE ? 'A close detail of its logo, hardware or signature part, held steady.'
       : nProd >= 2
       ? 'A close detail of its signature marking and stitching, every letter and line exactly as in the product photos, held steady.'
@@ -290,13 +345,17 @@
     var refs = '[Image1] is the finished ad photo: the set, its light, its colours and the product exactly as they look there.'
       + refLines(refs);
     var subject = people
-      ? 'Anyone in [Image1] keeps the same face, hair, clothing and pose style, moving only slightly and naturally.'
+      ? 'The person in [Image1] is the same person throughout: same face, hair, clothing and build, moving naturally like a real model on set.'
       : 'The product is the only subject; the set stays exactly as in [Image1].';
-    var truth = A_STYLE
+    var truth = people
+      ? 'The clothing keeps its true cut, colours, logo and printed details in every frame, hanging and moving with real fabric weight; her face, hair and build stay the same throughout.'
+      : A_STYLE
       ? 'The product keeps its true shape, proportions, colours, logo and printed details in every frame, at its real size, resting with real weight and a soft contact shadow.'
       : 'The product keeps its true shape, proportions, colours and markings exactly as in the photos in every frame, at its real size, resting with real weight and a soft contact shadow.';
     var light = 'All light comes from the set in [Image1]; highlights glide over surfaces as the camera moves, and the product\'s whites stay as bright as the other whites around it.';
-    var look = A_STYLE
+    var look = (A_STYLE && people)
+      ? 'A high-end fashion commercial filmed on a real camera: smooth stabilised moves, natural depth of field, clean frames showing only what is in [Image1].'
+      : A_STYLE
       ? 'A high-end product commercial filmed on a real camera: smooth stabilised moves, natural depth of field, clean frames showing only what is in [Image1].'
       : 'A high-end product commercial filmed on a real cinema camera with bold, confident, smooth camera moves and natural depth of field; every frame shows only what is in [Image1].';
     return (A_STYLE ? [refs, subject, truth, light, look, shots] : [look, shots, refs, subject, truth, light]).join('\n');
@@ -308,17 +367,18 @@
     if (!/^https:\/\//.test(String(LAST_POSTER_URL))) { setPrStatus('⚠️ 這張廣告圖還沒存成網址,請重新生成一次再做影片', 'var(--red)'); return; }
     var old = document.getElementById('amMotionModal'); if (old) old.remove();
 
-    var pick = { move: MOVES[0], sec: 10 };
+    var _ppl = hasPeople(), _moves = movesFor(_ppl);
+    var pick = { move: _moves[0], sec: 10 };
     var mask = el('div', 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;');
     mask.id = 'amMotionModal';
     var box = el('div', 'width:100%;max-width:440px;max-height:90vh;overflow:auto;background:#16161d;border:1px solid #2e2e3a;border-radius:14px;padding:18px;color:#e8e8f0;font-family:"Noto Sans TC",sans-serif;');
     box.appendChild(el('div', 'font-size:16px;font-weight:900;margin-bottom:4px;', '🎬 商品運鏡影片'));
-    box.appendChild(el('div', 'font-size:12px;color:#9a9aa8;margin-bottom:12px;line-height:1.6;', '用剛做好的廣告圖拍成一支有運鏡的商品影片。選一種動法:'));
+    box.appendChild(el('div', 'font-size:12px;color:#9a9aa8;margin-bottom:12px;line-height:1.6;', (_ppl ? '用剛做好的廣告圖拍成一支有運鏡的穿搭影片。選一種動法:' : '用剛做好的廣告圖拍成一支有運鏡的商品影片。選一種動法:')));
 
     var list = el('div', 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;');
     function paintMoves() {
       list.innerHTML = '';
-      MOVES.forEach(function (m) {
+      _moves.forEach(function (m) {
         var on = m.key === pick.move.key;
         var it = el('div', 'padding:9px 11px;border-radius:9px;cursor:pointer;border:1.5px solid ' + (on ? '#7c6dfa' : '#2e2e3a') + ';background:' + (on ? 'rgba(124,109,250,.15)' : 'transparent') + ';',
           '<div style="font-size:13px;font-weight:800;">' + m.label + '</div><div style="font-size:11px;color:#9a9aa8;margin-top:2px;">' + m.hint + '</div>');
@@ -335,7 +395,7 @@
     pick.tap = null;
     var mainPh = lib.filter(function (x) { return x.idx === mainIdx; })[0];
     if (mainPh) {
-      box.appendChild(el('div', 'font-size:12px;color:#cdb4ff;font-weight:800;margin:2px 0 4px;', '在商品照上點一下品牌 logo(可跳過)'));
+      box.appendChild(el('div', 'font-size:12px;color:#cdb4ff;font-weight:800;margin:2px 0 4px;', (_ppl ? '在照片上點一下衣服上的 logo(可跳過)' : '在商品照上點一下品牌 logo(可跳過)')));
       box.appendChild(el('div', 'font-size:11px;color:#9a9aa8;margin-bottom:6px;line-height:1.5;', '點了之後,影片拉近拍 logo 時會照原圖放大,字不會跑掉。'));
       var tapWrap = el('div', 'position:relative;width:100%;margin-bottom:14px;border-radius:9px;overflow:hidden;cursor:crosshair;border:1px solid #2e2e3a;');
       var tapImg = el('img', 'width:100%;height:auto;display:block;');
@@ -496,6 +556,6 @@
   }
   watch();
 
-  window.AdMotion = { VER: VER, flags: function () { return { USE_CROPS: USE_CROPS, USE_EXTRA: USE_EXTRA, A_STYLE: A_STYLE }; }, MOVES: MOVES, buildPrompt: buildPrompt, openPicker: openPicker };
+  window.AdMotion = { VER: VER, MOVES_MD: MOVES_MD, flags: function () { return { USE_CROPS: USE_CROPS, USE_EXTRA: USE_EXTRA, A_STYLE: A_STYLE }; }, MOVES: MOVES, buildPrompt: buildPrompt, openPicker: openPicker };
   console.log('[商品運鏡] ' + VER + ' 就緒 · 「變影片」改走 Seedance 2.0 運鏡(Console 打 window.AD_MOTION=false 退回 Kling)');
 })();
