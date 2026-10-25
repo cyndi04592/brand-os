@@ -14,13 +14,21 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.1-matte';
-  //  🧴 v2.1(2026-10-24)轉頭改用 nano-banana-2(Worker 現成的 nanobanana_compose,不動 Worker)
+  var VER = 'v2.2-owner';
+  //  v2.2(2026-10-25)重新打光改成「後台維修按鈕」:只有管理員看得到。
+  //   理由(RA 拍板):舊臉 29 位已在 10/25 由後台一次處理完;新臉從產生器就防油光,客戶用不到。
+  //   而且打光這一步沒有扣點,開給客戶按 = 我們自付成本。
+  //   判斷方式同 kol.html 的 Admin 入口:localStorage bs_sso_email === 管理員信箱。
+  function _isOwner() {
+    try { return String(localStorage.getItem('bs_sso_email') || '').trim().toLowerCase() === 'cyndi04592@gmail.com'; }
+    catch (e) { return false; }
+  }
+  //  v2.1(2026-10-24)轉頭改用 nano-banana-2(Worker 現成的 nanobanana_compose,不動 Worker)
   //   病(實測欣怡):正臉打光後已經霧面,但 Kontext 一轉頭就把油光加回臉頰、額頭、鼻子 ——
   //   換了四種講法(同光、霧面、蜜粉、陰天)都只是時好時壞;同一張正臉餵 nano-banana-2 連三次都是霧面、同一人、側臉夠側。
   //   所以油光在「建立 KOL 時」就擋住:新客戶建角色走的 autoRun 也是這顆按鈕,一樣吃新引擎。
-  //   打光(🧴)仍用 Kontext —— 它只換光、正臉實測穩定。
-  //  🧴 v2.0(2026-10-24)舊臉重新打光:防油光規則是後來才加進 KOL 產生器的,之前生的臉照(例:欣怡 6/30)
+  //   打光仍用 Kontext —— 它只換光、正臉實測穩定。
+  //  v2.0(2026-10-24)舊臉重新打光:防油光規則是後來才加進 KOL 產生器的,之前生的臉照(例:欣怡 6/30)
   //   本身就是強烈陽光+油亮高光;影片規則是「皮膚照參考照原樣」→ 臉照油,影片就油。
   //   這顆按鈕用 Kontext 只換光、不換人,換完再照常生 3/4 + 側臉、用這組存回素材庫(舊的自動清掉)。
   var RELIGHT_PROMPT = 'Re-photograph this exact same person with the light changed and nothing else: identical face, facial features, bone structure, hair, expression, clothing, head angle and framing. The new light is soft overcast daylight from a nearby window on an ordinary day, low contrast, so the skin reads matte with its own fine texture and only a faint natural sheen at the tip of the nose; the forehead, nose bridge and cheeks carry no bright highlight patches. Lighter everyday makeup with a natural lip colour close to their own. An ordinary phone snapshot exposure with neutral white balance.';
@@ -138,7 +146,7 @@
       return _csToR2(d.images[0].url);   // 🪣 顯示之前先轉存自家 R2
     });
   }
-  // 🧴 v2.1 轉頭專用:nano-banana-2 edit(皮膚維持霧面,見檔頭說明);一樣轉存自家 R2
+  // v2.1 轉頭專用:nano-banana-2 edit(皮膚維持霧面,見檔頭說明);一樣轉存自家 R2
   function turnHead(imageUrl, prompt) {
     var kai = K();
     return fetch(kai.WORKER_URL, {
@@ -180,10 +188,11 @@
     var picked = el('div', 'font-size:12px;color:#7ee0a0;margin-bottom:10px;min-height:16px;');
     box.appendChild(picked);
 
-    // 🧴 v2.0 舊臉重新打光(臉不變,只換成柔光霧面)
-    var btnRelight = el('button', btnCss('#8a5a1a', true), '先把這張正臉重新打光(臉不變·去油光)');
+    // v2.0 舊臉重新打光(臉不變,只換成柔光霧面)· v2.2 只有管理員看得到(維修用)
+    var _owner = _isOwner();
+    var btnRelight = el('button', btnCss('#8a5a1a', true), '🔧 維修:先把這張正臉重新打光(臉不變·去油光)');
     btnRelight.disabled = true; btnRelight.style.opacity = .5; btnRelight.style.marginBottom = '8px';
-    box.appendChild(btnRelight);
+    if (_owner) box.appendChild(btnRelight);
     var btnGen = el('button', btnCss('#6c4cf0', true), '② 生成 3/4 + 側臉(鎖臉轉頭)');
     btnGen.disabled = true; btnGen.style.opacity = .5;
     box.appendChild(btnGen);
@@ -336,7 +345,7 @@
       btnRelight.disabled = !url; btnRelight.style.opacity = url ? 1 : .5;
     }
     btnRelight.onclick = function () {
-      if (!FRONT) return;
+      if (!FRONT || !_isOwner()) return;
       var before = FRONT;
       btnRelight.disabled = true; btnRelight.style.opacity = .5;
       status.textContent = '重新打光中…(約 10–20 秒,只換光、不換人)';
