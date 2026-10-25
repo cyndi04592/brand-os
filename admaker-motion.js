@@ -9,6 +9,9 @@
      · [Image1] = 剛做好的廣告圖(場景、光、商品樣子全部以它為準)
      · [Image2] = 客人原本的商品照(只用來把商品形狀/logo/標籤/顏色校正回來)
      · 運鏡用預設組合(6 種),提示詞只寫「鏡頭怎麼走」與「商品的事實」,不寫禁止句
+     · v1.7:RA 選 A 版 → 回到 v1.0 運鏡與提示詞(1 張商品照、無裁切)。已知取捨:拉近拍品牌標時字可能不準。
+     · v1.6:運鏡分鏡移到提示詞最前面、參考圖說明縮短(RA:加了裁切後運鏡變弱。方法庫 C7「鏡頭寫在最前面」;
+       參考圖段落太長會把鏡頭的份量擠掉,模型就只顧著把商品照抄好、鏡頭不敢動)
      · v1.5(RA 點子):做廣告圖的那張原始商品照,系統自動切成「近、中」好幾張裁切圖一起送 ——
        客人不用多拍、不用多勾,特寫時品牌標、車線都有真圖可抄。裁切是原圖真實像素,不是 AI 補的。
      · v1.4:客人可以在視窗裡多勾幾張同商品的照片(細節、不同角度,最多 5 張)當參考;
@@ -25,7 +28,13 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.5';
+  var VER = 'v1.9';
+  //  v1.9:A 版的「旋轉」原本是抽到的(同提示詞不一定有)→ 質感棚拍明寫鏡頭微傾斜、退出時邊轉邊回正,每次都有
+  //  v1.7(RA 2026-10-25 看完 A/B/C 三版拍板「A 版」—— 會旋轉、停得夠久,就是她拍片的風格)
+  //   → 回到 v1.0 那套:只送 1 張原商品照、提示詞順序與寫法照 v1.0。
+  //   裁切圖(v1.5)與加照片(v1.4)會讓運鏡變保守,先關掉;程式留著,開關在下面。
+  var USE_CROPS = true, USE_EXTRA = false, A_STYLE = true;
+  //  v1.8(RA:要 A 的運鏡,但 logo 不能跑)→ A 版提示詞一字不改,只多送裁切圖,說明只用一句短句(長說明會吃掉運鏡的份量,見 v1.6)
 
   var SEC_COST = 60;                 // 每秒點數(跟 Worker seedance_submit 同一套)
   var BTN_LABEL = '🎬 商品運鏡影片(10 / 15 秒)';
@@ -38,17 +47,17 @@
   var MOVES = [
     { key: 'luxe', label: '質感棚拍(推薦)', hint: '亮相 → 材質特寫 → 細節 → 回到全景,像 MOZ 那支',
       s10: [
-        '[00:00-00:02] The product in full, the camera easing slowly toward it.',
+        '[00:00-00:02] The product in full from a slightly tilted angle, the camera easing slowly toward it.',
         '[00:02-00:05] An extreme close-up glides across its main material, the surface texture crisp as light slides over it.',
         '[00:05-00:07] {{DETAIL}}',
-        '[00:07-00:10] The camera arcs gently back out to the full product, a soft band of light passing across it, settling on a clean hero frame.'
+        '[00:07-00:10] The camera arcs back out around the product while rolling smoothly from a tilted angle to level, a soft band of light passing across it, settling on a clean hero frame.'
       ],
       s15: [
-        '[00:00-00:03] The product in full, the camera easing slowly toward it.',
+        '[00:00-00:03] The product in full from a slightly tilted angle, the camera easing slowly toward it.',
         '[00:03-00:06] An extreme close-up glides across its main material, the surface texture crisp as light slides over it.',
         '[00:06-00:08] {{DETAIL}}',
         '[00:08-00:11] A low angle from the side, the product rising tall in frame.',
-        '[00:11-00:15] The camera arcs gently back out to the full product, a soft band of light passing across it, settling on a clean hero frame.'
+        '[00:11-00:15] The camera arcs back out around the product while rolling smoothly from a tilted angle to level, a soft band of light passing across it, settling on a clean hero frame.'
       ] },
     { key: 'sweep', label: '光影掃過', hint: '商品不動,一道光慢慢掃過去',
       s10: [
@@ -190,11 +199,11 @@
   //  refs = { orig: 0|1, crops: n, extra: n }(舊呼叫傳數字也相容:數字 = 原圖+其他照片張數)
   function refLines(refs) {
     var i = 2, out = '';
-    if (refs.orig) { out += ' [Image' + i + '] is the real product photo: its exact shape, markings and colours.'; i++; }
+    if (refs.orig) { out += A_STYLE ? ' [Image' + i + '] is the same product as a plain photo, used only to keep its exact shape, logo, label and colours.' : ' [Image' + i + '] is the real product photo: its exact shape, markings and colours.'; i++; }
     if (refs.crops) {
       var a = i, b = i + refs.crops - 1;
       out += ' ' + (a === b ? '[Image' + a + '] is a close-up crop' : '[Image' + a + '] to [Image' + b + '] are close-up crops')
-        + ' of that same photo, showing its details at full sharpness; every close-up copies its markings, stitching and materials exactly from them.';
+        + (A_STYLE ? ' of that same photo.' : ' of that same photo, for exact detail in close-ups.');
       i = b + 1;
     }
     if (refs.extra) {
@@ -207,7 +216,8 @@
   function buildPrompt(move, sec, refs, people) {
     if (typeof refs !== 'object' || !refs) { var n = (refs === true) ? 1 : (refs || 0); refs = { orig: n ? 1 : 0, crops: 0, extra: Math.max(0, n - 1) }; }
     var nProd = (refs.orig || 0) + (refs.crops || 0) + (refs.extra || 0);
-    var detail = nProd >= 2
+    var detail = A_STYLE ? 'A close detail of its logo, hardware or signature part, held steady.'
+      : nProd >= 2
       ? 'A close detail of its signature marking and stitching, every letter and line exactly as in the product photos, held steady.'
       : 'A close detail of its stitching, seams or hardware, held steady.';
     var shots = (sec >= 15 ? move.s15 : move.s10).join('\n').replace('{{DETAIL}}', detail);
@@ -216,10 +226,14 @@
     var subject = people
       ? 'Anyone in [Image1] keeps the same face, hair, clothing and pose style, moving only slightly and naturally.'
       : 'The product is the only subject; the set stays exactly as in [Image1].';
-    var truth = 'The product keeps its true shape, proportions, colours and markings exactly as in the photos in every frame, at its real size, resting with real weight and a soft contact shadow.';
+    var truth = A_STYLE
+      ? 'The product keeps its true shape, proportions, colours, logo and printed details in every frame, at its real size, resting with real weight and a soft contact shadow.'
+      : 'The product keeps its true shape, proportions, colours and markings exactly as in the photos in every frame, at its real size, resting with real weight and a soft contact shadow.';
     var light = 'All light comes from the set in [Image1]; highlights glide over surfaces as the camera moves, and the product\'s whites stay as bright as the other whites around it.';
-    var look = 'A high-end product commercial filmed on a real camera: smooth stabilised moves, natural depth of field, clean frames showing only what is in [Image1].';
-    return [refs, subject, truth, light, look, shots].join('\n');
+    var look = A_STYLE
+      ? 'A high-end product commercial filmed on a real camera: smooth stabilised moves, natural depth of field, clean frames showing only what is in [Image1].'
+      : 'A high-end product commercial filmed on a real cinema camera with bold, confident, smooth camera moves and natural depth of field; every frame shows only what is in [Image1].';
+    return (A_STYLE ? [refs, subject, truth, light, look, shots] : [look, shots, refs, subject, truth, light]).join('\n');
   }
 
   // ── 選單視窗 ──────────────────────────────────────────────────────
@@ -253,7 +267,7 @@
     var lib = libraryPhotos(), mainIdx = mainPhotoIdx();
     pick.photos = {};
     if (mainIdx >= 0 && lib.some(function (x) { return x.idx === mainIdx; })) pick.photos[mainIdx] = 1;
-    if (lib.length) {
+    if (USE_EXTRA && lib.length) {
       box.appendChild(el('div', 'font-size:12px;color:#cdb4ff;font-weight:800;margin:2px 0 4px;', '(選填)再加幾張同一個商品的其他角度照'));
       box.appendChild(el('div', 'font-size:11px;color:#9a9aa8;margin-bottom:8px;line-height:1.5;', '系統已自動把這張商品照切成近、中景細節一起送。如果還有<b>同一個商品</b>的其他角度照,可以多勾幾張。'));
       var grid = el('div', 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;max-height:170px;overflow:auto;');
@@ -319,10 +333,10 @@
     try {
       var picked = (prodUrls || []).slice(0, 5);
       var mainUrl = picked[0] || '';
-      setPrStatus('準備商品細節圖(近、中景裁切)...', 'var(--t3)');
-      var cropUrls = mainUrl ? await makeCrops(mainUrl) : [];
+      if (USE_CROPS) setPrStatus('準備商品細節圖(近、中景裁切)...', 'var(--t3)');
+      var cropUrls = (USE_CROPS && mainUrl) ? await makeCrops(mainUrl) : [];
       //  9 張上限:廣告圖 1 + 原圖 1 + 裁切 ≤5 + 其他照片(剩幾格給幾格)
-      var extra = picked.slice(1, 1 + Math.max(0, 9 - 2 - cropUrls.length));
+      var extra = USE_EXTRA ? picked.slice(1, 1 + Math.max(0, 9 - 2 - cropUrls.length)) : [];
       var prods = (mainUrl ? [mainUrl] : []).concat(cropUrls, extra);
       var refs = { orig: mainUrl ? 1 : 0, crops: cropUrls.length, extra: extra.length };
       var people = hasPeople();
@@ -395,6 +409,6 @@
   }
   watch();
 
-  window.AdMotion = { VER: VER, MOVES: MOVES, buildPrompt: buildPrompt, openPicker: openPicker };
+  window.AdMotion = { VER: VER, flags: function () { return { USE_CROPS: USE_CROPS, USE_EXTRA: USE_EXTRA, A_STYLE: A_STYLE }; }, MOVES: MOVES, buildPrompt: buildPrompt, openPicker: openPicker };
   console.log('[商品運鏡] ' + VER + ' 就緒 · 「變影片」改走 Seedance 2.0 運鏡(Console 打 window.AD_MOTION=false 退回 Kling)');
 })();
