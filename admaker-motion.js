@@ -28,7 +28,15 @@
 */
 (function () {
   'use strict';
-  var VER = 'v1.9';
+  var VER = 'v2.1';
+  //  v2.1(RA 選「兩個都做」,實測後調整):
+  //   · 客人在視窗裡的商品照上「點一下 logo」(可跳過)→ 從原圖以那一點為中心切兩張(近、中)→ 分鏡拍品牌標時指名照那張
+  //   · 沒點 → 退回 v1.8 四格裁切
+  //   · AI 自動定位/讀字實測不準(把 moz 讀成 ITDC、FROST,框也偏)→ 先不用,detailCrops 留著
+  //  v2.0(RA:logo 又跑了 → 要抓原商品放大、每個鏡位都有精準參考圖)
+  //   先請 AI 看原商品照,找出「品牌標/字」與招牌細節在照片的哪裡(Worker v6.35 product_detail_boxes),
+  //   再把那幾個位置從原圖精準放大裁切;分鏡拍品牌標時直接指名「照 [ImageK] 一模一樣」。
+  //   AI 定位失敗才退回 v1.8 的四格裁切。
   //  v1.9:A 版的「旋轉」原本是抽到的(同提示詞不一定有)→ 質感棚拍明寫鏡頭微傾斜、退出時邊轉邊回正,每次都有
   //  v1.7(RA 2026-10-25 看完 A/B/C 三版拍板「A 版」—— 會旋轉、停得夠久,就是她拍片的風格)
   //   → 回到 v1.0 那套:只送 1 張原商品照、提示詞順序與寫法照 v1.0。
@@ -167,6 +175,56 @@
     try { var S = window.S || {}; return (S.selPhoto !== null && S.selPhoto !== undefined) ? S.selPhoto : -1; } catch (e) { return -1; }
   }
 
+  // v2.1 以客人點的那一點為中心,從原圖切「近、中」兩張(原圖真實像素)
+  async function tapCrops(url, tap) {
+    var out = [];
+    try {
+      var blob = await fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (x) { if (!x.ok) throw new Error('HTTP ' + x.status); return x.blob(); });
+      var bmp = await createImageBitmap(blob);
+      var W = bmp.width, H = bmp.height, m = Math.min(W, H);
+      var cx = tap.x * W, cy = tap.y * H;
+      var sizes = [[Math.max(260, m * 0.14), 'brand', 'brand mark, seen up close'], [Math.max(480, m * 0.30), 'detail', 'brand mark and the area around it']];
+      for (var k = 0; k < sizes.length; k++) {
+        var side = Math.round(Math.min(sizes[k][0], m));
+        var sx = Math.round(Math.max(0, Math.min(W - side, cx - side / 2)));
+        var sy = Math.round(Math.max(0, Math.min(H - side, cy - side / 2)));
+        var cv = document.createElement('canvas'); cv.width = side; cv.height = side;
+        cv.getContext('2d').drawImage(bmp, sx, sy, side, side, 0, 0, side, side);
+        try { out.push({ url: await uploadToFal(cv.toDataURL('image/jpeg', 0.95)), kind: sizes[k][1], label: sizes[k][2] }); }
+        catch (e) { console.warn('[商品運鏡] logo 裁切上傳失敗(略過):', e.message); }
+      }
+    } catch (e) { console.warn('[商品運鏡] 原圖讀不到,logo 裁切略過:', e.message); }
+    return out;
+  }
+
+  // v2.0 請 AI 找出品牌標與招牌細節的位置,從原圖精準放大裁切(原圖真實像素)
+  async function detailCrops(url) {
+    var out = [];
+    try {
+      var r = await kolPost({ action: 'product_detail_boxes', url: url });
+      var boxes = (r && r.ok && Array.isArray(r.boxes)) ? r.boxes : [];
+      if (!boxes.length) return out;
+      var blob = await fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (x) { if (!x.ok) throw new Error('HTTP ' + x.status); return x.blob(); });
+      var bmp = await createImageBitmap(blob);
+      var W = bmp.width, H = bmp.height;
+      for (var k = 0; k < boxes.length && out.length < 4; k++) {
+        var b = boxes[k];
+        // 框放大 1.8 倍留邊、至少 360 像素見方,中心不動
+        var cx = (b.x + b.w / 2) * W, cy = (b.y + b.h / 2) * H;
+        var side = Math.max(360, Math.max(b.w * W, b.h * H) * 1.8);
+        side = Math.min(side, Math.min(W, H));
+        var sx = Math.round(Math.max(0, Math.min(W - side, cx - side / 2)));
+        var sy = Math.round(Math.max(0, Math.min(H - side, cy - side / 2)));
+        side = Math.round(side);
+        var cv = document.createElement('canvas'); cv.width = side; cv.height = side;
+        cv.getContext('2d').drawImage(bmp, sx, sy, side, side, 0, 0, side, side);
+        try { out.push({ url: await uploadToFal(cv.toDataURL('image/jpeg', 0.95)), kind: b.kind, label: b.label }); }
+        catch (e) { console.warn('[商品運鏡] 細節圖上傳失敗(略過):', e.message); }
+      }
+    } catch (e) { console.warn('[商品運鏡] 細節定位失敗,改用四格裁切:', e.message); }
+    return out;
+  }
+
   // v1.5 把原始商品照切成「中景 + 四個角落近景」(原圖真實像素,不放大不重畫)
   async function makeCrops(url) {
     var out = [];
@@ -200,6 +258,12 @@
   function refLines(refs) {
     var i = 2, out = '';
     if (refs.orig) { out += A_STYLE ? ' [Image' + i + '] is the same product as a plain photo, used only to keep its exact shape, logo, label and colours.' : ' [Image' + i + '] is the real product photo: its exact shape, markings and colours.'; i++; }
+    if (refs.details && refs.details.length) {
+      refs.details.forEach(function (d) {
+        out += ' [Image' + i + '] is a close-up of its ' + (d.label || (d.kind === 'brand' ? 'brand mark' : 'detail')) + ', cut straight from the real photo.';
+        d.idx = i; i++;
+      });
+    }
     if (refs.crops) {
       var a = i, b = i + refs.crops - 1;
       out += ' ' + (a === b ? '[Image' + a + '] is a close-up crop' : '[Image' + a + '] to [Image' + b + '] are close-up crops')
@@ -215,8 +279,10 @@
 
   function buildPrompt(move, sec, refs, people) {
     if (typeof refs !== 'object' || !refs) { var n = (refs === true) ? 1 : (refs || 0); refs = { orig: n ? 1 : 0, crops: 0, extra: Math.max(0, n - 1) }; }
-    var nProd = (refs.orig || 0) + (refs.crops || 0) + (refs.extra || 0);
-    var detail = A_STYLE ? 'A close detail of its logo, hardware or signature part, held steady.'
+    var nProd = (refs.orig || 0) + ((refs.details && refs.details.length) || 0) + (refs.crops || 0) + (refs.extra || 0);
+    var _dl = (refs && refs.details) || [], _br = _dl.filter(function (d) { return d.kind === 'brand'; })[0] || _dl[0];
+    var detail = (A_STYLE && _br) ? ('A close detail of its ' + (_br.kind === 'brand' ? 'brand mark' : (_br.label || 'signature detail')) + ', exactly as in [Image' + (2 + (refs.orig ? 1 : 0) + _dl.indexOf(_br)) + '], held steady.')
+      : A_STYLE ? 'A close detail of its logo, hardware or signature part, held steady.'
       : nProd >= 2
       ? 'A close detail of its signature marking and stitching, every letter and line exactly as in the product photos, held steady.'
       : 'A close detail of its stitching, seams or hardware, held steady.';
@@ -265,6 +331,26 @@
 
     // v1.4 多勾幾張同商品的照片(細節/角度)→ 特寫更準
     var lib = libraryPhotos(), mainIdx = mainPhotoIdx();
+    // v2.1 點一下 logo 位置(可跳過)
+    pick.tap = null;
+    var mainPh = lib.filter(function (x) { return x.idx === mainIdx; })[0];
+    if (mainPh) {
+      box.appendChild(el('div', 'font-size:12px;color:#cdb4ff;font-weight:800;margin:2px 0 4px;', '在商品照上點一下品牌 logo(可跳過)'));
+      box.appendChild(el('div', 'font-size:11px;color:#9a9aa8;margin-bottom:6px;line-height:1.5;', '點了之後,影片拉近拍 logo 時會照原圖放大,字不會跑掉。'));
+      var tapWrap = el('div', 'position:relative;width:100%;margin-bottom:14px;border-radius:9px;overflow:hidden;cursor:crosshair;border:1px solid #2e2e3a;');
+      var tapImg = el('img', 'width:100%;height:auto;display:block;');
+      tapImg.src = mainPh.thumb; tapImg.referrerPolicy = 'no-referrer';
+      var dot = el('div', 'position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #fa6d9b;box-shadow:0 0 0 2px #fff;display:none;pointer-events:none;');
+      tapWrap.appendChild(tapImg); tapWrap.appendChild(dot);
+      tapWrap.onclick = function (e) {
+        var r = tapImg.getBoundingClientRect();
+        var x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        if (x < 0 || x > 1 || y < 0 || y > 1) return;
+        pick.tap = { x: x, y: y };
+        dot.style.left = (x * 100) + '%'; dot.style.top = (y * 100) + '%'; dot.style.display = 'block';
+      };
+      box.appendChild(tapWrap);
+    }
     pick.photos = {};
     if (mainIdx >= 0 && lib.some(function (x) { return x.idx === mainIdx; })) pick.photos[mainIdx] = 1;
     if (USE_EXTRA && lib.length) {
@@ -315,7 +401,7 @@
       // 做廣告圖的那張排第一
       var mainUrl = (lib.filter(function (x) { return x.idx === mainIdx; })[0] || {}).url;
       if (mainUrl && urls.indexOf(mainUrl) > 0) { urls.splice(urls.indexOf(mainUrl), 1); urls.unshift(mainUrl); }
-      mask.remove(); runMotion(pick.move, pick.sec, urls.slice(0, 5));
+      mask.remove(); runMotion(pick.move, pick.sec, urls.slice(0, 5), pick.tap);
     };
     acts.appendChild(cancel); acts.appendChild(go);
     box.appendChild(acts);
@@ -326,19 +412,20 @@
   }
 
   // ── 送出與等待 ────────────────────────────────────────────────────
-  async function runMotion(move, sec, prodUrls) {
+  async function runMotion(move, sec, prodUrls, tap) {
     var btn = document.getElementById('posterToVideoBtn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ 商品運鏡生成中...'; }
     var interval = startProgress(sec >= 15 ? 420000 : 300000);
     try {
       var picked = (prodUrls || []).slice(0, 5);
       var mainUrl = picked[0] || '';
-      if (USE_CROPS) setPrStatus('準備商品細節圖(近、中景裁切)...', 'var(--t3)');
-      var cropUrls = (USE_CROPS && mainUrl) ? await makeCrops(mainUrl) : [];
+      if (USE_CROPS) setPrStatus(tap ? '從原圖放大 logo...' : '準備商品細節圖...', 'var(--t3)');
+      var details = (USE_CROPS && mainUrl && tap) ? await tapCrops(mainUrl, tap) : [];
+      var cropUrls = (USE_CROPS && mainUrl && !details.length) ? await makeCrops(mainUrl) : [];
       //  9 張上限:廣告圖 1 + 原圖 1 + 裁切 ≤5 + 其他照片(剩幾格給幾格)
-      var extra = USE_EXTRA ? picked.slice(1, 1 + Math.max(0, 9 - 2 - cropUrls.length)) : [];
-      var prods = (mainUrl ? [mainUrl] : []).concat(cropUrls, extra);
-      var refs = { orig: mainUrl ? 1 : 0, crops: cropUrls.length, extra: extra.length };
+      var extra = USE_EXTRA ? picked.slice(1, 1 + Math.max(0, 9 - 2 - details.length - cropUrls.length)) : [];
+      var prods = (mainUrl ? [mainUrl] : []).concat(details.map(function (d) { return d.url; }), cropUrls, extra);
+      var refs = { orig: mainUrl ? 1 : 0, details: details.map(function (d) { return { kind: d.kind, label: d.label }; }), crops: cropUrls.length, extra: extra.length };
       var people = hasPeople();
       var prompt = buildPrompt(move, sec, refs, people);
       var brandId = (window.S && window.S.brandId) || '';
@@ -358,7 +445,7 @@
         provider: 'piapi'
       };
       console.log('[商品運鏡] ' + VER + ' · ' + move.label + ' · ' + sec + ' 秒 · ' + payload.aspectRatio
-        + ' · 引擎 ' + payload.provider + ' · 商品參考 原圖' + refs.orig + '+裁切' + refs.crops + '+其他' + refs.extra + ' · 提示詞 ' + prompt.length + ' 字');
+        + ' · 引擎 ' + payload.provider + ' · 商品參考 原圖' + refs.orig + '+細節' + refs.details.length + '(' + refs.details.map(function (d) { return d.kind; }).join('/') + ')+裁切' + refs.crops + '+其他' + refs.extra + ' · 提示詞 ' + prompt.length + ' 字');
       var sub = await kolPost(payload);
       if (sub && sub.error === 'INSUFFICIENT_BITS') {
         if (typeof showInsufficientBits === 'function') { try { showInsufficientBits(sec * SEC_COST); } catch (e) {} }
