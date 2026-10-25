@@ -2398,7 +2398,12 @@ async function padImageTo1080(base64, W=1080, H=1080) {
 
 async function urlToBlob(src) {
   if (src.startsWith('data:')) { const res = await fetch(src); return res.blob(); }
-  const res = await fetch(src);
+  //  🩹 2026-10-25 實測「❌ Failed to fetch」:同一張商品照先被畫面上的 <img> 載過(沒有跨網域標記),
+  //   瀏覽器把那份存進快取;這裡再用 fetch 讀同一個網址時拿到那份快取 → 少了跨網域許可 → 直接失敗。
+  //   修法:第一次失敗就跳過快取(cache:'no-store')重抓一次,CDN 本身有給許可(Access-Control-Allow-Origin: *)。
+  let res;
+  try { res = await fetch(src); } catch (e) { res = null; }
+  if (!res || !res.ok) res = await fetch(src, { cache: 'no-store' });
   if (!res.ok) throw new Error('圖片載入失敗');
   return res.blob();
 }
