@@ -1832,9 +1832,20 @@ async function loadImageSmart(src) {
   }
 }
 
-async function renderAdCanvas() {
+//  🩹 2026-10-25 RA 截圖:換一張商品照後,上面出現新照片、下面還掛著上一支影片(兩個疊在一起)。
+//   病:影片預覽是另外塞進畫面的 <video>,畫面切回圖片時沒有人把它拿掉;
+//   做新的廣告圖時更糟 —— 圖片區被影片藏起來沒打開,客人看到的還是舊影片。
+//   修:任何時候要畫圖片,先清掉影片預覽、把圖片區打開。
+function _clearVideoPreview() {
+  const v = document.getElementById('adVideoPreview');
+  if (v) { try { v.pause(); } catch (e) {} v.remove(); }
   const canvas = document.getElementById('adCanvas');
   if (canvas) canvas.style.display = 'block';
+}
+
+async function renderAdCanvas() {
+  const canvas = document.getElementById('adCanvas');
+  _clearVideoPreview();
   if (PR_BG_IMG) { await renderAdCanvasWithPR(); return; }
   if (!canvas) return;
   canvas.width = AM.w; canvas.height = AM.h;
@@ -4550,6 +4561,7 @@ async function renderGptPosterCanvas() {
   }
 
   // 圖已在手 → 以下全同步,瀏覽器一次重繪,看不到中間的黑
+  _clearVideoPreview();   // 🩹 2026-10-25 新廣告圖出來時,拿掉上一支影片預覽
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   canvas.width = AM.w; canvas.height = AM.h;
   ctx.imageSmoothingEnabled = true;
@@ -4667,7 +4679,7 @@ function showVideoInCanvas(videoUrl) {
   container.appendChild(video);
 
   const lbl = document.getElementById('previewLabel');
-  if (lbl) lbl.textContent = '影片預覽 5 秒循環播放';
+  if (lbl) lbl.textContent = '影片預覽 · 循環播放';
 }
 
 // ═══════════════════════════════════════════════════════════════════════
