@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   kol-real-person.js — 創建真人 KOL(v1.1 · 2026-10-26)
+   kol-real-person.js — 創建真人 KOL(v1.3 · 2026-10-26)
    ───────────────────────────────────────────────────────────────────
    職責(只有這一件事):讓客戶用【本人正面照 + 本人聲音 + 手寫簽名授權書】建一位 KOL。
      照片 → 角色照片(之後影片用他的臉;太大自動壓縮、太小自動放大)
@@ -23,6 +23,9 @@
   function token() { try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch (e) { return ''; } }
   function brandId() {
     try { return (window.S && window.S.currentBrandId) || (typeof S !== 'undefined' && S.currentBrandId) || (window.KAI && KAI.S && KAI.S.currentBrandId) || ''; } catch (e) { return ''; }
+  }
+  function brandName() {   // 授權書上要寫客戶看得懂的品牌名(例:RADESIGN),不是代號 ra
+    try { const sel = document.getElementById('brand-switcher'); const o = sel && sel.selectedOptions && sel.selectedOptions[0]; return (o && o.text || '').trim(); } catch (e) { return ''; }
   }
   function say(msg, kind) { try { if (typeof toast === 'function') return toast(msg, kind || 'info'); } catch (e) {} alert(msg); }
   async function call(action, extra) {
@@ -116,18 +119,30 @@
   }
 
   // ── 畫面 ──
-  const CSS = '#krp-mask{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:12px}' +
-    '#krp-box{background:#fff;color:#222;border-radius:14px;max-width:480px;width:100%;max-height:94vh;overflow:auto;padding:20px;font-size:14px;line-height:1.6;box-shadow:0 10px 40px rgba(0,0,0,.3);box-sizing:border-box}' +
-    '#krp-box h3{margin:0 0 4px;font-size:18px}#krp-box .sub{color:#777;font-size:12px;margin-bottom:12px}#krp-box .stp{font-size:12px;color:#999;margin-bottom:6px}' +
-    '#krp-box label.f{display:block;font-weight:600;margin:12px 0 4px}#krp-box input[type=text]{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box}' +
-    '#krp-box .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}#krp-box .btn{padding:9px 14px;border-radius:8px;border:1px solid #ccc;background:#f6f6f6;cursor:pointer;font-size:14px;color:#222}' +
-    '#krp-box .btn.pri{background:#111;color:#fff;border-color:#111}#krp-box .btn:disabled{opacity:.4;cursor:not-allowed}#krp-box .btn.rec{background:#e53935;color:#fff;border-color:#e53935}' +
-    '#krp-prev{width:120px;height:150px;object-fit:cover;border-radius:10px;background:#eee;display:none;margin-top:8px}#krp-box .hint{color:#888;font-size:12px}' +
-    '#krp-box .ok{color:#2e7d32;font-size:13px}#krp-box .req{color:#e53935}' +
-    '#krp-doc{border:1px solid #ddd;border-radius:10px;padding:12px 14px;background:#fafafa;max-height:38vh;overflow:auto;font-size:13px}#krp-doc h4{margin:0 0 8px;text-align:center;font-size:15px}#krp-doc ol{margin:0;padding-left:20px}#krp-doc li{margin-bottom:6px}' +
-    '#krp-sig{width:100%;height:160px;border:1.5px dashed #999;border-radius:10px;background:#fff;display:block;margin-top:6px}' +
-    '#krp-box .consent{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:10px;background:#fff8e1;border-radius:8px}' +
-    '#krp-st{margin-top:10px;font-size:13px;color:#555;min-height:18px}' +
+  //  v1.3:配色跟 KOL 工作室同一套(深色、紫色主色)。只有簽名框維持白底 = 像在紙上簽,存下來的簽名也清楚。
+  const V = function (n, f) { return 'var(--' + n + ',' + f + ')'; };
+  const CSS = '#krp-mask{position:fixed;inset:0;background:rgba(5,5,10,.72);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:12px}' +
+    '#krp-box{background:' + V('surface', '#111118') + ';color:' + V('text', '#f0f0f8') + ';border:1px solid ' + V('border', 'rgba(255,255,255,.07)') + ';border-radius:' + V('radius', '14px') + ';max-width:480px;width:100%;max-height:94vh;overflow:auto;padding:22px;font-size:14px;line-height:1.6;box-shadow:0 20px 60px rgba(0,0,0,.6);box-sizing:border-box;font-family:inherit}' +
+    '#krp-box h3{margin:0 0 4px;font-size:18px;color:' + V('text', '#f0f0f8') + '}#krp-box .sub{color:' + V('text-dim', 'rgba(240,240,248,.45)') + ';font-size:12px;margin-bottom:12px}' +
+    '#krp-box .stp{font-size:11px;font-weight:700;letter-spacing:.06em;color:' + V('accent', '#7c6dfa') + ';margin-bottom:6px}' +
+    '#krp-box label{color:' + V('text-mid', 'rgba(240,240,248,.72)') + '}#krp-box label.f{display:block;font-weight:600;margin:14px 0 4px;color:' + V('text', '#f0f0f8') + '}' +
+    '#krp-box input[type=text]{width:100%;padding:9px 11px;border:1px solid ' + V('border', 'rgba(255,255,255,.07)') + ';border-radius:' + V('radius-sm', '8px') + ';font-size:15px;box-sizing:border-box;background:' + V('surface2', '#1a1a24') + ';color:' + V('text', '#f0f0f8') + ';font-family:inherit}' +
+    '#krp-box input[type=text]:focus{outline:none;border-color:' + V('accent', '#7c6dfa') + '}#krp-box input[type=radio],#krp-box input[type=checkbox]{accent-color:' + V('accent', '#7c6dfa') + '}' +
+    '#krp-box input[type=file]{color:' + V('text-mid', 'rgba(240,240,248,.72)') + ';font-size:13px}' +
+    '#krp-box .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}' +
+    '#krp-box .btn{padding:9px 16px;border-radius:' + V('radius-sm', '8px') + ';border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);cursor:pointer;font-size:14px;color:' + V('text', '#f0f0f8') + ';font-family:inherit;transition:all .2s}' +
+    '#krp-box .btn:hover{background:rgba(255,255,255,.1)}' +
+    '#krp-box .btn.pri{background:linear-gradient(135deg,' + V('accent', '#7c6dfa') + ',' + V('accent2', '#fa6d9b') + ');border-color:transparent;color:#fff;font-weight:700}' +
+    '#krp-box .btn:disabled{opacity:.35;cursor:not-allowed}#krp-box .btn.rec{background:#e53935;color:#fff;border-color:#e53935}' +
+    '#krp-prev{width:120px;height:150px;object-fit:cover;border-radius:10px;background:' + V('surface2', '#1a1a24') + ';display:none;margin-top:8px}' +
+    '#krp-box .hint{color:' + V('text-dim', 'rgba(240,240,248,.45)') + ';font-size:12px}' +
+    '#krp-box .ok{color:' + V('accent3', '#6dfac2') + ';font-size:13px}#krp-box .req{color:' + V('accent2', '#fa6d9b') + '}' +
+    '#krp-doc{border:1px solid ' + V('border', 'rgba(255,255,255,.07)') + ';border-radius:10px;padding:12px 14px;background:' + V('surface2', '#1a1a24') + ';color:' + V('text-mid', 'rgba(240,240,248,.72)') + ';max-height:38vh;overflow:auto;font-size:13px}' +
+    '#krp-doc h4{margin:0 0 8px;text-align:center;font-size:15px;color:' + V('text', '#f0f0f8') + '}#krp-doc ol{margin:0;padding-left:20px}#krp-doc li{margin-bottom:6px}' +
+    '#krp-sig{width:100%;height:160px;border:1.5px dashed ' + V('accent', '#7c6dfa') + ';border-radius:10px;background:#fff;display:block;margin-top:6px}' +
+    '#krp-box .consent{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:10px 12px;background:rgba(124,109,250,.1);border:1px solid rgba(124,109,250,.3);border-radius:' + V('radius-sm', '8px') + ';color:' + V('text', '#f0f0f8') + '}' +
+    '#krp-box audio{color-scheme:dark}' +
+    '#krp-st{margin-top:10px;font-size:13px;color:' + V('text-mid', 'rgba(240,240,248,.72)') + ';min-height:18px}' +
     '.rs-card.krp-card{display:flex;align-items:center;justify-content:center;cursor:pointer}';
 
   let st = null;
@@ -172,7 +187,11 @@
     document.body.appendChild(m);
     const $ = function (id) { return document.getElementById(id); };
     m.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = close; });
-    m.addEventListener('click', function (e) { if (e.target === m) close(); });
+    //  只有「按下」和「放開」都在灰色背景上才關 —— 簽名時筆畫拉出框外,
+    //  放開的位置落在背景上也會觸發 click,不能因此把整個視窗關掉(v1.2 實測踩到)
+    let _downOnMask = false;
+    m.addEventListener('pointerdown', function (e) { _downOnMask = (e.target === m); });
+    m.addEventListener('click', function (e) { if (e.target === m && _downOnMask) close(); _downOnMask = false; });
 
     // 第 1 頁
     function check1() { $('krp-next').disabled = !($('krp-name').value.trim() && st.photoB64 && st.voiceB64); }
@@ -218,7 +237,7 @@
       const my = ++_docT;
       try {
         const r = await call('kol_consent_doc', {
-          brandId: brandId(), personaName: $('krp-name').value.trim(),
+          brandId: brandId(), brandName: brandName(), personaName: $('krp-name').value.trim(),
           personName: $('krp-pn').value.trim(), agent: agentOn(),
         });
         if (my !== _docT) return;
@@ -247,7 +266,7 @@
       $('krp-st').textContent = '上傳中…(約 10~20 秒,請不要關閉)';
       try {
         const r = await call('kol_real_create', {
-          brandId: brandId(), personaName: name, gender: g, consent: true,
+          brandId: brandId(), brandName: brandName(), personaName: name, gender: g, consent: true,
           personName: $('krp-pn').value.trim(), agent: agentOn(),
           signatureBase64: st.pad.png(),
           photoBase64: st.photoB64, voiceBase64: st.voiceB64, voiceExt: 'wav'
@@ -295,5 +314,5 @@
   new MutationObserver(function () { clearTimeout(_t); _t = setTimeout(hookAll, 150); }).observe(document.documentElement, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookAll); else hookAll();
 
-  window.KolRealPerson = { open: open, close: close, version: '1.1' };
+  window.KolRealPerson = { open: open, close: close, version: '1.3' };
 })();
