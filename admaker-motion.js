@@ -28,7 +28,8 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.3';
+  var VER = 'v2.3.1';
+  //  v2.3.1:點 logo 切出的近景圖一律放大到至少 512 像素(小圖切出 260 → Seedance 回 Invalid input,整單失敗)
   //  v2.3:商品新增第 7 招「聚攏成形」(RA 2026-10-26;刺蝟星球 3099 最新 CG 手法)。招式可自帶 subject/truth/look 三句
   //  v2.2:畫面有人的廣告圖(服飾穿搭、美業…)改用「模特兒運鏡」4 種:轉身回頭、走兩步、由下往上、穿搭細節(RA 2026-10-25)
   //  v2.1(RA 選「兩個都做」,實測後調整):
@@ -261,8 +262,12 @@
         var side = Math.round(Math.min(sizes[k][0], m));
         var sx = Math.round(Math.max(0, Math.min(W - side, cx - side / 2)));
         var sy = Math.round(Math.max(0, Math.min(H - side, cy - side / 2)));
-        var cv = document.createElement('canvas'); cv.width = side; cv.height = side;
-        cv.getContext('2d').drawImage(bmp, sx, sy, side, side, 0, 0, side, side);
+        //  v2.3.1:輸出至少 512 像素見方(Seedance 參考圖短邊 < 300 會整單回 Invalid input;
+        //   2026-10-26 實測:原圖 1000 像素左右,logo 近景只切出 260 → 整單失敗)
+        var outSide = Math.max(side, 512);
+        var cv = document.createElement('canvas'); cv.width = outSide; cv.height = outSide;
+        var cx2 = cv.getContext('2d'); cx2.imageSmoothingQuality = 'high';
+        cx2.drawImage(bmp, sx, sy, side, side, 0, 0, outSide, outSide);
         try { out.push({ url: await uploadToFal(cv.toDataURL('image/jpeg', 0.95)), kind: sizes[k][1], label: sizes[k][2] }); }
         catch (e) { console.warn('[商品運鏡] logo 裁切上傳失敗(略過):', e.message); }
       }
