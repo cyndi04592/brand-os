@@ -2794,11 +2794,13 @@ const CAMERA_MOVEMENTS = {
     duration_suggest: 10,
     fallback: 'slow dolly-in toward subject from medium shot to close-up, background softly blurs as camera approaches',
   },
+  //  🩹 2026-10-26:180° 大環繞 → 小角度勻速(刺蝟星球 10 月新文 3105/3037:大幅環繞讓人臉與商品走樣,改小角度、勻速、克制)
+  //   ⚠️ 只影響「沒有分鏡卡」的單支舊路徑;分鏡/接片模式的運鏡由分鏡卡決定,不走這裡。
   orbit: {
     label: '環繞鏡頭',
-    hint: '360° 氛圍',
+    hint: '小角度慢慢繞',
     duration_suggest: 10,
-    fallback: 'smooth orbital camera movement around subject, 180-degree arc, subject remains relatively centered',
+    fallback: 'the camera drifts in a slow arc of about twenty-five degrees around her at one steady speed, she stays in the same spot while the background shifts gently behind her',
   },
   pullback_reveal: {
     label: '↖️ 拉鏡揭示',
