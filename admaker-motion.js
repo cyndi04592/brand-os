@@ -28,7 +28,9 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.3.1';
+  var VER = 'v2.4';
+  //  v2.4(RA 2026-10-26「開修」,依刺蝟星球 10 月新文 3105/3037/3002):環繞 60°→25–30° 勻速、只動鏡頭;
+  //   光影掃過改窄光逐區照亮;慢慢推近勻速、最後停住;空景登場落地不彈跳。質感棚拍與聚攏成形是實測認可版,不動。
   //  v2.3.1:點 logo 切出的近景圖一律放大到至少 512 像素(小圖切出 260 → Seedance 回 Invalid input,整單失敗)
   //  v2.3:商品新增第 7 招「聚攏成形」(RA 2026-10-26;刺蝟星球 3099 最新 CG 手法)。招式可自帶 subject/truth/look 三句
   //  v2.2:畫面有人的廣告圖(服飾穿搭、美業…)改用「模特兒運鏡」4 種:轉身回頭、走兩步、由下往上、穿搭細節(RA 2026-10-25)
@@ -72,37 +74,40 @@
       ] },
     { key: 'sweep', label: '光影掃過', hint: '商品不動,一道光慢慢掃過去',
       s10: [
-        '[00:00-00:10] The camera holds still on the product. A soft band of light travels slowly across it from one side to the other, each surface brightening as the light reaches it and easing back after, then the light settles into an even glow.'
+        '[00:00-00:08] The camera holds still on the product. A narrow soft beam lights one part at a time, travelling from its top edge across its front to its base; each part glows with a natural surface reflection as the beam passes and settles back after, the shadows keeping their detail.',
+        '[00:08-00:10] The beam fades into an even glow and the frame holds still on the product.'
       ],
       s15: [
-        '[00:00-00:08] The camera holds still on the product. A soft band of light travels slowly across it from one side to the other, each surface brightening as the light reaches it and easing back after.',
-        '[00:08-00:15] The camera eases in a little closer while the light returns more slowly, settling into an even glow on a clean hero frame.'
+        '[00:00-00:10] The camera holds still on the product. A narrow soft beam lights one part at a time, travelling from its top edge across its front to its base; each part glows with a natural surface reflection as the beam passes and settles back after, the shadows keeping their detail.',
+        '[00:10-00:15] The camera eases in a little closer at a steady pace while the beam fades into an even glow, then holds still on a clean hero frame.'
       ] },
     { key: 'pushin', label: '慢慢推近', hint: '從全景一路推到細節',
       s10: [
-        '[00:00-00:10] One continuous slow dolly-in from the full set to a close detail of the product, smooth and steady, the focus staying on the product the whole way.'
+        '[00:00-00:08] One continuous slow dolly-in at a constant pace from the full set to a close detail of the product, the focus staying on the product the whole way.',
+        '[00:08-00:10] The camera stops on the detail and holds still.'
       ],
       s15: [
-        '[00:00-00:10] One continuous slow dolly-in from the full set to a close detail of the product, smooth and steady, the focus staying on the product the whole way.',
+        '[00:00-00:10] One continuous slow dolly-in at a constant pace from the full set to a close detail of the product, the focus staying on the product the whole way.',
         '[00:10-00:15] The camera holds on the detail as light drifts gently across it.'
       ] },
     { key: 'orbit', label: '環繞展示', hint: '鏡頭繞著商品轉,看到不同面',
       s10: [
-        '[00:00-00:10] The camera travels in a slow, smooth arc of about sixty degrees around the product at its own height; the product stays exactly in place while its sides turn into view and the light shifts across its surfaces.'
+        '[00:00-00:08] Only the camera moves: a slow arc of about twenty-five degrees around the product at its own height, at one constant speed; the product rests exactly in place while the light shifts across its surfaces.',
+        '[00:08-00:10] The camera stops and holds still on the product.'
       ],
       s15: [
-        '[00:00-00:10] The camera travels in a slow, smooth arc of about sixty degrees around the product at its own height; the product stays exactly in place while its sides turn into view and the light shifts across its surfaces.',
+        '[00:00-00:10] Only the camera moves: a slow arc of about thirty degrees around the product at its own height, at one constant speed; the product rests exactly in place while the light shifts across its surfaces.',
         '[00:10-00:15] The camera rises slightly and settles on a three-quarter hero frame.'
       ] },
     { key: 'reveal', label: '空景登場', hint: '先是空的場景,商品再出現',
       s10: [
         '[00:00-00:02] The same set and surface with the product absent, the light already in place.',
-        '[00:02-00:05] The product lowers gently into its place and settles with real weight, a soft contact shadow forming under it.',
-        '[00:05-00:10] The camera eases slowly toward it and finishes on a clean hero frame.'
+        '[00:02-00:05] The product lowers gently into its place and settles with real weight in one smooth landing, its contact shadow tightening as it touches down.',
+        '[00:05-00:10] The camera eases slowly toward it and finishes on a clean hero frame, holding still.'
       ],
       s15: [
         '[00:00-00:03] The same set and surface with the product absent, the light already in place.',
-        '[00:03-00:06] The product lowers gently into its place and settles with real weight, a soft contact shadow forming under it.',
+        '[00:03-00:06] The product lowers gently into its place and settles with real weight in one smooth landing, its contact shadow tightening as it touches down.',
         '[00:06-00:11] The camera eases slowly toward it, light gliding across its surfaces.',
         '[00:11-00:15] A close detail of its signature part, then a clean hero frame.'
       ] },
