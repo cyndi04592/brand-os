@@ -28,7 +28,8 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.2';
+  var VER = 'v2.3';
+  //  v2.3:商品新增第 7 招「聚攏成形」(RA 2026-10-26;刺蝟星球 3099 最新 CG 手法)。招式可自帶 subject/truth/look 三句
   //  v2.2:畫面有人的廣告圖(服飾穿搭、美業…)改用「模特兒運鏡」4 種:轉身回頭、走兩步、由下往上、穿搭細節(RA 2026-10-25)
   //  v2.1(RA 選「兩個都做」,實測後調整):
   //   · 客人在視窗裡的商品照上「點一下 logo」(可跳過)→ 從原圖以那一點為中心切兩張(近、中)→ 分鏡拍品牌標時指名照那張
@@ -113,6 +114,24 @@
         '[00:00-00:05] A macro camera glides slowly along the product surface, close enough to read the material: grain, weave, stitching or finish, sharp where the focus lands and softly blurred beyond.',
         '[00:05-00:10] The macro moves on to a second part of the product, its edges and details catching the light.',
         '[00:10-00:15] The camera pulls back to reveal the whole product in the set.'
+      ] },
+    //  v2.3 聚攏成形(刺蝟星球 3099 球鞋 CG,2026-10 最新):材質纖維從四周聚攏,一段段組成商品,最後停在廣告圖那一格
+    //  subject / truth / look 三句這招自己帶(商品是「長出來」的,不能沿用「每一格都完整」那句)
+    { key: 'assemble', label: '聚攏成形', hint: '商品的材質纖維從四周聚攏,一段段組成商品,最後停在廣告圖',
+      subject: 'The product is the only subject; the set stays exactly as in [Image1] while the product forms in its own place.',
+      truth: 'Once complete, the product keeps its true shape, proportions, colours, logo and printed details exactly as in the photos, at its real size, resting with real weight and a soft contact shadow.',
+      look: 'A high-end CG product commercial with real-camera moves: smooth stabilised glides, natural depth of field; the forming strands are the only addition to the set in [Image1].',
+      s10: [
+        '[00:00-00:03] The set from [Image1] with the product\'s place still empty. Loose strands and fine particles in the product\'s own colours and materials drift in from different depths, swirling and gathering toward that spot, the camera gliding close beside one stream.',
+        '[00:03-00:06] The strands draw tight and weave together, the product forming part by part from its base upward, its true material appearing wherever the strands settle, the camera tracking along the forming edge.',
+        '[00:06-00:08] The last strands settle and the product is complete. {{DETAIL}}',
+        '[00:08-00:10] The camera pulls back while rolling smoothly from a tilted angle to level, settling on the hero frame exactly as in [Image1].'
+      ],
+      s15: [
+        '[00:00-00:04] The set from [Image1] with the product\'s place still empty. Loose strands and fine particles in the product\'s own colours and materials drift in from different depths, swirling and gathering toward that spot, the camera gliding close beside one stream.',
+        '[00:04-00:08] The strands draw tight and weave together, the product forming part by part from its base upward, its true material appearing wherever the strands settle, the camera tracking along the forming edge.',
+        '[00:08-00:11] The last strands settle and the product is complete. {{DETAIL}}',
+        '[00:11-00:15] The camera arcs back out around the product while rolling smoothly from a tilted angle to level, a soft band of light passing across it, settling on the hero frame exactly as in [Image1].'
       ] }
   ];
 
@@ -344,16 +363,16 @@
     var shots = (sec >= 15 ? move.s15 : move.s10).join('\n').replace('{{DETAIL}}', detail);
     var refs = '[Image1] is the finished ad photo: the set, its light, its colours and the product exactly as they look there.'
       + refLines(refs);
-    var subject = people
-      ? 'The person in [Image1] is the same person throughout: same face, hair, clothing and build, moving naturally like a real model on set.'
+    var subject = move.subject ? move.subject : people
+      ?'The person in [Image1] is the same person throughout: same face, hair, clothing and build, moving naturally like a real model on set.'
       : 'The product is the only subject; the set stays exactly as in [Image1].';
-    var truth = people
-      ? 'The clothing keeps its true cut, colours, logo and printed details in every frame, hanging and moving with real fabric weight; her face, hair and build stay the same throughout.'
+    var truth = move.truth ? move.truth : people
+      ?'The clothing keeps its true cut, colours, logo and printed details in every frame, hanging and moving with real fabric weight; her face, hair and build stay the same throughout.'
       : A_STYLE
       ? 'The product keeps its true shape, proportions, colours, logo and printed details in every frame, at its real size, resting with real weight and a soft contact shadow.'
       : 'The product keeps its true shape, proportions, colours and markings exactly as in the photos in every frame, at its real size, resting with real weight and a soft contact shadow.';
     var light = 'All light comes from the set in [Image1]; highlights glide over surfaces as the camera moves, and the product\'s whites stay as bright as the other whites around it.';
-    var look = (A_STYLE && people)
+    var look = move.look ? move.look : (A_STYLE && people)
       ? 'A high-end fashion commercial filmed on a real camera: smooth stabilised moves, natural depth of field, clean frames showing only what is in [Image1].'
       : A_STYLE
       ? 'A high-end product commercial filmed on a real camera: smooth stabilised moves, natural depth of field, clean frames showing only what is in [Image1].'
