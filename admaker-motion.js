@@ -28,7 +28,9 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.5';
+  var VER = 'v2.6';
+  //  v2.6:環繞 25°→40°(15 秒 45°)+「鏡頭跟商品保持同樣距離、整個商品都在畫面裡」,最後停在整個商品的 3/4 視角
+  //   (2026-10-26 MOZ 德訓鞋實測:25° 被拍成一路推近到鞋側大特寫,沒有繞)
   //  v2.5:商品新增第 8、9 招「開蓋揭示」「落地回彈」(RA 2026-10-26;刺蝟星球 3111/3037、3099)
   //  v2.4(RA 2026-10-26「開修」,依刺蝟星球 10 月新文 3105/3037/3002):環繞 60°→25–30° 勻速、只動鏡頭;
   //   光影掃過改窄光逐區照亮;慢慢推近勻速、最後停住;空景登場落地不彈跳。質感棚拍與聚攏成形是實測認可版,不動。
@@ -93,12 +95,12 @@
       ] },
     { key: 'orbit', label: '環繞展示', hint: '鏡頭繞著商品轉,看到不同面',
       s10: [
-        '[00:00-00:08] Only the camera moves: a slow arc of about twenty-five degrees around the product at its own height, at one constant speed; the product rests exactly in place while the light shifts across its surfaces.',
-        '[00:08-00:10] The camera stops and holds still on the product.'
+        '[00:00-00:08] Only the camera moves: a slow arc of about forty degrees around the product at its own height, at one constant speed, keeping the same distance from it the whole way so the whole product stays in frame; the product rests exactly in place while the light shifts across its surfaces.',
+        '[00:08-00:10] The camera stops on a three-quarter view of the whole product and holds still.'
       ],
       s15: [
-        '[00:00-00:10] Only the camera moves: a slow arc of about thirty degrees around the product at its own height, at one constant speed; the product rests exactly in place while the light shifts across its surfaces.',
-        '[00:10-00:15] The camera rises slightly and settles on a three-quarter hero frame.'
+        '[00:00-00:11] Only the camera moves: a slow arc of about forty-five degrees around the product at its own height, at one constant speed, keeping the same distance from it the whole way so the whole product stays in frame; the product rests exactly in place while the light shifts across its surfaces.',
+        '[00:11-00:15] The camera rises slightly and settles on a three-quarter hero frame of the whole product, holding still.'
       ] },
     { key: 'reveal', label: '空景登場', hint: '先是空的場景,商品再出現',
       s10: [
