@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
-   kol-real-person.js — 創建真人 KOL(v1.4 · 2026-10-26)
+   kol-real-person.js — 使用自己建立 KOL(v1.5 · 2026-10-26)
+   v1.5:RA 定名「使用自己建立」(KOL 本來就是很真實的人,叫「真人」反而像在說其他是假人);卡片加 ＋、改粉色
    ───────────────────────────────────────────────────────────────────
    職責(只有這一件事):讓客戶用【本人錄影(或照片+錄音)+ 手寫簽名授權書】建一位 KOL。
    v1.4 主路:拍一支 25 秒的本人影片(畫面上有念稿提詞)
@@ -11,7 +12,7 @@
    授權書 → 全文由 Worker 產生(kol_consent_doc),客戶勾選 + 手指/滑鼠簽名,
      Worker 把簽好的那份連同時間、帳號、IP、檔案指紋存檔(kol_real_create,需 kol-proxy v6.43)。
    入口(都由這支自己掛,kol.html 只要一行 <script>):
-     ① 新品牌引導卡的「用真人照片建立」按鈕   ② 「＋建新角色」旁邊的「創建真人」卡
+     ① 新品牌引導卡的「用真人照片建立」按鈕   ② 「＋建新角色」旁邊的「＋ 使用自己建立」卡
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -208,9 +209,11 @@
     '#krp-box .consent{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:10px 12px;background:rgba(124,109,250,.1);border:1px solid rgba(124,109,250,.3);border-radius:' + C.rs + ';color:' + C.tx + '}' +
     '#krp-box audio{color-scheme:dark}' +
     '#krp-st{margin-top:10px;font-size:13px;color:' + C.mid + ';min-height:18px}' +
-    '.rs-card.krp-card{display:flex;align-items:center;justify-content:center;cursor:pointer}';
+    '.rs-card.krp-card{cursor:pointer;color:' + C.ac2 + ';border-color:rgba(250,109,155,.45);background:rgba(250,109,155,.06)}' +
+    '.rs-card.krp-card:hover{color:#fff;border-color:' + C.ac2 + ';background:rgba(250,109,155,.16)}';
 
   let st = null;
+  function ensureCss() { if (!document.getElementById('krp-css')) { const s = document.createElement('style'); s.id = 'krp-css'; s.textContent = CSS; document.head.appendChild(s); } }
 
   function stopCam() {
     try { if (st && st.rec && st.rec.state !== 'inactive') st.rec.stop(); } catch (e) {}
@@ -223,14 +226,14 @@
     const nk = document.getElementById('rs-new-kol');
     if (nk && nk.getAttribute('data-bos-lock')) { say('🔒 ' + (nk.title || '已達方案 KOL 上限') + ' · 到價目表升級即可新增', 'error'); return; }
     close();
-    if (!document.getElementById('krp-css')) { const s = document.createElement('style'); s.id = 'krp-css'; s.textContent = CSS; document.head.appendChild(s); }
+    ensureCss();
     st = { mode: 'video', frames: [], pick: {}, photoB64: '', voiceB64: '', rec: null, stream: null, chunks: [], pad: null, timer: 0 };
     const m = document.createElement('div'); m.id = 'krp-mask';
     m.innerHTML =
       '<div id="krp-box">' +
       // ── 第 1 頁:名字 + 錄影(或備用:照片+錄音)──
       '<div id="krp-p1">' +
-      '<div class="stp">步驟 1 / 3</div><h3>創建真人 KOL</h3>' +
+      '<div class="stp">步驟 1 / 2</div><h3>使用自己建立 KOL</h3>' +
       '<div class="sub">拍一支 25 秒的本人影片,系統會從影片取出你的臉(正面、斜側、側面)和聲音,影片就是你的臉、你的聲音。</div>' +
       '<label class="f">角色名字 <span class="req">*</span></label><input type="text" id="krp-name" maxlength="30" placeholder="例如:小芮">' +
       '<label class="f">性別</label><div class="row"><label><input type="radio" name="krp-g" value="female" checked> 女</label><label><input type="radio" name="krp-g" value="male"> 男</label></div>' +
@@ -264,7 +267,7 @@
       '</div>' +
       // ── 第 2 頁:授權書 + 簽名 ──
       '<div id="krp-p2" style="display:none">' +
-      '<div class="stp">步驟 2 / 3</div><h3>肖像及聲音授權</h3>' +
+      '<div class="stp">步驟 2 / 2</div><h3>肖像及聲音授權</h3>' +
       '<label class="f">肖像本人姓名 <span class="req">*</span></label><input type="text" id="krp-pn" maxlength="30" placeholder="照片和聲音的本人真實姓名">' +
       '<div class="row" style="margin-top:8px"><label><input type="radio" name="krp-ag" value="self" checked> 我就是本人</label><label><input type="radio" name="krp-ag" value="agent"> 我代本人上傳(已取得同意)</label></div>' +
       '<div id="krp-doc" style="margin-top:12px">載入授權書…</div>' +
@@ -470,10 +473,10 @@
           try { if (typeof loadPersonas === 'function') await loadPersonas(brandId(), true); } catch (e) {}
           try { if (typeof window.autoBindPersona === 'function') await window.autoBindPersona(name, r.sheets.front); } catch (e) { console.warn('[krp] bind', e); }
           close();
-          say('✓ 真人 KOL「' + name + '」建立完成(正面、斜側、側面都是本人),授權書已存檔', 'success');
+          say('✓ KOL「' + name + '」建立完成(正面、斜側、側面都是本人),授權書已存檔', 'success');
         } else {
           close();
-          say('✓ 真人 KOL「' + name + '」建立完成,授權書已存檔', 'success');
+          say('✓ KOL「' + name + '」建立完成,授權書已存檔', 'success');
           try { if (window.KCS && typeof window.KCS.autoRun === 'function') await window.KCS.autoRun(r.photoUrl); } catch (e) { console.warn('[krp] autoRun', e); }
         }
         try { if (typeof window.refreshAll === 'function') window.refreshAll(); else if (typeof refreshAll === 'function') refreshAll(); } catch (e) {}
@@ -492,18 +495,19 @@
     document.querySelectorAll('#kol-onboard-card .onb-opt').forEach(function (b) {
       if (b.dataset.krp || !/真人照片/.test(b.textContent)) return;
       b.dataset.krp = '1'; b.disabled = false; b.removeAttribute('title');
-      const t = b.querySelector('.t'); if (t) t.innerHTML = '創建真人<span class="tag">新</span>';
+      const t = b.querySelector('.t'); if (t) t.innerHTML = '使用自己建立<span class="tag">新</span>';
       const d = b.querySelector('.d'); if (d) d.textContent = '拍一支 25 秒的自拍影片,影片就是你的臉、你的聲音。';
       b.addEventListener('click', open);
     });
   }
-  // ── 入口 ②:「＋建新角色」旁邊的「創建真人」卡(角色列表會重畫,所以盯著補) ──
+  // ── 入口 ②:「＋建新角色」旁邊的「＋ 使用自己建立」卡(角色列表會重畫,所以盯著補) ──
   function hookCard() {
     const nk = document.getElementById('rs-new-kol');
     if (!nk || document.getElementById('rs-new-real')) return;
+    ensureCss();   // 卡片的粉色樣式要在視窗打開前就有
     const c = document.createElement('div');
     c.className = 'rs-card rs-new krp-card'; c.id = 'rs-new-real'; c.tabIndex = 0;
-    c.innerHTML = '<span>創建真人</span>';
+    c.innerHTML = '＋<span>使用自己<br>建立</span>';   // 卡片窄,手動斷成兩行(不然會斷成「使用自己建/立」)
     c.addEventListener('click', open);
     c.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
     nk.parentNode.insertBefore(c, nk.nextSibling);
@@ -513,5 +517,5 @@
   new MutationObserver(function () { clearTimeout(_t); _t = setTimeout(hookAll, 150); }).observe(document.documentElement, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookAll); else hookAll();
 
-  window.KolRealPerson = { open: open, close: close, version: '1.4' };
+  window.KolRealPerson = { open: open, close: close, version: '1.5' };
 })();
