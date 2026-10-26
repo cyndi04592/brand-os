@@ -6010,7 +6010,7 @@ function showVideoPreview(url, label) {
       <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent3)"></div>${escapeHtml(label)}</div>
       <video src="${escapeHtml(url)}" controls autoplay playsinline style="width:100%;border-radius:var(--radius-sm);background:#000;max-height:500px;display:block"></video>
       <div class="btn-row" style="margin-top:10px">
-        <a href="${escapeHtml(url)}" download class="btn btn-ghost btn-sm">⬇ 下載影片</a>
+        <a href="${escapeHtml(url)}" download onclick="return kolDownloadVideo(event, this)" class="btn btn-ghost btn-sm">⬇ 下載影片</a>
         <a href="${escapeHtml(url)}" target="_blank" class="btn btn-ghost btn-sm">開新分頁</a>
       </div>
     </div>
@@ -8873,7 +8873,7 @@ function showSeedancePreview(task) {
       <div class="panel-title" style="margin-bottom:10px"><div class="dot" style="background:var(--accent)"></div>${escapeHtml(task.label)}</div>
       <video src="${escapeHtml(task.url)}" controls autoplay playsinline loop style="width:100%;border-radius:var(--radius-sm);background:#000;max-height:500px;display:block"></video>
       <div class="btn-row" style="margin-top:10px">
-        <a href="${escapeHtml(task.url)}" download class="btn btn-ghost btn-sm">⬇ 下載影片</a>
+        <a href="${escapeHtml(task.url)}" download onclick="return kolDownloadVideo(event, this)" class="btn btn-ghost btn-sm">⬇ 下載影片</a>
         <a href="${escapeHtml(task.url)}" target="_blank" class="btn btn-ghost btn-sm">開新分頁</a>
         ${task.seed ? `<button class="btn btn-ghost btn-sm" onclick="reuseSeed(${task.seed})">🔒 用此 Seed 重生</button>` : ''}
       </div>
@@ -10756,6 +10756,29 @@ function getColorForName(name) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) { hash = (hash << 5) - hash + str.charCodeAt(i); hash = hash & hash; }
   return colors[Math.abs(hash) % colors.length];
+}
+
+//  ⬇ 2026-10-26 Mac Safari 下載修正(客人 joannetsao1007 10/22 實測:按「下載影片」只會打開播放器,存不下來)
+//   原因:影片在別的網域(cdn / 引擎),Safari 不理 <a download>,直接開檔播放。
+//   做法:先把影片抓成本機檔案再存(兩個網域都已驗證可跨網域讀取);抓不到就照舊開新分頁,至少看得到。
+function kolDownloadVideo(ev, a) {
+  try { ev.preventDefault(); } catch (e) {}
+  const url = a.getAttribute('href') || '';
+  if (!url) return false;
+  const label = a.textContent;
+  a.textContent = '⏳ 下載中...';
+  fetch(url, { mode: 'cors', cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+    .then(function (b) {
+      const u = URL.createObjectURL(b);
+      const x = document.createElement('a');
+      x.href = u; x.download = 'BrandOS_' + new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '') + '.mp4';
+      document.body.appendChild(x); x.click();
+      setTimeout(function () { URL.revokeObjectURL(u); x.remove(); }, 8000);
+      a.textContent = label;
+    })
+    .catch(function () { a.textContent = label; window.open(url, '_blank'); });
+  return false;
 }
 
 function escapeHtml(str) {
