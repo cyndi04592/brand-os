@@ -28,7 +28,8 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.4';
+  var VER = 'v2.5';
+  //  v2.5:商品新增第 8、9 招「開蓋揭示」「落地回彈」(RA 2026-10-26;刺蝟星球 3111/3037、3099)
   //  v2.4(RA 2026-10-26「開修」,依刺蝟星球 10 月新文 3105/3037/3002):環繞 60°→25–30° 勻速、只動鏡頭;
   //   光影掃過改窄光逐區照亮;慢慢推近勻速、最後停住;空景登場落地不彈跳。質感棚拍與聚攏成形是實測認可版,不動。
   //  v2.3.1:點 logo 切出的近景圖一律放大到至少 512 像素(小圖切出 260 → Seedance 回 Invalid input,整單失敗)
@@ -138,6 +139,38 @@
         '[00:04-00:08] The strands draw tight and weave together, the product forming part by part from its base upward, its true material appearing wherever the strands settle, the camera tracking along the forming edge.',
         '[00:08-00:11] The last strands settle and the product is complete. {{DETAIL}}',
         '[00:11-00:15] The camera arcs back out around the product while rolling smoothly from a tilted angle to level, a soft band of light passing across it, settling on the hero frame exactly as in [Image1].'
+      ] },
+    //  v2.5 開蓋揭示(刺蝟星球 3111/3037,2026-10):有蓋子的商品(面霜、罐裝、瓶裝、粉餅)—— 蓋子打開、露出內容物質地
+    { key: 'opentop', label: '開蓋揭示', hint: '蓋子慢慢打開,露出裡面的質地(面霜、罐裝、瓶裝、粉餅)',
+      truth: 'The product keeps its true shape, proportions, colours, logo and printed label in every frame, at its real size, resting with real weight and a soft contact shadow; only its lid moves.',
+      s10: [
+        '[00:00-00:03] The closed product from a slightly tilted angle, its label facing the camera, the camera easing slowly toward it.',
+        '[00:03-00:06] Its lid turns and lifts away in one smooth motion, revealing what is inside, the texture of the contents catching the light.',
+        '[00:06-00:08] A macro glide across the revealed contents, sharp where the focus lands.',
+        '[00:08-00:10] The lid rests beside the product as the camera eases back while rolling smoothly to level, settling on a clean hero frame of the open product in the set from [Image1].'
+      ],
+      s15: [
+        '[00:00-00:04] The closed product from a slightly tilted angle, its label facing the camera, the camera easing slowly toward it.',
+        '[00:04-00:07] {{DETAIL}}',
+        '[00:07-00:10] Its lid turns and lifts away in one smooth motion, revealing what is inside, the texture of the contents catching the light.',
+        '[00:10-00:12] A macro glide across the revealed contents, sharp where the focus lands.',
+        '[00:12-00:15] The lid rests beside the product as the camera eases back while rolling smoothly to level, settling on a clean hero frame of the open product in the set from [Image1].'
+      ] },
+    //  v2.5 落地回彈(刺蝟星球 3099,2026-10):鞋、枕頭、軟墊、軟材質 —— 落下、受壓、回彈,看得見彈性
+    { key: 'rebound', label: '落地回彈', hint: '商品輕輕落下、壓縮、再彈回原形(鞋、枕頭、軟材質)',
+      truth: 'The product keeps its true colours, logo and printed details in every frame, at its real size, and returns to its exact true shape once it settles, resting with real weight and a soft contact shadow.',
+      s10: [
+        '[00:00-00:03] A low side angle in the set from [Image1]; the product descends gently onto the surface, one edge touching first.',
+        '[00:03-00:05] Its soft parts compress under its own weight, the pressure travelling along it, with a brief pause at the deepest point.',
+        '[00:05-00:08] It springs back part by part to its original form, lifting slightly and settling again, the camera tracking low and then rising.',
+        '[00:08-00:10] It rests in its place exactly as in [Image1], the camera holding still.'
+      ],
+      s15: [
+        '[00:00-00:04] A low side angle in the set from [Image1]; the product descends gently onto the surface, one edge touching first.',
+        '[00:04-00:07] Its soft parts compress under its own weight, the pressure travelling along it, with a brief pause at the deepest point.',
+        '[00:07-00:10] It springs back part by part to its original form, lifting slightly and settling again, the camera tracking low and then rising.',
+        '[00:10-00:12] {{DETAIL}}',
+        '[00:12-00:15] It rests in its place exactly as in [Image1], the camera easing back and holding still.'
       ] }
   ];
 
