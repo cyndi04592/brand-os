@@ -8,6 +8,9 @@
      ③ 廣告圖(photoroom-proxy /adlean.js)、商品運鏡(kol-proxy AdMotion)都讀這裡的同一份句子
         → 提示詞只多「一句尺寸」+(有填才有)「一句補充」,不佔字數
    一個檔案一個職責:index.html / config.js 不再長肉,這支自己掛
+   🎯 v1.3(2026-10-27)「這是哪一類」點一下 → 自動帶入驗證過的專業說明(RA:Red hammer 那段要烙印,
+     以後生存遊戲的客人進來點「生存遊戲」就有,不用自己寫長文)。說明照樣存進補充說明 → 廣告圖、影片都吃得到。
+     ⚠️ 只放【實測過有效】的類別;每做好一個新行業就加一條 KNOW。
    ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -71,6 +74,12 @@
       'laid flat in a sunny living room with sheer curtains, seen from a high angle, a low sofa behind it',
     ],
   };
+  //  🎯 v1.3 行業知識庫:點一下帶入。文字寫【正面事實】,不寫「禁止/不要」
+  //   生存遊戲:實測 2026-10-27 Red hammer 瞄具蓋(提示詞全程不提「槍」,寫 replica / 生存遊戲 → 圖片模型不擋)
+  const KNOW = [
+    { key: 'airsoft', label: '🎯 生存遊戲配件',
+      note: '生存遊戲(airsoft)配件:畫面裡它裝在金屬 replica 上的正確位置,或放在生存遊戲場地、戰術裝備旁;玩家戴戰術手套使用' },
+  ];
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 
   function tok() { try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch (e) { return ''; } }
@@ -140,6 +149,7 @@
         '<div id="ppl-opts"></div><div id="ppl-size"></div>' +
         '<div style="font-size:12px;font-weight:700;margin-top:10px">補充說明(選填)</div>' +
         '<div style="font-size:11px;color:#9a9aa8">裡面裝什麼、怎麼用。例:一盒 6 包海苔 / 兩隻腳伸進去 / 可以掛在帳篷上</div>' +
+        '<div id="ppl-know" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px"></div>' +
         '<textarea id="ppl-note" maxlength="300">' + esc(restNote(prod)) + '</textarea>' +
         '<div id="ppl-st"></div><div class="row"><button id="ppl-cancel">取消</button><button id="ppl-save" class="pri">存好,繼續</button></div></div>';
       document.body.appendChild(m);
@@ -156,6 +166,20 @@
         btn.disabled = !sel || (must && !size);
       }
       paint();
+      //  🎯 v1.3 行業按鈕:點了就把那段專業說明放進補充說明最前面(已有就拿掉 = 再點一次取消)
+      const kb = m.querySelector('#ppl-know'), ta = m.querySelector('#ppl-note');
+      function paintKnow() {
+        kb.innerHTML = '<span style="font-size:11px;color:#9a9aa8;width:100%">是這一類嗎?點一下,系統自動補上專業說明:</span>' +
+          KNOW.map(k => '<div class="opt' + (ta.value.indexOf(k.note) > -1 ? ' on' : '') + '" data-kn="' + k.key + '" style="margin:0;padding:6px 10px;font-size:12px">' + k.label + '</div>').join('');
+        kb.querySelectorAll('[data-kn]').forEach(el => el.onclick = function () {
+          const k = KNOW.find(x => x.key === el.getAttribute('data-kn')); if (!k) return;
+          const v = ta.value;
+          ta.value = v.indexOf(k.note) > -1 ? v.replace(k.note, '').replace(/^[;;。\s]+/, '').trim() : (k.note + (v.trim() ? ';' + v.trim() : ''));
+          paintKnow();
+        });
+      }
+      ta.addEventListener('input', paintKnow);
+      paintKnow();
       m.querySelector('#ppl-cancel').onclick = function () { m.remove(); done(false); };
       btn.onclick = async function () {
         if (!sel) return;
@@ -210,5 +234,5 @@
     if (sig !== _sig) { _sig = sig; paintChip(); }
   }, 800);
 
-  window.ProductPlace = { OPTS, open, scaleLine, isFloorish, setting, noteLine, version: '1.2', sizeOf: sizeOf, needsSize: needsSize };
+  window.ProductPlace = { OPTS, open, scaleLine, isFloorish, setting, noteLine, version: '1.3', KNOW: KNOW, sizeOf: sizeOf, needsSize: needsSize };
 })();
