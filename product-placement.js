@@ -11,6 +11,9 @@
    🎯 v1.3(2026-10-27)「這是哪一類」點一下 → 自動帶入驗證過的專業說明(RA:Red hammer 那段要烙印,
      以後生存遊戲的客人進來點「生存遊戲」就有,不用自己寫長文)。說明照樣存進補充說明 → 廣告圖、影片都吃得到。
      ⚠️ 只放【實測過有效】的類別;每做好一個新行業就加一條 KNOW。
+   🎯 v1.5(2026-10-27)不用客人點「是這一類嗎」(RA:進來就內建):商品名/品牌看得出是生存遊戲 → 打開就自動帶好專業說明,配件也從商品名自動選好;
+     客人只剩「裝在哪一種 replica」可選填。認不出來的商品 → 什麼都不顯示,跟以前一樣
+   🎯 v1.4(2026-10-27)生存遊戲再往下兩排:哪一種配件(帶入裝在哪、怎麼裝)+ 裝在哪一種 replica(M4 / AK / 狙擊 / 手槍型)
    ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -76,10 +79,41 @@
   };
   //  🎯 v1.3 行業知識庫:點一下帶入。文字寫【正面事實】,不寫「禁止/不要」
   //   生存遊戲:實測 2026-10-27 Red hammer 瞄具蓋(提示詞全程不提「槍」,寫 replica / 生存遊戲 → 圖片模型不擋)
+  //  🎯 v1.4 生存遊戲往下再問兩排(RA:專業術語要自動寫、要能選 AK / M4):
+  //   ① 哪一種配件 → 帶入「裝在哪裡、怎麼裝」的專業事實  ② 裝在哪一種 replica → 帶入外型特徵
+  //   ⚠️ 按鈕上給客人看的字可以有「槍」(客人聽得懂);【帶進提示詞的 note】一律不寫「槍」
+  //   ⚠️ 順序:配件 → replica → 行業,最重要的放最前面(影片那邊只讀前 80 字)
   const KNOW = [
-    { key: 'airsoft', label: '🎯 生存遊戲配件',
-      note: '生存遊戲(airsoft)配件:畫面裡它裝在金屬 replica 上的正確位置,或放在生存遊戲場地、戰術裝備旁;玩家戴戰術手套使用' },
+    { key: 'airsoft', label: '生存遊戲',
+      //  認得出是生存遊戲的字(商品名 / 標籤 / 品牌名);單看「握把、背帶、護目鏡」不算,那些別的行業也有
+      detect: /生存遊戲|airsoft|replica|BB ?彈|GBB|AEG|戰術|漆彈/i,
+      note: '生存遊戲(airsoft)配件,畫面在生存遊戲場地或戰術裝備旁,玩家戴戰術手套',
+      groups: [
+        { title: '哪一種配件?', items: [
+          //  第三格 = 商品名裡出現這些字就自動選它(由上往下第一個中的;「瞄準鏡蓋」要排在「瞄準鏡」前面)
+          ['瞄準鏡蓋', '翻蓋套在瞄準鏡最前端的鏡頭上,掀開時蓋子立在鏡頭旁,蓋上時護住鏡片', /鏡蓋|翻蓋|護蓋|鏡頭蓋/],
+          ['瞄準鏡', '用兩個鏡環固定在 replica 上方的長條導軌,目鏡朝向玩家的眼睛', /瞄準鏡|瞄具|倍鏡|scope/i],
+          ['紅點・內紅點', '固定在 replica 上方的長條導軌,玩家從後方看進小鏡片', /紅點|內紅|外紅|全息|dot/i],
+          ['前握把', '鎖在 replica 前段護木下方的導軌,玩家前手握著它', /握把|grip/i],
+          ['槍燈・戰術手電', '鎖在 replica 前段護木側邊的導軌,燈頭朝前', /槍燈|手電|戰術燈|flashlight/i],
+          ['背帶', '兩端扣在 replica 前後的扣環,斜背在玩家身上', /背帶|sling/i],
+          ['彈匣袋', '掛在戰術背心或腰封的織帶上', /彈匣袋|彈袋|pouch/i],
+          ['彈匣', '插在 replica 中段下方的彈匣口', /彈匣|magazine/i],
+          ['滅音管・火帽', '旋在 replica 最前端的管口上', /滅音|消音|火帽|抑制器/],
+          ['護目鏡・面罩', '玩家戴在臉上', /護目鏡|面罩|口罩|goggle|mask/i],
+          ['戰術背心', '玩家穿在身上', /背心|vest|胸掛|plate/i],
+        ] },
+        { title: '裝在哪一種 replica 上?(選填,點一下)', items: [
+          ['M4 型', '裝在 M4 型 replica 上(黑色、上方長導軌、可伸縮後托)', /M4|M16|AR-?15|HK416/i],
+          ['AK 型', '裝在 AK 型 replica 上(木紋護木、彎的長彈匣)', /AK-?\d|AKM|AK ?型|AK ?系/i],
+          ['狙擊型', '裝在長管栓動狙擊型 replica 上(有兩腳架)', /狙擊|栓動|VSR|L96|sniper/i],
+          ['手槍型', '裝在手持的短 replica 上', /手槍|pistol|glock|1911/i],
+        ] },
+      ] },
   ];
+  //  補充說明 = [每排選到的那句…] + 行業那句 + 客人自己打的字(用 ; 接)
+  function knowPieces(k) { return [k.note].concat(...(k.groups || []).map(g => g.items.map(x => x[1]))); }
+  function splitNote(v) { return String(v || '').split(/[;;]/).map(x => x.trim()).filter(Boolean); }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 
   function tok() { try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch (e) { return ''; } }
@@ -166,18 +200,43 @@
         btn.disabled = !sel || (must && !size);
       }
       paint();
-      //  🎯 v1.3 行業按鈕:點了就把那段專業說明放進補充說明最前面(已有就拿掉 = 再點一次取消)
+      //  🎯 v1.3 行業按鈕(v1.4 加第二層):點了就把專業說明放進補充說明;再點一次取消;客人自己打的字保留在最後
       const kb = m.querySelector('#ppl-know'), ta = m.querySelector('#ppl-note');
+      function compose(k, picks, own) {
+        return picks.filter(Boolean).concat(k ? [k.note] : []).concat(own).join(';');
+      }
+      function stateOf() {
+        const parts = splitNote(ta.value);
+        const k = KNOW.find(x => parts.indexOf(x.note) > -1) || null;
+        const known = k ? knowPieces(k) : [];
+        const picks = k ? (k.groups || []).map(g => (g.items.find(it => parts.indexOf(it[1]) > -1) || [])[1] || '') : [];
+        const own = parts.filter(x => known.indexOf(x) === -1 && !KNOW.some(y => y.note === x));
+        return { k, picks, own };
+      }
       function paintKnow() {
-        kb.innerHTML = '<span style="font-size:11px;color:#9a9aa8;width:100%">是這一類嗎?點一下,系統自動補上專業說明:</span>' +
-          KNOW.map(k => '<div class="opt' + (ta.value.indexOf(k.note) > -1 ? ' on' : '') + '" data-kn="' + k.key + '" style="margin:0;padding:6px 10px;font-size:12px">' + k.label + '</div>').join('');
-        kb.querySelectorAll('[data-kn]').forEach(el => el.onclick = function () {
-          const k = KNOW.find(x => x.key === el.getAttribute('data-kn')); if (!k) return;
-          const v = ta.value;
-          ta.value = v.indexOf(k.note) > -1 ? v.replace(k.note, '').replace(/^[;;。\s]+/, '').trim() : (k.note + (v.trim() ? ';' + v.trim() : ''));
+        const st0 = stateOf();
+        //  v1.5 不再問「是這一類嗎」:認得出來就直接顯示已帶好;認不出來什麼都不顯示
+        let h = st0.k ? '<span style="font-size:11px;color:#6dfac2;width:100%">✅ 看得出是「' + esc(st0.k.label) + '」,專業說明已自動帶好(可以改)</span>' : '';
+        if (st0.k) (st0.k.groups || []).forEach((g, gi) => {
+          h += '<span style="font-size:11px;color:#9a9aa8;width:100%;margin-top:4px">' + esc(g.title) + '</span>' +
+            g.items.map((it, ii) => '<div class="opt' + (st0.picks[gi] === it[1] ? ' on' : '') + '" data-g="' + gi + '" data-i="' + ii + '" style="margin:0;padding:5px 9px;font-size:12px">' + esc(it[0]) + '</div>').join('');
+        });
+        kb.innerHTML = h;
+        kb.querySelectorAll('[data-g]').forEach(el => el.onclick = function () {
+          const s1 = stateOf(), gi = +el.getAttribute('data-g'), it = s1.k.groups[gi].items[+el.getAttribute('data-i')];
+          s1.picks[gi] = s1.picks[gi] === it[1] ? '' : it[1];
+          ta.value = compose(s1.k, s1.picks, s1.own);
           paintKnow();
         });
       }
+      //  v1.5 打開時:補充說明還沒有行業那句、而商品看得出是這一行 → 自動帶好(配件 / replica 從商品名自動選)
+      (function autoKnow() {
+        const hay = [prod.name, prod.prodName, prod.prodTag, prod.tag, (window.S && (window.S.brandName || window.S.subName)) || ''].join(' ');
+        const s0 = stateOf(); if (s0.k) return;
+        const k = KNOW.find(x => x.detect && x.detect.test(hay)); if (!k) return;
+        const picks = (k.groups || []).map(g => { const it = g.items.find(x => x[2] && x[2].test(hay)); return it ? it[1] : ''; });
+        ta.value = compose(k, picks, s0.own);
+      })();
       ta.addEventListener('input', paintKnow);
       paintKnow();
       m.querySelector('#ppl-cancel').onclick = function () { m.remove(); done(false); };
@@ -234,5 +293,5 @@
     if (sig !== _sig) { _sig = sig; paintChip(); }
   }, 800);
 
-  window.ProductPlace = { OPTS, open, scaleLine, isFloorish, setting, noteLine, version: '1.3', KNOW: KNOW, sizeOf: sizeOf, needsSize: needsSize };
+  window.ProductPlace = { OPTS, open, scaleLine, isFloorish, setting, noteLine, version: '1.5', KNOW: KNOW, sizeOf: sizeOf, needsSize: needsSize };
 })();
