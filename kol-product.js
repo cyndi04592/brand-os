@@ -110,6 +110,22 @@
     if (cm <= 190) return 'roughly her own standing height';
     return 'a large piece taller than her that she stands beside';
   }
+  //  📦 v5.50(2026-10-27)擺放方式(product-placement.js / products.placement)優先於 realSize
+  //   RA:巴士收納櫃被縮小放上餐桌 —— 公分 AI 用不上,改用「客戶選的擺放方式」,以她的身體當比例尺。
+  //   沒選過 → 走原本的 realSize,一字不變。
+  const PLACE_SCALE = {
+    tip:   'tiny, small enough to pinch between two fingers',
+    palm:  'hand-sized, fitting in one of her hands',
+    table: 'a tabletop piece she would carry with both hands or set on a table',
+    floor: 'a floor-standing piece about knee-to-chest height beside her',
+    large: 'a large floor-standing piece taller than her that she stands beside',
+    flat:  'lying flat on the floor, about the size of a rug',
+  };
+  function placeOf(prod) { return String((prod && prod.placement) || ''); }
+  function isFloorish(prod) { return /^(floor|large|flat)$/.test(placeOf(prod)); }
+  function scaleFor(prod) { return PLACE_SCALE[placeOf(prod)] || sizeToScale(prod && prod.realSize); }
+  function bigScaleFor(prod) { return PLACE_SCALE[placeOf(prod)] || sizeToScaleLarge(prod && prod.realSize); }
+  function placeNote(prod) { const n = String((prod && prod.placeNote) || '').replace(/\s+/g, ' ').trim(); return n ? 'about the product: ' + n.slice(0, 160) : ''; }
   // 決定類型:優先 productType,沒填則 hasPackaging 推(dish 推不出,必須明填)
   function resolveType(prod) {
     const t = String(prod.productType || '').trim().toLowerCase();
@@ -302,7 +318,7 @@
       return 'PROP (a wearable product — feature it being worn or carried): its logo reads correctly; she wears or carries it naturally on her body (on feet, shoulder, wrist, face or body as fits) so it clearly reads as worn' + sz + (_wm ? '; ' + _wm : '') + '; it has real weight and sits naturally against her, shown from flattering angles';
     }
     if (mode === 'hero') {
-      const big = sizeToScaleLarge(prod.realSize);
+      const big = bigScaleFor(prod);
       const bigSz = big ? '; it is ' + big : '';
       return 'HERO PRODUCT (the product is the star of the shot — feature it prominently): its finish reads correctly; show it large, complete and prominent from flattering angles, and she interacts with it naturally (sits on, opens, operates, touches or stands beside it as fits)' + bigSz + '; it has real weight and sits solidly on the floor in the scene, obeying gravity, never floating or pasted on';
     }
@@ -586,12 +602,13 @@
     // 🆕 v3.0:有明設 productMode → 走新模式;沒設(海苔等舊商品)→ 往下走 v2.2 原本邏輯,一字不變
     const mode = resolveMode(prod);
     if (mode) {
-      const mc = contributeNewMode(prod, mode, sizeToScale(prod.realSize));
+      const mc = contributeNewMode(prod, mode, scaleFor(prod));
       if (mc) return mc;
     }
     const type = resolveType(prod);
-    const scale = sizeToScale(prod.realSize);
+    const scale = scaleFor(prod);
     const bits = [];
+    const _pn = placeNote(prod);
 
     if (type === 'dish') {
       const look = (prod.productLook || prod.prodName || '').trim();
@@ -655,6 +672,7 @@
         bits.push('the bag is already open along its top edge, she reaches in through that opening to take a piece, and the bag keeps its whole shape');
       }
       if (scale) bits.push('the product is ' + scale + ', shown at that true size against her body');
+      if (_pn) bits.push(_pn);
       //  ✂️ v5.39:GROUNDED 後面那兩句都是第二份 ——
       //   「正面與標籤朝向鏡頭」上面那句已經在講印刷字要讀得出來;
       //   「自然的重量弧線」GROUNDED 本身就是在講重量與重力。
@@ -667,10 +685,16 @@
     bits.push('the product reads correctly and is never mirrored' + (look ? ' (' + look + ')' : ''));   /* v3.51:一致性已由資產標註區負責,這裡不再重複 */
     { const _m = materialOf(prod); if (_m.pack) bits.push(_m.pack); }   // 🧱 v5.44
     if (scale) bits.push('the product is ' + scale + ', shown at that true size');
+    if (_pn) bits.push(_pn);
+    //  📦 v5.50 落地 / 大型 / 鋪地:她拿不起來 —— 它在地上,她在旁邊用它、打開它、手扶著它
+    if (isFloorish(prod)) {
+      bits.push('it stays on the floor of the room the whole time, its front toward the camera; she stands or sits beside it and uses it, opens it or rests a hand on it');
+      return 'PROP (the product in the room with her, at its real-life size): ' + bits.join('; ');
+    }
     bits.push(GROUNDED + ', its front kept toward the camera and recognizable while held, moving on a natural weighted arc if the action calls for it');
     return 'PROP (the product she is using or showing, at its real-life size): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.49', resolveMode, handProfile, materialOf };
-  console.log('[KolProduct] 👗 v5.49:✂️全模式盤點精簡(螢幕5否定/設備3/專業服務點名五樣/數位3/代操5/命理6→全改正面事實,特效與比較版面不再被唸出來;語意一句沒掉) · v5.48:⚖️受法規行業不再在提示詞裡提醒法規(舊版寫 DO NOT before/after、NOT a medicine、never as merchandise=點名即召喚,跟木偶事件同一個病):醫美/課程/旅遊/養生四個模式全改成正面事實,合規交回 kol-compliance 那一層 · v5.47:✂️服務成果盤點(兩句否定講同一件事→一句正面·五種工藝只送當下那一種·去背句重複刪掉)+🔒特徵鎖(形狀長度顏色質感照參考圖·治鮑伯頭變龐克、法式變彩繪) · v5.46:🥿多張商品圖=同一件的不同角度(治兩雙鞋被合成第三雙) · v5.45:🧱 materialOf 材質與拿法(袋/盒/瓶/罐/紙/布/口紅/鞋包/飾品/噴霧/飲品·抓不到就不寫) · ✋ handProfile 手跟商品怎麼互動(細部動作放不放行＋一句事實給分鏡 AI) · v5.42 ✂️拿掉五份「keep it subtle / do NOT overpower」(那句等於叫模型把商品縮小) · v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.50', resolveMode, handProfile, materialOf, scaleFor, isFloorish };
+  console.log('[KolProduct] 📦 v5.50:擺放方式(落地型不拿在手上)· 👗 v5.49:✂️全模式盤點精簡(螢幕5否定/設備3/專業服務點名五樣/數位3/代操5/命理6→全改正面事實,特效與比較版面不再被唸出來;語意一句沒掉) · v5.48:⚖️受法規行業不再在提示詞裡提醒法規(舊版寫 DO NOT before/after、NOT a medicine、never as merchandise=點名即召喚,跟木偶事件同一個病):醫美/課程/旅遊/養生四個模式全改成正面事實,合規交回 kol-compliance 那一層 · v5.47:✂️服務成果盤點(兩句否定講同一件事→一句正面·五種工藝只送當下那一種·去背句重複刪掉)+🔒特徵鎖(形狀長度顏色質感照參考圖·治鮑伯頭變龐克、法式變彩繪) · v5.46:🥿多張商品圖=同一件的不同角度(治兩雙鞋被合成第三雙) · v5.45:🧱 materialOf 材質與拿法(袋/盒/瓶/罐/紙/布/口紅/鞋包/飾品/噴霧/飲品·抓不到就不寫) · ✋ handProfile 手跟商品怎麼互動(細部動作放不放行＋一句事實給分鏡 AI) · v5.42 ✂️拿掉五份「keep it subtle / do NOT overpower」(那句等於叫模型把商品縮小) · v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
