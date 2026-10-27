@@ -4491,7 +4491,10 @@ async function generateGptPoster() {
           endpoint: 'openai/gpt-image-2/edit',
           payload: {
             prompt: 'Image 1 is a finished campaign photograph. Image 2 shows the real ' + (_isApp ? 'garment' : 'product') + '. ' +
-              'In image 1, the ' + (_isApp ? 'garment' : 'products') + ' become exact copies of the real ones in image 2: every label, printed word, logo, embroidery, stitch line, panel and colour matches the real product it shows. ' +
+              //  📐 2026-10-27 根治「貼上去」:舊句「become exact copies of the real ones in image 2」→ AI 把第 2 張的棚拍原圖(白亮平光、原角度)整塊貼回來,
+              //   第一步好不容易融進場景的光、透視、陰影又被蓋掉。改成:形體/角度/光影/大小照第 1 張,只把「印的東西」對回第 2 張。
+              'In image 1, the markings on the ' + (_isApp ? 'garment' : 'products') + ' are corrected to match the real ones in image 2: every label, printed word, logo, embroidery, stitch line, panel and colour reads exactly as on the real product. ' +
+              'The ' + (_isApp ? 'garment' : 'products') + ' keep the shape, viewing angle, perspective, light, shading, reflections and contact shadows they have in image 1, lit by the same light as everything around them. ' +
               'Everything else in image 1 — the background, the headline and other lettering on the background, the light, the shadows, the camera angle, the position and size of the ' + (_isApp ? 'garment, the model\'s face, hair and pose' : 'products') + ' — stays exactly as it is.',
             image_urls: [winner.imageUrl, imageUrl],
             image_size: _sz.fal,
