@@ -528,7 +528,7 @@ function buildDataFromSheets(data) {
       soul: p.subSoul, adStyle: p.subAdStyle, hashtags: p.subHashtags, prods: []
     };
     if (p.prodId) {
-      prodByBrand[p.brandId][key].prods.push({ id: p.prodId, name: p.prodName, tag: p.prodTag, spec: p.spec || '', feature: p.feature || '' });
+      prodByBrand[p.brandId][key].prods.push({ id: p.prodId, name: p.prodName, tag: p.prodTag, spec: p.spec || '', feature: p.feature || '', placement: p.placement || '', placeNote: p.placeNote || '' });   // 📦 2026-10-27 擺放方式(product-placement.js)
     }
   });
   window.BRANDS = (brands || []).map(b => ({
@@ -607,3 +607,6 @@ function buildDataFromSheets(data) {
     return _p;
   };
 })();
+
+// 📦 2026-10-27 商品擺放方式:小視窗與提示詞句子都在 product-placement.js(一個檔案一個職責,config.js 只負責載入)
+(function(){ try { if (document.querySelector('script[src*="product-placement.js"]')) return; var s=document.createElement('script'); s.src='product-placement.js?v=1.0'; document.head.appendChild(s); } catch(e){} })();
