@@ -43,16 +43,32 @@
       'standing on the floor in a quiet bedroom corner by the window, a chair beside it',
       'standing on the floor in a calm home corner, a floor lamp and a potted plant beside it',
       'standing on the tiled floor of a covered balcony, a folding chair beside it',
+      // ── 2026-10-27 Pinterest「2026質感 家具 拍攝 空間」「2026質感 兒童房」 ──
+      'standing on the floor of an airy white room, floor-length sheer curtains and an arched floor lamp beside it',
+      'standing on the floor of a seventies living room, a round walnut coffee table and a shag rug beside it',
+      'standing on the floor of a cream living room, a tan leather sofa and a big leafy plant beside it',
+      'standing on a woven rattan mat against a textured lime-plaster wall, a low stool beside it',
+      'standing on the floor of a children\'s room with arched built-in shelves, a round rug and a small wooden chair beside it',
+      'standing on the floor of a children\'s room with a sage-green panelled wall, a low bed and a soft pouf beside it',
+      'standing on the warm wooden floor of a light hallway with framed prints, a pair of shoes beside it',
+      'standing on the floor of a bare putty-coloured room, one hard line of sun across the floor, a single chair beside it',
     ],
     large: [
       'standing on the floor of a spacious bright showroom, a person walking past it',
       'standing on a clean workshop floor, a worker standing beside it',
       'standing against a wide living-room wall, a sofa in front of it',
+      'standing in a calm grey living room with tall sheer curtains, a person walking past in the background',
+      'standing in a bright open-plan apartment, a dining table and chairs in front of it',
+      'standing against a textured plaster wall in a spacious room, a person standing a few steps away',
+      'standing on a polished concrete floor in a quiet design studio, a long work table beside it',
     ],
     flat: [
       'laid flat on the floor of a bright living room, seen from a high angle, a sofa edge and a few toys at its side',
       'laid flat on a sunny playroom floor, seen from above, a pair of small slippers at its edge',
       'laid flat on a pale wooden floor by a big window, seen from a high angle, a cushion beside it',
+      'laid flat in a children\'s room with arched built-in shelves, seen from a high angle, a small wooden chair at its edge',
+      'laid flat on a sage-green room floor, seen from above, a soft toy and a pouf at its side',
+      'laid flat in a sunny living room with sheer curtains, seen from a high angle, a low sofa behind it',
     ],
   };
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
@@ -166,5 +182,5 @@
     if (sig !== _sig) { _sig = sig; paintChip(); }
   }, 800);
 
-  window.ProductPlace = { OPTS, open, scaleLine, isFloorish, setting, noteLine, version: '1.0' };
+  window.ProductPlace = { OPTS, open, scaleLine, isFloorish, setting, noteLine, version: '1.1' };
 })();
