@@ -137,8 +137,9 @@
   function _sized(prod) {
     const k = placeOf(prod), en = SIZE_EN[sizeZh(prod)];
     if (!en) return PLACE_SCALE[k] || '';
-    if (k === 'floor') return 'a floor-standing piece ' + en + ', standing on the floor beside her';
-    if (k === 'large') return 'a large floor-standing piece ' + en + ', standing on the floor beside her';
+    //  📏 v5.53(RA:巴士櫃還是偏小)AI 對家具習慣往小畫 → 寫成「整件家具的尺寸」+「她站在旁邊時頂端落在她身上哪裡」
+    if (k === 'floor') return 'a full-size floor-standing piece of furniture ' + en + ' — when she stands beside it, its top is level with that part of her body';
+    if (k === 'large') return 'a large full-size floor-standing piece ' + en + ' — when she stands beside it, it reaches that height against her body';
     if (k === 'flat')  return 'lying flat on the floor, ' + en;
     return (PLACE_SCALE[k] ? PLACE_SCALE[k] + ', ' : '') + en;
   }
@@ -614,7 +615,9 @@
       if (!zh) return r;
       const n = String((prod && prod.placeNote) || '').replace(SIZE_RE, '').replace(/\s+/g, ' ').trim().slice(0, 80);
       const note = n ? '(' + n + ')' : '';
-      if (/^(floor|large|flat)$/.test(pl)) return { fine: false, fact: zh + note + '她拿不起來:它一直放在房間地板上,她站或坐在旁邊使用、打開或用手扶著。', mode: r.mode };
+      //  📏 v5.53 分鏡至少有一個鏡頭她站在旁邊、手扶著頂端 → 觀眾一眼看出多大(蹲著、跪著看不出比例)
+      if (/^(floor|large)$/.test(pl)) return { fine: false, fact: zh + note + '她拿不起來:它一直放在房間地板上,她站或坐在旁邊使用、打開或用手扶著;至少有一個鏡頭她站直在它旁邊、一手扶著它的頂端,讓人一眼看出它有多大。', mode: r.mode };
+      if (pl === 'flat') return { fine: false, fact: zh + note + '她拿不起來:它一直鋪在地板上,她站、坐或走在上面。', mode: r.mode };
       return Object.assign({}, r, { fact: zh + note + (r.fact || '') });
     } catch (e) { return r; }
   }
@@ -742,6 +745,6 @@
     return 'PROP (the product she is using or showing, at its real-life size): ' + bits.join('; ');
   }
 
-  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.52', resolveMode, handProfile, materialOf, scaleFor, isFloorish };
+  window.KolProduct = { contribute, isYes, sizeToScale, resolveType, version: 'v5.53', resolveMode, handProfile, materialOf, scaleFor, isFloorish };
   console.log('[KolProduct] 📦 v5.51:擺放方式(落地型不拿在手上·分鏡也知道大小)· 👗 v5.49:✂️全模式盤點精簡(螢幕5否定/設備3/專業服務點名五樣/數位3/代操5/命理6→全改正面事實,特效與比較版面不再被唸出來;語意一句沒掉) · v5.48:⚖️受法規行業不再在提示詞裡提醒法規(舊版寫 DO NOT before/after、NOT a medicine、never as merchandise=點名即召喚,跟木偶事件同一個病):醫美/課程/旅遊/養生四個模式全改成正面事實,合規交回 kol-compliance 那一層 · v5.47:✂️服務成果盤點(兩句否定講同一件事→一句正面·五種工藝只送當下那一種·去背句重複刪掉)+🔒特徵鎖(形狀長度顏色質感照參考圖·治鮑伯頭變龐克、法式變彩繪) · v5.46:🥿多張商品圖=同一件的不同角度(治兩雙鞋被合成第三雙) · v5.45:🧱 materialOf 材質與拿法(袋/盒/瓶/罐/紙/布/口紅/鞋包/飾品/噴霧/飲品·抓不到就不寫) · ✋ handProfile 手跟商品怎麼互動(細部動作放不放行＋一句事實給分鏡 AI) · v5.42 ✂️拿掉五份「keep it subtle / do NOT overpower」(那句等於叫模型把商品縮小) · v5.40:✂️三個肥模式去重(服務成果四句→兩句·盛盤食物七種說法→一句·養生保健三個DO NOT→正面一句) · v5.39:✂️包裝商品去重三處(包裝句跟資產標註區整句重複/片數例子過長/GROUNDED 後面兩句都是第二份)。RA:「砍了一堆提示詞等於沒砍,字數還是逼近 3900」—— 雙商品時商品鐵律 1416 字,把前面省下的全吃掉了 · v5.38:✂️去背毛邊列四種→一句正面(16模式共用,199→75字)·內衣拿掉「布料與花紋要正確」(標註區已鎖,純重複) · v5.37:🧹服務類模式跨層清理 9 處(指揮光線 even light/clean lighting/studio light/directional light → 跟光的鐵律打架,昨天已在 crew-director 殺過三份;寫死地點 cleanroom/office-meeting-clinic/treatment room/table → 跟實景照打架)。光交給光的鐵律,地點交給實景照,商品層只留「這一行在做什麼」 · v5.36:🔢包裝商品內容物【片數照參考圖】(舊句前半 keep count、後半又寫 loose pieces may vary naturally 把鎖放掉 → 模型照後半做) · v5.35:補回【她穿著服裝參考圖那一套,商品在底下】的事實陳述(v5.34 拿掉那句後,整份 prompt 沒有任何一句說她身上有外層 → 模型把商品當成唯一那件在穿;RA:內衣穿反從六次偶爾一次變成幾乎每次)。仍不寫「從領口露出/敞開/被瞥見」那類指揮穿法的字 · v5.34:拿掉「穿在外出服底下·從敞開領口被瞥見」(與服裝圖打架→模型把外層整件拿掉·兩段穿著不一致)·穿著只由服裝圖決定 · 🎒 v4.0 就緒 · 🧵內衣材質行為(軟/垂墜/可凹陷·治硬板子) · ✂️去背毛邊公版(16模式共用·掛在出口) · · 📦雙槽模式第二張圖全部點名(內衣正/背·設備機台/加工件·螢幕裝置/畫面·養生商品/配戴) · 道具師·模式驅動(16模式) · 🆕 貼身衣物內層模式(265字·無分號·整條受保底保護) · 自動判斷(與合規模組共用分類表) · 🆕 服務成果左右對稱鎖(單眼參考圖不會只做一隻眼·鏡頭間不換邊) · 海苔等舊商品原樣不變');
 })();
