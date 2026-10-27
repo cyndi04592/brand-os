@@ -11,7 +11,7 @@
    🎯 v1.3(2026-10-27)「這是哪一類」點一下 → 自動帶入驗證過的專業說明(RA:Red hammer 那段要烙印,
      以後生存遊戲的客人進來點「生存遊戲」就有,不用自己寫長文)。說明照樣存進補充說明 → 廣告圖、影片都吃得到。
      ⚠️ 只放【實測過有效】的類別;每做好一個新行業就加一條 KNOW。
-   🎯 v1.5(2026-10-27)不用客人點「是這一類嗎」(RA:進來就內建):商品名/品牌看得出是生存遊戲 → 打開就自動帶好專業說明,配件也從商品名自動選好;
+   🎯 v1.5(2026-10-27)不用客人點「是這一類嗎」(RA:進來就內建):商品名/品牌靈魂(入駐表→靈魂書→soul)看得出是生存遊戲 → 打開就自動帶好專業說明,配件也從商品名自動選好;
      客人只剩「裝在哪一種 replica」可選填。認不出來的商品 → 什麼都不顯示,跟以前一樣
    🎯 v1.4(2026-10-27)生存遊戲再往下兩排:哪一種配件(帶入裝在哪、怎麼裝)+ 裝在哪一種 replica(M4 / AK / 狙擊 / 手槍型)
    ═══════════════════════════════════════════════════════════════ */
@@ -87,6 +87,7 @@
     { key: 'airsoft', label: '生存遊戲',
       //  認得出是生存遊戲的字(商品名 / 標籤 / 品牌名);單看「握把、背帶、護目鏡」不算,那些別的行業也有
       detect: /生存遊戲|airsoft|replica|BB ?彈|GBB|AEG|戰術|漆彈/i,
+      soulDetect: /生存遊戲|airsoft|漆彈/i,
       note: '生存遊戲(airsoft)配件,畫面在生存遊戲場地或戰術裝備旁,玩家戴戰術手套',
       groups: [
         { title: '哪一種配件?', items: [
@@ -231,10 +232,16 @@
       }
       //  v1.5 打開時:補充說明還沒有行業那句、而商品看得出是這一行 → 自動帶好(配件 / replica 從商品名自動選)
       (function autoKnow() {
-        const hay = [prod.name, prod.prodName, prod.prodTag, prod.tag, (window.S && (window.S.brandName || window.S.subName)) || ''].join(' ');
+        //  商品自己的字(名稱/標籤)→ 判斷行業 + 自動選配件/型號
+        const own = [prod.name, prod.prodName, prod.prodTag, prod.tag].join(' ');
+        //  品牌靈魂(入駐表 → 靈魂書 → 審核時濃縮成 soul,品牌與系列都有一份;config.js 帶到 window.BRANDS)
+        //   → 只拿來判斷行業,用嚴格的字(「戰術」不算:行銷文案常寫「行銷戰術」)
+        const S_ = window.S || {}, B = (window.BRANDS || []).find(b => b.id === S_.brandId) || {};
+        const sub = (B.subs || []).find(x => x.id === S_.subId) || {};
+        const soul = [B.name, B.soul, sub.name, sub.soul].join(' ');
         const s0 = stateOf(); if (s0.k) return;
-        const k = KNOW.find(x => x.detect && x.detect.test(hay)); if (!k) return;
-        const picks = (k.groups || []).map(g => { const it = g.items.find(x => x[2] && x[2].test(hay)); return it ? it[1] : ''; });
+        const k = KNOW.find(x => (x.detect && x.detect.test(own)) || (x.soulDetect && x.soulDetect.test(soul))); if (!k) return;
+        const picks = (k.groups || []).map(g => { const it = g.items.find(x => x[2] && x[2].test(own)); return it ? it[1] : ''; });
         ta.value = compose(k, picks, s0.own);
       })();
       ta.addEventListener('input', paintKnow);
