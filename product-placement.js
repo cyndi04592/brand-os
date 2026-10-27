@@ -78,11 +78,32 @@
   function keyOf(p) { return String((p && p.placement) || ''); }
 
   //  ── 給提示詞用的三個小工具(沒選 = 回空字串,行為跟以前一模一樣)──
-  function scaleLine(p) { return SCALE[keyOf(p || curProd())] || ''; }
+  //  📏 v1.2 大小用「點一下」選,不用打字(RA:1000 個客人不可能一個一個跟我聊多高)
+  //   存在補充說明最前面「【大小】到大人的腰。」→ 不用動資料庫、後台也看得到改得到
+  const SIZES = {
+    floor: [['到大人的膝蓋', 'about knee height of an adult'], ['到大人的腰', 'about waist height of an adult'], ['到大人的胸口', 'about chest height of an adult'], ['跟大人差不多高', 'about as tall as an adult']],
+    large: [['跟大人差不多高', 'about as tall as an adult'], ['比大人高一個頭', 'about a head taller than an adult'], ['快碰到天花板', 'almost reaching the ceiling']],
+    flat:  [['一張小地墊大小', 'about the size of a small doormat'], ['一張客廳地毯大小', 'about the size of a living-room rug'], ['鋪滿半個房間', 'covering about half the floor of a room']],
+    table: [['比 A4 紙小', 'smaller than a sheet of A4 paper'], ['像一個鞋盒', 'about the size of a shoebox'], ['像一台微波爐', 'about the size of a microwave oven']],
+    palm:  [['握在手心', 'small enough to close inside one palm'], ['像一支手機', 'about the size of a phone'], ['像一瓶 500ml 的水', 'about the size of a 500 ml water bottle']],
+  };
+  const SIZE_RE = /^【大小】([^。]+)。\s*/;
+  function sizeOf(p) { const m = String((p && p.placeNote) || '').match(SIZE_RE); return m ? m[1] : ''; }
+  function restNote(p) { return String((p && p.placeNote) || '').replace(SIZE_RE, '').trim(); }
+  function needsSize(p) { return /^(floor|large|flat)$/.test(keyOf(p)) && !sizeOf(p); }
+  function sizeEn(p) { const k = keyOf(p), zh = sizeOf(p), row = (SIZES[k] || []).find(x => x[0] === zh); return row ? row[1] : ''; }
+  function scaleLine(p) {
+    p = p || curProd(); const k = keyOf(p), en = sizeEn(p);
+    if (!en) return SCALE[k] || '';
+    if (k === 'floor') return 'It is a floor-standing piece ' + en + ', standing on the floor at that true size.';
+    if (k === 'large') return 'It is a large floor-standing piece, ' + en + ', standing on the floor at that true size.';
+    if (k === 'flat')  return 'It lies flat on the floor, ' + en + '.';
+    return (SCALE[k] || '') + ' It is ' + en + '.';
+  }
   function isFloorish(p) { return /^(floor|large|flat)$/.test(keyOf(p || curProd())); }
   function setting(p) { const s = SETS[keyOf(p || curProd())]; return s ? pick(s) : ''; }
   function noteLine(p) {
-    const n = String(((p || curProd()) || {}).placeNote || '').replace(/\s+/g, ' ').trim();
+    const n = restNote(p || curProd()).replace(/\s+/g, ' ').trim();
     return n ? 'About the product: ' + n.slice(0, 160) + '.' : '';
   }
 
@@ -112,28 +133,34 @@
       if (!prod) { done(false); return; }
       css();
       const old = document.getElementById('ppl-mask'); if (old) old.remove();
-      let sel = keyOf(prod);
+      let sel = keyOf(prod), size = sizeOf(prod);
       const m = document.createElement('div'); m.id = 'ppl-mask';
       m.innerHTML = '<div id="ppl-box"><h3>這個商品怎麼擺?</h3>' +
         '<div class="sub">「' + esc(prod.name) + '」· 只要選一次,之後廣告圖、影片都照這個大小拍</div>' +
-        '<div id="ppl-opts"></div>' +
+        '<div id="ppl-opts"></div><div id="ppl-size"></div>' +
         '<div style="font-size:12px;font-weight:700;margin-top:10px">補充說明(選填)</div>' +
         '<div style="font-size:11px;color:#9a9aa8">裡面裝什麼、怎麼用。例:一盒 6 包海苔 / 兩隻腳伸進去 / 可以掛在帳篷上</div>' +
-        '<textarea id="ppl-note" maxlength="300">' + esc(prod.placeNote || '') + '</textarea>' +
+        '<textarea id="ppl-note" maxlength="300">' + esc(restNote(prod)) + '</textarea>' +
         '<div id="ppl-st"></div><div class="row"><button id="ppl-cancel">取消</button><button id="ppl-save" class="pri">存好,繼續</button></div></div>';
       document.body.appendChild(m);
       const box = m.querySelector('#ppl-opts'), btn = m.querySelector('#ppl-save'), st = m.querySelector('#ppl-st');
       function paint() {
         box.innerHTML = OPTS.map(o => '<div class="opt' + (o.key === sel ? ' on' : '') + '" data-k="' + o.key + '"><b>' + o.label + '</b><div>' + o.hint + '</div></div>').join('');
-        box.querySelectorAll('.opt').forEach(el => el.onclick = function () { sel = el.getAttribute('data-k'); paint(); });
-        btn.disabled = !sel;
+        box.querySelectorAll('.opt').forEach(el => el.onclick = function () { const k = el.getAttribute('data-k'); if (k !== sel) size = ''; sel = k; paint(); });
+        //  📏 選了有大小差別的 → 下面接一排「大約多大」,點一下就好(落地/大型/鋪地必選)
+        const sz = m.querySelector('#ppl-size'), rows = SIZES[sel] || [], must = /^(floor|large|flat)$/.test(sel);
+        if (size && !rows.some(x => x[0] === size)) size = '';
+        sz.innerHTML = rows.length ? '<div style="font-size:12px;font-weight:700;margin:10px 0 6px">大約多大?' + (must ? '<span style="color:#fa6d9b"> (必選)</span>' : '(選填)') + '</div><div style="display:flex;flex-wrap:wrap;gap:6px">' +
+          rows.map(x => '<div class="opt' + (x[0] === size ? ' on' : '') + '" data-s="' + x[0] + '" style="margin:0;padding:7px 10px;font-size:13px">' + x[0] + '</div>').join('') + '</div>' : '';
+        sz.querySelectorAll('[data-s]').forEach(el => el.onclick = function () { const v = el.getAttribute('data-s'); size = (size === v && !must) ? '' : v; paint(); });
+        btn.disabled = !sel || (must && !size);
       }
       paint();
       m.querySelector('#ppl-cancel').onclick = function () { m.remove(); done(false); };
       btn.onclick = async function () {
         if (!sel) return;
         btn.disabled = true; st.textContent = '儲存中...';
-        const note = m.querySelector('#ppl-note').value.trim();
+        const note = (size ? '【大小】' + size + '。' : '') + m.querySelector('#ppl-note').value.trim().replace(SIZE_RE, '');
         try {
           const r = await fetch(KOL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
             action: 'product_placement_set', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : ''),
@@ -157,7 +184,8 @@
     css();
     if (!c) { c = document.createElement('div'); c.id = 'ppl-chip'; c.className = 'ppl-chip'; sec.insertBefore(c, sec.firstChild); }
     const o = OPTS.find(x => x.key === keyOf(p));
-    c.innerHTML = '📦 擺放方式:' + (o ? '<b>' + o.label + '</b>' : '<span style="color:#fa6d9b">還沒選</span>') + '<a>' + (o ? '改' : '選') + '</a>';
+    const zs = sizeOf(p);
+    c.innerHTML = '📦 擺放方式:' + (o ? '<b>' + o.label + '</b>' + (zs ? ' · ' + esc(zs) : (needsSize(p) ? ' · <span style="color:#fa6d9b">還沒選大小</span>' : '')) : '<span style="color:#fa6d9b">還沒選</span>') + '<a>' + (o ? '改' : '選') + '</a>';
     c.querySelector('a').onclick = function () { open(p); };
   }
   function hook() {
@@ -165,7 +193,7 @@
     const orig = window.generateGptPoster;
     const wrapped = async function () {
       const p = curProd();
-      if (p && !keyOf(p)) { const ok = await open(p); if (!ok) return; }
+      if (p && (!keyOf(p) || needsSize(p))) { const ok = await open(p); if (!ok) return; }   // 📏 v1.2 落地/大型/鋪地還沒選大小 → 也問一次
       return orig.apply(this, arguments);
     };
     wrapped._ppl = true;
@@ -178,9 +206,9 @@
   setInterval(function () {
     const md = document.getElementById('adMakerModal');
     if (!md || md.style.display === 'none') { _sig = ''; return; }
-    const p = curProd(), sig = p ? (p.id + '|' + keyOf(p)) : '-';
+    const p = curProd(), sig = p ? (p.id + '|' + keyOf(p) + '|' + sizeOf(p)) : '-';
     if (sig !== _sig) { _sig = sig; paintChip(); }
   }, 800);
 
-  window.ProductPlace = { OPTS, open, scaleLine, isFloorish, setting, noteLine, version: '1.1' };
+  window.ProductPlace = { OPTS, open, scaleLine, isFloorish, setting, noteLine, version: '1.2', sizeOf: sizeOf, needsSize: needsSize };
 })();
