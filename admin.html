@@ -1689,7 +1689,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
       <input class="filter-input" id="filterSearch" placeholder="搜尋商品名稱..." oninput="renderProducts()">
     </div>
     <div class="table-wrap">
-      <table><thead><tr><th>品牌</th><th>子系列ID</th><th>子系列名</th><th>顏色</th><th>商品ID</th><th>商品名稱</th><th>標籤</th><th>規格</th><th>特色</th><th></th></tr></thead>
+      <table><thead><tr><th>品牌</th><th>子系列ID</th><th>子系列名</th><th>顏色</th><th>商品ID</th><th>商品名稱</th><th>標籤</th><th>規格</th><th>特色</th><th title="AI 照這個大小拍商品(廣告圖/商品影片/KOL)">擺放方式</th><th>補充說明</th><th></th></tr></thead>
       <tbody id="productsBody"></tbody></table>
     </div>
   </div>
@@ -3690,12 +3690,14 @@ function updateFilters() {
   if (memSel) memSel.innerHTML = '<option value="">全部品牌</option>' + DB.brands.map(b=>`<option value="${b.id}">${b.icon||''} ${b.name}</option>`).join('');
 }
 
+//  📦 2026-10-27 商品擺放方式(跟 kol-proxy PLACEMENTS、product-placement.js 同一組代號)
+const _PLACE_OPTS = [['', '(還沒選)'], ['tip', '指尖小物'], ['palm', '手掌大小'], ['table', '桌上型'], ['floor', '落地型'], ['large', '大型設備・家具'], ['flat', '鋪地型'], ['wear', '穿戴・做在人身上'], ['service', '服務・課程']];
 function renderProducts() {
   const bf = document.getElementById('filterBrand').value;
   const sf = document.getElementById('filterSearch').value.toLowerCase();
   const filtered = DB.products.filter(p => (!bf||p.brandId===bf)&&(!sf||p.prodName?.toLowerCase().includes(sf)));
   const tbody = document.getElementById('productsBody');
-  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--t4)">沒有符合的商品</td></tr>'; return; }
+  if (!filtered.length) { tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--t4)">沒有符合的商品</td></tr>'; return; }
   tbody.innerHTML = filtered.map(p => {
     const i = DB.products.indexOf(p);
     //  ✏️ 2026-10-21 一筆一筆存:代號(系列/商品)是這一筆的身分,存過就不能改;新加的那筆按「✓ 建立」才寫進系統
@@ -3712,6 +3714,8 @@ function renderProducts() {
       <td><input class="td-input" value="${esc(p.prodTag)}" oninput="DB.products[${i}].prodTag=this.value"${A('prodTag')} style="min-width:80px"></td>
       <td><input class="td-input" value="${esc(p.spec||'')}" placeholder="如:16吋/復古銅" oninput="DB.products[${i}].spec=this.value"${A('spec')} title="${esc(p.spec||'')}" style="min-width:140px"></td>
       <td><input class="td-input" value="${esc(p.feature||'')}" placeholder="如:嘖嘖募資" oninput="DB.products[${i}].feature=this.value"${A('feature')} title="${esc(p.feature||'')}" style="min-width:130px"></td>
+      <td><select class="td-input" onchange="DB.products[${i}].placement=this.value"${A('placement')} style="min-width:110px${p.placement ? '' : ';color:#fa6d9b'}">${_PLACE_OPTS.map(o=>`<option value="${o[0]}" ${(p.placement||'')===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></td>
+      <td><input class="td-input" value="${esc(p.placeNote||'')}" placeholder="裡面裝什麼、怎麼用" oninput="DB.products[${i}].placeNote=this.value"${A('placeNote')} title="${esc(p.placeNote||'')}" style="min-width:150px"></td>
       <td style="white-space:nowrap;">
         ${nw
           ? `<button class="btn-refresh" style="padding:4px 10px;font-size:12px;" onclick="createProduct(${i})">✓ 建立</button>
@@ -3724,7 +3728,7 @@ function renderProducts() {
 }
 function addProduct() {
   const brandId = document.getElementById('filterBrand').value||(DB.brands[0]?.id||'');
-  DB.products.push({brandId,subId:'',subName:'',subColor:'gold',subSoul:'',subAdStyle:'',subHashtags:'',prodId:'',prodName:'新商品',prodTag:'',spec:'',feature:'',_new:true});
+  DB.products.push({brandId,subId:'',subName:'',subColor:'gold',subSoul:'',subAdStyle:'',subHashtags:'',prodId:'',prodName:'新商品',prodTag:'',spec:'',feature:'',placement:'',placeNote:'',_new:true});
   renderProducts();
   setStatus('填好系列代號、商品代號、名稱後,按那一列的「✓ 建立」', 'ok');
 }
@@ -3732,7 +3736,7 @@ function addProduct() {
 async function createProduct(i) {
   const p = DB.products[i]; if (!p) return;
   if (!String(p.subId||'').trim() || !String(p.prodId||'').trim() || !String(p.prodName||'').trim()) { setStatus('❌ 系列代號、商品代號、商品名稱都要填', 'err'); return; }
-  const row = {}; ['brandId','subId','prodId','subName','subColor','prodName','prodTag','spec','feature'].forEach(k => row[k] = String(p[k]||'').trim());
+  const row = {}; ['brandId','subId','prodId','subName','subColor','prodName','prodTag','spec','feature','placement','placeNote'].forEach(k => row[k] = String(p[k]||'').trim());
   let j = null; try { j = await workerWrite('adminAddProduct', { email: ADMIN_USER_EMAIL, row }); } catch (_) {}
   if (!j || !j.ok) { setStatus('❌ ' + ((j && (j.message || j.error)) || '建立失敗'), 'err'); return; }
   delete p._new; Object.assign(p, row); _rowOrigSet(p); renderProducts();
