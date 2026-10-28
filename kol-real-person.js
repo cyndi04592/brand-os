@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
-   kol-real-person.js — 使用自己建立 KOL(v1.5 · 2026-10-26)
+   kol-real-person.js — 使用自己建立 KOL(v1.6 · 2026-10-28)
+   v1.6:簽名前直接看正式 A4 授權書(kol-proxy v6.64 kol_consent_doc.previewHtml,iframe 顯示＋開新視窗列印)
    v1.5:RA 定名「使用自己建立」(KOL 本來就是很真實的人,叫「真人」反而像在說其他是假人);卡片加 ＋、改粉色
    ───────────────────────────────────────────────────────────────────
    職責(只有這一件事):讓客戶用【本人錄影(或照片+錄音)+ 手寫簽名授權書】建一位 KOL。
@@ -426,11 +427,23 @@
       try {
         const r = await call('kol_consent_doc', {
           brandId: brandId(), brandName: brandName(), personaName: $('krp-name').value.trim(),
-          personName: $('krp-pn').value.trim(), agent: agentOn(),
+          personName: $('krp-pn').value.trim(), agent: agentOn(), source: st.mode === 'video' ? 'video' : 'photo',
         });
         if (my !== _docT) return;
         if (!r || !r.ok) throw new Error((r && r.error) || '授權書載入失敗');
-        $('krp-doc').innerHTML = '<h4>' + esc(r.title) + '</h4><ol>' + r.items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ol>';
+        //  📄 v1.6 授權書 v3:直接顯示正式 A4 表單(kol-proxy v6.64 previewHtml);舊版 Worker 沒給 → 照舊條列
+        if (r.previewHtml) {
+          $('krp-doc').innerHTML = '<iframe id="krp-docf" title="授權書" style="width:100%;height:420px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:#fff"></iframe>' +
+            '<div class="row" style="justify-content:flex-end;margin-top:4px"><button type="button" class="lnk" id="krp-docfull">開新視窗看完整 A4 / 列印</button></div>';
+          $('krp-docf').srcdoc = r.previewHtml;
+          $('krp-docfull').onclick = function () {
+            const u = URL.createObjectURL(new Blob([r.previewHtml], { type: 'text/html' }));
+            window.open(u, '_blank');
+            setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+          };
+        } else {
+          $('krp-doc').innerHTML = '<h4>' + esc(r.title) + '</h4><ol>' + r.items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ol>';
+        }
       } catch (e) { if (my === _docT) $('krp-doc').textContent = e.message || '授權書載入失敗,請重開視窗'; }
     }
     function agentOn() { return ((document.querySelector('input[name=krp-ag]:checked') || {}).value) === 'agent'; }
