@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
-//  🎬 kol-mode.js v1.3(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  🎬 kol-mode.js v1.4(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v1.4:風格 21 → 25(Q 版大頭、黑白漫畫、粉彩水彩動漫、紅黑海報;RA 給的 Pinterest 裡現有沒有的才加)
 //  v1.3:動畫模式只在 STEP2 生效;切到 STEP3 單集企劃或其他頁面自動回到寫實(避免角色設計圖對錯 KOL)
 //  v1.2:風格 13 → 21 種、重新分 5 組(配合 Worker v6.72);熱血戰鬥標「已測」
 //  v1.1:風格卡改成可收合(左欄窄,13 張卡太長)—— 平常只顯示「目前風格」一列,按「更換風格 ▾」才展開,點完卡片自動收起
 //  RA 拍板:動畫不是另一個版面,是 KOL 同一條流程上的一顆切換鈕。
 //   ① 寫實真人 / 動畫 二選一(寫實 = 跟原本一模一樣)
-//   ② 動畫 → 21 種風格卡(卡片圖 = anim-styles/<key>.jpg)
+//   ② 動畫 → 25 種風格卡(卡片圖 = anim-styles/<key>.jpg;v1.4 新 4 種用 CDN 角色設計圖)
 //   ③ 角色確認:KOL 照片轉成該風格的角色設計圖(kol_toon,60 點;同一位 KOL 同一風格只轉一次,之後免費)
 //   ④ 下面流程照舊;提示詞與分鏡思考由 Worker 食譜依 window.KOL_MODE 自動切換
 //  對外:window.KOL_MODE(風格 key,寫實 = '')、window.KOL_TOON_URL(角色設計圖)
@@ -14,9 +15,18 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '1.3';
+  const VERSION = '1.4';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
+  //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
+  const CDN_CARD = 'https://cdn.raby.com.tw/cdn-cgi/image/width=480,height=480,fit=cover,gravity=0.5x0.3,quality=85,format=auto/ra/toon/';
+  const CARD_SRC = {
+    chibi: CDN_CARD + 'chibi-01716c404e429a83b385cf998a04c42ace0e5035.jpg',
+    manga: CDN_CARD + 'manga-1d47680b75fc67f997b393015bd4f39dcc5f9fc6.jpg',
+    poster: CDN_CARD + 'poster-db02efb979d7b6ad9ff3bbc6d5c7cb5107603b48.jpg',
+    pastelwc: CDN_CARD + 'pastelwc-98dc6b866377a066a2db1511c946061ab518a617.jpg',
+  };
+  function _card(k) { return CARD_SRC[k] || (IMG_DIR + k + '.jpg'); }
 
   //  卡片文字(UI 用;畫風本身寫在 Worker 食譜)
   const GROUPS = [
@@ -38,6 +48,9 @@
       ['retro90s', '90 年代復古動畫', '賽璐珞、底片顆粒、VHS 感'],
       ['cyberanime', '賽博動漫', '藍色螢幕光、霓虹、未來感'],
       ['lineart', '日系線稿插畫', '細線、淡色、大量留白'],
+      ['chibi', 'Q 版大頭', '2 頭半身、超大眼睛、蹦蹦跳跳'],
+      ['manga', '黑白漫畫', '黑白線稿＋網點,商品是唯一彩色'],
+      ['pastelwc', '粉彩水彩動漫', '粉紅淡紫水彩暈染、夢幻大眼'],
     ] },
     { name: '插畫動畫', items: [
       ['gouache', '手繪水粉 lo-fi', '水粉蠟筆、紙紋、夕陽金光'],
@@ -45,6 +58,7 @@
       ['editorial', '潮流插畫', '粗線條、大色塊、有態度'],
       ['scribble', '塗鴉實拍', '蠟筆塗鴉角色在真實場景'],
       ['neon', '霓虹雙色', '紫＋桃紅、夜色氛圍'],
+      ['poster', '紅黑海報', '大紅、黑、米白三色網版印刷'],
     ] },
     { name: '平面設計', items: [
       ['flat', '品牌扁平動畫', '品牌色大色塊、彈跳手腳'],
@@ -121,7 +135,7 @@
       + '<button data-km="anim" class="' + (mode ? 'on' : '') + '">🎬 動畫</button></div>';
     if (mode && !open) {
       const it = _item(mode);
-      h += '<div class="km-cur" data-km-open="1"><img src="' + IMG_DIR + mode + '.jpg" alt="">'
+      h += '<div class="km-cur" data-km-open="1"><img src="' + _card(mode) + '" alt="">'
         + '<div><div class="km-curt">' + _esc(it ? it[1] : '') + '</div><div class="km-curd">' + _esc(it ? it[2] : '') + '</div></div>'
         + '<span class="km-chg">更換風格 ▾</span></div>';
       h += '<div class="km-char" id="km-char">' + _charHtml() + '</div>';
@@ -132,7 +146,7 @@
         g.items.forEach(function (it) {
           const tag = it[3] ? '<span class="km-tag">' + it[3] + '</span>' : '<span class="km-tag new">新</span>';
           h += '<div class="km-c' + (mode === it[0] ? ' on' : '') + '" data-ks="' + it[0] + '">'
-            + '<img loading="lazy" src="' + IMG_DIR + it[0] + '.jpg" alt="' + _esc(it[1]) + '">'
+            + '<img loading="lazy" src="' + _card(it[0]) + '" alt="' + _esc(it[1]) + '">'
             + '<div class="km-cn">' + _esc(it[1]) + tag + '</div><div class="km-cd">' + _esc(it[2]) + '</div></div>';
         });
         h += '</div>';
