@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 kol-mode.js v1.4(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v1.5:偶像動漫 3D 卡片換成現在線上真正轉出來的那張(舊卡是改版前偏皮克斯的圖)
 //  v1.4:風格 21 → 25(Q 版大頭、黑白漫畫、粉彩水彩動漫、紅黑海報;RA 給的 Pinterest 裡現有沒有的才加)
 //  v1.3:動畫模式只在 STEP2 生效;切到 STEP3 單集企劃或其他頁面自動回到寫實(避免角色設計圖對錯 KOL)
 //  v1.2:風格 13 → 21 種、重新分 5 組(配合 Worker v6.72);熱血戰鬥標「已測」
@@ -15,12 +16,13 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '1.4';
+  const VERSION = '1.5';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
   //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
   const CDN_CARD = 'https://cdn.raby.com.tw/cdn-cgi/image/width=480,height=480,fit=cover,gravity=0.5x0.3,quality=85,format=auto/ra/toon/';
   const CARD_SRC = {
+    anime3d: CDN_CARD + 'anime3d-8c3bf0c04dd0a06f35d5d053be1df1668a3643ea.jpg',
     chibi: CDN_CARD + 'chibi-01716c404e429a83b385cf998a04c42ace0e5035.jpg',
     manga: CDN_CARD + 'manga-1d47680b75fc67f997b393015bd4f39dcc5f9fc6.jpg',
     poster: CDN_CARD + 'poster-db02efb979d7b6ad9ff3bbc6d5c7cb5107603b48.jpg',
