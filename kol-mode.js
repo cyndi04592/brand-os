@@ -1,8 +1,10 @@
 // ═══════════════════════════════════════════════════════════════
-//  🎬 kol-mode.js v1.0(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  🎬 kol-mode.js v1.2(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v1.2:風格 13 → 21 種、重新分 5 組(配合 Worker v6.72);熱血戰鬥標「已測」
+//  v1.1:風格卡改成可收合(左欄窄,13 張卡太長)—— 平常只顯示「目前風格」一列,按「更換風格 ▾」才展開,點完卡片自動收起
 //  RA 拍板:動畫不是另一個版面,是 KOL 同一條流程上的一顆切換鈕。
 //   ① 寫實真人 / 動畫 二選一(寫實 = 跟原本一模一樣)
-//   ② 動畫 → 13 種風格卡(卡片圖 = anim-styles/<key>.jpg)
+//   ② 動畫 → 21 種風格卡(卡片圖 = anim-styles/<key>.jpg)
 //   ③ 角色確認:KOL 照片轉成該風格的角色設計圖(kol_toon,60 點;同一位 KOL 同一風格只轉一次,之後免費)
 //   ④ 下面流程照舊;提示詞與分鏡思考由 Worker 食譜依 window.KOL_MODE 自動切換
 //  對外:window.KOL_MODE(風格 key,寫實 = '')、window.KOL_TOON_URL(角色設計圖)
@@ -11,7 +13,7 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '1.0';
+  const VERSION = '1.2';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
 
@@ -20,8 +22,9 @@
     { name: '3D 動畫', items: [
       ['pixar', '皮克斯 3D', '寫實比例、柔光皮膚、真情表演', '已測'],
       ['fantasy3d', '卡通喜劇 3D', '超圓比例、橡皮筋誇張、糖果高彩'],
-      ['anime3d', '偶像動漫 3D', '3D 身體＋漫畫表情、舞台光'],
+      ['anime3d', '偶像動漫 3D', '韓系偶像、改良韓服、漫畫式誇張表情'],
       ['painterly', '油畫筆觸 3D', '會動的油畫、筆觸＋墨線'],
+      ['isometric', '3D 微縮街景', '等角視角的可愛小鎮'],
     ] },
     { name: '手作定格', items: [
       ['toy', '潮玩公仔世界', '2 頭身公仔、黏土微縮場景'],
@@ -29,13 +32,22 @@
     ] },
     { name: '日本動畫', items: [
       ['jp_slice', '日式生活動畫', '細線、柔光、安靜留白'],
-      ['shonen', '熱血戰鬥動畫', '粗墨線、速度線、爆發'],
+      ['shonen', '熱血戰鬥動畫', '粗墨線、速度線、爆發', '已測'],
+      ['animefood', '動漫商品特寫', '美食與商品的動畫特寫'],
+      ['retro90s', '90 年代復古動畫', '賽璐珞、底片顆粒、VHS 感'],
+      ['cyberanime', '賽博動漫', '藍色螢幕光、霓虹、未來感'],
+      ['lineart', '日系線稿插畫', '細線、淡色、大量留白'],
     ] },
-    { name: '平面插畫', items: [
+    { name: '插畫動畫', items: [
       ['gouache', '手繪水粉 lo-fi', '水粉蠟筆、紙紋、夕陽金光'],
-      ['flat', '品牌扁平動畫', '品牌色大色塊、彈跳手腳'],
-      ['geo', '幾何說明動畫', '小頭長手腳、形狀變形'],
+      ['picturebook', '繪本動物', '色鉛筆繪本、變成可愛小動物'],
+      ['editorial', '潮流插畫', '粗線條、大色塊、有態度'],
+      ['scribble', '塗鴉實拍', '蠟筆塗鴉角色在真實場景'],
       ['neon', '霓虹雙色', '紫＋桃紅、夜色氛圍'],
+    ] },
+    { name: '平面設計', items: [
+      ['flat', '品牌扁平動畫', '品牌色大色塊、彈跳手腳'],
+      ['geo', '幾何說明動畫', '純扁平、圖表自己畫出來'],
       ['pixel', '像素過場', '方塊像素、遊戲過場感'],
     ] },
   ];
@@ -45,6 +57,7 @@
   let mode = '';          // '' = 寫實
   let toonFor = '';       // 角色設計圖對應的「KOL 照片網址|風格」
   let busy = false;
+  let open = false;       // 風格卡展開中
 
   function _ls(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
   function _kolImg() { try { return (window.S && S.selectedKol && S.selectedKol.image_url) || ''; } catch (e) { return ''; } }
@@ -83,6 +96,11 @@
       + '#kolmode .km-char img{width:84px;height:84px;border-radius:10px;object-fit:cover;border:1.5px solid var(--accent,#a99bff)}'
       + '#kolmode .km-note{font-size:11.5px;opacity:.65;line-height:1.6}'
       + '#kolmode .km-btns{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}'
+      + '#kolmode .km-cur{display:flex;gap:10px;align-items:center;margin-top:10px;padding:8px;border:1.5px solid var(--accent,#a99bff);border-radius:10px;background:#0f0f18;cursor:pointer}'
+      + '#kolmode .km-cur img{width:52px;height:52px;border-radius:8px;object-fit:cover}'
+      + '#kolmode .km-cur .km-curt{font-size:13px;font-weight:700}'
+      + '#kolmode .km-cur .km-curd{font-size:11px;opacity:.6;margin-top:2px}'
+      + '#kolmode .km-cur .km-chg{margin-left:auto;font-size:12px;color:var(--accent,#a99bff);white-space:nowrap}'
       + '.km-badge{display:inline-block;margin-left:8px;font-size:12px;padding:3px 9px;border-radius:7px;background:rgba(169,155,255,.15);color:var(--accent,#a99bff);vertical-align:middle}';
     document.head.appendChild(st);
   }
@@ -94,7 +112,14 @@
     let h = '<div class="km-t">🎬 影片風格</div>'
       + '<div class="km-seg"><button data-km="real" class="' + (mode ? '' : 'on') + '">📷 寫實真人</button>'
       + '<button data-km="anim" class="' + (mode ? 'on' : '') + '">🎬 動畫</button></div>';
-    if (mode) {
+    if (mode && !open) {
+      const it = _item(mode);
+      h += '<div class="km-cur" data-km-open="1"><img src="' + IMG_DIR + mode + '.jpg" alt="">'
+        + '<div><div class="km-curt">' + _esc(it ? it[1] : '') + '</div><div class="km-curd">' + _esc(it ? it[2] : '') + '</div></div>'
+        + '<span class="km-chg">更換風格 ▾</span></div>';
+      h += '<div class="km-char" id="km-char">' + _charHtml() + '</div>';
+    } else if (mode) {
+      h += '<div class="km-g" style="display:flex;justify-content:space-between;align-items:center"><span>選一種畫風</span><span data-km-close="1" style="cursor:pointer;color:var(--accent,#a99bff)">收起 ▴</span></div>';
       GROUPS.forEach(function (g) {
         h += '<div class="km-g">' + g.name + '</div><div class="km-row">';
         g.items.forEach(function (it) {
@@ -110,6 +135,12 @@
       h += '<div class="km-note" style="margin-top:8px">寫實真人 = 跟原本一模一樣。選「動畫」才會展開風格。</div>';
     }
     box.innerHTML = h;
+  }
+
+  function _item(k) {
+    let f = null;
+    GROUPS.forEach(function (g) { g.items.forEach(function (it) { if (it[0] === k) f = it; }); });
+    return f;
   }
 
   function _charHtml() {
@@ -182,13 +213,15 @@
     box.addEventListener('click', function (e) {
       const seg = e.target.closest('[data-km]');
       if (seg) {
-        if (seg.dataset.km === 'real') mode = '';
-        else if (!mode) mode = _ls(LS_KEY) && LABEL[_ls(LS_KEY)] ? _ls(LS_KEY) : 'pixar';
+        if (seg.dataset.km === 'real') { mode = ''; open = false; }
+        else if (!mode) { mode = _ls(LS_KEY) && LABEL[_ls(LS_KEY)] ? _ls(LS_KEY) : 'pixar'; open = !_ls(LS_KEY); }
         _ls(LS_KEY + 'On', mode ? '1' : '');
         _apply(); _render(); _lookup(); return;
       }
       const card = e.target.closest('[data-ks]');
-      if (card) { mode = card.dataset.ks; _ls(LS_KEY, mode); _ls(LS_KEY + 'On', '1'); _apply(); _render(); _lookup(); return; }
+      if (card) { mode = card.dataset.ks; open = false; _ls(LS_KEY, mode); _ls(LS_KEY + 'On', '1'); _apply(); _render(); _lookup(); return; }
+      if (e.target.closest('[data-km-open]')) { open = true; _render(); return; }
+      if (e.target.closest('[data-km-close]')) { open = false; _render(); _lookup(); return; }
       if (e.target.closest('[data-km-make]')) { _make(false); return; }
       if (e.target.closest('[data-km-redo]')) { _make(true); return; }
     });
