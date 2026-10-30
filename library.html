@@ -674,6 +674,28 @@ function showState(icon, title, sub){
    ⚠️ 只有「我的素材」那四類能改;AI 生成的成品不給動 ——
      讓成品被搬進素材類,只會讓兩邊都錯亂。 */
 const MY_CATS = ['照片素材','商品/服務照','場景素材','LOGO','KOL'];
+const DEL_CATS = ['廣告圖','短影片'];   // 🗑 只有 AI 成品能刪
+
+/* 🗑 2026-10-30 刪除不要的成品:先問一次,刪了就從牆上拿掉(需要的話請先下載) */
+async function _doDelete(it){
+  const what = (it.category === '短影片') ? '這支影片' : '這張廣告圖';
+  if(!confirm('確定要刪除'+what+'嗎?\n刪除後素材庫就看不到了,需要的話請先下載。')) return;
+  const btn = $('lbDel');
+  if(btn){ btn.disabled = true; btn.textContent = '刪除中…'; }
+  try{
+    const r = await api('asset_hide', { brandId: S.brandId, assetId: String(it.id || '') });
+    if(r && r.ok){
+      closeLb();
+      await loadAssets(true);                 // 強制重抓,牆上立刻少一張
+    } else {
+      alert('刪除失敗:' + ((r && r.error) || '未知錯誤'));
+      if(btn){ btn.disabled = false; btn.textContent = '🗑 刪除'; }
+    }
+  }catch(e){
+    alert('刪除失敗:' + e.message);
+    if(btn){ btn.disabled = false; btn.textContent = '🗑 刪除'; }
+  }
+}
 
 function openLb(it){
   if(!it) return;
@@ -681,15 +703,19 @@ function openLb(it){
   // 只有客戶自己上傳的(id 前綴 u)且屬於「我的素材」四類才給改。
   //   系統生成的成品(前綴 g)住在生成登記簿,不是 assets,改了也無處可寫。
   const canRecat = MY_CATS.indexOf(it.category) !== -1 && /^u/.test(String(it.id || ''));
+  //  🗑 2026-10-30 手動刪除(MOZ 回饋):只開放 AI 成品(廣告圖/短影片);你上傳的素材會用在生成,不給刪
+  const canDel = DEL_CATS.indexOf(it.category) !== -1 && /^[ug]\d+$/.test(String(it.id || ''));
   $('lbIn').innerHTML =
     (vid ? '<video src="'+esc(it.url)+'" controls autoplay playsinline></video>'
          : '<img src="'+esc(thumbUrl(it.url,1400))+'" alt="">')
     + '<div class="lb-bar">'
     +   (canRecat ? '<button class="nav-btn" id="lbRecat">🗂 改分類(目前:'+esc(it.category)+')</button>' : '')
     +   '<a class="dl" href="'+esc(it.url)+'" download target="_blank" rel="noopener">下載</a>'
+    +   (canDel ? '<button class="nav-btn" id="lbDel" style="color:#ff6b6b;border-color:rgba(255,107,107,.45)">🗑 刪除</button>' : '')
     + '</div>';
   $('lb').classList.add('on');
   if(canRecat) $('lbRecat').onclick = function(ev){ ev.stopPropagation(); _askRecat(it); };
+  if(canDel) $('lbDel').onclick = function(ev){ ev.stopPropagation(); _doDelete(it); };
 }
 
 /* 🗂 改分類:直接在原地換一列下拉選單,選了就存。
