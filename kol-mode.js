@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 kol-mode.js v1.4(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v1.6:90 年代復古動畫卡片換成 city-pop 新版(kol-proxy v6.81)
 //  v1.5:偶像動漫 3D 卡片換成現在線上真正轉出來的那張(舊卡是改版前偏皮克斯的圖)
 //  v1.4:風格 21 → 25(Q 版大頭、黑白漫畫、粉彩水彩動漫、紅黑海報;RA 給的 Pinterest 裡現有沒有的才加)
 //  v1.3:動畫模式只在 STEP2 生效;切到 STEP3 單集企劃或其他頁面自動回到寫實(避免角色設計圖對錯 KOL)
@@ -16,12 +17,13 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '1.5';
+  const VERSION = '1.6';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
   //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
   const CDN_CARD = 'https://cdn.raby.com.tw/cdn-cgi/image/width=480,height=480,fit=cover,gravity=0.5x0.3,quality=85,format=auto/ra/toon/';
   const CARD_SRC = {
+    retro90s: CDN_CARD + 'retro90s-3dd83e4e14bef2fc0c8df2520aab92ae2bc00375.jpg',
     anime3d: CDN_CARD + 'anime3d-8c3bf0c04dd0a06f35d5d053be1df1668a3643ea.jpg',
     chibi: CDN_CARD + 'chibi-01716c404e429a83b385cf998a04c42ace0e5035.jpg',
     manga: CDN_CARD + 'manga-1d47680b75fc67f997b393015bd4f39dcc5f9fc6.jpg',
@@ -47,7 +49,7 @@
       ['jp_slice', '日式生活動畫', '細線、柔光、安靜留白'],
       ['shonen', '熱血戰鬥動畫', '粗墨線、速度線、爆發', '已測'],
       ['animefood', '動漫商品特寫', '美食與商品的動畫特寫'],
-      ['retro90s', '90 年代復古動畫', '賽璐珞、底片顆粒、VHS 感'],
+      ['retro90s', '90 年代復古動畫', '城市流行感、黃昏紫粉、細墨線'],
       ['cyberanime', '賽博動漫', '藍色螢幕光、霓虹、未來感'],
       ['lineart', '日系線稿插畫', '細線、淡色、大量留白'],
       ['chibi', 'Q 版大頭', '2 頭半身、超大眼睛、蹦蹦跳跳'],
