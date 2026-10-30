@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 kol-mode.js v1.4(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v1.7:每次打開頁面都從「寫實真人」開始(以前會自動套上次的動畫風格 → 客人忘了就拍錯風格);切到動畫時一定展開風格卡,讓客人自己選
 //  v1.6:90 年代復古動畫卡片換成 city-pop 新版(kol-proxy v6.81)
 //  v1.5:偶像動漫 3D 卡片換成現在線上真正轉出來的那張(舊卡是改版前偏皮克斯的圖)
 //  v1.4:風格 21 → 25(Q 版大頭、黑白漫畫、粉彩水彩動漫、紅黑海報;RA 給的 Pinterest 裡現有沒有的才加)
@@ -17,7 +18,7 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '1.6';
+  const VERSION = '1.7';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
   //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
@@ -239,7 +240,7 @@
       const seg = e.target.closest('[data-km]');
       if (seg) {
         if (seg.dataset.km === 'real') { mode = ''; open = false; }
-        else if (!mode) { mode = _ls(LS_KEY) && LABEL[_ls(LS_KEY)] ? _ls(LS_KEY) : 'pixar'; open = !_ls(LS_KEY); }
+        else if (!mode) { mode = _ls(LS_KEY) && LABEL[_ls(LS_KEY)] ? _ls(LS_KEY) : 'pixar'; open = true; }
         _ls(LS_KEY + 'On', mode ? '1' : '');
         _apply(); _render(); _lookup(); return;
       }
@@ -261,7 +262,7 @@
     box.id = 'kolmode';
     list.insertAdjacentElement('afterend', box);
     _bind(box);
-    if (_ls(LS_KEY + 'On') === '1' && LABEL[_ls(LS_KEY)]) mode = _ls(LS_KEY);
+    //  v1.7:不自動套用上次的動畫風格,每次都從寫實開始
     _apply(); _render(); _lookup();
     return true;
   }
