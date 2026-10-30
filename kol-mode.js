@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
-//  🎬 kol-mode.js v1.2(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  🎬 kol-mode.js v1.3(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v1.3:動畫模式只在 STEP2 生效;切到 STEP3 單集企劃或其他頁面自動回到寫實(避免角色設計圖對錯 KOL)
 //  v1.2:風格 13 → 21 種、重新分 5 組(配合 Worker v6.72);熱血戰鬥標「已測」
 //  v1.1:風格卡改成可收合(左欄窄,13 張卡太長)—— 平常只顯示「目前風格」一列,按「更換風格 ▾」才展開,點完卡片自動收起
 //  RA 拍板:動畫不是另一個版面,是 KOL 同一條流程上的一顆切換鈕。
@@ -13,7 +14,7 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '1.2';
+  const VERSION = '1.3';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
 
@@ -65,9 +66,15 @@
   function _toast(m, t) { try { (window.toast || console.log)(m, t); } catch (e) {} }
   function _esc(x) { return String(x || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
+  //  v1.3:動畫模式只在 STEP2(電影鏡頭)生效 —— STEP3 單集企劃、其他頁面一律回到寫實
+  //   (STEP3 選的 KOL 可能跟 STEP2 不同,角色設計圖會對錯人)
+  function _inStep2() {
+    const lay = document.getElementById('main-layout-cinematic');
+    return !!(lay && getComputedStyle(lay).display !== 'none');
+  }
   function _apply() {
     const ok = mode && window.KolAnim && window.KolAnim.STYLES && window.KolAnim.STYLES[mode];
-    window.KOL_MODE = ok ? mode : '';
+    window.KOL_MODE = (ok && _inStep2()) ? mode : '';
     if (!ok) window.KOL_TOON_URL = '';
     _badge();
   }
@@ -247,7 +254,7 @@
     if (!document.getElementById('kolmode')) { _mount(); return; }
     const img = _kolImg();
     if (img !== _lastImg) { _lastImg = img; if (mode) _lookup(); }
-    _badge();
+    _apply();
   }, 800);
 
   window.KolMode = { version: VERSION, get: function () { return mode; }, set: function (k) { mode = LABEL[k] ? k : ''; _apply(); _render(); _lookup(); } };
