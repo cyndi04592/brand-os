@@ -676,10 +676,10 @@ function showState(icon, title, sub){
 const MY_CATS = ['照片素材','商品/服務照','場景素材','LOGO','KOL'];
 const DEL_CATS = ['廣告圖','短影片'];   // 🗑 只有 AI 成品能刪
 
-/* 🗑 2026-10-30 刪除不要的成品:先問一次,刪了就從牆上拿掉(需要的話請先下載) */
+/* 🗑 2026-10-30 刪除不要的成品:先問一次,按下去檔案就真的刪掉(RA 定:真刪除,無法復原) */
 async function _doDelete(it){
   const what = (it.category === '短影片') ? '這支影片' : '這張廣告圖';
-  if(!confirm('確定要刪除'+what+'嗎?\n刪除後素材庫就看不到了,需要的話請先下載。')) return;
+  if(!confirm('確定要永久刪除'+what+'嗎?\n檔案會立刻刪除、無法復原,需要的話請先下載。')) return;
   const btn = $('lbDel');
   if(btn){ btn.disabled = true; btn.textContent = '刪除中…'; }
   try{
