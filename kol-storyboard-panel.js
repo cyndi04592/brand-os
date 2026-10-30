@@ -24,6 +24,31 @@
   //   解法:面板內部一律「只在當前掛載的 rootEl 裡找元素」,兩個容器各自獨立。
   function $el(id) { return (rootEl && rootEl.querySelector) ? rootEl.querySelector('#' + id) : document.getElementById(id); }
 
+  //  🩹 v3.5(2026-10-30):不用瀏覽器原生 alert / confirm —— 原生跳窗會卡住整個頁面,
+  //   客人沒注意到就以為網站當掉(RA 實測卡在「AI 編修會蓋掉卡片」那一個)。
+  //   改成頁面內的小視窗;_ask 回傳 Promise<boolean>,_say 只顯示。
+  function _dlg(msg, withCancel) {
+    return new Promise(function (resolve) {
+      var w = document.createElement('div');
+      w.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+      var esc = String(msg || '').replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }).replace(/\n/g, '<br>');
+      w.innerHTML = '<div style="max-width:420px;width:100%;background:#16161f;border:1px solid rgba(167,139,250,.35);border-radius:14px;padding:18px 18px 14px;color:#e8e8f0;font-size:14px;line-height:1.7;box-shadow:0 12px 40px rgba(0,0,0,.5);">'
+        + '<div>' + esc + '</div>'
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">'
+        + (withCancel ? '<button data-v="0" style="padding:8px 16px;border-radius:8px;border:1px solid #3a3a4a;background:#1e1e2a;color:#e8e8f0;cursor:pointer;">取消</button>' : '')
+        + '<button data-v="1" style="padding:8px 16px;border-radius:8px;border:none;background:#a78bfa;color:#0a0a0f;font-weight:700;cursor:pointer;">' + (withCancel ? '確定' : '知道了') + '</button>'
+        + '</div></div>';
+      w.addEventListener('click', function (e) {
+        var v = e.target && e.target.getAttribute && e.target.getAttribute('data-v');
+        if (v === null || v === undefined) { if (e.target === w && withCancel) { w.remove(); resolve(false); } return; }
+        w.remove(); resolve(v === '1');
+      });
+      document.body.appendChild(w);
+    });
+  }
+  function _ask(msg) { return _dlg(msg, true); }
+  function _say(msg) { return _dlg(msg, false); }
+
   const esc = (s) => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
@@ -207,18 +232,18 @@
     if (!ctx?.sceneLabel && !_currentSceneLabel()) {
       const msg = '請先在下面選一個場景,再按「AI 編修成分鏡」——\n分鏡要知道在哪裡拍,才寫得出對的動作與走位。';
       if (typeof window.toast === 'function') window.toast('請先選場景,再編修分鏡', 'warn');
-      else alert(msg);
+      else _say(msg);
       return;
     }
 
     if (state.busy) return;
-    if (!window.KolStorywriter) { alert('KolStorywriter 未載入'); return; }
-    if (typeof api !== 'function') { alert('api() 未載入'); return; }
+    if (!window.KolStorywriter) { _say('KolStorywriter 未載入'); return; }
+    if (typeof api !== 'function') { _say('api() 未載入'); return; }
     // 🆕 v1.9:先把畫面上的字收回 state,才問得準
     if (state.beats.length) syncDom();
     //  ⚠️ 開放自己打之後,這一步變成必要 ——
     //     以前卡片只能由 AI 生,沒東西可洗;現在導演可能已經打了半小時。
-    if (hasContent() && !confirm('AI 編修會用新的內容蓋掉卡片上已經寫好的字。\n\n(按過「🔒 鎖台詞」的台詞會保住,鏡頭描述不會)\n\n確定要讓 AI 重寫嗎?')) return;
+    if (hasContent() && !(await _ask('AI 編修會用新的內容蓋掉卡片上已經寫好的字。\n\n(按過「🔒 鎖台詞」的台詞會保住,鏡頭描述不會)\n\n確定要讓 AI 重寫嗎?'))) return;
     unlockIfConfirmed();
 
     const lockedLines = collectLocked();
@@ -244,7 +269,7 @@
       if (!res || !res.ok) {
         //  🔑 2026-09-18:登入過期由 auth-expire.js 跳統一視窗,這裡就不要再跳一個看不懂的 alert
         if (!(window.BSAuthExpire && window.BSAuthExpire.looksExpired(200, res))) {
-          alert('AI 編修失敗:' + (res?.error || '未知錯誤'));
+          _say('AI 編修失敗:' + (res?.error || '未知錯誤'));
         }
       } else {
         // 🩹 v1.9:骨架改用【現有卡片】,不要重產一份空的。
@@ -255,7 +280,7 @@
         state.beats = window.KolStorywriter.mergeExpandResult(skeleton, res.beats, lockedLines, ctx && ctx.persona && ctx.persona.nationality);
       }
     } catch (e) {
-      alert('AI 編修錯誤:' + e.message);
+      _say('AI 編修錯誤:' + e.message);
     }
 
     state.busy = false;
@@ -305,13 +330,13 @@
     if (b) b.productUrl = '';
     renderCards();
   }
-  function durationChange(v) {
+  async function durationChange(v) {
     const nv = parseInt(v);
     if (nv === state.duration) return;
     if (state.beats.length) syncDom();
     // 🆕 v1.9:換長度 = 換段數 = 卡片重排,寫好的字會沒。先問。
     //   ⚠️ 按取消時要把下拉【拉回原值】,否則畫面顯示新長度、實際還是舊的。
-    if (hasContent() && !confirm('換長度會重新排段數,卡片上寫好的內容會清空。\n\n確定要換嗎?')) {
+    if (hasContent() && !(await _ask('換長度會重新排段數,卡片上寫好的內容會清空。\n\n確定要換嗎?'))) {
       const sel = $el('sbp-duration');
       if (sel) sel.value = String(state.duration);
       return;
@@ -323,24 +348,24 @@
   }
 
   function confirmToggle() {
-    if (!state.beats.length) { alert('分鏡卡片還沒準備好,請重選一次長度'); return; }
+    if (!state.beats.length) { _say('分鏡卡片還沒準備好,請重選一次長度'); return; }
     if (!state.confirmed) {
       syncDom();
       // 🆕 v1.9:卡片現在永遠存在,守門要改看【有沒有寫東西】,不是看有沒有卡片。
       //   ★ 不擋的話會送出一支什麼都沒寫的空片 —— 錢照扣。
       const _blank = state.beats.filter(b => !(b.shotDesc || '').trim());
       if (_blank.length === state.beats.length) {
-        alert('分鏡卡片還是空的唷。\n\n你可以自己在「鏡頭」欄寫,或填好上面的大綱按「AI 編修成分鏡」讓 AI 幫你寫。');
+        _say('分鏡卡片還是空的唷。\n\n你可以自己在「鏡頭」欄寫,或填好上面的大綱按「AI 編修成分鏡」讓 AI 幫你寫。');
         return;
       }
       if (_blank.length) {
-        alert('第 ' + _blank.map(b => b.index).join('、') + ' 段的「鏡頭」還是空的。\n\n空的段落一樣會照秒數生成、照樣扣點,但畫面沒人指揮。請補寫,或改短長度減少段數。');
+        _say('第 ' + _blank.map(b => b.index).join('、') + ' 段的「鏡頭」還是空的。\n\n空的段落一樣會照秒數生成、照樣扣點,但畫面沒人指揮。請補寫,或改短長度減少段數。');
         return;
       }
       // 🆕 v1.5 防呆:任何一段台詞超長(紅字)就擋下確認,不讓超長台詞進生成(超長=引擎趕戲吃字)
       const _over = state.beats.filter(b => b.overflow);
       if (_over.length) {
-        alert('還不能確認唷:第 ' + _over.map(b => b.index + 1).join('、') + ' 段的台詞太長,講不完會被趕戲。\n\n請把該段台詞刪短一點(看卡片下方的字數提示,變回灰色就 OK),或再按一次「AI 編修」重寫。');
+        _say('還不能確認唷:第 ' + _over.map(b => b.index + 1).join('、') + ' 段的台詞太長,講不完會被趕戲。\n\n請把該段台詞刪短一點(看卡片下方的字數提示,變回灰色就 OK),或再按一次「AI 編修」重寫。');
         return;
       }
       // 🆕 v2.5 防呆:長段落完全沒台詞 → 硬擋。
@@ -354,7 +379,7 @@
       //    提醒治不了「看不懂分鏡的人」,只有擋得住。
       const _mute = state.beats.filter(b => (b.seconds || 0) >= 10 && !String(b.dialogue || '').trim());
       if (_mute.length) {
-        alert('還不能確認唷:第 ' + _mute.map(b => b.index).join('、') + ' 段完全沒有台詞。\n\n'
+        _say('還不能確認唷:第 ' + _mute.map(b => b.index).join('、') + ' 段完全沒有台詞。\n\n'
           + '這幾段會生成 ' + _mute.map(b => b.seconds).join('、') + ' 秒的純畫面,全程沒有人說話 —— 客戶會覺得影片後半是空的。\n\n'
           + '三種做法:\n'
           + '① 直接在台詞欄補上要講的話(建議補到約 ' + Math.round((_mute[0].seconds || 15) * FILL * SPEAK_RATE) + ' 字)\n'
@@ -364,7 +389,7 @@
       }
       state.confirmed = true;
       if (typeof ctx?.onConfirm === 'function') ctx.onConfirm(state.beats, state.duration);
-      else alert('尚未接上確認流程(onConfirm)');
+      else _say('尚未接上確認流程(onConfirm)');
     } else {
       state.confirmed = false;
       if (typeof ctx?.onEdit === 'function') ctx.onEdit();
@@ -573,5 +598,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v3.4 就緒 · 🔑登入過期交給統一視窗(不再跳看不懂的 AI 編修失敗) · v3.3 就緒 · 🗣「從開口捏起」不算說話(三邊同步) · v3.2 就緒 · 🗣「開口處」(袋子開口)不算說話(三邊同步) · v3.1 就緒 · ⏱說話視窗改成第一段開口→最後一段還在講(三邊同步) · v3.0 就緒 · 📏兩條線分開(甜蜜點給建議、硬線給警告,跟 kol-proxy v5.43 同一套) · 超過硬線才顯示「講不完」 · v2.9 就緒 · ⏱說話視窗從 shotDesc 的分時段自己抓(不依賴額外欄位;與 kol-proxy _winOf、crew-director _speakSegOf 同一套) · v2.8 就緒 · ⏱語速對齊 4.2→6.0(面板與 Worker 差 43%,15秒一個算50字一個算72字,所以「建議補到72字」一直失常) · 🗣建議字數改用【說話視窗】(AI 分時段後會給 dialogueTime,5-15 代表只講10秒,用整格算會塞爆語速) · 卡片顯示開口時間與視窗 · v2.7 就緒 · 📏建議值與硬擋線統一(治「叫你補到60字·補到59又說太長」) · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
+  console.log('[KolStoryboardPanel] v3.5 就緒 · 🪟原生 alert/confirm 全換成頁面內小視窗(原生跳窗會卡住整頁) · v3.4 就緒 · 🔑登入過期交給統一視窗(不再跳看不懂的 AI 編修失敗) · v3.3 就緒 · 🗣「從開口捏起」不算說話(三邊同步) · v3.2 就緒 · 🗣「開口處」(袋子開口)不算說話(三邊同步) · v3.1 就緒 · ⏱說話視窗改成第一段開口→最後一段還在講(三邊同步) · v3.0 就緒 · 📏兩條線分開(甜蜜點給建議、硬線給警告,跟 kol-proxy v5.43 同一套) · 超過硬線才顯示「講不完」 · v2.9 就緒 · ⏱說話視窗從 shotDesc 的分時段自己抓(不依賴額外欄位;與 kol-proxy _winOf、crew-director _speakSegOf 同一套) · v2.8 就緒 · ⏱語速對齊 4.2→6.0(面板與 Worker 差 43%,15秒一個算50字一個算72字,所以「建議補到72字」一直失常) · 🗣建議字數改用【說話視窗】(AI 分時段後會給 dialogueTime,5-15 代表只講10秒,用整格算會塞爆語速) · 卡片顯示開口時間與視窗 · v2.7 就緒 · 📏建議值與硬擋線統一(治「叫你補到60字·補到59又說太長」) · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
