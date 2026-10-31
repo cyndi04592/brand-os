@@ -725,21 +725,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 }
 .movement-card.selected .movement-dur{background:rgba(124,109,250,.2);color:var(--accent);}
 
-/* v5.4: 故事弧區塊 */
-.story-arc-block{border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:14px;overflow:hidden;}
-.story-arc-head{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--surface2);transition:background .2s;user-select:none;}
-.story-arc-head:hover{background:rgba(124,109,250,.06);}
-.story-arc-arrow{transition:transform .2s;font-size:10px;}
-.story-arc-block.open .story-arc-arrow{transform:rotate(90deg);}
-.story-arc-title{flex:1;font-size:12px;font-weight:600;color:var(--text-mid);}
-.story-arc-chip{font-size:10px;font-family:'Syne',sans-serif;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(124,109,250,.15);color:var(--accent);text-transform:uppercase;letter-spacing:.04em;}
-.story-arc-chip.set{background:rgba(109,250,194,.15);color:var(--accent3);}
-.story-arc-body{padding:14px;border-top:1px solid var(--border);}
-.story-arc-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-@media(max-width:640px){.story-arc-row{grid-template-columns:1fr;}}
-.story-arc-field{display:flex;flex-direction:column;gap:4px;}
-.story-arc-field label{font-size:10.5px;font-weight:600;color:var(--text-dim);}
-.story-arc-hint{font-size:10.5px;color:var(--text-dim);margin-top:10px;line-height:1.6;padding:10px;background:rgba(124,109,250,.06);border-left:2px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;}
 
 /* v5.5 · 系統模式(Phase 0 UI 骨架) */
 .system-wrap{max-width:1100px;margin:0 auto;padding:0 24px 80px;}
@@ -1820,68 +1805,7 @@ document.addEventListener('DOMContentLoaded', function(){
           </select>
         </div>
 
-        <!-- 🆕 v5.4: 故事弧三欄(淺版 · 加進 prompt 引導 AI) -->
-        <div class="story-arc-block" id="story-arc-block" style="display:none">
-          <div class="story-arc-head" onclick="toggleStoryArc()">
-            <span class="story-arc-arrow" id="story-arc-arrow">▶</span>
-            <span class="story-arc-title">故事弧(選填 · 讓 AI KOL 有主題性)</span>
-            <span class="story-arc-chip" id="story-arc-chip">未設定</span>
-          </div>
-          <div class="story-arc-body" id="story-arc-body" style="display:none">
-            <div class="story-arc-row">
-              <div class="story-arc-field">
-                <label>故事定位</label>
-                <select class="form-select" id="story-arc-theme" onchange="onStoryArcChange()">
-                  <option value="">— 不指定(一般 vlog)—</option>
-                  <option value="daily vlog slice of life">日常 vlog</option>
-                  <option value="casual complaint about work stress">工作抱怨</option>
-                  <option value="motherhood daily struggle and joy">媽媽經</option>
-                  <option value="fashion outfit sharing">穿搭分享</option>
-                  <option value="travel journal vlog">旅遊 vlog</option>
-                  <option value="cozy after-work unwinding">下班放鬆</option>
-                  <option value="weekend self-care ritual">週末 me-time</option>
-                  <option value="quiet reflection moment">安靜獨處</option>
-                </select>
-              </div>
-              <div class="story-arc-field">
-                <label>情緒基調</label>
-                <select class="form-select" id="story-arc-tone" onchange="onStoryArcChange()">
-                  <option value="">— 不指定 —</option>
-                  <option value="warm and gentle">溫暖療癒</option>
-                  <option value="witty and slightly sarcastic">幽默犀利</option>
-                  <option value="tired but content">‍疲憊而滿足</option>
-                  <option value="relaxed and playful">輕鬆俏皮</option>
-                  <option value="confident and independent">自信獨立</option>
-                  <option value="nostalgic and soft">懷舊柔軟</option>
-                  <option value="excited and energetic">興奮期待</option>
-                </select>
-              </div>
-              <div class="story-arc-field">
-                <label>主推產品(自然帶入)</label>
-                <!-- ═══════════════════════════════════════════════════════
-                     🩹 v7.30(2026-08-24)清掉寫死的內衣選項(LACE&Z 時代殘留)
-                     為什麼不只是「死碼」:
-                       populateStoryArcProducts() 會用當前品牌的真商品覆蓋這裡,
-                       但它在 onBrandChange 裡、而且【排在 if (!brandId) return 之後】——
-                       沒選品牌(或載入失敗)時那行永遠跑不到,
-                       這六個內衣選項就成了畫面上實際顯示的東西。
-                     而它們的 value 是【英文提示詞】,不是商品名 ——
-                       海苔品牌的客戶誤選「蕾絲系列」,送出去的就是
-                       "lace lingerie set tastefully implied"。
-                     ★ 選項一律由 populateStoryArcProducts() 動態產生,
-                       HTML 只留一個中性預設,任何品牌看到都不會錯。
-                     ═══════════════════════════════════════════════════════ -->
-                <select class="form-select" id="story-arc-product" onchange="onStoryArcChange()">
-                  <option value="">— 不強調(用本週主推)—</option>
-                </select>
-              </div>
-            </div>
-            <div class="story-arc-hint">
-              這三個欄位會加進 prompt 引導 AI,讓 KOL 有主題性但不說品名(符合自然植入)。<br>
-              系統自動帶入品牌靈魂書 + KOL 人設書,讓內容更有連貫性。
-            </div>
-          </div>
-        </div>
+        <!-- 🗑 v7.31(2026-11-01)故事弧區塊移除(RA:用不到、還會亂加提示詞,劇情交給 AI 分鏡一手包辦) -->
 
         <!-- 🆕 v5.1: 當前配置摘要 -->
         <div class="scene-summary" id="scene-summary" style="display:none">
@@ -3774,23 +3698,6 @@ async function onBrandChange() {
   document.getElementById('seedance-prompt').value = '';
   const mpGroup = document.getElementById('movement-picker-group');
   if (mpGroup) mpGroup.style.display = 'none';
-  const saBlock = document.getElementById('story-arc-block');
-  if (saBlock) {
-    saBlock.style.display = 'none';
-    saBlock.classList.remove('open');
-    document.getElementById('story-arc-body').style.display = 'none';
-    const chip = document.getElementById('story-arc-chip');
-    if (chip) { chip.textContent = '未設定'; chip.classList.remove('set'); }
-    const themeSel = document.getElementById('story-arc-theme');
-    const toneSel = document.getElementById('story-arc-tone');
-    const prodSel = document.getElementById('story-arc-product');
-    if (themeSel) themeSel.value = '';
-    if (toneSel) toneSel.value = '';
-    // 🩹 v7.30:連【選項本身】一起清掉,不只清選中值。
-    //   否則切品牌時會留著上一個品牌的商品清單 ——
-    //   海苔品牌的下拉裡出現內衣商品,就是這樣來的。
-    if (prodSel) { prodSel.innerHTML = '<option value="">— 不強調(用本週主推)—</option>'; prodSel.value = ''; }
-  }
 
   if (!brandId) {
     document.getElementById('no-brand-panel').style.display = '';
@@ -3801,7 +3708,6 @@ async function onBrandChange() {
   }
 
   localStorage.setItem('kol_last_brand', brandId);
-  populateStoryArcProducts();   // 用該品牌真商品填主推下拉(取代寫死內衣)
   document.getElementById('no-brand-panel').style.display = 'none';
   // 依當前 mode 顯示對應版面
   switchMode(S.currentMode);
@@ -6968,8 +6874,6 @@ function handleSceneCardClick(e) {
   renderMovementPicker();
   // v5.13 → 🩹 v7.27:改叫共用函式(選卡 / 鎖實景照 都算場景已定)
   syncOutfitPickerVisibility();
-  // v5.4: 故事弧區塊也跟場景一起出現
-  document.getElementById('story-arc-block').style.display = '';
 
   // 組 prompt + 更新摘要
   syncScenePrompt();
@@ -7062,13 +6966,6 @@ function handleMovementClick(e) {
   syncScenePrompt();
 }
 
-// v5.4: 故事弧切換
-function toggleStoryArc() {
-  const block = document.getElementById('story-arc-block');
-  const body = document.getElementById('story-arc-body');
-  const isOpen = block.classList.toggle('open');
-  body.style.display = isOpen ? '' : 'none';
-}
 
 // 🆕 v5.13: 服飾品牌選擇 → 存進 S,重組 prompt
 function onOutfitBrandChange() {
@@ -7076,49 +6973,6 @@ function onOutfitBrandChange() {
   S.selectedOutfitBrand = picker ? picker.value : 'auto';
   if (typeof syncScenePrompt === 'function') syncScenePrompt();
   if (typeof updateSeedanceSubmitButton === 'function') updateSeedanceSubmitButton();
-}
-// 用「當前品牌的真實商品」填滿主推產品下拉(取代寫死的內衣選項)
-function populateStoryArcProducts() {
-  const sel = document.getElementById('story-arc-product');
-  if (!sel) return;
-  const prev = sel.value;
-  const seen = new Set();
-  const prods = (S.products || [])
-    .filter(p => p.brandId === S.currentBrandId && p.prodName)
-    .filter(p => { if (seen.has(p.prodName)) return false; seen.add(p.prodName); return true; });
-  sel.innerHTML = '<option value="">— 不強調(用本週主推)—</option>' +
-    prods.map(p => `<option value="${escapeHtml(p.prodName)}">${escapeHtml(p.prodName)}${p.prodTag ? '（' + escapeHtml(p.prodTag) + '）' : ''}</option>`).join('');
-  if (prev && prods.some(p => p.prodName === prev)) sel.value = prev;
-}
-function onStoryArcChange() {
-  const prodName = document.getElementById('story-arc-product').value;
-  // 下拉選的是真商品 → 找回整筆(含包裝/尺寸)給道具師
-  // 找回整筆 + 補 name/tag 別名(跟 getCurrentRotationProduct 同形狀,下游讀 .name/.tag 才不會 undefined)
-  let selectedProduct = null;
-  if (prodName) {
-    const _row = (S.products || []).find(p => p.brandId === S.currentBrandId && p.prodName === prodName);
-    if (_row) selectedProduct = { ..._row, name: _row.prodName, tag: _row.prodTag };
-  }
-
-  S.storyArc = {
-    theme: document.getElementById('story-arc-theme').value,
-    tone: document.getElementById('story-arc-tone').value,
-    productHint: prodName,        // 真商品名(乾淨),取代以前的內衣英文字串
-    selectedProduct,              // 整筆真商品 → generateEpisode 餵給道具師
-  };
-
-  // 更新 chip 顯示(只算 theme/tone/productHint 三格)
-  const chip = document.getElementById('story-arc-chip');
-  const setCount = [S.storyArc.theme, S.storyArc.tone, S.storyArc.productHint].filter(Boolean).length;
-  if (setCount > 0) {
-    chip.textContent = `已設 ${setCount}/3`;
-    chip.classList.add('set');
-  } else {
-    chip.textContent = '未設定';
-    chip.classList.remove('set');
-  }
-
-  syncScenePrompt();
 }
 // 組 prompt 並更新各處顯示
 function syncScenePrompt() {
