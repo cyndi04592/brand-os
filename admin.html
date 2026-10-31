@@ -1875,13 +1875,13 @@ tr:hover td { background: rgba(124,109,250,0.04); }
     </div>
     <div style="font-size:12px;color:var(--t3);line-height:1.8;margin:6px 0 12px">
       影片裡 KOL 把某個詞念錯了,就在這裡加一條:台詞裡的「原本的詞」送給 AI 時,會改寫成「改成這樣念」。<b>畫面上的字不會變</b>,只影響念法。<br>
-      訣竅:換成同音、常見、不會念錯的字(例:蝦皮 → 蝦啤)。KOL 工作室和蝦皮小幫手一起生效,約 2 分鐘後、重新整理頁面就會套用。
+      訣竅:<b>換一種意思一樣的說法,或換成英文</b>(例:蝦皮 → Shopee、尷尬 → 糗、無鋼圈 → 沒有鋼圈)。<b>不要填同音字</b>(蝦啤、乾尬實測一樣會念歪)。KOL 工作室和蝦皮小幫手一起生效,約 2 分鐘後、重新整理頁面就會套用。
     </div>
     <div style="padding:4px 0 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <input id="prWord" placeholder="原本的詞(例:蝦皮)" style="padding:8px 10px;width:150px">
       <span>→</span>
-      <input id="prSay" placeholder="改成這樣念(例:蝦啤)" style="padding:8px 10px;width:150px">
-      <input id="prNote" placeholder="備註(例:念成蝦版)" style="padding:8px 10px;min-width:180px">
+      <input id="prSay" placeholder="換成這樣說(例:Shopee)" style="padding:8px 10px;width:150px">
+      <input id="prNote" placeholder="備註(例:念成蝦泡)" style="padding:8px 10px;min-width:180px">
       <button class="btn-refresh" onclick="savePron()">＋ 加入／更新</button>
     </div>
     <div class="table-wrap" id="prBody"><div class="empty-state"><p>載入中...</p></div></div>
