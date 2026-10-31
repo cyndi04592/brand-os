@@ -8255,7 +8255,9 @@ function refreshPaceHints(){
 // ───────────────────────────────────────────────────────
 // 🩹 2026-10-30 生成前確認要寫出【拍幾秒、扣幾點】(以前只寫「會消耗生成額度」,客人不知道會扣多少)
 //   秒數:有分鏡 → 分鏡卡秒數加總(影片實際照卡片拍);沒有 → 時長按鈕。點數照 Worker 計價:每秒 60 點,1080P 三倍;本人真人角色每秒 80 點。
-function _pgcCostLine(opts, faceless) {
+//  🧑 2026-10-31:本人真人角色(有存本人聲音)每秒 80 點 —— 確認視窗先照 60 顯示,查到是真人角色就換成 80(rate 參數)
+function _pgcCostLine(opts, faceless, rate) {
+  rate = rate || 60;
   try {
     var step3 = opts && opts.step === 3;
     var sb = step3 ? null : S.cineStoryboard;
@@ -8265,9 +8267,9 @@ function _pgcCostLine(opts, faceless) {
     if (!secs) return '即將開始生成影片,會消耗生成額度。';
     var res = String(((step3 ? S.episodeParams : S.seedanceParams) || {}).resolution || '720p');
     var hi = /1080|1k|2k|4k/i.test(res);
-    var pts = secs * 60 * (hi ? 3 : 1);
+    var pts = secs * rate * (hi ? 3 : 1);
     return '即將生成約 <b>' + secs + ' 秒</b>影片(' + res + '),預計扣 <b>' + pts.toLocaleString() + ' 點</b>'
-      + '<span style="color:var(--text-dim);font-size:12px;">(每秒 60 點' + (hi ? '、1080P 三倍' : '') + (faceless ? '' : ';本人真人角色每秒 80 點') + ';失敗會自動退還)</span>';
+      + '<span style="color:var(--text-dim);font-size:12px;">(' + (rate === 80 ? '本人真人角色 · ' : '') + '每秒 ' + rate + ' 點' + (hi ? '、1080P 三倍' : '') + ';失敗會自動退還)</span>';
   } catch (e) { return '即將開始生成影片,會消耗生成額度。'; }
 }
 function preGenConfirm(opts) {
@@ -8314,7 +8316,7 @@ function preGenConfirm(opts) {
       '<div class="persona-modal-content" style="max-width:440px;">' +
         '<div class="persona-modal-head"><span class="persona-modal-title">生成前確認</span></div>' +
         '<div class="persona-modal-body">' +
-          '<div style="font-size:13px;color:var(--text);line-height:1.6;">' + _pgcCostLine(opts, _faceless) + '</div>' +
+          '<div class="pgc-cost" style="font-size:13px;color:var(--text);line-height:1.6;">' + _pgcCostLine(opts, _faceless) + '</div>' +
           warnHtml + voiceHtml + paceHtml +
         '</div>' +
         '<div class="persona-modal-foot">' +
@@ -8323,6 +8325,20 @@ function preGenConfirm(opts) {
         '</div>' +
       '</div>';
     document.body.appendChild(wrap);
+    //  🧑 2026-10-31 查這位 KOL 是不是本人真人角色(有存本人聲音 → 每秒 80 點),是的話把金額換成 80
+    if (!_faceless) {
+      (async function () {
+        try {
+          var _bid = S.currentBrandId, _nm = '';
+          if (opts && opts.step === 3) { var _pp = (S.personas || []).find(function (x) { return x.persona_id === systemSelectedPersonaId; }); _nm = _pp && _pp.persona_name; }
+          else _nm = S.selectedKol && S.selectedKol.name;
+          if (!_bid || !_nm) return;
+          var _vi = await api('kol_voice_info', { brandId: _bid, personaName: _nm });
+          var _el = wrap.isConnected && wrap.querySelector('.pgc-cost');
+          if (_vi && _vi.hasVoice && _el) _el.innerHTML = _pgcCostLine(opts, _faceless, 80);
+        } catch (e) {}
+      })();
+    }
     var done = function (v) { wrap.remove(); resolve(v); };
     wrap.querySelector('.persona-modal-backdrop').onclick = function () { done(false); };
     wrap.querySelector('.pgc-cancel').onclick = function () { done(false); };
