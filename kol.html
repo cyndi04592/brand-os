@@ -1706,17 +1706,9 @@ document.addEventListener('DOMContentLoaded', function(){
           <div class="motion-hint">寫了 AI 會照你的情境演,不寫就靠場景自由發揮。這裡只描述「畫面在做什麼」,不是台詞。</div>
         </div>
 
-        <!-- 🆕 v5.1: 場景網格(點一下直接套用) -->
+        <!-- 🆕 2026-10-31 RA:照片上傳放最前面(場景卡移到下面) · 上傳自家實景當背景(賣場 / 快閃店 / 門市)→ 跳過 AI 生背景,直接鎖真照 -->
         <div class="form-group" style="margin-top:0">
-          <label class="form-label">場景(點一下選擇)</label>
-          <div class="scene-grid-v2" id="scene-grid-cine">
-            <div class="kol-empty" style="grid-column:1/-1;padding:16px;font-size:12px">選品牌後載入場景…</div>
-          </div>
-        </div>
-
-        <!-- 🆕 上傳自家實景當背景(賣場 / 快閃店 / 門市)→ 跳過 AI 生背景,直接鎖真照 -->
-        <div class="form-group" style="margin-top:0">
-          <label class="form-label">或上傳自家實景背景(賣場 / 快閃店 · 選填)</label>
+          <label class="form-label">場景照片:上傳自家實景當背景(推薦 · 賣場 / 門市 / 快閃店)</label>
           <!-- 🆕 v7.12:獨立成一塊,並補上「＋ 上傳場景素材」直達鈕 -->
           <div class="scn-box">
             <div class="scn-head">
@@ -1734,7 +1726,16 @@ document.addEventListener('DOMContentLoaded', function(){
           </div>
           <div id="custom-scene-thumb"></div>
           </div>
-          <div class="motion-hint">給了實景照,系統就<b>跳過 AI 生背景、直接用你的真照</b>,上面的場景卡可以不用挑。<br>想再補一點氛圍描述(光線、時段)才挑一張接近的。</div>
+          <div class="motion-hint">給了實景照,系統就<b>跳過 AI 生背景、直接用你的真照</b>,下面的場景卡可以不用挑。<br>想再補一點氛圍描述(光線、時段)才挑一張接近的。</div>
+        </div>
+
+
+        <!-- 🆕 v5.1: 場景網格(點一下直接套用) -->
+        <div class="form-group" style="margin-top:0">
+          <label class="form-label">沒有實景照?從場景卡挑一個(點一下選擇)</label>
+          <div class="scene-grid-v2" id="scene-grid-cine">
+            <div class="kol-empty" style="grid-column:1/-1;padding:16px;font-size:12px">選品牌後載入場景…</div>
+          </div>
         </div>
 
         <!-- 🆕 v5.1: 地標庫(戶外場景可疊加) -->
@@ -9841,18 +9842,8 @@ function renderEpisodeCard() {
         </div>
         <textarea id="ep-situation" placeholder="例:加班到 7 點後走進巷弄咖啡廳,和自己對話一下...">${escapeHtml(draft.situation || '')}</textarea>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="ep-field">
-          <label>場景</label>
-          <select id="ep-scene">${sceneOptions}</select>
-        </div>
-        <div class="ep-field">
-          <label>運鏡</label>
-          <select id="ep-movement">${movementOptions}</select>
-        </div>
-      </div>
-      <div class="ep-field" style="margin-top:4px">
-        <label>或上傳自家實景背景(賣場 / 快閃店 · 選填)</label>
+      <div class="ep-field" style="margin-top:0">
+        <label>場景照片:上傳自家實景當背景(推薦 · 賣場 / 門市 / 快閃店)</label>
         <div class="scn-box">
           <div class="scn-head">
             <span class="t">🏢 用你自己的實景照當背景</span>
@@ -9869,7 +9860,17 @@ function renderEpisodeCard() {
         </div>
         <div id="ep-custom-scene-thumb"></div>
         </div>
-        <div class="motion-hint">給了實景照就跳過 AI 生背景、直接用你的真照,上面的場景下拉可以不用挑。<br>想再補一點氛圍描述(光線、時段)才挑一張接近的。</div>
+        <div class="motion-hint">給了實景照就跳過 AI 生背景、直接用你的真照,下面的場景下拉可以不用挑。<br>想再補一點氛圍描述(光線、時段)才挑一張接近的。</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="ep-field">
+          <label>沒有實景照?選 AI 場景</label>
+          <select id="ep-scene">${sceneOptions}</select>
+        </div>
+        <div class="ep-field">
+          <label>運鏡</label>
+          <select id="ep-movement">${movementOptions}</select>
+        </div>
       </div>
       <div class="ep-field">
         <label>地標(選填,飛東京/香港/巴黎…只在戶外場景生效)</label>
