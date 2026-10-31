@@ -969,6 +969,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .ep-field input,.ep-field textarea,.ep-field select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:7px 10px;outline:none;font-family:'Noto Sans TC',sans-serif;}
 .ep-field textarea{resize:vertical;min-height:54px;line-height:1.6;}
 .ep-field input:focus,.ep-field textarea:focus,.ep-field select:focus{border-color:var(--accent);}
+/* 📱 2026-10-31 RWD:STEP3 手機版右半邊被推出畫面(下拉選單長字撐開格子)→ 格子可以縮、選單不超出 */
+.system-grid>*,.system-col-right>*,.ep-field{min-width:0;}
+.ep-field select,.ep-field input:not([type=checkbox]):not([type=radio]){max-width:100%;min-width:0;width:100%;box-sizing:border-box;}
 .ep-summary{font-size:11px;color:var(--accent3);padding:6px 10px;background:rgba(109,250,194,.06);border-radius:6px;border-left:2px solid var(--accent3);line-height:1.6;}
 
 /* v5.9: Tab 3 商品照選擇器 */
