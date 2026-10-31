@@ -4482,7 +4482,9 @@ async function generateGptPoster() {
 
     // 🆕 2026-10-22 重拍模式第二步「商品校正」(RA 實測:重拍畫面好看但鞋舌標籤被 AI 自編;
     //   第二步把成品+原商品照一起送,只把商品改回原樣,其他畫面不動 →「可以了」)
-    if (window._amReshoot && winner.from === 'fal' && winner.imageUrl) {
+    //  🏷 2026-10-31 ad-logotap.js:客人生成前點了商品 LOGO → 一般模式也校正,並多帶 LOGO 近景(圖 3)
+    const _lt = (window._amLogoTap && window._amLogoTap.crop) ? window._amLogoTap : null;
+    if ((window._amReshoot || _lt) && winner.from === 'fal' && winner.imageUrl) {
       try {
         setPrStatus('🔍 商品校正中(把商品細節對回原圖,約 1-2 分鐘)...', 'var(--t3)');
         const _isApp = (SELECTED_PRODTYPE === 'apparel');
@@ -4495,8 +4497,9 @@ async function generateGptPoster() {
               //   第一步好不容易融進場景的光、透視、陰影又被蓋掉。改成:形體/角度/光影/大小照第 1 張,只把「印的東西」對回第 2 張。
               'In image 1, the markings on the ' + (_isApp ? 'garment' : 'products') + ' are corrected to match the real ones in image 2: every label, printed word, logo, embroidery, stitch line, panel and colour reads exactly as on the real product. ' +
               'The ' + (_isApp ? 'garment' : 'products') + ' keep the shape, viewing angle, perspective, light, shading, reflections and contact shadows they have in image 1, lit by the same light as everything around them. ' +
-              'Everything else in image 1 — the background, the headline and other lettering on the background, the light, the shadows, the camera angle, the position and size of the ' + (_isApp ? 'garment, the model\'s face, hair and pose' : 'products') + ' — stays exactly as it is.',
-            image_urls: [winner.imageUrl, imageUrl],
+              'Everything else in image 1 — the background, the headline and other lettering on the background, the light, the shadows, the camera angle, the position and size of the ' + (_isApp ? 'garment, the model\'s face, hair and pose' : 'products') + ' — stays exactly as it is.' +
+              (_lt ? ' Image 3 is a close-up of the brand mark on the real ' + (_isApp ? 'garment' : 'product') + ': in image 1 that brand mark reads exactly like image 3 — the same letters, symbol, shape, proportions and colours, in the same spot on the ' + (_isApp ? 'garment' : 'product') + ', following its surface and light.' : ''),
+            image_urls: _lt ? [winner.imageUrl, imageUrl, _lt.crop] : [winner.imageUrl, imageUrl],
             image_size: _sz.fal,
             quality: 'high',
             num_images: 1
