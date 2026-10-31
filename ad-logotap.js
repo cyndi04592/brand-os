@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
-//  🏷 ad-logotap.js v1.0(2026-10-31)— 廣告圖生成前「點一下商品 LOGO」
+//  🏷 ad-logotap.js v1.1(2026-10-31)
+//  v1.1:切 LOGO 近景改用 urlToBlob 讀商品照(v1.0 實測:cdn 商品照被瀏覽器擋讀 → 近景沒切出來,校正少了那張)— 廣告圖生成前「點一下商品 LOGO」
 //  RA:跟商品運鏡影片同一個做法 —— 人眼點的位置比 AI 自己找的準(AI 曾把 moz 讀成 ITDC)。
 //   ① 按「生成廣告圖」→ 先跳視窗:在商品照上點一下品牌 LOGO(可跳過)
 //   ② 從原商品照以那一點為中心切一張 LOGO 近景(原圖真實像素)
@@ -12,7 +13,7 @@
 (function () {
   'use strict';
   if (window.AdLogoTap) return;
-  var VERSION = '1.0';
+  var VERSION = '1.1';
   var memo = {};            // 商品照 → { x, y } 或 'skip'
 
   function photoNow() {
@@ -81,9 +82,11 @@
 
   // 從原商品照切 LOGO 近景(真實像素,輸出 512 見方)
   async function cropAt(src, pt) {
-    var got = (typeof loadImageSmart === 'function') ? await loadImageSmart(src) : null;
-    var im = got && got.img; if (!im) return '';
-    var W = im.naturalWidth || im.width, H = im.naturalHeight || im.height, m = Math.min(W, H);
+    //  v1.1 用 admaker 的 urlToBlob 讀檔(它會避開「畫面上 <img> 先載過 → 快取少了跨網域許可」那個坑);
+    //   v1.0 用 loadImageSmart → 圖被瀏覽器標成不能讀 → 切不出近景(實測 cdn 商品照)
+    var blob = (typeof urlToBlob === 'function') ? await urlToBlob(src) : await (await fetch(src, { cache: 'no-store' })).blob();
+    var im = await createImageBitmap(blob);
+    var W = im.width, H = im.height, m = Math.min(W, H);
     var side = Math.round(Math.min(m, Math.max(240, m * 0.18)));
     var sx = Math.round(Math.max(0, Math.min(W - side, pt.x * W - side / 2)));
     var sy = Math.round(Math.max(0, Math.min(H - side, pt.y * H - side / 2)));
