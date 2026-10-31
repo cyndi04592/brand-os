@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 kol-mode.js v1.4(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v1.8:①確認分鏡後才換風格(或寫實↔動畫)→ 按生成先提醒「分鏡是用 X 寫的」,再按一次才照用(分鏡的演法、聲音是照當時風格寫的)②角色轉換失敗/能量不足改成看得懂的話(以前會顯示 INSUFFICIENT_BITS、重複「角色轉換失敗」兩次)
 //  v1.7:每次打開頁面都從「寫實真人」開始(以前會自動套上次的動畫風格 → 客人忘了就拍錯風格);切到動畫時一定展開風格卡,讓客人自己選
 //  v1.6:90 年代復古動畫卡片換成 city-pop 新版(kol-proxy v6.81)
 //  v1.5:偶像動漫 3D 卡片換成現在線上真正轉出來的那張(舊卡是改版前偏皮克斯的圖)
@@ -18,7 +19,7 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '1.7';
+  const VERSION = '1.8';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
   //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
@@ -210,9 +211,25 @@
     try {
       const r = await api('kol_toon', { style: mode, imageUrl: img, brandId: (window.S && S.currentBrandId) || '', force: !!force });
       if (r && r.ok && r.url && _kolImg() + '|' + mode === want) { window.KOL_TOON_URL = r.url; toonFor = want; }
-      else if (!(r && r.ok)) _toast('角色轉換失敗:' + ((r && r.error) || '請再試一次'), 'error');
-    } catch (e) { _toast('角色轉換失敗:' + e.message, 'error'); }
+      else if (!(r && r.ok)) _toast(_failMsg(r), 'error');
+    } catch (e) { _toast(_failMsg(null), 'error'); }
     busy = false; _refreshChar();
+  }
+
+  //  v1.8 失敗訊息講人話(點數不足 / 其他失敗都已自動退點)
+  function _failMsg(r) {
+    if (r && /INSUFFICIENT_BITS|insufficient/i.test(String(r.error || ''))) {
+      return '能量不足:轉換角色要 ' + (r.need || 60) + ' 點' + (r.balance != null ? ',目前餘額 ' + r.balance + ' 點' : '') + '。可以到「訂閱方案」加購補給包。';
+    }
+    return '角色這次沒轉成功,點數已自動退還,請再按一次「轉換角色」。';
+  }
+  //  v1.8 分鏡風格對不上:分鏡面板 AI 編修成功時會記下 window.KOL_SB_MODE(當時的風格,寫實 = '')
+  let _sbWarnAt = 0;
+  function _sbMismatch() {
+    if (window.KOL_SB_MODE === undefined) return '';
+    const a = window.KOL_SB_MODE || '', b = window.KOL_MODE || '';
+    if (a === b) return '';
+    return '分鏡是用「' + (a ? (LABEL[a] || a) : '寫實真人') + '」寫的,現在選的是「' + (b ? (LABEL[b] || b) : '寫實真人') + '」—— 演法和聲音會對不上。建議按「AI 編修成分鏡」重寫一次;要照用就再按一次生成。';
   }
 
   // ── 生成按鈕旁的標記 + 沒轉角色先擋 ──
@@ -226,7 +243,15 @@
   }
   document.addEventListener('click', function (e) {
     const t = e.target && e.target.closest && e.target.closest('#create-seedance-btn');
-    if (!t || !window.KOL_MODE) return;
+    if (!t) return;
+    const _mm = _sbMismatch();
+    if (_mm && Date.now() - _sbWarnAt > 20000) {
+      _sbWarnAt = Date.now();
+      e.preventDefault(); e.stopImmediatePropagation();
+      _toast(_mm, 'warn');
+      return;
+    }
+    if (!window.KOL_MODE) return;
     if (!window.KOL_TOON_URL || toonFor !== _kolImg() + '|' + window.KOL_MODE) {
       e.preventDefault(); e.stopImmediatePropagation();
       _toast('動畫模式要先在「影片風格」轉換角色,再生成', 'warn');
