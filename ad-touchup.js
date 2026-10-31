@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
-//  ✏️ ad-touchup.js v1.0(2026-10-31)— 廣告圖「局部修改」第一版
+//  ✏️ ad-touchup.js v1.1(2026-10-31)
+//  v1.1:提示改成「把要改的東西整個塗滿」(實測:只塗杯口 → 換成蘋果,杯底還留著)— 廣告圖「局部修改」第一版
 //  RA:白紙新手、阿公阿嬤也要會用;人眼點的位置比 AI 自己找的準。
 //   ① 客人在成品上「塗一下」或「點一下」要改的地方
 //   ② 選「把這裡刪掉」或「我自己說」一句話 → kol-proxy ad_touchup(60 點,失敗自動退)
@@ -13,7 +14,7 @@
 (function () {
   'use strict';
   if (window.AdTouchup) return;
-  var VERSION = '1.0';
+  var VERSION = '1.1';
   var COST = 60;
 
   // 這一張廣告圖的版本紀錄(換新廣告圖就重來)
@@ -92,7 +93,7 @@
     wrap.className = 'tu-wrap';
     wrap.innerHTML =
       '<div class="tu-top"><b>✏️ 局部修改</b><button class="tu-x" data-tu="close">✕ 關閉</button></div>' +
-      '<div class="tu-hint" data-tu="hint">在圖上<b>塗一下</b>(或<b>點一下</b>)要改的地方,紅色就是會改的範圍,其他地方完全不會動。</div>' +
+      '<div class="tu-hint" data-tu="hint">在圖上把要改的東西<b>整個塗滿</b>(或<b>點一下</b>),紅色就是會改的範圍,其他地方完全不會動。</div>' +
       '<div class="tu-stage"><canvas data-tu="view"></canvas></div>' +
       '<div class="tu-row" data-tu="tools">' +
       '  <button class="tu-b on" data-tu="brush">🖌 塗抹</button>' +
@@ -213,7 +214,7 @@
     q('tools').style.display = on ? 'none' : 'flex';
     q('hint').innerHTML = on
       ? '這是修改後的樣子。<b>按住「看修改前」</b>可以比對;滿意就按「用這張」。'
-      : '在圖上<b>塗一下</b>(或<b>點一下</b>)要改的地方,紅色就是會改的範圍,其他地方完全不會動。';
+      : '在圖上把要改的東西<b>整個塗滿</b>(或<b>點一下</b>),紅色就是會改的範圍,其他地方完全不會動。';
   }
 
   function maskEmpty() {
