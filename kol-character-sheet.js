@@ -14,7 +14,10 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.3-board';
+  var VER = 'v2.4-board';
+  //  v2.4(2026-11-02)boardAll 角色名單改讀素材庫(list_kol_photos_lib):舊的 GAS 清單少了 予安、可昀、昱瑄、晴天、真人測試 5 位。
+  //    + 真人授權角色改看素材庫有沒有 real_ 開頭的照片(本人照存進素材庫後網址不一定帶 real_,v2.3 漏擋 真人測試)。
+  //      真人角色不讓 AI 重畫臉:底圖直接用本人正臉照。
   //  v2.3(2026-11-02)🧍 新版底圖(刺蝟星球 3101 版型)—— RA 11/02 實測通過:「蠻扯的,這通過了!」
   //   一張圖:上半正臉特寫、下半全身正面 + 背面;真人皮膚(毛孔、小痣、雀斑、膚色不均)、淡妝清透、霧面。
   //   存 R2 kol_board/(Worker v7.44 kol_board_save),拍片時整支用它當 [Image1]。
@@ -184,10 +187,22 @@
     return fetch(kai.WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json(); });
   }
+  // 這位是不是真人授權角色:素材庫裡有 real_ 開頭的本人照 → 回傳那張的網址
+  function _realPhoto(brandId, persona) {
+    return _post({ action: 'list_kol_photos_lib', brandId: brandId }).then(function (d) {
+      var p = ((d && d.personas) || []).filter(function (x) { return x.persona_name === persona; })[0];
+      var all = p ? [].concat(p.photos || [], p.processed_photos || []) : [];
+      var r = all.filter(function (x) { return /^real_/i.test(x.name || '') || /\/[^/]*real_front/i.test(x.url || ''); })[0];
+      return r ? r.url : '';
+    }).catch(function () { return ''; });
+  }
   function makeBoard(brandId, persona, frontUrl) {
     if (!brandId || !persona || !/^https?:\/\//.test(String(frontUrl || ''))) return Promise.reject(new Error('缺品牌/角色/正臉'));
     frontUrl = String(frontUrl).replace(/\/cdn-cgi\/image\/[^/]*\//i, '/');   // 縮圖絕不餵引擎
-    return _post({ action: 'nanobanana_pro', prompt: BOARD_PROMPT, image_urls: [frontUrl], num_images: 1, aspect_ratio: '9:16', resolution: '2K', output_format: 'jpeg' })
+    return _realPhoto(brandId, persona).then(function (realUrl) {
+      if (realUrl) return { images: [{ url: encodeURI(realUrl) }], _real: true };   // 真人:用本人照,不重畫
+      return _post({ action: 'nanobanana_pro', prompt: BOARD_PROMPT, image_urls: [frontUrl], num_images: 1, aspect_ratio: '9:16', resolution: '2K', output_format: 'jpeg' });
+    })
       .then(function (d) {
         var u = d && d.images && d.images[0] && d.images[0].url;
         if (!u) throw new Error((d && d.error) || '底圖生成失敗');
@@ -200,7 +215,7 @@
       });
   }
   // 🧍 v2.3 舊角色一次全部換(管理員 Console:KCS.boardAll() 先試算;KCS.boardAll({ apply: true }) 才真的做)
-  //   正臉來源 = 素材庫 kol_sheet(sheet_front);真人授權角色(檔名 real_)跳過;已有底圖的跳過(force: true 重做)
+  //   名單 = 素材庫 list_kol_photos_lib(v2.4);正臉來源 = 素材庫 kol_sheet(sheet_front);真人授權角色(檔名 real_)跳過;已有底圖的跳過(force: true 重做)
   function boardAll(opt) {
     opt = opt || {};
     if (!_isOwner()) return Promise.reject(new Error('只限管理員'));
@@ -209,7 +224,7 @@
     var list = [], report = { made: [], skipped: [], failed: [] };
     return brands.reduce(function (ch, b) {
       return ch.then(function () {
-        return _post({ action: 'gas_cached', gasAction: 'listKolPhotos', gasParams: { brandId: b } }).then(function (d) {
+        return _post({ action: 'list_kol_photos_lib', brandId: b }).then(function (d) {
           ((d && d.personas) || []).forEach(function (p) { if (p && p.persona_name) list.push({ brandId: b, persona: p.persona_name }); });
         }).catch(function () {});
       });
