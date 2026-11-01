@@ -14,7 +14,13 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.2-owner';
+  var VER = 'v2.3-board';
+  //  v2.3(2026-11-02)🧍 新版底圖(刺蝟星球 3101 版型)—— RA 11/02 實測通過:「蠻扯的,這通過了!」
+  //   一張圖:上半正臉特寫、下半全身正面 + 背面;真人皮膚(毛孔、小痣、雀斑、膚色不均)、淡妝清透、霧面。
+  //   存 R2 kol_board/(Worker v7.44 kol_board_save),拍片時整支用它當 [Image1]。
+  //   ★ 不進素材庫、不取 sheet_ 檔名 —— kol.html 跟這支都靠檔名挑正臉,新檔放進去會被當成正臉。
+  //   ① 新角色:三角度存好後自動接著做底圖(背景跑,不擋建立角色)
+  //   ② 舊角色:管理員 Console 跑 KCS.boardAll() 一次全部換(真人授權角色不做,臉不能讓 AI 重畫)
   //  v2.2(2026-10-25)重新打光改成「後台維修按鈕」:只有管理員看得到。
   //   理由(RA 拍板):舊臉 29 位已在 10/25 由後台一次處理完;新臉從產生器就防油光,客戶用不到。
   //   而且打光這一步沒有扣點,開給客戶按 = 我們自付成本。
@@ -104,6 +110,17 @@
       prompt: 'Show this exact person in a true 90-degree side profile, the face turned fully sideways so the far eye is hidden and the nose forms a clear silhouette against the background. ' + SAME_SHOOT }
   ];
 
+  //  🧍 v2.3 新版底圖提示詞(照 11/02 通過那張的版式寫;正面講要什麼,不寫「不要」)
+  var BOARD_PROMPT = 'Make a reference sheet of this exact person: one real photograph on a plain mid-grey studio backdrop, tall 9:16. '
+    + 'Top half: a single front-facing head-and-shoulders close-up, looking straight into the camera with a relaxed neutral expression. '
+    + 'Bottom half: two full-length standing shots side by side, the front view on the left and the back view on the right, arms relaxed at the sides, shoes visible. '
+    + 'One thin grey line runs across the sheet between the top half and the bottom half, and the rest of the sheet is clean backdrop with no text. '
+    + 'The same face, facial features, bone structure, hairstyle and hair length as in the photo. '
+    + 'Real skin as a phone camera sees it: visible pores, a few small moles and freckles, slightly uneven tone, natural asymmetry; '
+    + 'light, clear everyday makeup with a lip colour close to their own; the skin reads matte under soft, dull light. '
+    + 'Plain white crew-neck T-shirt, mid-blue straight jeans, white canvas sneakers. '
+    + 'Soft, even studio light from the front and both sides, low contrast, true everyday colours.';
+
   // ═══════════════════════════════════════════════════════════════════════
   //  🪣 2026-09-05 角度圖一律轉存自家 R2 再顯示(白標根治)
   //  ★ 病灶:角度圖原本直接用影像引擎回傳的網址塞進 <img src>(三處預覽都是),
@@ -158,6 +175,66 @@
       return _csToR2(d.images[0].url);
     });
   }
+
+  // 🧍 v2.3 做一張新版底圖並存好(回傳底圖網址)。frontUrl = 這位的正臉原圖(不能是縮圖)
+  function _post(body) {
+    var kai = K();
+    if (!kai) return Promise.reject(new Error('KAI 未就緒'));
+    body.password = kai.PASSWORD;
+    return fetch(kai.WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); });
+  }
+  function makeBoard(brandId, persona, frontUrl) {
+    if (!brandId || !persona || !/^https?:\/\//.test(String(frontUrl || ''))) return Promise.reject(new Error('缺品牌/角色/正臉'));
+    frontUrl = String(frontUrl).replace(/\/cdn-cgi\/image\/[^/]*\//i, '/');   // 縮圖絕不餵引擎
+    return _post({ action: 'nanobanana_pro', prompt: BOARD_PROMPT, image_urls: [frontUrl], num_images: 1, aspect_ratio: '9:16', resolution: '2K', output_format: 'jpeg' })
+      .then(function (d) {
+        var u = d && d.images && d.images[0] && d.images[0].url;
+        if (!u) throw new Error((d && d.error) || '底圖生成失敗');
+        return _post({ action: 'kol_board_save', brandId: brandId, kolName: persona, imageUrl: u });
+      })
+      .then(function (r) {
+        if (!r || !r.url) throw new Error((r && r.error) || '底圖存檔失敗');
+        console.log('[character-sheet] 🧍 新版底圖存好:' + brandId + '/' + persona + ' → ' + r.url);
+        return r.url;
+      });
+  }
+  // 🧍 v2.3 舊角色一次全部換(管理員 Console:KCS.boardAll() 先試算;KCS.boardAll({ apply: true }) 才真的做)
+  //   正臉來源 = 素材庫 kol_sheet(sheet_front);真人授權角色(檔名 real_)跳過;已有底圖的跳過(force: true 重做)
+  function boardAll(opt) {
+    opt = opt || {};
+    if (!_isOwner()) return Promise.reject(new Error('只限管理員'));
+    var sel = document.getElementById('brand-switcher');
+    var brands = opt.brands || (sel ? [].map.call(sel.options, function (o) { return o.value; }).filter(Boolean) : []);
+    var list = [], report = { made: [], skipped: [], failed: [] };
+    return brands.reduce(function (ch, b) {
+      return ch.then(function () {
+        return _post({ action: 'gas_cached', gasAction: 'listKolPhotos', gasParams: { brandId: b } }).then(function (d) {
+          ((d && d.personas) || []).forEach(function (p) { if (p && p.persona_name) list.push({ brandId: b, persona: p.persona_name }); });
+        }).catch(function () {});
+      });
+    }, Promise.resolve()).then(function () {
+      return list.reduce(function (ch, it) {
+        return ch.then(function () {
+          var tag = it.brandId + '/' + it.persona;
+          return _post({ action: 'kol_board_get', brandId: it.brandId, kolName: it.persona }).then(function (g) {
+            if (g && g.url && !opt.force) { report.skipped.push(tag + '(已有底圖)'); return; }
+            return _post({ action: 'kol_sheet', brandId: it.brandId, kolName: it.persona }).then(function (s) {
+              var f = s && s.faceUrl;
+              if (!f) { report.skipped.push(tag + '(沒有正臉)'); return; }
+              if (/\/real_/i.test(f)) { report.skipped.push(tag + '(真人授權)'); return; }
+              if (!opt.apply) { report.made.push(tag + '(試算)'); return; }
+              return makeBoard(it.brandId, it.persona, f).then(function (u) { report.made.push(tag + ' → ' + u); })
+                .catch(function (e) { report.failed.push(tag + ':' + ((e && e.message) || e)); });
+            });
+          }).catch(function (e) { report.failed.push(tag + ':' + ((e && e.message) || e)); });
+        });
+      }, Promise.resolve());
+    }).then(function () { console.log('[character-sheet] 🧍 boardAll', opt.apply ? '完成' : '試算', report); return report; });
+  }
+  window.KCS = window.KCS || {};
+  window.KCS.makeBoard = makeBoard;
+  window.KCS.boardAll = boardAll;
 
   function el(tag, css, html) { var e = document.createElement(tag); if (css) e.style.cssText = css; if (html != null) e.innerHTML = html; return e; }
   function btnCss(bg, big) {
@@ -686,6 +763,10 @@
         // 存檔 + 清理都完成之後才走到這 —— 拆出來是因為上面要等 Promise
         function _afterSave(purged) {
           btnUse.textContent = '✅ 已存進素材庫 · 人物表鎖定(' + saved.length + '/3)';
+          //  🧍 v2.3 接著做新版底圖(背景跑,不擋後面「完成建立角色」;失敗不影響拍片,會退回用正臉)
+          makeBoard(brandId, persona, RESULTS.front).then(function (bu) {
+            try { cards.appendChild(card('新版底圖', bu, null)); } catch (_) {}
+          }).catch(function (e) { console.warn('[character-sheet] 🧍 新版底圖略過:', (e && e.message) || e); });
           if (purged > 0) {
             status.textContent = '🧹 順手清掉 ' + purged + ' 張舊的角度照,這位只留最新的一組。';
           }
@@ -817,5 +898,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
   else build();
 
-  console.log('[character-sheet] 🎬 ' + VER + ' 就緒(Kontext 鎖臉 + 存進素材庫 + window.KCS.autoRun 自動入口)');
+  console.log('[character-sheet] 🎬 ' + VER + ' 就緒(Kontext 鎖臉 + 存進素材庫 + window.KCS.autoRun 自動入口 + 🧍 新版底圖)');
 })();
