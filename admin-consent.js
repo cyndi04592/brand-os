@@ -108,3 +108,9 @@
 
   window.AdminConsent = { load: load, show: show, version: '1.0' };
 })();
+
+/* 🎄 2026-11-02 後台「節慶」分頁(admin-season.js)搭這支的車載入:admin.html 已 4,000+ 行,不為一行 <script> 整檔重傳。失敗不影響授權書分頁。 */
+(function () {
+  if (window.__admSeasonLoader) return; window.__admSeasonLoader = true;
+  try { var s = document.createElement('script'); s.src = 'admin-season.js?v=20261102'; s.defer = true; document.body.appendChild(s); } catch (e) {}
+})();
