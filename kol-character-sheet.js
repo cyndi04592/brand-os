@@ -209,6 +209,16 @@
   function makeBoard(brandId, persona, frontUrl) {
     if (!brandId || !persona || !/^https?:\/\//.test(String(frontUrl || ''))) return Promise.reject(new Error('缺品牌/角色/正臉'));
     frontUrl = String(frontUrl).replace(/\/cdn-cgi\/image\/[^/]*\//i, '/');   // 縮圖絕不餵引擎
+    //  🧍 v2.8(RA 11/02「挑的臉和最後的底圖不一樣 → 直接生成!」)
+    //   生成器的候選本身就是底圖(kol-ai-generator v3.47 engine:'board')→ 客人挑的那張直接存成底圖,不再重畫
+    var _adopt = String(window.KAI_ADOPT_BOARD || '').split('?')[0];
+    if (_adopt && _adopt === String(frontUrl).split('?')[0]) {
+      return _post({ action: 'kol_board_save', brandId: brandId, kolName: persona, imageUrl: frontUrl }).then(function (r) {
+        if (!r || !r.url) throw new Error((r && r.error) || '底圖存檔失敗');
+        console.log('[character-sheet] 🧍 客人挑的底圖直接存好:' + brandId + '/' + persona + ' → ' + r.url);
+        return r.url;
+      });
+    }
     //  🧍 v2.7 真人也做底圖:輸入改用本人正臉照(素材庫 real_ 那張),沒有就用傳進來的正臉
     return _realPhoto(brandId, persona).then(function (realUrl) {
       var src = realUrl ? _encUrl(realUrl) : frontUrl;
