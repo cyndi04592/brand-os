@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  kol-persona-delete.js · v1.0(2026-11-02)客人自己刪除 KOL 角色
+ *  kol-persona-delete.js · v1.1(2026-11-02)客人自己刪除 KOL 角色
+ *  v1.1:紅框卡(照片存了、角色還沒建完)右下角加「🗑」→ 把那個名字的照片藏起來(Worker v7.62 deleteKolPhoto,要登入、只能動自己品牌)
  * ───────────────────────────────────────────────────────────────────
  *  RA 11/02:客人建錯角色刪不掉,只能找管理員;刪了照片還留著 → 形象庫多一張「還沒建立」空卡。
  *  ★ 按鈕在哪:KOL 工作室「人設書編輯」視窗左下角「🗑 刪除這個角色」。
@@ -13,12 +14,15 @@
 (function () {
   'use strict';
   if (window.__kolPersonaDelete) return;
-  window.__kolPersonaDelete = 'v1.0';
+  window.__kolPersonaDelete = 'v1.1';
 
   var CSS = '.kpd-btn{margin-right:auto;background:none;border:1px solid rgba(255,110,110,.35);color:#ff8a8a;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}'
     + '.kpd-btn:hover{background:rgba(255,110,110,.1)}'
     + '.kpd-btn.kpd-sure{background:#c93a3a;border-color:#c93a3a;color:#fff;font-weight:700}'
-    + '.kpd-btn:disabled{opacity:.6;cursor:default}';
+    + '.kpd-btn:disabled{opacity:.6;cursor:default}'
+    + '.rs-card.rs-unbound{position:relative}'
+    + '.kpd-x{position:absolute;bottom:4px;right:4px;z-index:3;border:0;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;line-height:1;padding:5px 6px;cursor:pointer}'
+    + '.kpd-x:hover{background:#c93a3a}.kpd-x.kpd-sure{background:#c93a3a;font-weight:700;padding:5px 8px}.kpd-x:disabled{opacity:.6}';
 
   function say(msg, kind) { try { if (typeof toast === 'function') return toast(msg, kind); } catch (_) {} alert(msg); }
   function curPersona() {
@@ -73,6 +77,40 @@
     if (modal && window.MutationObserver) new MutationObserver(function () { if (!btn.disabled) reset(btn); }).observe(modal, { attributes: true, attributeFilter: ['style'] });
   }
 
-  function start() { mount(); if (!document.querySelector('#persona-editor-modal .kpd-btn')) setTimeout(start, 1000); }
+  //  v1.1 紅框卡(還沒建立):照片藏起來就不見了;按一次變紅「再按一次刪除」,3 秒內再按才動
+  async function dropUnbound(name, b) {
+    b.disabled = true; b.textContent = '刪除中…';
+    try {
+      var res = await api('deleteKolPhoto', { brandId: S.currentBrandId, kolName: name, apply: true });
+      if (!res || res.ok === false) throw new Error((res && res.error) || '刪除失敗');
+      try { var bid = S.currentBrandId; if (S._libKolCache) delete S._libKolCache[bid]; if (S._drivePhotoCache) delete S._drivePhotoCache[bid]; } catch (_) {}
+      say('🗑 已移除「' + name + '」的照片(' + (res.deleted || 0) + ' 張)', 'success');
+      try { if (typeof refreshAll === 'function') await refreshAll(); } catch (_) {}
+    } catch (e) { say('❌ ' + ((e && e.message) || e), 'error'); b.disabled = false; b.classList.remove('kpd-sure'); b.textContent = '🗑'; b._armed = false; }
+  }
+  function markUnbound() {
+    document.querySelectorAll('.rs-card.rs-unbound[data-unbound]').forEach(function (card) {
+      if (card.querySelector('.kpd-x')) return;
+      if (!document.getElementById('kpd-css')) { var st = document.createElement('style'); st.id = 'kpd-css'; st.textContent = CSS; document.head.appendChild(st); }
+      var name = card.getAttribute('data-unbound');
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'kpd-x'; b.textContent = '🗑'; b.title = '不要這位了(把照片移除)';
+      b.addEventListener('click', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        if (b.disabled) return;
+        if (!b._armed) {
+          b._armed = true; b.classList.add('kpd-sure'); b.textContent = '再按一次刪除';
+          clearTimeout(b._t); b._t = setTimeout(function () { if (!b.disabled) { b._armed = false; b.classList.remove('kpd-sure'); b.textContent = '🗑'; } }, 3000);
+          return;
+        }
+        clearTimeout(b._t); dropUnbound(name, b);
+      }, true);
+      card.appendChild(b);
+    });
+  }
+  if (window.MutationObserver) new MutationObserver(function () { clearTimeout(window.__kpdT); window.__kpdT = setTimeout(markUnbound, 150); })
+    .observe(document.documentElement, { childList: true, subtree: true });
+
+  function start() { mount(); markUnbound(); if (!document.querySelector('#persona-editor-modal .kpd-btn')) setTimeout(start, 1000); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
