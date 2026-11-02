@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  theme-season.js · v1.3(2026-11-02)節慶換膚(全站共用,由 loader.js 自動載入)
+ *  theme-season.js · v1.4(2026-11-02)節慶換膚(全站共用,由 loader.js 自動載入)
+ *  v1.4:首頁(廣告圖頁)LOGO 旁也掛小樹(.nav-logo-wrap);右下角大樹會擋到面板 → 改成「角落是空的才出現」
  * ───────────────────────────────────────────────────────────────────
  *  RA 11/02:「先幫我變成聖誕節版,但後面會自動改回來」—— 像遊戲一樣有節慶感
  *  ★ 只換外觀(顏色、背景光暈、飄雪、小裝飾),版面與功能完全不動
@@ -10,7 +11,7 @@
 (function () {
   'use strict';
   if (window.__bsSeasonTheme) return;
-  window.__bsSeasonTheme = 'v1.3';
+  window.__bsSeasonTheme = 'v1.4';
 
   // 日期用「月-日」,含頭含尾;跨年的檔期把 from 寫大於 to 即可(例:12-28 ~ 01-05)
   var SEASONS = [
@@ -47,7 +48,9 @@
         // LOGO 前面一棵點陣小樹(v1.1 RA:不要 emoji,要科技感)
         '.bs-dot-tree-logo{display:inline-block;vertical-align:-4px;margin-right:8px;width:15px;height:20px;}' +
         // 右下角大一點的點陣樹(只在桌機,不擋點擊)
-        '.bs-dot-tree-corner{position:fixed;right:28px;bottom:24px;width:130px;height:150px;pointer-events:none;z-index:1;opacity:.9;}' +
+        '.bs-dot-tree-corner{position:fixed;right:28px;bottom:24px;width:130px;height:150px;pointer-events:none;z-index:1;opacity:.9;transition:opacity .3s;}' +
+        '.bs-dot-tree-corner.bs-off{opacity:0;}' +
+        '.nav-logo-wrap .bs-dot-tree-logo{margin:0 0 0 2px;width:13px;height:18px;vertical-align:-3px;}' +
         '@media (max-width:1100px){.bs-dot-tree-corner{display:none}}' +
         '.bs-dot-tree rect{fill:#d9b25f}.bs-dot-tree rect.d{fill:#9c7a35}.bs-dot-tree rect.b{fill:#ffe39a}' +
         '.bs-dot-tree rect.tw{animation:bsTwinkle 3s ease-in-out infinite}' +
@@ -124,6 +127,7 @@
     document.head.appendChild(st);
     if (th.tree) {
       try {
+        //  LOGO 旁的小樹:KOL 工作室 = .topbar-logo(文字 LOGO);首頁 = .nav-logo-wrap(圖 + 「Brand OS」字)
         var logo = document.querySelector('.topbar-logo');
         if (logo && !logo.querySelector('.bs-dot-tree')) {
           logo.insertAdjacentHTML('afterbegin', logoTreeSVG());
@@ -132,7 +136,43 @@
           var sync = function () { try { lt.style.display = parseFloat(getComputedStyle(logo).fontSize) > 0 ? '' : 'none'; } catch (_) {} };
           sync(); window.addEventListener('resize', sync);
         }
+        var nav = document.querySelector('.nav-logo-wrap .nav-brand-text');
+        if (nav && !nav.parentNode.querySelector('.bs-dot-tree')) {
+          nav.insertAdjacentHTML('beforebegin', logoTreeSVG());
+          var nt = nav.parentNode.querySelector('.bs-dot-tree-logo');
+          var sync2 = function () { try { nt.style.display = nav.offsetWidth > 0 ? '' : 'none'; } catch (_) {} };   // 手機把「Brand OS」字藏起來時,小樹也藏
+          sync2(); window.addEventListener('resize', sync2);
+        }
         document.body.insertAdjacentHTML('beforeend', dotTreeSVG('bs-dot-tree-corner'));
+        //  v1.4 右下角大樹:角落底下有面板/卡片/按鈕就隱藏(首頁右邊素材面板會被擋到),角落空的才出現
+        var ct = document.querySelector('.bs-dot-tree-corner');
+        //  首頁(廣告圖實驗室)的 .workspace 會一路延伸到右下角,生成的文案/圖片就出現在那 → 這頁直接不放大樹(LOGO 小樹、雪、配色照常)
+        if (document.querySelector('.workspace')) ct.classList.add('bs-off');
+        var solid = function (el) {
+          for (var e = el; e && e !== document.body && e !== document.documentElement; e = e.parentElement) {
+            if (e.offsetWidth >= innerWidth * 0.9 && e.offsetHeight >= innerHeight * 0.9) continue;   // 整頁大底色(版面外框)不算面板
+            var cs = getComputedStyle(e), m = (cs.backgroundColor || '').match(/rgba?\(([^)]+)\)/);
+            var a = m ? (m[1].split(',')[3] !== undefined ? parseFloat(m[1].split(',')[3]) : 1) : 0;
+            if (a > 0.03 || parseFloat(cs.borderTopWidth) > 0 || cs.backgroundImage !== 'none' || /^(BUTTON|INPUT|TEXTAREA|SELECT|IMG|VIDEO|A)$/.test(e.tagName)) return true;
+          }
+          return false;
+        };
+        var check = function () {
+          try {
+            var r = ct.getBoundingClientRect(), hit = false;
+            [[.25, .3], [.75, .3], [.5, .6], [.25, .9], [.75, .9]].forEach(function (f) {
+              var els = document.elementsFromPoint(r.left + r.width * f[0], r.top + r.height * f[1]) || [];
+              for (var i = 0; i < els.length; i++) {
+                var el = els[i];
+                if (el.closest && (el.closest('.bs-dot-tree') || el.closest('.bs-snow'))) continue;
+                if (solid(el)) hit = true;
+                break;
+              }
+            });
+            ct.classList.toggle('bs-off', hit || !!document.querySelector('.workspace'));
+          } catch (_) {}
+        };
+        check(); window.addEventListener('resize', check); window.addEventListener('scroll', check, { passive: true }); setInterval(check, 2000);
       } catch (_) {}
     }
     // 飄雪(手機少一半,省電)
