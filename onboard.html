@@ -762,7 +762,7 @@ body{
       </div>
       <input type="hidden" id="f_category">
     </div>
-    <div class="field"><label>主力商品/服務(簡短描述,一行一個)*</label><textarea id="f_products" rows="5" placeholder="例(實體商品):&#10;米香腸原味 280g&#10;&#10;例(課程服務):&#10;200小時瑜珈師資培訓班&#10;&#10;例(專業服務):&#10;企業法律顧問月費方案"></textarea><div class="field-hint">不限實體商品,課程、服務、顧問方案都可以填</div></div>
+    <div class="field"><label>主力商品/服務(簡短描述,一行一個)*</label><textarea id="f_products" rows="5" placeholder="例(實體商品):&#10;米香腸原味 280g&#10;&#10;例(課程服務):&#10;200小時瑜珈師資培訓班&#10;&#10;例(專業服務):&#10;企業法律顧問月費方案"></textarea><div class="field-hint">不限實體商品,課程、服務、顧問方案都可以填</div><div id="psz-onboard" style="margin-top:10px"></div></div>
     <div class="field">
       <label>上架或銷售平台(可多選)</label>
       <div class="check-group">
@@ -1022,6 +1022,8 @@ body{
 <script src="plans.js?v=20261020"></script>
 <script src="ref-capture.js"></script><!-- 🤝 2026-09-18 推薦碼:業務把進駐頁網址直接給客人時也記得到 -->
 <script src="auth-expire.js"></script><!-- 🔑 2026-09-18 登入過期統一處理 -->
+<script src="product-size.js"></script><!-- 📏 2026-11-02 商品尺寸點選器:每個商品點一個大小,送出時接在商品行尾,核准時(kol-proxy v7.59)存進商品資料 -->
+<script>(function(){ function go(){ var box=document.getElementById('psz-onboard'), ta=document.getElementById('f_products'); if(!box||!ta||!window.ProductSize||!ProductSize.mountList){ return setTimeout(go,500); } window.__pszList=ProductSize.mountList(box,{textarea:ta}); } if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go(); })();</script>
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const GAS_PASSWORD = 'raby2026';
@@ -1414,7 +1416,7 @@ async function doSubmit(){
     fb:v('f_fb'),ig:v('f_ig'),xiaohongshu:v('f_xiaohongshu'),douyin:v('f_douyin'),wechat:v('f_wechat'),socialOther:v('f_social_other'),
     contact:v('f_contact'),phone:phoneCode+' '+v('f_phone'),
     story:v('f_story'),values:v('f_values'),competitors:v('f_competitors'),competitorUrls:v('f_competitorUrls'),pros:v('f_pros'),cons:v('f_cons'),misc:v('f_misc'),
-    category:v('f_category'),products:v('f_products'),platforms:getPlatforms(),price:v('f_price'),audience:(v('f_buyer')?v('f_buyer')+'｜':'')+v('f_audience'),   // 🧭 格式:客人類型｜目標客群(Worker 靠「企業」二字判斷 B2B)
+    category:v('f_category'),products:(window.__pszList?window.__pszList.compose(v('f_products')):v('f_products')),platforms:getPlatforms(),price:v('f_price'),audience:(v('f_buyer')?v('f_buyer')+'｜':'')+v('f_audience'),   // 🧭 格式:客人類型｜目標客群(Worker 靠「企業」二字判斷 B2B)
     // 🩹 2026-08-19:colorHex 要送「實際選中的」。
     //   舊寫法一律送 selectedColorHex(公版色),客戶從網址抓來的顏色
     //   存在 extraColors 裡卻從來沒被送出去,等於白抓一場。
