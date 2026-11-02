@@ -14,7 +14,9 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.6-board';
+  var VER = 'v2.7-board';
+  //  v2.7(2026-11-02)RA:真人授權角色也要產生真人底圖(「1.也要」)。來源 = 本人正臉照(素材庫 real_ 那張),照同一套 3101 版型生底圖、切上半部當大頭貼。
+  //   影片多了全身正背面,換裝也一致。用本人照當輸入,不另外加任何美化。
   //  v2.6(2026-11-02)RA:「這裡應該就不用了吧」→ 多角度人物表面板對所有人隱藏(管理員也不顯示)。
   //   面板留在頁面上(隱藏)是因為 KCS.autoRun 的狀態文字掛在裡面;管理員工具改用 Console:KCS.avatarAll / KCS.boardAll / KCS.boardToAvatar。
   //  v2.5(2026-11-02)RA:「客戶生成直接生底圖就好,把底圖上半部切下來當系統大頭貼」
@@ -207,9 +209,10 @@
   function makeBoard(brandId, persona, frontUrl) {
     if (!brandId || !persona || !/^https?:\/\//.test(String(frontUrl || ''))) return Promise.reject(new Error('缺品牌/角色/正臉'));
     frontUrl = String(frontUrl).replace(/\/cdn-cgi\/image\/[^/]*\//i, '/');   // 縮圖絕不餵引擎
+    //  🧍 v2.7 真人也做底圖:輸入改用本人正臉照(素材庫 real_ 那張),沒有就用傳進來的正臉
     return _realPhoto(brandId, persona).then(function (realUrl) {
-      if (realUrl) return { images: [{ url: encodeURI(realUrl) }], _real: true };   // 真人:用本人照,不重畫
-      return _post({ action: 'nanobanana_pro', prompt: BOARD_PROMPT, image_urls: [frontUrl], num_images: 1, aspect_ratio: '9:16', resolution: '2K', output_format: 'jpeg' });
+      var src = realUrl ? _encUrl(realUrl) : frontUrl;
+      return _post({ action: 'nanobanana_pro', prompt: BOARD_PROMPT, image_urls: [src], num_images: 1, aspect_ratio: '9:16', resolution: '2K', output_format: 'jpeg' });
     })
       .then(function (d) {
         var u = d && d.images && d.images[0] && d.images[0].url;
@@ -245,7 +248,6 @@
             return _post({ action: 'kol_sheet', brandId: it.brandId, kolName: it.persona }).then(function (s) {
               var f = s && s.faceUrl;
               if (!f) { report.skipped.push(tag + '(沒有正臉)'); return; }
-              if (/\/real_/i.test(f)) { report.skipped.push(tag + '(真人授權)'); return; }
               if (!opt.apply) { report.made.push(tag + '(試算)'); return; }
               return makeBoard(it.brandId, it.persona, f).then(function (u) { report.made.push(tag + ' → ' + u); })
                 .catch(function (e) { report.failed.push(tag + ':' + ((e && e.message) || e)); });
@@ -297,18 +299,9 @@
   }
   // 🧍 v2.5 一位角色:底圖 → 切頭 → 存正臉(真人:底圖=本人照,正臉也用本人照)。回傳新正臉網址
   function boardToAvatar(brandId, persona, frontUrl) {
-    return _realPhoto(brandId, persona).then(function (realUrl) {
-      if (realUrl) {
-        return _post({ action: 'kol_board_save', brandId: brandId, kolName: persona, imageUrl: _encUrl(realUrl) }).then(function () {
-          var kai = K();
-          return kai.gasPost('saveKolPhoto', { brandId: brandId, personaName: persona, imageUrl: _encUrl(realUrl),
-            filename: persona + '_sheet_front_board_' + _stamp() + '.jpg', outfit: '', toProcessed: true,
-            metadata: { source: 'real_front' } }).then(function (res) { return (res && (res.url || res.drive_url)) || realUrl; });
-        });
-      }
-      return makeBoard(brandId, persona, frontUrl).then(function (bu) { return _cropHead(bu); })
-        .then(function (du) { return _saveBoardFront(brandId, persona, du); });
-    });
+    //  🧍 v2.7 真人也走同一套(makeBoard 會自動改用本人正臉照當輸入)
+    return makeBoard(brandId, persona, frontUrl).then(function (bu) { return _cropHead(bu); })
+      .then(function (du) { return _saveBoardFront(brandId, persona, du); });
   }
   // 🧍 v2.5 舊角色大頭貼一次換成各自底圖上半部(管理員;先試算)
   function avatarAll(opt) {
@@ -325,7 +318,6 @@
               var tag = b + '/' + p.persona_name;
               var all = [].concat(p.photos || [], p.processed_photos || []);
               if (all.some(function (x) { return /sheet_front_board/i.test(x.name || ''); }) && !opt.force) { report.skipped.push(tag + '(已換過)'); return; }
-              if (all.some(function (x) { return /^real_/i.test(x.name || ''); })) { report.skipped.push(tag + '(真人授權,大頭貼照舊)'); return; }
               return _post({ action: 'kol_board_get', brandId: b, kolName: p.persona_name }).then(function (g) {
                 if (!g || !g.url) { report.skipped.push(tag + '(沒有底圖)'); return; }
                 if (!opt.apply) { report.done.push(tag + '(試算)'); return; }
