@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 kol-mode.js v1.4(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v1.9(11/03 刺蝟星球 3111/3120 角色四視圖):動畫角色改用【整張底圖】(上臉、下正背全身)轉成該畫風 → 每段衣服身形一致
+//       (以前只拿大頭照轉,身體衣服靠 AI 猜)。沒有底圖的舊角色照舊用大頭照。舊的「只有頭」版本照用不扣點,畫面提示可升級成全身版。
 //  v1.8:①確認分鏡後才換風格(或寫實↔動畫)→ 按生成先提醒「分鏡是用 X 寫的」,再按一次才照用(分鏡的演法、聲音是照當時風格寫的)②角色轉換失敗/能量不足改成看得懂的話(以前會顯示 INSUFFICIENT_BITS、重複「角色轉換失敗」兩次)
 //  v1.7:每次打開頁面都從「寫實真人」開始(以前會自動套上次的動畫風格 → 客人忘了就拍錯風格);切到動畫時一定展開風格卡,讓客人自己選
 //  v1.6:90 年代復古動畫卡片換成 city-pop 新版(kol-proxy v6.81)
@@ -19,7 +21,7 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '1.8';
+  const VERSION = '1.9';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
   //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
@@ -83,6 +85,17 @@
   function _ls(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
   function _kolImg() { try { return (window.S && S.selectedKol && S.selectedKol.image_url) || ''; } catch (e) { return ''; } }
   function _kolName() { try { return (window.S && S.selectedKol && S.selectedKol.name) || ''; } catch (e) { return ''; } }
+  //  v1.9 角色底圖(上臉、下正背全身):有就拿整張去轉畫風
+  const _boards = {};
+  function _bid() { try { return (window.S && S.currentBrandId) || ''; } catch (e) { return ''; } }
+  function _who() { return _bid() + '::' + _kolName() + '::' + _kolImg(); }
+  async function _ensureBoard() {
+    const k = _bid() + '::' + _kolName();
+    if (!_bid() || !_kolName() || (k in _boards)) return;
+    try { const r = await api('kol_board_get', { brandId: _bid(), kolName: _kolName() }); _boards[k] = (r && r.url) || ''; } catch (e) { _boards[k] = ''; }
+  }
+  function _board() { return _boards[_bid() + '::' + _kolName()] || ''; }
+  let toonOld = false;   // 目前用的是舊版「只有頭」的角色圖
   function _toast(m, t) { try { (window.toast || console.log)(m, t); } catch (e) {} }
   function _esc(x) { return String(x || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
@@ -95,7 +108,7 @@
   function _apply() {
     const ok = mode && window.KolAnim && window.KolAnim.STYLES && window.KolAnim.STYLES[mode];
     window.KOL_MODE = (ok && _inStep2()) ? mode : '';
-    if (!ok) window.KOL_TOON_URL = '';
+    if (!ok) { window.KOL_TOON_URL = ''; window.KOL_TOON_SHEET = false; }
     _badge();
   }
 
@@ -120,7 +133,7 @@
       + '#kolmode .km-tag{font-size:9.5px;border-radius:5px;padding:0 5px;margin-left:4px;background:#1f3a2a;color:#7be0a0}'
       + '#kolmode .km-tag.new{background:#2a2540;color:#c9bfff}'
       + '#kolmode .km-char{display:flex;gap:12px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border,#2a2a3d)}'
-      + '#kolmode .km-char img{width:84px;height:84px;border-radius:10px;object-fit:cover;border:1.5px solid var(--accent,#a99bff)}'
+      + '#kolmode .km-char img{width:84px;height:84px;border-radius:10px;object-fit:cover;object-position:50% 0;border:1.5px solid var(--accent,#a99bff)}'
       + '#kolmode .km-note{font-size:11.5px;opacity:.65;line-height:1.6}'
       + '#kolmode .km-btns{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}'
       + '#kolmode .km-cur{display:flex;gap:10px;align-items:center;margin-top:10px;padding:8px;border:1.5px solid var(--accent,#a99bff);border-radius:10px;background:#0f0f18;cursor:pointer}'
@@ -174,7 +187,13 @@
     const img = _kolImg(), nm = _esc(_kolName()), lb = _esc(LABEL[mode] || '');
     if (!img) return '<div class="km-note">先在上面選一位 KOL,再轉成「' + lb + '」角色。</div>';
     if (busy) return '<div class="km-note">⏳ 正在把 ' + nm + ' 轉成「' + lb + '」角色…(約 20 秒)</div>';
-    if (window.KOL_TOON_URL && toonFor === img + '|' + mode) {
+    if (window.KOL_TOON_URL && toonFor === _who() + '|' + mode) {
+      if (toonOld && _board()) {
+        return '<img src="' + _esc(window.KOL_TOON_URL) + '" alt="">'
+          + '<div><div style="font-size:13px;font-weight:700">' + nm + ' · ' + lb + ' 版 ✓(舊版:只有頭)</div>'
+          + '<div class="km-note">可以照用。轉成「全身版」(臉＋正面＋背面)後,每段影片的衣服和身形會更一致。</div>'
+          + '<div class="km-btns"><button class="btn btn-primary btn-sm" data-km-make="1">✨ 轉成全身版(60 點)</button></div></div>';
+      }
       return '<img src="' + _esc(window.KOL_TOON_URL) + '" alt="">'
         + '<div><div style="font-size:13px;font-weight:700">' + nm + ' · ' + lb + ' 版 ✓</div>'
         + '<div class="km-note">影片裡的人物就用這張。之後再選這個風格直接用,不再扣點。</div>'
@@ -190,15 +209,20 @@
   // ── 角色設計圖 ──
   async function _lookup() {
     const img = _kolImg();
-    if (!mode || !img) { window.KOL_TOON_URL = ''; toonFor = ''; _refreshChar(); return; }
-    const want = img + '|' + mode;
+    if (!mode || !img) { window.KOL_TOON_URL = ''; window.KOL_TOON_SHEET = false; toonFor = ''; _refreshChar(); return; }
+    const want = _who() + '|' + mode;
     if (toonFor === want && window.KOL_TOON_URL) { _refreshChar(); return; }
-    window.KOL_TOON_URL = ''; toonFor = '';
+    window.KOL_TOON_URL = ''; window.KOL_TOON_SHEET = false; toonFor = ''; toonOld = false;
     _refreshChar();
     try {
-      const r = await api('kol_toon_get', { style: mode, imageUrl: img });
-      if (_kolImg() + '|' + mode !== want) return;          // 中途換人/換風格 → 丟掉舊結果
-      if (r && r.ok && r.url) { window.KOL_TOON_URL = r.url; toonFor = want; }
+      await _ensureBoard();
+      const bd = _board();
+      //  ① 全身版(底圖整張轉)② 沒有 → 舊版只有頭的那張(已經付過點,照用)
+      let r = bd ? await api('kol_toon_get', { style: mode, imageUrl: bd, sheet: true }) : null;
+      let sheet = !!(r && r.ok && r.url);
+      if (!sheet) r = await api('kol_toon_get', { style: mode, imageUrl: img });
+      if (_who() + '|' + mode !== want) return;          // 中途換人/換風格 → 丟掉舊結果
+      if (r && r.ok && r.url) { window.KOL_TOON_URL = r.url; window.KOL_TOON_SHEET = sheet; toonOld = !sheet; toonFor = want; }
     } catch (e) {}
     _refreshChar();
   }
@@ -206,11 +230,13 @@
   async function _make(force) {
     const img = _kolImg();
     if (!img || !mode || busy) return;
-    const want = img + '|' + mode;
+    const want = _who() + '|' + mode;
     busy = true; _refreshChar();
     try {
-      const r = await api('kol_toon', { style: mode, imageUrl: img, brandId: (window.S && S.currentBrandId) || '', force: !!force });
-      if (r && r.ok && r.url && _kolImg() + '|' + mode === want) { window.KOL_TOON_URL = r.url; toonFor = want; }
+      await _ensureBoard();
+      const bd = _board();   // v1.9 有底圖 → 整張轉成全身版角色圖
+      const r = await api('kol_toon', { style: mode, imageUrl: bd || img, sheet: !!bd, brandId: (window.S && S.currentBrandId) || '', force: !!force });
+      if (r && r.ok && r.url && _who() + '|' + mode === want) { window.KOL_TOON_URL = r.url; window.KOL_TOON_SHEET = !!bd; toonOld = false; toonFor = want; }
       else if (!(r && r.ok)) _toast(_failMsg(r), 'error');
     } catch (e) { _toast(_failMsg(null), 'error'); }
     busy = false; _refreshChar();
@@ -252,7 +278,7 @@
       return;
     }
     if (!window.KOL_MODE) return;
-    if (!window.KOL_TOON_URL || toonFor !== _kolImg() + '|' + window.KOL_MODE) {
+    if (!window.KOL_TOON_URL || toonFor !== _who() + '|' + window.KOL_MODE) {
       e.preventDefault(); e.stopImmediatePropagation();
       _toast('動畫模式要先在「影片風格」轉換角色,再生成', 'warn');
       const box = document.getElementById('kolmode'); if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -296,7 +322,7 @@
   let _lastImg = '';
   setInterval(function () {
     if (!document.getElementById('kolmode')) { _mount(); return; }
-    const img = _kolImg();
+    const img = _who();
     if (img !== _lastImg) { _lastImg = img; if (mode) _lookup(); }
     _apply();
   }, 800);
