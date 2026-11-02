@@ -668,7 +668,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.45 💡拔掉佈光下拉(臉=中性資產·光交給影片層) · v3.44 💡佈光補上光源方向與眼球反射形狀(治眼神假+人貼在背景上) · v3.43 🎯拔掉場域下拉(臉改中性棚背景·治「臉被釘在一個場景裡」) · v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
+  console.log('[kol-ai-generator v3.46 🩹年齡拉桿不再被舊預設值打成50·沒角色按生成直接開取名視窗 · v3.45 💡拔掉佈光下拉(臉=中性資產·光交給影片層) · v3.44 💡佈光補上光源方向與眼球反射形狀(治眼神假+人貼在背景上) · v3.43 🎯拔掉場域下拉(臉改中性棚背景·治「臉被釘在一個場景裡」) · v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1437,7 +1437,19 @@ function applyBrandDefaults(brandId) {
 
   document.querySelectorAll('.kai-param').forEach(el => {
     const k = el.dataset.k;
-    if (defaults[k]) el.value = defaults[k];
+    if (!defaults[k]) return;
+    //  🩹 v3.46(2026-11-02 實測)年齡是 1~99 拉桿,預設表卻還是舊下拉的字('standard')
+    //   → 拉桿收到非數字,瀏覽器自動跳到中間值 50,旁邊數字還顯示 26(沒送 input 事件)
+    //   → 客戶看到 26 歲,實際生出 50 歲。改成換算成數字並通知拉桿更新。
+    if (el.type === 'range') {
+      const AGE_NUM = { kid: 7, young: 22, standard: 26, mature: 31, elder: 37 };
+      const n = AGE_NUM[defaults[k]] || parseInt(defaults[k], 10);
+      if (!(n >= 1 && n <= 99)) return;
+      el.value = String(n);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
+    el.value = defaults[k];
   });
 }
 
@@ -1958,6 +1970,9 @@ async function generate() {
     return;
   }
   if (!S.currentPersonaName) {
+    //  🩹 v3.46(2026-11-02 實測)品牌還沒有角色就按生成 → 以前跳 alert 擋住,客戶不知道下一步
+    //   → 直接打開「取名字」視窗,取好名字再按一次生成
+    if (typeof openNewPersonaModal === 'function') { openNewPersonaModal(); return; }
     alert('請先選擇或建立 KOL 角色');
     return;
   }
@@ -2268,7 +2283,10 @@ async function saveKolImageToLibrary(idx) {
     img.driveFileId = res.file_id;
     renderGallery();
 
-    showStatus('✅ 已存進雲端倉庫:' + res.filename + ' — 左欄 Gallery 請點「重新載入」', 'ok');
+    showStatus('✅ 已存進雲端倉庫:' + res.filename, 'ok');
+    //  🩹 v3.46(2026-11-02 實測)選完臉左邊卡片還是空白頭像「還沒建立」,要客戶自己按「重新載入」
+    //   → 存好就自動重新載入形象庫(refreshAll 住在 kol.html)
+    try { if (typeof window.refreshAll === 'function') setTimeout(function () { window.refreshAll(); }, 800); } catch (_) {}
 
     // ══════════════════════════════════════════════════════════════════
     //  🎬 2026-09-10 · 選完正臉 → 自動接多角度(RA 拍板)
