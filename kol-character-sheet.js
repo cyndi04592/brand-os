@@ -14,7 +14,13 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.4-board';
+  var VER = 'v2.5-board';
+  //  v2.5(2026-11-02)RA:「客戶生成直接生底圖就好,把底圖上半部切下來當系統大頭貼」
+  //   ① 客戶按「選這張」→ 直接做真人底圖 → 切上半部(分隔線以上)存成正臉(檔名 _sheet_front_board_)→ 綁口播 → 完成。不再生 3/4 + 側臉。
+  //      大頭貼、口播、影片三處同一張臉。kol.html 看到 sheet_front_board 就算「真人底圖已完成」。
+  //   ② 多角度人物表面板只有管理員看得到(客戶看不到、也不用按)。
+  //   ③ 舊角色:管理員 Console 跑 KCS.avatarAll() 先試算,KCS.avatarAll({ apply: true }) 把每位的大頭貼換成各自底圖上半部。
+  //   ④ 真人授權角色:不讓 AI 重畫,底圖 = 本人照,大頭貼照舊。
   //  v2.4(2026-11-02)boardAll 角色名單改讀素材庫(list_kol_photos_lib):舊的 GAS 清單少了 予安、可昀、昱瑄、晴天、真人測試 5 位。
   //    + 真人授權角色改看素材庫有沒有 real_ 開頭的照片(本人照存進素材庫後網址不一定帶 real_,v2.3 漏擋 真人測試)。
   //      真人角色不讓 AI 重畫臉:底圖直接用本人正臉照。
@@ -247,9 +253,101 @@
       }, Promise.resolve());
     }).then(function () { console.log('[character-sheet] 🧍 boardAll', opt.apply ? '完成' : '試算', report); return report; });
   }
+  // 🧍 v2.5 底圖上半部(分隔線以上)切下來 → dataUrl
+  //   找線:縮小到 256 寬,在 30%–62% 高度間找「整排都跟上兩列差很多」的那一列(橫線橫跨全寬;頭髮、衣服邊只佔一部分)
+  function _encUrl(u) { u = String(u || ''); return /%[0-9A-F]{2}/i.test(u) ? u : encodeURI(u); }
+  function _cropHead(boardUrl) {
+    return fetch(_encUrl(boardUrl)).then(function (r) { return r.blob(); }).then(function (b) { return createImageBitmap(b); }).then(function (bmp) {
+      var W = bmp.width, H = bmp.height, sw = 256, sh = Math.round(H * sw / W);
+      var c = document.createElement('canvas'); c.width = sw; c.height = sh;
+      var x = c.getContext('2d'); x.drawImage(bmp, 0, 0, sw, sh);
+      var d = x.getImageData(0, 0, sw, sh).data;
+      function L(i) { return 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; }
+      var best = -1, by = Math.round(sh * 0.48);
+      for (var y = Math.round(sh * 0.30); y < Math.round(sh * 0.62); y++) {
+        var n = 0;
+        for (var xx = 0; xx < sw; xx++) if (Math.abs(L((y * sw + xx) * 4) - L(((y - 2) * sw + xx) * 4)) > 14) n++;
+        if (n > best) { best = n; by = y; }
+      }
+      if (best < sw * 0.6) by = Math.round(sh * 0.48);            // 沒找到清楚的線 → 取一半
+      var cutY = Math.max(10, Math.round((by - 3) * H / sh));
+      var o = document.createElement('canvas'); o.width = W; o.height = cutY;
+      o.getContext('2d').drawImage(bmp, 0, 0, W, cutY, 0, 0, W, cutY);
+      return o.toDataURL('image/jpeg', 0.92);
+    });
+  }
+  // 🧍 v2.5 存成這位的正臉(檔名 _sheet_front_board_ → 大頭貼/口播/kol.html 完成判斷都認得)
+  function _saveBoardFront(brandId, persona, dataUrl) {
+    var key = 'av' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    return _post({ action: 'size_card_save', brandId: brandId, key: key, dataUrl: dataUrl }).then(function (r) {
+      if (!r || !r.url) throw new Error((r && r.error) || '大頭貼上傳失敗');
+      var kai = K();
+      if (!kai || typeof kai.gasPost !== 'function') throw new Error('KAI 未就緒');
+      return kai.gasPost('saveKolPhoto', {
+        brandId: brandId, personaName: persona, imageUrl: r.url,
+        filename: persona + '_sheet_front_board_' + _stamp() + '.jpg', outfit: '', toProcessed: true,
+        metadata: { source: 'board_crop', generated_at: new Date().toISOString() }
+      });
+    }).then(function (res) {
+      if (!res || !res.ok) throw new Error((res && res.error) || '存正臉失敗');
+      return res.url || res.drive_url || '';
+    });
+  }
+  // 🧍 v2.5 一位角色:底圖 → 切頭 → 存正臉(真人:底圖=本人照,正臉也用本人照)。回傳新正臉網址
+  function boardToAvatar(brandId, persona, frontUrl) {
+    return _realPhoto(brandId, persona).then(function (realUrl) {
+      if (realUrl) {
+        return _post({ action: 'kol_board_save', brandId: brandId, kolName: persona, imageUrl: _encUrl(realUrl) }).then(function () {
+          var kai = K();
+          return kai.gasPost('saveKolPhoto', { brandId: brandId, personaName: persona, imageUrl: _encUrl(realUrl),
+            filename: persona + '_sheet_front_board_' + _stamp() + '.jpg', outfit: '', toProcessed: true,
+            metadata: { source: 'real_front' } }).then(function (res) { return (res && (res.url || res.drive_url)) || realUrl; });
+        });
+      }
+      return makeBoard(brandId, persona, frontUrl).then(function (bu) { return _cropHead(bu); })
+        .then(function (du) { return _saveBoardFront(brandId, persona, du); });
+    });
+  }
+  // 🧍 v2.5 舊角色大頭貼一次換成各自底圖上半部(管理員;先試算)
+  function avatarAll(opt) {
+    opt = opt || {};
+    if (!_isOwner()) return Promise.reject(new Error('只限管理員'));
+    var sel = document.getElementById('brand-switcher');
+    var brands = opt.brands || (sel ? [].map.call(sel.options, function (o) { return o.value; }).filter(Boolean) : []);
+    var report = { done: [], skipped: [], failed: [] };
+    return brands.reduce(function (ch, b) {
+      return ch.then(function () {
+        return _post({ action: 'list_kol_photos_lib', brandId: b }).then(function (d) {
+          return ((d && d.personas) || []).reduce(function (ch2, p) {
+            return ch2.then(function () {
+              var tag = b + '/' + p.persona_name;
+              var all = [].concat(p.photos || [], p.processed_photos || []);
+              if (all.some(function (x) { return /sheet_front_board/i.test(x.name || ''); }) && !opt.force) { report.skipped.push(tag + '(已換過)'); return; }
+              if (all.some(function (x) { return /^real_/i.test(x.name || ''); })) { report.skipped.push(tag + '(真人授權,大頭貼照舊)'); return; }
+              return _post({ action: 'kol_board_get', brandId: b, kolName: p.persona_name }).then(function (g) {
+                if (!g || !g.url) { report.skipped.push(tag + '(沒有底圖)'); return; }
+                if (!opt.apply) { report.done.push(tag + '(試算)'); return; }
+                return _cropHead(g.url).then(function (du) { return _saveBoardFront(b, p.persona_name, du); })
+                  .then(function (u) { report.done.push(tag + ' → ' + u); })
+                  .catch(function (e) { report.failed.push(tag + ':' + ((e && e.message) || e)); });
+              });
+            });
+          }, Promise.resolve());
+        }).catch(function (e) { report.failed.push(b + ':' + ((e && e.message) || e)); });
+      });
+    }, Promise.resolve()).then(function () {
+      console.log('[character-sheet] 🧍 avatarAll', opt.apply ? '完成' : '試算', report);
+      if (opt.apply && typeof window.refreshAll === 'function') { try { window.refreshAll(); } catch (_) {} }
+      return report;
+    });
+  }
   window.KCS = window.KCS || {};
   window.KCS.makeBoard = makeBoard;
   window.KCS.boardAll = boardAll;
+  window.KCS.boardToAvatar = boardToAvatar;
+  window.KCS.avatarAll = avatarAll;
+  window.KCS._cropHead = _cropHead;
+  window.KCS.boardMode = true;   // kol.html 用這個判斷要不要走真人底圖流程
 
   function el(tag, css, html) { var e = document.createElement(tag); if (css) e.style.cssText = css; if (html != null) e.innerHTML = html; return e; }
   function btnCss(bg, big) {
@@ -299,6 +397,7 @@
     box.appendChild(btnUse);
 
     panel.appendChild(box);
+    if (!_isOwner()) box.style.display = 'none';   // 🧍 v2.5 多角度人物表只有管理員看得到;客戶走真人底圖(autoRun)
 
     // 品牌與 persona 的來源順位(btnUse 原本寫在自己裡面,現在三處共用)
     function ctx() {
@@ -897,6 +996,29 @@
       //     縮圖絕不能餵引擎(鐵律),自動還原成原圖網址。
       frontUrl = String(frontUrl).replace(/\/cdn-cgi\/image\/[^/]*\//i, '/');
 
+      //  🧍 v2.5 真人底圖流程:底圖 → 切上半部當正臉(大頭貼)→ 綁口播 → 完成。不再生 3/4 + 側臉。
+      if (window.KCS_BOARD_FLOW !== false) {
+        if (window._kcsBoardBusy) { console.warn('[character-sheet] autoRun:上一位的底圖還在做,略過'); return false; }
+        window._kcsBoardBusy = true;
+        setFront(frontUrl);
+        status.textContent = '🧍 正在產生真人底圖(約 40 秒)…';
+        boardToAvatar(_c0.brandId, _c0.persona, frontUrl).then(function (avatarUrl) {
+          status.textContent = '✅ 真人底圖完成,大頭貼已換成底圖上的臉';
+          if (typeof window.autoBindPersona === 'function') {
+            return window.autoBindPersona(_c0.persona, avatarUrl || frontUrl).then(function (r) {
+              if (r && r.ok) status.textContent = r.skipped ? '✅ 全部完成。' : '🎉 「' + _c0.persona + '」已建立完成 —— 可以拿去拍片了。';
+              else status.textContent = '⚠️ 底圖好了,但最後的建立沒成功:' + ((r && r.error) || '未知');
+            });
+          }
+        }).catch(function (e) {
+          status.textContent = '❌ 真人底圖沒做成:' + friendlyErr(e);
+          console.warn('[character-sheet] 真人底圖失敗:', e);
+        }).then(function () {
+          window._kcsBoardBusy = false;
+          if (typeof window.refreshAll === 'function') { try { window.refreshAll(); } catch (e) {} }
+        });
+        return true;
+      }
       try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
       SAVED_IDS = {};          // 換人了,上一輪的編號不能留(會刪到別人的照片)
       AUTO = true;             // 生成完自動接存檔,見 btnGen 成功分支
@@ -913,5 +1035,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
   else build();
 
-  console.log('[character-sheet] 🎬 ' + VER + ' 就緒(Kontext 鎖臉 + 存進素材庫 + window.KCS.autoRun 自動入口 + 🧍 新版底圖)');
+  console.log('[character-sheet] 🎬 ' + VER + ' 就緒(🧍 真人底圖:autoRun 直接做底圖 + 切上半部當大頭貼;多角度面板只給管理員)');
 })();
