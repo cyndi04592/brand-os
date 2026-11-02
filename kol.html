@@ -3937,7 +3937,7 @@ function kolSetupSteps(personaName, hasPhoto, needPersona) {
   const steps = [
     { key: 'name',   ok: !!nm,                      label: '取名' },
     { key: 'photo',  ok: !!hasPhoto,                label: '形象照' },
-    { key: 'angle',  ok: !!(ang.q34 && ang.profile), label: '多角度' },
+    { key: 'angle',  ok: !!(ang.q34 && ang.profile), label: '真人底圖' },   // 🧍 2026-11-02 多角度 → 真人底圖
     { key: 'persona',ok: !needPersona,              label: '人設' },
   ];
   const done = steps.filter(x => x.ok).length;
@@ -4037,7 +4037,10 @@ function kolAngleStatus(name) {
   const p = (S.drivePhotos?.personas || []).find(x => String(x.persona_name || '').trim() === nm);
   const procs = (p && p.processed_photos) || [];
   const has = a => procs.some(x => new RegExp('(^|_)sheet_' + a + '|' + a, 'i').test(x.name || ''));
-  return { q34: has('q34'), profile: has('profile'), count: procs.length };
+  //  🧍 2026-11-02 真人底圖(刺蝟星球 3101 版型)取代 3/4 + 側臉:有底圖切下來的正臉(檔名 sheet_front_board)就算完成。
+  //   拍影片整支用底圖(kol-proxy v7.44+),3/4、側臉已經用不到;舊角色沒有底圖時照舊看 3/4 + 側臉。
+  const board = procs.some(x => /sheet_front_board/i.test(x.name || ''));
+  return { q34: board || has('q34'), profile: board || has('profile'), board: board, count: procs.length };
 }
 
 function goShootWithKol() {
@@ -4046,17 +4049,10 @@ function goShootWithKol() {
   const st = kolAngleStatus(nm);
   if (!st.q34 || !st.profile) {
     const miss = [!st.q34 ? '3/4 側' : '', !st.profile ? '側臉' : ''].filter(Boolean).join('、');
-    alert('「' + (nm || '這位 KOL') + '」還沒有多角度照片(缺 ' + miss + ')。\n\n' +
-          '影片的每一段都會用同一張正臉,人物會很呆板 —— 這是影片品質差最主要的原因。\n\n' +
-          '請先在下面「🎬 多角度人物表」按:\n' +
-          '  ① 讀取上面的正臉\n' +
-          '  ② 生成 3/4 + 側臉\n' +
-          '  ③ 用這組當人物表\n\n' +
-          '做完再回來拍片。');
-    try {
-      const cs = document.getElementById('cs-box');
-      if (cs) cs.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } catch (_) {}
+    //  🧍 2026-11-02 改成真人底圖:不再叫客戶去下面按三顆按鈕,直接幫他產生(約 40 秒)
+    alert('「' + (nm || '這位 KOL') + '」還沒有真人底圖。\n\n' +
+          '系統現在幫你產生(約 40 秒),好了角色卡會顯示「✅ 真人底圖已完成」,再回來拍片。');
+    try { goCharacterSheet(nm); } catch (_) {}
     return;
   }
   switchMode('cinematic');
@@ -5298,12 +5294,12 @@ function updatePersonaBindButtons() {
           ? kolAngleStatus(persona)
           : { q34: false, profile: false };
         if (_ang.q34 && _ang.profile) {
-          btn.textContent = '✅ 多角度照片已完成';
+          btn.textContent = '✅ 真人底圖已完成';
           btn.disabled = true;
           btn.classList.remove('btn-success'); btn.classList.add('btn-ghost');
           delete btn.dataset.mode;
         } else {
-          btn.textContent = '🎬 產生多角度照片 (建議要加)';
+          btn.textContent = '🧍 產生真人底圖';
           btn.disabled = false;
           btn.dataset.mode = 'sheet';          // 給點擊分流用
         }
@@ -5360,6 +5356,12 @@ function goCharacterSheet(personaName) {
   }
   photo.classList.add('selected');
 
+  //  🧍 2026-11-02 真人底圖:直接用這張正臉產生底圖(kol-character-sheet v2.5 的 KCS.autoRun),不再捲到人物表面板
+  if (window.KCS && typeof window.KCS.autoRun === 'function' && window.KCS.boardMode) {
+    const _img = photo.querySelector('img');
+    const _u = (photo.dataset && (photo.dataset.url || photo.dataset.src)) || (_img && _img.src) || '';
+    if (_u && window.KCS.autoRun(_u)) { toast('🧍 正在產生真人底圖(約 40 秒)…', 'success'); updateDriveActionBar(); return; }
+  }
   // ③ 捲到人物表面板
   const box = document.getElementById('cs-box');
   if (!box) {
