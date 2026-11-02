@@ -63,3 +63,15 @@
     if (el) el.innerHTML = '';
   };
 })();
+
+/* 🎄 2026-11-02 節慶換膚:依日期自動載入 theme-season.js(時間到自動不載入,畫面回原樣)。失敗不影響網站。 */
+(function(){
+  if (window.__bsSeasonLoader) return;
+  window.__bsSeasonLoader = true;
+  try {
+    var s = document.createElement('script');
+    s.src = 'theme-season.js';
+    s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {}
+})();
