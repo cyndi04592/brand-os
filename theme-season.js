@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════
  *  theme-season.js · v1.4(2026-11-02)節慶換膚(全站共用,由 loader.js 自動載入)
  *  v1.4:首頁(廣告圖頁)LOGO 旁也掛小樹(.nav-logo-wrap);右下角大樹會擋到面板 → 改成「角落是空的才出現」
+ *  v1.5:檔期改成 RA 在 Admin 後台「🎄 節慶」分頁設定(kol-proxy v7.61 /season.json)。
+ *        記在這台瀏覽器 10 分鐘;讀不到後台就用下面內建的 SEASONS(網站照常,不會壞)。後台關掉 → 下次換頁自動換回原樣
  * ───────────────────────────────────────────────────────────────────
  *  RA 11/02:「先幫我變成聖誕節版,但後面會自動改回來」—— 像遊戲一樣有節慶感
  *  ★ 只換外觀(顏色、背景光暈、飄雪、小裝飾),版面與功能完全不動
@@ -11,7 +13,7 @@
 (function () {
   'use strict';
   if (window.__bsSeasonTheme) return;
-  window.__bsSeasonTheme = 'v1.4';
+  window.__bsSeasonTheme = 'v1.5';
 
   // 日期用「月-日」,含頭含尾;跨年的檔期把 from 寫大於 to 即可(例:12-28 ~ 01-05)
   var SEASONS = [
@@ -21,7 +23,26 @@
   function mmdd(d) { return ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function inRange(today, from, to) { return from <= to ? (today >= from && today <= to) : (today >= from || today <= to); }
 
+  //  v1.5 後台設定:先用這台瀏覽器記住的(10 分鐘內),同時在背景問後台最新的,下次換頁就套用
+  var CFG_URL = 'https://kol-proxy.calm-sunset-6b66.workers.dev/season.json';
+  function loadCfg() {
+    try {
+      var c = JSON.parse(localStorage.getItem('bs_season_cfg') || 'null');
+      if (c && Array.isArray(c.seasons)) {
+        SEASONS = c.seasons.filter(function (x) { return x && x.on; });
+        if (Date.now() - (c.at || 0) < 10 * 60 * 1000) return;
+      }
+    } catch (_) {}
+    try {
+      fetch(CFG_URL, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d || !Array.isArray(d.seasons)) return;
+        try { localStorage.setItem('bs_season_cfg', JSON.stringify({ seasons: d.seasons, at: Date.now() })); } catch (_) {}
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
   function pickSeason() {
+    loadCfg();
     var force = '';
     try {
       var q = (location.search.match(/[?&]theme=([a-z]+)/) || [])[1] || '';
