@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  product-size.js · v1.3(2026-11-02)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
+ *  product-size.js · v1.4(2026-11-02)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
  * ───────────────────────────────────────────────────────────────────
  *  RA 11/02:「客戶去哪裡填尺寸?只有入駐填一次,懶的人一定沒填」
  *          「用手掌這招(刺蝟星球)更準,讓客戶點選幾個手掌大」
@@ -18,7 +18,7 @@
 (function () {
   'use strict';
   if (window.ProductSize) return;
-  var VERSION = 'v1.3';
+  var VERSION = 'v1.4';
   var HAND = 18;   // 一個手掌 = 手腕到指尖約 18cm
 
   var PACK = [
@@ -215,5 +215,51 @@
     if (document.readyState !== 'loading') autoMount(); else document.addEventListener('DOMContentLoaded', autoMount);
   }
 
-  window.ProductSize = { version: VERSION, mount: mount, readState: readState };
+  // ══════════════════════════════════════════════════════════════
+  //  v1.4 入駐問卷用:商品還沒建檔(沒有商品編號)→ 每一行商品各點一個大小,
+  //   送出時接在行尾「｜尺寸:最長約27cm」/「｜尺寸:高約100cm(到大人的腰)」,核准時 Worker v7.59 拆回商品資料
+  //   用法:var L = ProductSize.mountList(容器, { textarea: 商品欄位 }); 送出時用 L.compose(原文)
+  // ══════════════════════════════════════════════════════════════
+  function mountList(box, opts) {
+    ensureCss();
+    opts = opts || {};
+    var ta = opts.textarea, picks = {}, last = '';
+    function lines() { return String((ta && ta.value) || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); }
+    function render() {
+      var ls = lines(), sig = ls.join('\n');
+      if (sig === last) return; last = sig;
+      if (!ls.length) { box.innerHTML = ''; return; }
+      box.innerHTML = '<div class="psz"><h4>📏 每個商品大概多大?(選填 —— 填了,之後 AI 影片裡商品的大小會更準)</h4>'
+        + '<p class="st">服務、課程、顧問方案不用填。想填準一點,之後在 KOL 工作室可以改成公分。</p>'
+        + ls.map(function (nm, i) {
+          return '<div class="lb" style="margin-top:8px">' + esc(nm) + '</div><div class="row" data-i="' + i + '">'
+            + PACK.map(function (o) { return '<button type="button" class="c' + (picks[nm] === o.k ? ' on' : '') + '" data-k="' + o.k + '">' + o.t + '</button>'; }).join('')
+            + '</div>';
+        }).join('') + '</div>';
+      box.querySelectorAll('.row[data-i]').forEach(function (row) {
+        var nm = ls[+row.getAttribute('data-i')];
+        row.querySelectorAll('button.c').forEach(function (b) {
+          b.onclick = function () {
+            var k = b.getAttribute('data-k');
+            picks[nm] = (picks[nm] === k) ? '' : k;
+            row.querySelectorAll('button.c').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-k') === picks[nm]); });
+          };
+        });
+      });
+    }
+    function compose(text) {
+      return String(text || '').split('\n').map(function (ln) {
+        var nm = ln.trim(); if (!nm) return ln;
+        var o = null; PACK.forEach(function (x) { if (x.k === picks[nm]) o = x; });
+        if (!o) return ln;
+        return nm + '｜尺寸:' + (o.big ? '高約' + o.cm + 'cm(' + o.big + ')' : '最長約' + o.cm + 'cm');
+      }).join('\n');
+    }
+    render();
+    if (ta) ta.addEventListener('input', render);
+    var t = setInterval(function () { if (!document.body.contains(box)) { clearInterval(t); return; } render(); }, 2000);
+    return { compose: compose, picks: picks };
+  }
+
+  window.ProductSize = { version: VERSION, mount: mount, readState: readState, mountList: mountList };
 })();
