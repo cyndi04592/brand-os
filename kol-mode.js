@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 kol-mode.js v1.4(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v2.0(11/03 RA 選 A):動畫角色也依客人選的服裝 —— 底圖先穿上這次的衣服(服裝品牌 / auto=依場景),再轉畫風;
+//       換場景或服裝品牌 → 要重新轉一次(每套衣服每種畫風 60 點,轉過的存起來不再扣)
 //  v1.9(11/03 刺蝟星球 3111/3120 角色四視圖):動畫角色改用【整張底圖】(上臉、下正背全身)轉成該畫風 → 每段衣服身形一致
 //       (以前只拿大頭照轉,身體衣服靠 AI 猜)。沒有底圖的舊角色照舊用大頭照。舊的「只有頭」版本照用不扣點,畫面提示可升級成全身版。
 //  v1.8:①確認分鏡後才換風格(或寫實↔動畫)→ 按生成先提醒「分鏡是用 X 寫的」,再按一次才照用(分鏡的演法、聲音是照當時風格寫的)②角色轉換失敗/能量不足改成看得懂的話(以前會顯示 INSUFFICIENT_BITS、重複「角色轉換失敗」兩次)
@@ -21,7 +23,7 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '1.9';
+  const VERSION = '2.0';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
   //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
@@ -88,7 +90,21 @@
   //  v1.9 角色底圖(上臉、下正背全身):有就拿整張去轉畫風
   const _boards = {};
   function _bid() { try { return (window.S && S.currentBrandId) || ''; } catch (e) { return ''; } }
-  function _who() { return _bid() + '::' + _kolName() + '::' + _kolImg(); }
+  //  v2.0 這次的服裝條件(客人選的服裝品牌 + 場景);人設裡的固定穿搭已停用(Worker v7.66)
+  function _outfitCtx() { try { return { outfitBrand: (window.S && S.selectedOutfitBrand) || '', sceneId: (window.S && S.selectedSceneId) || '' }; } catch (e) { return {}; } }
+  function _who() { const o = _outfitCtx(); return _bid() + '::' + _kolName() + '::' + _kolImg() + '::' + (o.outfitBrand || '') + '::' + (o.sceneId || ''); }
+  //  底圖 → 穿上這次的衣服(只查快取 / 必要時生成)
+  async function _dressed(generate) {
+    const bd = _board();
+    if (!bd) return '';
+    const W = window.KolWardrobe, K = window.KolStitch;
+    if (!W || !K || !K.dressBoard) return bd;
+    const ctx = _outfitCtx();
+    if (!W.resolveOutfitText(ctx)) return bd;   // 這次沒有衣服條件 → 直接用底圖本來的衣服
+    const outfit = generate ? await W.generateOutfitRefImage(ctx) : await W.findOutfitRefImage(ctx);
+    if (!outfit) return generate ? bd : '';
+    return generate ? ((await K.dressBoard(_bid(), bd, outfit)) || bd) : await K.findDressBoard(_bid(), bd, outfit);
+  }
   async function _ensureBoard() {
     const k = _bid() + '::' + _kolName();
     if (!_bid() || !_kolName() || (k in _boards)) return;
@@ -186,12 +202,12 @@
   function _charHtml() {
     const img = _kolImg(), nm = _esc(_kolName()), lb = _esc(LABEL[mode] || '');
     if (!img) return '<div class="km-note">先在上面選一位 KOL,再轉成「' + lb + '」角色。</div>';
-    if (busy) return '<div class="km-note">⏳ 正在把 ' + nm + ' 轉成「' + lb + '」角色…(約 20 秒)</div>';
+    if (busy) return '<div class="km-note">⏳ 正在幫 ' + nm + ' 換上這次的衣服,再轉成「' + lb + '」角色…(約 1 分鐘)</div>';
     if (window.KOL_TOON_URL && toonFor === _who() + '|' + mode) {
       if (toonOld && _board()) {
         return '<img src="' + _esc(window.KOL_TOON_URL) + '" alt="">'
           + '<div><div style="font-size:13px;font-weight:700">' + nm + ' · ' + lb + ' 版 ✓(舊版:只有頭)</div>'
-          + '<div class="km-note">可以照用。轉成「全身版」(臉＋正面＋背面)後,每段影片的衣服和身形會更一致。</div>'
+          + '<div class="km-note">可以照用,但衣服不會換成這次選的。轉成「全身版」會穿上這次的衣服,每段影片的衣服和身形也更一致。</div>'
           + '<div class="km-btns"><button class="btn btn-primary btn-sm" data-km-make="1">✨ 轉成全身版(60 點)</button></div></div>';
       }
       return '<img src="' + _esc(window.KOL_TOON_URL) + '" alt="">'
@@ -199,8 +215,8 @@
         + '<div class="km-note">影片裡的人物就用這張。之後再選這個風格直接用,不再扣點。</div>'
         + '<div class="km-btns"><button class="btn btn-ghost btn-sm" data-km-redo="1">↻ 重轉(60 點)</button></div></div>';
     }
-    return '<div><div style="font-size:13px;font-weight:700">' + nm + ' 還沒有「' + lb + '」角色</div>'
-      + '<div class="km-note">第一次要把 ' + nm + ' 轉成這個風格(60 點),之後直接用。</div>'
+    return '<div><div style="font-size:13px;font-weight:700">' + nm + ' 還沒有穿這套衣服的「' + lb + '」角色</div>'
+      + '<div class="km-note">要把 ' + nm + ' 換上這次的衣服、轉成這個風格(60 點);同一套衣服之後直接用。換場景或服裝品牌會換衣服,要再轉一次。</div>'
       + '<div class="km-btns"><button class="btn btn-primary btn-sm" data-km-make="1">✨ 轉換角色(60 點)</button></div></div>';
   }
 
@@ -217,10 +233,11 @@
     try {
       await _ensureBoard();
       const bd = _board();
-      //  ① 全身版(底圖整張轉)② 沒有 → 舊版只有頭的那張(已經付過點,照用)
-      let r = bd ? await api('kol_toon_get', { style: mode, imageUrl: bd, sheet: true }) : null;
+      //  ① 穿上這次衣服的全身版 ② 沒有 → 舊版只有頭的那張(已經付過點,照用,提示可升級)
+      const dr = bd ? await _dressed(false) : '';
+      let r = dr ? await api('kol_toon_get', { style: mode, imageUrl: dr, sheet: true }) : null;
       let sheet = !!(r && r.ok && r.url);
-      if (!sheet) r = await api('kol_toon_get', { style: mode, imageUrl: img });
+      if (!sheet && !bd) r = await api('kol_toon_get', { style: mode, imageUrl: img });   // 沒底圖的老角色照舊用大頭照
       if (_who() + '|' + mode !== want) return;          // 中途換人/換風格 → 丟掉舊結果
       if (r && r.ok && r.url) { window.KOL_TOON_URL = r.url; window.KOL_TOON_SHEET = sheet; toonOld = !sheet; toonFor = want; }
     } catch (e) {}
@@ -234,8 +251,9 @@
     busy = true; _refreshChar();
     try {
       await _ensureBoard();
-      const bd = _board();   // v1.9 有底圖 → 整張轉成全身版角色圖
-      const r = await api('kol_toon', { style: mode, imageUrl: bd || img, sheet: !!bd, brandId: (window.S && S.currentBrandId) || '', force: !!force });
+      const bd = _board();   // v1.9 有底圖 → 整張轉成全身版;v2.0 先穿上這次的衣服
+      const src = bd ? await _dressed(true) : img;
+      const r = await api('kol_toon', { style: mode, imageUrl: src, sheet: !!bd, brandId: (window.S && S.currentBrandId) || '', force: !!force });
       if (r && r.ok && r.url && _who() + '|' + mode === want) { window.KOL_TOON_URL = r.url; window.KOL_TOON_SHEET = !!bd; toonOld = false; toonFor = want; }
       else if (!(r && r.ok)) _toast(_failMsg(r), 'error');
     } catch (e) { _toast(_failMsg(null), 'error'); }
