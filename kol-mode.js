@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 kol-mode.js v1.4(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v2.1(11/03)新增「國風動畫」組:國漫修仙、啟發小故事(佛教寓言/老闆大道理/星座);這兩種穿風格自己的服裝,不幫她換客人選的衣服
 //  v2.0(11/03 RA 選 A):動畫角色也依客人選的服裝 —— 底圖先穿上這次的衣服(服裝品牌 / auto=依場景),再轉畫風;
 //       換場景或服裝品牌 → 要重新轉一次(每套衣服每種畫風 60 點,轉過的存起來不再扣)
 //  v1.9(11/03 刺蝟星球 3111/3120 角色四視圖):動畫角色改用【整張底圖】(上臉、下正背全身)轉成該畫風 → 每段衣服身形一致
@@ -23,7 +24,7 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '2.0';
+  const VERSION = '2.1';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
   //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
@@ -35,6 +36,9 @@
     manga: CDN_CARD + 'manga-1d47680b75fc67f997b393015bd4f39dcc5f9fc6.jpg',
     poster: CDN_CARD + 'poster-db02efb979d7b6ad9ff3bbc6d5c7cb5107603b48.jpg',
     pastelwc: CDN_CARD + 'pastelwc-98dc6b866377a066a2db1511c946061ab518a617.jpg',
+    //  v2.1 國風兩種:用米禾轉出來的全身版,只取上面那張臉
+    xianxia: 'https://cdn.raby.com.tw/cdn-cgi/image/width=480,height=480,fit=cover,gravity=0.5x0,quality=85,format=auto/ly/toon/xianxia-e9a0c87b4f056876cf79a0012bb6dfa3f6035cf7.jpg',
+    zen: 'https://cdn.raby.com.tw/cdn-cgi/image/width=480,height=480,fit=cover,gravity=0.5x0,quality=85,format=auto/ly/toon/zen-cebcfbefc1c24f0b955d3adcc917b0818b8cf585.jpg',
   };
   function _card(k) { return CARD_SRC[k] || (IMG_DIR + k + '.jpg'); }
 
@@ -61,6 +65,10 @@
       ['chibi', 'Q 版大頭', '2 頭半身、超大眼睛、蹦蹦跳跳'],
       ['manga', '黑白漫畫', '黑白線稿＋網點,商品是唯一彩色'],
       ['pastelwc', '粉彩水彩動漫', '粉紅淡紫水彩暈染、夢幻大眼'],
+    ] },
+    { name: '國風動畫', items: [
+      ['xianxia', '國漫修仙', '仙俠 3D、長袍飄逸、法術層層展開'],
+      ['zen', '啟發小故事', '水墨二維、幾乎無對白、結尾一句道理(佛教/人生/星座)'],
     ] },
     { name: '插畫動畫', items: [
       ['gouache', '手繪水粉 lo-fi', '水粉蠟筆、紙紋、夕陽金光'],
@@ -100,6 +108,8 @@
     const W = window.KolWardrobe, K = window.KolStitch;
     if (!W || !K || !K.dressBoard) return bd;
     const ctx = _outfitCtx();
+    const _st = window.KolAnim && window.KolAnim.STYLES && window.KolAnim.STYLES[mode];
+    if (_st && _st.costume) return bd;               // v2.1 國漫修仙/啟發小故事:穿風格自己的服裝
     if (!W.resolveOutfitText(ctx)) return bd;   // 這次沒有衣服條件 → 直接用底圖本來的衣服
     const outfit = generate ? await W.generateOutfitRefImage(ctx) : await W.findOutfitRefImage(ctx);
     if (!outfit) return generate ? bd : '';
