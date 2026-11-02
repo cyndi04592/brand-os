@@ -75,3 +75,15 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {}
 })();
+
+/* 🗑 2026-11-02 KOL 工作室:客人自己刪角色(kol-persona-delete.js,只在 /kol 載入)。失敗不影響網站。 */
+(function(){
+  if (window.__kpdLoader || !/\/kol(\.html)?$/.test(location.pathname)) return;
+  window.__kpdLoader = true;
+  try {
+    var s = document.createElement('script');
+    s.src = 'kol-persona-delete.js';
+    s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {}
+})();
