@@ -1186,6 +1186,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   }
   .drive-product-gallery::-webkit-scrollbar{width:4px;}
   .drive-product-gallery::-webkit-scrollbar-thumb{background:rgba(124,109,250,.3);border-radius:2px;}
+  /* 🩹 2026-11-02 iPhone Safari:格子框限高＋框內捲動時,Safari 把「正方形(aspect-ratio)」的格子壓扁,
+     一排只剩 45px、圖片疊在一起(RA 手機截圖)。改用「上邊距撐出正方形」的老寫法,所有瀏覽器都認。 */
+  .drive-product-gallery{grid-auto-rows:auto;align-content:start;}
+  .drive-product-item{aspect-ratio:auto;height:0;padding-top:100%;}
+  .drive-product-item img{position:absolute;top:0;left:0;width:100%;height:100%;}
 }
 /* ── 第三波:太長的清單全面「選角色化」+ 書類折疊 ──
    RA 回饋:場景卡/形象庫/多角度照直排太長;人設書要能折疊。 */
