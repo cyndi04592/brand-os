@@ -475,92 +475,23 @@ body{
 .info-box-title{font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px;}
 .info-box p{font-size:11px;color:var(--t2);line-height:2;}
 
-/* ══════════════════════════════════════════
-   KOL 區塊(原本就紫色,跟新主題一致,小升級)
-   ══════════════════════════════════════════ */
-.kol-hero{
-  background:linear-gradient(135deg,rgba(124,109,250,0.12),rgba(250,109,155,0.08));
-  border:1px solid rgba(124,109,250,0.3);
-  border-radius:14px;padding:18px 20px;margin-bottom:20px;
-  box-shadow:0 4px 16px rgba(124,109,250,0.12);
-}
-.kol-hero-title{
-  font-family:'Syne',sans-serif;
-  font-size:22px;letter-spacing:2px;
-  background:var(--grad-main);
-  -webkit-background-clip:text;background-clip:text;
-  -webkit-text-fill-color:transparent;
-  font-weight:800;
-  margin-bottom:6px;
-}
-.kol-hero-desc{font-size:12px;color:var(--t2);line-height:1.9;}
-.kol-hero-badge{
-  display:inline-block;padding:3px 10px;
-  background:var(--grad-main);
-  color:#fff;font-size:9px;
-  font-family:'Syne',sans-serif;letter-spacing:1px;font-weight:700;
-  border-radius:12px;margin-left:6px;vertical-align:middle;
-}
-
-.kol-option-group{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
-.kol-option{
-  background:var(--bg3);border:1px solid var(--line);
-  border-radius:12px;padding:18px;cursor:pointer;transition:all .2s;
-}
-.kol-option:hover{border-color:rgba(124,109,250,0.3);transform:translateY(-1px);}
-.kol-option.on{
-  border-color:var(--purple);background:var(--purple2);
-  box-shadow:0 0 0 3px rgba(124,109,250,0.12);
-}
-.kol-option-head{display:flex;align-items:flex-start;gap:12px;}
-.kol-option-radio{
-  width:20px;height:20px;border-radius:50%;
-  border:2px solid var(--t3);flex-shrink:0;margin-top:2px;
-  position:relative;transition:all .2s;
-}
-.kol-option.on .kol-option-radio{border-color:var(--purple);}
-.kol-option.on .kol-option-radio::after{
-  content:'';position:absolute;inset:3px;
-  background:var(--grad-main);border-radius:50%;
-}
-.kol-option-content{flex:1;}
-.kol-option-title{font-size:14px;font-weight:900;color:var(--t1);margin-bottom:4px;}
-.kol-option-desc{font-size:11px;color:var(--t2);line-height:1.7;}
 .opt-more{margin:4px 0 14px;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;}
 .opt-more>summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--t2);list-style:none;}
 .opt-more>summary::-webkit-details-marker{display:none;}
 .opt-more>summary::before{content:'＋ ';color:var(--sky);}
 .opt-more[open]>summary::before{content:'－ ';}
 .opt-more[open]>summary{margin-bottom:10px;}
-.kol-option-detail{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:none;}
-.kol-option.on .kol-option-detail{display:block;}
 
-.kol-url-field{margin-bottom:12px;}
-.kol-url-label{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--t3);margin-bottom:5px;display:block;text-transform:uppercase;}
-.kol-url-input{
-  width:100%;background:var(--bg4);border:1px solid var(--line);border-radius:8px;
-  color:var(--t1);font-family:'DM Mono';font-size:11px;padding:10px 12px;outline:none;
-  transition:all .2s;
-}
-.kol-url-input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,109,250,0.1);}
-
-.kol-warning{
-  background:rgba(250,109,155,0.06);
-  border:1px solid rgba(250,109,155,0.2);
-  border-radius:8px;padding:10px 12px;margin-top:10px;
-  font-size:10px;color:#FFB3CC;line-height:1.8;
-}
-.kol-warning strong{color:var(--orange);}
-.kol-hint{font-size:10px;color:var(--t3);margin-top:5px;line-height:1.6;}
-.kol-owner-fields{margin-top:8px;}
-.kol-owner-fields .field{margin-bottom:12px;}
-.kol-owner-note{
-  background:rgba(91,200,232,0.06);
-  border:1px solid rgba(91,200,232,0.2);
-  border-radius:8px;padding:10px 12px;margin-top:8px;
-  font-size:10px;color:var(--sky);line-height:1.8;
-}
-
+/* 🪶 2026-11-02 入駐問卷簡化:AI 最常用標籤、欄位下方提示(取代跳出視窗)、類別「更多」、平台分組 */
+.ai-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:9px;font-size:9px;font-weight:700;letter-spacing:.5px;
+  color:#1f2230;background:var(--gold);vertical-align:1px;}
+.opt-tag{margin-left:6px;color:var(--t3);font-weight:400;font-size:9px;}
+.f-msg{margin-top:6px;font-size:11px;line-height:1.7;color:#ff8a8a;white-space:pre-line;}
+.f-msg.warn{color:#f5c26b;}
+.f-bad input,.f-bad textarea,.f-bad .radio-group{outline:1px solid rgba(255,120,120,.55);outline-offset:2px;border-radius:8px;}
+.cat-more{margin-top:10px;}
+.plat-sub{font-size:10px;color:var(--t3);margin:10px 0 6px;letter-spacing:.5px;}
+.plat-sub:first-child{margin-top:0;}
 @media(max-width:600px){
   .main{padding:20px 14px 60px;}
   .page-title{font-size:30px;letter-spacing:2px;}
@@ -580,11 +511,7 @@ body{
   .gen-title{font-size:22px;}
   .color-url-row{flex-direction:column;}
   .btn-grab-color{width:100%;}
-  .kol-option{padding:14px;}
-  .kol-option-title{font-size:13px;}
-  .kol-option-desc{font-size:10px;}
   .login-title{font-size:24px;}
-  .kol-hero-title{font-size:18px;}
 }
 </style>
 <style>
@@ -666,7 +593,6 @@ body{
     <div class="step" id="step2"><div class="step-num">2</div><div class="step-lbl">品牌故事</div></div>
     <div class="step" id="step3"><div class="step-num">3</div><div class="step-lbl">商品資訊</div></div>
     <div class="step" id="step4"><div class="step-num">4</div><div class="step-lbl">風格設定</div></div>
-    <div class="step" id="step45" style="display:none"><div class="step-num">5</div><div class="step-lbl">KOL 數字人</div></div>
     <div class="step" id="step46"><div class="step-num">5</div><div class="step-lbl">選方案</div></div>
     <div class="step" id="step5"><div class="step-num">6</div><div class="step-lbl">確認送出</div></div>
   </div>
@@ -714,13 +640,14 @@ body{
 
   <div class="section" id="sec2">
     <div class="sec-title">02 · 品牌故事與定位</div>
-    <div class="field"><label>為什麼創立這個品牌?*</label><textarea id="f_story" rows="4" placeholder="例:阿公傳下來的古早味配方,想讓更多人吃到真正的台灣米香腸..."></textarea></div>
-    <div class="field"><label>品牌核心價值(3個關鍵字)</label><input type="text" id="f_values" placeholder="例:健康、天然、台灣在地"><div class="field-hint">用逗號分隔,這會成為品牌靈魂的核心</div></div>
+    <div class="field"><label>為什麼創立這個品牌?* <span class="ai-tag">AI 最常用</span></label><textarea id="f_story" rows="4" placeholder="例:阿公傳下來的古早味配方,想讓更多人吃到真正的台灣米香腸..."></textarea></div>
+    <div class="field"><label>品牌核心價值(3個關鍵字)<span class="opt-tag">選填</span></label><input type="text" id="f_values" placeholder="例:健康、天然、台灣在地"><div class="field-hint">用逗號分隔,這會成為品牌靈魂的核心</div></div>
+    <!-- 🪶 2026-11-02「優勢」拉出來並改必填(RA:系統真的有用的欄位都打星號,客戶必須認真填):靈魂書精華的「為什麼選我們」靠它 -->
+    <div class="field"><label>跟別家比,你們好在哪?* <span class="ai-tag">AI 最常用</span></label><textarea id="f_pros" rows="3" placeholder="例:使用100%台灣豬、添加米讓口感更Q彈、無防腐劑..."></textarea><div class="field-hint">這段會變成廣告裡「為什麼選我們」,寫具體一點(用什麼原料、做法、服務有什麼不一樣)</div></div>
     <!-- 🪶 2026-10-18 防呆:第一次用的客人不用一次面對 7 格。只有「為什麼創立」必填,其餘收起來 -->
-    <details class="opt-more"><summary>想讓 AI 更懂你?可以再補充競爭對手、優勢、困擾(選填,可跳過)</summary>
+    <details class="opt-more"><summary>想讓 AI 更懂你?可以再補充競爭對手、困擾、想說的話(選填,可跳過)</summary>
     <div class="field"><label>主要競爭對手名稱</label><input type="text" id="f_competitors" placeholder="例:xxx品牌、yyy品牌"></div>
-    <div class="field"><label>競爭對手網址(可多個,換行分隔)</label><textarea id="f_competitorUrls" rows="3" placeholder="例:&#10;https://www.competitor1.com&#10;https://www.competitor2.com"></textarea><div class="field-hint">AI 會分析競爭對手的定位,幫你找出差異化方向</div></div>
-    <div class="field"><label>相較競爭對手的優勢</label><textarea id="f_pros" rows="3" placeholder="例:使用100%台灣豬、添加米讓口感更Q彈、無防腐劑..."></textarea></div>
+    <div class="field"><label>競爭對手網址(可多個,換行分隔)</label><textarea id="f_competitorUrls" rows="3" placeholder="例:&#10;https://www.competitor1.com&#10;https://www.competitor2.com"></textarea><div class="field-hint">給我們的顧問參考用(AI 不會打開網址)</div></div>
     <div class="field"><label>目前的弱點或挑戰</label><textarea id="f_cons" rows="2" placeholder="例:知名度低、價格比市售高..."></textarea><div class="field-hint">誠實填寫,AI 才能幫你找到突破點</div></div>
     <div class="field"><label>想說但不知道怎麼說的話(廢話也可以)</label><textarea id="f_misc" rows="3" placeholder="任何想表達的想法,什麼都可以寫..."></textarea></div>
     </details>
@@ -731,20 +658,25 @@ body{
     <div class="sec-title">03 · 商品/服務資訊</div>
     <div class="field">
       <label>品牌屬於哪個類別?*</label>
-      <div class="radio-group" id="catGroup">
+      <!-- 🪶 2026-11-02 27 顆一整面牆 → 先秀 8 個最常見,其他收「更多類別」。按鈕文字一個都沒改(靈魂書/文案/Worker 都讀這個值) -->
+      <div id="catGroup">
+      <div class="radio-group">
         <button class="radio-btn" onclick="selectRadio(this,'cat')">食品/飲料</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">健康保健</button>
-        <button class="radio-btn" onclick="selectRadio(this,'cat')">家電用品</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">美容保養</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">美髮/美甲/美業服務</button><!-- 🆕 2026-10-24 RA:理髮店(Double W)找不到類別只好選「設計/創意服務」-->
         <button class="radio-btn" onclick="selectRadio(this,'cat')">服飾配件</button>
-        <button class="radio-btn" onclick="selectRadio(this,'cat')">寵物用品</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">3C電子</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">居家生活</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">線上課程/教育</button>
+      </div>
+      <details class="opt-more cat-more"><summary>找不到?看更多類別(19 種)</summary>
+      <div class="radio-group">
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">家電用品</button>
+        <button class="radio-btn" onclick="selectRadio(this,'cat')">寵物用品</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">運動休閒</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">生存遊戲/戰術裝備</button><!-- 🆕 2026-10-27 RA:生存遊戲客人(Red hammer)找不到類別;選了它 → 靈魂書文案一律寫生存遊戲/replica -->
         <button class="radio-btn" onclick="selectRadio(this,'cat')">母嬰兒童</button>
-        <button class="radio-btn" onclick="selectRadio(this,'cat')">線上課程/教育</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">身心靈/療癒</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">法律/顧問服務</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">醫療/診所</button>
@@ -760,13 +692,24 @@ body{
         <button class="radio-btn" onclick="selectRadio(this,'cat')">汽車/機車</button>
         <button class="radio-btn" onclick="selectRadio(this,'cat')">其他</button>
       </div>
+      </details>
+      </div>
       <input type="hidden" id="f_category">
     </div>
-    <div class="field"><label>主力商品/服務(簡短描述,一行一個)*</label><textarea id="f_products" rows="5" placeholder="例(實體商品):&#10;米香腸原味 280g&#10;&#10;例(課程服務):&#10;200小時瑜珈師資培訓班&#10;&#10;例(專業服務):&#10;企業法律顧問月費方案"></textarea><div class="field-hint">不限實體商品,課程、服務、顧問方案都可以填</div><div id="psz-onboard" style="margin-top:10px"></div></div>
+    <!-- 🪶 2026-11-02 RA:商品改成表格(名稱/售價/尺寸,按「+」多一列,預設 1 列),畫在 product-size.js v1.6 mountTable。
+         隱藏的 f_products / f_price 由表格自動同步 → 靈魂書、送出沿用原欄位,Worker 不用改 -->
+    <div class="field"><label>主力商品/服務 * <span class="ai-tag">AI 最常用</span></label>
+      <div class="field-hint" style="margin:-2px 0 8px">一列一個商品,寫完整名稱。課程、服務、顧問方案也可以填,尺寸留空就好</div>
+      <div id="prodTable"></div>
+      <textarea id="f_products" hidden></textarea><input type="hidden" id="f_price">
+    </div>
     <div class="field">
-      <label>上架或銷售平台(可多選)</label>
-      <div class="check-group">
+      <label>上架或銷售平台(可多選)<span class="opt-tag">選填</span></label><div class="field-hint" style="margin:-2px 0 8px">在哪個國家/地區賣,就打開那一區勾選</div><div id="platGroup">
+            <div class="check-group">
         <label class="check-item"><input type="checkbox" value="官網" id="ch_web"><span>官網</span></label>
+      </div>
+      <details class="opt-more plat-region" open><summary>🇹🇼 台灣電商</summary>
+      <div class="check-group">
         <label class="check-item"><input type="checkbox" value="MOMO" id="ch_momo"><span>MOMO</span></label>
         <label class="check-item"><input type="checkbox" value="PChome" id="ch_pchome"><span>PChome</span></label>
         <label class="check-item"><input type="checkbox" value="蝦皮商城" id="ch_shopee_mall"><span>蝦皮商城</span></label>
@@ -775,18 +718,68 @@ body{
         <label class="check-item"><input type="checkbox" value="樂天" id="ch_rakuten"><span>樂天</span></label>
         <label class="check-item"><input type="checkbox" value="Yahoo購物" id="ch_yahoo"><span>Yahoo購物</span></label>
         <label class="check-item"><input type="checkbox" value="LINE購物" id="ch_line"><span>LINE購物</span></label>
-        <label class="check-item"><input type="checkbox" value="小紅書電商" id="ch_xhs"><span>小紅書電商</span></label>
+      </div>
+      </details>
+      <details class="opt-more plat-region"><summary>🇭🇰 香港・澳門電商</summary>
+      <div class="check-group">
+        <label class="check-item"><input type="checkbox" value="HKTVmall" id="ch_hktv"><span>HKTVmall</span></label>
+        <label class="check-item"><input type="checkbox" value="Carousell" id="ch_carousell"><span>Carousell</span></label>
+        <label class="check-item"><input type="checkbox" value="友和YOHO" id="ch_yoho"><span>友和YOHO</span></label>
+      </div>
+      </details>
+      <details class="opt-more plat-region"><summary>🇨🇳 中國大陸電商</summary>
+      <div class="check-group">
+        <label class="check-item"><input type="checkbox" value="淘寶" id="ch_taobao"><span>淘寶</span></label>
+        <label class="check-item"><input type="checkbox" value="天貓" id="ch_tmall"><span>天貓</span></label>
+        <label class="check-item"><input type="checkbox" value="京東" id="ch_jd"><span>京東</span></label>
+        <label class="check-item"><input type="checkbox" value="拼多多" id="ch_pdd"><span>拼多多</span></label>
         <label class="check-item"><input type="checkbox" value="抖音小店" id="ch_douyin_shop"><span>抖音小店</span></label>
-        <label class="check-item"><input type="checkbox" value="實體門市" id="ch_offline"><span>實體門市</span></label>
+        <label class="check-item"><input type="checkbox" value="小紅書電商" id="ch_xhs"><span>小紅書電商</span></label>
+        <label class="check-item"><input type="checkbox" value="微信小程序/微店" id="ch_wechat_shop"><span>微信小程序/微店</span></label>
+      </div>
+      </details>
+      <details class="opt-more plat-region"><summary>🇯🇵 日本電商</summary>
+      <div class="check-group">
+        <label class="check-item"><input type="checkbox" value="Amazon Japan" id="ch_amazon_jp"><span>Amazon Japan</span></label>
+        <label class="check-item"><input type="checkbox" value="楽天市場" id="ch_rakuten_jp"><span>楽天市場</span></label>
+        <label class="check-item"><input type="checkbox" value="Yahoo!ショッピング" id="ch_yahoo_jp"><span>Yahoo!ショッピング</span></label>
+        <label class="check-item"><input type="checkbox" value="Mercari" id="ch_mercari"><span>Mercari</span></label>
+        <label class="check-item"><input type="checkbox" value="Qoo10" id="ch_qoo10"><span>Qoo10</span></label>
+      </div>
+      </details>
+      <details class="opt-more plat-region"><summary>🌏 東南亞電商</summary>
+      <div class="check-group">
+        <label class="check-item"><input type="checkbox" value="Shopee(東南亞)" id="ch_shopee_sea"><span>Shopee(東南亞)</span></label>
+        <label class="check-item"><input type="checkbox" value="Lazada" id="ch_lazada"><span>Lazada</span></label>
+        <label class="check-item"><input type="checkbox" value="TikTok Shop" id="ch_tiktok_shop"><span>TikTok Shop</span></label>
+      </div>
+      </details>
+      <details class="opt-more plat-region"><summary>🌍 歐美・全球電商</summary>
+      <div class="check-group">
+        <label class="check-item"><input type="checkbox" value="Amazon" id="ch_amazon"><span>Amazon</span></label>
+        <label class="check-item"><input type="checkbox" value="Shopify 官網" id="ch_shopify"><span>Shopify 官網</span></label>
+        <label class="check-item"><input type="checkbox" value="eBay" id="ch_ebay"><span>eBay</span></label>
+        <label class="check-item"><input type="checkbox" value="Etsy" id="ch_etsy"><span>Etsy</span></label>
+      </div>
+      </details>
+      <div class="plat-sub">社群・私訊</div>
+      <div class="check-group">
         <label class="check-item"><input type="checkbox" value="私訊/Line下單" id="ch_direct"><span>私訊/Line下單</span></label>
+        <label class="check-item"><input type="checkbox" value="WhatsApp/微信下單" id="ch_dm_global"><span>WhatsApp/微信下單</span></label>
+      </div>
+      <div class="plat-sub">實體・活動</div>
+      <div class="check-group">
+        <label class="check-item"><input type="checkbox" value="實體門市" id="ch_offline"><span>實體門市</span></label>
         <label class="check-item"><input type="checkbox" value="線下活動/課程" id="ch_event"><span>線下活動/課程</span></label>
+      </div>
+      <input type="text" id="f_platformOther" placeholder="其他平台(自己填,例:Pinkoi、團購主、Uber Eats)" style="margin-top:10px">
       </div>
     </div>
     <!-- 🧭 2026-10-18 客人類型:B2B 客人(原料廠、漁產批發、水電行)的廣告要對「專業買家」說話,
          不是對一般消費者。這題的答案會跟目標客群一起存進 audience 欄位(格式:類型｜客群),
          靈魂書、KOL 台詞、社群貼文、文案都靠它判斷要對誰說話。 -->
     <div class="field">
-      <label>你的商品主要賣給誰?*</label>
+      <label>你的商品主要賣給誰?* <span class="ai-tag">AI 最常用</span></label>
       <div class="radio-group" id="buyerGroup">
         <button class="radio-btn" onclick="selectRadio(this,'buyer')">一般消費者</button>
         <button class="radio-btn" onclick="selectRadio(this,'buyer')">企業/店家/專業人士</button>
@@ -794,10 +787,7 @@ body{
       </div>
       <input type="hidden" id="f_buyer">
     </div>
-    <div class="field-row">
-      <div class="field"><label>商品/服務平均售價</label><input type="text" id="f_price" placeholder="例:NT$280 / NT$15,000/堂"></div>
-      <div class="field"><label>目標客群 *</label><input type="text" id="f_audience" placeholder="例:30-45歲媽媽 / 餐廳主廚、日料店採購 / 水電師傅、工程行"></div>
-    </div>
+    <div class="field"><label>目標客群 * <span class="ai-tag">AI 最常用</span></label><input type="text" id="f_audience" placeholder="例:30-45歲媽媽 / 餐廳主廚、日料店採購 / 水電師傅、工程行"></div>
     <div class="btn-row"><button class="btn-back" onclick="goStep(2)">← 上一步</button><button class="btn-next" onclick="goStep(4)">下一步 →</button></div>
   </div>
 
@@ -807,6 +797,7 @@ body{
       <label>品牌主色系</label>
       <div class="color-section">
         <div class="color-presets" id="colorPresets"></div>
+        <details class="opt-more" style="margin-top:12px"><summary>想用自己官網的顏色?貼網址自動抓(選填)</summary>
         <div class="color-custom-area">
           <div class="color-custom-title">✨ 輸入你喜歡的品牌網址,AI 自動抓取主色系</div>
           <div class="color-url-row">
@@ -818,6 +809,7 @@ body{
             <div class="color-swatches" id="colorSwatches"></div>
           </div>
         </div>
+        </details>
         <div class="selected-color-preview">
           <div class="selected-dot" id="selectedDot" style="background:#E8A03A;"></div>
           <span class="selected-label">已選主色:</span>
@@ -851,123 +843,7 @@ body{
     <div class="btn-row"><button class="btn-back" onclick="goStep(3)">← 上一步</button><button class="btn-next" onclick="goStep(46)">下一步 →</button></div>
   </div>
 
-  <!-- ══════════════════════════════════════════
-       Step 4.5 · KOL 數字人設定
-       ══════════════════════════════════════════ -->
-  <!-- 🪶 2026-10-18 KOL 數字人這步拿掉(RA:兩個網紅網址融合沒有接進 KOL 工作室,KOL 一律在後台 KOL 工作室建立)。
-       整段保留但不顯示,f_kolType 固定 none → 審核時不會觸發舊的 GAS 產 KOL 流程 -->
-  <div class="section" id="sec45" style="display:none!important">
-    <div class="sec-title sec-title-kol">04.5 · KOL 數字人設定 <span class="kol-hero-badge">進階付費</span></div>
-
-    <div class="kol-hero">
-      <div class="kol-hero-title">🎭 Brand OS KOL Studio</div>
-      <div class="kol-hero-desc">
-        AI 讀你貼的網紅連結 → 自動分析風格 → 生成你專屬的數字人 KOL。<br>
-        不用自己拍片、不用找代言人,讓 AI 幫你養一個 24 小時工作的網紅。
-      </div>
-    </div>
-
-    <div class="kol-option-group">
-
-      <!-- 選項 1:獨立 KOL 融合模式 -->
-      <div class="kol-option" id="kolOpt1" onclick="selectKolOption(1)">
-        <div class="kol-option-head">
-          <div class="kol-option-radio"></div>
-          <div class="kol-option-content">
-            <div class="kol-option-title">🪄 自己養專屬 KOL 數字人</div>
-            <div class="kol-option-desc">
-              貼 2 個你喜歡的網紅連結(YouTube / Instagram),AI 融合兩者風格生成獨特數字人。<br>
-              <strong style="color:var(--purple);">融合模式</strong>:不會太像任何單一網紅,降低侵權風險。
-            </div>
-          </div>
-        </div>
-
-        <div class="kol-option-detail">
-          <div class="kol-url-field">
-            <label class="kol-url-label">🔗 參考網址 A *(必填)</label>
-            <input class="kol-url-input" id="f_kolUrl1" type="url" placeholder="https://www.youtube.com/@某頻道 或 https://www.instagram.com/某帳號">
-            <div class="kol-hint">支援:YouTube 頻道 / Instagram 公開帳號</div>
-          </div>
-
-          <div class="kol-url-field">
-            <label class="kol-url-label">🔗 參考網址 B *(必填,務必選不同風格)</label>
-            <input class="kol-url-input" id="f_kolUrl2" type="url" placeholder="https://...">
-            <div class="kol-hint">兩個網址風格越不同,融合出來越獨特</div>
-          </div>
-
-          <div class="kol-warning">
-            <strong>⚠️ 重要提醒:</strong><br>
-            • IG 私密帳號無法抓取,請確認是公開帳號<br>
-            • 為避免侵權風險,強制要求融合 2 個來源(不支援單個仿造)<br>
-            • 生成的數字人會融合兩者特色,不會太像任一人<br>
-            • 審核通過後,AI 會讀取網址並生成專屬人設資料
-          </div>
-        </div>
-      </div>
-
-      <!-- 選項 2:品牌主理人(尚未開放,暫鎖) -->
-      <div class="kol-option" id="kolOpt2" style="opacity:0.45;cursor:not-allowed;pointer-events:none;">
-        <div class="kol-option-head">
-          <div class="kol-option-radio"></div>
-          <div class="kol-option-content">
-            <div class="kol-option-title">👑 品牌主理人 / 創辦人專屬數字人 <span style="font-size:10px;font-weight:800;color:#ff9d4d;border:1px solid rgba(255,157,77,.5);border-radius:6px;padding:2px 7px;margin-left:6px;vertical-align:middle;letter-spacing:.5px;">尚未開放</span></div>
-            <div class="kol-option-desc">
-              適合不敢露鏡、沒時間拍的品牌主。<br>
-              用你的臉 + 聲音生成數字人,由品牌主本人親自為品牌發聲,信任感最高。
-            </div>
-          </div>
-        </div>
-
-        <div class="kol-option-detail">
-          <div class="kol-owner-fields">
-            <div class="field">
-              <label>創辦人姓名 / 稱呼 *</label>
-              <input type="text" id="f_ownerName" placeholder="例:王老闆 / Cyndi / Lisa 姐">
-            </div>
-
-            <div class="field">
-              <label>品牌故事(用在創辦人開場白)*</label>
-              <textarea id="f_ownerStory" rows="3" placeholder="例:我們 20 年前從一間小工廠起家,堅持只用在地食材..."></textarea>
-              <div class="field-hint">這段會變成「創辦人數字人」開場能講的故事</div>
-            </div>
-
-            <div class="field">
-              <label>希望給消費者的印象</label>
-              <input type="text" id="f_ownerTone" placeholder="例:溫暖專業 / 霸氣直白 / 溫柔堅定">
-            </div>
-          </div>
-
-          <div class="kol-owner-note">
-            ✉️ <strong>下一步</strong>:審核通過後,我們會寄 email 聯絡你上傳:<br>
-            • 一張創辦人正臉照片(JPG/PNG)<br>
-            • 一段 30 秒聲音樣本(唸一段自然對話即可)<br>
-            聯絡 email:<span id="ownerContactEmail" style="color:var(--sky);font-family:'DM Mono';"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 選項 3:暫不需要 -->
-      <div class="kol-option on" id="kolOpt3" onclick="selectKolOption(3)">
-        <div class="kol-option-head">
-          <div class="kol-option-radio"></div>
-          <div class="kol-option-content">
-            <div class="kol-option-title">⏭️ 暫時不需要</div>
-            <div class="kol-option-desc">
-              日後有需要時,隨時可以到 Brand OS 後台 → KOL 工作室新增。
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <input type="hidden" id="f_kolType" value="none"><!-- 🪶 2026-10-18 預設「暫時不需要」:要養 KOL 的人自己點,沒網紅連結的客人不會卡在這步 -->
-
-    <div class="btn-row">
-      <button class="btn-back" onclick="goStep(4)">← 上一步</button>
-      <button class="btn-next" onclick="goStep(46)">下一步 →</button>
-    </div>
-  </div>
+  <!-- 🪶 2026-11-02 已刪除隱藏的「4.5 KOL 數字人」舊步驟(10/18 起不顯示;KOL 一律在 KOL 工作室建立)。要復原從 git 歷史撿。 -->
 
   <div class="section" id="sec46">
     <div class="sec-title">05 · 選擇方案(這一步不會付款)</div>
@@ -1023,7 +899,7 @@ body{
 <script src="ref-capture.js"></script><!-- 🤝 2026-09-18 推薦碼:業務把進駐頁網址直接給客人時也記得到 -->
 <script src="auth-expire.js"></script><!-- 🔑 2026-09-18 登入過期統一處理 -->
 <script src="product-size.js"></script><!-- 📏 2026-11-02 商品尺寸點選器:每個商品點一個大小,送出時接在商品行尾,核准時(kol-proxy v7.59)存進商品資料 -->
-<script>(function(){ function go(){ var box=document.getElementById('psz-onboard'), ta=document.getElementById('f_products'); if(!box||!ta||!window.ProductSize||!ProductSize.mountList){ return setTimeout(go,500); } window.__pszList=ProductSize.mountList(box,{textarea:ta}); } if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go(); })();</script>
+<script>(function(){ function go(){ var box=document.getElementById('prodTable'); if(!box||!window.ProductSize||!ProductSize.mountTable){ return setTimeout(go,400); } window.__pt=ProductSize.mountTable(box,{products:document.getElementById('f_products'),price:document.getElementById('f_price'),onChange:function(){ if(window._clearMsg)_clearMsg('f_products'); }}); } if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go(); })();</script>
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJgPVlBS6qJV9zmxJQyPTrwn_jHY11AKOHfwiKVPhtHLUWJNjEVsFpWMd-Mk-RtZhy5w/exec';
 const GAS_PASSWORD = 'raby2026';
@@ -1210,29 +1086,21 @@ async function grabColors(){
   btn.disabled=false;btn.innerHTML='🎨 抓取色系';
 }
 function selectRadio(btn,group){
-  btn.closest('.radio-group').querySelectorAll('.radio-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
-  const id={cat:'f_category',style:'f_style',buyer:'f_buyer'}[group];if(id)document.getElementById(id).value=btn.textContent.trim();
+  (btn.closest('#catGroup')||btn.closest('.radio-group')).querySelectorAll('.radio-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');   // 🪶 11/02 類別分兩區(常見 + 更多),要一起清
+  const id={cat:'f_category',style:'f_style',buyer:'f_buyer'}[group];if(id){document.getElementById(id).value=btn.textContent.trim();_clearMsg(id);}
   // 🧭 選了客人類型 → 目標客群的範例跟著換,客人比較知道要寫什麼
   if(group==='buyer'){const a=document.getElementById('f_audience');const t=btn.textContent.trim();
     a.placeholder = t==='一般消費者' ? '例:30-45歲媽媽、重視健康的上班族' : t==='企業/店家/專業人士' ? '例:餐廳主廚、日料店採購 / 保健品牌商 / 水電師傅' : '例:一般家庭為主,也賣給餐廳與團購主(主要的寫前面)';}
 }
 
-function selectKolOption(n){
-  if(n===2){ return; } // 品牌主理人(老闆臉)暫未開放
-  document.querySelectorAll('.kol-option').forEach(el=>el.classList.remove('on'));
-  document.getElementById('kolOpt'+n).classList.add('on');
-  const typeMap={1:'independent',2:'brand_owner',3:'none'};
-  document.getElementById('f_kolType').value=typeMap[n];
-}
-
 function goStep(n){
   if(n>currentStep&&!validateStep(currentStep))return;
 
-  ['sec1','sec2','sec3','sec4','sec45','sec46','sec5'].forEach(id=>{
+  ['sec1','sec2','sec3','sec4','sec46','sec5'].forEach(id=>{
     document.getElementById(id).classList.remove('active');
   });
 
-  const target=n===45?'sec45':('sec'+n);
+  const target='sec'+n;
   document.getElementById(target).classList.add('active');
 
   const stepOrder=[1,2,3,4,46,5];   // 🪶 2026-10-18 KOL 那步(45)已移除
@@ -1248,68 +1116,75 @@ function goStep(n){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+// 🪶 2026-11-02 必填沒填:不再跳視窗,改在那一格下面出現紅字(黃字 = 提醒,再按一次「下一步」就照目前內容繼續)
+function _msgHost(id){const el=document.getElementById(id);if(!el)return null;
+  if(el.type==='hidden'){const g=el.previousElementSibling;return g?(g.closest('.field')||g):null;}
+  return el.closest('.field')||el.parentNode;}
+function _clearMsg(id){const h=_msgHost(id);if(!h)return;h.classList.remove('f-bad');const m=h.querySelector(':scope > .f-msg');if(m)m.remove();}
+function _clearAllMsg(){document.querySelectorAll('.f-msg').forEach(m=>m.remove());document.querySelectorAll('.f-bad').forEach(x=>x.classList.remove('f-bad'));}
+function _say(id,msg,warn){const h=_msgHost(id);if(!h){alert(msg);return;}
+  const d=document.getElementById(id)&&document.getElementById(id).closest('details');if(d)d.open=true;
+  h.classList.toggle('f-bad',!warn);
+  let m=h.querySelector(':scope > .f-msg');if(!m){m=document.createElement('div');h.appendChild(m);}
+  m.className='f-msg'+(warn?' warn':'');m.textContent=(warn?'💡 ':'⚠️ ')+msg;
+  h.scrollIntoView({behavior:'smooth',block:'center'});
+  const el=document.getElementById(id);if(el&&el.type!=='hidden'){try{el.focus({preventScroll:true});}catch(_){}}}
+const _warned={};   // 黃字提醒:同一段內容提醒過一次,第二次按「下一步」就放行
+function _warnOnce(key,id,msg){const val=v(id);if(_warned[key]===val)return true;_warned[key]=val;_say(id,msg,true);return false;}
+document.addEventListener('input',e=>{if(e.target&&e.target.id&&/^f_/.test(e.target.id))_clearMsg(e.target.id);});
+
 function validateStep(n){
+  _clearAllMsg();
   // ★ 防呆 helper:網址格式檢查(有填才檢查,空的不擋因為有些欄位選填)
   const badUrl = (id) => { const u=v(id); return u && !/^https?:\/\//i.test(u); };
 
   if(n===1){
-    if(v('f_name').length < 2){alert('請填寫品牌名稱(至少 2 個字)');return false;}
-    if(!v('f_contact')){alert('請填寫聯絡人姓名');return false;}
+    if(v('f_name').length < 2){_say('f_name','請填寫品牌名稱(至少 2 個字)');return false;}
+    if(!v('f_contact')){_say('f_contact','請填寫聯絡人姓名');return false;}
     // 官網有填但格式錯 → 擋(避免存進去一個壞網址)
-    if(badUrl('f_website')){alert('官方網站格式怪怪的,要以 http:// 或 https:// 開頭。沒有官網可以留空');return false;}
+    if(badUrl('f_website')){_say('f_website','官方網站要以 http:// 或 https:// 開頭。沒有官網可以留空');return false;}
   }
 
   if(n===2){
     // ★ 品牌故事是靈魂書的核心 → 太短會害 AI 生出空泛的靈魂書
     if(v('f_story').length < 15){
-      alert('「為什麼創立品牌」再多寫一點(至少 15 字)。\n這段是 AI 寫品牌靈魂書最重要的素材,寫越具體靈魂書越準。');
+      _say('f_story','再多寫一點(至少 15 字)。\n這段是 AI 寫品牌靈魂書最重要的素材,寫越具體靈魂書越準。');
+      return false;
+    }
+    // 🪶 2026-11-02 優勢必填:靈魂書精華「為什麼選我們」、廣告主張都靠它
+    if(v('f_pros').length < 10){
+      _say('f_pros','這格請認真寫(至少 10 字)。\n廣告裡的「為什麼選我們」就是從這裡來的,例:100%台灣豬、加米口感更Q彈、無防腐劑。');
       return false;
     }
     // 競品網址有填但格式錯 → 擋
     if(v('f_competitorUrls')){
       const lines = v('f_competitorUrls').split(/\n+/).map(s=>s.trim()).filter(Boolean);
       const bad = lines.find(u => !/^https?:\/\//i.test(u));
-      if(bad){alert('競爭對手網址格式怪怪的:「'+bad.slice(0,40)+'」\n每行要以 http:// 或 https:// 開頭,沒有可以整欄留空');return false;}
+      if(bad){_say('f_competitorUrls','這個網址格式怪怪的:「'+bad.slice(0,40)+'」\n每行要以 http:// 或 https:// 開頭,沒有可以整欄留空');return false;}
     }
   }
 
   if(n===3){
-    if(!v('f_category')){alert('請選擇商品類別');return false;}
+    if(!v('f_category')){_say('f_category','請選一個商品類別(找不到可以點「看更多類別」)');return false;}
+    // 🪶 2026-11-02 商品表格:至少一列、每列要有售價(檢查寫在 product-size.js mountTable.check)
+    {const c=window.__pt?window.__pt.check():(v('f_products').length<4?{ok:false,msg:'請填主力商品,寫出完整商品名(例:米香腸原味 280g)。'}:{ok:true});
+     if(!c.ok){_say('f_products',c.msg);if(c.el)c.el.focus();return false;}}
     // 🧭 2026-10-18:客人類型 + 目標客群必填 —— AI 要知道廣告是對誰說話
-    if(!v('f_buyer')){alert('請選擇「你的商品主要賣給誰」。\n賣給企業/店家的品牌,廣告要對專業買家說話,AI 需要知道這點。');return false;}
-    if(v('f_audience').length < 2){alert('請填「目標客群」。\n例:30-45歲媽媽 / 餐廳主廚、日料店採購 / 水電師傅、工程行');return false;}
-    // 🧭 客群寫得太空泛(有錢人 / 大家 / 所有人…)→ 不擋,但提醒寫具體;AI 寫靈魂書時也會再展開成完整的受眾畫像
+    if(!v('f_buyer')){_say('f_buyer','請選一個。賣給企業/店家的品牌,廣告要對專業買家說話,AI 需要知道這點。');return false;}
+    if(v('f_audience').length < 2){_say('f_audience','請填目標客群。例:30-45歲媽媽 / 餐廳主廚、日料店採購 / 水電師傅、工程行');return false;}
+    // 🧭 客群寫得太空泛 → 不擋,黃字提醒一次
     if(/^(有錢(的)?人|有錢人|大家|所有人|每個人|一般人|都可以|全部|不限|消費者|客人)$/.test(v('f_audience').replace(/[\s,、。.]/g,'')) || v('f_audience').replace(/\s/g,'').length < 4){
-      if(!confirm('「目標客群」可以再具體一點嗎?\n\n寫越具體,AI 做的廣告越打中人。可以加上:\n・年齡 / 職業 / 身分(例:40-60歲企業主、餐廳主廚)\n・他們在意什麼(例:面子與品味、穩定供貨)\n\n例:「有錢的人」→「40-60歲企業主、重視品味與送禮面子」\n\n按「取消」回去補寫;按「確定」照目前內容繼續。'))return false;
+      if(!_warnOnce('aud','f_audience','可以再具體一點嗎?寫越具體,AI 做的廣告越打中人。\n加上年齡/職業/身分 + 他們在意什麼,例:「有錢的人」→「40-60歲企業主、重視品味與送禮面子」\n不想改的話,再按一次「下一步」就照目前內容繼續。'))return false;
     }
-    // 🧭 2026-10-20:年齡範圍太寬(例「0到70歲」)→ 不擋,提醒寫主力那一段
+    // 🧭 2026-10-20:年齡範圍太寬(例「0到70歲」)→ 不擋,黃字提醒一次
     {const _m=v('f_audience').match(/(\d{1,2})\s*(?:-|~|～|到|至)\s*(\d{1,3})/);
      if(_m && (Number(_m[1])<12 || Number(_m[2])-Number(_m[1])>=40)){
-      if(!confirm('「目標客群」的年齡範圍有點寬('+_m[0]+')。\n\n寫出【最常買的那一群】,AI 做的廣告才打得中:\n例:「0到70歲」→「30-50歲、試過很多方法都瘦不下來的上班族」\n\n按「取消」回去補寫;按「確定」照目前內容繼續。'))return false;
+      if(!_warnOnce('age','f_audience','年齡範圍有點寬('+_m[0]+')。寫出【最常買的那一群】,AI 做的廣告才打得中。\n例:「0到70歲」→「30-50歲、試過很多方法都瘦不下來的上班族」\n不想改的話,再按一次「下一步」就照目前內容繼續。'))return false;
      }}
-    // ★ 主力商品太短 → 害 AI 抓不到商品本質
-    if(v('f_products').length < 4){
-      alert('「主力商品/服務」再寫清楚一點。\n一行一個,寫出完整商品名(例:米香腸原味 280g),AI 出圖才抓得準。');
-      return false;
-    }
   }
 
   if(n===4){
     // 註:f_ref 允許純文字描述(例「Apple 的簡潔感」),所以不硬擋格式
-  }
-
-  if(n===45){
-    const kolType=v('f_kolType');
-    if(kolType==='independent'){
-      const u1=v('f_kolUrl1').trim(),u2=v('f_kolUrl2').trim();
-      if(!u1||!u2){alert('融合模式需要 2 個網址,請兩個都填寫');return false;}
-      if(!/^https?:\/\//i.test(u1)||!/^https?:\/\//i.test(u2)){alert('網址格式錯誤,需以 http:// 或 https:// 開頭');return false;}
-      if(u1===u2){alert('兩個網址不能一樣,請選不同的網紅');return false;}
-    }
-    if(kolType==='brand_owner'){
-      if(!v('f_ownerName')){alert('請填寫創辦人姓名');return false;}
-      if(v('f_ownerStory').length < 15){alert('「品牌故事」再多寫一點(至少 15 字),這段會變成創辦人數字人的開場白');return false;}
-    }
   }
   return true;
 }
@@ -1317,16 +1192,6 @@ function validateStep(n){
 function buildSummary(){
   const platforms=getPlatforms()||'未填寫';
   const phoneCode=document.getElementById('f_phoneCode').value;
-  const kolType=v('f_kolType');
-  const kolLabel={independent:'🪄 獨立 KOL 融合模式',brand_owner:'👑 品牌主理人專屬',none:'⏭️ 暫不需要'}[kolType];
-
-  let kolDetail='';
-  if(kolType==='independent'){
-    kolDetail=`<br><b style="color:var(--purple)">KOL 網址 A:</b>${v('f_kolUrl1')}<br><b style="color:var(--purple)">KOL 網址 B:</b>${v('f_kolUrl2')}`;
-  }else if(kolType==='brand_owner'){
-    kolDetail=`<br><b style="color:var(--purple)">創辦人:</b>${v('f_ownerName')}<br><b style="color:var(--purple)">品牌故事:</b>${v('f_ownerStory').slice(0,50)}...`;
-  }
-
   let planLabel='未選(可日後補)';
   if(desiredPlan==='custom'){planLabel='客製方案(一對一報價)';}
   else if(desiredPlan&&typeof findBrandosPlan==='function'){
@@ -1345,8 +1210,10 @@ function buildSummary(){
 
 function v(id){return document.getElementById(id)?.value?.trim()||'';}
 function getPlatforms(){
-  return['ch_web','ch_momo','ch_pchome','ch_shopee_mall','ch_shopee','ch_coupang','ch_rakuten','ch_yahoo','ch_line','ch_xhs','ch_douyin_shop','ch_offline','ch_direct','ch_event']
-    .filter(id=>document.getElementById(id)?.checked).map(id=>document.getElementById(id).value).join('、');
+  // 🪶 2026-11-02 平台依地區分組、加了港陸日/東南亞/全球 → 改成讀整區所有勾選,再接「其他平台」
+  const a=[...document.querySelectorAll('#platGroup input[type=checkbox]:checked')].map(x=>x.value);
+  if(v('f_platformOther'))a.push(v('f_platformOther'));
+  return a.join('、');
 }
 
 async function doGenerate(){
@@ -1354,7 +1221,7 @@ async function doGenerate(){
   const msgs=['分析品牌資料中...','研究競爭對手...','建立品牌定位...','生成廣告策略...','撰寫品牌靈魂書...'];
   let pct=0;
   const interval=setInterval(()=>{pct=Math.min(pct+6,85);document.getElementById('genBarFill').style.width=pct+'%';document.getElementById('genMsg').textContent=msgs[Math.floor(pct/18)]||msgs[4];},400);
-  const phoneCode=document.getElementById('f_phoneCode').value;
+  // 🪶 2026-11-02 聯絡人姓名/電話不再送進 AI(寫靈魂書用不到,也少傳一份個資;電話照樣存給管理員聯絡)
   // 🩹 2026-08-19:品牌主色要送「客戶真正選的」。
   //   病灶:這裡寫死 selectedColorHex(預設公版色),客戶從自己官網抓來的
   //   顏色存在 extraColors 卻沒被送進 prompt —— AI 拿著錯的顏色寫整本靈魂書,
@@ -1363,7 +1230,7 @@ async function doGenerate(){
     ? extraColors.map(function(c){return c.hex;}).join('、')
     : selectedColorHex;
   const _today=new Date(); const _todayStr=_today.getFullYear()+'-'+String(_today.getMonth()+1).padStart(2,'0')+'-'+String(_today.getDate()).padStart(2,'0');   // 🗓 2026-10-18:AI 不知道今年幾年,書名會寫成 2024 → 告訴它今天日期
-  const prompt=`你是一位頂尖的品牌策略師,請根據以下資料生成一份完整的「品牌靈魂書」。\n今天日期:${_todayStr}\n\n【品牌基本資訊】\n品牌名稱:${v('f_name')}\n官網:${v('f_website')}\nFacebook:${v('f_fb')}  Instagram:${v('f_ig')}\n小紅書:${v('f_xiaohongshu')}  抖音:${v('f_douyin')}\n微信公眾號:${v('f_wechat')}  其他:${v('f_social_other')}\n聯絡:${v('f_contact')} ${phoneCode} ${v('f_phone')}\n\n【品牌故事】\n創立原因:${v('f_story')}\n核心價值:${v('f_values')}\n競爭對手:${v('f_competitors')}\n競爭優勢:${v('f_pros')}\n目前挑戰:${v('f_cons')}\n補充:${v('f_misc')}\n\n【商品/服務】\n類別:${v('f_category')}\n主力商品:${v('f_products')}\n銷售平台:${getPlatforms()}\n售價:${v('f_price')}\n客人類型:${v('f_buyer')}\n目標客群:${v('f_audience')}\n\n【品牌風格】\n視覺風格:${v('f_style')}\n品牌主色:${_brandHex}\n參考品牌:${v('f_ref')}\n\n請用繁體中文生成品牌靈魂書,依序 7 段,每段標題用「## 01｜段名」格式:\n1. 品牌定位宣言:一句話\n2. 品牌靈魂:3-5 句\n3. 目標受眾畫像:每個受眾約 150 字,含痛點\n4. 廣告文案風格指南:約 200 字\n5. 核心廣告主張:3 個方向,每個方向一句主標+一句副標\n6. 建議Hashtag:10 個,含中英文,一行列完\n7. 競爭差異化重點:3 點,每點約 50 字\n全書約 2500 字,寫完第 7 段就結束。\n\n客人類型是「企業/店家/專業人士」:目標受眾畫像要寫出【採購決策者】(職位、在意的規格/品質穩定/供貨/成本),廣告文案風格走專業可信,對採購決策者說話。\n客人類型是「兩者都有」:目標受眾畫像照客人寫的目標客群、依他寫的先後排主次;客人寫到的企業/店家,才寫成採購決策者那一段。`+(/生存遊戲/.test(v('f_category'))?`\n類別是「生存遊戲/戰術裝備」:整本用玩家的說法寫 —— 生存遊戲、airsoft、replica、場地、戰術裝備、配件;商品一律稱「replica」或直接寫配件名稱(廣告平台審核與生成圖都比較順)。`:'');
+  const prompt=`你是一位頂尖的品牌策略師,請根據以下資料生成一份完整的「品牌靈魂書」。\n今天日期:${_todayStr}\n\n【品牌基本資訊】\n品牌名稱:${v('f_name')}\n官網:${v('f_website')}\nFacebook:${v('f_fb')}  Instagram:${v('f_ig')}\n小紅書:${v('f_xiaohongshu')}  抖音:${v('f_douyin')}\n微信公眾號:${v('f_wechat')}  其他:${v('f_social_other')}\n\n【品牌故事】\n創立原因:${v('f_story')}\n核心價值:${v('f_values')}\n競爭對手:${v('f_competitors')}\n競爭優勢:${v('f_pros')}\n目前挑戰:${v('f_cons')}\n補充:${v('f_misc')}\n\n【商品/服務】\n類別:${v('f_category')}\n主力商品:${v('f_products')}\n銷售平台:${getPlatforms()}\n售價:${v('f_price')}\n客人類型:${v('f_buyer')}\n目標客群:${v('f_audience')}\n\n【品牌風格】\n視覺風格:${v('f_style')}\n品牌主色:${_brandHex}\n參考品牌:${v('f_ref')}\n\n請用繁體中文生成品牌靈魂書,依序 7 段,每段標題用「## 01｜段名」格式:\n1. 品牌定位宣言:一句話\n2. 品牌靈魂:3-5 句\n3. 目標受眾畫像:每個受眾約 150 字,含痛點\n4. 廣告文案風格指南:約 200 字\n5. 核心廣告主張:3 個方向,每個方向一句主標+一句副標\n6. 建議Hashtag:10 個,含中英文,一行列完\n7. 競爭差異化重點:3 點,每點約 50 字\n全書約 2500 字,寫完第 7 段就結束。\n\n客人類型是「企業/店家/專業人士」:目標受眾畫像要寫出【採購決策者】(職位、在意的規格/品質穩定/供貨/成本),廣告文案風格走專業可信,對採購決策者說話。\n客人類型是「兩者都有」:目標受眾畫像照客人寫的目標客群、依他寫的先後排主次;客人寫到的企業/店家,才寫成採購決策者那一段。`+(/生存遊戲/.test(v('f_category'))?`\n類別是「生存遊戲/戰術裝備」:整本用玩家的說法寫 —— 生存遊戲、airsoft、replica、場地、戰術裝備、配件;商品一律稱「replica」或直接寫配件名稱(廣告平台審核與生成圖都比較順)。`:'');
   try{
     const res=await fetch(CF_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claude_generate',password:'raby2026',prompt,max_tokens:4500,token:guestToken,email:userEmail})});
     const data=await res.json();
@@ -1408,7 +1275,7 @@ async function doGenerate(){
 async function doSubmit(){
   const btn=document.getElementById('btnSubmit');btn.disabled=true;btn.innerHTML='<span class="spin"></span> 送出中...';
   const phoneCode=document.getElementById('f_phoneCode').value;
-  const kolType=v('f_kolType');
+  const kolType='none';   // 🪶 2026-11-02 KOL 舊步驟已刪,固定 none(Worker 照舊收得到這幾個欄位)
 
   const payload={
     action:'submitBrand',password:GAS_PASSWORD,email:userEmail,
@@ -1416,7 +1283,7 @@ async function doSubmit(){
     fb:v('f_fb'),ig:v('f_ig'),xiaohongshu:v('f_xiaohongshu'),douyin:v('f_douyin'),wechat:v('f_wechat'),socialOther:v('f_social_other'),
     contact:v('f_contact'),phone:phoneCode+' '+v('f_phone'),
     story:v('f_story'),values:v('f_values'),competitors:v('f_competitors'),competitorUrls:v('f_competitorUrls'),pros:v('f_pros'),cons:v('f_cons'),misc:v('f_misc'),
-    category:v('f_category'),products:(window.__pszList?window.__pszList.compose(v('f_products')):v('f_products')),platforms:getPlatforms(),price:v('f_price'),audience:(v('f_buyer')?v('f_buyer')+'｜':'')+v('f_audience'),   // 🧭 格式:客人類型｜目標客群(Worker 靠「企業」二字判斷 B2B)
+    category:v('f_category'),products:(window.__pt?window.__pt.compose():v('f_products')),platforms:getPlatforms(),price:v('f_price'),audience:(v('f_buyer')?v('f_buyer')+'｜':'')+v('f_audience'),   // 🧭 格式:客人類型｜目標客群(Worker 靠「企業」二字判斷 B2B)
     // 🩹 2026-08-19:colorHex 要送「實際選中的」。
     //   舊寫法一律送 selectedColorHex(公版色),客戶從網址抓來的顏色
     //   存在 extraColors 裡卻從來沒被送出去,等於白抓一場。
@@ -1443,11 +1310,7 @@ async function doSubmit(){
     rootFolderId:ROOT_FOLDER_ID,soulBook:generatedSoul,status:'pending',
     desiredPlan:desiredPlan,
     kolType:kolType,
-    kolUrl1:kolType==='independent'?v('f_kolUrl1'):'',
-    kolUrl2:kolType==='independent'?v('f_kolUrl2'):'',
-    ownerName:kolType==='brand_owner'?v('f_ownerName'):'',
-    ownerStory:kolType==='brand_owner'?v('f_ownerStory'):'',
-    ownerTone:kolType==='brand_owner'?v('f_ownerTone'):'',
+    kolUrl1:'',kolUrl2:'',ownerName:'',ownerStory:'',ownerTone:'',
   };
 
   // 🔀 2026-08-06 入駐搬 Worker(D1 + Drive + Resend)
@@ -1511,8 +1374,6 @@ function _enterOnboard(email){
   userEmail = email || '';
   document.getElementById('loginOverlay').style.display='none';
   document.getElementById('navEmail').textContent = userEmail;
-  const ownerEmailEl = document.getElementById('ownerContactEmail');
-  if(ownerEmailEl) ownerEmailEl.textContent = userEmail;
 }
 
 // ── 📧 Email 驗證碼 ────────────────────────────────────────────
