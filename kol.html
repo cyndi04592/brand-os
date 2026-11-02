@@ -1791,7 +1791,6 @@ document.addEventListener('DOMContentLoaded', function(){
                    v7.32 曾拿掉品牌名(因為誤判它只靠授權 IP),結果生出來跟 GU 沒兩樣。
                    RA 提供 NAVY 分類頁後才知道:CACO 有自有線,識別是「鯊魚」織章,
                    那是自家原創標記、不是授權角色,可以寫也該寫。 -->
-              <option value="caco">CACO NAVY 海軍鯊魚</option>
             </optgroup>
             <optgroup label="精品">
               <option value="lv">Louis Vuitton 精品優雅</option>
@@ -6922,6 +6921,12 @@ function renderMovementPicker() {
   const group = document.getElementById('movement-picker-group');
   if (!grid || !group) return;
 
+  //  🎬 2026-11-02 RA:「運鏡這個應該也可以刪除了,都是靠 AI 分鏡」→ 整塊不顯示。
+  //   三向掃描:①只有這支與 lockCineZone/重置流程控制它的顯示 ②movement-picker-group / movement-grid / movement-card ③其他檔案不讀 S.selectedMovementId(接片路徑 movementId 一律 null)
+  //   S.selectedMovementId 維持預設 'static',單鏡頭舊路徑照常可用。
+  group.style.display = 'none';
+  return;
+
   // 沒選場景才隱藏
   if (!S.selectedSceneId) {
     group.style.display = 'none';
@@ -9780,7 +9785,6 @@ function renderEpisodeCard() {
           <optgroup label="台灣女裝">
             <option value="mallothi">Mallothi 法式復古</option>
             <option value="pazzo">PAZZO 好感日韓</option>
-            <option value="caco">CACO 日常休閒</option>
           </optgroup>
           <optgroup label="精品">
             <option value="lv">Louis Vuitton 精品優雅</option>
