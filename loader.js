@@ -87,3 +87,15 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {}
 })();
+
+/* 🧍 2026-11-03 廣告圖類型防呆:選「商品實拍」但照片裡有模特兒 → 先問要不要改「服飾穿搭」(ad-typeguard.js,只在首頁載入)。失敗不影響網站。 */
+(function(){
+  if (window.__adtgLoader || !/^\/(index(\.html)?)?$/.test(location.pathname)) return;
+  window.__adtgLoader = true;
+  try {
+    var s = document.createElement('script');
+    s.src = 'ad-typeguard.js';
+    s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {}
+})();
