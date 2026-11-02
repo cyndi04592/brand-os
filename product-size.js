@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  product-size.js · v1.0(2026-11-02)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
+ *  product-size.js · v1.1(2026-11-02)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
  * ───────────────────────────────────────────────────────────────────
  *  RA 11/02:「客戶去哪裡填尺寸?只有入駐填一次,懶的人一定沒填」
  *          「用手掌這招(刺蝟星球)更準,讓客戶點選幾個手掌大」
@@ -18,7 +18,7 @@
 (function () {
   'use strict';
   if (window.ProductSize) return;
-  var VERSION = 'v1.0';
+  var VERSION = 'v1.1';
   var HAND = 18;   // 一個手掌 = 手腕到指尖約 18cm
 
   var PACK = [
@@ -55,13 +55,10 @@
     var packKey = '';
     if (bigZh) PACK.forEach(function (o) { if (o.big === bigZh) packKey = o.k; });
     var mx = pieceOnly ? 0 : Math.max(w, h);
-    if (!packKey && mx) {
-      var best = null;
-      PACK.forEach(function (o) { if (!best || Math.abs(o.cm - mx) < Math.abs(best.cm - mx)) best = o; });
-      packKey = best ? best.k : '';
-    }
+    //  v1.1 只在「剛好等於」那顆時才亮 —— 用最接近的那顆會讓按存檔時把精準數字改成約略值(海苔單片 14.5 → 18)
+    if (!packKey && mx && !(w && h)) PACK.forEach(function (o) { if (!o.big && o.cm === mx) packKey = o.k; });
     var pieceKey = '';
-    if (piece) { var bp = null; PIECE.forEach(function (o) { if (!bp || Math.abs(o.cm - piece) < Math.abs(bp.cm - piece)) bp = o; }); pieceKey = bp ? bp.k : ''; }
+    if (piece) PIECE.forEach(function (o) { if (o.cm === piece) pieceKey = o.k; });
     return { w: w, h: h, mx: mx, packKey: packKey, piece: piece, pieceKey: pieceKey, filled: !!(mx || bigZh) };
   }
 
@@ -70,9 +67,10 @@
     var cfg = window.KAI || {};
     var url = cfg.WORKER_URL || 'https://kol-proxy.calm-sunset-6b66.workers.dev';
     var place = String(p.placement || '');
-    var note = String(p.placeNote || '')
-      .replace(/【大小】[^。]*。?/g, '')
-      .replace(/內容物單件長約\d+(?:\.\d+)?\s*cm。?/g, '').trim();
+    var note = String(p.placeNote || '');
+    if (pack || exact) note = note.replace(/【大小】[^。]*。?/g, '');                       // 只有這次有點整包大小才換掉舊的
+    if (piece) note = note.replace(/內容物單件長約\d+(?:\.\d+)?\s*cm。?/g, '');      // 只有這次有點裡面一件才換掉舊的
+    note = note.trim();
     var rs;
     if (exact && exact.w && exact.h) rs = '寬' + exact.w + '×高' + exact.h + 'cm';
     else if (pack && pack.big) rs = '高約' + pack.cm + 'cm';
@@ -129,7 +127,7 @@
       if (!p || !PHYSICAL.test(String(p.placement || ''))) { box.innerHTML = ''; box.style.display = 'none'; return; }
       box.style.display = '';
       var s = readState(p);
-      sel = { pack: s.packKey, piece: s.pieceKey, w: s.w && s.h ? s.w : '', h: s.w && s.h ? s.h : '', pc: '' };
+      sel = { pack: s.packKey, piece: s.pieceKey, w: s.w && s.h ? s.w : '', h: s.w && s.h ? s.h : '', pc: (s.piece && !s.pieceKey) ? String(s.piece) : '' };
       var name = esc(p.name || p.prodName || '這個商品');
       var status = s.filled
         ? '<p class="st">✅ 已存:' + esc(p.realSize || '') + (s.piece ? ' · 裡面一件約 ' + s.piece + ' cm' : '') + ' —— 系統會照這個大小做尺寸參考照</p>'
@@ -140,12 +138,14 @@
         + '<div class="ex"><span class="lb" style="margin:0">想填準一點(公分):</span>寬 <input data-f="w" inputmode="decimal" value="' + esc(sel.w) + '"> × 高 <input data-f="h" inputmode="decimal" value="' + esc(sel.h) + '"> cm</div>'
         + '<div class="lb">裡面一件大概多大?(沒有內容物就不用點)</div><div class="row" data-g="piece">'
         + PIECE.map(function (o) { return '<button type="button" class="c' + (sel.piece === o.k ? ' on' : '') + '" data-k="' + o.k + '">' + o.t + '</button>'; }).join('')
-        + ' <span class="lb" style="margin:0">或</span> <input data-f="pc" inputmode="decimal" placeholder="長" value=""> cm</div>'
+        + ' <span class="lb" style="margin:0">或</span> <input data-f="pc" inputmode="decimal" placeholder="長" value="' + esc(sel.pc) + '"> cm</div>'
         + '<button type="button" class="sv">存起來</button><span class="msg"></span></div>';
       box.querySelectorAll('.row button.c').forEach(function (b) {
         b.onclick = function () {
           var g = b.parentNode.getAttribute('data-g'), k = b.getAttribute('data-k');
           sel[g] = (sel[g] === k) ? '' : k;
+          if (g === 'pack' && sel[g]) { sel.w = ''; sel.h = ''; box.querySelectorAll('input[data-f=w],input[data-f=h]').forEach(function (x) { x.value = ''; }); }
+          if (g === 'piece' && sel[g]) { sel.pc = ''; var pi = box.querySelector('input[data-f=pc]'); if (pi) pi.value = ''; }
           b.parentNode.querySelectorAll('button.c').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-k') === sel[g]); });
         };
       });
@@ -156,7 +156,7 @@
         var w = parseFloat(sel.w), h = parseFloat(sel.h);
         var exact = (w > 0 && h > 0) ? { w: w, h: h } : null;
         var pc = parseFloat(sel.pc); if (!(pc > 0)) { PIECE.forEach(function (o) { if (o.k === sel.piece) pc = o.cm; }); }
-        if (!pack && !exact) { msg.textContent = '先點整包大概多大,或填寬和高'; return; }
+        if (!pack && !exact && !readState(p).filled) { msg.textContent = '先點整包大概多大,或填寬和高'; return; }
         btn.disabled = true; msg.textContent = '存檔中…';
         try {
           await save(p, opts.brandId || (window.S && window.S.currentBrandId) || p.brandId, pack, exact, pc > 0 ? pc : 0);
