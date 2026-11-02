@@ -14,7 +14,9 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.5-board';
+  var VER = 'v2.6-board';
+  //  v2.6(2026-11-02)RA:「這裡應該就不用了吧」→ 多角度人物表面板對所有人隱藏(管理員也不顯示)。
+  //   面板留在頁面上(隱藏)是因為 KCS.autoRun 的狀態文字掛在裡面;管理員工具改用 Console:KCS.avatarAll / KCS.boardAll / KCS.boardToAvatar。
   //  v2.5(2026-11-02)RA:「客戶生成直接生底圖就好,把底圖上半部切下來當系統大頭貼」
   //   ① 客戶按「選這張」→ 直接做真人底圖 → 切上半部(分隔線以上)存成正臉(檔名 _sheet_front_board_)→ 綁口播 → 完成。不再生 3/4 + 側臉。
   //      大頭貼、口播、影片三處同一張臉。kol.html 看到 sheet_front_board 就算「真人底圖已完成」。
@@ -397,7 +399,7 @@
     box.appendChild(btnUse);
 
     panel.appendChild(box);
-    if (!_isOwner()) box.style.display = 'none';   // 🧍 v2.5 多角度人物表只有管理員看得到;客戶走真人底圖(autoRun)
+    box.style.display = 'none';   // 🧍 v2.6 多角度人物表全部隱藏(真人底圖取代 3/4 + 側臉;管理員工具走 Console)
 
     // 品牌與 persona 的來源順位(btnUse 原本寫在自己裡面,現在三處共用)
     function ctx() {
