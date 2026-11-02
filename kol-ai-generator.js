@@ -668,7 +668,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.46 🩹年齡拉桿不再被舊預設值打成50·沒角色按生成直接開取名視窗 · v3.45 💡拔掉佈光下拉(臉=中性資產·光交給影片層) · v3.44 💡佈光補上光源方向與眼球反射形狀(治眼神假+人貼在背景上) · v3.43 🎯拔掉場域下拉(臉改中性棚背景·治「臉被釘在一個場景裡」) · v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
+  console.log('[kol-ai-generator v3.47 🧍候選直接生真人底圖(挑哪張就用哪張) · v3.46 🩹年齡拉桿不再被舊預設值打成50·沒角色按生成直接開取名視窗 · v3.45 💡拔掉佈光下拉(臉=中性資產·光交給影片層) · v3.44 💡佈光補上光源方向與眼球反射形狀(治眼神假+人貼在背景上) · v3.43 🎯拔掉場域下拉(臉改中性棚背景·治「臉被釘在一個場景裡」) · v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -1910,9 +1910,38 @@ function minorGateOk() {
   } catch (e) { return true; }                  // 判斷不出來就不擋,避免擋死正常客戶
 }
 
+// ══════════════════════════════════════════════════════════════════
+//  🧍 v3.47(RA 11/02「挑的臉和最後的底圖不一樣 → 直接生成!」)
+//   候選直接生「真人底圖」(刺蝟星球 3101 版型,跟 kol-character-sheet 的 BOARD_PROMPT 同一套),
+//   客人挑哪張就是哪張:存成底圖 → 切上半部當大頭貼,不再二次重畫。關:window.KAI_BOARD_CANDIDATES = false
+// ══════════════════════════════════════════════════════════════════
+function _boardMode() { return window.KAI_BOARD_CANDIDATES !== false; }
+function buildBoardPrompt() {
+  const params = {};
+  document.querySelectorAll('.kai-param').forEach(el => { params[el.dataset.k] = el.value; });
+  const freeText = document.getElementById('kai-free-text')?.value.trim() || '';
+  const _age = ageClause(params.age, params.gender);
+  const who = (_age ? _age.phrase : 'a 26-year-old') + ' ' + (NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw) + ' '
+    + (_age ? _age.noun : (GENDER_MAP[params.gender] || GENDER_MAP.female));
+  const persona = String(PERSONA_MAP[params.persona] || PERSONA_MAP.girl_next_door).replace(/,?\s*light sweat sheen/g, '');
+  let p = 'Make a reference sheet of one real person: ' + who + ', ' + persona
+    + (freeText ? ', ' + freeText : '') + (_age ? ', ' + _age.traits : '') + '. '
+    + 'One real photograph on a plain mid-grey studio backdrop, tall 9:16. '
+    + 'Top half: a single front-facing head-and-shoulders close-up, looking straight into the camera with a relaxed neutral expression. '
+    + 'Bottom half: two full-length standing shots side by side, the front view on the left and the back view on the right, arms relaxed at the sides, shoes visible. '
+    + 'One thin grey line runs across the sheet between the top half and the bottom half, and the rest of the sheet is clean backdrop with no text. '
+    + 'The same face, hairstyle and hair length in every view. '
+    + 'Real skin as a phone camera sees it: visible pores, a few small moles and freckles, slightly uneven tone, natural asymmetry; '
+    + 'light, clear everyday makeup with a lip colour close to their own; the skin reads matte under soft, dull light. '
+    + 'Plain white crew-neck T-shirt, mid-blue straight jeans, white canvas sneakers. '
+    + 'Soft, even studio light from the front and both sides, low contrast, true everyday colours.';
+  if (_age && _age.minor) p += ' ' + MINOR_GUARD;
+  return p;
+}
+
 function renderPromptPreview() {
   if (_manualPromptMode) return;
-  const prompt = buildPrompt();
+  const prompt = _boardMode() ? buildBoardPrompt() : buildPrompt();
   S.lastPrompt = prompt;
   const preview = document.getElementById('kai-prompt-preview');
   if (preview) preview.textContent = prompt;
@@ -1985,9 +2014,10 @@ async function generate() {
     return;
   }
 
+  const _isBoard = _boardMode();
   const prompt = _manualPromptMode
     ? document.getElementById('kai-prompt-preview').textContent.trim()
-    : buildPrompt();
+    : (_isBoard ? buildBoardPrompt() : buildPrompt());
 
   if (!prompt) {
     alert('Prompt 為空');
@@ -2001,7 +2031,8 @@ async function generate() {
 
   const payload = {
     prompt,
-    aspect_ratio: ratio,
+    engine: _isBoard ? 'board' : undefined,   // 🧍 v3.47 Worker v7.56 起認得
+    aspect_ratio: _isBoard ? '9:16' : ratio,
     num_images: numImages,
     safety_tolerance: safety,
     output_format: 'jpeg',
@@ -2010,7 +2041,9 @@ async function generate() {
   };
 
   const seedInput = document.getElementById('kai-seed').value.trim();
-  if (S.lockedSeed !== null) {
+  if (_isBoard) {
+    // 底圖引擎不吃 seed —— 同一張臉靠「客人挑的那張底圖」本身
+  } else if (S.lockedSeed !== null) {
     payload.seed = S.lockedSeed;
   } else if (seedInput && /^\d+$/.test(seedInput)) {
     payload.seed = parseInt(seedInput);
@@ -2028,7 +2061,7 @@ async function generate() {
   const statusArea = document.getElementById('kai-status-area');
 
   results.style.display = 'block';
-  gallery.innerHTML = '<div class="kai-empty" style="grid-column:1/-1"><span class="emoji">⏳</span>生成中,預計 10-25 秒...</div>';
+  gallery.innerHTML = '<div class="kai-empty" style="grid-column:1/-1"><span class="emoji">⏳</span>' + (_isBoard ? '正在生成真人底圖,預計 40-90 秒...' : '生成中,預計 10-25 秒...') + '</div>';
   statusArea.innerHTML = '';
   meta.textContent = '';
 
@@ -2056,6 +2089,7 @@ async function generate() {
       throw new Error('回應無 images');
     }
 
+    S.lastBoard = !!data.board;
     S.lastImages = data.images.map((img, i) => ({
       ...img,
       seed: data.seed,
@@ -2071,7 +2105,7 @@ async function generate() {
     } catch (_) {}
 
     renderGallery();
-    _kaiFramingCheck();   // 📏 v3.46 背景看構圖,太近的那張加提醒(不動照片、不動提示詞)
+    if (!S.lastBoard) _kaiFramingCheck();   // 📏 v3.46(底圖本來就有上半特寫,不用查構圖) 背景看構圖,太近的那張加提醒(不動照片、不動提示詞)
 
     // 自動填 seed 到輸入框
     const seedInp = document.getElementById('kai-seed');
@@ -2310,6 +2344,8 @@ async function saveKolImageToLibrary(idx) {
     try {
       if (window.KCS && typeof window.KCS.autoRun === 'function') {
         const _front = res.url || res.drive_url || img.url;
+        //  🧍 v3.47 挑的這張就是底圖 → 告訴 kol-character-sheet 直接存、不要重畫
+        window.KAI_ADOPT_BOARD = S.lastBoard ? String(_front).replace(/\/cdn-cgi\/image\/[^/]*\//i, '/') : '';
         const _ok = window.KCS.autoRun(_front);
         if (!_ok) console.warn('[kai] 多角度沒自動啟動(原因見上一行),正臉已存好,可手動走 ①②');
       } else {
