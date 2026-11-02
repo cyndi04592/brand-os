@@ -3391,6 +3391,9 @@ function hasBoundKol() {
 
 // 空狀態卡片:① 捲到 AI 生成器並閃一下 ② 開 Drive 的 /KOL 資料夾
 function kolOnboardGoAI() {
+  //  🩹 2026-11-02(新品牌實測):以前只捲到生成器,客戶沒取名字就按生成 → 卡住。
+  //   跟「＋ 建新角色」同一個行為:直接開取名字視窗。
+  if (typeof window.openNewPersonaModal === 'function') { window.openNewPersonaModal(); return; }
   const el = document.getElementById('kai-panel');
   if (!el) { toast('生成器還在載入,請稍候再試', 'warn'); return; }
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -9626,6 +9629,13 @@ async function savePersonaFromEditor() {
         && S.selectedKol.persona.persona_id === p.persona_id) {
       Object.assign(S.selectedKol.persona, updated);
     }
+    //  🩹 2026-11-02(新角色實測):剛建好的角色,名冊當時還沒有人設 → S.selectedKol.persona 是空的,
+    //   上面那段接不到 → STEP2 一直寫「尚未填寫人設」「聲音未設定」。空的就直接接上同一份。
+    if (S.selectedKol && !S.selectedKol.persona && idx >= 0
+        && String(S.selectedKol.name || '') === String(p.persona_name || '')) {
+      S.selectedKol.persona = S.personas[idx];
+    }
+    try { if (S.selectedKol) { renderSelectedKolBanner(S.selectedKol); syncSelectedKolToCine(); } } catch (e) {}
 
     toast('✅ 人設已儲存', 'success');
     closePersonaEditor();
