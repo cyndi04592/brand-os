@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  product-size.js · v1.1(2026-11-02)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
+ *  product-size.js · v1.2(2026-11-02)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
  * ───────────────────────────────────────────────────────────────────
  *  RA 11/02:「客戶去哪裡填尺寸?只有入駐填一次,懶的人一定沒填」
  *          「用手掌這招(刺蝟星球)更準,讓客戶點選幾個手掌大」
@@ -18,7 +18,7 @@
 (function () {
   'use strict';
   if (window.ProductSize) return;
-  var VERSION = 'v1.1';
+  var VERSION = 'v1.2';
   var HAND = 18;   // 一個手掌 = 手腕到指尖約 18cm
 
   var PACK = [
@@ -41,6 +41,8 @@
     { k: 'p1', t: '1 個手掌', cm: 18 },
   ];
   var PHYSICAL = /^(tip|palm|table|floor|large|flat|)$/;
+  //  v1.2 這些呈現方式不需要尺寸(沒有實體商品 / 穿在身上由身體當比例尺)—— 跟 kol-proxy v7.57 同一份清單
+  var NO_SIZE_MODES = /^(service|equip|screen|pro|digital|medical|course|mystic|travel|agency|worn|innerwear)$/;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function num(s, re) { var m = String(s || '').match(re); return m ? parseFloat(m[1]) : 0; }
@@ -121,10 +123,10 @@
 
     function render(force) {
       var p = getP();
-      var sig = p ? [p.brandId, p.prodId, p.realSize, p.placeNote, p.placement].join('|') : '';
+      var sig = p ? [p.brandId, p.prodId, p.realSize, p.placeNote, p.placement, p.productMode].join('|') : '';
       if (!force && sig === lastSig) return;
       lastSig = sig;
-      if (!p || !PHYSICAL.test(String(p.placement || ''))) { box.innerHTML = ''; box.style.display = 'none'; return; }
+      if (!p || !PHYSICAL.test(String(p.placement || '')) || NO_SIZE_MODES.test(String(p.productMode || ''))) { box.innerHTML = ''; box.style.display = 'none'; return; }
       box.style.display = '';
       var s = readState(p);
       sel = { pack: s.packKey, piece: s.pieceKey, w: s.w && s.h ? s.w : '', h: s.w && s.h ? s.h : '', pc: (s.piece && !s.pieceKey) ? String(s.piece) : '' };
