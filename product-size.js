@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  product-size.js · v1.2(2026-11-02)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
+ *  product-size.js · v1.3(2026-11-02)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
  * ───────────────────────────────────────────────────────────────────
  *  RA 11/02:「客戶去哪裡填尺寸?只有入駐填一次,懶的人一定沒填」
  *          「用手掌這招(刺蝟星球)更準,讓客戶點選幾個手掌大」
@@ -18,7 +18,7 @@
 (function () {
   'use strict';
   if (window.ProductSize) return;
-  var VERSION = 'v1.2';
+  var VERSION = 'v1.3';
   var HAND = 18;   // 一個手掌 = 手腕到指尖約 18cm
 
   var PACK = [
@@ -44,6 +44,12 @@
   //  v1.2 這些呈現方式不需要尺寸(沒有實體商品 / 穿在身上由身體當比例尺)—— 跟 kol-proxy v7.57 同一份清單
   var NO_SIZE_MODES = /^(service|equip|screen|pro|digital|medical|course|mystic|travel|agency|worn|innerwear)$/;
 
+  //  v1.3 大件(到膝蓋以上、落地/大型/鋪地):「裡面一件」用不到 → 不顯示
+  function _isBig(packKey, p) {
+    var o = null; PACK.forEach(function (x) { if (x.k === packKey) o = x; });
+    if (o) return !!o.big;
+    return /^(floor|large|flat)$/.test(String((p && p.placement) || ''));
+  }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function num(s, re) { var m = String(s || '').match(re); return m ? parseFloat(m[1]) : 0; }
 
@@ -61,11 +67,11 @@
     if (!packKey && mx && !(w && h)) PACK.forEach(function (o) { if (!o.big && o.cm === mx) packKey = o.k; });
     var pieceKey = '';
     if (piece) PIECE.forEach(function (o) { if (o.cm === piece) pieceKey = o.k; });
-    return { w: w, h: h, mx: mx, packKey: packKey, piece: piece, pieceKey: pieceKey, filled: !!(mx || bigZh) };
+    return { w: w, h: h, mx: mx, packKey: packKey, piece: piece, pieceKey: pieceKey, bigZh: bigZh, filled: !!(mx || bigZh) };
   }
 
   // ── 存:沿用 Worker 的 product_placement_set(要帶 placement)
-  async function save(p, brandId, pack, exact, piece) {
+  async function save(p, brandId, pack, exact, piece, ids) {
     var cfg = window.KAI || {};
     var url = cfg.WORKER_URL || 'https://kol-proxy.calm-sunset-6b66.workers.dev';
     var place = String(p.placement || '');
@@ -87,7 +93,11 @@
     }
     if (!place) place = 'palm';
     if (piece) note = '內容物單件長約' + piece + 'cm。' + note;
-    var body = { action: 'product_placement_set', password: cfg.PASSWORD, brandId: brandId || p.brandId, subId: p.subId || '', prodId: p.prodId || '', placement: place, placeNote: note.slice(0, 300), realSize: rs };
+    var _id = ids || {};
+    var body = { action: 'product_placement_set', password: cfg.PASSWORD || (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : ''),
+      token: (function () { try { return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch (_) { return ''; } })(),
+      brandId: _id.brandId || brandId || p.brandId, subId: (_id.subId != null ? _id.subId : (p.subId || '')), prodId: _id.prodId || p.prodId || p.id || '',
+      placement: place, placeNote: note.slice(0, 300), realSize: rs };
     var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     var d = await r.json().catch(function () { return { ok: false, error: '回應不是 JSON' }; });
     if (!d || d.ok === false) throw new Error((d && d.error) || '存檔失敗');
@@ -95,7 +105,7 @@
     p.placement = d.placement || place; p.placeNote = d.placeNote != null ? d.placeNote : note; p.realSize = rs;
     try {
       ((window.S && window.S.products) || []).forEach(function (x) {
-        if (x !== p && x.brandId === p.brandId && x.prodId === p.prodId && (x.subId || '') === (p.subId || '')) { x.placement = p.placement; x.placeNote = p.placeNote; x.realSize = rs; }
+        if (x !== p && x.brandId === body.brandId && x.prodId === body.prodId && (x.subId || '') === (body.subId || '')) { x.placement = p.placement; x.placeNote = p.placeNote; x.realSize = rs; }
       });
     } catch (_) {}
     return rs;
@@ -132,21 +142,22 @@
       sel = { pack: s.packKey, piece: s.pieceKey, w: s.w && s.h ? s.w : '', h: s.w && s.h ? s.h : '', pc: (s.piece && !s.pieceKey) ? String(s.piece) : '' };
       var name = esc(p.name || p.prodName || '這個商品');
       var status = s.filled
-        ? '<p class="st">✅ 已存:' + esc(p.realSize || '') + (s.piece ? ' · 裡面一件約 ' + s.piece + ' cm' : '') + ' —— 系統會照這個大小做尺寸參考照</p>'
+        ? '<p class="st">✅ 已存:' + esc(p.realSize || s.bigZh || '') + (s.piece && !_isBig(s.packKey, p) ? ' · 裡面一件約 ' + s.piece + ' cm' : '') + ' —— 系統會照這個大小做尺寸參考照</p>'
         : '<p class="st warn">⚠️ 「' + name + '」還沒填尺寸 —— 影片裡商品大小有機會不準(偏大或偏小)。點一下就好:</p>';
       box.innerHTML = '<div class="psz"><h4>📏 商品實際大小</h4>' + status
         + '<div class="lb">整包(整件)大概多大?</div><div class="row" data-g="pack">'
         + PACK.map(function (o) { return '<button type="button" class="c' + (sel.pack === o.k ? ' on' : '') + '" data-k="' + o.k + '">' + o.t + '</button>'; }).join('') + '</div>'
         + '<div class="ex"><span class="lb" style="margin:0">想填準一點(公分):</span>寬 <input data-f="w" inputmode="decimal" value="' + esc(sel.w) + '"> × 高 <input data-f="h" inputmode="decimal" value="' + esc(sel.h) + '"> cm</div>'
-        + '<div class="lb">裡面一件大概多大?(沒有內容物就不用點)</div><div class="row" data-g="piece">'
+        + '<div class="psz-piece"' + (_isBig(sel.pack, p) ? ' style="display:none"' : '') + '><div class="lb">裡面一件大概多大?(沒有內容物就不用點)</div><div class="row" data-g="piece">'
         + PIECE.map(function (o) { return '<button type="button" class="c' + (sel.piece === o.k ? ' on' : '') + '" data-k="' + o.k + '">' + o.t + '</button>'; }).join('')
-        + ' <span class="lb" style="margin:0">或</span> <input data-f="pc" inputmode="decimal" placeholder="長" value="' + esc(sel.pc) + '"> cm</div>'
+        + ' <span class="lb" style="margin:0">或</span> <input data-f="pc" inputmode="decimal" placeholder="長" value="' + esc(sel.pc) + '"> cm</div></div>'
         + '<button type="button" class="sv">存起來</button><span class="msg"></span></div>';
       box.querySelectorAll('.row button.c').forEach(function (b) {
         b.onclick = function () {
           var g = b.parentNode.getAttribute('data-g'), k = b.getAttribute('data-k');
           sel[g] = (sel[g] === k) ? '' : k;
           if (g === 'pack' && sel[g]) { sel.w = ''; sel.h = ''; box.querySelectorAll('input[data-f=w],input[data-f=h]').forEach(function (x) { x.value = ''; }); }
+          if (g === 'pack') { var pw = box.querySelector('.psz-piece'); if (pw) pw.style.display = _isBig(sel.pack, p) ? 'none' : ''; }
           if (g === 'piece' && sel[g]) { sel.pc = ''; var pi = box.querySelector('input[data-f=pc]'); if (pi) pi.value = ''; }
           b.parentNode.querySelectorAll('button.c').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-k') === sel[g]); });
         };
@@ -161,7 +172,8 @@
         if (!pack && !exact && !readState(p).filled) { msg.textContent = '先點整包大概多大,或填寬和高'; return; }
         btn.disabled = true; msg.textContent = '存檔中…';
         try {
-          await save(p, opts.brandId || (window.S && window.S.currentBrandId) || p.brandId, pack, exact, pc > 0 ? pc : 0);
+          if (pack && pack.big) pc = 0;
+          await save(p, opts.brandId || (window.S && window.S.currentBrandId) || p.brandId, pack, exact, pc > 0 ? pc : 0, typeof opts.ids === 'function' ? opts.ids() : null);
           msg.textContent = '✅ 存好了';
           setTimeout(function () { render(true); }, 900);
         } catch (e) { msg.textContent = '❌ ' + ((e && e.message) || e); btn.disabled = false; }
@@ -184,6 +196,20 @@
       mount(box);
     });
   }
+  //  v1.3 廣告圖頁:掛在「📦 擺放方式」那條(#ppl-chip,product-placement.js 畫的)下面
+  function autoMountAd() {
+    var chip = document.getElementById('ppl-chip');
+    if (!chip || !chip.parentNode) return;
+    if (chip.nextElementSibling && chip.nextElementSibling.classList.contains('psz-host')) return;
+    var box = document.createElement('div'); box.className = 'psz-host';
+    chip.parentNode.insertBefore(box, chip.nextSibling);
+    mount(box, {
+      getProduct: function () { return (window.S && window.S.prod) || null; },
+      ids: function () { var S0 = window.S || {}; return { brandId: S0.brandId || '', subId: S0.subId || '', prodId: (S0.prod && S0.prod.id) || '' }; },
+      brandId: (window.S && window.S.brandId) || '',
+    });
+  }
+  if (!/\/kol(\.html)?$/.test(location.pathname)) setInterval(autoMountAd, 1500);
   if (/\/kol(\.html)?$/.test(location.pathname)) {
     setInterval(autoMount, 2000);
     if (document.readyState !== 'loading') autoMount(); else document.addEventListener('DOMContentLoaded', autoMount);
