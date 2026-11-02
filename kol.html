@@ -4696,6 +4696,11 @@ function kolFrontUrl(kol, fallbackUrl) {
     const nm = _n(kol?.name || kol?.persona_name || kol?.persona?.persona_name);
     if (!nm || !S.drivePhotos) return _fb;
     const per = (S.drivePhotos.personas || []).find(x => _n(x.persona_name) === nm);
+    //  🧍 2026-11-02 有真人底圖 → 大頭貼一律用底圖上半部切下來的那張(sheet_front_board,取最新)
+    //   RA:「系統上大頭貼都取打勾的這張圖」—— 大頭貼跟影片是同一張臉,不再出現兩種長相
+    const _bd = ((per && per.processed_photos) || []).filter(x => /sheet_front_board/i.test(x.name || ''))
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
+    if (_bd && (_bd.url || _bd.image_url)) return _bd.url || _bd.image_url;
     const all = (per && per.photos) || [];
     const isSheet = n => /sheet_(q34|profile|front)/i.test(n || '');
     const hit = all.find(x => /_ai_/i.test(x.name || '') && !isSheet(x.name))
@@ -4777,7 +4782,9 @@ function renderLookPicker() {
   //    撈不到檔案就退回用它,九位舊角色立刻全好,不必回頭重跑。
   //  ⚠️ 退路只補「正臉」:3/4 與側臉是 Kontext 另外生的,沒有等價的替代來源,
   //    硬拿主照片頂替會讓三張角度變成同一張臉、失去多角度的意義。
-  const _angles = [['front','正臉'], ['q34','3/4'], ['profile','側臉']]
+  //  🧍 2026-11-02 有真人底圖 → 造型卡只放那一張正臉(底圖上半部);3/4、側臉是舊流程的不同長相,不再顯示
+  const _hasBoard = _procs.some(x => /sheet_front_board/i.test(x.name || ''));
+  const _angles = (_hasBoard ? [['front','正臉']] : [['front','正臉'], ['q34','3/4'], ['profile','側臉']])
     .map(([k, label]) => {
       let ph = pickAnglePhoto(_procs, k);
       if (!ph && k === 'front') {
@@ -4823,7 +4830,7 @@ function renderLookPicker() {
   //     而正臉正是後者。檢查測錯了東西,等於沒裝。
   //   ★ 改成問:「應該要有的三個角度,少了哪一個?」
   //     少了就喊,不管是沒存、沒標、還是名字改過。下次換側臉不見也抓得到。
-  const _EXPECT = ['正臉', '3/4', '側臉'];
+  const _EXPECT = _hasBoard ? ['正臉'] : ['正臉', '3/4', '側臉'];
   const _got = _angles.map(a => a.label);
   const _missing = _EXPECT.filter(x => _got.indexOf(x) === -1);
   const _usedMain = _angles.some(a => a.ph && a.ph._fromMain);
