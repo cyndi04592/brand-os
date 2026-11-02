@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
-   kol-real-person.js — 使用自己建立 KOL(v1.6 · 2026-10-28)
+   kol-real-person.js — 使用自己建立 KOL(v1.7 · 2026-11-02)
+   v1.7:錄影三角度建立完,背景接著產生真人底圖(KCS.boardToAvatar)+ 切上半部當大頭貼;影片整支用底圖(RA:真人也要)
    v1.6:簽名前直接看正式 A4 授權書(kol-proxy v6.64 kol_consent_doc.previewHtml,iframe 顯示＋開新視窗列印)
    v1.5:RA 定名「使用自己建立」(KOL 本來就是很真實的人,叫「真人」反而像在說其他是假人);卡片加 ＋、改粉色
    ───────────────────────────────────────────────────────────────────
@@ -486,7 +487,15 @@
           try { if (typeof loadPersonas === 'function') await loadPersonas(brandId(), true); } catch (e) {}
           try { if (typeof window.autoBindPersona === 'function') await window.autoBindPersona(name, r.sheets.front); } catch (e) { console.warn('[krp] bind', e); }
           close();
-          say('✓ KOL「' + name + '」建立完成(正面、斜側、側面都是本人),授權書已存檔', 'success');
+          say('✓ KOL「' + name + '」建立完成(正面、斜側、側面都是本人),授權書已存檔;真人底圖產生中(約 40 秒)', 'success');
+          //  🧍 2026-11-02 真人也做真人底圖(RA:「1.也要」):用本人正臉生 3101 版型底圖 + 切上半部當大頭貼(背景跑,不擋)
+          try {
+            if (window.KCS && typeof window.KCS.boardToAvatar === 'function') {
+              window.KCS.boardToAvatar(brandId(), name, r.sheets.front)
+                .then(function () { try { if (typeof window.refreshAll === 'function') window.refreshAll(); } catch (e) {} })
+                .catch(function (e) { console.warn('[krp] 真人底圖失敗(角色已建好,影片退回用本人正臉):', e); });
+            }
+          } catch (e) { console.warn('[krp] board', e); }
         } else {
           close();
           say('✓ KOL「' + name + '」建立完成,授權書已存檔', 'success');
