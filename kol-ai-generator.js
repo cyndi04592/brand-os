@@ -668,7 +668,7 @@ function init() {
   injectStyle();
   injectPanel();
   hookBrandSwitcher();
-  console.log('[kol-ai-generator v3.47 🧍候選直接生真人底圖(挑哪張就用哪張) · v3.46 🩹年齡拉桿不再被舊預設值打成50·沒角色按生成直接開取名視窗 · v3.45 💡拔掉佈光下拉(臉=中性資產·光交給影片層) · v3.44 💡佈光補上光源方向與眼球反射形狀(治眼神假+人貼在背景上) · v3.43 🎯拔掉場域下拉(臉改中性棚背景·治「臉被釘在一個場景裡」) · v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
+  console.log('[kol-ai-generator v3.48 🧍底圖候選放大只秀臉(點圖看全身) · v3.47 🧍候選直接生真人底圖(挑哪張就用哪張) · v3.46 🩹年齡拉桿不再被舊預設值打成50·沒角色按生成直接開取名視窗 · v3.45 💡拔掉佈光下拉(臉=中性資產·光交給影片層) · v3.44 💡佈光補上光源方向與眼球反射形狀(治眼神假+人貼在背景上) · v3.43 🎯拔掉場域下拉(臉改中性棚背景·治「臉被釘在一個場景裡」) · v3.42] 已載入(🪣候選圖轉存自家R2·白標 +window.KAI 人物表共用 +gasPost +年齡1~99拉桿 +未成年閘門 +同批只選一張 +寫入自動重試x3)');
 }
 
 // ── CSS 注入(貼合 kol.html v4.1 視覺) ──────────────────
@@ -870,6 +870,12 @@ function injectStyle() {
     width: 100%; height: 100%; object-fit: cover; display: block;
     transition: transform .25s;
   }
+  /* 🧍 v3.48 底圖候選:一張一列、只秀上半部的大頭特寫(點圖看整張含全身)—— RA:「客戶看超小根本看不到臉」 */
+  .kai-gallery.board { grid-template-columns: 1fr; }
+  .kai-img-thumb.board { aspect-ratio: 9/8; }
+  .kai-img-thumb.board img { height: 200%; object-fit: cover; object-position: top; }
+  .kai-img-thumb.board:hover img { transform: none; }
+  .kai-board-hint { position:absolute; right:6px; bottom:6px; background:rgba(0,0,0,.7); color:#fff; font-size:10.5px; padding:2px 7px; border-radius:10px; }
   .kai-img-idx {
     position: absolute; top: 6px; left: 6px;
     background: rgba(0,0,0,0.7); color: #6dfac2;
@@ -2185,16 +2191,18 @@ function renderGallery() {
   // ══════════════════════════════════════════════════════════════════
   const _pickedIdx = S.lastImages.findIndex(x => x && x.saved);
   const _hasPicked = _pickedIdx > -1;
+  gallery.classList.toggle('board', !!S.lastBoard);
 
   gallery.innerHTML = S.lastImages.map((img, i) => {
     const nsfw = img.nsfw ? '<div style="position:absolute;top:6px;right:6px;background:rgba(250,109,155,0.85);color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;">NSFW</div>' : '';
     const _locked = _hasPicked && !img.saved;   // 別人被選走了 → 這張鎖住
     return `
       <div class="kai-img-card${img.saved ? ' picked' : ''}" data-idx="${i}"${_locked ? ' style="opacity:.4"' : ''}>
-        <div class="kai-img-thumb" data-act="zoom" data-idx="${i}" title="點擊放大看原圖">
+        <div class="kai-img-thumb${S.lastBoard ? ' board' : ''}" data-act="zoom" data-idx="${i}" title="點擊放大看原圖">
           <span class="kai-img-idx">#${i + 1}</span>
           ${nsfw}
           <img src="${escapeHtml(img.url)}" alt="AI KOL ${i + 1}" loading="lazy" />
+          ${S.lastBoard ? '<span class="kai-board-hint">🔍 點圖看全身</span>' : ''}
           ${img.tight ? '<div title="' + escapeHtml(img.tightReason || '') + '" style="position:absolute;left:6px;right:6px;bottom:6px;background:rgba(20,20,28,.82);border:1px solid rgba(255,206,107,.7);color:#ffce6b;padding:4px 6px;border-radius:6px;font-size:10.5px;font-weight:700;line-height:1.4;text-align:center;">📏 構圖太近<br><span style="font-weight:500;color:#f5e6c4;">拍片時臉會太大,建議選別張</span></div>' : ''}
         </div>
         <div class="kai-img-actions">
