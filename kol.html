@@ -2219,6 +2219,12 @@ document.addEventListener('DOMContentLoaded', function(){
           <label>角色關係(role_relationship)</label>
           <textarea id="pe-role-relationship" rows="2" placeholder="例:我在台灣當 Model,因為拍攝認識 LACEZ,以消費者身份分享"></textarea>
         </div>
+        <!-- 👗 2026-11-02 RA:「人設書空了他的服裝」—— 服裝(outfit)一直存在資料裡、但編輯視窗沒有這一欄,
+             建角色時選的衣服(例:米禾=白T)每支影片都穿、客人看不到也改不了。這裡補上。 -->
+        <div class="pe-row">
+          <label>固定服裝(outfit) · 填了每支影片都穿這套;留空 = 依場景自動搭配</label>
+          <input type="text" id="pe-outfit" placeholder="例:米白針織衫配卡其長褲、白色球鞋(留空就每支依場景換衣服)">
+        </div>
         <div class="pe-row">
           <label>口頭禪(catchphrases · 用逗號分隔)</label>
           <input type="text" id="pe-catchphrases" placeholder="欸〜, うん, 就是...那個, 這樣呢〜">
@@ -9576,6 +9582,7 @@ function openPersonaEditor(personaIdArg) {
   renderVoiceStyle();                      // 🆕 v6.4:建控制器(只建一次)
   loadVoiceStyle(p.voice_style || '');     //         反推標籤與滑桿位置
   document.getElementById('pe-role-relationship').value = p.role_relationship || '';
+  { const _o = document.getElementById('pe-outfit'); if (_o) _o.value = p.outfit || ''; }   // 👗 2026-11-02
   document.getElementById('pe-catchphrases').value = (p.catchphrases || []).join(', ');
   document.getElementById('pe-taboo-words').value = (p.taboo_words || []).join(', ');
   document.getElementById('pe-signature-topics').value = (p.signature_topics || []).join(', ');
@@ -9603,6 +9610,7 @@ async function savePersonaFromEditor() {
     speaking_style: document.getElementById('pe-speaking-style').value.trim(),
     voice_style: document.getElementById('pe-voice-style').value.trim(),   // 🆕 v6.4
     role_relationship: document.getElementById('pe-role-relationship').value.trim(),
+    outfit: (document.getElementById('pe-outfit')?.value || '').trim(),   // 👗 2026-11-02 空白 = 依場景自動搭配
     catchphrases: parseList(document.getElementById('pe-catchphrases').value),
     taboo_words: parseList(document.getElementById('pe-taboo-words').value),
     signature_topics: parseList(document.getElementById('pe-signature-topics').value),
