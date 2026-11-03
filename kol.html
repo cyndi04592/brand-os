@@ -3584,6 +3584,9 @@ async function loadBrands() {
     let _cached = null;
     try { _cached = JSON.parse(localStorage.getItem(_bk) || 'null'); } catch (e) {}
     if (_cached && Array.isArray(_cached.brands) && _cached.brands.length) {
+      // 🩹 2026-11-03 快取太快:頁面其他程式還沒載完就切品牌 → 切到一半出錯,角色永遠「載入中」。
+      //   等整頁載完(通常不到 1 秒)再套用快取。
+      if (document.readyState !== 'complete') await new Promise(r => window.addEventListener('load', r, { once: true }));
       _kolBrandsFresh(email, _bk, JSON.stringify(_cached.brands));   // 背景拿最新(不等)
       return await _kolApplyBrands({ ok: true, data: _cached }, email);
     }
@@ -3695,6 +3698,7 @@ async function _kolApplyBrands(res, email) {
       await onBrandChange();
     }
   } catch (e) {
+    console.error('[品牌] 套用品牌清單/切品牌失敗', e);
     toast('載入品牌失敗:' + e.message, 'error');
   }
 }
