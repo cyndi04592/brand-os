@@ -3562,9 +3562,57 @@ async function loadBrands() {
       toast('請先回主站登入,再進入 KOL Studio', 'error');
       return;
     }
+    // ⚡ 2026-11-03 品牌清單先開快取:Cloudflare 塞車時 getBrandOS 要等 3~13 秒,品牌下拉一直空著。
+    //   改成:這台電腦上次拿到的品牌清單(跟首頁共用 bs_brandos_<email>)→ 馬上顯示並選回上次的品牌;
+    //         同時背景跟 Worker 拿最新的,有變才悄悄更新,不打斷操作。第一次用的電腦照舊等。
+    const _bk = 'bs_brandos_' + email;
+    let _cached = null;
+    try { _cached = JSON.parse(localStorage.getItem(_bk) || 'null'); } catch (e) {}
+    if (_cached && Array.isArray(_cached.brands) && _cached.brands.length) {
+      _kolBrandsFresh(email, _bk, JSON.stringify(_cached.brands));   // 背景拿最新(不等)
+      return await _kolApplyBrands({ ok: true, data: _cached }, email);
+    }
     const res = await gasGet('getBrandOS', { email });
     if (!res.ok) throw new Error('讀取品牌清單失敗');
+    _kolSaveBrands(_bk, res);
+    return await _kolApplyBrands(res, email);
+  } catch (e) {
+    toast('載入品牌失敗:' + e.message, 'error');
+  }
+}
 
+// ⚡ 2026-11-03 存下這次拿到的品牌清單(只存有品牌的,空的不存,免得鎖住空清單)
+function _kolSaveBrands(key, res) {
+  try {
+    if (res && res.ok && res.data && (res.data.brands || []).length) localStorage.setItem(key, JSON.stringify(res.data));
+  } catch (e) {}
+}
+
+// ⚡ 2026-11-03 背景拿最新品牌清單:品牌有變 → 重畫下拉(保留目前選的);沒變 → 只更新商品/資料夾資料
+async function _kolBrandsFresh(email, key, cachedBrandsJson) {
+  try {
+    const res = await gasGet('getBrandOS', { email });
+    if (!res || !res.ok) return;
+    _kolSaveBrands(key, res);
+    const brands = res.data?.brands || [];
+    if (!brands.length) return;                       // 新的是空的 → 不拿空清單蓋掉畫面
+    S.products = res.data?.products || S.products;
+    S.folders = res.data?.folders || S.folders;
+    if (JSON.stringify(brands) === cachedBrandsJson) return;
+    S.brands = brands.map(_cleanBrandText);
+    const sel = document.getElementById('brand-switcher');
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— 請先選擇品牌 —</option>' +
+      S.brands.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)}</option>`).join('');
+    if (cur && S.brands.find(b => b.id === cur)) { sel.value = cur; return; }
+    sel.value = S.brands[0].id;                       // 原本選的品牌被拿掉了 → 換到第一個
+    await onBrandChange();
+  } catch (e) { console.log('[品牌] 背景更新失敗(畫面照用快取):' + e.message); }
+}
+
+async function _kolApplyBrands(res, email) {
+  try {
     S.brands = (res.data?.brands || []).map(_cleanBrandText);   // 🧹 2026-08-23
     S.products = res.data?.products || [];  // v5.7: 一次載入產品
     S.folders = res.data?.folders || [];    // 🆕 v5.15: 載入 folders 表(商品照 productFolderId 用)
