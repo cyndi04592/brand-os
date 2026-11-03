@@ -99,3 +99,19 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {}
 })();
+
+/* 🛟 2026-11-03 網站備份在客人瀏覽器(sw.js):Cloudflare 慢超過 3 秒就先開備份,登入頁/換頁不再卡。
+ *    緊急關閉這台:網址加 ?sw=off;全站關閉:sw.js 的 KILL 改 true 再部署。失敗不影響網站。 */
+(function(){
+  if (window.__bsSwLoader || !('serviceWorker' in navigator)) return;
+  window.__bsSwLoader = true;
+  try {
+    if (/[?&]sw=off\b/.test(location.search)) {
+      navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); });
+      if (window.caches) caches.keys().then(function (ks) { ks.forEach(function (k) { if (k.indexOf('bos-shell-') === 0) caches.delete(k); }); });
+      return;
+    }
+    var go = function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); };
+    if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
+  } catch (e) {}
+})();
