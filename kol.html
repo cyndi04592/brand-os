@@ -3819,6 +3819,32 @@ async function onBrandChange() {
   ]);
 }
 
+// ⚡ 2026-11-03 角色清單快取(每個帳號、每個品牌各一份,只存在這台電腦)
+function _kolPersonaKey(brandId) {
+  return 'kol_personas_' + (localStorage.getItem('bs_sso_email') || '') + '_' + brandId;
+}
+function _kolSavePersonas(brandId, list) {
+  try { if (Array.isArray(list) && list.length) localStorage.setItem(_kolPersonaKey(brandId), JSON.stringify(list)); } catch (e) {}
+}
+// 背景拿最新角色:有變 → 換掉內容(保留同一個陣列,其他地方的參照不會斷)並重畫角色區
+async function _kolPersonasFresh(brandId, cachedJson) {
+  try {
+    const res = await gasGet('getKolPersonas', { brandId });
+    if (!res || res.ok === false || !Array.isArray(res.personas)) return;
+    const fresh = res.personas;
+    if (fresh.length) _kolSavePersonas(brandId, fresh);
+    else { try { localStorage.removeItem(_kolPersonaKey(brandId)); } catch (e) {} }
+    if (JSON.stringify(fresh) === cachedJson) return;
+    const arr = (S._personaCache && S._personaCache[brandId]) || [];
+    arr.splice(0, arr.length, ...fresh);
+    if (S.currentBrandId !== brandId) return;          // 已經換到別的品牌 → 只更新資料,不重畫
+    S.personas = arr;
+    try { await loadKolList(brandId); } catch (e) {}
+    try { if (S.drivePhotos && document.getElementById('drive-gallery-wrap')) renderDriveGallery(); } catch (e) {}
+    try { if (S.currentMode === 'system') renderSystemTab(); } catch (e) {}
+  } catch (e) { console.log('[角色] 背景更新失敗(畫面照用快取):' + e.message); }
+}
+
 // ─── 載入 personas ────────────────────────────────────────
 async function loadPersonas(brandId, force) {
   S._personaCache = S._personaCache || {};
@@ -3833,10 +3859,27 @@ async function loadPersonas(brandId, force) {
     try { if (S.drivePhotos && document.getElementById('drive-gallery-wrap')) renderDriveGallery(); } catch (e) {}
     return;
   }
+  // ⚡ 2026-11-03 角色清單先開快取:今天 Worker 查 KOL 角色要 20~30 秒,角色區一直「載入中」。
+  //   改成:這台電腦上次看到的角色 → 馬上顯示;背景跟 Worker 拿最新的,有變才重畫,不打斷操作。
+  //   force(剛新增/編輯完要重抓)不吃快取,照舊等最新的。
+  const _pk = _kolPersonaKey(brandId);
+  if (!force) {
+    let _pc = null;
+    try { _pc = JSON.parse(localStorage.getItem(_pk) || 'null'); } catch (e) {}
+    if (Array.isArray(_pc) && _pc.length) {
+      S.personas = _pc;
+      S._personaCache[brandId] = S.personas;
+      S._personasLoading = false;
+      _kolPersonasFresh(brandId, JSON.stringify(_pc));   // 背景拿最新(不等)
+      try { if (S.drivePhotos && document.getElementById('drive-gallery-wrap')) renderDriveGallery(); } catch (e) {}
+      return;
+    }
+  }
   try {
     const res = await gasGet('getKolPersonas', { brandId });
     S.personas = res.personas || [];
     S._personaCache[brandId] = S.personas;  // 🆕 抓過就記住(切回同品牌直接用·參照共享,編輯自動同步)
+    _kolSavePersonas(brandId, S.personas);
   } catch (e) {
     console.error('載入 personas 失敗', e);
     S.personas = [];
