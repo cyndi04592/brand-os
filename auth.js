@@ -308,13 +308,25 @@ function doGoogleLogin() {
   btn.innerHTML = '<span class="spin" style="border-top-color:#fff"></span> 登入中...';
   document.getElementById('loginErr').textContent = '';
   if (!tokenClient) {
-    setTimeout(() => {
-      if (tokenClient) tokenClient.requestAccessToken({ prompt: 'select_account' });
-      else {
-        document.getElementById('loginErr').textContent = '❌ Google 載入失敗';
-        btn.disabled = false;
-      }
-    }, 1500);
+    // 🩹 2026-11-03 網路慢時 Google 登入元件還沒載完,舊版等 1.5 秒就報「Google 載入失敗」且按鈕卡在「登入中...」。
+    //   改成:最多等 4 秒(超過的話瀏覽器會擋登入視窗);還沒好 → 按鈕恢復,提示稍等,
+    //         背景繼續等 Google,載好了就告訴客人「已就緒,請再按一次」。
+    const _err = document.getElementById('loginErr');
+    const _ready = () => { if (!tokenClient && window.google && google.accounts) { try { initGoogleAuth(); } catch (e) {} } return !!tokenClient; };
+    const _t0 = Date.now();
+    const _wait = setInterval(() => {
+      if (_ready()) { clearInterval(_wait); tokenClient.requestAccessToken({ prompt: 'select_account' }); return; }
+      if (Date.now() - _t0 < 4000) return;
+      clearInterval(_wait);
+      btn.disabled = false;
+      btn.textContent = '使用 Google 帳號登入';
+      if (_err) _err.textContent = '⏳ Google 登入還在載入(網路較慢),請稍等再按一次';
+      const _bg = setInterval(() => {
+        if (!_ready() && Date.now() - _t0 < 60000) return;
+        clearInterval(_bg);
+        if (_err) _err.textContent = tokenClient ? '✅ Google 已就緒,請再按一次登入' : '❌ Google 載入失敗,請重新整理頁面';
+      }, 500);
+    }, 200);
     return;
   }
   tokenClient.requestAccessToken({ prompt: 'select_account' });
