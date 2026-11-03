@@ -48,6 +48,41 @@ async function loadMemories(brandId, productId) {
   return currentMemories;
 }
 
+// 🧠 2026-11-03 物理記憶比對:鉤子跟記憶(或同批前面的)太像 → 拿掉;不夠 count 組時,拿最不像的補回
+function _memNorm(s) { return String(s || '').replace(/[\s\p{P}\p{S}]/gu, '').toLowerCase(); }
+function _memSim(a, b) {   // 兩兩字組(bigram)重疊率:0 = 完全不同,1 = 一模一樣
+  a = _memNorm(a); b = _memNorm(b);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const g = s => { const m = new Map(); for (let i = 0; i < s.length - 1; i++) { const k = s.slice(i, i + 2); m.set(k, (m.get(k) || 0) + 1); } return m; };
+  const A = g(a), B = g(b); let hit = 0, na = 0, nb = 0;
+  A.forEach(v => { na += v; }); B.forEach(v => { nb += v; });
+  A.forEach((v, k) => { if (B.has(k)) hit += Math.min(v, B.get(k)); });
+  return (na + nb) ? (2 * hit) / (na + nb) : 0;
+}
+function _memFilter(combos, count) {
+  const MAX = 0.5;   // 鉤子重疊超過一半 = 太像
+  const past = (currentMemories || []).map(m => m.hookScript).filter(Boolean);
+  const scored = (combos || []).map(c => {
+    const h = c && c.hook && c.hook.script;
+    let worst = 0;
+    past.forEach(p => { worst = Math.max(worst, _memSim(h, p)); });
+    return { c, worst };
+  });
+  const keep = [], drop = [];
+  scored.forEach(x => {
+    const dupBatch = keep.some(k => _memSim(k.c.hook && k.c.hook.script, x.c.hook && x.c.hook.script) > MAX);
+    (x.worst > MAX || dupBatch ? drop : keep).push(x);
+  });
+  drop.sort((a, b) => a.worst - b.worst);
+  while (keep.length < count && drop.length) keep.push(drop.shift());   // 不夠就拿最不像的補,絕不給空白
+  const out = keep.slice(0, count).map(x => x.c);
+  out.forEach((c, i) => { c.id = 'AD' + String(i + 1).padStart(3, '0'); });
+  const removed = (combos || []).length - out.length;
+  if (past.length) console.log('[記憶] 比對 ' + past.length + ' 筆記憶,拿掉 ' + Math.max(0, removed) + ' 組太像的');
+  return out;
+}
+
 async function saveMemory(combo, brandId, subId, brandName, productName) {
   try {
     const hookScript = combo.hook?.script || '';
@@ -211,12 +246,12 @@ async function doGenerate() {
   btn.innerHTML = '<span class="spin"></span>載入記憶...';
   await loadMemories(window.S.brandId, window.S.prod.id);
 
-  const memoryContext = currentMemories.length > 0
-    ? `\n━━━ 🧠 歷史記憶（已用過，新腳本必須完全不同方向）━━━\n` +
-      currentMemories.slice(0, 5).map((m, i) =>
-        `[記憶${i+1}] 方向:${m.hookMethod} 分數:${m.score}\n  Hook: ${m.hookScript}\n  CTA: ${m.ctaScript}`
-      ).join('\n') + `\n❌ 禁止重複以上方向 ✅ 必須全新切入角度\n`
-    : '';
+  // 🧠 2026-11-03 記憶改成「物理記憶」(RA:不要把舊文案塞進提示詞叫 AI 別重複,那很白癡)
+  //   舊做法:最近 5 筆記憶貼進提示詞 +「禁止重複以上方向」→ 佔字數、AI 反而照抄字句、也沒人檢查有沒有避開。
+  //   新做法:提示詞完全不提記憶;有記憶時多要 3 組,生成完由程式逐組比對鉤子,太像的直接拿掉。
+  //   ★ 不會多扣點:還是一次生成,只是多要幾組來挑。
+  const _extra = currentMemories.length > 0 ? Math.min(3, Math.max(1, Math.round(count * 0.15))) : 0;
+  const _ask = count + _extra;
 
   // 🧾 2026-10-18 商品資料(RA:文案常把「UC-856A」這種型號寫出來,但 iPhone 8 Plus、RTX 5080 Ti 這種客人會搜的型號又要寫)
   //   ① 商品名照原樣給(拆字會拆壞名字),只在偵測到型號時多給一行,寫不寫交給 AI 依品類判斷
@@ -247,13 +282,12 @@ async function doGenerate() {
 ${_marks.length ? `【型號】商品名裡的「${_marks.join('、')}」是型號或英文系列名 —— 消費者會拿來搜尋、比較的商品(例:手機、顯示卡、電腦、機械設備)就寫進文案;一般家電、食品、生活用品,文案只用中文品名稱呼\n` : ''}${_facts ? `【商品事實】${_facts}(文案裡的規格、數字以這裡為準)\n` : ''}【目標受眾】${aud}
 【Hashtag】${tags}
 【文案規格】${copyLengthGuide}
-${memoryContext}
 ━━━ ⚠️ 字數鐵則（違反不接受，生成前必須自我驗算）━━━
 ‣ hook.script：繁體中文字數【硬性上限 25 字】，只能 1 句話，禁止用句號切兩句
 ‣ cta.script：繁體中文字數【硬性上限 20 字】，只能 1 句話
 ‣ 計算規則：每個中文字算 1 字，英文單字整體算 1 字，標點符號不計入字數
 
-生成「剛好 ${count} 組」，只回傳純 JSON：
+生成「剛好 ${_ask} 組」，只回傳純 JSON：
 {"combos":[{"id":"AD001","hook":{"method":"方向名稱","script":"鉤子文字≤25字","visual":"畫面建議"},"core":{"type":"廣告類型","script":"核心段落","solve":"解決什麼核心問題"},"cta":{"style":"CTA風格","script":"CTA文字≤20字"}}]}`;
 
   try {
@@ -271,7 +305,7 @@ ${memoryContext}
     const _s = raw.indexOf('{'), _e = raw.lastIndexOf('}');
     if (_s >= 0 && _e > _s) raw = raw.slice(_s, _e + 1);
     const parsed = JSON.parse(raw);
-    window.S.scripts = parsed.combos || [];
+    window.S.scripts = _memFilter(parsed.combos || [], count);
     renderScripts(brandDisplay, sub?.color || brand?.navColor);
 
     const sb = document.getElementById('scriptBadge');
