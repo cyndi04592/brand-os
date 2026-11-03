@@ -2326,15 +2326,30 @@ const _RETRY_SAFE_KOL = [
 async function _kolRetryFetch(origFetch, input, init, label) {
   const TRIES = 4;
   let lastErr;
+  // ⏱ 2026-11-03 卡死保險:實測偶爾有單一請求 70 秒以上沒回應(同時間重送 1 秒就回來),
+  //   客人就一直卡在「載入中」。每一次嘗試加計時:超過時間就放棄這次、重送一次。
+  //   只用在這張唯讀白名單上(扣點類永遠不會進來),所以重送不會重複扣點。
+  const LIMIT_MS = /^(gas_cached|ping)/.test(String(label || '')) ? 8000 : 15000;
   for (let i = 0; i < TRIES; i++) {
+    const ctl = (typeof AbortController !== 'undefined' && !(init && init.signal)) ? new AbortController() : null;
+    let timer = null;
     try {
-      const resp = await origFetch(input, init);
-      if (resp.status >= 500 && i < TRIES - 1) throw new Error('HTTP ' + resp.status);
-      // ★ 關鍵:body 也要在重試圈內驗。斷線常見「假 200 但 body 壞掉」,
-      //   只包 fetch 抓不到 —— 這是廣告圖那條線踩過才學到的。
-      await resp.clone().json();
+      const run = (async function () {
+        const resp = await origFetch(input, ctl ? Object.assign({}, init, { signal: ctl.signal }) : init);
+        if (resp.status >= 500 && i < TRIES - 1) throw new Error('HTTP ' + resp.status);
+        // ★ 關鍵:body 也要在重試圈內驗。斷線常見「假 200 但 body 壞掉」,
+        //   只包 fetch 抓不到 —— 這是廣告圖那條線踩過才學到的。
+        await resp.clone().json();
+        return resp;
+      })();
+      run.catch(function () {});   // 逾時放棄後,那一次的錯誤不要噴到 console
+      const resp = await (ctl ? Promise.race([run, new Promise(function (_, rej) {
+        timer = setTimeout(function () { try { ctl.abort(); } catch (_) {} rej(new Error('逾時 ' + (LIMIT_MS / 1000) + ' 秒沒回應')); }, LIMIT_MS);
+      })]) : run);
+      if (timer) clearTimeout(timer);
       return resp;
     } catch (e) {
+      if (timer) clearTimeout(timer);
       lastErr = e;
       if (i < TRIES - 1) {
         const wait = Math.min(1600, 250 * Math.pow(2, i)) + Math.floor(Math.random() * 400);
