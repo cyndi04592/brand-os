@@ -60,26 +60,39 @@ function _memSim(a, b) {   // 兩兩字組(bigram)重疊率:0 = 完全不同,1 =
   A.forEach((v, k) => { if (B.has(k)) hit += Math.min(v, B.get(k)); });
   return (na + nb) ? (2 * hit) / (na + nb) : 0;
 }
-function _memFilter(combos, count) {
-  const MAX = 0.5;   // 鉤子重疊超過一半 = 太像
+// 🧠 2026-11-04 改比「意思」(Worker memory_check,Cloudflare 語意模型):「我今天吃一碗飯」跟「你昨天喝兩碗湯」字不同但同一個梗
+//   Worker 回每組鉤子跟記憶最像多少(worst)+ 同一批彼此多像(pair)+ 門檻(limit);Worker 連不上 → 退回在這裡比字
+async function _memScores(hooks, past) {
+  try {
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 8000);
+    const r = await fetch(CF_WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
+      body: JSON.stringify({ action: 'memory_check', password: GAS_PASSWORD, items: hooks, past: past }) });
+    clearTimeout(tm);
+    const d = await r.json();
+    if (d && d.ok && Array.isArray(d.worst) && d.worst.length === hooks.length) return d;
+  } catch (e) {}
+  return { mode: 'chars', limit: 0.5,
+    worst: hooks.map(h => past.reduce((m, p) => Math.max(m, _memSim(h, p)), 0)),
+    pair: hooks.map(x => hooks.map(y => _memSim(x, y))) };
+}
+async function _memFilter(combos, count) {
+  combos = combos || [];
   const past = (currentMemories || []).map(m => m.hookScript).filter(Boolean);
-  const scored = (combos || []).map(c => {
-    const h = c && c.hook && c.hook.script;
-    let worst = 0;
-    past.forEach(p => { worst = Math.max(worst, _memSim(h, p)); });
-    return { c, worst };
-  });
+  const hooks = combos.map(c => String((c && c.hook && c.hook.script) || ''));
+  let sc = null;
+  if (combos.length) sc = await _memScores(hooks, past);
+  const MAX = (sc && sc.limit) || 0.5;
   const keep = [], drop = [];
-  scored.forEach(x => {
-    const dupBatch = keep.some(k => _memSim(k.c.hook && k.c.hook.script, x.c.hook && x.c.hook.script) > MAX);
-    (x.worst > MAX || dupBatch ? drop : keep).push(x);
+  combos.forEach((c, i) => {
+    const worst = (sc && sc.worst && past.length) ? sc.worst[i] : 0;
+    const dupBatch = keep.some(k => sc && sc.pair && sc.pair[i] && sc.pair[i][k.i] > MAX);
+    (worst > MAX || dupBatch ? drop : keep).push({ c, i, worst });
   });
   drop.sort((a, b) => a.worst - b.worst);
   while (keep.length < count && drop.length) keep.push(drop.shift());   // 不夠就拿最不像的補,絕不給空白
   const out = keep.slice(0, count).map(x => x.c);
   out.forEach((c, i) => { c.id = 'AD' + String(i + 1).padStart(3, '0'); });
-  const removed = (combos || []).length - out.length;
-  if (past.length) console.log('[記憶] 比對 ' + past.length + ' 筆記憶,拿掉 ' + Math.max(0, removed) + ' 組太像的');
+  console.log('[記憶] ' + ((sc && sc.mode) || '-') + ' 比對 ' + past.length + ' 筆記憶,' + combos.length + ' 組裡拿掉 ' + Math.max(0, combos.length - out.length) + ' 組太像的');
   return out;
 }
 
@@ -305,7 +318,8 @@ ${_marks.length ? `【型號】商品名裡的「${_marks.join('、')}」是型�
     const _s = raw.indexOf('{'), _e = raw.lastIndexOf('}');
     if (_s >= 0 && _e > _s) raw = raw.slice(_s, _e + 1);
     const parsed = JSON.parse(raw);
-    window.S.scripts = _memFilter(parsed.combos || [], count);
+    btn.innerHTML = '<span class="spin"></span>比對記憶...';
+    window.S.scripts = await _memFilter(parsed.combos || [], count);
     renderScripts(brandDisplay, sub?.color || brand?.navColor);
 
     const sb = document.getElementById('scriptBadge');
