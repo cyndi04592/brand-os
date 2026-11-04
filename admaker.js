@@ -3659,8 +3659,9 @@ const LAYOUT_BY_PRODTYPE = {
     { group: '版面型', keys: ['sc_code_split', 'sc_feature_tile'] },
   ],
   pro: [
+    // ✂️ 2026-11-05 RA 同意:名片資訊型 / 專業觀點型(排版文字圖)先收起,之後做「重拍照片+排版文字」新做法再開回來(程式仍認得 pr_namecard / pr_viewpoint)
     { group: '人物', keys: ['pr_portrait', 'pr_team'] },
-    { group: '空間與資訊', keys: ['pr_office', 'pr_namecard', 'pr_viewpoint'] },
+    { group: '空間', keys: ['pr_office'] },
   ],
 };
 
