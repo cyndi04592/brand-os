@@ -3901,8 +3901,10 @@ const PRODTYPE_OPTIONS = [
   { value: 'physical_reshoot', label: '商品實拍 · 重拍 — 新場景、新角度,像攝影師重新拍(推薦)', highlight: true },
   // 2026-10-24 RA:「商品拍攝留第一個就好,第二個反而變爛」→ 選單收起「保留角度」(程式仍認得 'physical',要恢復把下一行的 // 拿掉)
   // { value: 'physical', label: '商品實拍 · 保留角度 — 照原圖角度,只換背景與光' },
-  { value: 'apparel',      label: '服飾穿搭 · 重拍 — AI 模特兒穿上你的衣服,換姿勢、角度、場景' },
-  { value: 'apparel_keep', label: '服飾穿搭 · 保留原模特兒 — 人照原圖,只換背景與光' },
+  { value: 'apparel',      label: '服飾穿搭 · 重拍 — AI 模特兒穿上你的衣服,換姿勢、角度、場景(推薦)', highlight: true },
+  // 2026-11-04 RA:「我每一個都要重拍的質感」—— 保留原模特兒 = 姿勢角度永遠照原圖,MOZ 員工用了一週每張都長一樣 → 選單收起
+  //   (程式仍認得 'apparel_keep',要恢復把下一行的 // 拿掉)
+  // { value: 'apparel_keep', label: '服飾穿搭 · 保留原模特兒 — 人照原圖,只換背景與光' },
   { value: 'wellness', label: '養生能量商品 — 水晶 / 串珠 / 能量手環 / 按摩器材' },
   { group: '服務與體驗' },
   { value: 'beauty',  label: '美業服務 — 美睫 / 美甲 / 美髮 / 紋繡 / SPA' },
