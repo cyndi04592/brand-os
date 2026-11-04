@@ -1,5 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
-//  🏷 ad-logotap.js v1.2(2026-11-04)
+//  🏷 ad-logotap.js v1.3(2026-11-04)
+//  v1.3:點完 LOGO,系統先自己讀 LOGO 字、幫客人填好(kol-proxy v7.81 logo_read,不扣點)
+//   實測:帶品牌名當對照 → MOZ 小刺繡讀對「MOZ sweden」;不帶 → 讀成「MVPZ ARMY」還自稱確定
+//   → 一律帶品牌名;AI 的「確定」不可信 → 一律請客人看一眼確認(不對直接改)
+//   客人自己打過字就不覆蓋;同品牌記住的字直接用,不重讀
 //  v1.2:LOGO 字對不上 → 加「LOGO 上寫的字」+「局部放大修 LOGO」
 //   RA 11/04 實測:MOZ 外套重拍後 LOGO 變 New Balance / Jeep;
 //   點了 LOGO 校正後還是「WHOZ / micafon」—— 原圖 LOGO 是很小的刺繡,AI(連 Claude)都讀不出是 MOZ。
@@ -22,7 +26,7 @@
 (function () {
   'use strict';
   if (window.AdLogoTap) return;
-  var VERSION = '1.2';
+  var VERSION = '1.3';
   var memo = {};            // 商品照 → { x, y, text } 或 'skip'
 
   function photoNow() {
@@ -31,6 +35,9 @@
   function srcOf(p) { return p && (p.canvasRes || p.full || p.hiRes || p.src || p.thumb) || ''; }
   function keyOf(p) { return p && (p.id || p.full || p.src || p.thumb) || ''; }
   function brandNow() { try { return (window.S && window.S.brandId) || ''; } catch (e) { return ''; } }
+  function brandName() {
+    try { var id = brandNow(), b = (window.BRANDS || []).find(function (x) { return x.id === id; }); return (b && b.name) || ''; } catch (e) { return ''; }
+  }
 
   //  LOGO 字記憶:同一張商品照優先,沒有就用同品牌上次填的
   function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
@@ -52,6 +59,7 @@
       '.lt-txt label small{font-weight:400;color:#9a9aae}' +
       '.lt-txt input{background:#14141c;border:1.5px solid #8b7bff;border-radius:10px;color:#fff;padding:10px 12px;font-size:15px;font-family:inherit;outline:none}' +
       '.lt-txt .lt-tip{font-size:12px;color:#9a9aae;line-height:1.5}' +
+      '.lt-txt .lt-ai{font-size:13px;color:#ffd479;line-height:1.5;min-height:18px}' +
       '.lt-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}' +
       '.lt-b{border:1.5px solid #555;background:#1b1b24;color:#eee;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}' +
       '.lt-b.go{border-color:#8b7bff;background:linear-gradient(135deg,#7c6dfa,#a78bfa);color:#fff}' +
@@ -71,6 +79,7 @@
         '<div class="lt-txt" style="display:none">' +
         '  <label>LOGO 上寫的字 <small>(選填,填了字最準)</small></label>' +
         '  <input type="text" maxlength="40" placeholder="例如:MOZ sweden">' +
+        '  <div class="lt-ai"></div>' +
         '  <div class="lt-tip">照商品上的大小寫打,兩行就用空格分開。LOGO 很小、AI 看不清楚的時候,靠這一格把字寫對。</div>' +
         '</div>' +
         '<div class="lt-row">' +
@@ -83,6 +92,30 @@
       var txtBox = w.querySelector('.lt-txt'), inp = w.querySelector('.lt-txt input');
       inp.value = (prev && prev.text) || lsGet('lt_txt_' + key) || lsGet('lt_txt_b_' + brandNow());
       var pt = (prev && prev.x != null) ? { x: prev.x, y: prev.y } : null;
+      //  🤖 v1.3 自動讀 LOGO 字:格子空的才讀;客人自己打過字(typed)就不覆蓋
+      var aiLine = w.querySelector('.lt-ai'), typed = !!inp.value, autoVal = '', seq = 0, rt = null;
+      inp.addEventListener('input', function () { if (inp.value !== autoVal) typed = true; });
+      function readSoon() {
+        if (typed || !pt) return;
+        clearTimeout(rt);
+        rt = setTimeout(async function () {
+          var my = ++seq;
+          aiLine.textContent = '🤖 讀取 LOGO 上的字中…';
+          var r = null;
+          try {
+            var tight = await cropAt(src, pt, 0.075, 160), wide = await cropAt(src, pt, 0.18, 240);
+            var u1 = await put(tight), u2 = await put(wide);
+            r = await kp({ action: 'logo_read', urls: [u1, u2], brandName: brandName() });
+          } catch (e) { r = null; }
+          if (my !== seq || typed || !document.body.contains(w)) return;
+          if (r && r.ok && r.text) {
+            autoVal = r.text; inp.value = r.text;
+            aiLine.textContent = '🤖 AI 讀到「' + r.text + '」—— 請看一眼對不對,不對直接改';
+          } else {
+            aiLine.textContent = '🤖 AI 看不清楚這個 LOGO,請自己填上面的字(不填也能生成)';
+          }
+        }, 350);
+      }
       function place() {
         if (!pt) return;
         dot.style.display = 'block';
@@ -90,6 +123,7 @@
         dot.style.top = (pt.y * img.clientHeight) + 'px';
         txtBox.style.display = 'flex';
         ok.disabled = false;
+        readSoon();
       }
       img.onload = place;
       img.src = src;
@@ -114,13 +148,26 @@
     });
   }
 
+  //  同一張商品照只下載一次(點 LOGO 視窗裡每點一次都要切近景)
+  var _bmSrc = '', _bmP = null;
+  function bitmapOf(src) {
+    if (src !== _bmSrc || !_bmP) {
+      _bmSrc = src;
+      _bmP = (async function () {
+        var blob = (typeof urlToBlob === 'function') ? await urlToBlob(src) : await (await fetch(src, { cache: 'no-store' })).blob();
+        return createImageBitmap(blob);
+      })();
+      _bmP.catch(function () { _bmSrc = ''; _bmP = null; });
+    }
+    return _bmP;
+  }
+
   // 從原商品照切 LOGO 近景(真實像素,輸出 512 見方)
   //  sizeFrac:近景佔商品照短邊的比例。一般 0.18(帶到 LOGO 周圍);tight 0.075(LOGO 塞滿,局部修字用)
   async function cropAt(src, pt, sizeFrac, minSide) {
     //  v1.1 用 admaker 的 urlToBlob 讀檔(它會避開「畫面上 <img> 先載過 → 快取少了跨網域許可」那個坑);
     //   v1.0 用 loadImageSmart → 圖被瀏覽器標成不能讀 → 切不出近景(實測 cdn 商品照)
-    var blob = (typeof urlToBlob === 'function') ? await urlToBlob(src) : await (await fetch(src, { cache: 'no-store' })).blob();
-    var im = await createImageBitmap(blob);
+    var im = await bitmapOf(src);
     var W = im.width, H = im.height, m = Math.min(W, H);
     var side = Math.round(Math.min(m, Math.max(minSide || 240, m * (sizeFrac || 0.18))));
     var sx = Math.round(Math.max(0, Math.min(W - side, pt.x * W - side / 2)));
@@ -250,5 +297,5 @@
 
   //  重點 LOGO 位置:Console 或之後的按鈕可用 AdLogoTap.reset()
   window.AdLogoTap = { version: VERSION, reset: function () { memo = {}; }, fixLogo: fixLogo, _ask: ask };
-  console.log('[AdLogoTap] 🏷 v' + VERSION + ' 就緒 · 生成廣告圖前點一下商品 LOGO + 填 LOGO 字(可跳過)· 出圖後局部放大修字');
+  console.log('[AdLogoTap] 🏷 v' + VERSION + ' 就緒 · 生成廣告圖前點一下商品 LOGO(AI 先讀字、客人確認)· 出圖後局部放大修字');
 })();
