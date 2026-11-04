@@ -3647,16 +3647,18 @@ const LAYOUT_BY_PRODTYPE = {
     { group: '信任感', keys: ['in_session', 'mirror_selfie'] },
   ],
   medical: [
+    // ✂️ 2026-11-05 照片類版型走重拍(photoroom-proxy v11.41);排版文字圖先收起(程式仍認得):med_education 衛教說明
     { group: '信任感', keys: ['med_doctor_portrait', 'med_team', 'med_facility'] },
-    { group: '溝通型', keys: ['med_consult', 'med_education'] },
+    { group: '溝通型', keys: ['med_consult'] },
   ],
   equip: [
-    { group: '產品呈現', keys: ['eq_machine_full', 'eq_part_macro', 'eq_spec_hero'] },
+    // ✂️ 2026-11-05 收起(程式仍認得):eq_spec_hero 規格數字
+    { group: '產品呈現', keys: ['eq_machine_full', 'eq_part_macro'] },
     { group: '實績與場域', keys: ['eq_application', 'eq_factory_floor', 'eq_exhibition'] },
   ],
   screen: [
+    // ✂️ 2026-11-05 收起(程式仍認得):sc_code_split 大字+截圖、sc_feature_tile 功能區塊
     { group: '裝置外框', keys: ['sc_browser_hero', 'sc_laptop_frame', 'sc_phone_angle'] },
-    { group: '版面型', keys: ['sc_code_split', 'sc_feature_tile'] },
   ],
   pro: [
     // ✂️ 2026-11-05 RA 同意:名片資訊型 / 專業觀點型(排版文字圖)先收起,之後做「重拍照片+排版文字」新做法再開回來(程式仍認得 pr_namecard / pr_viewpoint)
@@ -3869,10 +3871,12 @@ Object.assign(LAYOUT_BY_PRODTYPE, {
   ],
   mystic: [
     { group: '諮詢現場', keys: ['reading_session', 'tool_closeup'] },
-    { group: '人與空間', keys: ['master_portrait', 'mystic_space', 'mystic_headline'] },
+    // ✂️ 2026-11-05 收起(程式仍認得):mystic_headline 觀點大字
+    { group: '人與空間', keys: ['master_portrait', 'mystic_space'] },
   ],
   travel: [
-    { group: '目的地', keys: ['landmark_hero', 'itinerary_grid', 'accommodation'] },
+    // ✂️ 2026-11-05 收起(程式仍認得):itinerary_grid 行程多格
+    { group: '目的地', keys: ['landmark_hero', 'accommodation'] },
     { group: '旅途中', keys: ['activity_scene', 'local_food', 'transport_move'] },
   ],
   // 養生能量商品就是拍商品,沿用「商品實拍」的十種版型,差別只在合規段
