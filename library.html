@@ -331,6 +331,22 @@ const S = { brands: [], brandId: '', items: [], counts: {}, cat: 'all', kol: 'al
    ═══════════════════════════════════════════════════════════════ */
 const CACHE = {};   // brandId → { items, counts }
 
+/* ═══════════════════════════════════════════════════════════════
+   ⚡ v3.0 素材庫提速(2026-11-05 RA:「客人一定會越丟越多」)
+   量出來:開一次要 ~3 秒 = 先問品牌清單(~1 秒)→ 等完才問素材(~1.5 秒)→ 才開始畫。
+   三個修法:
+     ① 上次看過的 → 先秒開(存在這台電腦,只存前 60 筆的清單文字,不存圖)
+     ② 品牌清單和素材【同時】問(上次看的品牌先問)
+     ③ 素材分批:第一批 60 筆先畫,其他在背景一批 200 筆補上(後端 v7.82 支援 offset)
+   分類籤的數字用後端算的總數(不是手上有幾筆),所以東西再多也是對的。
+   ═══════════════════════════════════════════════════════════════ */
+const FIRST_PAGE = 60, NEXT_PAGE = 200;
+function _lsGet(k){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+function _lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function _brandsKey(){ return 'bs_lib_brands_' + (myEmail() || '').toLowerCase(); }
+function _assetsKey(b){ return 'bs_lib_assets_' + (myEmail() || '').toLowerCase() + '_' + b; }
+let _loadSeq = 0;   // 切品牌時,舊品牌還在背景補的批次直接作廢
+
 const $ = id => document.getElementById(id);
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function authToken(){ try{ return sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; }catch(e){ return ''; } }
@@ -444,11 +460,22 @@ async function loadBrands(){
     showState('🔒','請先登入','回主系統登入後再進入素材庫');
     return;
   }
+  //  ⚡ v3.0 ① 上次的品牌清單先擺上去 + 上次看的品牌先開始拿素材(跟品牌清單同時問)
+  let _last0 = ''; try{ _last0 = localStorage.getItem(LAST_KEY) || ''; }catch(e){}
+  const _cb = _lsGet(_brandsKey());
+  if(_cb && _cb.length){
+    sel.innerHTML = _cb.map(b => '<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>').join('');
+    S.brands = _cb;
+    S.brandId = (_last0 && _cb.some(b=>b.id===_last0)) ? _last0 : _cb[0].id;
+    sel.value = S.brandId;
+    loadAssets();                       // 不 await:品牌清單在背景同時問
+  }
   try{
     // ⚠️ getBrandOS 是 GAS 的動作,不是 Worker 的 ——
     //    直接送會回「未知 action」。要用 gas_cached 包一層(照抄 kol.html gasGet)。
     const res = await api('gas_cached', { gasAction:'getBrandOS', gasParams:{ email: myEmail() } });
     const list = (res && res.ok !== false && res.data && res.data.brands) ? res.data.brands : [];
+    if(list.length) _lsSet(_brandsKey(), list.map(b => ({ id:b.id, name:b.name })));
     S.brands = list;
     if(!list.length){
       // 🩹 2026-08-23:授權為空時【要說是哪個帳號】(與 kol.html 同一套處理)。
@@ -467,50 +494,81 @@ async function loadBrands(){
       try{ console.log('[素材庫] 未開通 · 憑證帳號:', _tok, '· 瀏覽器記錄:', _ls); }catch(e){}
       return;
     }
+    const _was = S.brandId;
     sel.innerHTML = list.map(b => '<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>').join('');
     let last = '';
     try{ last = localStorage.getItem(LAST_KEY) || ''; }catch(e){}
-    S.brandId = (last && list.some(b=>b.id===last)) ? last : list[0].id;
+    S.brandId = (_was && list.some(b=>b.id===_was)) ? _was : ((last && list.some(b=>b.id===last)) ? last : list[0].id);
     sel.value = S.brandId;
-    await loadAssets();
+    if(S.brandId !== _was) await loadAssets();     // 已經在拿同一個品牌 → 不重問
   }catch(e){
+    if(S.brands && S.brands.length) return;   // 已經用上次的清單在跑 → 不蓋掉
     sel.innerHTML = '<option value="">載入失敗</option>';
     showState('⚠️','載入品牌失敗','請稍後再試一次');
   }
 }
 
 async function loadAssets(force){
-  if(!S.brandId || S.loading) return;
+  if(!S.brandId) return;
+  const bid = S.brandId, my = ++_loadSeq;
 
   // 看過的品牌 → 直接用手上的,不打後端
-  if(!force && CACHE[S.brandId]){
-    S.items  = CACHE[S.brandId].items;
-    S.counts = CACHE[S.brandId].counts;
-    S.retDays = CACHE[S.brandId].retDays || 0;
+  if(!force && CACHE[bid]){
+    S.items  = CACHE[bid].items;
+    S.counts = CACHE[bid].counts;
+    S.total  = CACHE[bid].total;
+    S.retDays = CACHE[bid].retDays || 0;
     renderTabs(); renderGrid();
     return;
   }
 
+  //  ⚡ v3.0 ① 上次的前 60 筆先畫出來(秒開),同時去拿最新的
+  const _snap = force ? null : _lsGet(_assetsKey(bid));
+  if(_snap && Array.isArray(_snap.items)){
+    S.items = _snap.items; S.counts = _snap.counts || {}; S.total = _snap.total || _snap.items.length; S.retDays = _snap.retDays || 0;
+    renderTabs(); renderGrid();
+  } else {
+    showState('⏳','讀取中…','');
+  }
+
   S.loading = true;
-  showState('⏳','讀取中…','');
   try{
-    const res = await api('list_assets', { brandId:S.brandId, limit:300 });
+    const res = await api('list_assets', { brandId:bid, limit:FIRST_PAGE, offset:0 });
+    if(my !== _loadSeq) return;                       // 已經切到別的品牌
     if(!res || !res.ok){
-      S.items = []; S.counts = {}; renderTabs();
+      if(_snap) return;                               // 手上有上次的 → 先留著
+      S.items = []; S.counts = {}; S.total = 0; renderTabs();
       showState('⚠️','讀取失敗','請稍後再試一次');
       return;
     }
     S.items  = res.items || [];
     S.counts = res.counts || {};
+    S.total  = Number(res.total || S.items.length);
     S.retDays = Number(res.retentionDays || 0);   // 🗑 這個品牌 AI 成品保存幾天(0 = 不刪)
-    CACHE[S.brandId] = { items: S.items, counts: S.counts, retDays: S.retDays };
-    try{ localStorage.setItem(LAST_KEY, S.brandId); }catch(e){}
+    _lsSet(_assetsKey(bid), { items: S.items, counts: S.counts, total: S.total, retDays: S.retDays });
+    try{ localStorage.setItem(LAST_KEY, bid); }catch(e){}
     renderTabs();
     renderGrid();
+    //  ⚡ v3.0 ③ 其他的在背景一批一批補(東西少的品牌第一批就拿完了,不會多打)
+    //   (舊版後端沒有 more/offset → 用 total 判斷;一批裡一筆新的都沒有就停,不會無限問)
+    let more = (res.more !== undefined) ? !!res.more : (S.total > S.items.length), off = S.items.length;
+    while(more && my === _loadSeq){
+      const r2 = await api('list_assets', { brandId:bid, limit:NEXT_PAGE, offset:off });
+      if(my !== _loadSeq || !r2 || !r2.ok) break;
+      const have = {}; S.items.forEach(function(x){ have[x.id] = 1; });
+      let added = 0;
+      (r2.items || []).forEach(function(x){ if(!have[x.id]){ S.items.push(x); added++; } });
+      if(!added) break;
+      S.counts = r2.counts || S.counts; S.total = Number(r2.total || S.total);
+      off += (r2.items || []).length;
+      more = !!r2.more && (r2.items || []).length > 0;
+      renderTabs(); renderGrid();
+    }
+    if(my === _loadSeq) CACHE[bid] = { items: S.items, counts: S.counts, total: S.total, retDays: S.retDays };
   }catch(e){
-    showState('⚠️','讀取失敗','請稍後再試一次');
+    if(my === _loadSeq && !_snap) showState('⚠️','讀取失敗','請稍後再試一次');
   }finally{
-    S.loading = false;
+    if(my === _loadSeq) S.loading = false;
   }
 }
 
@@ -543,7 +601,7 @@ function renderTabs(){
   //   但畫面上只用一條細線分隔,七個籤還是擠成一排,
   //   客戶分不出哪些是自己傳的、哪些是系統做出來的。
   //   ★ 改成各自一行、前面掛組名 —— 一眼就知道上面是原料、下面是成品。
-  const total = S.items.length;
+  const total = Number(S.total || S.items.length);   // ⚡ v3.0 後端算的總數(還在背景補也是對的)
   let html = '<button class="tab'+(S.cat==='all'?' on':'')+'" data-c="all">全部<span class="n">'+total+'</span></button>';
 
   GROUPS.forEach(function(g){
