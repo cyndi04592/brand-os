@@ -1,13 +1,16 @@
-# Brand OS · 瀏覽器快取規則(2026-11-03)
-# 目的:Cloudflare 忽快忽慢時,換頁不用每個檔案都重新問伺服器。
-# 規則:1 分鐘內直接用瀏覽器裡的那份;超過 1 分鐘也先用舊的秒開,同時在背景偷偷抓新的,下一次換頁就是新版。
+# Brand OS · 瀏覽器快取規則(2026-11-05 v2)
+# v2 根治「部署完客人要開兩三次才拿到新版」:
+#   v1 的程式檔寫了「先用舊的、背景再更新」(stale-while-revalidate)→ Cloudflare 伺服器和瀏覽器都照做,新版晚到。
+#   v2 程式檔改成每次先問一句「有沒有新版」:沒變 → 伺服器只回「沒變」(不重新下載,很快);有新版 → 馬上拿到。
+#   Cloudflare 慢的時候不怕:網站備份 sw.js 3 秒沒回應就先開備份。
+# 圖片不常改 → 1 天內直接用瀏覽器裡的那份。
 # 網頁本身(.html)不加,維持每次都問伺服器。
 
 /*.js
-  Cache-Control: public, max-age=60, stale-while-revalidate=604800
+  Cache-Control: public, max-age=0, must-revalidate
 
 /*.css
-  Cache-Control: public, max-age=60, stale-while-revalidate=604800
+  Cache-Control: public, max-age=0, must-revalidate
 
 /*.webp
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
