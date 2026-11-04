@@ -4512,6 +4512,15 @@ async function generateGptPoster() {
       } catch (e) { console.warn('[商品校正] 例外,用第一步成品:', e.message); }
     }
 
+    // 🏷 2026-11-04 ad-logotap.js v1.2「局部放大修 LOGO」(RA 實測:MOZ 小刺繡 LOGO 整張校正後還是拼成 WHOZ;
+    //   只切 LOGO 那一小塊、放大 + 告訴 AI 客人填的字重繡 → 拼對 MOZ sweden,接縫看不出來)
+    //  只在客人有填「LOGO 上寫的字」才做;失敗就用上一步的圖,絕不擋出圖
+    if (_lt && _lt.text && winner.from === 'fal' && winner.imageUrl && window.AdLogoTap && typeof window.AdLogoTap.fixLogo === 'function') {
+      setPrStatus('🏷 LOGO 對字中(只修 LOGO 那一小塊,約 1-2 分鐘)...', 'var(--t3)');
+      const _fixedUrl = await window.AdLogoTap.fixLogo(winner.imageUrl, _lt, SELECTED_PRODTYPE === 'apparel');
+      if (_fixedUrl) winner = { from: 'fal', imageUrl: _fixedUrl };
+    }
+
     const finalImg = winner.imageUrl || winner.imageBase64 || winner.download_url;
     if (!finalImg) throw new Error('未取得廣告圖片');
 
