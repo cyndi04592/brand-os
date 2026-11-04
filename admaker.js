@@ -3640,9 +3640,11 @@ const LAYOUT_BY_PRODTYPE = {
   beauty: [
     // 🆕 2026-08-24 依 RA 提供的七張真實美業參考圖重排:
     //   前後對比(最有效)→ 主圖側格(層次最好)→ 成果特寫 → 極致細節 → 多格對照 → 模特情境
-    { group: '成果呈現', keys: ['beauty_before_after', 'hero_side_grid', 'result_closeup', 'macro_detail', 'skin_detail', 'model_editorial'] },
+    // ✂️ 2026-11-05 RA:「美業有些沒用就不要了,早期沒重拍很爛」→ 只留走美業重拍(photoroom-proxy v11.37)的 5 種
+    //   收起(程式仍認得,要恢復把 key 放回來):beauty_before_after 前後對比、hero_side_grid 主圖側格、
+    //   skin_detail 膚質細節(跟極致細節重複)、question_headline 問句知識、booking_info 預約資訊
+    { group: '成果呈現', keys: ['result_closeup', 'macro_detail', 'model_editorial'] },
     { group: '信任感', keys: ['in_session', 'mirror_selfie'] },
-    { group: '文字型', keys: ['question_headline', 'booking_info'] },
   ],
   medical: [
     { group: '信任感', keys: ['med_doctor_portrait', 'med_team', 'med_facility'] },
