@@ -1,5 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  ad-typeguard.js · v1.0(2026-11-03)廣告圖「類型選錯」防呆
+ *  ad-typeguard.js · v1.1(2026-11-04)廣告圖「類型選錯」防呆
+ *  v1.1:RA 11/04 抓到 —— 推薦改「保留原模特兒」會讓每張都是原照片的姿勢和角度(MOZ 員工 30 天都長一樣);
+ *        好看又多變的(低角度藍天、伸手入鏡、聖誕紅牆)都是「服飾穿搭 · 重拍」。改成主推重拍,保留原模特兒已從選單收起(admaker.js 同日),視窗只留「改重拍」和「照原本」。
  * ───────────────────────────────────────────────────────────────────
  *  RA 11/03:MOZ 員工把模特兒照選成「商品實拍 · 重拍」→ 提示詞寫「商品放在胡桃木層架上」
  *           → AI 把整個人當商品,放上木台還配花瓶。客人也一定會選錯。
@@ -12,7 +14,7 @@
 (function () {
   'use strict';
   if (window.__adTypeGuard) return;
-  window.__adTypeGuard = 'v1.0';
+  window.__adTypeGuard = 'v1.1';
   var KOL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
   var seen = {};     // 照片網址 → true/false(這次開頁判斷過的)
   var kept = {};     // 照片網址 → 客人選了「照原本」就不再問
@@ -48,9 +50,9 @@
     mask.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;';
     mask.innerHTML = '<div style="width:100%;max-width:400px;background:#16161d;border:1px solid #2e2e3a;border-radius:14px;padding:18px;color:#e8e8f0;font-family:\'Noto Sans TC\',sans-serif;">'
       + '<div style="font-size:16px;font-weight:900;margin-bottom:6px;">這張照片裡有模特兒</div>'
-      + '<div style="font-size:12.5px;color:#a9a9b8;line-height:1.7;margin-bottom:14px;">「商品實拍」會把照片裡的東西當成商品擺在桌上或層架上,有人的照片會變成人站在台子上。<br>要改用「服飾穿搭 · 保留原模特兒」嗎?(人照原圖,只換背景與光)</div>'
+      + '<div style="font-size:12.5px;color:#a9a9b8;line-height:1.7;margin-bottom:14px;">「商品實拍」會把照片裡的東西當成商品擺在桌上或層架上,有人的照片會變成人站在台子上。<br>建議改用<b style="color:#e8e8f0">服飾穿搭 · 重拍</b>:衣服照原樣,模特兒換姿勢、角度和場景,每張都不一樣。</div>'
       + '<div style="display:flex;flex-direction:column;gap:8px;">'
-      + '<button data-g="sw" style="padding:11px;border-radius:9px;border:none;background:linear-gradient(135deg,#7c6dfa,#fa6d9b);color:#fff;font-weight:900;cursor:pointer;">改用服飾穿搭</button>'
+      + '<button data-g="re" style="padding:11px;border-radius:9px;border:none;background:linear-gradient(135deg,#7c6dfa,#fa6d9b);color:#fff;font-weight:900;cursor:pointer;">改用服飾穿搭 · 重拍(推薦)</button>'
       + '<button data-g="keep" style="padding:10px;border-radius:9px;border:1px solid #3a3a4a;background:transparent;color:#bbb;cursor:pointer;">照原本的商品實拍(我就是要拍成商品)</button>'
       + '</div></div>';
     mask.addEventListener('click', function (e) {
@@ -58,17 +60,19 @@
       if (!b && e.target === mask) { mask.remove(); return; }
       if (!b) return;
       mask.remove();
-      if (b.getAttribute('data-g') === 'sw') onSwitch(); else onKeep();
+      var g = b.getAttribute('data-g');
+      if (g === 're') onSwitch('apparel'); else if (g === 'sw') onSwitch('apparel_keep'); else onKeep();
     });
     document.body.appendChild(mask);
   }
 
-  function switchToApparel() {
+  function switchToApparel(to) {
+    to = to || 'apparel';
     try { if (typeof _renderProdTypeOptions === 'function') _renderProdTypeOptions(); } catch (e) {}
     var sel = document.getElementById('prodTypeSel');
-    if (sel) sel.value = 'apparel_keep';
-    try { if (typeof onSelProdType === 'function') onSelProdType('apparel_keep'); } catch (e) {}
-    say('✅ 已改成「服飾穿搭 · 保留原模特兒」—— 版型要重新選一次,選好再按生成', 'var(--mint)');
+    if (sel) sel.value = to;
+    try { if (typeof onSelProdType === 'function') onSelProdType(to); } catch (e) {}
+    say('✅ 已改成「' + (to === 'apparel' ? '服飾穿搭 · 重拍' : '服飾穿搭 · 保留原模特兒') + '」—— 版型要重新選一次,選好再按生成', 'var(--mint)');
     try { if (sel) sel.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
   }
 
