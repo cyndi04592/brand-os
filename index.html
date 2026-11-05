@@ -278,9 +278,10 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
         <div style="display:flex;flex-direction:column;gap:3px;min-width:120px;">
           <div class="sel-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
             <span>組數</span>
-            <span id="selNVal" style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--accent);">20</span>
+            <span id="selNVal" style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--accent);">5</span>
           </div>
-          <input type="range" id="selN" min="1" max="30" step="1" value="20"
+          <!-- ✂️ 2026-11-06 RA:AI 一次寫不完 20 組(會被截斷、白扣點)→ 最多 5 組 -->
+          <input type="range" id="selN" min="1" max="5" step="1" value="5"
             style="width:100%;accent-color:var(--accent);cursor:pointer;height:22px;"
             oninput="document.getElementById('selNVal').textContent=this.value">
         </div>
