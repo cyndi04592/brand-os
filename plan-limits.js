@@ -75,7 +75,7 @@
 
     //  ① 文案組數(滑桿 #selN)
     const n = document.getElementById('selN');
-    const nMax = Number(L.copy_groups_max || 0);
+    const nMax = Math.min(5, Number(L.copy_groups_max || 0));   // ✂️ 2026-11-06 全站最多 5 組(AI 一次寫不完 20 組)
     if (n && nMax > 0) {
       n.max = String(nMax);
       if (Number(n.value) > nMax) n.value = String(nMax);
