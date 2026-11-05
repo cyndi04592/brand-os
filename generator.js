@@ -219,6 +219,54 @@ function injectMemoryCSS() {
 // ════════════════════════════════════════════════════════════════
 // 主生成函式（加入記憶讀取）
 // ════════════════════════════════════════════════════════════════
+// ══ 🩹 2026-11-06 文案 JSON 修復(RA 實測 MOZ 德訓鞋連生 3 次都失敗、每次照扣 120 點)══
+//   病:AI 在文案裡用了英文雙引號 "(例:她說"好穿")沒有跳脫 → JSON.parse 在第 5376 字爆掉
+//       → 跳「生成失敗」,但 AI 已經寫完、點數已經扣了。
+//   修:先照常 parse;失敗才逐字掃一次:在字串裡遇到 " ,如果後面接的不是 , } ] : 這種結構符號,
+//       它就是文案裡的引號 → 換成「」的樣子,其他一個字不動。再失敗才報錯(行為跟以前一樣)。
+function _safeJsonParse(raw) {
+  try { return JSON.parse(raw); } catch (e1) {
+    let out = '', inStr = false, open = true;
+    for (let i = 0; i < raw.length; i++) {
+      const c = raw[i];
+      if (inStr && c === '\\') { out += c + (raw[i + 1] || ''); i++; continue; }
+      if (c === '"') {
+        if (!inStr) { inStr = true; out += c; continue; }
+        let j = i + 1; while (j < raw.length && /\s/.test(raw[j])) j++;
+        const nx = raw[j];
+        if (nx === undefined || nx === ',' || nx === '}' || nx === ']' || nx === ':') { inStr = false; out += c; continue; }
+        out += open ? '「' : '」'; open = !open; continue;
+      }
+      if (inStr && (c === '\n' || c === '\r')) { out += '\\n'; continue; }
+      out += c;
+    }
+    try { const r = JSON.parse(out); console.log('[文案] 🩹 JSON 修好了(文案裡的引號換成「」)'); return r; }
+    catch (e2) {
+      //  ✂️ 被截斷(RA 2026-11-06 實測:20 組中等文案寫到第 12 組就被字數上限切斷,5362 字停在半句)
+      //   → 只留「已經寫完整的那幾組」,不要整批丟掉(點數已經扣了)
+      const cut = _cutToLastCombo(out);
+      if (cut) { try { const r = JSON.parse(cut); console.log('[文案] ✂️ 回應被截斷,保留寫完的 ' + ((r.combos || []).length) + ' 組'); return r; } catch (e3) {} }
+      throw e1;
+    }
+  }
+}
+
+//  找 combos 陣列裡最後一個「完整收尾」的物件,截到那裡再補上 ]} 收尾
+function _cutToLastCombo(txt) {
+  const k = txt.indexOf('"combos"'); if (k < 0) return '';
+  const a = txt.indexOf('[', k); if (a < 0) return '';
+  let depth = 0, inStr = false, last = -1;
+  for (let i = a + 1; i < txt.length; i++) {
+    const c = txt[i];
+    if (inStr) { if (c === '\\') { i++; continue; } if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; continue; }
+    if (c === '{') depth++;
+    else if (c === '}') { depth--; if (depth === 0) last = i; }
+    else if (c === ']' && depth === 0) break;
+  }
+  return last > 0 ? txt.slice(0, last + 1) + ']}' : '';
+}
+
 async function doGenerate() {
   if (!window.S.brandId) { alert('請先選擇品牌！'); return; }
   if (!window.S.prod)    { alert('請先選擇商品！'); return; }
@@ -229,7 +277,7 @@ async function doGenerate() {
   const style = sub?.adStyle || brand?.adStyle || '';
   const tags  = sub?.hashtags|| brand?.hashtags|| '';
   const aud   = document.getElementById('selAud').value;
-  const count = parseInt(document.getElementById('selN').value) || 20;
+  const count = Math.min(5, parseInt(document.getElementById('selN').value) || 5);   // ✂️ 2026-11-06 RA:最多 5 組
   const brandDisplay = `${brand.name}${sub && sub.id !== brand.id ? ' › ' + sub.name : ''}`;
 
   const btn  = document.getElementById('genBtn');
@@ -300,14 +348,14 @@ ${_marks.length ? `【型號】商品名裡的「${_marks.join('、')}」是型�
 ‣ cta.script：繁體中文字數【硬性上限 20 字】，只能 1 句話
 ‣ 計算規則：每個中文字算 1 字，英文單字整體算 1 字，標點符號不計入字數
 
-生成「剛好 ${_ask} 組」，只回傳純 JSON：
+生成「剛好 ${_ask} 組」，只回傳純 JSON（文案內容裡要用引號一律用「」，不可用英文雙引號）：
 {"combos":[{"id":"AD001","hook":{"method":"方向名稱","script":"鉤子文字≤25字","visual":"畫面建議"},"core":{"type":"廣告類型","script":"核心段落","solve":"解決什麼核心問題"},"cta":{"style":"CTA風格","script":"CTA文字≤20字"}}]}`;
 
   try {
     const res = await fetch(CF_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'claude_generate', password: GAS_PASSWORD, prompt, max_tokens: 4000, email: (localStorage.getItem('bs_sso_email') || '') })
+      body: JSON.stringify({ action: 'claude_generate', password: GAS_PASSWORD, prompt, max_tokens: 8000, email: (localStorage.getItem('bs_sso_email') || '') })
     });
     fill.style.width = '80%';
     btn.innerHTML = '<span class="spin"></span>整理中...';
@@ -317,7 +365,7 @@ ${_marks.length ? `【型號】商品名裡的「${_marks.join('、')}」是型�
     // 🆕 模型偶爾會在 JSON 前後多講說明(例:「我先進行字數驗算:」)→ 只抽第一個 { 到最後一個 } 再 parse
     const _s = raw.indexOf('{'), _e = raw.lastIndexOf('}');
     if (_s >= 0 && _e > _s) raw = raw.slice(_s, _e + 1);
-    const parsed = JSON.parse(raw);
+    const parsed = _safeJsonParse(raw);
     btn.innerHTML = '<span class="spin"></span>比對記憶...';
     window.S.scripts = await _memFilter(parsed.combos || [], count);
     renderScripts(brandDisplay, sub?.color || brand?.navColor);
