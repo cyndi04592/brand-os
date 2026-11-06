@@ -1,5 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   🎬 kol-subtitle.js v1.7(2026-10-07)語音辨識不再帶台詞當提示
+   🎬 kol-subtitle.js v1.8(2026-11-07)字幕改【自己燒】
+   v1.8:RA:「目前的字幕很像抽卡很難上准」—— 外包燒字斷行亂切、字型被換、時間對不上。
+        按【加上字幕】→ 先把分鏡卡台詞全文交給燒字機(Worker v8.00-selfburn → subtitle-burner 容器):
+        ★ 字一律用台詞(1+x=10:答案已知,只找每個字第幾秒),燒字機自己聽時間、自己斷行(每行≤12字、不切斷詞)
+        ★ 思源黑體粗體裝在燒字機裡,不會再被換字型;位置固定在 IG/抖音按鈕區上方
+        ★ 燒字機沒接上 → 自動走 v1.7 舊路(瀏覽器聽時間 + 外包燒),客人照樣拿得到字幕
+        扣點、退點、成品回報都沿用舊流程(燒失敗自動退點)。
+   ───────────────────────────────────────────────────────────────────────
+   v1.7(2026-10-07)語音辨識不再帶台詞當提示
    v1.7:RA 妞妞露營片:字幕 7.5 秒才出現第一句、中間 11-14 秒空白、最後半秒把四句擠在一起。
         Claude 從 RA 的 Chrome 對同一支片各跑一次語音辨識比對:
         【帶台詞當提示】→ 第一句整句沒聽出來(那 4 秒被塞進一個「公」字),
@@ -448,6 +456,28 @@
           out.innerHTML = '<span style="color:#a78bfa;">⏳ 字幕製作中,約 1-2 分鐘,請不要關閉這個頁面(已等 ' + Math.round((Date.now() - t0) / 1000) + ' 秒)</span>';
         }, 1000);
         try {
+          //  🔤 v1.8:先交給【燒字機】—— 字用分鏡卡台詞、它自己聽時間、自己斷行、思源黑體燒好
+          //    (Worker v8.00-selfburn → subtitle-burner)。燒字機沒接上才走下面的舊路。
+          const script = beats.map(function (b) { return String((b && b.dialogue) || '').trim(); }).filter(Boolean).join('\n');
+          let sub = null;
+          try {
+            const s1 = await S._api('subtitle_burn', { videoUrl: o.videoUrl, script: script, brandId: o.brandId || 'stitch', durationSec: totalSec });
+            if (s1 && s1.selfBurn && s1.requestId) sub = s1;
+          } catch (e1) {
+            const m1 = String((e1 && e1.message) || '');
+            if (/INSUFFICIENT|點數不足|Bits 不足|沒有台詞/i.test(m1)) throw e1;
+            try { console.warn('[KolSubtitle] 燒字機沒接上,改走舊路:', m1); } catch (_) {}
+          }
+          if (sub) {
+            try { console.log('[KolSubtitle] 🔤 燒字機接手(自己聽時間、自己燒)'); } catch (_) {}
+            const url1 = await S.pollEpisode(sub.requestId, o.brandId || 'stitch', null, null, 72);   // 5 秒 × 72 = 6 分鐘
+            clearInterval(tick);
+            btn.textContent = '✅ 字幕已加上';
+            out.innerHTML = '<div style="color:#8fd694;margin-bottom:6px;">✅ 有字幕的版本做好了(原片在上面,兩支都可以下載)</div>'
+              + '<video src="' + url1 + '" controls playsinline style="width:100%;border-radius:10px;background:#000;"></video>'
+              + '<div style="margin-top:6px;"><a href="' + url1 + '" target="_blank" style="color:#a78bfa;font-size:12px;">↗ 開新分頁 / 下載有字幕版</a></div>';
+            return;
+          }
           //  🎧 v1.4:① 語音辨識 → ② 量音量 → ③ 都不行就不燒、不扣點(不准用猜的)
           let timed = null, how = '';
           try {
@@ -471,7 +501,7 @@
           }
           const srt = toSRT(timed);
           try { console.log('[KolSubtitle] 時間來源:' + how); } catch (_) {}
-          const sub = await S._api('subtitle_burn', {
+          sub = await S._api('subtitle_burn', {
             videoUrl: o.videoUrl, srt: srt, brandId: o.brandId || 'stitch', durationSec: totalSec,
           });
           const url = await S.pollEpisode(sub.requestId, o.brandId || 'stitch', null, sub.endpoint, 72);   // 5 秒 × 72 = 6 分鐘
@@ -496,8 +526,8 @@
     }
   }
 
-  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, audioDataUri, version: 'v1.7' };
+  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, audioDataUri, version: 'v1.8' };
   root.KolSubtitle = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  try { console.log('[KolSubtitle] v1.7 就緒 · 🎧語音辨識不帶提示(治漏聽第一句+幻聽重念拉歪時間軸)+片長外片段丟掉 · v1.6 ⏱卡片秒數≠實際秒數時照比例縮放+往前多找2秒 · v1.5 🎧聲音由瀏覽器直接遞給語音辨識(繞過CDN 403) · v1.4 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
+  try { console.log('[KolSubtitle] v1.8 就緒 · 🔤 先交給燒字機自己燒(斷行/字型/時間都自己控)· v1.7 🎧語音辨識不帶提示(治漏聽第一句+幻聽重念拉歪時間軸)+片長外片段丟掉 · v1.6 ⏱卡片秒數≠實際秒數時照比例縮放+往前多找2秒 · v1.5 🎧聲音由瀏覽器直接遞給語音辨識(繞過CDN 403) · v1.4 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
 })(typeof window !== 'undefined' ? window : globalThis);
