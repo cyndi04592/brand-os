@@ -8636,6 +8636,11 @@ async function aiWriteFacelessSituation() {
 }
 
 async function createSeedanceVideo() {
+  //  🚦 2026-11-08 RA:場景卡或自家實景照一定要有一個,不然不能生成 —— 放在扣點確認之前
+  //   (以前無臉模式完全沒擋;一般/接片是在客人按完「開始生成」之後才說要選場景)
+  if (!S.selectedSceneId && !S.customSceneUrl) {
+    toast('請先選一個場景,或上傳自家實景照,再按生成', 'error'); return;
+  }
   // 生成前確認(含未確認分鏡紅字提醒)— 單支/接片都會跳
   if (!(await preGenConfirm({ step: 2, pending: S.cineStoryboardPending, itemCount: productItemCount(S.seedanceProductUrls), duration: S.seedanceParams.duration }))) return;
   // 🆕 無臉模式:跳過 KOL,商品當主角(v5.13-faceless)
