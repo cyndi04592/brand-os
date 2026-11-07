@@ -9459,10 +9459,11 @@ const PRODUCT_MODE_NEW = ['held', 'worn', 'innerwear', 'hero', 'demo', 'digital'
                           'medical', 'course', 'mystic', 'travel', 'wellness', 'agency'];
 function applyProductModeOverride(prod) {
   if (!prod) return prod;
-  const ov = (S.productModeOverride || {})[prod.prodName || prod.name];
+  //  🎬 2026-11-08 商品表有存 productMode(kol-proxy v8.08)→ 這一頁沒另外選時,照商品表那一格
+  const ov = (S.productModeOverride || {})[prod.prodName || prod.name] || String(prod.productMode || '').trim().toLowerCase();
   if (!ov) return prod;                                    // 自動:不覆蓋,照商品表(海苔走這條,輸出不變)
   if (PRODUCT_MODE_NEW.includes(ov)) return { ...prod, productMode: ov };
-  return { ...prod, productType: ov, productMode: '' };     // packaged / dish → 走舊 productType 路
+  return { ...prod, productType: ov, productMode: '', _modeRaw: ov };     // packaged / dish → 走舊 productType 路(_modeRaw 給下拉顯示用)
 }
 const PRODUCT_MODE_OPTS = [
   { v: '', label: '自動 · 依商品判斷' },
@@ -9501,7 +9502,7 @@ function renderProductModePicker(mountId) {
   if (!el) return;                                          // 該步沒掛 → 跳過,不報錯
   const prod = (typeof getCurrentRotationProduct === 'function') ? getCurrentRotationProduct() : null;
   if (!prod) { el.innerHTML = ''; return; }
-  const cur = (S.productModeOverride || {})[prod.prodName || prod.name] || prod.productMode || '';
+  const cur = (S.productModeOverride || {})[prod.prodName || prod.name] || prod._modeRaw || prod.productMode || '';
   const optHtml = PRODUCT_MODE_OPTS.map(o => o.grp
     ? `<optgroup label="${o.grp}">` + o.opts.map(x => `<option value="${x.v}" ${x.v === cur ? 'selected' : ''}>${x.label}</option>`).join('') + `</optgroup>`
     : `<option value="${o.v}" ${o.v === cur ? 'selected' : ''}>${o.label}</option>`).join('');
@@ -9516,6 +9517,17 @@ function setProductModeOverride(val) {
   if (!key) return;
   if (!S.productModeOverride) S.productModeOverride = {};
   if (val) S.productModeOverride[key] = val; else delete S.productModeOverride[key];
+  //  🎬 2026-11-08 選了就存回商品(kol-proxy v8.08 product_mode_set)→ 重新整理、換天、STEP2/STEP3 都沿用,不用每次重選
+  try {
+    const _bid = S.currentBrandId;
+    (S.products || []).forEach(function (x) { if (x.brandId === _bid && x.prodName === key) x.productMode = val || ''; });
+    const _p = (S.products || []).find(function (x) { return x.brandId === _bid && x.prodName === key; });
+    if (_p && _p.prodId && typeof api === 'function') {
+      api('product_mode_set', { brandId: _bid, subId: _p.subId || '', prodId: _p.prodId, productMode: val || '' })
+        .then(function (r) { if (!r || !r.ok) console.warn('[商品呈現方式] 沒存進商品:', r && r.error); })
+        .catch(function () {});
+    }
+  } catch (_) {}
   renderProductModePicker('product-mode-s2');              // 兩步選擇器同步(存在才畫)
   renderProductModePicker('product-mode-s3');
   if (typeof renderRefList === 'function' && document.getElementById('ref-list')) renderRefList();
