@@ -167,7 +167,7 @@
       const dl = $el('sbp-dlg-' + b.index);
       if (dl) {
         b.dialogue = dl.value;
-        b.fit = window.KolStorywriter.checkDialogueFit(b.dialogue, b.seconds);
+        b.fit = window.KolStorywriter.checkDialogueFit(b.dialogue, b.seconds, _nat());
         b.overflow = !b.fit.fits;
       }
     });
@@ -309,7 +309,7 @@
     const b = state.beats.find(x => x.index === idx);
     if (!b) return;
     b.dialogue = v;
-    b.fit = window.KolStorywriter.checkDialogueFit(v, b.seconds);
+    b.fit = window.KolStorywriter.checkDialogueFit(v, b.seconds, _nat());
     b.overflow = !b.fit.fits;
     const fitEl = $el('sbp-fit-' + idx);
     if (fitEl) {
@@ -380,7 +380,7 @@
       // 🆕 v1.5 防呆:任何一段台詞超長(紅字)就擋下確認,不讓超長台詞進生成(超長=引擎趕戲吃字)
       const _over = state.beats.filter(b => b.overflow);
       if (_over.length) {
-        _say('還不能確認唷:第 ' + _over.map(b => b.index + 1).join('、') + ' 段的台詞太長,講不完會被趕戲。\n\n請把該段台詞刪短一點(看卡片下方的字數提示,變回灰色就 OK),或再按一次「AI 編修」重寫。');
+        _say('還不能確認唷:第 ' + _over.map(b => b.index).join('、') + ' 段的台詞太長,講不完會被趕戲。\n\n請把該段台詞刪短一點(看卡片下方的字數提示,變回灰色就 OK),或再按一次「AI 編修」重寫。');
         return;
       }
       // 🆕 v2.5 防呆:長段落完全沒台詞 → 硬擋。
@@ -468,6 +468,8 @@
   //  ═══════════════════════════════════════════════════════════════════
   const SPEAK_RATE = 6.0;   // ⚠️ 要跟 kol-proxy 的 SPEAK_RATE 同步
   //  🗾 v3.10(2026-11-07)說日文/英文的 KOL 語速不同(跟 kol-proxy v8.03 同一套):英文 14 字母/秒、日文 7 字/秒
+  //  🗣 v3.12:台詞字數檢查帶國籍(日文/英文語速不同);「第幾段」不再多 +1(index 本來就從 1 開始)
+  function _nat() { return String((ctx && ctx.persona && ctx.persona.nationality) || ''); }
   function _rate() { const n = String((ctx && ctx.persona && ctx.persona.nationality) || ''); return /^en/.test(n) ? 14.0 : /^ja/.test(n) ? 7.0 : SPEAK_RATE; }
   const FILL       = 0.80;  // ⚠️ 同上
 
