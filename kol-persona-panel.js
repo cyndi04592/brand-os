@@ -619,6 +619,13 @@ function buildFormHTML() {
         <option value="hk">香港</option>
         <option value="my">馬來西亞</option>
         <option value="jpmix">日混台</option>
+        <option value="ja_ceo">日本・說日文(開朗社長)</option>
+        <option value="ja_casual">日本・說日文(年輕人口語)</option>
+        <option value="ja_kansai">日本・說日文(關西腔)</option>
+        <option value="ja_polite">日本・說日文(溫柔丁寧)</option>
+        <option value="en_us">英文(美式輕鬆)</option>
+        <option value="en_uk">英文(英式)</option>
+        <option value="en_biz">英文(商務簡報)</option>
       </select>
 
     <div class="kpp-form-field">
