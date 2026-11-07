@@ -1,5 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   🎬 kol-subtitle.js v1.8(2026-11-07)字幕改【自己燒】
+   🎬 kol-subtitle.js v1.9(2026-11-07)客人自己挑字幕樣式 + 重點字放大
+   v1.9:按鈕下方多一排選項:字的大小(小/中/大)、位置(下方/中間)、字型(黑體/宋體/粉圓)、重點字放大(AI 挑賣點詞)。
+        選的當下就疊在成品影片上預覽;選擇會記住,下次自動帶入。送到 kol-proxy v8.01 → 燒字機 v1.1。
+   ───────────────────────────────────────────────────────────────────────
+   v1.8(2026-11-07)字幕改【自己燒】
    v1.8:RA:「目前的字幕很像抽卡很難上准」—— 外包燒字斷行亂切、字型被換、時間對不上。
         按【加上字幕】→ 先把分鏡卡台詞全文交給燒字機(Worker v8.00-selfburn → subtitle-burner 容器):
         ★ 字一律用台詞(1+x=10:答案已知,只找每個字第幾秒),燒字機自己聽時間、自己斷行(每行≤12字、不切斷詞)
@@ -414,6 +418,118 @@
   //  點數:與 Worker v5.74 同一個公式(⚠️ 兩邊同步)—— 60 秒以內 100 點,之後每分鐘 100 點
   function costOf(sec) { return Math.max(100, Math.ceil(Math.max(1, Math.min(600, Number(sec) || 60)) / 60 * 100)); }
 
+
+  //  🎨 v1.9 字幕樣式:客人自己挑 大小 / 位置 / 字型 / 重點字放大,並在成品影片上直接疊出預覽
+  //   ⚠️ 代號要跟 kol-proxy v8.01(_subSelfBurn)、燒字機 burn_core v1.1(SIZES/POSES/FONTS)三邊一致
+  const SUB_SIZES = [['s', '小', 0.056], ['m', '中', 0.068], ['l', '大', 0.082]];
+  const SUB_POSES = [['low', '下方', 0.24], ['mid', '中間', 0.40]];
+  const SUB_FONTS = [['sans', '黑體', "'Noto Sans TC', sans-serif", 700],
+                     ['serif', '宋體', "'Noto Serif TC', serif", 700],
+                     ['round', '粉圓', "'jf-openhuninn', 'Noto Sans TC', sans-serif", 400]];
+  const SUB_KEY = 'kolSubStyle.v1';
+  let _fontsAsked = false;
+  function _loadPreviewFonts() {   // 預覽才需要;燒字機裡本來就裝好了
+    if (_fontsAsked) return; _fontsAsked = true;
+    try {
+      const l = document.createElement('link'); l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&display=swap';
+      document.head.appendChild(l);
+      const ff = new FontFace('jf-openhuninn', 'url(https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@2.1/font/jf-openhuninn-2.1.ttf)');
+      ff.load().then(function (f) { document.fonts.add(f); }).catch(function () {});
+    } catch (_) {}
+  }
+  function stylePanel(wrap, boxEl, cues) {
+    let st = { size: 'm', pos: 'low', font: 'sans', emph: true };
+    try { Object.assign(st, JSON.parse(localStorage.getItem(SUB_KEY) || '{}')); } catch (_) {}
+    const panel = document.createElement('div');
+    panel.style.cssText = 'margin-top:8px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:#ccc;';
+    //  預覽:蓋在成品影片上的一層字(只是看,不會燒進去)
+    const vid = boxEl.querySelector('video');
+    let layer = null, line = null;
+    if (vid && vid.parentNode) {
+      const host = vid.parentNode;
+      if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+      layer = document.createElement('div');
+      layer.style.cssText = 'position:absolute;pointer-events:none;display:flex;justify-content:center;align-items:flex-end;';
+      line = document.createElement('div');
+      line.style.cssText = 'color:#fff;white-space:nowrap;text-align:center;line-height:1.15;';
+      layer.appendChild(line); host.appendChild(layer);
+    }
+    const sample = String((cues[0] && cues[0].text) || '這就是字幕會長的樣子');
+    function paint() {
+      if (!layer || !vid) return;
+      const w = vid.clientWidth, h = vid.clientHeight;
+      if (!w || !h) { setTimeout(paint, 400); return; }
+      layer.style.left = vid.offsetLeft + 'px'; layer.style.top = vid.offsetTop + 'px';
+      layer.style.width = w + 'px'; layer.style.height = h + 'px';
+      const size = (SUB_SIZES.find(x => x[0] === st.size) || SUB_SIZES[1])[2];
+      const pos = (SUB_POSES.find(x => x[0] === st.pos) || SUB_POSES[0])[2];
+      const f = SUB_FONTS.find(x => x[0] === st.font) || SUB_FONTS[0];
+      const px = Math.max(9, Math.round(w * size));
+      line.style.fontSize = px + 'px'; line.style.fontFamily = f[2]; line.style.fontWeight = f[3];
+      line.style.marginBottom = Math.round(h * pos) + 'px';
+      line.style.textShadow = '0 0 ' + Math.max(1, px * 0.07) + 'px #141414,' + [[-1,-1],[1,-1],[-1,1],[1,1],[0,2]].map(function (d) { return d[0] * Math.max(1, px * 0.06) + 'px ' + d[1] * Math.max(1, px * 0.06) + 'px 0 #141414'; }).join(',');
+      //  重點字只是示意:真正放大哪幾個字,燒的時候由 AI 從台詞挑
+      if (st.emph && sample.length > 4) {
+        const k = Math.max(2, Math.min(4, Math.floor(sample.length / 3)));
+        line.innerHTML = '';
+        line.appendChild(document.createTextNode(sample.slice(0, sample.length - k)));
+        const em = document.createElement('span');
+        em.textContent = sample.slice(sample.length - k);
+        em.style.cssText = 'color:#FFD232;font-size:1.25em;';
+        line.appendChild(em);
+      } else line.textContent = sample;
+      layer.style.display = 'flex';
+    }
+    function group(label, items, key) {
+      const g = document.createElement('div');
+      g.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
+      const t = document.createElement('span'); t.textContent = label; t.style.cssText = 'width:52px;color:#999;';
+      g.appendChild(t);
+      items.forEach(function (it) {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = it[1];
+        b.dataset.v = it[0];
+        b.onclick = function () { st[key] = it[0]; save(); refresh(); };
+        g.appendChild(b);
+      });
+      panel.appendChild(g);
+      return g;
+    }
+    const gSize = group('字的大小', SUB_SIZES, 'size');
+    const gPos = group('位置', SUB_POSES, 'pos');
+    const gFont = group('字型', SUB_FONTS, 'font');
+    const emRow = document.createElement('label');
+    emRow.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;';
+    const emBox = document.createElement('input'); emBox.type = 'checkbox';
+    emBox.onchange = function () { st.emph = emBox.checked; save(); refresh(); };
+    emRow.appendChild(emBox);
+    emRow.appendChild(document.createTextNode('重點字放大(AI 從台詞挑 1~3 個賣點詞,放大＋金色)'));
+    panel.appendChild(emRow);
+    const hint = document.createElement('div');
+    hint.style.cssText = 'color:#777;font-size:11px;';
+    hint.textContent = vid ? '👆 影片上的字是預覽,選好再按「加上字幕」' : '';
+    panel.appendChild(hint);
+    function save() { try { localStorage.setItem(SUB_KEY, JSON.stringify(st)); } catch (_) {} }
+    function refresh() {
+      [[gSize, 'size'], [gPos, 'pos'], [gFont, 'font']].forEach(function (p) {
+        p[0].querySelectorAll('button').forEach(function (b) {
+          const on = b.dataset.v === st[p[1]];
+          b.style.cssText = 'padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid ' + (on ? '#a78bfa' : '#444') + ';background:' + (on ? '#a78bfa' : 'transparent') + ';color:' + (on ? '#fff' : '#ccc') + ';';
+        });
+      });
+      emBox.checked = !!st.emph;
+      if (st.font !== 'sans') _loadPreviewFonts();
+      paint();
+    }
+    wrap.insertBefore(panel, wrap.lastChild);
+    if (vid) { vid.addEventListener('loadedmetadata', paint); window.addEventListener('resize', paint); }
+    refresh();
+    return {
+      get: function () { return { size: st.size, pos: st.pos, font: st.font, emph: st.emph ? 'auto' : [] }; },
+      hide: function () { if (layer) layer.style.display = 'none'; panel.style.display = 'none'; },
+    };
+  }
+
   //  成品區加一顆【加上字幕】。beats = 分鏡卡;plan = 接片計畫(取實際秒數);videoUrl = 成品網址
   //  ★ 白牌:畫面上只出現「加上字幕」「算力機」,不出現任何後端服務名。
   function attach(boxEl, o) {
@@ -444,6 +560,7 @@
       row.appendChild(btn); row.appendChild(tip);
       wrap.appendChild(row); wrap.appendChild(out);
       boxEl.appendChild(wrap);
+      const pick = stylePanel(wrap, boxEl, cues);   // 🎨 v1.9
 
       btn.onclick = async function () {
         if (!confirm('加上繁體中文字幕,會扣 ' + cost + ' 點。\n原本沒有字幕的影片會保留。\n\n確定要加嗎?')) return;
@@ -461,7 +578,7 @@
           const script = beats.map(function (b) { return String((b && b.dialogue) || '').trim(); }).filter(Boolean).join('\n');
           let sub = null;
           try {
-            const s1 = await S._api('subtitle_burn', { videoUrl: o.videoUrl, script: script, brandId: o.brandId || 'stitch', durationSec: totalSec });
+            const s1 = await S._api('subtitle_burn', { videoUrl: o.videoUrl, script: script, brandId: o.brandId || 'stitch', durationSec: totalSec, style: pick.get() });
             if (s1 && s1.selfBurn && s1.requestId) sub = s1;
           } catch (e1) {
             const m1 = String((e1 && e1.message) || '');
@@ -472,8 +589,10 @@
             try { console.log('[KolSubtitle] 🔤 燒字機接手(自己聽時間、自己燒)'); } catch (_) {}
             const url1 = await S.pollEpisode(sub.requestId, o.brandId || 'stitch', null, null, 72);   // 5 秒 × 72 = 6 分鐘
             clearInterval(tick);
+            pick.hide();
             btn.textContent = '✅ 字幕已加上';
-            out.innerHTML = '<div style="color:#8fd694;margin-bottom:6px;">✅ 有字幕的版本做好了(原片在上面,兩支都可以下載)</div>'
+            const _em = (sub.emph && sub.emph.length) ? '<div style="color:#FFD232;font-size:12px;margin-bottom:6px;">重點字:' + sub.emph.map(function (w) { return String(w).replace(/[<>&"]/g, ''); }).join('、') + '</div>' : '';
+            out.innerHTML = '<div style="color:#8fd694;margin-bottom:6px;">✅ 有字幕的版本做好了(原片在上面,兩支都可以下載)</div>' + _em
               + '<video src="' + url1 + '" controls playsinline style="width:100%;border-radius:10px;background:#000;"></video>'
               + '<div style="margin-top:6px;"><a href="' + url1 + '" target="_blank" style="color:#a78bfa;font-size:12px;">↗ 開新分頁 / 下載有字幕版</a></div>';
             return;
@@ -526,8 +645,8 @@
     }
   }
 
-  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, audioDataUri, version: 'v1.8' };
+  const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, audioDataUri, version: 'v1.9' };
   root.KolSubtitle = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  try { console.log('[KolSubtitle] v1.8 就緒 · 🔤 先交給燒字機自己燒(斷行/字型/時間都自己控)· v1.7 🎧語音辨識不帶提示(治漏聽第一句+幻聽重念拉歪時間軸)+片長外片段丟掉 · v1.6 ⏱卡片秒數≠實際秒數時照比例縮放+往前多找2秒 · v1.5 🎧聲音由瀏覽器直接遞給語音辨識(繞過CDN 403) · v1.4 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
+  try { console.log('[KolSubtitle] v1.9 就緒 · 🎨 客人自選大小/位置/字型+重點字放大(影片上即時預覽)· v1.8 🔤 先交給燒字機自己燒(斷行/字型/時間都自己控)· v1.7 🎧語音辨識不帶提示(治漏聽第一句+幻聽重念拉歪時間軸)+片長外片段丟掉 · v1.6 ⏱卡片秒數≠實際秒數時照比例縮放+往前多找2秒 · v1.5 🎧聲音由瀏覽器直接遞給語音辨識(繞過CDN 403) · v1.4 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
 })(typeof window !== 'undefined' ? window : globalThis);
