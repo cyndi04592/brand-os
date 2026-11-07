@@ -4539,8 +4539,8 @@ async function generateGptPoster() {
       saveAdImageSilently(winner.imageUrl, 'poster', reqid);
     }
 
-    AM.w = 1080;
-    AM.h = 1080;
+    //  🩹 2026-11-08 畫布跟著客人選的尺寸(原本寫死 1080×1080 → 選限動/直式時圖兩側黑邊、LOGO 疊到黑邊上)
+    { const _szF = _adSize(); AM.w = _szF.w; AM.h = _szF.h; }
     await renderGptPosterCanvas();
     finishProgress(interval);
 
