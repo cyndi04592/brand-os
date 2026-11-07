@@ -12,10 +12,12 @@
   'use strict';
 
   const DURATIONS = [15, 30, 45, 60, 90];
+  //  🧭 v3.9(2026-11-07)影片類型:探店帶看 / 旅行 vlog(刺蝟星球 #18 #19)→ 送 storyFormat 給 kol-proxy v8.02;一般 = 跟以前一樣
+  const FORMATS = [['', '一般(劇情)'], ['tandian', '探店帶看'], ['vlog', '旅行 vlog 一日']];
 
   let rootEl = null;
   let ctx = null;
-  const state = { duration: 15, outline: '', beats: [], busy: false, confirmed: false };
+  const state = { duration: 15, outline: '', beats: [], busy: false, confirmed: false, format: '' };
   let prodCache = [];   // 🆕 1b 分段綁圖:商品照縮圖清單(每次 renderCards 從 ctx.getProductImages() 重讀)
 
   // v1.3 修:本面板同時掛在 STEP2(sbp-cine-mount)+ STEP3(sbp-episode-mount)兩個容器,
@@ -259,6 +261,7 @@
       //      舊寫法只讀快取 → 直接進 STEP2 的人永遠沒有記憶,而且安靜地沒有。
       recentEpisodes: (typeof ctx?.getRecentEpisodes === 'function') ? (await ctx.getRecentEpisodes() || []) : [],
     });
+    payload.storyFormat = state.format || '';   // 🧭 v3.9 影片類型
 
     state.busy = true;
     const btn = $el('sbp-expand-btn');
@@ -417,6 +420,12 @@
     <label class="sbp-label" style="margin:0">長度</label>
     <select id="sbp-duration" class="sbp-select" style="width:auto" onchange="KolStoryboardPanel.durationChange(this.value)">
       ${DURATIONS.map(d => `<option value="${d}" ${d === state.duration ? 'selected' : ''}>${d} 秒 · ${window.KolStorywriter.planBeats(d).length} beat</option>`).join('')}
+    </select>
+  </div>
+  <div class="sbp-row">
+    <label class="sbp-label" style="margin:0">影片類型</label>
+    <select id="sbp-format" class="sbp-select" style="width:auto" onchange="KolStoryboardPanel.formatChange(this.value)">
+      ${FORMATS.map(f => `<option value="${f[0]}" ${f[0] === state.format ? 'selected' : ''}>${f[1]}</option>`).join('')}
     </select>
   </div>
   <div class="sbp-stage sbp-stage-a">
@@ -607,12 +616,14 @@
 </div>`;
   }
 
+  function formatChange(v) { state.format = String(v || ''); }   // 🧭 v3.9 只記下來,按 AI 編修時才送
+
   window.KolStoryboardPanel = {
     mount, open, expand, lock, confirmToggle,
-    durationChange, outlineInput, shotInput, dialogueInput,
+    durationChange, formatChange, outlineInput, shotInput, dialogueInput,
     pickProduct, clearProduct,
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v3.8 就緒 · 🎬記下分鏡是用哪種風格寫的(換風格會提醒)· 能量不足講人話 · v3.7 就緒 · ⏳AI 編修進度文字(寫分鏡→檢查修正→快好了,治「等一分鐘以為卡住」) · v3.6 就緒 · 🎬動畫模式不顯示寫實的建議字數/偏短提示 · v3.5 就緒 · 🪟原生 alert/confirm 全換成頁面內小視窗(原生跳窗會卡住整頁) · v3.4 就緒 · 🔑登入過期交給統一視窗(不再跳看不懂的 AI 編修失敗) · v3.3 就緒 · 🗣「從開口捏起」不算說話(三邊同步) · v3.2 就緒 · 🗣「開口處」(袋子開口)不算說話(三邊同步) · v3.1 就緒 · ⏱說話視窗改成第一段開口→最後一段還在講(三邊同步) · v3.0 就緒 · 📏兩條線分開(甜蜜點給建議、硬線給警告,跟 kol-proxy v5.43 同一套) · 超過硬線才顯示「講不完」 · v2.9 就緒 · ⏱說話視窗從 shotDesc 的分時段自己抓(不依賴額外欄位;與 kol-proxy _winOf、crew-director _speakSegOf 同一套) · v2.8 就緒 · ⏱語速對齊 4.2→6.0(面板與 Worker 差 43%,15秒一個算50字一個算72字,所以「建議補到72字」一直失常) · 🗣建議字數改用【說話視窗】(AI 分時段後會給 dialogueTime,5-15 代表只講10秒,用整格算會塞爆語速) · 卡片顯示開口時間與視窗 · v2.7 就緒 · 📏建議值與硬擋線統一(治「叫你補到60字·補到59又說太長」) · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
+  console.log('[KolStoryboardPanel] v3.9 就緒 · 🧭影片類型(探店帶看/旅行 vlog,配 kol-proxy v8.02) · v3.8 就緒 · 🎬記下分鏡是用哪種風格寫的(換風格會提醒)· 能量不足講人話 · v3.7 就緒 · ⏳AI 編修進度文字(寫分鏡→檢查修正→快好了,治「等一分鐘以為卡住」) · v3.6 就緒 · 🎬動畫模式不顯示寫實的建議字數/偏短提示 · v3.5 就緒 · 🪟原生 alert/confirm 全換成頁面內小視窗(原生跳窗會卡住整頁) · v3.4 就緒 · 🔑登入過期交給統一視窗(不再跳看不懂的 AI 編修失敗) · v3.3 就緒 · 🗣「從開口捏起」不算說話(三邊同步) · v3.2 就緒 · 🗣「開口處」(袋子開口)不算說話(三邊同步) · v3.1 就緒 · ⏱說話視窗改成第一段開口→最後一段還在講(三邊同步) · v3.0 就緒 · 📏兩條線分開(甜蜜點給建議、硬線給警告,跟 kol-proxy v5.43 同一套) · 超過硬線才顯示「講不完」 · v2.9 就緒 · ⏱說話視窗從 shotDesc 的分時段自己抓(不依賴額外欄位;與 kol-proxy _winOf、crew-director _speakSegOf 同一套) · v2.8 就緒 · ⏱語速對齊 4.2→6.0(面板與 Worker 差 43%,15秒一個算50字一個算72字,所以「建議補到72字」一直失常) · 🗣建議字數改用【說話視窗】(AI 分時段後會給 dialogueTime,5-15 代表只講10秒,用整格算會塞爆語速) · 卡片顯示開口時間與視窗 · v2.7 就緒 · 📏建議值與硬擋線統一(治「叫你補到60字·補到59又說太長」) · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
