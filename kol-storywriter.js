@@ -108,14 +108,22 @@
   const FIT_SWEET = 0.80;   // 建議目標:15 秒 → 50 字(講 12 秒,留 3 秒呼吸)
   const FIT_MAX   = 0.92;   // 硬擋上限:15 秒 → 57 字
 
-  function checkDialogueFit(text, beatSeconds = SECONDS_PER_BEAT) {
+  //  🗣 2026-11-08 v5.30:語速跟著國籍走(日文 7、英文 14、其他 6),要跟 kol-proxy 的 SPEAK_RATE 同步
+  //   病(RA 實測):日文 KOL 的台詞照中文語速算,AI 剛寫好就被自己的上限擋下來
+  function rateFor(nationality) {
+    const n = String(nationality || '');
+    return /^en/.test(n) ? 14.0 : /^ja/.test(n) ? 7.0 : SPEAK_RATE;
+  }
+
+  function checkDialogueFit(text, beatSeconds = SECONDS_PER_BEAT, nationality = '') {
+    const RATE = rateFor(nationality);
     const chars = (text || '').replace(/\s/g, '').length;
-    const estSec = +(chars / SPEAK_RATE).toFixed(1);
+    const estSec = +(chars / RATE).toFixed(1);
     return {
       chars, estSec,
       fits: estSec <= beatSeconds * FIT_MAX,
-      sweetChars: Math.round(beatSeconds * FIT_SWEET * SPEAK_RATE),
-      maxChars: Math.round(beatSeconds * FIT_MAX * SPEAK_RATE),
+      sweetChars: Math.round(beatSeconds * FIT_SWEET * RATE),
+      maxChars: Math.round(beatSeconds * FIT_MAX * RATE),
     };
   }
 
@@ -193,17 +201,18 @@
     //    註解明寫「不用改 Worker、不用改架構」。字數規格用同一條路帶過去。
     //  ★ 規格由同一組常數算出:FIT_SWEET / FIT_MAX / SPEAK_RATE,
     //    所以前端顯示、前端硬擋、AI 被要求的字數,三者永遠同步。
+    const _rate = rateFor(persona && persona.nationality);
     const _beatPlan = planBeats(duration);
     const _specLines = (Array.isArray(_beatPlan) ? _beatPlan : [])
       .map(function (b) {
         const sec = (b && (b.seconds || b.durationSec)) || 15;
-        return sec + ' 秒的段落寫 ' + Math.round(sec * FIT_SWEET * SPEAK_RATE)
-          + '-' + Math.round(sec * FIT_MAX * SPEAK_RATE) + ' 字';
+        return sec + ' 秒的段落寫 ' + Math.round(sec * FIT_SWEET * _rate)
+          + '-' + Math.round(sec * FIT_MAX * _rate) + ' 字';
       });
     const _uniqSpec = _specLines.filter(function (x, i, a) { return a.indexOf(x) === i; });
     const _charSpec = _uniqSpec.length
       ? ('\n\n【台詞字數規格 · 必須遵守】每一段的台詞字數:' + _uniqSpec.join('、')
-         + '。這是依實測語速 ' + SPEAK_RATE + ' 字/秒換算的 —— 字數不足的話,'
+         + '。這是依實測語速 ' + _rate + ' 字/秒換算的 —— 字數不足的話,'
          + '影片後段會出現好幾秒沒有人說話的空白,畫面會變成乾等。'
          + '寧可把事情講得更具體、多給一個細節,也不要讓段落講不滿。')
       : '';
@@ -354,7 +363,7 @@
       const locked = lockMap[s.index];
       let dialogue = locked || got.dialogue || '';
       if (!locked) dialogue = speechFriendly(dialogue, nationality);
-      const fit = checkDialogueFit(dialogue, s.seconds);
+      const fit = checkDialogueFit(dialogue, s.seconds, nationality);
       return {
         ...s,
         shotDesc: sanitizeShotDesc(got.shotDesc || s.shotDesc || ''),
@@ -416,6 +425,7 @@
     splitForMultiShot,
     planBeats,
     checkDialogueFit,
+    rateFor,
     buildExpandRequest,
     mergeExpandResult,
     beatToEpisode,
