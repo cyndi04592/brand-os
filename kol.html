@@ -3614,8 +3614,16 @@ async function _kolBrandsFresh(email, key, cachedBrandsJson) {
     _kolSaveBrands(key, res);
     const brands = res.data?.brands || [];
     if (!brands.length) return;                       // 新的是空的 → 不拿空清單蓋掉畫面
+    const _prodBefore = JSON.stringify(S.products || []);
     S.products = res.data?.products || S.products;
     S.folders = res.data?.folders || S.folders;
+    //  🎬 2026-11-08 商品資料有變(例:商品呈現方式剛在別處改過)→ 重畫呈現方式下拉與商品照分槽
+    //   (以前只在品牌清單變了才重畫 → 打開頁面時畫面停在快取的舊值)
+    if (JSON.stringify(S.products || []) !== _prodBefore) {
+      try { renderProductModePicker('product-mode-s2'); renderProductModePicker('product-mode-s3'); } catch (_) {}
+      try { if (typeof renderRefList === 'function' && document.getElementById('ref-list')) renderRefList(); } catch (_) {}
+      try { if (typeof renderEpisodeSlots === 'function' && document.getElementById('ep-ref-list')) renderEpisodeSlots(); } catch (_) {}
+    }
     if (JSON.stringify(brands) === cachedBrandsJson) return;
     S.brands = brands.map(_cleanBrandText);
     const sel = document.getElementById('brand-switcher');
