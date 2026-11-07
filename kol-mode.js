@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 kol-mode.js v1.4(2026-10-30)— KOL 工作室「影片風格」切換鈕
+//  v2.1.2(11/07 抽查):國漫修仙/啟發小故事穿風格自己的服裝 → 轉角色的說明不再寫「換上這次的衣服」
 //  v2.1.1:國風兩張卡縮圖只取上面那張大頭(RA:只要大頭貼)
 //  v2.1(11/03)新增「國風動畫」組:國漫修仙、啟發小故事(佛教寓言/老闆大道理/星座);這兩種穿風格自己的服裝,不幫她換客人選的衣服
 //  v2.0(11/03 RA 選 A):動畫角色也依客人選的服裝 —— 底圖先穿上這次的衣服(服裝品牌 / auto=依場景),再轉畫風;
@@ -25,7 +26,7 @@
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const VERSION = '2.1.1';
+  const VERSION = '2.1.2';
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
   //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
@@ -212,8 +213,10 @@
 
   function _charHtml() {
     const img = _kolImg(), nm = _esc(_kolName()), lb = _esc(LABEL[mode] || '');
+    const _st0 = window.KolAnim && window.KolAnim.STYLES && window.KolAnim.STYLES[mode];
+    const own = !!(_st0 && _st0.costume);   // v2.1.2 這個風格穿自己的服裝
     if (!img) return '<div class="km-note">先在上面選一位 KOL,再轉成「' + lb + '」角色。</div>';
-    if (busy) return '<div class="km-note">⏳ 正在幫 ' + nm + ' 換上這次的衣服,再轉成「' + lb + '」角色…(約 1 分鐘)</div>';
+    if (busy) return '<div class="km-note">⏳ 正在幫 ' + nm + (own ? ' 轉成「' + lb + '」角色(穿這個風格自己的服裝)' : ' 換上這次的衣服,再轉成「' + lb + '」角色') + '…(約 1 分鐘)</div>';
     if (window.KOL_TOON_URL && toonFor === _who() + '|' + mode) {
       if (toonOld && _board()) {
         return '<img src="' + _esc(window.KOL_TOON_URL) + '" alt="">'
@@ -226,6 +229,9 @@
         + '<div class="km-note">影片裡的人物就用這張。之後再選這個風格直接用,不再扣點。</div>'
         + '<div class="km-btns"><button class="btn btn-ghost btn-sm" data-km-redo="1">↻ 重轉(60 點)</button></div></div>';
     }
+    if (own) return '<div><div style="font-size:13px;font-weight:700">' + nm + ' 還沒有「' + lb + '」角色</div>'
+      + '<div class="km-note">這個風格穿它自己的服裝,不套這次選的衣服。轉一次 60 點,之後選這個風格直接用。</div>'
+      + '<div class="km-btns"><button class="btn btn-primary btn-sm" data-km-make="1">✨ 轉換角色(60 點)</button></div></div>';
     return '<div><div style="font-size:13px;font-weight:700">' + nm + ' 還沒有穿這套衣服的「' + lb + '」角色</div>'
       + '<div class="km-note">要把 ' + nm + ' 換上這次的衣服、轉成這個風格(60 點);同一套衣服之後直接用。換場景或服裝品牌會換衣服,要再轉一次。</div>'
       + '<div class="km-btns"><button class="btn btn-primary btn-sm" data-km-make="1">✨ 轉換角色(60 點)</button></div></div>';
