@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.14';
+  var VER = '1.15';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -106,11 +106,18 @@
   var page = (path.split('/').pop() || 'index').replace(/\.html$/, '') || 'index';
   var BASE = '/i18n/' + LANG + '/';
 
-  // 載入前先遮住,避免中文閃一下(最多 2.5 秒,載不到就照常顯示)
+  //  ⚡ v1.15 速度(RA:切成日文/英文比較慢、有延遲)
+  //   以前每次開頁都要先下載語言包(KOL 頁 150KB)、整頁遮住等它回來,才開始換字 → 每頁多等半秒到一秒。
+  //   現在:語言包存在這台電腦(localStorage),第二次開始直接拿來用,一邊載入頁面一邊換字,不遮畫面;
+  //   背景照樣去拿最新版,有更新就存起來並重換一次。只有第一次開某頁才會短暫遮住。
+  var CKEY = 'bos_i18n:' + LANG + ':' + page, CACHED = null, CRAW = '';
+  try { CRAW = localStorage.getItem(CKEY) || ''; if (CRAW) CACHED = JSON.parse(CRAW); } catch (_) { CACHED = null; CRAW = ''; }
+
+  // 第一次(沒有存檔)才遮住,避免中文閃一下(最多 2.5 秒,載不到就照常顯示)
   var hide = document.createElement('style');
   hide.id = 'bos-i18n-hide';
   hide.textContent = 'body{visibility:hidden!important}';
-  (document.head || document.documentElement).appendChild(hide);
+  if (!CACHED) (document.head || document.documentElement).appendChild(hide);
   function reveal() { var h = document.getElementById('bos-i18n-hide'); if (h) h.remove(); }
   var revealTimer = setTimeout(reveal, 2500);
 
@@ -208,9 +215,13 @@
     return false;
   }
 
+  var ORIG = new WeakMap(), FORCE = false;   // v1.15:記住換字前的中文,語言包更新時從中文重換(不會拿日文漢字去比對)
   function doText(n) {
     var v = n.nodeValue;
-    if (!v || done.get(n) === v || !(CJK.test(v) || (SPACE_LANG && PUNC_EN[v.trim()]))) return;   // v1.14:單獨的中文標點也要進來換
+    if (v && FORCE && done.get(n) === v && ORIG.has(n)) v = ORIG.get(n);
+    else if (v && FORCE && done.get(n) === v) { /* 之前沒換到的中文:再試一次 */ }
+    else if (!v || done.get(n) === v) return;
+    if (!(CJK.test(v) || (SPACE_LANG && PUNC_EN[v.trim()]))) return;   // v1.14:單獨的中文標點也要進來換
     if (n.parentElement && skipEl(n.parentElement)) return;
     // 手動用 <br> 斷行的短字(例「使用自己<br>建立」):整段合起來查,查得到就整段換掉、拿掉 <br>
     var p = n.parentElement;
@@ -224,6 +235,7 @@
       if (ok && DICT[wk]) {
         var tn = document.createTextNode(DICT[wk]);
         done.set(tn, DICT[wk]);
+        ORIG.set(tn, wk);
         p.textContent = '';
         p.appendChild(tn);
         return;
@@ -231,7 +243,8 @@
     }
     var out = tr(v);
     done.set(n, out);
-    if (out !== v) n.nodeValue = out;
+    if (out !== v) ORIG.set(n, v);
+    if (out !== n.nodeValue) n.nodeValue = out;
   }
 
   var ATTRS = ['placeholder', 'title', 'aria-label', 'alt', 'data-tip'];
@@ -269,7 +282,10 @@
     };
   });
 
+  var started = false;
   function start() {
+    if (started) { walk(document.body); return; }
+    started = true;
     walk(document.body);
     if (document.title) document.title = tr(document.title);
     document.documentElement.lang = LANG === 'ja' ? 'ja' : 'en';
@@ -279,7 +295,7 @@
       if (paused) return;
       var now = Date.now();
       if (now - burstT > 1000) { burst = 0; burstT = now; }
-      burst += list.length;
+      if (document.readyState !== 'loading') burst += list.length;   // 頁面還在載入時的大量新增是正常的,不算
       if (burst > 4000) {
         paused = true;
         console.warn('[i18n] 太多變動,暫停翻譯 3 秒');
@@ -293,11 +309,16 @@
         else for (var j = 0; j < m.addedNodes.length; j++) walk(m.addedNodes[j]);
       }
     });
-    mo.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
-    switcher();
-    legalNote();
-    clearTimeout(revealTimer);
-    reveal();
+    mo.observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+    function finish() {
+      if (document.title) document.title = tr(document.title);
+      switcher();
+      legalNote();
+      clearTimeout(revealTimer);
+      reveal();
+    }
+    if (document.body && document.readyState !== 'loading') finish();
+    else document.addEventListener('DOMContentLoaded', function () { walk(document.body); finish(); });
   }
 
   // 條款、隱私權這類法律文件:翻譯只供參考,以中文版為準(頁首加一行說明)
@@ -316,12 +337,19 @@
 
   window.BOS_I18N = { VER: VER, lang: LANG, page: page, tr: tr, set: goLang };
 
+  if (CACHED) { build(CACHED); start(); }   // 有存檔:馬上開始,頁面邊載入邊換字
+
   fetch(BASE + page + '.json?v=' + VER, { cache: 'no-cache' })
-    .then(function (r) { return r.ok ? r.json() : {}; })
-    .catch(function () { return {}; })
-    .then(function (d) {
+    .then(function (r) { return r.ok ? r.text() : ''; })
+    .catch(function () { return ''; })
+    .then(function (raw) {
+      var d = null;
+      try { d = raw ? JSON.parse(raw) : null; } catch (_) { d = null; }
+      if (!d) { if (!CACHED) { build({}); start(); } return; }
+      if (raw === CRAW) return;                       // 跟存檔一樣 → 不用動
+      try { localStorage.setItem(CKEY, raw); } catch (_) {}
       build(d);
-      if (document.body) start();
-      else document.addEventListener('DOMContentLoaded', start);
+      if (CACHED && started) { FORCE = true; walk(document.body); FORCE = false; return; }   // 語言包有更新 → 整頁從中文重換一次
+      start();
     });
 })();
