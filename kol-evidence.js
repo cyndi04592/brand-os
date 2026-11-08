@@ -1,6 +1,6 @@
 // ⚠️⚠️ 這個檔案的正確檔名是:kol-evidence.js  (證據圖 KolEvidence)  ⚠️⚠️
 // ═════════════════════════════════════════════════════════════════
-//  kol-evidence.js · v1.1(2026-11-09)
+//  kol-evidence.js · v1.2(2026-11-09)
 //  🖼 講者 + 證據圖(RA:參考 wetracked 那種影片 —— KOL 講話,畫面下半部彈出客人自己的方形廣告圖)
 //
 //  職責(只做這一件事):
@@ -89,7 +89,7 @@
       + '<div style="font-size:12px;color:#aaa;line-height:1.6;margin-bottom:8px;">她講到哪一句,那張圖就從畫面下半部彈出來。每 15 秒放 2 張,最多 ' + MAX + ' 張(90 秒)。'
       + '圖是拍完才疊上去的,不佔 9 張參考圖的名額。</div>'
       + (st.err ? '<div style="color:#ffb86b;font-size:12px;margin-bottom:6px;">' + _esc(st.err) + '</div>' : '')
-      + '<div class="kev-grid" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;">' + grid + '</div>'
+      + '<div class="kev-grid" style="display:flex;flex-wrap:wrap;gap:6px;max-height:240px;overflow-y:auto;padding-bottom:4px;">' + grid + '</div>'
       + '<div style="font-size:12px;margin-top:6px;color:' + (n ? '#c4b5fd' : '#888') + ';">'
       + (n ? ('已勾 ' + n + ' 張 → 影片 ' + dur + ' 秒(' + (dur / 15) + ' 段)· 加字幕時會一起把圖疊上去') : '還沒勾 · 至少勾 1 張')
       + (n ? ' <a href="javascript:void 0" class="kev-clear" style="color:#a78bfa;margin-left:6px;">清除</a>' : '')
@@ -139,5 +139,5 @@
   }
 
   window.KolEvidence = { render, payload, count, setPlan, cardsFor, durationFor, PER_BEAT, MAX };
-  try { console.log('[KolEvidence] v1.1 就緒 · 面板重畫時圖清單畫到最新的框 · v1.0 · 🖼 講者 + 證據圖(每 15 秒 2 張 · 最多 12 張 · 加字幕時一起疊)'); } catch (_) {}
+  try { console.log('[KolEvidence] v1.2 就緒 · 圖清單換行不撐寬頁面 · v1.1 · 面板重畫時圖清單畫到最新的框 · v1.0 · 🖼 講者 + 證據圖(每 15 秒 2 張 · 最多 12 張 · 加字幕時一起疊)'); } catch (_) {}
 })();

@@ -469,7 +469,10 @@
     if (!box || !window.KolEvidence) return;
     window.KolEvidence.render(box, {
       on: state.format === 'evidence' && !window.KOL_MODE,
-      onDuration: function (d) { if (d !== state.duration) durationChange(d); },
+      onDuration: async function (d) {
+        if (d !== state.duration) await durationChange(d);
+        const sel = $el('sbp-duration'); if (sel) sel.value = String(state.duration);   // durationChange 本來是下拉觸發的,不會回頭改下拉 → 這裡同步
+      },
     });
   }
 
