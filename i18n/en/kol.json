@@ -1955,5 +1955,16 @@
 "🧍 產生真人底圖": "🧍 Generate realistic base image",
 "🧹 清理舊角度照…": "🧹 Cleaning up old angle photos…",
 "🧹 順手清掉": "🧹 Also clearing",
-"🫱 AI 幫我寫動作": "🫱 Let AI write the motion"
+"🫱 AI 幫我寫動作": "🫱 Let AI write the motion",
+"外貌(人種・髮色)": "Appearance (ethnicity · hair)",
+"依國籍(預設)": "Match nationality (default)",
+"白人・金髮": "White · blonde",
+"白人・棕髮": "White · brown hair",
+"白人・紅髮": "White · red hair",
+"黑人": "Black",
+"拉丁裔": "Latino",
+"南亞裔(印度等)": "South Asian (e.g. Indian)",
+"東南亞裔": "Southeast Asian",
+"亞歐混血": "Eurasian (Asian-European)",
+"長相看「外貌」,講什麼語言看「國籍氣質」": "\"Appearance\" sets the look; \"Nationality\" sets the language they speak"
 }
