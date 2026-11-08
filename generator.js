@@ -13,7 +13,7 @@ function switchTab(btn) {
 // ══ 字數計算 ══
 function countWords(str) {
   if (!str) return 0;
-  const s = str.replace(/[，。！？、；：「」『』【】〔〕…—·\s]/g, '');
+  const s = str.replace(/[，。！？、；：「」『』【】〔〕…—·\s]/g, ' ');   // 換成空白(以前直接刪掉 → 英文單字黏在一起,整句算成 1 個字)
   //  🌐 2026-11-08 日文假名(ひらがな/カタカナ)也一個字算一字
   const zhChars = (s.match(/[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff]/g) || []).length;
   const enWords = (s.replace(/[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff]/g, ' ').match(/[a-zA-Z0-9]+/g) || []).length;
