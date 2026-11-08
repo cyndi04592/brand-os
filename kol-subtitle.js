@@ -543,6 +543,10 @@
       if (!cues.length) return;   // 整支都沒台詞 → 不顯示按鈕
       const totalSec = durs.reduce((a, d) => a + (Number(d) || 0), 0) || 15;
       const cost = costOf(totalSec);
+      //  🖼 v2.0 講者 + 證據圖:這支片的台詞對得上分鏡時的出場表 → 加字幕時一起把證據圖疊上去(不另外收點)
+      const _evScript = beats.map(function (b) { return String((b && b.dialogue) || '').trim(); }).filter(Boolean).join('\n');
+      const _cards = (root.KolEvidence && typeof root.KolEvidence.cardsFor === 'function') ? root.KolEvidence.cardsFor(_evScript) : null;
+      const _btnLabel = (_cards ? '🔤 加上字幕 + 證據圖(' : '🔤 加上字幕(') + cost + ' 點)';
 
       const wrap = document.createElement('div');
       wrap.style.cssText = 'margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid #a78bfa33;background:#a78bfa0d;';
@@ -550,10 +554,10 @@
       row.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.textContent = '🔤 加上字幕(' + cost + ' 點)';
+      btn.textContent = _btnLabel;
       btn.style.cssText = 'padding:8px 14px;border-radius:8px;border:none;background:#a78bfa;color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
       const tip = document.createElement('span');
-      tip.textContent = '繁體中文 · 共 ' + cues.length + ' 句 · 原片會保留';
+      tip.textContent = '繁體中文 · 共 ' + cues.length + ' 句' + (_cards ? ' · 證據圖 ' + _cards.length + ' 張' : '') + ' · 原片會保留';
       tip.style.cssText = 'color:#999;font-size:12px;';
       const out = document.createElement('div');
       out.style.cssText = 'margin-top:8px;font-size:13px;line-height:1.7;';
@@ -578,7 +582,7 @@
           const script = beats.map(function (b) { return String((b && b.dialogue) || '').trim(); }).filter(Boolean).join('\n');
           let sub = null;
           try {
-            const s1 = await S._api('subtitle_burn', { videoUrl: o.videoUrl, script: script, brandId: o.brandId || 'stitch', durationSec: totalSec, style: pick.get() });
+            const s1 = await S._api('subtitle_burn', { videoUrl: o.videoUrl, script: script, brandId: o.brandId || 'stitch', durationSec: totalSec, style: pick.get(), cards: _cards || undefined });
             if (s1 && s1.selfBurn && s1.requestId) sub = s1;
           } catch (e1) {
             const m1 = String((e1 && e1.message) || '');
@@ -614,7 +618,7 @@
           if (!timed) {
             clearInterval(tick);
             btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
-            btn.textContent = '🔤 加上字幕(' + cost + ' 點)';
+            btn.textContent = _btnLabel;
             out.innerHTML = '<span style="color:#ffb3b3;">⚠️ 這支影片暫時聽不清楚台詞的時間,為了不讓字幕對不上,這次先不加。<b>沒有扣點</b>,請稍後再按一次。</span>';
             return;
           }
@@ -633,7 +637,7 @@
           clearInterval(tick);
           const m = String((e && e.message) || '');
           btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
-          btn.textContent = '🔤 加上字幕(' + cost + ' 點)';
+          btn.textContent = _btnLabel;
           if (/INSUFFICIENT|點數不足|Bits 不足/i.test(m)) { out.innerHTML = ''; return; }   // 點數不足的視窗由全站攔截器負責
           if (/沒有台詞/.test(m)) { out.innerHTML = '<span style="color:#ffb3b3;">這支影片沒有台詞,不需要加字幕。</span>'; return; }
           out.innerHTML = '<span style="color:#ff6b6b;">⚠️ 字幕沒有加上:算力機目前滿載。<b>本次點數已自動退還</b>,請稍後再按一次。</span>';
@@ -648,5 +652,5 @@
   const api = { buildCues, toSRT, splitLines, speakSpan, download, attach, costOf, alignCues, alignByWords, measureVoice, audioDataUri, version: 'v1.9' };
   root.KolSubtitle = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  try { console.log('[KolSubtitle] v1.9 就緒 · 🎨 客人自選大小/位置/字型+重點字放大(影片上即時預覽)· v1.8 🔤 先交給燒字機自己燒(斷行/字型/時間都自己控)· v1.7 🎧語音辨識不帶提示(治漏聽第一句+幻聽重念拉歪時間軸)+片長外片段丟掉 · v1.6 ⏱卡片秒數≠實際秒數時照比例縮放+往前多找2秒 · v1.5 🎧聲音由瀏覽器直接遞給語音辨識(繞過CDN 403) · v1.4 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
+  try { console.log('[KolSubtitle] v2.0 就緒 · 🖼 講者 + 證據圖:加字幕時一起疊圖(kol-evidence.js)· v1.9 就緒 · 🎨 客人自選大小/位置/字型+重點字放大(影片上即時預覽)· v1.8 🔤 先交給燒字機自己燒(斷行/字型/時間都自己控)· v1.7 🎧語音辨識不帶提示(治漏聽第一句+幻聽重念拉歪時間軸)+片長外片段丟掉 · v1.6 ⏱卡片秒數≠實際秒數時照比例縮放+往前多找2秒 · v1.5 🎧聲音由瀏覽器直接遞給語音辨識(繞過CDN 403) · v1.4 🎧語音辨識對每個字的時間(字用自己的台詞)→ 備援量音量 → 都不行就不燒不扣點 · v1.3 🎧聽影片聲音對時間(字用自己的台詞·抓不到聲音退回推算) · v1.2 ⏱時間軸塞滿開口視窗(實測誤差0.1秒) · v1.1 🔤 成品下方【加上字幕】→ Worker subtitle_burn 燒進 MP4(扣點·原片保留) · v1.0 台詞+開口秒數 → 時間軸(一行≤15字·停留≥1.2秒·四邊同步 _speakSpan)'); } catch (_) {}
 })(typeof window !== 'undefined' ? window : globalThis);

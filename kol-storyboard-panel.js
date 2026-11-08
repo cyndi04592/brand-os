@@ -1,7 +1,7 @@
 // ⚠️⚠️ 這個檔案的正確檔名是:kol-storyboard-panel.js  (分鏡面板 KolStoryboardPanel)  ⚠️⚠️
 // 上傳前請核對檔名 —— 2026-08-23 曾發生兩檔互相覆蓋
 // ════════════════════════════════════════════════════════════════════
-//  kol-storyboard-panel.js · v1.6
+//  kol-storyboard-panel.js · v1.6(功能版號見檔尾 console:v3.12 講者 + 證據圖)
 //  分鏡產生器面板 — 大綱 → AI 編修 → 分鏡卡片 → 確認分鏡(鎖定)/ 重新編輯(解鎖)
 //   • open(ctx): { containerId, persona, product, sceneLabel, onConfirm, onEdit }
 //   • 確認分鏡 → ctx.onConfirm(beats, duration)(填劇情+鎖設定,不生成)
@@ -13,7 +13,7 @@
 
   const DURATIONS = [15, 30, 45, 60, 90];
   //  🧭 v3.9(2026-11-07)影片類型:探店帶看 / 旅行 vlog(刺蝟星球 #18 #19)→ 送 storyFormat 給 kol-proxy v8.02;一般 = 跟以前一樣
-  const FORMATS = [['', '一般(劇情)'], ['tandian', '探店帶看'], ['vlog', '旅行 vlog 一日']];
+  const FORMATS = [['', '一般(劇情)'], ['tandian', '探店帶看'], ['vlog', '旅行 vlog 一日'], ['evidence', '講者 + 證據圖']];   // 🖼 v3.12 講者 + 證據圖 → kol-evidence.js
 
   let rootEl = null;
   let ctx = null;
@@ -262,7 +262,12 @@
       //      舊寫法只讀快取 → 直接進 STEP2 的人永遠沒有記憶,而且安靜地沒有。
       recentEpisodes: (typeof ctx?.getRecentEpisodes === 'function') ? (await ctx.getRecentEpisodes() || []) : [],
     });
-    payload.storyFormat = state.format || '';   // 🧭 v3.9 影片類型
+    payload.storyFormat = state.format === 'evidence' ? '' : (state.format || '');   // 🧭 v3.9 影片類型(證據圖走一般劇情 + evidence)
+    //  🖼 v3.12 講者 + 證據圖:勾的圖交給編劇 AI 看(拍完才疊上去,不送進生成)
+    if (state.format === 'evidence' && window.KolEvidence) {
+      if (!window.KolEvidence.count()) { _say('「講者 + 證據圖」要先在上面勾至少 1 張廣告圖'); return; }
+      payload.evidence = window.KolEvidence.payload(state.duration);
+    } else if (window.KolEvidence) window.KolEvidence.setPlan(null);
 
     state.busy = true;
     const btn = $el('sbp-expand-btn');
@@ -290,6 +295,7 @@
         //     以前沒人踩到是因為卡片只能由 AI 生;開放自己打之後就會咬人。
         const skeleton = state.beats.length ? state.beats : window.KolStorywriter.planBeats(state.duration);
         state.beats = window.KolStorywriter.mergeExpandResult(skeleton, res.beats, lockedLines, ctx && ctx.persona && ctx.persona.nationality);
+        if (payload.evidence && window.KolEvidence) window.KolEvidence.setPlan(res.evidence || null);   // 🖼 v3.12 出場表:加字幕時一起疊圖
         //  v3.8 記下這份分鏡是用哪種風格寫的(寫實 = '');kol-mode.js 按生成時比對,換過風格會先提醒
         window.KOL_SB_MODE = window.KOL_MODE || '';
       }
@@ -429,6 +435,7 @@
       ${FORMATS.map(f => `<option value="${f[0]}" ${f[0] === state.format ? 'selected' : ''}>${f[1]}</option>`).join('')}
     </select>
   </div>
+  <div id="sbp-evidence" style="display:none"></div>
   <div class="sbp-stage sbp-stage-a">
     <span class="sbp-stage-num">STEP 1</span>
     <div class="sbp-stage-t">🤖 AI 幫你寫腳本</div>
@@ -453,6 +460,17 @@
   </div>
 </div>`;
     renderCards();
+    _evidenceBox();
+  }
+
+  //  🖼 v3.12 講者 + 證據圖:選這個類型才出現勾圖區;勾的張數決定長度(每 15 秒 2 張)
+  function _evidenceBox() {
+    const box = $el('sbp-evidence');
+    if (!box || !window.KolEvidence) return;
+    window.KolEvidence.render(box, {
+      on: state.format === 'evidence' && !window.KOL_MODE,
+      onDuration: function (d) { if (d !== state.duration) durationChange(d); },
+    });
   }
 
   //  ═══════════════════════════════════════════════════════════════════
@@ -621,7 +639,7 @@
 </div>`;
   }
 
-  function formatChange(v) { state.format = String(v || ''); }   // 🧭 v3.9 只記下來,按 AI 編修時才送
+  function formatChange(v) { state.format = String(v || ''); _evidenceBox(); }   // 🧭 v3.9 只記下來,按 AI 編修時才送 · 🖼 v3.12 證據圖區跟著開關
 
   window.KolStoryboardPanel = {
     mount, open, expand, lock, confirmToggle,
@@ -630,5 +648,5 @@
     getBeats: () => state.beats,
   };
 
-  console.log('[KolStoryboardPanel] v3.11 就緒 · 🏢只給自家實景照也能編修分鏡 · v3.10 就緒 · 🗾日文/英文 KOL 語速(英14/日7)· 動畫模式藏影片類型 · v3.9 就緒 · 🧭影片類型(探店帶看/旅行 vlog,配 kol-proxy v8.02) · v3.8 就緒 · 🎬記下分鏡是用哪種風格寫的(換風格會提醒)· 能量不足講人話 · v3.7 就緒 · ⏳AI 編修進度文字(寫分鏡→檢查修正→快好了,治「等一分鐘以為卡住」) · v3.6 就緒 · 🎬動畫模式不顯示寫實的建議字數/偏短提示 · v3.5 就緒 · 🪟原生 alert/confirm 全換成頁面內小視窗(原生跳窗會卡住整頁) · v3.4 就緒 · 🔑登入過期交給統一視窗(不再跳看不懂的 AI 編修失敗) · v3.3 就緒 · 🗣「從開口捏起」不算說話(三邊同步) · v3.2 就緒 · 🗣「開口處」(袋子開口)不算說話(三邊同步) · v3.1 就緒 · ⏱說話視窗改成第一段開口→最後一段還在講(三邊同步) · v3.0 就緒 · 📏兩條線分開(甜蜜點給建議、硬線給警告,跟 kol-proxy v5.43 同一套) · 超過硬線才顯示「講不完」 · v2.9 就緒 · ⏱說話視窗從 shotDesc 的分時段自己抓(不依賴額外欄位;與 kol-proxy _winOf、crew-director _speakSegOf 同一套) · v2.8 就緒 · ⏱語速對齊 4.2→6.0(面板與 Worker 差 43%,15秒一個算50字一個算72字,所以「建議補到72字」一直失常) · 🗣建議字數改用【說話視窗】(AI 分時段後會給 dialogueTime,5-15 代表只講10秒,用整格算會塞爆語速) · 卡片顯示開口時間與視窗 · v2.7 就緒 · 📏建議值與硬擋線統一(治「叫你補到60字·補到59又說太長」) · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
+  console.log('[KolStoryboardPanel] v3.12 就緒 · 🖼講者 + 證據圖(kol-evidence.js)· v3.11 就緒 · 🏢只給自家實景照也能編修分鏡 · v3.10 就緒 · 🗾日文/英文 KOL 語速(英14/日7)· 動畫模式藏影片類型 · v3.9 就緒 · 🧭影片類型(探店帶看/旅行 vlog,配 kol-proxy v8.02) · v3.8 就緒 · 🎬記下分鏡是用哪種風格寫的(換風格會提醒)· 能量不足講人話 · v3.7 就緒 · ⏳AI 編修進度文字(寫分鏡→檢查修正→快好了,治「等一分鐘以為卡住」) · v3.6 就緒 · 🎬動畫模式不顯示寫實的建議字數/偏短提示 · v3.5 就緒 · 🪟原生 alert/confirm 全換成頁面內小視窗(原生跳窗會卡住整頁) · v3.4 就緒 · 🔑登入過期交給統一視窗(不再跳看不懂的 AI 編修失敗) · v3.3 就緒 · 🗣「從開口捏起」不算說話(三邊同步) · v3.2 就緒 · 🗣「開口處」(袋子開口)不算說話(三邊同步) · v3.1 就緒 · ⏱說話視窗改成第一段開口→最後一段還在講(三邊同步) · v3.0 就緒 · 📏兩條線分開(甜蜜點給建議、硬線給警告,跟 kol-proxy v5.43 同一套) · 超過硬線才顯示「講不完」 · v2.9 就緒 · ⏱說話視窗從 shotDesc 的分時段自己抓(不依賴額外欄位;與 kol-proxy _winOf、crew-director _speakSegOf 同一套) · v2.8 就緒 · ⏱語速對齊 4.2→6.0(面板與 Worker 差 43%,15秒一個算50字一個算72字,所以「建議補到72字」一直失常) · 🗣建議字數改用【說話視窗】(AI 分時段後會給 dialogueTime,5-15 代表只講10秒,用整格算會塞爆語速) · 卡片顯示開口時間與視窗 · v2.7 就緒 · 📏建議值與硬擋線統一(治「叫你補到60字·補到59又說太長」) · 🔇長段落無台詞硬擋(治「B-roll 吃掉整個15秒·客戶付30秒拿到一半空鏡」·要空鏡請改5秒) · 📏建議字數0.78→0.95(15秒49字→60字·治「照建議寫必定空3秒變旁白」) · 🚦選場景防呆(沒選場景不給編修·治順序顛倒) · 🗺場景名保底(呼叫端沒給就自己抓當下選中的場景·治分鏡AI自己編地點) · v2.1 · 🪧兩階段區塊(STEP1 AI區 / STEP2 成品區·治「分不出哪裡是AI」) · · 🧾大綱區視覺分家(治「誤認成Beat1」) ·(🆕導演模式:選長度就開空白卡 · AI編修降級為選配 · 覆蓋前確認 · 空卡擋確認)');
 })();
