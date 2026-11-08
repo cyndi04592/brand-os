@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.3';
+  var VER = '1.4';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -200,14 +200,27 @@
     walk(document.body);
     if (document.title) document.title = tr(document.title);
     document.documentElement.lang = LANG === 'ja' ? 'ja' : 'en';
-    new MutationObserver(function (list) {
+    // 保險絲:萬一跟頁面上別的程式互相改字(你改我、我改你),1 秒內處理太多次就先停 3 秒,不讓頁面卡死
+    var burst = 0, burstT = Date.now(), paused = false;
+    var mo = new MutationObserver(function (list) {
+      if (paused) return;
+      var now = Date.now();
+      if (now - burstT > 1000) { burst = 0; burstT = now; }
+      burst += list.length;
+      if (burst > 4000) {
+        paused = true;
+        console.warn('[i18n] 太多變動,暫停翻譯 3 秒');
+        setTimeout(function () { paused = false; burst = 0; burstT = Date.now(); walk(document.body); }, 3000);
+        return;
+      }
       for (var i = 0; i < list.length; i++) {
         var m = list[i];
         if (m.type === 'characterData') doText(m.target);
         else if (m.type === 'attributes') doAttrs(m.target);
         else for (var j = 0; j < m.addedNodes.length; j++) walk(m.addedNodes[j]);
       }
-    }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+    });
+    mo.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
     switcher();
     clearTimeout(revealTimer);
     reveal();
