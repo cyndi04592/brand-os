@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.10';
+  var VER = '1.11';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -45,6 +45,17 @@
   // 左下角語言按鈕(v1.8:每個人都看得到,台灣人也能切日文/英文)
   //   平常只是一顆浮動的小按鈕「🌐 中文」,點了才展開三個語言;KOL 頁底部確認列跳出來時自動藏起來,不擋按鈕
   //   手機(≤768 寬)縮小一號、避開 iPhone 底部橫條(safe-area)
+  //  ★ v1.11 切語言:網址上的 ?lang= 優先權最高,只改記憶再重整會被網址蓋回去(RA 實測「切換都沒反應」)
+  //   → 記住 + 網址的 lang 一起換成新的再開
+  function goLang(l) {
+    try { localStorage.setItem('bos_lang', l); } catch (_) {}
+    try {
+      var u = new URL(location.href);
+      u.searchParams.set('lang', l);
+      location.replace(u.toString());
+    } catch (_) { location.reload(); }
+  }
+
   function switcher() {
     if (document.getElementById('bos-lang-sw') || !document.body) return;
     var NAMES = { zh: '中文', ja: '日本語', en: 'EN' };
@@ -70,15 +81,15 @@
       main.remove();
       ['zh', 'ja', 'en'].forEach(function (l) {
         btn(NAMES[l], l === LANG, function () {
-          if (l === LANG) { location.reload(); return; }
-          try { localStorage.setItem('bos_lang', l); } catch (_) {}
-          location.reload();
+          if (l === LANG) { box.remove(); switcher(); return; }   // 點到同一個語言 = 收起來
+          goLang(l);
         });
       });
     });
     main.title = 'Language / 言語 / 語言';
     document.body.appendChild(box);
     //  手機:頁面最底下多留一條空白,捲到底時頁尾版權那行不會被按鈕蓋住(電腦版不顯示)
+    if (document.getElementById('bos-lang-pad')) return;
     var pad = document.createElement('div');
     pad.id = 'bos-lang-pad';
     pad.setAttribute('aria-hidden', 'true');
@@ -288,7 +299,7 @@
     document.body.insertBefore(n, document.body.firstChild);
   }
 
-  window.BOS_I18N = { VER: VER, lang: LANG, page: page, tr: tr, set: function (l) { try { localStorage.setItem('bos_lang', l); } catch (_) {} location.reload(); } };
+  window.BOS_I18N = { VER: VER, lang: LANG, page: page, tr: tr, set: goLang };
 
   fetch(BASE + page + '.json?v=' + VER, { cache: 'no-cache' })
     .then(function (r) { return r.ok ? r.json() : {}; })
