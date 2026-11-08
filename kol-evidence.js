@@ -1,6 +1,6 @@
 // ⚠️⚠️ 這個檔案的正確檔名是:kol-evidence.js  (證據圖 KolEvidence)  ⚠️⚠️
 // ═════════════════════════════════════════════════════════════════
-//  kol-evidence.js · v1.0(2026-11-09)
+//  kol-evidence.js · v1.1(2026-11-09)
 //  🖼 講者 + 證據圖(RA:參考 wetracked 那種影片 —— KOL 講話,畫面下半部彈出客人自己的方形廣告圖)
 //
 //  職責(只做這一件事):
@@ -65,11 +65,13 @@
     if (!on) { box.innerHTML = ''; box.style.display = 'none'; return; }
     box.style.display = '';
     box._opts = opts;
-    if (_brand() !== st.brandId || (!st.ads.length && !st.loading)) {
+    st.box = box;   // 面板會重畫 → 永遠畫在【最新】那個框(讀完圖時舊框可能已經被換掉)
+    if (st.loading || _brand() !== st.brandId || !st.ads.length) {
       box.innerHTML = '<div style="color:#999;font-size:12px;padding:8px 0;">⏳ 讀取這個品牌的廣告圖…</div>';
-      await _load();
+      if (!st.loading) await _load();
+      else return;   // 已經在讀 → 讀完那一次會畫到 st.box
     }
-    _paint(box);
+    if (st.box && st.box.isConnected) _paint(st.box);
   }
 
   function _paint(box) {
@@ -137,5 +139,5 @@
   }
 
   window.KolEvidence = { render, payload, count, setPlan, cardsFor, durationFor, PER_BEAT, MAX };
-  try { console.log('[KolEvidence] v1.0 就緒 · 🖼 講者 + 證據圖(每 15 秒 2 張 · 最多 12 張 · 加字幕時一起疊)'); } catch (_) {}
+  try { console.log('[KolEvidence] v1.1 就緒 · 面板重畫時圖清單畫到最新的框 · v1.0 · 🖼 講者 + 證據圖(每 15 秒 2 張 · 最多 12 張 · 加字幕時一起疊)'); } catch (_) {}
 })();
