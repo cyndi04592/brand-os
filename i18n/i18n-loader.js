@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.1';
+  var VER = '1.2';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -61,7 +61,7 @@
   var TD = {};        // 去頭尾空白後的字典(句子裡局部比對用)
   var TRIE = {};
   var done = new WeakMap();   // node → 我們設過的字(避免日文漢字又被拿去比對)
-  var UNIT_RE = /(\d\s*)([點秒張段支個位字分次件集])/g;
+  var UNIT_RE = /(\d\s*)([點秒張段支個位字分次件集歲])/g;
   var SPACE_LANG = LANG === 'en';
 
   function build(d) {
@@ -119,6 +119,7 @@
     var core = t.replace(/「[^」]*」|“[^”]*”|"[^"]*"|[:：]\s*[^\s:：,，。]{1,12}$/g, '');
     var han = (core.match(/[\u3400-\u9fff]/g) || []).length;
     var cov = segment.covered || 0;
+    t.replace(UNIT_RE, function (all, num, u) { if (DICT[u]) cov++; return all; });   // 數字後的單位(15 秒、33 歲)也算蓋到
     if (!han || (han <= 6 ? cov < han : cov / han < 0.6)) { if (window.BOS_I18N_MISS) window.BOS_I18N_MISS.add(t); return text; }
     var out = lead + seg + tail;
     // 數字後面的單字單位(500 點、15 秒、3 張…):單字只在緊跟數字時換,避免「重點」被拆開
