@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.5';
+  var VER = '1.6';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -74,7 +74,7 @@
       TD[kt] = v.trim();
       var node = TRIE;
       for (var i = 0; i < kt.length; i++) { var c = kt[i]; node = node[c] || (node[c] = {}); }
-      node.$ = kt;
+      node['$k'] = kt;   // ★ v1.6 結尾記號用兩個字的鍵:字典裡有含「$」的字串時,單字「$」會跟結尾記號撞在一起,畫面出現 undefined
     });
   }
 
@@ -88,7 +88,7 @@
       var node = TRIE, j = i;
       while (j < n && (node = node[s[j]])) {
         j++;
-        if (node.$ && j - i + best[j] > best[i]) { best[i] = j - i + best[j]; pick[i] = node.$; }
+        if (node['$k'] && j - i + best[j] > best[i]) { best[i] = j - i + best[j]; pick[i] = node['$k']; }
       }
     }
     var out = '', k = 0, prevWord = false;
