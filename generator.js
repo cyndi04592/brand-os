@@ -38,13 +38,35 @@ const COPY_LANG = {
   ja: { label: '日本語',   hook: 32, cta: 25 },
   en: { label: 'English',  hook: 12, cta: 8  },
 };
+//  🌐 2026-11-08 RA:客人進駐書(品牌/商品資料)是日文就產日文、英文就產英文
+//   順序:① 客人在這個品牌手動選過的 → ② 看品牌/商品資料是什麼語言 → ③ 介面語言 → ④ 中文
+function _copyLangKey() { return 'bos_copy_lang:' + (window.S?.brandId || ''); }
+function detectBrandLang() {
+  const S = window.S || {};
+  const brand = (window.BRANDS || []).find(b => b.id === S.brandId);
+  if (!brand) return '';
+  const sub = brand.subs?.find(x => x.id === S.subId);
+  const txt = [brand.name, brand.soul, brand.adStyle, brand.hashtags, sub?.name, sub?.soul, sub?.adStyle,
+               S.prod?.name, S.prod?.tag, S.prod?.spec, S.prod?.feature].filter(Boolean).join(' ');
+  const kana  = (txt.match(/[\u3040-\u30ff]/g) || []).length;
+  const han   = (txt.match(/[\u3400-\u9fff]/g) || []).length;
+  const words = (txt.match(/[A-Za-z]{2,}/g) || []).length;
+  if (kana >= 3 && kana >= han * 0.15) return 'ja';   // 有假名 → 日文(日文漢字多,假名比例抓 15%)
+  if (han >= 3) return 'zh';
+  if (words >= 3) return 'en';                         // 幾乎沒有中文字、都是英文
+  return '';
+}
 function getCopyLang() {
-  const el = document.getElementById('selCopyLang');
-  if (el && COPY_LANG[el.value]) return el.value;
   let v = '';
-  try { v = localStorage.getItem('bos_copy_lang') || ''; } catch (_) {}
+  try { if (window.S?.brandId) v = localStorage.getItem(_copyLangKey()) || ''; } catch (_) {}
+  if (COPY_LANG[v]) return v;
+  v = detectBrandLang();
   if (COPY_LANG[v]) return v;
   return COPY_LANG[window.BOS_LANG] ? window.BOS_LANG : 'zh';
+}
+function syncCopyLangSelect() {
+  const el = document.getElementById('selCopyLang');
+  if (el) el.value = getCopyLang();
 }
 function injectCopyLangSelect() {
   if (document.getElementById('selCopyLang')) return;
@@ -59,7 +81,16 @@ function injectCopyLangSelect() {
     Object.keys(COPY_LANG).map(k => `<option value="${k}"${k === cur ? ' selected' : ''}>${COPY_LANG[k].label}</option>`).join('') +
     '</select>';
   box.parentElement.insertBefore(wrap, box.nextSibling);
-  wrap.querySelector('select').addEventListener('change', function () { try { localStorage.setItem('bos_copy_lang', this.value); } catch (_) {} });
+  //  手動選 = 只記在這個品牌(換品牌會回到自動判斷)
+  wrap.querySelector('select').addEventListener('change', function () {
+    try { if (window.S?.brandId) localStorage.setItem(_copyLangKey(), this.value); } catch (_) {}
+  });
+  //  點品牌/系列/商品後(brands.js 會呼叫 updateCtx)→ 選單跟著換成這個品牌的語言
+  if (typeof window.updateCtx === 'function' && !window.updateCtx._copyLang) {
+    const _orig = window.updateCtx;
+    window.updateCtx = function () { const r = _orig.apply(this, arguments); try { syncCopyLangSelect(); } catch (_) {} return r; };
+    window.updateCtx._copyLang = true;
+  }
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectCopyLangSelect);
 else injectCopyLangSelect();
@@ -373,7 +404,7 @@ async function doGenerate() {
   const _facts = [_noPrice(window.S.prod.spec), _noPrice(window.S.prod.feature)].filter(Boolean).join('；').slice(0, 200);
 
   injectCopyLangSelect();
-  const _lang = getCopyLang();
+  const _lang = (document.getElementById('selCopyLang') || {}).value || getCopyLang();
   const _L = COPY_LANG[_lang];
   const _intro = {
     zh: '你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣。',
