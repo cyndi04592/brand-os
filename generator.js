@@ -14,8 +14,9 @@ function switchTab(btn) {
 function countWords(str) {
   if (!str) return 0;
   const s = str.replace(/[，。！？、；：「」『』【】〔〕…—·\s]/g, '');
-  const zhChars = (s.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || []).length;
-  const enWords = (s.replace(/[\u4e00-\u9fff\u3400-\u4dbf]/g, ' ').match(/[a-zA-Z0-9]+/g) || []).length;
+  //  🌐 2026-11-08 日文假名(ひらがな/カタカナ)也一個字算一字
+  const zhChars = (s.match(/[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff]/g) || []).length;
+  const enWords = (s.replace(/[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff]/g, ' ').match(/[a-zA-Z0-9]+/g) || []).length;
   return zhChars + enWords;
 }
 
@@ -23,8 +24,45 @@ function charBadge(len, limit) {
   const over  = len > limit;
   const color = over ? '#FF4D6A' : '#7ED4B0';
   const icon  = over ? '⚠️ 超字數！' : '✅';
-  return `<span style="font-size:10px;font-weight:900;color:${color};font-family:'DM Mono';margin-left:6px;">${len}字 ${icon}</span>`;
+  const unit  = (window.S && window.S.copyLang === 'en') ? ' words' : '字';
+  return `<span style="font-size:10px;font-weight:900;color:${color};font-family:'DM Mono';margin-left:6px;">${len}${unit} ${icon}</span>`;
 }
+
+// ══ 🌐 2026-11-08 文案語言(RA:日本客人用,文案卻都是中文很奇怪)══
+//   客人在「文案長度」旁邊選:繁體中文 / 日本語 / English。
+//   預設跟著介面語言(中文介面→繁中、日文→日文、英文→英文),客人改過就記住。
+//   ★ 繁體中文那條提示詞跟以前一字不差,中文客人完全不受影響。
+//   字數上限各語言各自一套(日文假名比中文長、英文算單字)。
+const COPY_LANG = {
+  zh: { label: '繁體中文', hook: 25, cta: 20 },
+  ja: { label: '日本語',   hook: 32, cta: 25 },
+  en: { label: 'English',  hook: 12, cta: 8  },
+};
+function getCopyLang() {
+  const el = document.getElementById('selCopyLang');
+  if (el && COPY_LANG[el.value]) return el.value;
+  let v = '';
+  try { v = localStorage.getItem('bos_copy_lang') || ''; } catch (_) {}
+  if (COPY_LANG[v]) return v;
+  return COPY_LANG[window.BOS_LANG] ? window.BOS_LANG : 'zh';
+}
+function injectCopyLangSelect() {
+  if (document.getElementById('selCopyLang')) return;
+  const len = document.getElementById('selCopyLength');
+  const box = len && len.parentElement;
+  if (!box || !box.parentElement) return;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;gap:3px;';
+  const cur = getCopyLang();
+  wrap.innerHTML = '<div class="sel-lbl">文案語言</div>' +
+    '<select class="sel" id="selCopyLang" style="width:96px" data-i18n-skip>' +
+    Object.keys(COPY_LANG).map(k => `<option value="${k}"${k === cur ? ' selected' : ''}>${COPY_LANG[k].label}</option>`).join('') +
+    '</select>';
+  box.parentElement.insertBefore(wrap, box.nextSibling);
+  wrap.querySelector('select').addEventListener('change', function () { try { localStorage.setItem('bos_copy_lang', this.value); } catch (_) {} });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectCopyLangSelect);
+else injectCopyLangSelect();
 
 // ════════════════════════════════════════════════════════════════
 // ★ 記憶模組
@@ -334,7 +372,24 @@ async function doGenerate() {
     .replace(/\s+/g, ' ').trim();
   const _facts = [_noPrice(window.S.prod.spec), _noPrice(window.S.prod.feature)].filter(Boolean).join('；').slice(0, 200);
 
-  const prompt = `你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣。
+  injectCopyLangSelect();
+  const _lang = getCopyLang();
+  const _L = COPY_LANG[_lang];
+  const _intro = {
+    zh: '你是台灣頂尖FB廣告策略師，精通 Alex Hormozi 廣告矩陣。',
+    ja: '你是日本頂尖的 Meta(FB/IG)廣告策略師,精通 Alex Hormozi 廣告矩陣,熟悉日本消費者的語感與廣告用語。',
+    en: '你是美國頂尖的 Meta(FB/IG)廣告策略師,精通 Alex Hormozi 廣告矩陣,熟悉美國消費者的語感與廣告用語。',
+  }[_lang];
+  const _rules = _lang === 'zh' ? `‣ hook.script：繁體中文字數【硬性上限 25 字】，只能 1 句話，禁止用句號切兩句
+‣ cta.script：繁體中文字數【硬性上限 20 字】，只能 1 句話
+‣ 計算規則：每個中文字算 1 字，英文單字整體算 1 字，標點符號不計入字數` : _lang === 'ja' ? `‣ 語言:所有欄位(method、script、visual、type、solve、style)一律用自然的日文書寫,讀起來像日本廣告公司寫的原生文案
+‣ hook.script：日文【上限 ${_L.hook} 字】(漢字、平假名、片假名各算 1 字),1 句話
+‣ cta.script：日文【上限 ${_L.cta} 字】,1 句話
+‣ 品牌名、商品名照原樣保留;Hashtag 改成日本人會搜尋的日文 hashtag` : `‣ Language: write every field (method, script, visual, type, solve, style) in natural American English, like native copy from a US agency
+‣ hook.script: max ${_L.hook} words, one sentence
+‣ cta.script: max ${_L.cta} words, one sentence
+‣ Keep brand and product names exactly as given; turn hashtags into English hashtags people in the US search for`;
+  const prompt = `${_intro}
 
 【品牌】${brandDisplay}
 【品牌靈魂】${soul}
@@ -344,12 +399,10 @@ ${_marks.length ? `【型號】商品名裡的「${_marks.join('、')}」是型�
 【Hashtag】${tags}
 【文案規格】${copyLengthGuide}
 ━━━ ⚠️ 字數鐵則（違反不接受，生成前必須自我驗算）━━━
-‣ hook.script：繁體中文字數【硬性上限 25 字】，只能 1 句話，禁止用句號切兩句
-‣ cta.script：繁體中文字數【硬性上限 20 字】，只能 1 句話
-‣ 計算規則：每個中文字算 1 字，英文單字整體算 1 字，標點符號不計入字數
+${_rules}
 
 生成「剛好 ${_ask} 組」，只回傳純 JSON（文案內容裡要用引號一律用「」，不可用英文雙引號）：
-{"combos":[{"id":"AD001","hook":{"method":"方向名稱","script":"鉤子文字≤25字","visual":"畫面建議"},"core":{"type":"廣告類型","script":"核心段落","solve":"解決什麼核心問題"},"cta":{"style":"CTA風格","script":"CTA文字≤20字"}}]}`;
+{"combos":[{"id":"AD001","hook":{"method":"方向名稱","script":"鉤子文字≤${_L.hook}${_lang === 'en' ? ' words' : '字'}","visual":"畫面建議"},"core":{"type":"廣告類型","script":"核心段落","solve":"解決什麼核心問題"},"cta":{"style":"CTA風格","script":"CTA文字≤${_L.cta}${_lang === 'en' ? ' words' : '字'}"}}]}`;
 
   try {
     const res = await fetch(CF_WORKER_URL, {
@@ -368,6 +421,7 @@ ${_marks.length ? `【型號】商品名裡的「${_marks.join('、')}」是型�
     const parsed = _safeJsonParse(raw);
     btn.innerHTML = '<span class="spin"></span>比對記憶...';
     window.S.scripts = await _memFilter(parsed.combos || [], count);
+    window.S.copyLang = _lang;
     renderScripts(brandDisplay, sub?.color || brand?.navColor);
 
     const sb = document.getElementById('scriptBadge');
@@ -416,12 +470,13 @@ function renderScripts(brandDisplay, colorKey) {
     window.S.scripts.map((s, i) => {
       const hookLen = countWords(s.hook?.script || '');
       const ctaLen  = countWords(s.cta?.script  || '');
+      const _lim = COPY_LANG[window.S.copyLang] || COPY_LANG.zh;
       return `<div class="ad-card" style="animation-delay:${i * 18}ms">
         <div class="ac-top">
           <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
             <span class="ac-id">${s.id}</span>
-            <span class="ac-pill" style="background:${sc.bg};color:${sc.c};">${window.S.prod?.name}</span>
-            <span style="font-size:9px;color:var(--t3);">${s.core?.type||''}</span>
+            <span class="ac-pill" data-i18n-skip style="background:${sc.bg};color:${sc.c};">${window.S.prod?.name}</span>
+            <span data-i18n-skip style="font-size:9px;color:var(--t3);">${s.core?.type||''}</span>
           </div>
           <div class="ac-btns">
             <button class="tbtn tbtn-s" onclick="addDeliver(${i})">＋ 加入記憶學習區</button>
@@ -431,25 +486,25 @@ function renderScripts(brandDisplay, colorKey) {
         <div class="ac-body">
           <div class="seg">
             <div class="seg-lbl" style="color:var(--sky)">· 黃金3秒鉤子</div>
-            <div class="seg-txt" style="font-size:14px;font-weight:700;line-height:1.6;color:#F5F5F5;">${s.hook?.script||''}</div>
+            <div class="seg-txt" data-i18n-skip style="font-size:14px;font-weight:700;line-height:1.6;color:#F5F5F5;">${s.hook?.script||''}</div>
             <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:4px;">
-              <span class="seg-badge" style="background:var(--sky2);color:var(--sky)">${s.hook?.method||''}</span>
-              ${charBadge(hookLen, 25)}
+              <span class="seg-badge" data-i18n-skip style="background:var(--sky2);color:var(--sky)">${s.hook?.method||''}</span>
+              ${charBadge(hookLen, _lim.hook)}
             </div>
-            <div class="seg-hint">· ${s.hook?.visual||''}</div>
+            <div class="seg-hint" data-i18n-skip>· ${s.hook?.visual||''}</div>
           </div>
           <div class="seg">
             <div class="seg-lbl" style="color:var(--mint)">· 核心段落</div>
-            <div class="seg-txt" style="white-space:pre-line">${s.core?.script||''}</div>
-            <span class="seg-badge" style="background:var(--mint2);color:var(--mint)">${s.core?.type||''}</span>
-            <div class="seg-hint">· ${s.core?.solve||''}</div>
+            <div class="seg-txt" data-i18n-skip style="white-space:pre-line">${s.core?.script||''}</div>
+            <span class="seg-badge" data-i18n-skip style="background:var(--mint2);color:var(--mint)">${s.core?.type||''}</span>
+            <div class="seg-hint" data-i18n-skip>· ${s.core?.solve||''}</div>
           </div>
           <div class="seg">
             <div class="seg-lbl" style="color:var(--peach)">· 行動呼籲 CTA</div>
-            <div class="seg-txt" style="font-size:14px;font-weight:700;line-height:1.6;color:#F5F5F5;">${s.cta?.script||''}</div>
+            <div class="seg-txt" data-i18n-skip style="font-size:14px;font-weight:700;line-height:1.6;color:#F5F5F5;">${s.cta?.script||''}</div>
             <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:4px;">
-              <span class="seg-badge" style="background:var(--peach2);color:var(--peach)">${s.cta?.style||''}</span>
-              ${charBadge(ctaLen, 20)}
+              <span class="seg-badge" data-i18n-skip style="background:var(--peach2);color:var(--peach)">${s.cta?.style||''}</span>
+              ${charBadge(ctaLen, _lim.cta)}
             </div>
           </div>
         </div>
