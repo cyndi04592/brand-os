@@ -3,7 +3,7 @@
    ───────────────────────────────────────────────────────────────────
    像 Adobe 的語言包:主系統(kol.html、index.html…)照舊寫中文,
    這支只在「日文 / 英文」客人身上把畫面上的字換掉。
-     · 中文客人:只在左下角放一顆語言按鈕(v1.8),其他什麼都不載、什麼都不改。
+     · 中文客人:只在左下角放一顆浮動的 🌐 語言按鈕(v1.9),其他什麼都不載、什麼都不改。
      · 日文 / 英文客人:載入 /i18n/{ja|en}/{頁面}.json,把畫面上的中文換掉,
        之後跳出來的提示、彈窗、新卡片也會跟著換(MutationObserver)。
    語言怎麼決定(順序):
@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.8';
+  var VER = '1.9';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -43,7 +43,7 @@
   window.BOS_LANG = LANG;
 
   // 左下角語言按鈕(v1.8:每個人都看得到,台灣人也能切日文/英文)
-  //   平常只是一顆小小的「中文」(RA:不要 icon),點了才展開三個語言;KOL 頁底部確認列跳出來時自動藏起來,不擋按鈕
+  //   平常只是一顆浮動的小按鈕「🌐 中文」,點了才展開三個語言;KOL 頁底部確認列跳出來時自動藏起來,不擋按鈕
   //   手機(≤768 寬)縮小一號、避開 iPhone 底部橫條(safe-area)
   function switcher() {
     if (document.getElementById('bos-lang-sw') || !document.body) return;
@@ -65,7 +65,7 @@
       box.appendChild(b);
       return b;
     }
-    var main = btn(NAMES[LANG], false, function () {
+    var main = btn('🌐 ' + NAMES[LANG], false, function () {
       main.remove();
       ['zh', 'ja', 'en'].forEach(function (l) {
         btn(NAMES[l], l === LANG, function () {
