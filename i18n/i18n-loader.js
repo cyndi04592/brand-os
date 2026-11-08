@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.4';
+  var VER = '1.5';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -222,8 +222,23 @@
     });
     mo.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
     switcher();
+    legalNote();
     clearTimeout(revealTimer);
     reveal();
+  }
+
+  // 條款、隱私權這類法律文件:翻譯只供參考,以中文版為準(頁首加一行說明)
+  function legalNote() {
+    if (!/^(terms|privacy|data-deletion|meta-privacy|meta-terms)$/.test(page)) return;
+    if (document.getElementById('bos-legal-note')) return;
+    var n = document.createElement('div');
+    n.id = 'bos-legal-note';
+    n.setAttribute('data-i18n-skip', '');
+    n.style.cssText = 'margin:0;padding:10px 16px;background:#2a2230;color:#f3e9c8;font:500 13px/1.5 system-ui,sans-serif;text-align:center';
+    n.textContent = LANG === 'ja'
+      ? 'この日本語訳は参考用です。内容に相違がある場合は、繁体字中国語版が優先されます。'
+      : 'This English translation is provided for reference only. If there is any discrepancy, the Traditional Chinese version prevails.';
+    document.body.insertBefore(n, document.body.firstChild);
   }
 
   // 右下角語言按鈕(只有日文/英文客人看得到)
