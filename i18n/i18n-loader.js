@@ -3,7 +3,7 @@
    ───────────────────────────────────────────────────────────────────
    像 Adobe 的語言包:主系統(kol.html、index.html…)照舊寫中文,
    這支只在「日文 / 英文」客人身上把畫面上的字換掉。
-     · 中文客人:只在左下角放一顆 🌐 語言按鈕(v1.7),其他什麼都不載、什麼都不改。
+     · 中文客人:只在左下角放一顆語言按鈕(v1.8),其他什麼都不載、什麼都不改。
      · 日文 / 英文客人:載入 /i18n/{ja|en}/{頁面}.json,把畫面上的中文換掉,
        之後跳出來的提示、彈窗、新卡片也會跟著換(MutationObserver)。
    語言怎麼決定(順序):
@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.7';
+  var VER = '1.8';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -42,17 +42,19 @@
   var LANG = detect();
   window.BOS_LANG = LANG;
 
-  // 🌐 左下角語言按鈕(v1.7:每個人都看得到,台灣人也能切日文/英文)
-  //   平常只是一顆小小的「🌐 中文」,點了才展開三個語言;KOL 頁底部確認列跳出來時自動藏起來,不擋按鈕
+  // 左下角語言按鈕(v1.8:每個人都看得到,台灣人也能切日文/英文)
+  //   平常只是一顆小小的「中文」(RA:不要 icon),點了才展開三個語言;KOL 頁底部確認列跳出來時自動藏起來,不擋按鈕
+  //   手機(≤768 寬)縮小一號、避開 iPhone 底部橫條(safe-area)
   function switcher() {
     if (document.getElementById('bos-lang-sw') || !document.body) return;
     var NAMES = { zh: '中文', ja: '日本語', en: 'EN' };
     var box = document.createElement('div');
     box.id = 'bos-lang-sw';
     box.setAttribute('data-i18n-skip', '');
-    box.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:99998;display:flex;gap:4px;align-items:center;background:rgba(20,20,24,.85);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px;font:600 12px/1 system-ui,sans-serif';
+    box.style.cssText = 'position:fixed;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99998;display:flex;gap:4px;align-items:center;background:rgba(20,20,24,.85);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px;font:600 12px/1 system-ui,sans-serif;max-width:calc(100vw - 24px);box-sizing:border-box';
     var st = document.createElement('style');
-    st.textContent = 'body:has(.rs-actionbar.show) #bos-lang-sw{display:none!important}';
+    st.textContent = 'body:has(.rs-actionbar.show) #bos-lang-sw{display:none!important}' +
+      '@media(max-width:768px){#bos-lang-sw{left:calc(8px + env(safe-area-inset-left,0px))!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;font-size:11px!important;gap:2px!important;opacity:.9}#bos-lang-sw button{padding:5px 8px!important;font-size:11px!important}}';
     box.appendChild(st);
     function btn(txt, on, fn) {
       var b = document.createElement('button');
@@ -63,7 +65,7 @@
       box.appendChild(b);
       return b;
     }
-    var main = btn('🌐 ' + NAMES[LANG], false, function () {
+    var main = btn(NAMES[LANG], false, function () {
       main.remove();
       ['zh', 'ja', 'en'].forEach(function (l) {
         btn(NAMES[l], l === LANG, function () {
