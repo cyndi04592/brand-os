@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.13';
+  var VER = '1.14';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -210,7 +210,7 @@
 
   function doText(n) {
     var v = n.nodeValue;
-    if (!v || done.get(n) === v || !CJK.test(v)) return;
+    if (!v || done.get(n) === v || !(CJK.test(v) || (SPACE_LANG && PUNC_EN[v.trim()]))) return;   // v1.14:單獨的中文標點也要進來換
     if (n.parentElement && skipEl(n.parentElement)) return;
     // 手動用 <br> 斷行的短字(例「使用自己<br>建立」):整段合起來查,查得到就整段換掉、拿掉 <br>
     var p = n.parentElement;
