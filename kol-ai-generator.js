@@ -2377,6 +2377,19 @@ async function saveKolImageToLibrary(idx) {
     img.driveFileId = res.file_id;
     renderGallery();
 
+    //  🌐 2026-11-08 RA 實測:建角色選了「英文(美式輕鬆)」,人設卻還是台灣 → 影片講中文。
+    //   選臉存好後,把這裡選的國籍・性別寫進人設(之後要改走「編輯人設」)
+    try {
+      const _kp = {}; document.querySelectorAll('.kai-param').forEach(el => { _kp[el.dataset.k] = el.value; });
+      const _row = (S.personas || []).find(x => String(x.persona_name || '') === String(S.currentPersonaName));
+      const _nat = _kp.nationality || 'tw', _gen = _kp.gender || '';
+      if (_row && (String(_row.nationality || 'tw') !== _nat || (_gen && String(_row.gender || '') !== _gen))) {
+        const _upd = Object.assign({}, _row, { nationality: _nat }, _gen ? { gender: _gen } : {});
+        const _r2 = await gasPost('saveKolPersona', { data: _upd });
+        if (_r2 && _r2.ok) Object.assign(_row, { nationality: _nat }, _gen ? { gender: _gen } : {});
+      }
+    } catch (e) { console.warn('[kai] 國籍寫進人設失敗(不影響正臉):', e && e.message); }
+
     showStatus('✅ 已存進雲端倉庫:' + res.filename, 'ok');
     //  🩹 v3.46(2026-11-02 實測)選完臉左邊卡片還是空白頭像「還沒建立」,要客戶自己按「重新載入」
     //   → 存好就自動重新載入形象庫(refreshAll 住在 kol.html)
