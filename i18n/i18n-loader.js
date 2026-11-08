@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.0';
+  var VER = '1.1';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -92,6 +92,7 @@
       }
     }
     var out = '', k = 0, prevWord = false;
+    segment.covered = best[0];
     while (k < n) {
       var key = pick[k];
       if (key) {
@@ -112,7 +113,14 @@
     var t = text.trim();
     if (DICT[t]) return text.replace(t, function () { return DICT[t]; });
     var lead = text.match(/^\s*/)[0], tail = text.match(/\s*$/)[0];
-    var out = lead + segment(t) + tail;
+    var seg = segment(t);
+    //  ★ 蓋不到大部分中文就整句不動(避免客人自己的品牌名、人名、檔名被翻一半,變成「Hong Kong福临门」)
+    //  引號裡、冒號後面那一小段多半是客人自己的名字(已選定:晴天、切換到「芮比」),不算進要蓋住的字數
+    var core = t.replace(/「[^」]*」|“[^”]*”|"[^"]*"|[:：]\s*[^\s:：,，。]{1,12}$/g, '');
+    var han = (core.match(/[\u3400-\u9fff]/g) || []).length;
+    var cov = segment.covered || 0;
+    if (!han || (han <= 6 ? cov < han : cov / han < 0.6)) { if (window.BOS_I18N_MISS) window.BOS_I18N_MISS.add(t); return text; }
+    var out = lead + seg + tail;
     // 數字後面的單字單位(500 點、15 秒、3 張…):單字只在緊跟數字時換,避免「重點」被拆開
     return out.replace(UNIT_RE, function (all, num, u) { var v = DICT[u]; if (!v) return all; return (/\s$/.test(num) && /^\s/.test(v)) ? num + v.replace(/^\s+/, '') : num + v; });
   }
