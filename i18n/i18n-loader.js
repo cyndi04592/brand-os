@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.12';
+  var VER = '1.13';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -178,7 +178,10 @@
     return out;
   }
 
+  //  ★ v1.13 英文介面:單獨一顆中文標點(例:標題最後被 <span> 隔開的「。」)換成英文標點
+  var PUNC_EN = { '。': '.', '，': ',', '、': ',', '！': '!', '？': '?', '：': ':', '；': ';' };
   function tr(text) {
+    if (SPACE_LANG && text) { var pt = text.trim(); if (PUNC_EN[pt]) return text.replace(pt, PUNC_EN[pt]); }
     if (!text || !CJK.test(text)) return text;
     var t = text.trim();
     if (DICT[t]) return text.replace(t, function () { return DICT[t]; });
