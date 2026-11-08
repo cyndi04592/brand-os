@@ -1131,6 +1131,29 @@ let SELECTED_FLAVOR  = '';
 let SELECTED_CONTEXT = '';       // ③ 也不預選 ——「選無」本身就是一種選擇,要客戶自己按
 let SELECTED_INSPIRATION = null;
 let LAST_POSTER_URL = null;
+//  🩹 2026-11-08 RA 實測:換了商品照之後,「已生成 · 再做一支」還是拿【上一張廣告圖】去做影片
+//   (影片的 [Image1] 是舊廣告圖、商品參考卻是新照片 → 兩個商品混在一起)。
+//   → 記住這張廣告圖是用哪張商品照做的;照片換了就把變影片按鈕收起來,要先重新生成廣告圖。
+let LAST_POSTER_PHOTO = null;
+function _posterIsStale() {
+  if (!LAST_POSTER_URL || !LAST_POSTER_PHOTO) return false;
+  const cur = (window.S && window.S.selPhoto !== null && window.S.photos) ? window.S.photos[window.S.selPhoto] : null;
+  return cur !== LAST_POSTER_PHOTO;
+}
+function _dropStalePoster() {
+  if (!_posterIsStale()) return false;
+  LAST_POSTER_URL = null; LAST_POSTER_PHOTO = null;
+  const b = document.getElementById('posterToVideoBtn');
+  if (b) { b.style.display = 'none'; b.disabled = false; b.textContent = '變 5 秒影片'; }
+  return true;
+}
+//  按鈕被按下的那一刻再檢查一次(比任何別的程式先攔下來)
+document.addEventListener('click', function (e) {
+  const b = e.target && e.target.closest && e.target.closest('#posterToVideoBtn');
+  if (!b || !_dropStalePoster()) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  if (typeof setPrStatus === 'function') setPrStatus('⚠️ 商品照換了,請先用這張照片重新生成廣告圖,再做影片', 'var(--red)');
+}, true);
 
 const BLACK_IMAGE_THRESHOLD = 30000;
 
@@ -1846,6 +1869,7 @@ function _clearVideoPreview() {
 async function renderAdCanvas() {
   const canvas = document.getElementById('adCanvas');
   _clearVideoPreview();
+  _dropStalePoster();   // 🩹 2026-11-08 換了商品照 → 舊廣告圖不能再拿去做影片
   if (PR_BG_IMG) { await renderAdCanvasWithPR(); return; }
   if (!canvas) return;
   canvas.width = AM.w; canvas.height = AM.h;
@@ -4533,6 +4557,7 @@ async function generateGptPoster() {
 
     PR_BG_IMG = finalImg;
     LAST_POSTER_URL = winner.imageUrl || winner.download_url || finalImg;
+    LAST_POSTER_PHOTO = (window.S.selPhoto !== null) ? window.S.photos[window.S.selPhoto] : null;
     CANVAS_TAINTED = false;
 
     if (winner.from === 'fal') {
