@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.11';
+  var VER = '1.12';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -122,8 +122,20 @@
   var UNIT_RE = /(\d\s*)([點秒張段支個位字分次件集歲])/g;
   var SPACE_LANG = LANG === 'en';
 
+  //  ★ v1.12 字典是從 HTML 原始碼抽出來的,裡面有「&amp;」「&gt;」這種寫法,畫面上的字卻是「&」「>」
+  //   → 對不到整句,只好拆字硬翻(出現「芮比Ad行銷」),而且翻出來的字會直接秀「&amp;」。載入時一律還原成真正的符號
+  var ENT = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&nbsp;': '\u00a0' };
+  function unEnt(x) { return String(x).replace(/&(amp|lt|gt|quot|#39|nbsp);/g, function (m) { return ENT[m]; }); }
   function build(d) {
-    DICT = d || {};
+    DICT = {};
+    Object.keys(d || {}).forEach(function (k) {
+      var v = unEnt(d[k]);
+      DICT[k] = v;
+      var k2 = unEnt(k);
+      if (k2 !== k && !(k2 in d)) DICT[k2] = v;
+      var k3 = k2.replace(/\u00a0/g, ' ');
+      if (k3 !== k2 && !(k3 in DICT)) DICT[k3] = v;
+    });
     TD = {}; TRIE = {};
     Object.keys(DICT).forEach(function (k) {
       var v = DICT[k], kt = k.trim();
