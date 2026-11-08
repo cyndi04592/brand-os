@@ -206,13 +206,16 @@
     const _specLines = (Array.isArray(_beatPlan) ? _beatPlan : [])
       .map(function (b) {
         const sec = (b && (b.seconds || b.durationSec)) || 15;
-        return sec + ' 秒的段落寫 ' + Math.round(sec * FIT_SWEET * _rate)
-          + '-' + Math.round(sec * FIT_MAX * _rate) + ' 字';
+        const _lo = Math.round(sec * FIT_SWEET * _rate), _hi = Math.round(sec * FIT_MAX * _rate);
+        //  🌐 2026-11-08 英文用單字數講(AI 會把「字」當成單字);約 5.6 個字元 = 1 個英文單字
+        return /^en/.test(String((persona && persona.nationality) || ''))
+          ? (sec + ' 秒的段落寫約 ' + Math.round(_lo / 5.6) + '-' + Math.round(_hi / 5.6) + ' 個英文單字')
+          : (sec + ' 秒的段落寫 ' + _lo + '-' + _hi + ' 字');
       });
     const _uniqSpec = _specLines.filter(function (x, i, a) { return a.indexOf(x) === i; });
     const _charSpec = _uniqSpec.length
       ? ('\n\n【台詞字數規格 · 必須遵守】每一段的台詞字數:' + _uniqSpec.join('、')
-         + '。這是依實測語速 ' + _rate + ' 字/秒換算的 —— 字數不足的話,'
+         + '(這是一進畫面就開口的長度;晚幾秒開口就照開口的秒數等比例減少)。這是依實測語速 ' + (/^en/.test(String((persona && persona.nationality) || '')) ? '每秒約 2.5 個英文單字' : (_rate + ' 字/秒')) + '換算的 —— 字數不足的話,'
          + '影片後段會出現好幾秒沒有人說話的空白,畫面會變成乾等。'
          + '寧可把事情講得更具體、多給一個細節,也不要讓段落講不滿。')
       : '';
