@@ -35,7 +35,7 @@ function charBadge(len, limit) {
 //   字數上限各語言各自一套(日文假名比中文長、英文算單字)。
 const COPY_LANG = {
   zh: { label: '繁體中文', hook: 25, cta: 20 },
-  ja: { label: '日本語',   hook: 32, cta: 25 },
+  ja: { label: '日本語',   hook: 32, cta: 28 },   // 2026-11-08 RA:日文 CTA 25 字常不夠 → 28
   en: { label: 'English',  hook: 12, cta: 8  },
 };
 //  🌐 2026-11-08 RA:客人進駐書(品牌/商品資料)是日文就產日文、英文就產英文
