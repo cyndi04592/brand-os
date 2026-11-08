@@ -52,8 +52,8 @@ function detectBrandLang() {
   const han   = (txt.match(/[\u3400-\u9fff]/g) || []).length;
   const words = (txt.match(/[A-Za-z]{2,}/g) || []).length;
   if (kana >= 3 && kana >= han * 0.15) return 'ja';   // 有假名 → 日文(日文漢字多,假名比例抓 15%)
+  if (words >= 3 && words * 2 >= han) return 'en';     // 英文為主(品牌名、系列名夾幾個中文字也算英文;1 個英文字 ≈ 2 個中文字)
   if (han >= 3) return 'zh';
-  if (words >= 3) return 'en';                         // 幾乎沒有中文字、都是英文
   return '';
 }
 function getCopyLang() {
