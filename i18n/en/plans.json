@@ -84,7 +84,7 @@
 "主體保真鎖核": "Subject fidelity lock",
 "人力產能放大": "Multiply your team's output",
 "付 12 個月 · 開通 13 個月": "Pay for 12 months · Get 13",
-"付款完成後自動開立電子發票(由創捷國際貿易股份有限公司開立)": "An e-invoice is issued automatically after payment (by 創捷國際貿易股份有限公司)",
+"付款完成後自動開立電子發票(由創捷國際貿易股份有限公司開立)": "An e-invoice is issued automatically after payment (by TRON INTERNATIONAL TRADING CO., Ltd.)",
 "企業": "Enterprise",
 "企業 · 集團": "Enterprise · Groups",
 "企業級運算": "Enterprise-grade compute",
@@ -182,7 +182,7 @@
 "極速專屬佇列": "Express dedicated queue",
 "標準運算佇列": "Standard compute queue",
 "標準雜誌級": "Standard magazine grade",
-"標示價格為含稅價 · 付款完成後自動開立電子發票(由創捷國際貿易股份有限公司開立)": "Prices include tax · An e-invoice is issued automatically after payment (by 創捷國際貿易股份有限公司)",
+"標示價格為含稅價 · 付款完成後自動開立電子發票(由創捷國際貿易股份有限公司開立)": "Prices include tax · An e-invoice is issued automatically after payment (by TRON INTERNATIONAL TRADING CO., Ltd.)",
 "標示價格為含稅價 · 點數每月自動配發、到期歸零回滿 · 加購補給包點數永久保留": "Prices include tax · Points refill automatically each month and reset at expiry · Top-up pack points never expire",
 "模型中立矩陣": "Model-agnostic matrix",
 "正在建立付款": "Setting up your payment",
@@ -289,5 +289,8 @@
 "🏦 匯款完成後,回報您的帳號後五碼": "🏦 After transferring, send us the last 5 digits of your account",
 "🏦 銀行轉帳（年繳 · 人工開通）": "🏦 Bank transfer (annual · activated manually)",
 "💳 信用卡付款（即時開通）": "💳 Pay by card (instant access)",
-"💳 立即付款開通": "💳 Pay now and get started"
+"💳 立即付款開通": "💳 Pay now and get started",
+"創捷國際貿易股份有限公司": "TRON INTERNATIONAL TRADING CO., Ltd.",
+"創捷國際貿易": "TRON INTERNATIONAL TRADING",
+"創捷": "TRON"
 }

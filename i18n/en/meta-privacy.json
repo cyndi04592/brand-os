@@ -58,13 +58,13 @@
 "職責 Responsibilities": "Responsibilities",
 "肖像及聲音": "Likeness and voice",
 "芮比廣告行銷行 RB Advertising & Marketing（統一編號 72600600）": "芮比廣告行銷行 RB Advertising & Marketing (Unified Business No. 72600600)",
-"芮比廣告行銷行（以下稱「本公司」）與創捷國際貿易股份有限公司（以下稱「創捷」）由同一創辦團隊建立，共同構成": "RB Advertising & Marketing (hereinafter the \"Company\") and 創捷國際貿易股份有限公司 (hereinafter \"創捷\") were established by the same founding team and together form the",
+"芮比廣告行銷行（以下稱「本公司」）與創捷國際貿易股份有限公司（以下稱「創捷」）由同一創辦團隊建立，共同構成": "RB Advertising & Marketing (hereinafter the \"Company\") and TRON INTERNATIONAL TRADING CO., Ltd. (hereinafter \"TRON\") were established by the same founding team and together form the",
 "角色 Role": "Role",
 "資料儲存於 Cloudflare 等通過國際資安認證之雲端基礎設施，傳輸全程以 HTTPS／TLS 加密。": "Data is stored on cloud infrastructure that has obtained international information security certifications, such as Cloudflare, and all transmissions are encrypted end to end with HTTPS/TLS.",
 "資料刪除 Data Deletion": "Data Deletion",
 "資料刪除說明": "Data Deletion Instructions",
 "資料類別 Data": "Data Category",
-"除提供本服務所必要之對象外，本公司不會將資料提供予第三人。必要對象包括：技術研發方創捷（平台維運）、雲端服務（Cloudflare）、AI 生成服務（如 Anthropic、OpenAI、HeyGen 等，僅限前述生成所需資料），以及依法令或主管機關要求之情形。": "The Company will not provide data to third parties other than those necessary to provide the Service. Such necessary recipients include: the technology developer 創捷 (platform operations), cloud services (Cloudflare), AI generation services (such as Anthropic, OpenAI, HeyGen, etc., limited to the generation data described above), and cases required by law or by competent authorities.",
+"除提供本服務所必要之對象外，本公司不會將資料提供予第三人。必要對象包括：技術研發方創捷（平台維運）、雲端服務（Cloudflare）、AI 生成服務（如 Anthropic、OpenAI、HeyGen 等，僅限前述生成所需資料），以及依法令或主管機關要求之情形。": "The Company will not provide data to third parties other than those necessary to provide the Service. Such necessary recipients include: the technology developer TRON (platform operations), cloud services (Cloudflare), AI generation services (such as Anthropic, OpenAI, HeyGen, etc., limited to the generation data described above), and cases required by law or by competent authorities.",
 "隱私權政策": "Privacy Policy",
 "隱私權政策 Privacy Policy": "Privacy Policy",
 "隱私權政策 Privacy Policy · RB Advertising & Marketing": "Privacy Policy · RB Advertising & Marketing",
@@ -74,7 +74,10 @@
 "：僅於建立數字人時，經當事人書面同意後蒐集之肖像照片與聲音樣本。": ": Portrait photos and voice samples collected only when creating a digital human, after obtaining the written consent of the individual concerned.",
 "：公司名稱、聯絡人姓名、職稱、電子郵件、電話，用於契約履行、帳務及客戶服務。": ": Company name, contact person's name, job title, email, and phone number, used for contract performance, billing, and customer service.",
 "：出售或出租任何資料；將資料用於上述目的以外之用途；存取一般用戶之個人檔案、好友名單或私人訊息；將受眾或粉絲之個人資料提供予 AI 服務供應商或用於模型訓練。": ": sell or rent any data; use data for any purpose other than those stated above; access the personal profiles, friend lists, or private messages of general users; or provide the personal data of audiences or followers to AI service providers or use it for model training.",
-"：創捷專注於 Brand OS AI 品牌行銷平台之核心技術研發與基礎建設；本公司為 Brand OS 之": ": 創捷 focuses on core technology R&D and infrastructure for Brand OS, an AI brand marketing platform; the Company is Brand OS's ",
+"：創捷專注於 Brand OS AI 品牌行銷平台之核心技術研發與基礎建設；本公司為 Brand OS 之": ": TRON focuses on core technology R&D and infrastructure for Brand OS, an AI brand marketing platform; the Company is Brand OS's ",
 "：客戶提供之品牌識別、商品資訊、圖片、影片與文案，用於生成廣告圖文與影片。": ": Brand identity, product information, images, videos, and copy provided by clients, used to generate ad creatives and videos.",
-"：登入、操作及錯誤紀錄，用於資訊安全與服務品質維護。": ": Login, activity, and error logs, used to maintain information security and service quality."
+"：登入、操作及錯誤紀錄，用於資訊安全與服務品質維護。": ": Login, activity, and error logs, used to maintain information security and service quality.",
+"創捷國際貿易股份有限公司": "TRON INTERNATIONAL TRADING CO., Ltd.",
+"創捷國際貿易": "TRON INTERNATIONAL TRADING",
+"創捷": "TRON"
 }
