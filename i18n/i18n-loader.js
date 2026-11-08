@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.2';
+  var VER = '1.3';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -139,6 +139,23 @@
     var v = n.nodeValue;
     if (!v || done.get(n) === v || !CJK.test(v)) return;
     if (n.parentElement && skipEl(n.parentElement)) return;
+    // 手動用 <br> 斷行的短字(例「使用自己<br>建立」):整段合起來查,查得到就整段換掉、拿掉 <br>
+    var p = n.parentElement;
+    if (p && p.childNodes.length > 1 && p.childNodes.length <= 7) {
+      var ok = true, whole = '';
+      for (var i = 0; i < p.childNodes.length; i++) {
+        var c = p.childNodes[i];
+        if (c.nodeType === 3) whole += c.nodeValue; else if (c.nodeName !== 'BR') { ok = false; break; }
+      }
+      var wk = whole.trim();
+      if (ok && DICT[wk]) {
+        var tn = document.createTextNode(DICT[wk]);
+        done.set(tn, DICT[wk]);
+        p.textContent = '';
+        p.appendChild(tn);
+        return;
+      }
+    }
     var out = tr(v);
     done.set(n, out);
     if (out !== v) n.nodeValue = out;
