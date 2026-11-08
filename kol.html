@@ -10499,6 +10499,7 @@ async function generateSocialPosts(ctx) {
   try {
     const res = await api('ai_generate_social_posts', {
       kolName: persona.persona_name,
+      nationality: persona.nationality || 'tw',   // 🌐 2026-11-08 說日文/英文的 KOL → 貼文也用日文/英文(kol-proxy 依這個切換)
       kolBackground: persona.background || '',
       kolPersonality: persona.personality || '',
       kolSpeakingStyle: persona.speaking_style || '',

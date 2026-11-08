@@ -293,6 +293,32 @@ const NATIONALITY_MAP = {
   my: 'Malaysian Chinese',
 };
 
+//  🌍 2026-11-08 RA:「沒有外國人、金髮那些選項」→ 新增「外貌」:只決定長相(人種、髮色),
+//   講話的語言 / 口音照舊由「國籍氣質」決定(例:金髮白人 + 英文(美式輕鬆) = 美國人講英文;金髮白人 + 台灣 = 住台灣的外國人講中文)
+const LOOK_LABEL = {
+  '':            '依國籍(預設)',
+  white_blonde:  '白人・金髮',
+  white_brown:   '白人・棕髮',
+  white_red:     '白人・紅髮',
+  black:         '黑人',
+  latino:        '拉丁裔',
+  south_asian:   '南亞裔(印度等)',
+  sea:           '東南亞裔',
+  eurasian:      '亞歐混血',
+};
+const LOOK_MAP = {
+  white_blonde: { eth: 'Caucasian', hair: 'natural blonde hair' },
+  white_brown:  { eth: 'Caucasian', hair: 'natural brown hair' },
+  white_red:    { eth: 'Caucasian', hair: 'natural ginger red hair' },
+  black:        { eth: 'Black',     hair: '' },
+  latino:       { eth: 'Latino',    hair: '' },
+  south_asian:  { eth: 'South Asian', hair: '' },
+  sea:          { eth: 'Southeast Asian', hair: '' },
+  eurasian:     { eth: 'half-Asian half-European mixed-race', hair: '' },
+};
+function _lookEth(params) { const L = LOOK_MAP[params.look]; return L ? L.eth : (NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw); }
+function _lookHair(params) { const L = LOOK_MAP[params.look]; return (L && L.hair) ? ', with ' + L.hair : ''; }
+
 const PERSONA_MAP = {
   girl_next_door: 'girl-next-door type with intellectual warmth, soft gentle smile, natural skin with light freckles and visible texture',
   professional:   'confident intellectual professional woman, composed and poised, natural skin with subtle fine lines and real texture',
@@ -1169,6 +1195,16 @@ function buildPanelHTML() {
 
       <div class="kai-row">
         <div class="kai-field">
+          <label class="kai-label">外貌(人種・髮色)</label>
+          <select class="kai-select kai-param" data-k="look">${renderOptions(LOOK_LABEL, '')}</select>
+        </div>
+        <div class="kai-field" style="font-size:11px;color:#8a8a98;line-height:1.6;align-self:end;padding-bottom:6px">
+          長相看「外貌」,講什麼語言看「國籍氣質」
+        </div>
+      </div>
+
+      <div class="kai-row">
+        <div class="kai-field">
           <label class="kai-label">服裝</label>
           <select class="kai-select kai-param" data-k="outfit">${outOpts}</select>
         </div>
@@ -1875,7 +1911,7 @@ function buildPrompt() {
   const _age = ageClause(params.age, params.gender);
   let prompt = (BACKBONES[mode] || BACKBONES.candid)
     .replace('{AGE}', _age ? _age.phrase : (AGE_MAP[params.age] || AGE_MAP.standard))
-    .replace(/\{NATIONALITY\}/g, NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw)
+    .replace(/\{NATIONALITY\}/g, _lookEth(params))
     .replace('{GENDER}', _age ? _age.noun : (params.age === 'kid' ? (params.gender === 'male' ? 'boy' : 'girl') : (GENDER_MAP[params.gender] || GENDER_MAP.female)))
     .replace('{PERSONA}', PERSONA_MAP[params.persona] || PERSONA_MAP.girl_next_door)
     .replace('{LIGHTING}', NEUTRAL_LIGHT)   // 💡 v3.45:固定中性光
@@ -1895,6 +1931,7 @@ if (params.nationality === 'kr') {
     }
   }
 
+  if (_lookHair(params)) prompt += _lookHair(params);   // 🌍 外貌:髮色
   if (freeText) {
     prompt += ', ' + freeText;
   }
@@ -1942,8 +1979,8 @@ function buildBoardPrompt() {
   document.querySelectorAll('.kai-param').forEach(el => { params[el.dataset.k] = el.value; });
   const freeText = document.getElementById('kai-free-text')?.value.trim() || '';
   const _age = ageClause(params.age, params.gender);
-  const who = (_age ? _age.phrase : 'a 26-year-old') + ' ' + (NATIONALITY_MAP[params.nationality] || NATIONALITY_MAP.tw) + ' '
-    + (_age ? _age.noun : (GENDER_MAP[params.gender] || GENDER_MAP.female));
+  const who = (_age ? _age.phrase : 'a 26-year-old') + ' ' + _lookEth(params) + ' '
+    + (_age ? _age.noun : (GENDER_MAP[params.gender] || GENDER_MAP.female)) + _lookHair(params);
   const persona = String(PERSONA_MAP[params.persona] || PERSONA_MAP.girl_next_door).replace(/,?\s*light sweat sheen/g, '');
   let p = 'Make a reference sheet of one real person: ' + who + ', ' + persona
     + (freeText ? ', ' + freeText : '') + (_age ? ', ' + _age.traits : '') + '. '
