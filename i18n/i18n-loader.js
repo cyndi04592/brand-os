@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.9';
+  var VER = '1.10';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -54,6 +54,7 @@
     box.style.cssText = 'position:fixed;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99998;display:flex;gap:4px;align-items:center;background:rgba(20,20,24,.85);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px;font:600 12px/1 system-ui,sans-serif;max-width:calc(100vw - 24px);box-sizing:border-box';
     var st = document.createElement('style');
     st.textContent = 'body:has(.rs-actionbar.show) #bos-lang-sw{display:none!important}' +
+      '#bos-lang-pad{display:none}@media(max-width:768px){#bos-lang-pad{display:block;height:calc(52px + env(safe-area-inset-bottom,0px))}}' +
       '@media(max-width:768px){#bos-lang-sw{left:calc(8px + env(safe-area-inset-left,0px))!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;font-size:11px!important;gap:2px!important;opacity:.9}#bos-lang-sw button{padding:5px 8px!important;font-size:11px!important}}';
     box.appendChild(st);
     function btn(txt, on, fn) {
@@ -77,6 +78,11 @@
     });
     main.title = 'Language / 言語 / 語言';
     document.body.appendChild(box);
+    //  手機:頁面最底下多留一條空白,捲到底時頁尾版權那行不會被按鈕蓋住(電腦版不顯示)
+    var pad = document.createElement('div');
+    pad.id = 'bos-lang-pad';
+    pad.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(pad);
   }
 
   if (LANG === 'zh') {   // ★ 中文客人:只放語言按鈕,其他什麼都不載、什麼都不改
