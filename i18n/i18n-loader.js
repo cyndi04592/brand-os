@@ -33,9 +33,14 @@
     langs = Array.prototype.map.call(langs, function (x) { return String(x || '').toLowerCase(); });
     var tz = '';
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
-    if (langs.some(function (l) { return l.indexOf('zh') === 0; })) return 'zh';
+    //  v1.16 瀏覽器【第一語言】最優先:日本人瀏覽器若另外加了中文當第二語言,以前會被判成中文
+    var p0 = langs[0] || '';
+    if (p0.indexOf('zh') === 0) return 'zh';
+    if (p0.indexOf('ja') === 0) return 'ja';
     if (/^Asia\/(Taipei|Hong_Kong|Macau|Shanghai|Chongqing|Urumqi)$/.test(tz)) return 'zh';
-    if (langs[0].indexOf('ja') === 0 || tz === 'Asia/Tokyo') return 'ja';
+    if (tz === 'Asia/Tokyo') return 'ja';
+    if (langs.some(function (l) { return l.indexOf('zh') === 0; })) return 'zh';
+    if (langs.some(function (l) { return l.indexOf('ja') === 0; })) return 'ja';
     return 'en';
   }
 
