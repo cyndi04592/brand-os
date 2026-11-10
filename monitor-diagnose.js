@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-diagnose.js · v1.1(2026-11-11)v1.1 加大盤競價擁擠度
+   Brand OS · monitor-diagnose.js · v1.2(2026-11-11)v1.2 加時段出單 + 每天穩定度、捲到才抓;v1.1 大盤
    新版廣告監控頁「🩺 CPA 為什麼變貴」診斷區。資料:MON.state.data(主畫面)+ MON.diag()(診斷包)
 
    核心:CPA = CPM ÷ 1000 ÷ 點擊率 ÷ 購買率(點進來的人有幾 % 買)
@@ -209,6 +209,64 @@
       + '<div class="mo-note"><b>對照用:</b>CPA 哪天開始變貴,就往上找那幾天改了什麼。預算一次加太多(一般建議一次不超過 2 成)、換出價方式、改受眾,都會讓學習期重來,前幾天 CPA 偏高是正常的。</div></div>';
   }
 
+  // ── ⑦ 時段:上午 / 中午 / 下午 / 晚上 / 半夜 各幾筆 ────────
+  var SLOTS = [
+    { name: '半夜', from: 0, to: 5,   icon: '🌙' },
+    { name: '上午', from: 6, to: 10,  icon: '🌅' },
+    { name: '中午', from: 11, to: 13, icon: '🍱' },
+    { name: '下午', from: 14, to: 17, icon: '☕' },
+    { name: '晚上', from: 18, to: 23, icon: '🌃' }
+  ];
+  function hourlyBlock(d, g) {
+    var hs = g.hourly;
+    if (!hs || !hs.length) return '';
+    var tot = hs.reduce(function (s, h) { return s + h.purchases; }, 0), totS = hs.reduce(function (s, h) { return s + h.spend; }, 0);
+    if (!tot) return '';
+    var days = (d.range && d.range.days) || 7;
+    var slots = SLOTS.map(function (sl) {
+      var x = hs.filter(function (h) { return h.hour >= sl.from && h.hour <= sl.to; });
+      var p = x.reduce(function (s, h) { return s + h.purchases; }, 0), sp = x.reduce(function (s, h) { return s + h.spend; }, 0);
+      return { sl: sl, p: p, sp: sp, pShare: p / tot, sShare: totS ? sp / totS : 0, cpa: p ? sp / p : 0 };
+    });
+    var avgCpa = totS / tot;
+    var cards = slots.map(function (x) {
+      var eff = x.sShare ? x.pShare / x.sShare : 0;   // >1 = 這段花的錢帶回比較多單
+      var tag = !x.p ? '<span class="mo-tag bad">沒有成交</span>' : eff >= 1.15 ? '<span class="mo-tag good">划算時段</span>' : eff <= 0.85 ? '<span class="mo-tag warn">偏貴時段</span>' : '<span class="mo-tag good">正常</span>';
+      return '<div class="dg-part"><div class="t">' + x.sl.icon + ' ' + x.sl.name + '(' + x.sl.from + '~' + (x.sl.to + 1) + ' 點)</div>'
+        + '<div class="v">' + x.p + ' 筆 <span class="mo-flat" style="font-size:11px;font-weight:500">· 每天約 ' + (x.p / days).toFixed(1) + ' 筆</span></div>'
+        + tag + '<div class="a">佔成交 ' + Math.round(x.pShare * 100) + '% / 佔花費 ' + Math.round(x.sShare * 100) + '% · CPA ' + (x.p ? F.money(x.cpa) : '—') + '</div></div>';
+    }).join('');
+    //  24 小時柱狀
+    var W = 760, H = 120, pl = 4, pr = 4, pt = 8, pb = 18, iw = W - pl - pr, ih = H - pt - pb, bw = iw / 24;
+    var mx = Math.max.apply(null, hs.map(function (h) { return h.purchases; })) || 1;
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:120px;display:block;margin-top:12px">';
+    for (var i = 0; i < 24; i++) {
+      var h = hs.filter(function (z) { return z.hour === i; })[0] || { purchases: 0, spend: 0 };
+      var bh = h.purchases / mx * ih;
+      svg += '<rect x="' + (pl + i * bw + bw * 0.15) + '" y="' + (pt + ih - bh) + '" width="' + (bw * 0.7) + '" height="' + Math.max(1, bh) + '" rx="2" fill="rgba(124,109,250,0.65)"><title>' + i + ' 點:' + h.purchases + ' 筆 · 花費 ' + F.money(h.spend) + '</title></rect>';
+      if (i % 3 === 0) svg += '<text x="' + (pl + i * bw + bw / 2) + '" y="' + (H - 4) + '" font-size="10" fill="#8a8aa0" text-anchor="middle">' + i + '</text>';
+    }
+    svg += '</svg>';
+    //  每天穩不穩:近 28 天每日購買數的起伏(變異係數)
+    var today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+    var ds = (d.days || []).filter(function (x) { return x.date !== today; }).map(function (x) { return x.purchases; });
+    var stab = '';
+    if (ds.length >= 7) {
+      var m = ds.reduce(function (s, v) { return s + v; }, 0) / ds.length;
+      var sd = Math.sqrt(ds.reduce(function (s, v) { return s + (v - m) * (v - m); }, 0) / ds.length);
+      var cv = m ? sd / m : 0, zero = ds.filter(function (v) { return !v; }).length;
+      stab = '<b>每天穩不穩:</b>近 28 天平均每天 ' + m.toFixed(1) + ' 筆,'
+        + (cv <= 0.35 ? '起伏小,<span class="mo-up">出單很穩</span>' : cv <= 0.6 ? '起伏中等' : '<span class="mo-down">起伏很大(有幾天特別多、有幾天很少)</span>')
+        + (zero ? ',其中 ' + zero + ' 天掛零' : '') + '。';
+    }
+    var noSale = slots.filter(function (x) { return !x.p; }).map(function (x) { return x.sl.name; });
+    return '<div class="mo-card"><div class="mo-h">🕐 哪個時段出單 <small>這段期間 · 共 ' + tot + ' 筆 · 依「看到廣告的時間」</small></div>'
+      + '<div class="dg-parts">' + cards + '</div>' + svg
+      + '<div class="mo-note">' + stab + (noSale.length ? ' <b>' + noSale.join('、') + '沒有成交</b>,如果花費也不少,可以考慮用預算排程把那段的預算挪到出單多的時段。' : '')
+      + '<br><b>怎麼看:</b>「划算時段」= 佔成交的比例比佔花費高(花得少、帶回的單多)。時間是 Meta 記的「看到廣告的時間」,不是付款時間;想看真實下單時間要看 SMR。'
+      + '平均 CPA ' + F.money(avgCpa) + '。</div></div>';
+  }
+
   // ── ⑥ 大盤:跨品牌 CPM 擁擠度 ───────────────────────────
   function avgIdx(days, since, until) {
     var v = days.filter(function (x) { return x.date >= since && x.date <= until; });
@@ -250,16 +308,25 @@
   }
 
   // ── 畫 ──────────────────────────────────────────────────
-  var seq = 0;
+  var seq = 0, seen = false, pending = null;
+  //  捲到診斷區附近才去抓細項(少問 Meta 幾次,避免被限流)
+  function watch() {
+    var el = document.getElementById('mon-diag');
+    if (!el || !('IntersectionObserver' in window)) { seen = true; return; }
+    new IntersectionObserver(function (es) {
+      if (es.some(function (e) { return e.isIntersecting; }) && !seen) { seen = true; if (pending) render(pending); }
+    }, { rootMargin: '600px 0px' }).observe(el);
+  }
   function render(d) {
     var el = document.getElementById('mon-diag'); if (!el || !d) return;
     var my = ++seq;
+    if (!seen) { pending = d; el.innerHTML = headBlock(d, null) + '<div class="mo-skel" style="height:160px"></div>'; return; }
     el.innerHTML = headBlock(d, null) + '<div class="mo-skel" style="height:160px"></div>';
     Promise.all([M.diag(), M.market ? M.market().catch(function () { return null; }) : null]).then(function (res) {
       var g = res[0], mk = res[1];
       if (my !== seq) return;
       if (!g || !g.ok) { el.innerHTML = headBlock(d, null) + marketBlock(d, mk) + '<div class="mo-card"><div class="dg-wait">⚠️ 診斷細項讀不到:' + esc((g && g.error) || '請稍後再試') + '</div></div>'; return; }
-      el.innerHTML = headBlock(d, g) + marketBlock(d, mk) + campBlock(g) + ageBlock(g) + regionBlock(g) + eventsBlock(g);
+      el.innerHTML = headBlock(d, g) + marketBlock(d, mk) + hourlyBlock(d, g) + campBlock(g) + ageBlock(g) + regionBlock(g) + eventsBlock(g);
     });
   }
   function skeleton() {
@@ -268,9 +335,10 @@
   }
 
   injectCss();
+  watch();
   M.on('loading', skeleton);
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_DIAG = { version: 'monitor-diagnose v1.1', render: render, decompose: decompose };
+  window.MON_DIAG = { version: 'monitor-diagnose v1.2', render: render, decompose: decompose };
 })();
