@@ -4,6 +4,7 @@
    規則全部照 Meta 台灣香港電商團隊「ASC 高效推廣 - 測試進階策略」簡報:
 
    ① 今天各行銷活動:花了日預算幾 %、跑得太快還太慢、預算是 CPA 的幾倍
+      · CIBS 花不出去 = 官方說的正常行為(under-delivery 是設計),標「待命中」不標警告
       · 日預算 ≥ CPA × 10 才跑得完學習期;CIBS 建議 CPA × 20~50
       · 花滿了而且 CPA 還在目標內 = 「預算卡住」,這就是 CIBS 要解的問題
    ② 學習期:每個廣告組合一週要 50 次轉換,差幾次一起算
@@ -95,7 +96,7 @@
         var paceTxt = !c.dailyBudget ? tag('warn', '預算在廣告組合') :
           used >= 0.9 ? tag('good', '今天花滿了') :
           pace > 1.4 ? tag('bad', '跑太快,會提早花完') :
-          (g === 'cibs' && used < 0.05 && frac > 0.15) ? tag('warn', 'ROAS 目標太高?') :
+          (g === 'cibs' && used < 0.05 && frac > 0.15) ? tag('good', '待命中(正常)') :
           pace < 0.35 && frac > 0.3 ? tag('warn', '花不出去') : tag('good', '正常');
         if (g === 'cibs' && c.dailyBudget && used < 0.05 && frac > 0.15) flags.cibsIdle.push(c.name);
 
@@ -125,7 +126,7 @@
     var notes = [];
     if (flags.constrained.length) notes.push('💰 <b>預算卡住了:</b>' + flags.constrained.map(esc).join('、') + ' 今天已花滿,而且 CPA 還在目標內——這就是簡報說的「受限於預算」。可以考慮改用 CIBS(設 CPA 目標 + 日預算拉高到 CPA 的 20~50 倍)。');
     if (flags.thin.length) notes.push('📉 <b>日預算太小:</b>' + flags.thin.map(esc).join('、') + ' 的日預算不到 CPA 的 10 倍,一週湊不滿 50 次轉換,學習期很難跑完。');
-    if (flags.cibsIdle.length) notes.push('🧊 <b>CIBS 花不出去:</b>' + flags.cibsIdle.map(esc).join('、') + ' 預算開很大、今天幾乎沒花。通常是「最低 ROAS」目標設太高,系統找不到符合的成交機會——可以小幅調降目標(簡報建議參考近 7~14 天同類商品的實際表現),或確認素材夠多。');
+    if (flags.cibsIdle.length) notes.push('🧊 <b>CIBS 待命中:</b>' + flags.cibsIdle.map(esc).join('、') + ' 今天幾乎沒花——<b>這是設計,不是故障</b>。Meta 官方:CIBS = 成本目標 + 超額預算,轉換率穩定時花不出去是正常的,平日自動縮、旺日(週末 / 檔期)才放量。只有<b>連旺日都放不出量</b>,才代表目標設得比盈虧平衡點還嚴,這時再小步調整(一次一點、等學習)。');
     if (flags.fewAds.length) notes.push('🧩 <b>ASC 素材太少:</b>' + flags.fewAds.map(esc).join('、') + '。Meta 建議每個 ASC 至少 20 則廣告,系統才有得挑。');
 
     return '<div class="mo-card"><div class="mo-h">🎯 今天的行銷活動 <small>白線 = 現在時間(一天過了 ' + Math.round(frac * 100) + '%)</small></div>'
