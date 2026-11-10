@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-data.js · v1.1(2026-11-11)— v1.1:Worker 回舊資料(stale)時,15 秒後自動換新的;自動更新不硬敲 Meta
+   Brand OS · monitor-data.js · v1.2(2026-11-11)— v1.2:加 MON.diag() 診斷包;v1.1:Worker 回舊資料(stale)時,15 秒後自動換新的;自動更新不硬敲 Meta
    新版廣告監控頁的「資料管家」——整頁只有這支檔跟後台講話。
    其他區塊檔(總覽 / ASC / 廣告列表 / 小幫手)只跟這支拿資料,不自己打 API。
 
@@ -194,6 +194,17 @@
     lsSet(LS_CFG, JSON.stringify(state.cfg));
     if (state.data) emit('data', state.data);
   }
+  //  診斷包(CPA 為什麼變貴):跟主畫面分開抓,主畫面先出來
+  var diagMem = {};
+  function diag() {
+    var brand = state.brand, range = state.range, k = brand + '|' + rangeKey(range);
+    var x = diagMem[k];
+    if (x && Date.now() - x.at < MEM_TTL) return Promise.resolve(x.data);
+    return post({ action: 'diagnose', brand: brand, range: range }, 45000).then(function (j) {
+      if (j && j.ok) diagMem[k] = { at: Date.now(), data: j };
+      return j;
+    });
+  }
   function brandInfo(id) {
     id = id || state.brand;
     return (state.me && state.me.brands.filter(function (b) { return b.id === id; })[0]) || null;
@@ -227,12 +238,12 @@
   var GROUP_LABEL = { asc: 'ASC 高效推廣', cibs: 'CIBS 超額預算', rt: '再行銷', other: '其他' };
 
   window.MON = {
-    version: 'monitor-data v1.1',
+    version: 'monitor-data v1.2',
     on: on, init: init,
     refresh: function () { return load(true); },                                          // 使用者按「重抓最新」
     softRefresh: function () { delete mem[state.brand + '|' + rangeKey(state.range)]; return load(false); },   // 自動更新:讓 Worker 決定要不要敲 Meta
     setBrand: setBrand, setRange: setRange, setCfg: setCfg,
-    brandInfo: brandInfo, state: state, fmt: fmt,
+    brandInfo: brandInfo, state: state, fmt: fmt, diag: diag,
     campaignGroup: campaignGroup, GROUP_LABEL: GROUP_LABEL,
     CFG_DEFAULT: CFG_DEFAULT
   };
