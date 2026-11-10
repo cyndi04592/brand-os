@@ -786,8 +786,9 @@ var CFG={
 
 // ══ 品牌帳號清單 ══
 var ACCOUNTS=[
-  {brand:'moz', accountId:'566452034785926', label:'MOZ 瑞典駝鹿'},
-  // 新品牌由管理員審核後加入
+  {brand:'moz', accountId:'566452034785926', label:'MOZ 瑞典駝鹿'},   // 讀 FB_TOKEN_MOZ(MOZ 自己的 API)
+  {brand:'cf',  accountId:'297543482706451', label:'巧福健康家電'},   // 2026-11-11 讀 META_SYSTEM_TOKEN(芮比 BM 系統帳號)· 沒接 SMR → 那一塊自動隱藏
+  // 新品牌:廣告帳號先分享進芮比 BM、指派給系統帳號 RB Brand OS Publisher,再加一行在這裡(brand = Brand OS 品牌代號)
 ];
 
 // ══ 品牌權限檢查(重用 Brand OS getBrandOS 開關;查不到=一律擋)══
