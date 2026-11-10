@@ -101,11 +101,9 @@
     var parts = x.parts.map(function (z) {
       var isMain = z === x.main && Math.abs(x.ratio - 1) >= 0.05;
       var hurt = z.effect > 0;
-      var share = x.lt ? z.effect / x.lt * 100 : 0;
       return '<div class="dg-part' + (isMain ? ' main' : '') + '"><div class="t">' + z.name + '</div>'
         + '<div class="v">' + (z.fmt === 'money' ? F.money(z.prev) + ' → ' + F.money(z.cur) : z.prev.toFixed(2) + '% → ' + z.cur.toFixed(2) + '%') + '</div>'
         + '<span class="' + (hurt ? 'mo-down' : 'mo-up') + '">' + pctTxt(z.ratio) + ' · ' + (hurt ? '讓 CPA 變貴' : '讓 CPA 變便宜') + '</span>'
-        + (Math.abs(x.ratio - 1) >= 0.05 ? ' <span class="mo-flat">(佔 ' + Math.round(Math.max(0, share)) + '%)</span>' : '')
         + '<div class="dg-bar"><i style="width:' + (Math.abs(z.effect) / maxEff * 100).toFixed(0) + '%;background:' + (hurt ? 'var(--pink,#FA6D9B)' : 'var(--mint,#6DFAC2)') + '"></i></div>'
         + (isMain && x.up ? '<div class="a">' + ADVICE[z.k] + '</div>' : '') + '</div>';
     }).join('');
@@ -233,5 +231,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_DIAG = { version: 'monitor-diagnose v1.0', render: render, decompose: decompose };
+  window.MON_DIAG = { version: 'monitor-diagnose v1.0.1', render: render, decompose: decompose };
 })();
