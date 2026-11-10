@@ -229,9 +229,13 @@
       return { sl: sl, p: p, sp: sp, pShare: p / tot, sShare: totS ? sp / totS : 0, cpa: p ? sp / p : 0 };
     });
     var avgCpa = totS / tot;
+    //  看「今天」時,還沒到的時段不算沒成交
+    var nowTw = new Date(Date.now() + 8 * 3600 * 1000), todayStr = nowTw.toISOString().slice(0, 10), nowHour = nowTw.getUTCHours();
+    var onlyToday = d.range && d.range.since === todayStr && d.range.until === todayStr;
+    slots.forEach(function (x) { x.future = onlyToday && x.sl.from > nowHour; });
     var cards = slots.map(function (x) {
       var eff = x.sShare ? x.pShare / x.sShare : 0;   // >1 = 這段花的錢帶回比較多單
-      var tag = !x.p ? '<span class="mo-tag bad">沒有成交</span>' : eff >= 1.15 ? '<span class="mo-tag good">划算時段</span>' : eff <= 0.85 ? '<span class="mo-tag warn">偏貴時段</span>' : '<span class="mo-tag good">正常</span>';
+      var tag = x.future ? '<span class="mo-tag warn">還沒到</span>' : !x.p ? '<span class="mo-tag bad">沒有成交</span>' : eff >= 1.15 ? '<span class="mo-tag good">划算時段</span>' : eff <= 0.85 ? '<span class="mo-tag warn">偏貴時段</span>' : '<span class="mo-tag good">正常</span>';
       return '<div class="dg-part"><div class="t">' + x.sl.icon + ' ' + x.sl.name + '(' + x.sl.from + '~' + (x.sl.to + 1) + ' 點)</div>'
         + '<div class="v">' + x.p + ' 筆 <span class="mo-flat" style="font-size:11px;font-weight:500">· 每天約 ' + (x.p / days).toFixed(1) + ' 筆</span></div>'
         + tag + '<div class="a">佔成交 ' + Math.round(x.pShare * 100) + '% / 佔花費 ' + Math.round(x.sShare * 100) + '% · CPA ' + (x.p ? F.money(x.cpa) : '—') + '</div></div>';
@@ -259,10 +263,10 @@
         + (cv <= 0.35 ? '起伏小,<span class="mo-up">出單很穩</span>' : cv <= 0.6 ? '起伏中等' : '<span class="mo-down">起伏很大(有幾天特別多、有幾天很少)</span>')
         + (zero ? ',其中 ' + zero + ' 天掛零' : '') + '。';
     }
-    var noSale = slots.filter(function (x) { return !x.p; }).map(function (x) { return x.sl.name; });
+    var noSale = slots.filter(function (x) { return !x.p && !x.future; }).map(function (x) { return x.sl.name; });
     return '<div class="mo-card"><div class="mo-h">🕐 哪個時段出單 <small>這段期間 · 共 ' + tot + ' 筆 · 依「看到廣告的時間」</small></div>'
       + '<div class="dg-parts">' + cards + '</div>' + svg
-      + '<div class="mo-note">' + stab + (noSale.length ? ' <b>' + noSale.join('、') + '沒有成交</b>,如果花費也不少,可以考慮用預算排程把那段的預算挪到出單多的時段。' : '')
+      + '<div class="mo-note">' + (onlyToday ? '<b>現在看的是「今天」(現在 ' + nowHour + ' 點),還沒到的時段先不算。看時段分佈建議選近 7 或 14 天。</b><br>' : '') + stab + (noSale.length ? ' <b>' + noSale.join('、') + '沒有成交</b>,如果花費也不少,可以考慮用預算排程把那段的預算挪到出單多的時段。' : '')
       + '<br><b>怎麼看:</b>「划算時段」= 佔成交的比例比佔花費高(花得少、帶回的單多)。時間是 Meta 記的「看到廣告的時間」,不是付款時間;想看真實下單時間要看 SMR。'
       + '平均 CPA ' + F.money(avgCpa) + '。</div></div>';
   }
@@ -340,5 +344,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_DIAG = { version: 'monitor-diagnose v1.2', render: render, decompose: decompose };
+  window.MON_DIAG = { version: 'monitor-diagnose v1.2.1', render: render, decompose: decompose };
 })();
