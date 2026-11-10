@@ -7,7 +7,7 @@
    ② 直客內部指標(加減乘除算出來的):
       · 邊際 ROAS   多花的那筆錢,帶回多少營收(判斷「加預算還划不划算」)
       · 損益兩平 ROAS 依毛利率算出「至少要幾倍才不虧」
-      · 客單價 / 千次曝光營收 / 花費集中度 / 頻率飽和 / 花費規模(年化 + 佔全台數位廣告量)
+      · 客單價 / 千次曝光營收 / 花費集中度 / 頻率飽和 / 月花費級距(芮比參考尺)
    ③ 轉換漏斗:每一關剩多少人、掉了幾 %,最大漏洞自動標紅
    ④ 近 28 天趨勢(花費柱 + ROAS 線,週末底色標出來)
    每一塊下面都有一行白話說明(學 SMR 的寫法)。
@@ -142,14 +142,25 @@
       !tot ? '' : (share >= 70 ? '<span class="mo-tag bad">太集中,風險高</span>' : share >= 45 ? '<span class="mo-tag warn">偏集中</span>' : '<span class="mo-tag good">分散健康</span>'),
       '前 3 則廣告吃掉總花費的比例。超過 7 成 = 那幾支一疲乏整個帳號就掉,要準備接棒素材。']);
 
-    //  花費規模:年化花費佔全台數位廣告量多少(DMA 2025 台灣數位廣告量 661 億)
-    //  ⚠️ 這是「市佔」不是「排名」——Meta 不公開各廣告主花費分佈,所以算不出前幾 %
-    var TW_DIGITAL_AD = 66100000000;
-    var days = (d.range && d.range.days) || 7, yearly = t.spend / days * 365;
-    var share = yearly / TW_DIGITAL_AD * 100;
-    cards.push(['花費規模(年化)', yearly >= 1e8 ? (yearly / 1e8).toFixed(2) + ' 億' : Math.round(yearly / 1e4).toLocaleString('zh-TW') + ' 萬',
-      '<span class="mo-flat">佔全台數位廣告量 ' + (share >= 0.1 ? share.toFixed(2) : share.toFixed(3)) + '%</span>',
-      '照這段期間每天平均花費 × 365 推估。全台 2025 年數位廣告總量約 661 億(DMA 台灣數位媒體應用暨行銷協會)。Meta 不公開每家廣告主花多少,所以這是「市佔」,算不出「前幾 %」。']);
+    //  月花費級距(芮比自訂參考尺 —— Meta 不公開台灣廣告主花費分佈,這不是官方排名)
+    //  改級距:只要改下面 TIERS 的金額
+    var TIERS = [
+      { max: 50000,    name: '起步',   tag: 'warn' },
+      { max: 300000,   name: '小型',   tag: 'warn' },
+      { max: 1000000,  name: '中型',   tag: 'good' },
+      { max: 3000000,  name: '中大型', tag: 'good' },
+      { max: Infinity, name: '大型',   tag: 'good' }
+    ];
+    var days = (d.range && d.range.days) || 7, monthly = t.spend / days * 30;
+    var ti = 0; while (ti < TIERS.length - 1 && monthly >= TIERS[ti].max) ti++;
+    var tier = TIERS[ti];
+    var bar = TIERS.map(function (x, i) {
+      return '<span style="flex:1;height:6px;border-radius:3px;background:' + (i === ti ? 'var(--pink,#FA6D9B)' : i < ti ? 'rgba(124,109,250,0.55)' : 'rgba(255,255,255,0.08)') + '"></span>';
+    }).join('');
+    var range = ti === 0 ? '月 5 萬以下' : (TIERS[ti].max === Infinity ? '月 ' + TIERS[ti - 1].max / 10000 + ' 萬以上' : '月 ' + TIERS[ti - 1].max / 10000 + '~' + TIERS[ti].max / 10000 + ' 萬');
+    cards.push(['月花費級距', tier.name,
+      '<span class="mo-tag ' + tier.tag + '">' + range + '</span><div style="display:flex;gap:3px;margin-top:6px">' + bar + '</div>',
+      '每月約 ' + F.money(Math.round(monthly / 1000) * 1000) + '(這段期間每天平均 × 30)。級距:起步 <5 萬 / 小型 5~30 萬 / 中型 30~100 萬 / 中大型 100~300 萬 / 大型 300 萬以上——芮比參考尺,不是 Meta 官方排名。']);
 
     //  頻率飽和
     var fq = t.frequency || 0, fw = cfg.freqWarn || 3.5;
@@ -266,5 +277,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_OVERVIEW = { version: 'monitor-overview v1.1', render: render };
+  window.MON_OVERVIEW = { version: 'monitor-overview v1.2', render: render };
 })();
