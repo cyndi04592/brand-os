@@ -6,8 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brand OS · 廣告監控</title>
 <link rel="stylesheet" href="style.css">
+<script src="loader.js"></script><!-- 系統共用太空人 Loading(showSpaceLoader) -->
 <!--
-  Brand OS · monitor.html · v2.2(2026-11-11)加 CPA 診斷區;v2.1整頁重做;v2.1 自動更新改走暫存、Meta 限流時顯示提示
+  Brand OS · monitor.html · v2.3(2026-11-11)讀取時顯示系統太空人;v2.2加 CPA 診斷區;v2.1整頁重做;v2.1 自動更新改走暫存、Meta 限流時顯示提示
   這支只是「殼」:頂部列 + 品牌切換 + 日期 + 三個區塊的掛載點。
   ┌ monitor-data.js      資料管家(唯一跟 ads-monitor Worker 講話的檔)
   ├ monitor-overview.js  總覽 + 直客內部指標 + 漏斗 + 28 天走勢
@@ -48,6 +49,9 @@ body{
 .mn-err{display:none;padding:12px 14px;border-radius:11px;background:rgba(250,109,155,0.1);border:1px solid rgba(250,109,155,0.35);color:var(--t1);font-size:12px}
 .mn-smr{display:none;padding:10px 14px;border-radius:11px;background:rgba(109,250,194,0.07);border:1px solid rgba(109,250,194,0.25);font-size:11.5px;color:var(--t2)}
 .mn-smr a{color:var(--mint,#6DFAC2);font-weight:700}
+.mn-loading{display:none;position:fixed;left:0;right:0;top:150px;bottom:0;z-index:40;background:rgba(8,8,14,0.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding-top:8vh}
+.mn-loading.on{display:flex}
+.mn-loading>div{width:min(420px,90vw)}
 .mn-foot{text-align:center;font-size:10px;color:var(--t3);padding:10px}
 @media(max-width:640px){.mn-meta{margin-left:0;width:100%}.mn-sep{display:none}.mn-nav .tt{display:none}}
 </style>
@@ -81,6 +85,7 @@ body{
   </div>
 </div>
 
+<div class="mn-loading" id="mnLoading"><div id="mnLoadingBox"></div></div>
 <div class="mn-wrap">
   <div class="mn-err" id="mnErr"></div>
   <div class="mn-smr" id="mnSmr">🧾 這個品牌有接 SMR:Meta 回報的營收會灌水(像素重複算),<b>真實成交、口袋錢以 SMR 為準</b> → <a href="https://smr.raby.com.tw/" target="_blank" rel="noopener">打開 SMR 真實成交</a></div>
@@ -148,8 +153,16 @@ body{
     $('mnAdmin').style.display = boss ? '' : 'none';
     drawBrands(); drawRange();
   });
-  M.on('loading', function () { $('mnUpd').textContent = '讀取中…'; $('mnErr').style.display = 'none'; });
+  //  太空人 Loading:讀取時蓋住內容區,資料到了 / 出錯就收起來
+  function showLoading() {
+    var bi = M.brandInfo();
+    if (window.showSpaceLoader) showSpaceLoader('mnLoadingBox', '正在讀取' + (bi ? ' ' + bi.name + ' ' : '') + '的廣告數據');
+    $('mnLoading').classList.add('on');
+  }
+  function hideLoading() { $('mnLoading').classList.remove('on'); }
+  M.on('loading', function () { $('mnUpd').textContent = '讀取中…'; $('mnErr').style.display = 'none'; showLoading(); });
   M.on('data', function (d) {
+    hideLoading();
     if (!d.warn) $('mnErr').style.display = 'none';
     var t = new Date(d.fetchedAt);
     $('mnUpd').textContent = (d.stale ? '上次的 ' : d.cached ? '暫存 ' : '最新 ') + t.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) + (d.loadMs != null && d.loadMs > 50 ? ' · ' + (d.loadMs / 1000).toFixed(1) + ' 秒' : '');
@@ -157,7 +170,7 @@ body{
     drawBrands(); drawRange();
   });
   M.on('warn', function (msg) { $('mnErr').style.display = 'block'; $('mnErr').textContent = 'ℹ️ ' + msg; });
-  M.on('error', function (msg) { $('mnErr').style.display = 'block'; $('mnErr').textContent = '⚠️ ' + msg; $('mnUpd').textContent = '讀取失敗'; });
+  M.on('error', function (msg) { hideLoading(); $('mnErr').style.display = 'block'; $('mnErr').textContent = '⚠️ ' + msg; $('mnUpd').textContent = '讀取失敗'; });
 
   M.init();
   //  每 5 分鐘自動更新(分頁在背景時不抓)
