@@ -7,7 +7,7 @@
    ② 直客內部指標(加減乘除算出來的):
       · 邊際 ROAS   多花的那筆錢,帶回多少營收(判斷「加預算還划不划算」)
       · 損益兩平 ROAS 依毛利率算出「至少要幾倍才不虧」
-      · 客單價 / 千次曝光營收 / 花費集中度 / 頻率飽和
+      · 客單價 / 千次曝光營收 / 花費集中度 / 頻率飽和 / 花費規模(年化 + 佔全台數位廣告量)
    ③ 轉換漏斗:每一關剩多少人、掉了幾 %,最大漏洞自動標紅
    ④ 近 28 天趨勢(花費柱 + ROAS 線,週末底色標出來)
    每一塊下面都有一行白話說明(學 SMR 的寫法)。
@@ -142,6 +142,15 @@
       !tot ? '' : (share >= 70 ? '<span class="mo-tag bad">太集中,風險高</span>' : share >= 45 ? '<span class="mo-tag warn">偏集中</span>' : '<span class="mo-tag good">分散健康</span>'),
       '前 3 則廣告吃掉總花費的比例。超過 7 成 = 那幾支一疲乏整個帳號就掉,要準備接棒素材。']);
 
+    //  花費規模:年化花費佔全台數位廣告量多少(DMA 2025 台灣數位廣告量 661 億)
+    //  ⚠️ 這是「市佔」不是「排名」——Meta 不公開各廣告主花費分佈,所以算不出前幾 %
+    var TW_DIGITAL_AD = 66100000000;
+    var days = (d.range && d.range.days) || 7, yearly = t.spend / days * 365;
+    var share = yearly / TW_DIGITAL_AD * 100;
+    cards.push(['花費規模(年化)', yearly >= 1e8 ? (yearly / 1e8).toFixed(2) + ' 億' : Math.round(yearly / 1e4).toLocaleString('zh-TW') + ' 萬',
+      '<span class="mo-flat">佔全台數位廣告量 ' + (share >= 0.1 ? share.toFixed(2) : share.toFixed(3)) + '%</span>',
+      '照這段期間每天平均花費 × 365 推估。全台 2025 年數位廣告總量約 661 億(DMA 台灣數位媒體應用暨行銷協會)。Meta 不公開每家廣告主花多少,所以這是「市佔」,算不出「前幾 %」。']);
+
     //  頻率飽和
     var fq = t.frequency || 0, fw = cfg.freqWarn || 3.5;
     cards.push(['平均頻率', fq.toFixed(2) + ' 次',
@@ -257,5 +266,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_OVERVIEW = { version: 'monitor-overview v1.0', render: render };
+  window.MON_OVERVIEW = { version: 'monitor-overview v1.1', render: render };
 })();
