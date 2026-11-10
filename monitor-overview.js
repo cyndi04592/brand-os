@@ -142,14 +142,15 @@
       !tot ? '' : (share >= 70 ? '<span class="mo-tag bad">太集中,風險高</span>' : share >= 45 ? '<span class="mo-tag warn">偏集中</span>' : '<span class="mo-tag good">分散健康</span>'),
       '前 3 則廣告吃掉總花費的比例。超過 7 成 = 那幾支一疲乏整個帳號就掉,要準備接棒素材。']);
 
-    //  月花費級距(芮比自訂參考尺 —— Meta 不公開台灣廣告主花費分佈,這不是官方排名)
-    //  改級距:只要改下面 TIERS 的金額
+    //  月花費級距 —— 依台灣行銷業界公開資料整理(代操接案門檻、自聘投手門檻、加碼型電商上限),
+    //  排除灰色產業 / 金融貸款 / 博弈這類高預算特殊行業。Meta 不公開花費分佈,這不是官方排名。
+    //  改級距:只要改下面 TIERS 的金額與說明
     var TIERS = [
-      { max: 50000,    name: '起步',   tag: 'warn' },
-      { max: 300000,   name: '小型',   tag: 'warn' },
-      { max: 1000000,  name: '中型',   tag: 'good' },
-      { max: 3000000,  name: '中大型', tag: 'good' },
-      { max: Infinity, name: '大型',   tag: 'good' }
+      { max: 30000,    name: '起步',   tag: 'warn', who: '自己試水溫,每天不到 1,000 元,系統很難學出效果;代操公司通常不接' },
+      { max: 100000,   name: '小型',   tag: 'warn', who: '個人投手、小團隊接案的起點;業界普遍說「一個月 3 萬起跳」' },
+      { max: 500000,   name: '中型',   tag: 'good', who: '數位代理商的主力客群(月 10 萬以上才接),開始需要完整漏斗與素材輪替' },
+      { max: 1500000,  name: '中大型', tag: 'good', who: '月 50 萬以上,品牌通常會自聘投手或固定專人;代操抽成可談到 15% 以下' },
+      { max: Infinity, name: '大型',   tag: 'good', who: '成效好、持續加碼的電商品牌上限區(百萬級),或 4A 綜合代理商的客戶' }
     ];
     var days = (d.range && d.range.days) || 7, monthly = t.spend / days * 30;
     var ti = 0; while (ti < TIERS.length - 1 && monthly >= TIERS[ti].max) ti++;
@@ -157,10 +158,12 @@
     var bar = TIERS.map(function (x, i) {
       return '<span style="flex:1;height:6px;border-radius:3px;background:' + (i === ti ? 'var(--pink,#FA6D9B)' : i < ti ? 'rgba(124,109,250,0.55)' : 'rgba(255,255,255,0.08)') + '"></span>';
     }).join('');
-    var range = ti === 0 ? '月 5 萬以下' : (TIERS[ti].max === Infinity ? '月 ' + TIERS[ti - 1].max / 10000 + ' 萬以上' : '月 ' + TIERS[ti - 1].max / 10000 + '~' + TIERS[ti].max / 10000 + ' 萬');
+    var fmtW = function (v) { return v >= 10000 ? (v / 10000) + ' 萬' : v; };
+    var range = ti === 0 ? '月 3 萬以下' : (TIERS[ti].max === Infinity ? '月 ' + fmtW(TIERS[ti - 1].max) + '以上' : '月 ' + fmtW(TIERS[ti - 1].max) + '~' + fmtW(TIERS[ti].max));
     cards.push(['月花費級距', tier.name,
       '<span class="mo-tag ' + tier.tag + '">' + range + '</span><div style="display:flex;gap:3px;margin-top:6px">' + bar + '</div>',
-      '每月約 ' + F.money(Math.round(monthly / 1000) * 1000) + '(這段期間每天平均 × 30)。級距:起步 <5 萬 / 小型 5~30 萬 / 中型 30~100 萬 / 中大型 100~300 萬 / 大型 300 萬以上——芮比參考尺,不是 Meta 官方排名。']);
+      '每月約 ' + F.money(Math.round(monthly / 1000) * 1000) + '(這段期間每天平均 × 30)。' + tier.who + '。'
+      + '<br>級距:起步 <3 萬 / 小型 3~10 萬 / 中型 10~50 萬 / 中大型 50~150 萬 / 大型 150 萬以上(台灣業界接案與投放門檻整理,不含灰產、金融貸款、博弈;不是 Meta 官方排名)。']);
 
     //  頻率飽和
     var fq = t.frequency || 0, fw = cfg.freqWarn || 3.5;
@@ -277,5 +280,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_OVERVIEW = { version: 'monitor-overview v1.2', render: render };
+  window.MON_OVERVIEW = { version: 'monitor-overview v1.3', render: render };
 })();
