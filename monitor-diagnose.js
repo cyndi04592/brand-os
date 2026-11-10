@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-diagnose.js · v1.0(2026-11-11)
+   Brand OS · monitor-diagnose.js · v1.1(2026-11-11)v1.1 加大盤競價擁擠度
    新版廣告監控頁「🩺 CPA 為什麼變貴」診斷區。資料:MON.state.data(主畫面)+ MON.diag()(診斷包)
 
    核心:CPA = CPM ÷ 1000 ÷ 點擊率 ÷ 購買率(點進來的人有幾 % 買)
@@ -209,16 +209,57 @@
       + '<div class="mo-note"><b>對照用:</b>CPA 哪天開始變貴,就往上找那幾天改了什麼。預算一次加太多(一般建議一次不超過 2 成)、換出價方式、改受眾,都會讓學習期重來,前幾天 CPA 偏高是正常的。</div></div>';
   }
 
+  // ── ⑥ 大盤:跨品牌 CPM 擁擠度 ───────────────────────────
+  function avgIdx(days, since, until) {
+    var v = days.filter(function (x) { return x.date >= since && x.date <= until; });
+    return v.length ? v.reduce(function (s, x) { return s + x.cpmIdx; }, 0) / v.length : 0;
+  }
+  function marketBlock(d, mk) {
+    if (!mk || !mk.days || !mk.days.length) return '';
+    var days = mk.days, r = d.range;
+    var cur = avgIdx(days, r.since, r.until), prev = avgIdx(days, r.prevSince, r.prevUntil);
+    var my = d.previous.impressions && d.totals.impressions ? (d.totals.spend / d.totals.impressions) / (d.previous.spend / d.previous.impressions) : 0;
+    var W = 760, H = 110, pl = 6, pr = 6, pt = 10, pb = 20, iw = W - pl - pr, ih = H - pt - pb, n = days.length, bw = iw / n;
+    var mx = Math.max(130, Math.max.apply(null, days.map(function (x) { return x.cpmIdx; })));
+    var mn = Math.min(70, Math.min.apply(null, days.map(function (x) { return x.cpmIdx; })));
+    var y = function (v) { return pt + ih - (v - mn) / (mx - mn) * ih; };
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:110px;display:block">'
+      + '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(100) + '" y2="' + y(100) + '" stroke="rgba(255,255,255,0.25)" stroke-dasharray="4 4"/>'
+      + '<text x="' + (W - pr) + '" y="' + (y(100) - 3) + '" font-size="10" fill="#8a8aa0" text-anchor="end">100 = 平常</text>';
+    days.forEach(function (x, i) {
+      var hot = x.cpmIdx >= 120, h = Math.abs(y(x.cpmIdx) - y(100));
+      svg += '<rect x="' + (pl + i * bw + bw * 0.15) + '" y="' + Math.min(y(x.cpmIdx), y(100)) + '" width="' + (bw * 0.7) + '" height="' + Math.max(1, h) + '" rx="2" fill="' + (hot ? 'rgba(250,109,155,0.75)' : x.cpmIdx >= 100 ? 'rgba(124,109,250,0.6)' : 'rgba(109,250,194,0.55)') + '"><title>' + x.date + ' 大盤 ' + x.cpmIdx + '</title></rect>';
+      if (i % 7 === 0 || i === n - 1) svg += '<text x="' + (pl + i * bw + bw / 2) + '" y="' + (H - 6) + '" font-size="10" fill="#8a8aa0" text-anchor="middle">' + x.date.slice(5) + '</text>';
+    });
+    svg += '</svg>';
+    var last = days[days.length - 1];
+    var line = '';
+    if (cur && prev) {
+      var mch = cur / prev;
+      line = '<b>這期大盤平均 ' + Math.round(cur) + '(上期 ' + Math.round(prev) + ',' + pctTxt(mch) + ')</b>';
+      if (my) {
+        line += ';你的 CPM ' + pctTxt(my) + '。';
+        if (my > 1.05 && mch > 1.05) line += Math.abs(my - mch) < 0.15 ? ' → <b>你的 CPM 漲幅跟大盤差不多,主要是市場在搶量,不是你的廣告變差。</b>旺季這段只能靠素材(點擊率)和網站(購買率)贏回來。'
+          : my > mch ? ' → 大盤有漲,但<b>你漲得比大盤多</b>,除了市場因素,還要看受眾是不是太窄、預算是不是一次加太多。' : ' → 大盤漲得比你多,你的 CPM 算控制得不錯。';
+        else if (my > 1.05) line += ' → <b>大盤沒漲、只有你在漲</b>,問題在自己的帳號(受眾太窄、出價、頻率太高),不是旺季。';
+      }
+    }
+    return '<div class="mo-card"><div class="mo-h">🌐 大盤:競價擁擠度 <small>' + mk.brands + ' 個品牌的 CPM 疊起來 · 最新 ' + last.date.slice(5) + ' = ' + last.cpmIdx + '</small></div>' + svg
+      + '<div class="mo-note">' + line + '<br><b>怎麼算:</b>每個品牌的每日 CPM 先除以它自己近 28 天的平均(100 = 那個品牌的平常價),再把所有品牌平均起來。'
+      + '紅柱 = 比平常貴 2 成以上(檔期搶量)。品牌接越多越準;之後會再疊 Google 搜尋熱度(需求)和 SMR 真實成交(成交熱度)。</div></div>';
+  }
+
   // ── 畫 ──────────────────────────────────────────────────
   var seq = 0;
   function render(d) {
     var el = document.getElementById('mon-diag'); if (!el || !d) return;
     var my = ++seq;
     el.innerHTML = headBlock(d, null) + '<div class="mo-skel" style="height:160px"></div>';
-    M.diag().then(function (g) {
+    Promise.all([M.diag(), M.market ? M.market().catch(function () { return null; }) : null]).then(function (res) {
+      var g = res[0], mk = res[1];
       if (my !== seq) return;
-      if (!g || !g.ok) { el.innerHTML = headBlock(d, null) + '<div class="mo-card"><div class="dg-wait">⚠️ 診斷細項讀不到:' + esc((g && g.error) || '請稍後再試') + '</div></div>'; return; }
-      el.innerHTML = headBlock(d, g) + campBlock(g) + ageBlock(g) + regionBlock(g) + eventsBlock(g);
+      if (!g || !g.ok) { el.innerHTML = headBlock(d, null) + marketBlock(d, mk) + '<div class="mo-card"><div class="dg-wait">⚠️ 診斷細項讀不到:' + esc((g && g.error) || '請稍後再試') + '</div></div>'; return; }
+      el.innerHTML = headBlock(d, g) + marketBlock(d, mk) + campBlock(g) + ageBlock(g) + regionBlock(g) + eventsBlock(g);
     });
   }
   function skeleton() {
@@ -231,5 +272,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_DIAG = { version: 'monitor-diagnose v1.0.1', render: render, decompose: decompose };
+  window.MON_DIAG = { version: 'monitor-diagnose v1.1', render: render, decompose: decompose };
 })();
