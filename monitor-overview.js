@@ -27,10 +27,10 @@
     + '.mo-h small{font-weight:500;color:var(--t3,#888);font-size:10.5px}'
     + '.mo-note{margin-top:10px;font-size:10.5px;line-height:1.75;color:var(--t3,#8a8aa0);border-top:1px dashed var(--line,rgba(255,255,255,0.08));padding-top:9px}'
     + '.mo-note b{color:var(--t2,#c8c8d8)}'
-    + '.mo-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}'
+    + '.mo-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}'
     + '.mo-kpi{background:rgba(255,255,255,0.03);border-radius:11px;padding:12px 13px}'
     + '.mo-kpi .l{font-size:10.5px;color:var(--t3,#8a8aa0)}'
-    + '.mo-kpi .v{font-size:20px;font-weight:800;color:var(--t1,#fff);margin:3px 0 2px;font-family:Syne,system-ui,sans-serif}'
+    + '.mo-kpi .v{font-size:19px;font-weight:800;color:var(--t1,#fff);margin:3px 0 2px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
     + '.mo-kpi .d{font-size:10.5px;font-weight:700}'
     + '.mo-up{color:var(--mint,#6DFAC2)}.mo-down{color:var(--pink,#FA6D9B)}.mo-flat{color:var(--t3,#8a8aa0)}'
     + '.mo-kpi .s{font-size:10px;color:var(--t3,#8a8aa0);margin-top:4px;line-height:1.5}'
@@ -166,14 +166,16 @@
     var top = steps[0][1] || 1, worst = -1, worstRate = 2;
     for (var i = 2; i < steps.length; i++) {           // 從「點連結→看商品」開始找最大漏洞
       var r = steps[i - 1][1] ? steps[i][1] / steps[i - 1][1] : 0;
-      if (steps[i - 1][1] && r < worstRate) { worstRate = r; worst = i; }
+      if (steps[i - 1][1] && r <= 1 && r < worstRate) { worstRate = r; worst = i; }
     }
     var rows = steps.map(function (s, i) {
       var w = Math.max(4, Math.sqrt(s[1] / top) * 100);   // 用開根號,不然後面幾關細到看不見
       var drop = '';
       if (i > 0) {
         var prev = steps[i - 1][1], keep = prev ? s[1] / prev * 100 : 0;
-        drop = '<div class="mo-drop' + (i === worst ? ' worst' : '') + '">留下 ' + keep.toFixed(keep < 1 ? 2 : 1) + '%' + (i === worst ? ' ⚠️' : '') + '</div>';
+        drop = keep > 100
+          ? '<div class="mo-drop">每人看 ' + (keep / 100).toFixed(1) + ' 頁</div>'      // 像素每看一頁算一次,會比點擊多
+          : '<div class="mo-drop' + (i === worst ? ' worst' : '') + '">留下 ' + keep.toFixed(keep < 1 ? 2 : 1) + '%' + (i === worst ? ' ⚠️' : '') + '</div>';
       } else drop = '<div class="mo-drop"></div>';
       return '<div class="mo-step"><div class="n">' + s[0] + '</div><div class="mo-bar"><i style="width:' + w.toFixed(1) + '%"></i><span>' + F.num(s[1]) + '</span></div>' + drop + '</div>';
     }).join('');
@@ -194,7 +196,8 @@
 
   // ── ④ 近 28 天趨勢(手畫 SVG,不用載圖表套件)────────────
   function trendBlock(d) {
-    var days = d.days || [];
+    var today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+    var days = (d.days || []).filter(function (x) { return x.date !== today; });   // 今天還沒跑完,不畫(會把線拉歪)
     if (!days.length) return '';
     var W = 760, H = 190, pl = 44, pr = 40, pt = 12, pb = 26;
     var iw = W - pl - pr, ih = H - pt - pb, n = days.length, bw = iw / n;
@@ -227,7 +230,7 @@
       line = '<b>五六日 ROAS ' + weR.toFixed(2) + ' / 平日 ' + wkR.toFixed(2) + '(' + better + ')。</b>'
         + (weR > wkR * 1.1 ? '可以用 ASC「預算排程」把五~日預算加高、平日降低(一週總額不變),Meta 簡報建議測 2~4 週。' : '');
     }
-    return '<div class="mo-card mo-trend"><div class="mo-h">📈 近 28 天走勢 <small>滑鼠移到柱子看當天</small></div>' + svg
+    return '<div class="mo-card mo-trend"><div class="mo-h">📈 近 28 天走勢 <small>不含今天(還沒跑完)· 滑鼠移到柱子看當天</small></div>' + svg
       + '<div class="mo-legend"><span><i style="background:rgba(124,109,250,0.55)"></i>每日花費</span><span><i style="background:#FA6D9B"></i>ROAS</span><span><i style="background:rgba(109,250,194,0.25)"></i>週末</span></div>'
       + '<div class="mo-note">' + (line || '') + ' 固定看 28 天,不跟著上面的日期變,才看得出週期。</div></div>';
   }
