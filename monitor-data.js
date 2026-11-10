@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-data.js · v1.0(2026-11-11)
+   Brand OS · monitor-data.js · v1.1(2026-11-11)— v1.1:Worker 回舊資料(stale)時,15 秒後自動換新的;自動更新不硬敲 Meta
    新版廣告監控頁的「資料管家」——整頁只有這支檔跟後台講話。
    其他區塊檔(總覽 / ASC / 廣告列表 / 小幫手)只跟這支拿資料,不自己打 API。
 
@@ -132,6 +132,16 @@
       j.loadMs = Date.now() - t0;
       state.data = j;
       emit('data', j);
+      if (j.warn) emit('warn', j.warn);
+      //  Worker 先給了舊資料、背景在重抓 → 15 秒後再拿一次(那時暫存已是新的)
+      if (j.stale && !j.warn) {
+        var k = state.brand + '|' + rangeKey(state.range);
+        setTimeout(function () {
+          if (state.brand + '|' + rangeKey(state.range) !== k) return;
+          delete mem[k];
+          load(false);
+        }, 15000);
+      }
       prefetchOthers();
       return j;
     });
@@ -217,8 +227,10 @@
   var GROUP_LABEL = { asc: 'ASC 高效推廣', cibs: 'CIBS 超額預算', rt: '再行銷', other: '其他' };
 
   window.MON = {
-    version: 'monitor-data v1.0',
-    on: on, init: init, refresh: function () { return load(true); },
+    version: 'monitor-data v1.1',
+    on: on, init: init,
+    refresh: function () { return load(true); },                                          // 使用者按「重抓最新」
+    softRefresh: function () { delete mem[state.brand + '|' + rangeKey(state.range)]; return load(false); },   // 自動更新:讓 Worker 決定要不要敲 Meta
     setBrand: setBrand, setRange: setRange, setCfg: setCfg,
     brandInfo: brandInfo, state: state, fmt: fmt,
     campaignGroup: campaignGroup, GROUP_LABEL: GROUP_LABEL,
