@@ -45,6 +45,11 @@
     document.head.appendChild(s);
   }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var PLAT = { facebook: 'FB', instagram: 'IG', threads: 'Threads', messenger: 'Messenger', audience_network: '聯播網' };
+  var POS = { feed: '動態消息', facebook_reels: 'Reels', instagram_reels: 'Reels', instagram_stories: '限時動態', facebook_stories: '限時動態',
+    threads_feed: '動態', instream_video: '影片插播', marketplace: 'Marketplace', search: '搜尋', video_feeds: '影片動態', explore: '探索',
+    explore_home: '探索首頁', profile_feed: '個人檔案', right_hand_column: '右欄', facebook_reels_overlay: 'Reels 疊加廣告', an_classic: '原生/橫幅', rewarded_video: '獎勵影片', messenger_inbox: '收件匣' };
+  function placeName(p) { return (PLAT[p.platform] || p.platform) + ' ' + (POS[p.position] || p.position); }
   function tag(cls, txt) { return '<span class="mo-tag ' + cls + '">' + txt + '</span>'; }
 
   //  今天過了幾 %(台北時間)
@@ -75,7 +80,7 @@
     var groups = { asc: [], cibs: [], rt: [], other: [] };
     camps.forEach(function (c) { groups[M.campaignGroup(c)].push(c); });
 
-    var flags = { constrained: [], thin: [], fewAds: [] };
+    var flags = { constrained: [], thin: [], fewAds: [], cibsIdle: [] };
     var rows = '';
     ['asc', 'cibs', 'rt', 'other'].forEach(function (g) {
       if (!groups[g].length) return;
@@ -90,14 +95,16 @@
         var paceTxt = !c.dailyBudget ? tag('warn', '預算在廣告組合') :
           used >= 0.9 ? tag('good', '今天花滿了') :
           pace > 1.4 ? tag('bad', '跑太快,會提早花完') :
+          (g === 'cibs' && used < 0.05 && frac > 0.15) ? tag('warn', 'ROAS 目標太高?') :
           pace < 0.35 && frac > 0.3 ? tag('warn', '花不出去') : tag('good', '正常');
+        if (g === 'cibs' && c.dailyBudget && used < 0.05 && frac > 0.15) flags.cibsIdle.push(c.name);
 
         //  日預算 ÷ CPA 倍數(用這段期間的 CPA)
         var mult = (c.dailyBudget && rangeCpa) ? c.dailyBudget / rangeCpa : 0, multTxt = '—';
         if (mult) {
           var need = g === 'cibs' ? 20 : 10;
-          multTxt = mult.toFixed(1) + ' 倍 ' + (mult >= need ? tag('good', '夠') : tag('bad', '低於 ' + need + ' 倍'));
-          if (mult < 10) flags.thin.push(c.name);
+          multTxt = mult.toFixed(1) + ' 倍 ' + (mult >= need ? tag('good', '夠') : g === 'rt' ? tag('warn', '再行銷受眾小,可接受') : tag('bad', '低於 ' + need + ' 倍'));
+          if (mult < 10 && g !== 'rt') flags.thin.push(c.name);
         }
         //  預算卡住:花滿 + CPA 在目標內(有設 CPA 警戒就用它,沒有就用區間 CPA)
         var target = cfg.cpaWarn || rangeCpa;
@@ -118,6 +125,7 @@
     var notes = [];
     if (flags.constrained.length) notes.push('💰 <b>預算卡住了:</b>' + flags.constrained.map(esc).join('、') + ' 今天已花滿,而且 CPA 還在目標內——這就是簡報說的「受限於預算」。可以考慮改用 CIBS(設 CPA 目標 + 日預算拉高到 CPA 的 20~50 倍)。');
     if (flags.thin.length) notes.push('📉 <b>日預算太小:</b>' + flags.thin.map(esc).join('、') + ' 的日預算不到 CPA 的 10 倍,一週湊不滿 50 次轉換,學習期很難跑完。');
+    if (flags.cibsIdle.length) notes.push('🧊 <b>CIBS 花不出去:</b>' + flags.cibsIdle.map(esc).join('、') + ' 預算開很大、今天幾乎沒花。通常是「最低 ROAS」目標設太高,系統找不到符合的成交機會——可以小幅調降目標(簡報建議參考近 7~14 天同類商品的實際表現),或確認素材夠多。');
     if (flags.fewAds.length) notes.push('🧩 <b>ASC 素材太少:</b>' + flags.fewAds.map(esc).join('、') + '。Meta 建議每個 ASC 至少 20 則廣告,系統才有得挑。');
 
     return '<div class="mo-card"><div class="mo-h">🎯 今天的行銷活動 <small>白線 = 現在時間(一天過了 ' + Math.round(frac * 100) + '%)</small></div>'
@@ -144,7 +152,7 @@
       var stTxt = s.st === 'FAIL' ? tag('bad', '學習受限') : s.st === 'LEARNING' ? tag('warn', '學習中') : tag('good', '已完成');
       return '<tr><td><div class="ma-name" title="' + esc(s.name) + '">' + esc(s.name) + '</div></td><td>' + stTxt + '</td>'
         + '<td><div class="ma-pace"><i class="' + (pct >= 100 ? 'full' : '') + '" style="width:' + pct.toFixed(0) + '%"></i><span>' + s.weekly.toFixed(0) + ' / 50</span></div></td>'
-        + '<td class="num">' + (s.weekly >= 50 ? '<span class="mo-up">夠了</span>' : '還差 ' + Math.ceil(50 - s.weekly)) + '</td></tr>';
+        + '<td class="num">' + (s.weekly >= 50 ? '<span class="mo-up">夠了</span>' : s.st === 'SUCCESS' ? '<span class="mo-flat">Meta 判定已學完</span>' : '還差 ' + Math.ceil(50 - s.weekly)) + '</td></tr>';
     }).join('');
     return '<div class="mo-card"><div class="mo-h">🎓 學習期進度 <small>' + sets.length + ' 個廣告組合 · 受限 ' + nFail + ' · 學習中 ' + nLearn + '</small></div>'
       + '<div class="ma-scroll"><table class="ma-tbl"><thead><tr><th>行銷活動 › 廣告組合</th><th>狀態</th><th>一週轉換(換算)</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
@@ -178,7 +186,7 @@
         + '直式 ROAS ' + vr.toFixed(2) + ' / 其他 ' + hr.toFixed(2) + ' ' + vTag
         + '<div style="margin-top:6px">直式素材要:9:16、有聲音、主要文字在安全區。直式佔比低,通常是缺直式影片,不是系統不給。</div></div>');
       var top = pl.slice(0, 5).map(function (p) {
-        return '<tr><td>' + esc(p.platform) + ' · ' + esc(p.position) + (p.vertical ? ' 📱' : '') + '</td><td class="num">' + F.money(p.spend) + '</td><td class="num">' + (p.spend ? (p.revenue / p.spend).toFixed(2) : '—') + '</td></tr>';
+        return '<tr><td>' + esc(placeName(p)) + (p.vertical ? ' 📱' : '') + '</td><td class="num">' + F.money(p.spend) + '</td><td class="num">' + (p.spend ? (p.revenue / p.spend).toFixed(2) : '—') + '</td></tr>';
       }).join('');
       boxes.push('<div class="ma-box"><div class="t">📍 花最多錢的版位</div><table class="ma-tbl" style="margin-top:4px"><tbody>' + top + '</tbody></table></div>');
     }
