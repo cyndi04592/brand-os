@@ -114,7 +114,7 @@
     cards.push(['邊際 ROAS', mTxt, mTag, mExp]);
 
     //  損益兩平 ROAS = 1 ÷ 毛利率
-    var mg = parseFloat(cfg['margin_' + d.brand]) || 0  // 毛利率每個品牌分開記, beTxt, beTag, beExp;
+    var mg = parseFloat(cfg['margin_' + d.brand]) || 0, beTxt, beTag, beExp;   // 毛利率每個品牌分開記
     if (mg > 0 && mg < 100) {
       var be = 100 / mg;
       beTxt = F.x(be);
