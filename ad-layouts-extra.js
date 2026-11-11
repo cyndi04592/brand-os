@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  ad-layouts-extra.js · v1.0 (2026-11-05)
+//  ad-layouts-extra.js · v1.1 (2026-11-12)
+//  v1.1 RA 11-12「前後對比、多格、條列這三種排版圖,不如刪除」→ 從 ① 選單收起(程式仍認得,要恢復把 key 從 HIDE 拿掉)
+//       以前存過這三種的選擇也一併清掉,不會在畫面空白時偷偷生出舊排版圖
 //  廣告圖「新增照片版型」—— 參考韓國醫美 / 日本旅遊 / IG 大品牌常見拍法補進 ① 版型選單
 //
 //  為什麼另開一個檔:admaker.js 已約 4,880 行(紅線 1,500),新功能一律不塞進去。
@@ -19,7 +21,7 @@
     return;
   }
   if (window._adLayoutsExtra) return;   // 重複載入保護
-  window._adLayoutsExtra = '1.0';
+  window._adLayoutsExtra = '1.1';
 
   var NO_TEXT = '\n- Photograph only; no lettering is added to the image (the customer types any text later).';
   function T(label, desc, comp) { return { label: label, desc: desc, composition: comp + NO_TEXT }; }
@@ -82,9 +84,27 @@
     g[2].forEach(function (k) { if (LAYOUT_TEMPLATES[k] && grp.keys.indexOf(k) === -1) grp.keys.push(k); });
   });
 
+  // ✂️ v1.1 收起三種排版圖(舊引擎、多格多字,質感達不到 MOZ 標準)
+  var HIDE = ['before_after', 'grid_showcase', 'checklist_info'];
+  Object.keys(LAYOUT_BY_PRODTYPE).forEach(function (pt) {
+    var list = LAYOUT_BY_PRODTYPE[pt];
+    if (!Array.isArray(list)) return;
+    list.forEach(function (g) { if (g && Array.isArray(g.keys)) g.keys = g.keys.filter(function (k) { return HIDE.indexOf(k) === -1; }); });
+  });
+  //  以前選過 / 從紀錄還原成這三種 → 清成「還沒選」,客人重選一次(生成前的必選檢查會提醒)
+  setInterval(function () {
+    try {
+      if (typeof SELECTED_LAYOUT !== 'undefined' && HIDE.indexOf(SELECTED_LAYOUT) !== -1) {
+        SELECTED_LAYOUT = '';
+        if (typeof _syncSteps === 'function') _syncSteps();
+        console.log('[版型+] 這個版型已收起,請重選 ① 排版');
+      }
+    } catch (e) {}
+  }, 800);
+
   // 選單若已畫過,讓它下次重畫(admaker 用 dataset.pt 記住畫過哪一類)
   var sel = document.getElementById('layoutSel');
   if (sel) delete sel.dataset.pt;
 
-  console.log('[版型+] v1.0 已載入:新增 20 種照片版型(美業 3 / 醫美 3 / 課程 2 / 命理 2 / 旅遊 3 / 機台 2 / 螢幕 2 / 專業 3)');
+  console.log('[版型+] v1.1 已載入:新增 20 種照片版型 · 收起前後對比 / 多格展示 / 重點條列');
 })();
