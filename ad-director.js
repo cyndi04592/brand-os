@@ -27,9 +27,9 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '1.4';
+  var VERSION = '1.4.1';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
-  var TIMEOUT_MS = 40000;    // 單次等待;失敗會再試一次
+  var TIMEOUT_MS = 40000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
   //   (v1.0 用 2600 字當界線,新引擎草稿常常 2610~2640 字 → 被誤判跳過,RA 11-11 實測抓到)
   var OLD_ENGINE = /^===\s*[A-Z][A-Z &]+===/m;
@@ -94,8 +94,8 @@
       '7. 促銷、節慶、檔期(例如雙 11)一樣照第 6 點拍成一張真的照片:節慶感只用配色、材質、光來表現;畫面上的促銷訊息只有一則、放在一處,由客人給的標題字負責。',
       '8. 刪掉畫質堆疊詞(8K、超清、perfect、cinematic lighting、golden hour、soft glow 這類),它們會讓畫面變塑膠感。',
       layout
-        ? '9. 這是一張「排版圖」(' + (safeLabel('LAYOUT_TEMPLATES', 'SELECTED_LAYOUT') || '多格 / 前後對比 / 清單') + '):草稿裡的版面結構完整保留 —— 畫布尺寸、幾格、哪一格放什麼、前後對比的左右或上下、條列幾點與順序、字放在哪裡。每一格裡的照片照第 6 點的拍法。草稿裡的 AVOID / 禁止清單改寫成正面的描述(要什麼),重複的句子合併。輸出英文,一個段落講版面、每一格各一句,具體、肯定、不寫否定句,總長 2,400 字元以內。'
-        : '9. 輸出英文,5 到 7 句,每句只講一件事,具體、肯定、不寫否定句,總長 1,200 字元以內。',
+        ? '9. 這是一張「排版圖」(' + (safeLabel('LAYOUT_TEMPLATES', 'SELECTED_LAYOUT') || '多格 / 前後對比 / 清單') + '):草稿裡的版面結構完整保留 —— 畫布尺寸、幾格、哪一格放什麼、前後對比的左右或上下、條列幾點與順序、字放在哪裡。每一格裡的照片照第 6 點的拍法。草稿裡的 AVOID / 禁止清單改寫成正面的描述(要什麼),重複的句子合併。輸出英文,一個段落講版面、每一格各一句,具體、肯定、不寫否定句,總長 2,400 字元以內 —— 這點很重要:越長,生圖模型越抓不到重點;寫不下就刪最不重要的細節,字、格數、商品保護句一定留。'
+        : '9. 輸出英文,5 到 7 句,每句只講一件事,具體、肯定、不寫否定句,總長 1,200 字元以內 —— 越長生圖模型越抓不到重點。',
       '',
       '你的回覆會原封不動交給生圖模型,所以第一個字就是提示詞的第一個字:只輸出最終提示詞本身,一段文字,不加標題、說明、前言或引號。'
     ].join('\n');
@@ -110,25 +110,27 @@
   }
 
   //  保險:就算 Claude 多講了一句前言 / 標題,也只留提示詞那一段(這些字會被生圖模型當成畫面內容)
-  var META = /^(i |i'm |i'll |i need|i can|let me|here is|here's|since |note|based on|okay|sure|final prompt|prompt\s*:)/i;
+  var META = /^(i |i'm |i'll |i need|i can|let me|here is|here's|since |note|based on|okay|sure|final prompt|prompt\s*:|this prompt|the prompt above|explanation|changes made|---)/i;
   function clean(t) {
     var paras = String(t).replace(/\r/g, '').split(/\n\s*\n/).map(function (x) {
       return x.replace(/^#+\s.*$/gm, '').replace(/^\s*(final prompt|prompt)\s*[:：]\s*/i, '').trim();
     }).filter(function (x) { return x && !META.test(x); });
-    var out = paras.length ? paras.reduce(function (a, b) { return b.length > a.length ? b : a; }) : '';
-    return out.replace(/^["「“]|["」”]$/g, '').trim();
+    //  v1.4.1 全部保留(排版圖會分段:版面一段、每一格一段)—— v1.4 只留最長一段,排版圖被砍到剩一格
+    return paras.join('\n\n').replace(/^["「“]|["」”]$/g, '').trim();
   }
 
   function once(content, layout) {
-    var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, TIMEOUT_MS);
+    var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, layout ? TIMEOUT_MS * 1.5 : TIMEOUT_MS);
     return fetch(WORKER, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
-      body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: layout ? 1600 : 900 })
+      body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: layout ? 2000 : 900 })
     }).then(function (r) { return r.json(); }).then(function (j) {
       clearTimeout(tm);
       var out = clean((j && j.ok && j.text) || '');
-      var ok = out.length >= 200 && out.length <= (layout ? 3600 : 2200);
-      return { out: ok ? out : null, error: ok ? '' : ((j && j.error) || ('長度不對 ' + out.length + ' 字')) };
+      //  v1.4.1 長度只防「壞掉」(空白 / 被截斷),不拿來淘汰好結果 —— 排版圖實測 4,700~5,200 字,v1.4 的 3,600 上限會把它丟掉
+      var whole = /[.!?"”」』)）。]\s*$/.test(out);   // 沒有句尾 = 字數用完被截斷 → 當失敗,自動重試
+      var ok = whole && out.length >= 200 && out.length <= (layout ? 8000 : 4000);
+      return { out: ok ? out : null, error: ok ? '' : ((j && j.error) || (!whole && out ? '回覆被截斷' : '長度不對 ' + out.length + ' 字')) };
     }).catch(function (e) { clearTimeout(tm); return { out: null, error: (e && e.name === 'AbortError') ? '逾時' : String(e && e.message || e) }; });
   }
 
