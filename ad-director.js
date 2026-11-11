@@ -24,7 +24,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '1.1';
+  var VERSION = '1.2';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 25000;
   var MAX_DRAFT = 2600;     // 草稿超過這個長度 = 舊引擎的排版圖,不改寫
@@ -168,6 +168,26 @@
     return true;
   }
 
+  //  ✍️ v1.2 字型一律用 MOZ 那套(RA 2026-11-11「MOZ 好看的也是壓字的,就照他」)
+  //   MOZ 沒有專屬品牌包 → 用預設的乾淨黑體;其他品牌包寫了明朝 / 宋體 / 草寫 / 斜體襯線,AI 畫中文最容易變形
+  //   做法:品牌包被讀出來的那一刻,把「Typography」那一行換成 MOZ 的,配色等其他設定照舊(精簡引擎與舊引擎都讀這裡)
+  var MOZ_TYPE = 'clean Sans Serif (Inter / 思源黑體 Regular), restrained letter-spacing';
+  function mozType(pack) {
+    if (!pack || !pack.dna || window.AD_MOZ_TYPE === false) return pack;
+    var dna = String(pack.dna).replace(/^-\s*Typography[^:\n]*:.*$/gim, '- Typography: ' + MOZ_TYPE);
+    return dna === pack.dna ? pack : Object.assign({}, pack, { dna: dna });
+  }
+  function installType() {
+    if (typeof window.detectBrandPack !== 'function') return false;
+    if (window.detectBrandPack.__mozType) return true;
+    var orig = window.detectBrandPack;
+    window.detectBrandPack = function () { return mozType(orig.apply(this, arguments)); };
+    window.detectBrandPack.__mozType = true;
+    return true;
+  }
+  var tt = 0;
+  (function waitType() { if (installType() || ++tt > 80) return; setTimeout(waitType, 250); })();
+
   //  等 admaker.js / adlean.js / ad-logotap.js 都掛好再包(最多等 15 秒)
   var tries = 0;
   (function wait() {
@@ -177,6 +197,6 @@
     setTimeout(wait, 250);
   })();
 
-  window.AdDirector = { version: VERSION, direct: direct, brief: brief };
+  window.AdDirector = { version: VERSION, direct: direct, brief: brief, mozType: mozType };
   console.log('[AdDirector] v' + VERSION + ' AI 美術指導已載入(關閉:window.AD_DIRECTOR = false)');
 })();
