@@ -1,5 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  product-size.js · v1.8(2026-11-12)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
+ *  product-size.js · v1.9(2026-11-12)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
+ *  v1.9 RA:入駐商品表格加必填欄「這是什麼、怎麼用」(雲朵水餃包其實是眼鏡包,AI 從名字猜不到);售價改選填(廣告圖與文案都會刻意刪掉價格,沒用到)
+ *       送出格式:「名稱｜用途:一句話｜尺寸:…」→ kol-proxy 核准時拆進商品的「特色」(feature)
  *  v1.8 RA:「先縮起來要再展開,這裡也是要必選」→ 存好的尺寸縮成一行(點「改」才展開);
  *       廣告圖頁標「必選」:實體商品沒存尺寸就不能生成(展開面板、捲過去、紅字提醒,不跳視窗)
  *  v1.5 RA:「給客戶選的那端簡單一點、有設計感一點」(圖示定案:白卡片 + 黑描邊 + 卡通圓手 + 金色量尺/商品箱)→ 主選項只留 6 顆(配小圖示),其他收進「更細 ▾」;
@@ -26,7 +28,7 @@
 (function () {
   'use strict';
   if (window.ProductSize) return;
-  var VERSION = 'v1.8';
+  var VERSION = 'v1.9';
   var HAND = 18;   // 一個手掌 = 手腕到指尖約 18cm
 
   var PACK = [
@@ -231,12 +233,12 @@
     + '.psz.psz-cell{display:inline-block;margin:0;padding:0;border:0;background:none}.psz.psz-drawer{margin-top:6px;padding:8px 10px}'
     // v1.6 商品表格
     + '.pt{border:1px solid var(--line,rgba(255,255,255,.1));border-radius:10px;padding:8px}'
-    + '.pt-head,.pt-row{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) auto 26px;gap:8px;align-items:center}'
+    + '.pt-head,.pt-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.7fr) minmax(0,.8fr) auto 26px;gap:8px;align-items:center}'
     + '.pt-head{font-size:10px;opacity:.55;padding:2px 4px 6px;letter-spacing:.5px}'
     + '.pt-row{padding:6px 0;border-top:1px solid var(--line,rgba(255,255,255,.08))}.pt-row:first-child{border-top:0}.pt-row input{margin:0}'
     + '.pt-drawer{grid-column:1/-1}.pt-del{background:none;border:0;color:inherit;opacity:.45;cursor:pointer;font-size:13px;padding:4px}.pt-del:hover{opacity:1;color:#ff8a8a}'
     + '.pt-add{margin-top:8px;width:100%;background:none;border:1px dashed var(--line,rgba(255,255,255,.18));color:inherit;opacity:.8;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer}.pt-add:hover{opacity:1}'
-    + '@media (max-width:600px){.pt-head{display:none}.pt-row{grid-template-columns:minmax(0,1fr) auto 26px}.pt-row .pt-name{grid-column:1/-1}}';
+    + '@media (max-width:600px){.pt-head{display:none}.pt-row{grid-template-columns:minmax(0,1fr) auto 26px}.pt-row .pt-name,.pt-row .pt-use{grid-column:1/-1}}';
   function ensureCss() {
     if (document.getElementById('psz-css')) return;
     var st = document.createElement('style'); st.id = 'psz-css'; st.textContent = CSS; document.head.appendChild(st);
@@ -470,26 +472,26 @@
   function mountTable(box, opts) {
     ensureCss();
     opts = opts || {};
-    box.innerHTML = '<div class="pt"><div class="pt-head"><span>商品名稱 *</span><span>售價 *</span><span>大概多大</span><span></span></div><div class="pt-rows"></div></div>'
+    box.innerHTML = '<div class="pt"><div class="pt-head"><span>商品名稱 *</span><span>這是什麼、怎麼用 *</span><span>售價(選填)</span><span>大概多大</span><span></span></div><div class="pt-rows"></div></div>'
       + '<button type="button" class="pt-add">＋ 再加一個商品</button>';
     var rowsEl = box.querySelector('.pt-rows');
     function rows() { return Array.prototype.slice.call(rowsEl.querySelectorAll('.pt-row')); }
     function data() {
-      return rows().map(function (r) { return { r: r, n: r.querySelector('.pt-name').value.trim(), p: r.querySelector('.pt-price').value.trim(), k: r._cell ? r._cell.get() : '' }; });
+      return rows().map(function (r) { return { r: r, n: r.querySelector('.pt-name').value.trim(), u: r.querySelector('.pt-use').value.trim().replace(/[｜|]/g, '/'), p: r.querySelector('.pt-price').value.trim(), k: r._cell ? r._cell.get() : '' }; });
     }
     function sync() {
       var named = data().filter(function (x) { return x.n; });
-      if (opts.products) opts.products.value = named.map(function (x) { return x.n; }).join('\n');
+      if (opts.products) opts.products.value = named.map(function (x) { return x.n + (x.u ? '(' + x.u + ')' : ''); }).join('\n');   // 靈魂書讀這欄:名稱後面帶用途
       if (opts.price) opts.price.value = named.filter(function (x) { return x.p; }).map(function (x) { return x.n + ' ' + x.p; }).join('；');
       var rs = rows(); rs.forEach(function (r) { r.querySelector('.pt-del').style.visibility = rs.length > 1 ? '' : 'hidden'; });
       if (typeof opts.onChange === 'function') opts.onChange();
     }
-    function add(name, price, focus) {
+    function add(name, price, focus, use) {
       var row = document.createElement('div'); row.className = 'pt-row';
-      row.innerHTML = '<input type="text" class="pt-name" placeholder="例:米香腸原味 280g"><input type="text" class="pt-price" placeholder="例:NT$280">'
+      row.innerHTML = '<input type="text" class="pt-name" placeholder="例:米香腸原味 280g"><input type="text" class="pt-use" placeholder="例:眼鏡收納包,可掛在胸前"><input type="text" class="pt-price" placeholder="例:NT$280">'
         + '<span class="pt-size"></span><button type="button" class="pt-del" title="刪除這一列">✕</button><div class="pt-drawer" style="display:none"></div>';
       rowsEl.appendChild(row);
-      row.querySelector('.pt-name').value = name || ''; row.querySelector('.pt-price').value = price || '';
+      row.querySelector('.pt-name').value = name || ''; row.querySelector('.pt-use').value = use || ''; row.querySelector('.pt-price').value = price || '';
       row.querySelectorAll('input').forEach(function (i) { i.addEventListener('input', sync); });
       row.querySelector('.pt-del').onclick = function () { row.remove(); sync(); };
       row._cell = mountCell(row.querySelector('.pt-size'), { drawer: row.querySelector('.pt-drawer'), onChange: sync });
@@ -500,13 +502,13 @@
     add('', '', false);
     return {
       add: add,
-      compose: function () { return data().filter(function (x) { return x.n; }).map(function (x) { return composeLine(x.n, x.k); }).join('\n'); },
+      compose: function () { return data().filter(function (x) { return x.n; }).map(function (x) { return composeLine(x.n + (x.u ? '｜用途:' + x.u : ''), x.k); }).join('\n'); },
       check: function () {
         var rs = data().filter(function (x) { return x.n; });
         if (!rs.length) return { ok: false, msg: '至少填一個商品名稱,寫完整一點(例:米香腸原味 280g),AI 出圖才抓得準。', el: box.querySelector('.pt-name') };
         for (var i = 0; i < rs.length; i++) {
           if (rs[i].n.length < 2) return { ok: false, msg: '「' + rs[i].n + '」太短了,寫完整商品名(例:米香腸原味 280g)。', el: rs[i].r.querySelector('.pt-name') };
-          if (!rs[i].p) return { ok: false, msg: '「' + rs[i].n + '」的售價還沒填。AI 會照價位決定畫面質感(平價/中價/精品),例:NT$280、HK$120、¥3,000、NT$15,000/堂', el: rs[i].r.querySelector('.pt-price') };
+          if (rs[i].u.length < 2) return { ok: false, msg: '「' + rs[i].n + '」還沒寫「這是什麼、怎麼用」。一句話就好,例:眼鏡收納包,可掛在胸前', el: rs[i].r.querySelector('.pt-use') };
         }
         return { ok: true };
       },
