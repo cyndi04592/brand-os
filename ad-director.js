@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 ad-director.js v1.5(2026-11-12)廣告圖「AI 美術指導」—— 每一張廣告圖都經過美術指導
+//  v1.6 字型:客人選的風格有寫字型就照風格(歐美雜誌 Didot、日系雅致明朝、水墨書法…共 13 種);沒寫才用 MOZ 黑體
 //  v1.5 全選項清查(類型×版型 91 組、風格 91 × 情境 28):
 //   · 主角照草稿認定(商品 / 模特兒 / 美業作品 / 專業人士 / 螢幕),人臉、作品、螢幕內容的保護句也一字不改
-//   · 字型一律 MOZ 黑體:9 種風格在排版圖會帶明朝 / 書法 / 手寫 / Didot / 變形大字 → 一律換掉
+//   · 品牌包寫死的字型一律換 MOZ 黑體(風格字型的規則見 v1.6)
 //  RA:「規則擋不完 —— 鞋子很輕想拍太空無重力、雪紡要飄、泳圈要浮。
 //       要跟 KOL 數字人 AI 分鏡一樣:先吸收再轉換,轉出來的提示詞簡短有力很明確。」
 //
@@ -30,7 +31,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '1.5';
+  var VERSION = '1.6';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 40000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -72,6 +73,7 @@
       '客人選的類型:' + (pt || '(沒選)'),
       '版型:' + (safeLabel('LAYOUT_TEMPLATES', 'SELECTED_LAYOUT') || '(沒選)'),
       '風格:' + (safeLabel('REGIONAL_FLAVORS', 'SELECTED_FLAVOR') || '(沒選)'),
+      '風格指定的字型:' + (styleType() || '(沒寫,用 MOZ 黑體)'),
       '情境:' + (safeLabel('CONTEXT_THEMES', 'SELECTED_CONTEXT') || '(沒選)'),
       '客人補充說明:' + (val('gptStyleDesc') || '(沒有)'),
       '標題:' + (val('gptHeadline') || '(沒有)') + (val('gptSubHeadline') ? ' / 副標:' + val('gptSubHeadline') : '')
@@ -99,10 +101,21 @@
       layout
         ? '9. 這是一張「排版圖」(' + (safeLabel('LAYOUT_TEMPLATES', 'SELECTED_LAYOUT') || '多格 / 前後對比 / 清單') + '):草稿裡的版面結構完整保留 —— 畫布尺寸、幾格、哪一格放什麼、前後對比的左右或上下、條列幾點與順序、字放在哪裡。每一格裡的照片照第 6 點的拍法。草稿裡的 AVOID / 禁止清單改寫成正面的描述(要什麼),重複的句子合併。輸出英文,一個段落講版面、每一格各一句,具體、肯定、不寫否定句,總長 2,400 字元以內 —— 這點很重要:越長,生圖模型越抓不到重點;寫不下就刪最不重要的細節,字、格數、商品保護句一定留。'
         : '9. 輸出英文,5 到 7 句,每句只講一件事,具體、肯定、不寫否定句,總長 1,200 字元以內 —— 越長生圖模型越抓不到重點。',
-      '10. 字型一律用 MOZ 那套:畫面上所有的字都是乾淨的無襯線黑體(Inter / 思源黑體 Regular)、字距收斂。草稿或風格裡寫的其他字型(襯線、明朝、宋體、書法、手寫、斜體、變形或超大的實驗字)都換成這個;風格的味道改用配色、材質、光與道具表現。',
+      '10. 字型:【風格指定的字型】有寫 → 畫面上所有的字都用那個風格的字型(例如歐美雜誌風用 Didot 那種高反差銳利襯線),字形正確、筆畫乾淨、好讀;沒寫 → 一律用 MOZ 那套乾淨的無襯線黑體(Inter / 思源黑體 Regular)、字距收斂。草稿裡其他的字型描述(品牌包寫的明朝、宋體、書法、斜體等)都換成上面決定的這一個。',
       '',
       '你的回覆會原封不動交給生圖模型,所以第一個字就是提示詞的第一個字:只輸出最終提示詞本身,一段文字,不加標題、說明、前言或引號。'
     ].join('\n');
+  }
+  //  v1.6 RA 11-12「Didot 字型幫他用回來」:客人選的風格自己有寫字型 → 照風格(90 種裡有 13 種,逐一讀過原文)
+  //   精簡引擎會把風格裡的字型描述拿掉(避免畫成排版),所以這裡直接從風格原文抽出來交給美術指導
+  //   品牌包寫死的字型(明朝 / 宋體…)不在這裡,照舊換成 MOZ 黑體
+  var TYPE_WORDS = /typograph|font|serif|lettering|headline|\bletters?\b|\btype\b|typeface|calligraph|handwrit|\bscript\b|glyph|\btext\b|wordmark/i;
+  function styleType() {
+    try {
+      var f = (typeof REGIONAL_FLAVORS !== 'undefined' && typeof SELECTED_FLAVOR !== 'undefined') ? (REGIONAL_FLAVORS[SELECTED_FLAVOR] || {}) : {};
+      return String(f.flavor || '').split(/(?<=[.;])\s+|,\s+/).filter(function (x) { return TYPE_WORDS.test(x); })
+        .map(function (x) { return x.replace(/^Add [^:]*:\s*/i, '').replace(/[.;]\s*$/, '').trim(); }).join(', ');
+    } catch (e) { return ''; }
   }
   //  admaker.js 的 const / let 不在 window 上,直接用名字讀(讀不到就空白)
   function safeLabel(mapName, keyName) {
@@ -234,6 +247,6 @@
   //  精簡引擎晚載入時也立刻重新包上(不用等到下一次生成)
   setInterval(function () { if (typeof window.buildPosterPrompt === 'function' && !window.buildPosterPrompt.__director && window.generateGptPoster && window.generateGptPoster.__director) { ensureBuild(); console.log('[AdDirector] 提示詞函式被換掉 → 已重新包上'); } }, 2000);
 
-  window.AdDirector = { version: VERSION, direct: direct, brief: brief, mozType: mozType, ensureBuild: ensureBuild };
+  window.AdDirector = { version: VERSION, direct: direct, brief: brief, mozType: mozType, ensureBuild: ensureBuild, styleType: styleType };
   console.log('[AdDirector] v' + VERSION + ' AI 美術指導已載入(關閉:window.AD_DIRECTOR = false)');
 })();
