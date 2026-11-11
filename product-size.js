@@ -1,5 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  product-size.js · v1.6(2026-11-02)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
+ *  product-size.js · v1.8(2026-11-12)商品尺寸點選器(KOL 工作室 / 廣告圖 / 入駐 共用)
+ *  v1.8 RA:「先縮起來要再展開,這裡也是要必選」→ 存好的尺寸縮成一行(點「改」才展開);
+ *       廣告圖頁標「必選」:實體商品沒存尺寸就不能生成(展開面板、捲過去、紅字提醒,不跳視窗)
  *  v1.5 RA:「給客戶選的那端簡單一點、有設計感一點」(圖示定案:白卡片 + 黑描邊 + 卡通圓手 + 金色量尺/商品箱)→ 主選項只留 6 顆(配小圖示),其他收進「更細 ▾」;
  *       入駐問卷每個商品平常只露一顆「多大?」小按鈕,選好縮成一行。存的格式完全沒變(Worker 照舊讀得懂)
  *  v1.7c 手套改實心連指手套(塗滿、不畫五指)、圖示再放大 + 顏色直接寫在圖上(不受頁面其他樣式影響)
@@ -24,7 +26,7 @@
 (function () {
   'use strict';
   if (window.ProductSize) return;
-  var VERSION = 'v1.7';
+  var VERSION = 'v1.8';
   var HAND = 18;   // 一個手掌 = 手腕到指尖約 18cm
 
   var PACK = [
@@ -205,6 +207,7 @@
     });
   }
   var CSS = '.psz{--pa:var(--accent,#8b7cf6);--pg:var(--accent2,#d9b25f);margin-top:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025);font-size:12px}'
+    + '.psz h4 .req{font-size:10px;font-weight:700;color:#fa6d9b;margin-left:2px}.psz.mini{padding:9px 14px}.psz.mini .st{margin:0}.psz .ed{margin-left:6px;color:var(--pa);cursor:pointer;text-decoration:underline;font-weight:600}.psz.need{border-color:#fa6d9b;box-shadow:0 0 0 2px rgba(250,109,155,.25)}'
     + '.psz h4{margin:0 0 4px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}.psz .st{font-size:11.5px;margin:0 0 10px;opacity:.65;line-height:1.5}.psz .st.warn{color:#f5b041;opacity:1}'
     + '.psz .row{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.psz .lb{font-size:11.5px;opacity:.72;margin-top:12px;font-weight:600}'
     + '.psz .ic{width:68px;height:68px;overflow:visible}.psz .ic .su{fill:#eef1f7}.psz .ic .pk2{fill:#9aa3b5}.psz .ic .vz{fill:#141a2a}.psz .ic .shine{fill:none;stroke:#fff;stroke-width:.45;stroke-linecap:round;opacity:.7}.psz .ic .scr{fill:#3fd8ff}.psz .ic .arm{fill:none;stroke:#eef1f7;stroke-width:1.6;stroke-linecap:round}.psz .ic .gl{fill:#fff;stroke:#3fd8ff;stroke-width:.55;stroke-linejoin:round}.psz .ic .sp{fill:none;stroke:#3fd8ff;stroke-width:.6;stroke-linecap:round}.psz .ic .rg{fill:none;stroke:#3fd8ff;stroke-width:.75;stroke-linecap:round;filter:drop-shadow(0 0 1.2px #3fd8ff)}.psz .ic .halo{fill:#a46bd8;opacity:.22}.psz .ic .glow{fill:#3fd8ff;opacity:.45;filter:blur(.5px)}.psz .ic.zm{overflow:hidden;border-radius:10px}.psz .ic.sm{width:16px;height:16px}.psz .ic.sm .ink{fill:none;stroke:#1f2230;stroke-width:1.6;stroke-linecap:round}.psz .ic.sm .ac{fill:#3fd8ff;stroke:#1f2230;stroke-width:1.2}'
@@ -245,10 +248,12 @@
     opts = opts || {};
     var getP = opts.getProduct || function () { return (typeof window.getCurrentRotationProduct === 'function') ? window.getCurrentRotationProduct() : null; };
     var lastSig = null, sel = { pack: '', piece: '', w: '', h: '', pc: '' };
+    var open = false, need = false;   // v1.8 open = 已存也展開(按了「改」);need = 生成時被擋下(紅框)
+    var REQ = opts.required ? '<span class="req">必選</span>' : '';
 
     function render(force) {
       var p = getP();
-      var sig = p ? [p.brandId, p.prodId, p.realSize, p.placeNote, p.placement, p.productMode].join('|') : '';
+      var sig = p ? [p.brandId, p.prodId, p.realSize, p.placeNote, p.placement, p.productMode, open, need].join('|') : '';
       if (!force && sig === lastSig) return;
       lastSig = sig;
       if (!p || !PHYSICAL.test(String(p.placement || '')) || NO_SIZE_MODES.test(String(p.productMode || ''))) { box.innerHTML = ''; box.style.display = 'none'; return; }
@@ -256,10 +261,16 @@
       var s = readState(p);
       sel = { pack: s.packKey, piece: s.pieceKey, w: s.w && s.h ? s.w : '', h: s.w && s.h ? s.h : '', pc: (s.piece && !s.pieceKey) ? String(s.piece) : '' };
       var name = esc(p.name || p.prodName || '這個商品');
+      //  v1.8 存好了 → 縮成一行;點「改」才展開
+      if (s.filled && !open) {
+        box.innerHTML = '<div class="psz mini"><h4>' + RULER + '商品實際大小' + REQ + '</h4><p class="st">✅ 已存:' + esc(p.realSize || s.bigZh || '') + (s.piece && !_isBig(s.packKey, p) ? ' · 裡面一件約 ' + s.piece + ' cm' : '') + '<a class="ed">改</a></p></div>';
+        box.querySelector('.ed').onclick = function () { open = true; render(true); };
+        return;
+      }
       var status = s.filled
         ? '<p class="st">✅ 已存:' + esc(p.realSize || s.bigZh || '') + (s.piece && !_isBig(s.packKey, p) ? ' · 裡面一件約 ' + s.piece + ' cm' : '') + ' —— 系統會照這個大小做尺寸參考照</p>'
-        : '<p class="st warn">⚠️ 「' + name + '」還沒填尺寸 —— 影片裡商品大小有機會不準(偏大或偏小)。點一下就好:</p>';
-      box.innerHTML = '<div class="psz"><h4>' + RULER + '商品實際大小</h4>' + status
+        : '<p class="st warn">⚠️ 「' + name + '」還沒填尺寸 —— ' + (opts.required ? '選好按「存起來」才能生成。' : '影片裡商品大小有機會不準(偏大或偏小)。') + '點一下就好:</p>';
+      box.innerHTML = '<div class="psz' + (need && !s.filled ? ' need' : '') + '"><h4>' + RULER + '商品實際大小' + REQ + (s.filled ? '<a class="ed" data-x="1">收起</a>' : '') + '</h4>' + status
         + '<div class="lb">整包(整件)大概多大?</div><div data-g="pack">' + tiles(sel.pack) + '</div>'
         + '<div class="ex"><span class="lb" style="margin:0">想填準一點(公分):</span>寬 <input data-f="w" inputmode="decimal" value="' + esc(sel.w) + '"> × 高 <input data-f="h" inputmode="decimal" value="' + esc(sel.h) + '"> cm</div>'
         + '<div class="psz-piece"' + (_isBig(sel.pack, p) ? ' style="display:none"' : '') + '><div class="lb">裡面一件大概多大?(沒有內容物就不用點)</div><div class="row" data-g="piece">'
@@ -267,6 +278,7 @@
         + ' <span class="lb" style="margin:0">或</span> <input data-f="pc" inputmode="decimal" placeholder="長" value="' + esc(sel.pc) + '"> cm</div></div>'
         + '<button type="button" class="sv">存起來</button><span class="msg"></span></div>';
       wireMore(box);
+      var cl = box.querySelector('h4 .ed[data-x]'); if (cl) cl.onclick = function () { open = false; render(true); };
       box.querySelectorAll('[data-g] button.c').forEach(function (b) {
         b.onclick = function () {
           var gp = b.closest('[data-g]'), g = gp.getAttribute('data-g'), k = b.getAttribute('data-k');
@@ -290,13 +302,18 @@
           if (pack && pack.big) pc = 0;
           await save(p, opts.brandId || (window.S && window.S.currentBrandId) || p.brandId, pack, exact, pc > 0 ? pc : 0, typeof opts.ids === 'function' ? opts.ids() : null);
           msg.textContent = '✅ 存好了';
-          setTimeout(function () { render(true); }, 900);
+          setTimeout(function () { open = false; need = false; render(true); }, 900);
         } catch (e) { msg.textContent = '❌ ' + ((e && e.message) || e); btn.disabled = false; }
       };
     }
     render(true);
     var t = setInterval(function () { if (!document.body.contains(box)) { clearInterval(t); return; } render(false); }, 1500);
-    return { refresh: function () { render(true); } };
+    return {
+      refresh: function () { render(true); },
+      //  v1.8 必選:面板有顯示(實體商品)而且還沒存 → 算缺
+      missing: function () { var p = getP(); return !!(p && box.style.display !== 'none' && box.innerHTML && !readState(p).filled); },
+      remind: function () { need = true; open = true; render(true); try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
+    };
   }
 
   // ── KOL 工作室自動掛:#ref-list(STEP2)/ #ep-ref-list(STEP3)那一區的下面
@@ -318,13 +335,31 @@
     if (chip.nextElementSibling && chip.nextElementSibling.classList.contains('psz-host')) return;
     var box = document.createElement('div'); box.className = 'psz-host';
     chip.parentNode.insertBefore(box, chip.nextSibling);
-    mount(box, {
+    _adSize = mount(box, {
+      required: true,
       getProduct: function () { return (window.S && window.S.prod) || null; },
       ids: function () { var S0 = window.S || {}; return { brandId: S0.brandId || '', subId: S0.subId || '', prodId: (S0.prod && S0.prod.id) || '' }; },
       brandId: (window.S && window.S.brandId) || '',
     });
   }
-  if (!/\/kol(\.html)?$/.test(location.pathname)) setInterval(autoMountAd, 1500);
+  //  v1.8 廣告圖「必選」:按生成時,實體商品還沒存尺寸 → 不生成,面板展開 + 紅框 + 狀態列提醒
+  var _adSize = null;
+  function hookAdGen() {
+    var g = window.generateGptPoster;
+    if (typeof g !== 'function' || g.__sizeReq) return;
+    var req = async function () {
+      if (_adSize && document.body.contains(document.querySelector('.psz-host')) && _adSize.missing()) {
+        _adSize.remind();
+        if (typeof setPrStatus === 'function') setPrStatus('📏 請先選「商品實際大小」並按「存起來」,再按生成', '#ff9d9d');
+        return;
+      }
+      return g.apply(this, arguments);
+    };
+    req.__sizeReq = true;
+    Object.keys(g).forEach(function (k) { try { req[k] = g[k]; } catch (e) {} });   // 保留其他檔案掛的旗標(__director / _ppl…)
+    window.generateGptPoster = req;
+  }
+  if (!/\/kol(\.html)?$/.test(location.pathname)) { setInterval(autoMountAd, 1500); setInterval(hookAdGen, 1500); }
   if (/\/kol(\.html)?$/.test(location.pathname)) {
     setInterval(autoMount, 2000);
     if (document.readyState !== 'loading') autoMount(); else document.addEventListener('DOMContentLoaded', autoMount);
