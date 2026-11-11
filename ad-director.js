@@ -3,6 +3,7 @@
 //  v2.4 RA 11-12「不是事後品管,是送出提示詞前就要想過 —— 眼鏡包被當一般包包、商品照拍很大但其實才裝得下一副眼鏡」
 //       → 美術指導先寫【思考】(是什麼 / 實際多大跟人比 / 材質姿態 / 照片拍到哪些面 / 風格世界 / 畫面主意 / 字與 LOGO)再寫【提示詞】
 //       → 商品實際大小(product-size.js 存的 realSize)第一次交給美術指導;思考內容存在 _adDirectorLast.think 給後台查
+//  v2.4.1 實測 Claude 想完常直接寫英文提示詞、沒寫【提示詞】標記 → 沒標記時,從【思考】後第一段英文開始切
 //       + 巧福「怕每張都一樣風格,復古風扇選別的風格也是復古」:第 12 點的商品類型拍法降成「沒選風格時的預設」,有選風格就照風格
 //       + 頌缽「書法字好醜,書法字都砍了」:風格寫書法也不用,水墨禪意風格的字一樣用 MOZ 黑體
 //       + 米香腸真空包被拍成硬挺地立著:第 2 點加「姿態跟著材質走」—— 軟包平放或斜靠、硬盒瓶罐才站著(所有商品通用,不只食品)
@@ -49,7 +50,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.4';
+  var VERSION = '2.4.1';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -140,7 +141,7 @@
       '5. 客人選的類型、風格、情境、擺放方式,要我拍成什麼樣的畫面',
       '6. 這張的畫面主意(一句話)',
       '7. 標題放哪、怎麼排;右下角留給 LOGO',
-      '【提示詞】',
+      '【提示詞】  ← 這一行標記一定要寫',
       '(這一段原封不動交給生圖模型:只寫最終提示詞本身,不加標題、說明、前言或引號)'
     ].join('\n');
   }
@@ -193,10 +194,19 @@
       body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: layout ? 3000 : 1700 })
     }).then(function (r) { return r.json(); }).then(function (j) {
       clearTimeout(tm);
-      var raw = String((j && j.ok && j.text) || ''), cut = raw.lastIndexOf('【提示詞】');
+      var raw = String((j && j.ok && j.text) || ''), cut = raw.lastIndexOf('【提示詞】'), mk = 5;
+      if (cut < 0 && raw.indexOf('【思考】') >= 0) {   // 沒寫標記 → 找【思考】後第一行「大半是英文」的地方
+        var lines = raw.split('\n'), pos = 0, seen = false;
+        for (var li = 0; li < lines.length; li++) {
+          var ln = lines[li], lat = (ln.match(/[A-Za-z]/g) || []).length, cjk = (ln.match(/[\u4e00-\u9fff]/g) || []).length;
+          if (ln.indexOf('【思考】') >= 0) seen = true;
+          else if (seen && ln.trim().length > 40 && lat > cjk * 3) { cut = pos; mk = 0; break; }
+          pos += ln.length + 1;
+        }
+      }
       //  v2.4 一定要先有【思考】再有【提示詞】;沒照格式 = 沒想過 → 當失敗重試
       var think = cut > 0 ? raw.slice(0, cut).replace(/^[\s\S]*?【思考】/, '').trim() : '';
-      var out = cut > 0 ? clean(raw.slice(cut + 5).replace(/^\s*[(（][^)）\n]*[)）]\s*/, '')) : '';
+      var out = cut > 0 ? clean(raw.slice(cut + mk).replace(/^\s*[(（][^)）\n]*[)）]\s*/, '')) : '';
       //  v1.4.1 長度只防「壞掉」(空白 / 被截斷),不拿來淘汰好結果 —— 排版圖實測 4,700~5,200 字,v1.4 的 3,600 上限會把它丟掉
       var whole = /[.!?"”」』)）。]\s*$/.test(out);   // 沒有句尾 = 字數用完被截斷 → 當失敗,自動重試
       var ok = whole && out.length >= 200 && out.length <= (layout ? 8000 : 4000);
