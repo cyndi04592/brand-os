@@ -100,6 +100,18 @@
   } catch (e) {}
 })();
 
+/* 🎬 2026-11-12 廣告圖 AI 美術指導(ad-director.js,只在首頁載入):先看懂商品+客人選擇,再把提示詞改寫成簡短明確的版本。失敗不影響網站。 */
+(function(){
+  if (window.__addirLoader || !/^\/(index(\.html)?)?$/.test(location.pathname)) return;
+  window.__addirLoader = true;
+  try {
+    var s = document.createElement('script');
+    s.src = 'ad-director.js?v=1.1';
+    s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {}
+})();
+
 /* 🛟 2026-11-03 網站備份在客人瀏覽器(sw.js):Cloudflare 慢超過 3 秒就先開備份,登入頁/換頁不再卡。
  *    緊急關閉這台:網址加 ?sw=off;全站關閉:sw.js 的 KILL 改 true 再部署。失敗不影響網站。 */
 (function(){
