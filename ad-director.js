@@ -24,7 +24,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '1.0';
+  var VERSION = '1.1';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 25000;
   var MAX_DRAFT = 2600;     // 草稿超過這個長度 = 舊引擎的排版圖,不改寫
@@ -50,7 +50,7 @@
     });
   }
 
-  function brief(draft) {
+  function brief(draft, hasPhoto) {
     var bc = {};
     try { bc = (typeof getBrandContext === 'function') ? (getBrandContext() || {}) : {}; } catch (e) {}
     var pt = '';
@@ -68,7 +68,9 @@
       '標題:' + (val('gptHeadline') || '(沒有)') + (val('gptSubHeadline') ? ' / 副標:' + val('gptSubHeadline') : '')
     ].filter(Boolean).join('\n');
     return [
-      '你是頂尖商業攝影的美術指導。附圖是客人的真實商品照。先看懂這個商品:它是什麼、多大、怎麼用、材質輕重、賣點在哪;再讀客人的選擇與補充說明;最後讀系統抽給你的拍攝草稿。',
+      hasPhoto
+        ? '你是頂尖商業攝影的美術指導。附圖是客人的真實商品照。先看懂這個商品:它是什麼、多大、怎麼用、材質輕重、賣點在哪;再讀客人的選擇與補充說明;最後讀系統抽給你的拍攝草稿。'
+        : '你是頂尖商業攝影的美術指導。這次沒有附圖,商品照會直接交給生圖模型;請從商品名稱、規格、特色判斷它是什麼、多大、怎麼用、材質輕重、賣點在哪;再讀客人的選擇與補充說明;最後讀系統抽給你的拍攝草稿。',
       '',
       '【商品與客人的選擇】',
       lines,
@@ -87,7 +89,7 @@
       '8. 刪掉畫質堆疊詞(8K、超清、perfect、cinematic lighting、golden hour、soft glow 這類),它們會讓畫面變塑膠感。',
       '9. 輸出英文,5 到 7 句,每句只講一件事,具體、肯定、不寫否定句,總長 1,200 字元以內。',
       '',
-      '只輸出最終提示詞本身,不要標題、不要解釋、不要引號包住。'
+      '你的回覆會原封不動交給生圖模型,所以第一個字就是提示詞的第一個字:只輸出最終提示詞本身,一段文字,不加標題、說明、前言或引號。'
     ].join('\n');
   }
   //  admaker.js 的 const / let 不在 window 上,直接用名字讀(讀不到就空白)
@@ -99,19 +101,29 @@
     } catch (e) { return ''; }
   }
 
+  //  保險:就算 Claude 多講了一句前言 / 標題,也只留提示詞那一段(這些字會被生圖模型當成畫面內容)
+  var META = /^(i |i'm |i'll |i need|i can|let me|here is|here's|since |note|based on|okay|sure|final prompt|prompt\s*:)/i;
+  function clean(t) {
+    var paras = String(t).replace(/\r/g, '').split(/\n\s*\n/).map(function (x) {
+      return x.replace(/^#+\s.*$/gm, '').replace(/^\s*(final prompt|prompt)\s*[:：]\s*/i, '').trim();
+    }).filter(function (x) { return x && !META.test(x); });
+    var out = paras.length ? paras.reduce(function (a, b) { return b.length > a.length ? b : a; }) : '';
+    return out.replace(/^["「“]|["」”]$/g, '').trim();
+  }
+
   function direct(draft) {
     var t0 = Date.now();
     return photoBase64().then(function (b64) {
       var content = [];
       if (b64) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } });
-      content.push({ type: 'text', text: brief(draft) });
+      content.push({ type: 'text', text: brief(draft, !!b64) });
       var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, TIMEOUT_MS);
       return fetch(WORKER, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
         body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: 900 })
       }).then(function (r) { return r.json(); }).then(function (j) {
         clearTimeout(tm);
-        var out = String((j && j.ok && j.text) || '').trim().replace(/^["「]|["」]$/g, '');
+        var out = clean((j && j.ok && j.text) || '');
         var ok = out.length >= 200 && out.length <= 2200;
         window._adDirectorLast = { draft: draft, final: ok ? out : '', ms: Date.now() - t0, used: ok, hadPhoto: !!b64, error: ok ? '' : ((j && j.error) || 'too short/long') };
         return ok ? out : null;
