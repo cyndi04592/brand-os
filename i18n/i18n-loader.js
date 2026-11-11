@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.15';
+  var VER = '1.17';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -46,6 +46,18 @@
 
   var LANG = detect();
   window.BOS_LANG = LANG;
+
+  //  ★ v1.17 日文/英文一律把語言寫進網址(?lang=ja / ?lang=en)
+  //   RA 11-12 實測:在系統裡切成日文 → 點「品牌入駐書」→ 網址只有 /onboard,語言只記在這個瀏覽器裡。
+  //   從 LINE 打開時入駐頁會請 LINE 換 Safari/Chrome 開(Google 不准在 LINE 裡登入),換了瀏覽器語言就不見了;
+  //   直接給 ?lang=ja 的網址則一路都對。→ 語言跟著網址走:換瀏覽器、跳轉、複製網址給客人都不會掉。
+  //   中文不加(網址保持乾淨);這行在入駐頁「LINE 偵測」之前執行,所以跳出去的網址也會帶著語言。
+  if (LANG !== 'zh') {
+    try {
+      var _u = new URL(location.href);
+      if (_u.searchParams.get('lang') !== LANG) { _u.searchParams.set('lang', LANG); history.replaceState(history.state, '', _u.toString()); }
+    } catch (_) {}
+  }
 
   // 左下角語言按鈕(v1.8:每個人都看得到,台灣人也能切日文/英文)
   //   平常只是一顆浮動的小按鈕「🌐 中文」,點了才展開三個語言;KOL 頁底部確認列跳出來時自動藏起來,不擋按鈕
