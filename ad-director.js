@@ -24,10 +24,13 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '1.2';
+  var VERSION = '1.3';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 25000;
-  var MAX_DRAFT = 2600;     // 草稿超過這個長度 = 舊引擎的排版圖,不改寫
+  //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
+  //   (v1.0 用 2600 字當界線,新引擎草稿常常 2610~2640 字 → 被誤判跳過,RA 11-11 實測抓到)
+  var OLD_ENGINE = /^===\s*[A-Z][A-Z &]+===/m;
+  var MAX_DRAFT = 8000;     // 只防異常,正常草稿不會碰到
   var pending = null;       // 這一次生成要用的最終提示詞(只用一次)
 
   function val(id) { var el = document.getElementById(id); return (el && el.value || '').trim(); }
@@ -154,11 +157,13 @@
       if (window.AD_DIRECTOR !== false) {
         try {
           var draft = origBuild();     // 精簡引擎抽一份(同時設好重拍 / 校正旗標)
-          if (draft && draft.length <= MAX_DRAFT) {
+          if (draft && draft.length <= MAX_DRAFT && !OLD_ENGINE.test(draft)) {
             if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 美術指導看商品、定拍法中…', 'var(--t3)');
             var fin = await direct(draft);
             pending = fin || draft;    // 失敗就用草稿,不重抽(旗標保持一致)
             console.log('[AdDirector v' + VERSION + '] ' + (fin ? '改寫完成 ' + fin.length + ' 字' : '改寫失敗,用草稿') + ' · ' + ((window._adDirectorLast || {}).ms || 0) + 'ms');
+          } else {
+            console.log('[AdDirector v' + VERSION + '] 舊引擎排版圖,不改寫(' + (draft ? draft.length : 0) + ' 字)');
           }
         } catch (e) { pending = null; console.warn('[AdDirector] 略過:', e && e.message); }
       }
