@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 ad-director.js v1.5(2026-11-12)廣告圖「AI 美術指導」—— 每一張廣告圖都經過美術指導
+//  v2.9.1 生成紀錄記下美術指導挑的壓字排法(params.director.textStyle,例如「7 兩行大標」;思考第 7 項也看得到)
 //  v2.9 RA 11-13 系統壓字(ad-textlayer.js):照片裡不畫字、不替字留白;美術指導從 RA 定案的 20 款排法挑一款(思考第 7 項寫編號)交給壓字模組
 //  v2.8.1 RA 11-13「LOGO 也是自己判斷,你才是智能」→ 拿掉「右下角先留給 LOGO」的預約;構圖自由,LOGO 由 admaker 生完圖量四角挑最乾淨的
 //  v2.8 RA 11-12「後台生成紀錄要看得到影片的導演思考」→ 商品運鏡寫進 gen_log 時(admaker_motion)一起存
@@ -75,7 +76,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.9';
+  var VERSION = '2.9.1';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -269,8 +270,8 @@
         if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 美術指導精簡提示詞…', 'var(--t3)');
         return squeeze(x.r.out, layout).then(function (sq) { if (sq) { x.long = x.r.out.length; x.r.out = sq; } return x; });
       }).then(function (x) {
-        try { var _t = tl(); if (_t) { var _m = String(x.r.think || '').match(/(?:^|\n)\s*7[.、．][^\n]*?(\d{1,2})/); if (_m) _t.suggest(_m[1]); } } catch (e) {}
-        window._adDirectorLast = { at: Date.now(), longBefore: x.long || 0, draft: draft, think: x.r.think || '', final: x.r.out || '', ms: Date.now() - t0, used: !!x.r.out, hadPhoto: !!b64, mode: layout ? 'layout' : 'photo', tries: x.tries, error: x.r.out ? '' : ((x.first ? x.first + ' / ' : '') + x.r.error) };
+        var _ts = 0; try { var _t = tl(); if (_t) { var _m = String(x.r.think || '').match(/(?:^|\n)\s*7[.、．][^\n]*?(\d{1,2})/); if (_m) _ts = Number(_t.suggest(_m[1])) || 0; } } catch (e) {}
+        window._adDirectorLast = { textStyle: _ts, at: Date.now(), longBefore: x.long || 0, draft: draft, think: x.r.think || '', final: x.r.out || '', ms: Date.now() - t0, used: !!x.r.out, hadPhoto: !!b64, mode: layout ? 'layout' : 'photo', tries: x.tries, error: x.r.out ? '' : ((x.first ? x.first + ' / ' : '') + x.r.error) };
         return x.r.out;
       });
     });
@@ -289,6 +290,7 @@
       ver: VERSION, used: !!L.used, tries: L.tries || 0, error: L.error || '', ms: L.ms || 0,
       draftLen: (L.draft || '').length, finalLen: (L.final || '').length, longBefore: L.longBefore || 0,
       headline: headT(), sub: subT(), note: val('gptStyleDesc'), textLayer: tl() ? 'system' : 'ai',
+      textStyle: L.textStyle ? (L.textStyle + ' ' + ((tl() && tl().names[L.textStyle]) || '')) : '',
       realSize: String(pr.realSize || ''), placement: placeLabel(), photo: ph.name || '',
       think: L.think || ''
     };
