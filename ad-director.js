@@ -3,6 +3,9 @@
 //  v2.4 RA 11-12「不是事後品管,是送出提示詞前就要想過 —— 眼鏡包被當一般包包、商品照拍很大但其實才裝得下一副眼鏡」
 //       → 美術指導先寫【思考】(是什麼 / 實際多大跟人比 / 材質姿態 / 照片拍到哪些面 / 風格世界 / 畫面主意 / 字與 LOGO)再寫【提示詞】
 //       → 商品實際大小(product-size.js 存的 realSize)第一次交給美術指導;思考內容存在 _adDirectorLast.think 給後台查
+//  v2.6 RA 11-12「後台要清楚知道客人點了哪些、怎麼生出這張圖,我們固定時間去查」
+//       → 廣告圖寫進既有的生成紀錄(D1 gen_log)時,一起存美術指導的思考、最終提示詞、系統草稿與客人的標題/補充/大小/擺放
+//       (包住 admaker.js 的 _kolPost,只在 action=gen_log 且是廣告圖時加料;不改 admaker.js、不改 Worker)
 //  v2.5.3 實測眼鏡包:美術指導寫了 1,782 字被 1,600 上限擋掉,兩次都擋 → 退回 2,500 字草稿(更長、沒經過美術指導)
 //       → 長度上限只擋壞掉的;超過 1,300 字就請美術指導再壓一次(意思保留、字變少),壓不成功才用原本那段
 //  v2.5.2 RA 10-22 鐵律「廣告圖提示詞完全不提 logo」:第 8 點改成只描述右下角是什麼背景,不寫 LOGO
@@ -57,7 +60,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.5.3';
+  var VERSION = '2.6';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -245,11 +248,48 @@
         if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 美術指導精簡提示詞…', 'var(--t3)');
         return squeeze(x.r.out, layout).then(function (sq) { if (sq) { x.long = x.r.out.length; x.r.out = sq; } return x; });
       }).then(function (x) {
-        window._adDirectorLast = { longBefore: x.long || 0, draft: draft, think: x.r.think || '', final: x.r.out || '', ms: Date.now() - t0, used: !!x.r.out, hadPhoto: !!b64, mode: layout ? 'layout' : 'photo', tries: x.tries, error: x.r.out ? '' : ((x.first ? x.first + ' / ' : '') + x.r.error) };
+        window._adDirectorLast = { at: Date.now(), longBefore: x.long || 0, draft: draft, think: x.r.think || '', final: x.r.out || '', ms: Date.now() - t0, used: !!x.r.out, hadPhoto: !!b64, mode: layout ? 'layout' : 'photo', tries: x.tries, error: x.r.out ? '' : ((x.first ? x.first + ' / ' : '') + x.r.error) };
         return x.r.out;
       });
     });
   }
+
+  //  v2.6 生成紀錄加料:客人當下的輸入 + 美術指導怎麼想 + 送出的提示詞 + 系統草稿
+  function logRow(row) {
+    if (!row || !/^admaker_/.test(String(row.action || ''))) return row;
+    var L = window._adDirectorLast;
+    if (!L || !L.at || Date.now() - L.at > 20 * 60000 || L.logged) return row;   // 只用這一次生成的,不拿舊的
+    L.logged = true;
+    var p = {}; try { p = JSON.parse(row.params || '{}') || {}; } catch (e) {}
+    var pr = (window.S && window.S.prod) || {}, ph = (window.S && window.S.photos && window.S.photos[window.S.selPhoto]) || {};
+    p.director = {
+      ver: VERSION, used: !!L.used, tries: L.tries || 0, error: L.error || '', ms: L.ms || 0,
+      draftLen: (L.draft || '').length, finalLen: (L.final || '').length, longBefore: L.longBefore || 0,
+      headline: val('gptHeadline'), sub: val('gptSubHeadline'), note: val('gptStyleDesc'),
+      realSize: String(pr.realSize || ''), placement: placeLabel(), photo: ph.name || '',
+      think: L.think || ''
+    };
+    row.params = JSON.stringify(p);
+    var head = String(row.prompt || '').split('\n\n')[0];
+    row.prompt = (/^【客人選擇】/.test(head) ? head + '\n\n' : '')
+      + '【美術指導 v' + VERSION + (L.used ? '' : ' ⚠️沒用上:' + (L.error || '')) + '】\n' + (L.think || '(沒有思考紀錄)')
+      + '\n\n【送給生圖的提示詞】' + (L.final || '(用系統草稿)') + '\n\n【系統草稿】' + (L.draft || '');
+    return row;
+  }
+  function hookLog() {
+    var k = window._kolPost;
+    if (typeof k !== 'function') return false;
+    if (k.__dirLog) return true;
+    var w = function (payload) {
+      try { if (payload && payload.action === 'gen_log' && payload.row) payload.row = logRow(payload.row); } catch (e) {}
+      return k.apply(this, arguments);
+    };
+    w.__dirLog = true;
+    window._kolPost = w;
+    return true;
+  }
+  var lt = 0;
+  (function waitLog() { if (hookLog() || ++lt > 80) return; setTimeout(waitLog, 250); })();
 
   //  v1.4 不在安裝時鎖死提示詞函式:每次用之前看一眼,被別的檔案(例如晚載入的精簡引擎)換掉了就重新包
   function ensureBuild() {
@@ -330,6 +370,6 @@
   //  精簡引擎晚載入時也立刻重新包上(不用等到下一次生成)
   setInterval(function () { if (typeof window.buildPosterPrompt === 'function' && !window.buildPosterPrompt.__director && window.generateGptPoster && window.generateGptPoster.__director) { ensureBuild(); console.log('[AdDirector] 提示詞函式被換掉 → 已重新包上'); } }, 2000);
 
-  window.AdDirector = { version: VERSION, direct: direct, brief: brief, mozType: mozType, ensureBuild: ensureBuild, styleType: styleType };
+  window.AdDirector = { logRow: logRow, version: VERSION, direct: direct, brief: brief, mozType: mozType, ensureBuild: ensureBuild, styleType: styleType };
   console.log('[AdDirector] v' + VERSION + ' AI 美術指導已載入(關閉:window.AD_DIRECTOR = false)');
 })();
