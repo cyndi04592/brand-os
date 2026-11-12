@@ -3,6 +3,10 @@
 //  v2.4 RA 11-12「不是事後品管,是送出提示詞前就要想過 —— 眼鏡包被當一般包包、商品照拍很大但其實才裝得下一副眼鏡」
 //       → 美術指導先寫【思考】(是什麼 / 實際多大跟人比 / 材質姿態 / 照片拍到哪些面 / 風格世界 / 畫面主意 / 字與 LOGO)再寫【提示詞】
 //       → 商品實際大小(product-size.js 存的 realSize)第一次交給美術指導;思考內容存在 _adDirectorLast.think 給後台查
+//  v2.7 RA 11-12「商品影片也要跟照片、KOL 影片一樣先思考」→ 商品運鏡影片送給 Seedance 前,AI 導演先看廣告圖 + 商品照想清楚
+//       (是什麼、多大、軟硬、哪些部分真的會動、看得到哪幾面、客人選的運鏡做不做得到)再改寫運鏡提示詞。
+//       線上運鏡引擎在 kol-proxy /admotion.js(不在 repo)→ 這裡在送出 seedance_submit 的那一刻接手,不改 Worker。
+//       時間碼與 [ImageN] 一個不能少、長度不能變長,不合格 / 逾時就用原本的運鏡。保險絲:window.MOTION_DIRECTOR = false
 //  v2.6 RA 11-12「後台要清楚知道客人點了哪些、怎麼生出這張圖,我們固定時間去查」
 //       → 廣告圖寫進既有的生成紀錄(D1 gen_log)時,一起存美術指導的思考、最終提示詞、系統草稿與客人的標題/補充/大小/擺放
 //       (包住 admaker.js 的 _kolPost,只在 action=gen_log 且是廣告圖時加料;不改 admaker.js、不改 Worker)
@@ -60,7 +64,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.6';
+  var VERSION = '2.7';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -291,6 +295,101 @@
   var lt = 0;
   (function waitLog() { if (hookLog() || ++lt > 80) return; setTimeout(waitLog, 250); })();
 
+  //  ═══ v2.7 商品運鏡影片的 AI 導演 ═══
+  function img64(url) {
+    return new Promise(function (resolve) {
+      try {
+        if (!url || typeof window.urlToBlob !== 'function') return resolve(null);
+        window.urlToBlob(url).then(function (b) { return createImageBitmap(b); }).then(function (bmp) {
+          var k = Math.min(1, 640 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+          c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+          c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+          resolve(c.toDataURL('image/jpeg', 0.82).split(',')[1]);
+        }).catch(function () { resolve(null); });
+      } catch (e) { resolve(null); }
+    });
+  }
+  function motionBrief(draft, mv, sec) {
+    var bc = {}; try { bc = (typeof getBrandContext === 'function') ? (getBrandContext() || {}) : {}; } catch (e) {}
+    var p = (window.S && window.S.prod) || {};
+    return [
+      '你是頂尖商品廣告影片的導演。第一張圖是已經做好的廣告圖(影片的第一格與場景),第二張是客人的原始商品照。',
+      '',
+      '【商品與客人的選擇】',
+      '商品:' + (bc.product || p.name || '(未命名)') + (bc.spec ? ' / 規格:' + bc.spec : '') + (bc.feature ? ' / 特色:' + bc.feature : ''),
+      '實際大小:' + (p.realSize || '(客人沒填,從照片判斷)') + (placeLabel() ? ' / 擺放方式:' + placeLabel() : ''),
+      '客人選的運鏡:' + (mv.label || mv.key || '') + (mv.hint ? '(' + mv.hint + ')' : '') + ',' + sec + ' 秒',
+      '',
+      '【系統的運鏡提示詞】(英文,要交給影片模型)',
+      draft,
+      '',
+      '【你的工作】把它改寫成這支商品真的拍得出來的版本。原則:',
+      '1. 看懂商品:它是什麼、實際多大、材質軟或硬、哪些部分真的會動(蓋子、掀蓋、拉鍊、扣子、鞋帶、布料),哪些是一體成形不會動。',
+      '2. 客人選的運鏡要做到;動作需要商品沒有的條件時(例如沒有蓋子卻要開蓋、硬殼卻要壓縮回彈),換成同一段時間裡、最接近而且這個商品做得到的動作。',
+      '3. 鏡頭只帶到廣告圖與商品照裡看得到的面;環繞或轉動的幅度停在看得到的範圍內。',
+      '4. 時間碼、每一段的順序、所有 [Image] 參考句、描述商品保持原樣的句子,一字不改照抄;每段的鏡頭動作寫在最前面。',
+      '5. 萬物照重力與材質:有重量、有接觸陰影,軟的會服貼、硬的不變形。畫面裡只有廣告圖裡本來就有的東西。',
+      '6. 輸出英文、肯定句,總長不超過原本那段的字數(等量交換:加一句就刪一句)。',
+      '',
+      '回覆固定兩段:',
+      '【思考】(中文,每項一句)1. 這是什麼、多大、軟硬 2. 哪些部分會動 3. 廣告圖看得到哪幾面 4. 客人選的運鏡做不做得到、要怎麼調 5. 這支影片的主意',
+      '【提示詞】  ← 這一行標記一定要寫',
+      '(這一段原封不動交給影片模型:只寫最終提示詞本身)'
+    ].join('\n');
+  }
+  async function directMotion(draft, mv, sec, mainUrl, posterUrl) {
+    var t0 = Date.now(), L = { draft: draft, at: t0, move: mv.key || '' };
+    window._motionDirectorLast = L;
+    try {
+      var a = await img64(posterUrl), b = await img64(mainUrl), content = [];
+      if (a) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: a } });
+      if (b) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b } });
+      content.push({ type: 'text', text: motionBrief(draft, mv, sec) });
+      var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, TIMEOUT_MS);
+      var r = await fetch(WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
+        body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: 1800 }) });
+      clearTimeout(tm);
+      var j = await r.json(), raw = String((j && j.ok && j.text) || ''), cut = raw.lastIndexOf('【提示詞】');
+      L.think = cut > 0 ? raw.slice(0, cut).replace(/^[\s\S]*?【思考】/, '').trim() : '';
+      var out = cut > 0 ? raw.slice(cut + 5).replace(/^\s*[(（][^)）\n]*[)）]\s*/, '').trim() : '';
+      var need = (draft.match(/\[\d\d:\d\d-\d\d:\d\d\]|\[Image\d+\]/g) || []).filter(function (x, i, arr) { return arr.indexOf(x) === i; });
+      var miss = need.filter(function (x) { return out.indexOf(x) < 0; });
+      if (!out) L.error = '沒有照格式回覆';
+      else if (miss.length) L.error = '少了 ' + miss.join(' ');
+      else if (out.length > draft.length + 200) L.error = '太長 ' + out.length + ' > ' + draft.length;
+      L.ms = Date.now() - t0;
+      if (L.error) { console.warn('[AI 導演 · 商品運鏡] 沒用上(' + L.error + '),用原本的運鏡'); return draft; }
+      L.final = out; L.used = true;
+      console.log('[AI 導演 · 商品運鏡] ' + draft.length + ' → ' + out.length + ' 字 · 思考:\n' + L.think);
+      return out;
+    } catch (e) { L.error = (e && e.name === 'AbortError') ? '逾時' : String(e && e.message || e); console.warn('[AI 導演 · 商品運鏡] 略過:', L.error); return draft; }
+  }
+  //  送出那一刻接手:只動 kol-proxy 的 seedance_submit、而且是商品運鏡(kolName 開頭「商品運鏡_」)
+  (function hookMotion() {
+    if (window.fetch && window.fetch.__motionDir) return;
+    var orig = window.fetch;
+    var w = async function (input, init) {
+      try {
+        var u = (typeof input === 'string') ? input : ((input && input.url) || '');
+        var body = init && typeof init.body === 'string' ? init.body : '';
+        if (window.MOTION_DIRECTOR !== false && /kol-proxy/.test(u) && body.indexOf('seedance_submit') >= 0 && body.indexOf('商品運鏡_') >= 0) {
+          var b = JSON.parse(body);
+          if (b.action === 'seedance_submit' && /^商品運鏡_/.test(String(b.kolName || '')) && b.prompt) {
+            var key = String(b.kolName).replace(/^商品運鏡_/, '');
+            var mv = (((window.AdMotion && window.AdMotion.MOVES) || []).filter(function (m) { return m.key === key; })[0]) || { key: key };
+            if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 導演看商品、調整運鏡中…', 'var(--t3)');
+            b.prompt = await directMotion(b.prompt, mv, Number(b.duration) || 10, (b.productImageUrls || [])[0], b.kolImageUrl);
+            if (typeof setPrStatus === 'function') setPrStatus('送出影片任務...', 'var(--t3)');
+            init = Object.assign({}, init, { body: JSON.stringify(b) });
+          }
+        }
+      } catch (e) { console.warn('[AI 導演 · 商品運鏡] 接手失敗,照原樣送出:', e && e.message); }
+      return orig.call(window, input, init);
+    };
+    w.__motionDir = true;
+    window.fetch = w;
+  })();
+
   //  v1.4 不在安裝時鎖死提示詞函式:每次用之前看一眼,被別的檔案(例如晚載入的精簡引擎)換掉了就重新包
   function ensureBuild() {
     var b = window.buildPosterPrompt;
@@ -370,6 +469,6 @@
   //  精簡引擎晚載入時也立刻重新包上(不用等到下一次生成)
   setInterval(function () { if (typeof window.buildPosterPrompt === 'function' && !window.buildPosterPrompt.__director && window.generateGptPoster && window.generateGptPoster.__director) { ensureBuild(); console.log('[AdDirector] 提示詞函式被換掉 → 已重新包上'); } }, 2000);
 
-  window.AdDirector = { logRow: logRow, version: VERSION, direct: direct, brief: brief, mozType: mozType, ensureBuild: ensureBuild, styleType: styleType };
+  window.AdDirector = { directMotion: directMotion, logRow: logRow, version: VERSION, direct: direct, brief: brief, mozType: mozType, ensureBuild: ensureBuild, styleType: styleType };
   console.log('[AdDirector] v' + VERSION + ' AI 美術指導已載入(關閉:window.AD_DIRECTOR = false)');
 })();
