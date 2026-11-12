@@ -3,6 +3,8 @@
 //  v2.4 RA 11-12「不是事後品管,是送出提示詞前就要想過 —— 眼鏡包被當一般包包、商品照拍很大但其實才裝得下一副眼鏡」
 //       → 美術指導先寫【思考】(是什麼 / 實際多大跟人比 / 材質姿態 / 照片拍到哪些面 / 風格世界 / 畫面主意 / 字與 LOGO)再寫【提示詞】
 //       → 商品實際大小(product-size.js 存的 realSize)第一次交給美術指導;思考內容存在 _adDirectorLast.think 給後台查
+//  v2.7.3 實測眼鏡包落地回彈:Claude 把「[Image3] to [Image7]」改了寫法 → 驗收不過、用原本運鏡(600 點白扣)
+//         → 參考圖與保護句由系統原樣保留,AI 導演只改寫有時間碼的分鏡;時間碼與段數一樣才收
 //  v2.7.2 實測:fetch 被晚載入的檔案再包一層 → 客人開商品運鏡視窗時再確認一次接手;同一筆只想一次
 //  v2.7.1 實測眼鏡包選「落地回彈」:AI 導演想對了(硬殼改成沉穩落定、扣蓋微顫),但寫了 1,610 字 > 原本 1,356 被丟掉
 //         → 太長先再壓一次(保留時間碼與 [Image]),壓完重新驗收
@@ -67,7 +69,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.7.2';
+  var VERSION = '2.7.3';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -330,14 +332,14 @@
       '1. 看懂商品:它是什麼、實際多大、材質軟或硬、哪些部分真的會動(蓋子、掀蓋、拉鍊、扣子、鞋帶、布料),哪些是一體成形不會動。',
       '2. 客人選的運鏡要做到;動作需要商品沒有的條件時(例如沒有蓋子卻要開蓋、硬殼卻要壓縮回彈),換成同一段時間裡、最接近而且這個商品做得到的動作。',
       '3. 鏡頭只帶到廣告圖與商品照裡看得到的面;環繞或轉動的幅度停在看得到的範圍內。',
-      '4. 時間碼、每一段的順序、所有 [Image] 參考句、描述商品保持原樣的句子,一字不改照抄;每段的鏡頭動作寫在最前面。',
+      '4. 你只改寫有時間碼的那幾行分鏡(其他行是參考圖與商品保護句,系統會原樣保留,你不用輸出);時間碼與段數不變,每段的鏡頭動作寫在最前面,[Image] 標記照原本的寫法。',
       '5. 萬物照重力與材質:有重量、有接觸陰影,軟的會服貼、硬的不變形。畫面裡只有廣告圖裡本來就有的東西。',
-      '6. 輸出英文、肯定句,總長不超過原本那段的字數(等量交換:加一句就刪一句)。',
+      '6. 輸出英文、肯定句,分鏡總長不超過原本分鏡的字數(等量交換:加一句就刪一句)。',
       '',
       '回覆固定兩段:',
       '【思考】(中文,每項一句)1. 這是什麼、多大、軟硬 2. 哪些部分會動 3. 廣告圖看得到哪幾面 4. 客人選的運鏡做不做得到、要怎麼調 5. 這支影片的主意',
       '【提示詞】  ← 這一行標記一定要寫',
-      '(這一段原封不動交給影片模型:只寫最終提示詞本身)'
+      '(只寫改好的分鏡,一段一行,每行以時間碼開頭)'
     ].join('\n');
   }
   async function directMotion(draft, mv, sec, mainUrl, posterUrl) {
@@ -354,18 +356,24 @@
       clearTimeout(tm);
       var j = await r.json(), raw = String((j && j.ok && j.text) || ''), cut = raw.lastIndexOf('【提示詞】');
       L.think = cut > 0 ? raw.slice(0, cut).replace(/^[\s\S]*?【思考】/, '').trim() : '';
-      var out = cut > 0 ? raw.slice(cut + 5).replace(/^\s*[(（][^)）\n]*[)）]\s*/, '').trim() : '';
-      var need = (draft.match(/\[\d\d:\d\d-\d\d:\d\d\]|\[Image\d+\]/g) || []).filter(function (x, i, arr) { return arr.indexOf(x) === i; });
-      var miss = need.filter(function (x) { return out.indexOf(x) < 0; });
-      if (out && !miss.length && out.length > draft.length + 100) {   // 太長 → 再壓一次(跟廣告圖同一招),壓完重新驗收
+      //  v2.7.3 只收時間碼開頭的分鏡行;參考圖與保護句由系統原樣保留(實測 Claude 會把 [Image3] to [Image7] 改寫法 → 標記不見)
+      var TC = /^\[\d\d:\d\d-\d\d:\d\d\]/;
+      var dl = draft.split('\n'), oldShots = dl.filter(function (x) { return TC.test(x); });
+      var newShots = (cut > 0 ? raw.slice(cut + 5) : '').split('\n').map(function (x) { return x.trim(); }).filter(function (x) { return TC.test(x); });
+      var oldLen = oldShots.join('\n').length, newLen = newShots.join('\n').length;
+      var codesOk = newShots.length === oldShots.length && oldShots.every(function (x, i) { return newShots[i].slice(0, 13) === x.slice(0, 13); });
+      if (codesOk && newLen > oldLen + 80) {   // 太長 → 再壓一次,壓完重新驗收
         if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 導演精簡運鏡…', 'var(--t3)');
-        var sq = await squeeze(out, false, draft.length);
-        L.longBefore = out.length;
-        if (sq) { out = sq; miss = need.filter(function (x) { return out.indexOf(x) < 0; }); }
+        L.longBefore = newLen;
+        var sq = await squeeze(newShots.join('\n'), false, oldLen);
+        var sqShots = sq ? sq.split('\n').map(function (x) { return x.trim(); }).filter(function (x) { return TC.test(x); }) : [];
+        if (sqShots.length === oldShots.length && oldShots.every(function (x, i) { return sqShots[i].slice(0, 13) === x.slice(0, 13); })) { newShots = sqShots; newLen = sqShots.join('\n').length; }
       }
-      if (!out) L.error = '沒有照格式回覆';
-      else if (miss.length) L.error = '少了 ' + miss.join(' ');
-      else if (out.length > draft.length + 200) L.error = '太長 ' + out.length + ' > ' + draft.length;
+      var out = '';
+      if (!newShots.length) L.error = '沒有照格式回覆';
+      else if (!codesOk) L.error = '分鏡段數或時間碼不對(' + newShots.length + '/' + oldShots.length + ')';
+      else if (newLen > oldLen + 200) L.error = '分鏡太長 ' + newLen + ' > ' + oldLen;
+      else { var si = 0; out = dl.map(function (x) { return TC.test(x) ? newShots[si++] : x; }).join('\n'); }
       L.ms = Date.now() - t0;
       if (L.error) { console.warn('[AI 導演 · 商品運鏡] 沒用上(' + L.error + '),用原本的運鏡'); return draft; }
       L.final = out; L.used = true;
