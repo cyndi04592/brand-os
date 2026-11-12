@@ -3,6 +3,8 @@
 //  v2.4 RA 11-12「不是事後品管,是送出提示詞前就要想過 —— 眼鏡包被當一般包包、商品照拍很大但其實才裝得下一副眼鏡」
 //       → 美術指導先寫【思考】(是什麼 / 實際多大跟人比 / 材質姿態 / 照片拍到哪些面 / 風格世界 / 畫面主意 / 字與 LOGO)再寫【提示詞】
 //       → 商品實際大小(product-size.js 存的 realSize)第一次交給美術指導;思考內容存在 _adDirectorLast.think 給後台查
+//  v2.5.3 實測眼鏡包:美術指導寫了 1,782 字被 1,600 上限擋掉,兩次都擋 → 退回 2,500 字草稿(更長、沒經過美術指導)
+//       → 長度上限只擋壞掉的;超過 1,300 字就請美術指導再壓一次(意思保留、字變少),壓不成功才用原本那段
 //  v2.5.2 RA 10-22 鐵律「廣告圖提示詞完全不提 logo」:第 8 點改成只描述右下角是什麼背景,不寫 LOGO
 //  v2.5.1 RA 11-12「選真空外包裝絕對是要給顧客看真實收到的樣貌;要內容物會自己選內容物照」→ 寫進第 2 點
 //  v2.5 RA 11-12「怕疊加一堆送出好幾萬字」→ 16 條規則(4,100 字、一堆例子)收斂成 9 條原則(約 1,900 字);
@@ -55,7 +57,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.5.2';
+  var VERSION = '2.5.3';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -207,9 +209,22 @@
       var out = cut > 0 ? clean(raw.slice(cut + mk).replace(/^\s*[(（][^)）\n]*[)）]\s*/, '')) : '';
       //  v1.4.1 長度只防「壞掉」(空白 / 被截斷),不拿來淘汰好結果 —— 排版圖實測 4,700~5,200 字,v1.4 的 3,600 上限會把它丟掉
       var whole = /[.!?"”」』)）。]\s*$/.test(out);   // 沒有句尾 = 字數用完被截斷 → 當失敗,自動重試
-      var ok = whole && out.length >= 200 && out.length <= (layout ? 3000 : 1600);
+      var ok = whole && out.length >= 200 && out.length <= (layout ? 8000 : 4000);
       return { out: ok ? out : null, think: think, error: ok ? '' : ((j && j.error) || (cut < 0 && raw ? '沒有照「先思考再寫提示詞」的格式' : (!whole && out ? '回覆被截斷' : '長度不對 ' + out.length + ' 字'))) };
     }).catch(function (e) { clearTimeout(tm); return { out: null, error: (e && e.name === 'AbortError') ? '逾時' : String(e && e.message || e) }; });
+  }
+
+  function squeeze(text, layout) {
+    var target = layout ? 2400 : 1100;
+    var ask = '下面是一段要交給生圖模型的英文提示詞,太長了。把它壓縮到 ' + target + ' 字元以內:每一句的意思都保留、改成更短的說法,先刪最不重要的形容;描述商品保持照片原樣、畫面上的字的句子一字不改。只輸出壓縮後的提示詞本身,不加任何說明。\n\n' + text;
+    var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, TIMEOUT_MS);
+    return fetch(WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
+      body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: [{ type: 'text', text: ask }], max_tokens: layout ? 1500 : 800 })
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      clearTimeout(tm);
+      var o = clean((j && j.ok && j.text) || '');
+      return (/[.!?"”」』)）。]\s*$/.test(o) && o.length >= 200 && o.length < text.length) ? o : null;
+    }).catch(function () { clearTimeout(tm); return null; });
   }
 
   function direct(draft) {
@@ -224,7 +239,13 @@
         if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 美術指導再想一次…', 'var(--t3)');
         return once(content, layout).then(function (r2) { return { r: r2, tries: 2, first: r1.error }; });
       }).then(function (x) {
-        window._adDirectorLast = { draft: draft, think: x.r.think || '', final: x.r.out || '', ms: Date.now() - t0, used: !!x.r.out, hadPhoto: !!b64, mode: layout ? 'layout' : 'photo', tries: x.tries, error: x.r.out ? '' : ((x.first ? x.first + ' / ' : '') + x.r.error) };
+        //  v2.5.3 太長不丟掉(丟掉會退回 2,500 字的草稿,更長、也沒經過美術指導)→ 再請它壓一次,意思保留、字變少
+        var lim = layout ? 2600 : 1300;
+        if (!x.r.out || x.r.out.length <= lim) return x;
+        if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 美術指導精簡提示詞…', 'var(--t3)');
+        return squeeze(x.r.out, layout).then(function (sq) { if (sq) { x.long = x.r.out.length; x.r.out = sq; } return x; });
+      }).then(function (x) {
+        window._adDirectorLast = { longBefore: x.long || 0, draft: draft, think: x.r.think || '', final: x.r.out || '', ms: Date.now() - t0, used: !!x.r.out, hadPhoto: !!b64, mode: layout ? 'layout' : 'photo', tries: x.tries, error: x.r.out ? '' : ((x.first ? x.first + ' / ' : '') + x.r.error) };
         return x.r.out;
       });
     });
