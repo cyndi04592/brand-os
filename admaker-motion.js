@@ -28,7 +28,11 @@
 */
 (function () {
   'use strict';
-  var VER = 'v2.6';
+  var VER = 'v2.7';
+  //  v2.7 RA 11-12「商品影片也要跟照片、KOL 影片一樣先思考」→ 送 Seedance 前,AI 導演先看廣告圖 + 商品照想清楚
+  //   (是什麼、多大、軟硬、哪些部分真的會動、廣告圖看得到哪幾面、客人選的運鏡做不做得到),再改寫運鏡提示詞。
+  //   時間碼、[ImageN] 參考句、商品原樣句保留;長度不超過原本(等量交換);做不到的動作換成最接近、做得到的。
+  //   失敗 / 逾時 / 格式不對 → 用原本的運鏡提示詞,影片照常生成。保險絲:window.MOTION_DIRECTOR = false
   //  v2.6:環繞 25°→40°(15 秒 45°)+「鏡頭跟商品保持同樣距離、整個商品都在畫面裡」,最後停在整個商品的 3/4 視角
   //   (2026-10-26 MOZ 德訓鞋實測:25° 被拍成一路推近到鞋側大特寫,沒有繞)
   //  v2.5:商品新增第 8、9 招「開蓋揭示」「落地回彈」(RA 2026-10-26;刺蝟星球 3111/3037、3099)
@@ -535,6 +539,81 @@
     document.body.appendChild(mask);
   }
 
+  // ── v2.7 AI 導演:送出前先想清楚 ────────────────────────────────
+  var CLAUDE_WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
+  function img64(url) {
+    return new Promise(function (resolve) {
+      try {
+        if (!url || typeof window.urlToBlob !== 'function') return resolve(null);
+        window.urlToBlob(url).then(function (b) { return createImageBitmap(b); }).then(function (bmp) {
+          var k = Math.min(1, 640 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+          c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+          c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+          resolve(c.toDataURL('image/jpeg', 0.82).split(',')[1]);
+        }).catch(function () { resolve(null); });
+      } catch (e) { resolve(null); }
+    });
+  }
+  function motionBrief(draft, move, sec, people) {
+    var bc = {}; try { bc = (typeof getBrandContext === 'function') ? (getBrandContext() || {}) : {}; } catch (e) {}
+    var p = (window.S && window.S.prod) || {};
+    var place = ''; try { var o = ((window.ProductPlace && window.ProductPlace.OPTS) || []).find(function (x) { return x.key === p.placement; }); place = (o && o.label) || ''; } catch (e) {}
+    return [
+      '你是頂尖商品廣告影片的導演。第一張圖是已經做好的廣告圖(影片的第一格與場景),第二張是客人的原始商品照。',
+      '',
+      '【商品與客人的選擇】',
+      '商品:' + (bc.product || p.name || '(未命名)') + (bc.spec ? ' / 規格:' + bc.spec : '') + (bc.feature ? ' / 特色:' + bc.feature : ''),
+      '實際大小:' + (p.realSize || '(客人沒填,從照片判斷)') + (place ? ' / 擺放方式:' + place : ''),
+      '客人選的運鏡:' + move.label + '(' + move.hint + '),' + sec + ' 秒' + (people ? ',畫面主角是人' : ''),
+      '',
+      '【系統的運鏡提示詞】(英文,要交給影片模型 Seedance)',
+      draft,
+      '',
+      '【你的工作】把它改寫成這支商品真的拍得出來的版本。原則:',
+      '1. 看懂商品:它是什麼、實際多大、材質軟或硬、哪些部分真的會動(蓋子、拉鍊、扣子、鞋帶、布料),哪些是一體成形不會動。',
+      '2. 客人選的運鏡要做到;動作需要商品沒有的條件時(例如沒有蓋子卻要開蓋、硬殼卻要壓縮回彈),換成同一段時間裡、最接近而且這個商品做得到的動作。',
+      '3. 鏡頭只帶到廣告圖與商品照裡看得到的面;環繞或轉動的幅度停在看得到的範圍內。',
+      '4. 時間碼、每一段的順序、所有 [Image] 開頭的參考句、描述商品保持原樣的句子,一字不改照抄;鏡頭的動作留在每段最前面。',
+      '5. 萬物照重力與材質:有重量、有接觸陰影,軟的會服貼、硬的不變形。畫面裡只有廣告圖裡本來就有的東西。',
+      '6. 輸出英文、肯定句,總長不超過原本那段的字數(等量交換:加一句就刪一句)。',
+      '',
+      '回覆固定兩段:',
+      '【思考】(中文,每項一句)1. 這是什麼、多大、軟硬 2. 哪些部分會動 3. 廣告圖看得到哪幾面 4. 客人選的運鏡做不做得到、要怎麼調 5. 這支影片的主意',
+      '【提示詞】  ← 這一行標記一定要寫',
+      '(這一段原封不動交給影片模型:只寫最終提示詞本身)'
+    ].join('\n');
+  }
+  async function directMotion(draft, move, sec, people, mainUrl) {
+    if (window.MOTION_DIRECTOR === false) return draft;
+    var t0 = Date.now(), L = { draft: draft, at: t0 };
+    window._motionDirectorLast = L;
+    try {
+      var a = await img64(LAST_POSTER_URL), b = await img64(mainUrl);
+      var content = [];
+      if (a) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: a } });
+      if (b) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b } });
+      content.push({ type: 'text', text: motionBrief(draft, move, sec, people) });
+      var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, 50000);
+      var r = await fetch(CLAUDE_WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
+        body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: 1800 }) });
+      clearTimeout(tm);
+      var j = await r.json(), raw = String((j && j.ok && j.text) || ''), cut = raw.lastIndexOf('【提示詞】');
+      L.think = cut > 0 ? raw.slice(0, cut).replace(/^[\s\S]*?【思考】/, '').trim() : '';
+      var out = cut > 0 ? raw.slice(cut + 5).replace(/^\s*[(（][^)）\n]*[)）]\s*/, '').trim() : '';
+      //  驗收:時間碼與 [ImageN] 一個都不能少、長度不能變長太多
+      var need = (draft.match(/\[\d\d:\d\d-\d\d:\d\d\]|\[Image\d+\]/g) || []).filter(function (x, i, arr) { return arr.indexOf(x) === i; });
+      var miss = need.filter(function (x) { return out.indexOf(x) < 0; });
+      if (!out) L.error = '沒有照格式回覆';
+      else if (miss.length) L.error = '少了 ' + miss.join(' ');
+      else if (out.length > draft.length + 200) L.error = '太長 ' + out.length + ' > ' + draft.length;
+      L.ms = Date.now() - t0;
+      if (L.error) { console.warn('[商品運鏡] AI 導演沒用上(' + L.error + '),用原本的運鏡'); return draft; }
+      L.final = out; L.used = true;
+      console.log('[商品運鏡] AI 導演的思考:\n' + L.think);
+      return out;
+    } catch (e) { L.error = (e && e.name === 'AbortError') ? '逾時' : String(e && e.message || e); console.warn('[商品運鏡] AI 導演略過:', L.error); return draft; }
+  }
+
   // ── 送出與等待 ────────────────────────────────────────────────────
   async function runMotion(move, sec, prodUrls, tap) {
     var btn = document.getElementById('posterToVideoBtn');
@@ -552,6 +631,8 @@
       var refs = { orig: mainUrl ? 1 : 0, details: details.map(function (d) { return { kind: d.kind, label: d.label }; }), crops: cropUrls.length, extra: extra.length };
       var people = hasPeople();
       var prompt = buildPrompt(move, sec, refs, people);
+      setPrStatus('🎬 AI 導演看商品、調整運鏡中…', 'var(--t3)');
+      prompt = await directMotion(prompt, move, sec, people, mainUrl);
       var brandId = (window.S && window.S.brandId) || '';
       setPrStatus('送出影片任務...', 'var(--t3)');
       var payload = {
@@ -620,6 +701,6 @@
   }
   watch();
 
-  window.AdMotion = { VER: VER, MOVES_MD: MOVES_MD, flags: function () { return { USE_CROPS: USE_CROPS, USE_EXTRA: USE_EXTRA, A_STYLE: A_STYLE }; }, MOVES: MOVES, buildPrompt: buildPrompt, openPicker: openPicker };
+  window.AdMotion = { directMotion: directMotion, motionBrief: motionBrief, VER: VER, MOVES_MD: MOVES_MD, flags: function () { return { USE_CROPS: USE_CROPS, USE_EXTRA: USE_EXTRA, A_STYLE: A_STYLE }; }, MOVES: MOVES, buildPrompt: buildPrompt, openPicker: openPicker };
   console.log('[商品運鏡] ' + VER + ' 就緒 · 「變影片」改走 Seedance 2.0 運鏡(Console 打 window.AD_MOTION=false 退回 Kling)');
 })();
