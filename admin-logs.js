@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
-   🧯 admin-logs.js v1.2(2026-11-12)後台「🧯 紀錄」分頁
+   🧯 admin-logs.js v1.3(2026-11-13)後台「🧯 紀錄」分頁
+   ・v1.3 看詳細多一行「壓字排法」(ad-director v2.9.1 記的);商品運鏡紀錄的成品是影片 → 用影片播放器顯示
    ・v1.2 RA 11-12「後台要清楚知道客人點了哪些、怎麼生出這張圖」:廣告圖每筆加「看詳細」
      → 成品圖 + 客人選擇 / 標題 / 補充 / 大小 / 擺放 + 美術指導的思考 + 送給生圖的提示詞 + 系統草稿
      (資料由 ad-director.js v2.6 寫進 gen_log;整筆用 kol-proxy 既有的 gen_log_get 讀,只限 RA 本人;
@@ -187,10 +188,12 @@
     const fin = sect(prompt, '送給生圖的提示詞') || (sel ? prompt.replace(/^【客人選擇】[^\n]*\n\n/, '') : prompt);
     const draft = sect(prompt, '系統草稿');
     const u = String(row.result_url || '');
-    const img = /^https?:\/\//.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" style="width:100%;border-radius:10px;display:block;"></a>` : '<div style="color:var(--t3);">(沒有成品網址)</div>';
+    const img = !/^https?:\/\//.test(u) ? '<div style="color:var(--t3);">(沒有成品網址)</div>'
+      : /\.(mp4|mov|webm)(\?|$)/i.test(u) ? `<video src="${esc(u)}" controls muted playsinline style="width:100%;border-radius:10px;display:block;background:#000;"></video><div style="font-size:11px;color:var(--t4);margin-top:4px;">影片暫存網址可能已過期;正式檔在素材庫</div>`
+      : `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" style="width:100%;border-radius:10px;display:block;"></a>`;
     const facts = [
       ['客人選擇', sel], ['標題', D.headline], ['副標', D.sub], ['補充說明', D.note],
-      ['商品實際大小', D.realSize || (D.ver ? '(客人沒填)' : '')], ['擺放方式', D.placement], ['用的商品照', D.photo || P.filename],
+      ['商品實際大小', D.realSize || (D.ver ? '(客人沒填)' : '')], ['擺放方式', D.placement], ['用的商品照', D.photo || P.filename], ['壓字排法', D.textStyle ? D.textStyle + '(系統壓字)' : (D.textLayer === 'ai' ? 'AI 畫字' : '')],
       ['美術指導', D.ver ? ('v' + D.ver + (D.used ? ' · 有用上' : ' · ⚠️ 沒用上:' + (D.error || '')) + ' · 試 ' + (D.tries || 0) + ' 次 · ' + Math.round((D.ms || 0) / 1000) + ' 秒 · 提示詞 ' + (D.finalLen || 0) + ' 字' + (D.longBefore ? '(原本 ' + D.longBefore + ' 字,壓過一次)' : '') + ' · 草稿 ' + (D.draftLen || 0) + ' 字') : '(這筆是美術指導 v2.6 之前的紀錄)']
     ].filter(x => x[1]).map(x => `<div style="font-size:12px;line-height:1.8;"><span style="color:var(--t3);display:inline-block;min-width:92px;">${esc(x[0])}</span>${esc(x[1])}</div>`).join('');
     $('lgDetailBox').innerHTML = `
