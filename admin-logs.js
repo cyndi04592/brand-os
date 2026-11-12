@@ -1,5 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════
-   🧯 admin-logs.js v1.1(2026-10-21)後台「🧯 紀錄」分頁
+   🧯 admin-logs.js v1.2(2026-11-12)後台「🧯 紀錄」分頁
+   ・v1.2 RA 11-12「後台要清楚知道客人點了哪些、怎麼生出這張圖」:廣告圖每筆加「看詳細」
+     → 成品圖 + 客人選擇 / 標題 / 補充 / 大小 / 擺放 + 美術指導的思考 + 送給生圖的提示詞 + 系統草稿
+     (資料由 ad-director.js v2.6 寫進 gen_log;整筆用 kol-proxy 既有的 gen_log_get 讀,只限 RA 本人;
+      其他管理員/審核員讀不到整筆時,顯示列表裡那 400 字)
    ・v1.1 加第三區「修改紀錄」:品牌/商品/資料夾每一格是誰、幾點、從什麼改成什麼,可一鍵還原
      (資料來源:kol-proxy v6.20 admin_changes;listAdminChanges / adminRevert,管理員/審核員才叫得動)
    ・一個檔案一個職責:admin.html 已 4,000+ 行,紀錄查看獨立成這支,admin.html 只掛分頁殼
@@ -127,6 +131,7 @@
     $('lgSum').innerHTML = chips(j.byUser, '依客人(點名字只看他)')
       + (kinds ? `<div style="margin-bottom:14px;"><div style="${LB}">生成了什麼</div>${kinds}</div>` : '');
     const rows = j.rows || [];
+    _genRows = {}; rows.forEach(r => { _genRows[r.id] = r; });
     if (!rows.length) { $('lgBody').innerHTML = '<div class="empty-state"><p>這段期間沒有生成紀錄</p></div>'; return; }
     $('lgBody').innerHTML = '<table><thead><tr><th>時間</th><th>客人</th><th>品牌</th><th>生成了什麼</th><th>KOL</th><th>結果</th><th>成品</th><th>花多久</th></tr></thead><tbody>'
       + rows.map(r => {
@@ -138,13 +143,70 @@
             <td>${esc(tw(r.ts))}</td>
             <td title="${esc(r.email)}">${esc(who(r.email))}</td>
             <td>${esc(r.brand_id || '—')}</td>
-            <td title="${esc(r.prompt)}" style="white-space:normal;min-width:160px;">${esc(actName(r.action))}${selLine(r.prompt)}</td>
+            <td title="${esc(r.prompt)}" style="white-space:normal;min-width:160px;">${esc(actName(r.action))}${selLine(r.prompt)}${/^admaker/.test(String(r.action || '')) ? `<div style="margin-top:4px;"><button class="btn-refresh" style="padding:3px 9px;font-size:11px;" onclick="AdminLogs.detail(${Number(r.id)})">看詳細</button></div>` : ''}</td>
             <td>${esc(r.kol_name || '—')}</td>
             <td style="white-space:normal;min-width:90px;">${okTxt}</td>
             <td>${link}</td>
             <td>${esc(sec(r.ms))}</td>
           </tr>`;
         }).join('') + '</tbody></table>';
+  }
+
+  // 🔎 v1.2 廣告圖「看詳細」
+  let _genRows = {};
+  function sect(p, name) {
+    const m = new RegExp('【' + name + '[^】]*】([\\s\\S]*?)(?=\\n\\n【|$)').exec(String(p || ''));
+    return m ? m[1].trim() : '';
+  }
+  function box(title, body, mono) {
+    if (!body) return '';
+    return `<div style="margin-bottom:12px;"><div style="${LB}">${esc(title)}</div><div style="white-space:pre-wrap;font-size:12px;line-height:1.7;color:var(--t1);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;${mono ? 'font-family:ui-monospace,Menlo,monospace;font-size:11px;' : ''}">${esc(body)}</div></div>`;
+  }
+  async function detail(id) {
+    const old = document.getElementById('lgDetail'); if (old) old.remove();
+    const wrap = document.createElement('div');
+    wrap.id = 'lgDetail';
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.72);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 14px;';
+    wrap.onclick = (e) => { if (e.target === wrap) wrap.remove(); };
+    wrap.innerHTML = '<div id="lgDetailBox" style="width:100%;max-width:1100px;background:#14141b;border:1px solid #2e2e3a;border-radius:14px;padding:18px;color:#e8e8f0;"><p style="color:var(--t3);">載入中...</p></div>';
+    document.body.appendChild(wrap);
+    let row = null, full = false;
+    try {
+      const r = await fetch(KOL_WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'gen_log_get', password: PASSWORD, email: ADMIN_USER_EMAIL, token: (window._bsAuthToken ? window._bsAuthToken() : ''), ids: [Number(id)] }) });
+      const j = await r.json();
+      const list = (j && (j.rows || j.results || j.items)) || [];
+      if (j && j.ok && list.length) { row = list[0]; full = true; }
+    } catch (_) {}
+    if (!row) row = _genRows[id] || {};
+    let P = {}; try { P = JSON.parse(row.params || '{}') || {}; } catch (_) {}
+    const D = P.director || {};
+    const prompt = String(row.prompt || '');
+    const sel = (/^【客人選擇】([^\n]*)/.exec(prompt) || [])[1] || '';
+    const think = D.think || sect(prompt, '美術指導');
+    const fin = sect(prompt, '送給生圖的提示詞') || (sel ? prompt.replace(/^【客人選擇】[^\n]*\n\n/, '') : prompt);
+    const draft = sect(prompt, '系統草稿');
+    const u = String(row.result_url || '');
+    const img = /^https?:\/\//.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" style="width:100%;border-radius:10px;display:block;"></a>` : '<div style="color:var(--t3);">(沒有成品網址)</div>';
+    const facts = [
+      ['客人選擇', sel], ['標題', D.headline], ['副標', D.sub], ['補充說明', D.note],
+      ['商品實際大小', D.realSize || (D.ver ? '(客人沒填)' : '')], ['擺放方式', D.placement], ['用的商品照', D.photo || P.filename],
+      ['美術指導', D.ver ? ('v' + D.ver + (D.used ? ' · 有用上' : ' · ⚠️ 沒用上:' + (D.error || '')) + ' · 試 ' + (D.tries || 0) + ' 次 · ' + Math.round((D.ms || 0) / 1000) + ' 秒 · 提示詞 ' + (D.finalLen || 0) + ' 字' + (D.longBefore ? '(原本 ' + D.longBefore + ' 字,壓過一次)' : '') + ' · 草稿 ' + (D.draftLen || 0) + ' 字') : '(這筆是美術指導 v2.6 之前的紀錄)']
+    ].filter(x => x[1]).map(x => `<div style="font-size:12px;line-height:1.8;"><span style="color:var(--t3);display:inline-block;min-width:92px;">${esc(x[0])}</span>${esc(x[1])}</div>`).join('');
+    $('lgDetailBox').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:15px;font-weight:700;">${esc(actName(row.action))} · ${esc(tw(row.ts))} · ${esc(who(row.email))} · ${esc(row.brand_id || '')}</div>
+        <button class="btn-refresh" style="padding:4px 12px;" onclick="document.getElementById('lgDetail').remove()">關閉</button>
+      </div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;">
+        <div style="flex:1 1 320px;max-width:420px;">${img}<div style="margin-top:12px;">${facts}</div></div>
+        <div style="flex:2 1 420px;min-width:0;">
+          ${box('美術指導的思考', think)}
+          ${box('送給生圖的提示詞', fin, true)}
+          ${draft ? `<details><summary style="cursor:pointer;font-size:12px;color:var(--t3);margin-bottom:8px;">系統原本的草稿(${draft.length} 字)</summary>${box('', draft, true)}</details>` : ''}
+          ${full ? '' : '<div style="font-size:11px;color:var(--t4);">只看得到前 400 字:整筆紀錄只有 RA 本人的帳號讀得到。</div>'}
+        </div>
+      </div>`;
   }
 
   // 🧾 2026-10-22 廣告圖:顯示客人當時選了什麼(admaker.js 寫在 prompt 第一行「【客人選擇】…」)
@@ -209,5 +271,5 @@
   function view(v) { readFilters(); _view = (v === 'gen' || v === 'chg') ? v : 'err'; shell(); search(); }
   function pick(email) { const w = $('lgWho'); if (w) w.value = String(email || ''); search(); }
 
-  window.AdminLogs = { load, view, search, pick, revert };
+  window.AdminLogs = { load, view, search, pick, revert, detail };
 })();
