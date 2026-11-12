@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 ad-director.js v1.5(2026-11-12)廣告圖「AI 美術指導」—— 每一張廣告圖都經過美術指導
+//  v2.9 RA 11-13 系統壓字(ad-textlayer.js):照片裡不畫字、不替字留白;美術指導從 RA 定案的 20 款排法挑一款(思考第 7 項寫編號)交給壓字模組
 //  v2.8.1 RA 11-13「LOGO 也是自己判斷,你才是智能」→ 拿掉「右下角先留給 LOGO」的預約;構圖自由,LOGO 由 admaker 生完圖量四角挑最乾淨的
 //  v2.8 RA 11-12「後台生成紀錄要看得到影片的導演思考」→ 商品運鏡寫進 gen_log 時(admaker_motion)一起存
 //       AI 導演的思考、真正送出的運鏡、系統草稿與客人選的運鏡/秒數/光線;後台「看詳細」直接看得到
@@ -74,7 +75,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.8.1';
+  var VERSION = '2.9';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -84,6 +85,10 @@
   var pending = null;       // 這一次生成要用的最終提示詞(只用一次)
 
   function val(id) { var el = document.getElementById(id); return (el && el.value || '').trim(); }
+  //  v2.9 系統壓字(ad-textlayer.js)開著時:生成期間大標欄位對程式是空的 → 從壓字模組拿客人真正打的字
+  function tl() { var t = window.AdTextLayer; return (t && t.isOn && t.isOn()) ? t : null; }
+  function headT() { var t = tl(); return t ? t.title().h : val('gptHeadline'); }
+  function subT() { var t = tl(); return t ? t.title().s : val('gptSubHeadline'); }
   function label(map, key) { try { return (key && map && map[key] && map[key].label) || ''; } catch (e) { return ''; } }
 
   //  商品照縮成 640px JPEG(base64)給 Claude 看 —— 雲端硬碟網址 Claude 讀不到,一律自己帶圖
@@ -123,7 +128,7 @@
       '風格指定的字型:' + (styleType() || '(沒寫,用乾淨黑體:' + MOZ_TYPE + ')'),
       '情境:' + (safeLabel('CONTEXT_THEMES', 'SELECTED_CONTEXT') || '(沒選)'),
       '客人補充說明:' + (val('gptStyleDesc') || '(沒有)'),
-      '標題:' + (val('gptHeadline') || '(沒有)') + (val('gptSubHeadline') ? ' / 副標:' + val('gptSubHeadline') : '')
+      (tl() ? '標題(系統出圖後用真字型壓上;照片裡不畫任何字,也不用替字留白,構圖照你的判斷):' : '標題:') + (headT() || '(沒有)') + (subT() ? ' / 副標:' + subT() : '')
     ].filter(Boolean).join('\n');
     return [
       hasPhoto
@@ -143,7 +148,8 @@
       '4. 客人的選擇優先:補充說明 > 擺放方式 > 風格與情境 > 草稿。選了風格,場景、年代、色調、道具照風格走;沒選風格,才自己挑國際品牌廣告(Nike、精品配件、高級食品禮盒)等級的拍法。節慶檔期只用配色、材質、光來表現。',
       '5. 草稿裡的保護句一字不改照抄:主體保持照片原樣(商品、人臉、作品、螢幕內容);其他衣物與物品是無品牌基本款;畫面上的字(引號裡的字原樣保留)。',
       '6. 拍法:真的攝影師重拍一張。一個具體的畫面主意放最前面;光寫成物理過程(從哪來、照到哪、影子落哪、牆與地反射補光),主體吃場景的光;構圖稍偏、留一塊乾淨的地方給字;生活痕跡最多 3 件。8K、超清、cinematic lighting、golden hour 這類堆疊詞拿掉。',
-      '7. 字:畫面上只有客人給的標題;背景的招牌、燈籠、道具都是素面,LOGO 只在商品原本印的位置。字型:【風格指定的字型】有寫就用,沒寫就用乾淨的無襯線黑體(Inter / 思源黑體);書法、毛筆字一律換成印刷字體。排法像國際品牌海報:字級克制、細字重、字距拉開、貼齊網格,可以直排;純色,沒有框、陰影、描邊。',
+      tl() ? '7. 字:照片裡不畫任何字(標題由系統出圖後壓上);背景的招牌、燈籠、道具都是素面,LOGO 只在商品原本印的位置。'
+           : '7. 字:畫面上只有客人給的標題;背景的招牌、燈籠、道具都是素面,LOGO 只在商品原本印的位置。字型:【風格指定的字型】有寫就用,沒寫就用乾淨的無襯線黑體(Inter / 思源黑體);書法、毛筆字一律換成印刷字體。排法像國際品牌海報:字級克制、細字重、字距拉開、貼齊網格,可以直排;純色,沒有框、陰影、描邊。',
       '8. 品牌 LOGO 由系統在生完圖後自己找最乾淨的角落疊上,構圖照你的判斷自由安排;提示詞全文不提 logo 這個字(一提生圖模型就會自己畫一個)。',
       layout
         ? '9. 這是一張「排版圖」(' + (safeLabel('LAYOUT_TEMPLATES', 'SELECTED_LAYOUT') || '多格 / 前後對比 / 清單') + '):草稿的版面結構完整保留(畫布、格數、每格放什麼、前後左右、條列順序、字的位置),每格照片照第 6 點拍。禁止清單改寫成正面描述,重複合併。輸出英文,版面一段、每格一句,肯定句,總長 2,400 字元以內(很重要:越長生圖模型越抓不到重點)。'
@@ -157,7 +163,8 @@
       '4. 照片拍到它的哪幾面、什麼角度(新畫面只用這些面)',
       '5. 客人選的類型、風格、情境、擺放方式,要我拍成什麼樣的畫面',
       '6. 這張的畫面主意(一句話)',
-      '7. 標題放哪、怎麼排',
+      tl() && headT() ? '7. 標題用哪一款排法(寫編號):1 極簡細字 / 2 底部置中小字 / 3 細線直排小字 / 4 括號標題 / 5 毛玻璃橫條 / 6 瑞士格線大字 / 7 兩行大標 / 9 白邊框 / 10 底部巨大字 / 11 大字加說明 / 12 明體大標 / 15 明體直排 / 16 雜誌跳字 / 17 單側巨字直排 / 18 左右分字 / 20 直排小字 / 21 巨大數字折扣(標題有數字)/ 25 底部色帶 / 26 斜貼標籤 / 28 字在主體後面。照品牌與風格挑:精品極簡 1 2 4 12,日系禪意 15 20 3,雜誌大片 7 16 17 18 28,促銷 21 25 11'
+                      : '7. 標題放哪、怎麼排',
       '【提示詞】  ← 這一行標記一定要寫',
       '(這一段原封不動交給生圖模型:只寫最終提示詞本身,不加標題、說明、前言或引號)'
     ].join('\n');
@@ -262,6 +269,7 @@
         if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 美術指導精簡提示詞…', 'var(--t3)');
         return squeeze(x.r.out, layout).then(function (sq) { if (sq) { x.long = x.r.out.length; x.r.out = sq; } return x; });
       }).then(function (x) {
+        try { var _t = tl(); if (_t) { var _m = String(x.r.think || '').match(/(?:^|\n)\s*7[.、．][^\n]*?(\d{1,2})/); if (_m) _t.suggest(_m[1]); } } catch (e) {}
         window._adDirectorLast = { at: Date.now(), longBefore: x.long || 0, draft: draft, think: x.r.think || '', final: x.r.out || '', ms: Date.now() - t0, used: !!x.r.out, hadPhoto: !!b64, mode: layout ? 'layout' : 'photo', tries: x.tries, error: x.r.out ? '' : ((x.first ? x.first + ' / ' : '') + x.r.error) };
         return x.r.out;
       });
@@ -280,7 +288,7 @@
     p.director = {
       ver: VERSION, used: !!L.used, tries: L.tries || 0, error: L.error || '', ms: L.ms || 0,
       draftLen: (L.draft || '').length, finalLen: (L.final || '').length, longBefore: L.longBefore || 0,
-      headline: val('gptHeadline'), sub: val('gptSubHeadline'), note: val('gptStyleDesc'),
+      headline: headT(), sub: subT(), note: val('gptStyleDesc'), textLayer: tl() ? 'system' : 'ai',
       realSize: String(pr.realSize || ''), placement: placeLabel(), photo: ph.name || '',
       think: L.think || ''
     };
