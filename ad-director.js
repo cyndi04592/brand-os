@@ -3,6 +3,8 @@
 //  v2.4 RA 11-12「不是事後品管,是送出提示詞前就要想過 —— 眼鏡包被當一般包包、商品照拍很大但其實才裝得下一副眼鏡」
 //       → 美術指導先寫【思考】(是什麼 / 實際多大跟人比 / 材質姿態 / 照片拍到哪些面 / 風格世界 / 畫面主意 / 字與 LOGO)再寫【提示詞】
 //       → 商品實際大小(product-size.js 存的 realSize)第一次交給美術指導;思考內容存在 _adDirectorLast.think 給後台查
+//  v2.7.1 實測眼鏡包選「落地回彈」:AI 導演想對了(硬殼改成沉穩落定、扣蓋微顫),但寫了 1,610 字 > 原本 1,356 被丟掉
+//         → 太長先再壓一次(保留時間碼與 [Image]),壓完重新驗收
 //  v2.7 RA 11-12「商品影片也要跟照片、KOL 影片一樣先思考」→ 商品運鏡影片送給 Seedance 前,AI 導演先看廣告圖 + 商品照想清楚
 //       (是什麼、多大、軟硬、哪些部分真的會動、看得到哪幾面、客人選的運鏡做不做得到)再改寫運鏡提示詞。
 //       線上運鏡引擎在 kol-proxy /admotion.js(不在 repo)→ 這裡在送出 seedance_submit 的那一刻接手,不改 Worker。
@@ -64,7 +66,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.7';
+  var VERSION = '2.7.1';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -221,16 +223,16 @@
     }).catch(function (e) { clearTimeout(tm); return { out: null, error: (e && e.name === 'AbortError') ? '逾時' : String(e && e.message || e) }; });
   }
 
-  function squeeze(text, layout) {
-    var target = layout ? 2400 : 1100;
-    var ask = '下面是一段要交給生圖模型的英文提示詞,太長了。把它壓縮到 ' + target + ' 字元以內:每一句的意思都保留、改成更短的說法,先刪最不重要的形容;描述商品保持照片原樣、畫面上的字的句子一字不改。只輸出壓縮後的提示詞本身,不加任何說明。\n\n' + text;
+  function squeeze(text, layout, tgt) {
+    var target = tgt || (layout ? 2400 : 1100);
+    var ask = '下面是一段要交給' + (tgt ? '影片' : '生圖') + '模型的英文提示詞,太長了。把它壓縮到 ' + target + ' 字元以內:每一句的意思都保留、改成更短的說法,先刪最不重要的形容;描述商品保持照片原樣、畫面上的字的句子一字不改' + (tgt ? ';時間碼 [00:00-00:00] 與 [Image] 標記全部保留、順序不變' : '') + '。只輸出壓縮後的提示詞本身,不加任何說明。\n\n' + text;
     var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, TIMEOUT_MS);
     return fetch(WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
       body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: [{ type: 'text', text: ask }], max_tokens: layout ? 1500 : 800 })
     }).then(function (r) { return r.json(); }).then(function (j) {
       clearTimeout(tm);
       var o = clean((j && j.ok && j.text) || '');
-      return (/[.!?"”」』)）。]\s*$/.test(o) && o.length >= 200 && o.length < text.length) ? o : null;
+      return (/[.!?"”」』)）。\]]\s*$/.test(o) && o.length >= 200 && o.length < text.length) ? o : null;
     }).catch(function () { clearTimeout(tm); return null; });
   }
 
@@ -354,6 +356,12 @@
       var out = cut > 0 ? raw.slice(cut + 5).replace(/^\s*[(（][^)）\n]*[)）]\s*/, '').trim() : '';
       var need = (draft.match(/\[\d\d:\d\d-\d\d:\d\d\]|\[Image\d+\]/g) || []).filter(function (x, i, arr) { return arr.indexOf(x) === i; });
       var miss = need.filter(function (x) { return out.indexOf(x) < 0; });
+      if (out && !miss.length && out.length > draft.length + 100) {   // 太長 → 再壓一次(跟廣告圖同一招),壓完重新驗收
+        if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 導演精簡運鏡…', 'var(--t3)');
+        var sq = await squeeze(out, false, draft.length);
+        L.longBefore = out.length;
+        if (sq) { out = sq; miss = need.filter(function (x) { return out.indexOf(x) < 0; }); }
+      }
       if (!out) L.error = '沒有照格式回覆';
       else if (miss.length) L.error = '少了 ' + miss.join(' ');
       else if (out.length > draft.length + 200) L.error = '太長 ' + out.length + ' > ' + draft.length;
