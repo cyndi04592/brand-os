@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
  *  ad-textlayer.js · v1.1(2026-11-13)廣告圖「系統壓字」
+ *  v1.3 美術指導指定的款先試縮字,不輕易換款;主體外擴 2 格,字離臉遠一點
  *  v1.2 HH 實測:人臉佔滿下半部,舊版只試 15 個固定點全失敗 → 掉到深色色帶。改成整張細掃找空位 + 放不下先縮字 + 一定放得下的色帶/毛玻璃排到最後 + 最後退路改輕的毛玻璃(促銷才用色帶)
  *  v1.1 實測 19 款:07/15/17 字疊到 LOGO → 先猜 LOGO 會放的角,字避開;05 字靠左把右邊讓給 LOGO;28 小字改壓在人前面
  *  RA 11-13:「客人打大標跟小標,就能精準地畫字」→ 字不再交給 AI 畫,改由系統用真字型壓上去
@@ -21,7 +22,7 @@
 (function () {
   'use strict';
   if (window.AdTextLayer) return;
-  var VERSION = '1.2';
+  var VERSION = '1.3';
   var ON = function () { return window.AD_TEXTLAYER !== false; };
   var SANS = '"Noto Sans TC", sans-serif', SERIF = '"Noto Serif TC", serif';
   var INK = '#1a1a1c', WHITE = '#ffffff';
@@ -115,10 +116,12 @@
         var mx = mc.getContext('2d'); mx.drawImage(maskImg, imgRect.x / cw, imgRect.y / ch, imgRect.w / cw, imgRect.h / ch);
         var md = mx.getImageData(0, 0, GW, GH).data, M = new Float32Array(GW * GH);
         for (var j = 0; j < GW * GH; j++) M[j] = md[j * 4 + 3] / 255;
-        // 主體外擴 1 格(字跟人之間留一點呼吸)
-        var M2 = new Float32Array(M);
-        for (var y2 = 1; y2 < GH - 1; y2++) for (var x2 = 1; x2 < GW - 1; x2++) {
-          var q = y2 * GW + x2; M2[q] = Math.max(M[q], M[q - 1], M[q + 1], M[q - GW], M[q + GW]);
+        var M2 = M;
+        for (var pass = 0; pass < 2; pass++) {   // 外擴 2 格(約 22px):字跟臉、頭髮之間留呼吸
+          var P = M2; M2 = new Float32Array(P);
+          for (var y2 = 1; y2 < GH - 1; y2++) for (var x2 = 1; x2 < GW - 1; x2++) {
+            var q = y2 * GW + x2; M2[q] = Math.max(P[q], P[q - 1], P[q + 1], P[q - GW], P[q + GW]);
+          }
         }
         A.mask = M2;
       } catch (e) {}
@@ -393,18 +396,23 @@
     // 自帶底 / 整張畫的款(05 09 18 25 28):05 09 25 一定放得下,所以排在最後當退路;美術指導指定的才放第一個
     var FULL = [5, 9, 18, 25, 28];
     if (!plan && suggested && FULL.indexOf(suggested) >= 0) done = drawFull(suggested, ctx, W, H, u, T, A, maskImg, imgRect);
-    // 兩輪找空位:先正常字級;整輪都放不下 → 字縮到 80% 再找一輪(小字也比蓋一條色帶好看)
-    (plan && plan.k ? [plan.k] : [1, 0.8]).forEach(function (k) {
-      for (var oi = 0; oi < order.length && !done; oi++) {
-        var n = order[oi]; if (FULL.indexOf(n) >= 0) continue;
-        var b = makeBlock(n, ctx, W, H, u * k, T); if (!b || b.w > W - 2 * M || b.h > H - 2 * M) continue;
-        var best = plan && plan.style === n && plan.x != null ? { x: plan.x, y: plan.y, r: { m: 0, s: 0, e: 0 } } : findSpot(A, b, W, H, M, u);
-        if (!best || best.r.m > 0.03 || (!A.mask && best.r.e > 0.35)) continue;   // 會壓到主體 / 太花 → 換下一款
-        var col = lum(ctx, best.x, best.y, b.w, b.h) > 140 ? INK : WHITE;
-        b.draw(ctx, best.x, best.y, col);
-        done = { style: n, x: best.x, y: best.y, m: best.r.m, e: best.r.e, k: k };
-      }
-    });
+    // 找空位的順序:美術指導指定的那款先試正常字級、再試縮 80%(尊重它的選擇)→ 其他款正常字級 → 其他款縮 80%
+    var tries = [];
+    if (plan && plan.k) tries.push([plan.style, plan.k]);
+    else {
+      var head = suggested && FULL.indexOf(suggested) < 0 ? [suggested] : [], rest = order.filter(function (v) { return v !== suggested; });
+      head.forEach(function (n) { tries.push([n, 1], [n, 0.8]); });
+      rest.forEach(function (n) { tries.push([n, 1]); }); rest.forEach(function (n) { tries.push([n, 0.8]); });
+    }
+    for (var ti = 0; ti < tries.length && !done; ti++) {
+      var n = tries[ti][0], k = tries[ti][1]; if (FULL.indexOf(n) >= 0) continue;
+      var b = makeBlock(n, ctx, W, H, u * k, T); if (!b || b.w > W - 2 * M || b.h > H - 2 * M) continue;
+      var best = plan && plan.style === n && plan.x != null ? { x: plan.x, y: plan.y, r: { m: 0, s: 0, e: 0 } } : findSpot(A, b, W, H, M, u);
+      if (!best || best.r.m > 0.03 || (!A.mask && best.r.e > 0.35)) continue;   // 會壓到主體 / 太花 → 換下一個
+      var col = lum(ctx, best.x, best.y, b.w, b.h) > 140 ? INK : WHITE;
+      b.draw(ctx, best.x, best.y, col);
+      done = { style: n, x: best.x, y: best.y, m: best.r.m, e: best.r.e, k: k };
+    }
     for (var fi = 0; fi < order.length && !done; fi++) if (FULL.indexOf(order[fi]) >= 0) done = drawFull(order[fi], ctx, W, H, u, T, A, maskImg, imgRect);
     // 全都放不下 → 自帶底的排法,保證讀得到:促銷用 25 色帶,其他用 05 毛玻璃(比較輕)
     if (!done) done = drawFull(PROMO.test(String(g('SELECTED_CONTEXT') || '')) ? 25 : 5, ctx, W, H, u, T, A, maskImg, imgRect);
