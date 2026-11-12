@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 ad-director.js v1.5(2026-11-12)廣告圖「AI 美術指導」—— 每一張廣告圖都經過美術指導
+//  v2.7.4 實測 HH 美睫:簡報寫「沒寫,用 MOZ 黑體」→ 美術指導把「MOZ Gothic」寫進別的品牌的提示詞(不存在的字型 + 別家品牌名)
+//         → 簡報直接給字型的描述(乾淨黑體 Inter / 思源黑體),不再出現 MOZ 這個字
 //  v2.4 RA 11-12「不是事後品管,是送出提示詞前就要想過 —— 眼鏡包被當一般包包、商品照拍很大但其實才裝得下一副眼鏡」
 //       → 美術指導先寫【思考】(是什麼 / 實際多大跟人比 / 材質姿態 / 照片拍到哪些面 / 風格世界 / 畫面主意 / 字與 LOGO)再寫【提示詞】
 //       → 商品實際大小(product-size.js 存的 realSize)第一次交給美術指導;思考內容存在 _adDirectorLast.think 給後台查
@@ -69,7 +71,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.7.3';
+  var VERSION = '2.7.4';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -115,7 +117,7 @@
       '客人選的類型:' + (pt || '(沒選)'),
       '版型:' + (safeLabel('LAYOUT_TEMPLATES', 'SELECTED_LAYOUT') || '(沒選)'),
       '風格:' + (safeLabel('REGIONAL_FLAVORS', 'SELECTED_FLAVOR') || '(沒選)'),
-      '風格指定的字型:' + (styleType() || '(沒寫,用 MOZ 黑體)'),
+      '風格指定的字型:' + (styleType() || '(沒寫,用乾淨黑體:' + MOZ_TYPE + ')'),
       '情境:' + (safeLabel('CONTEXT_THEMES', 'SELECTED_CONTEXT') || '(沒選)'),
       '客人補充說明:' + (val('gptStyleDesc') || '(沒有)'),
       '標題:' + (val('gptHeadline') || '(沒有)') + (val('gptSubHeadline') ? ' / 副標:' + val('gptSubHeadline') : '')
