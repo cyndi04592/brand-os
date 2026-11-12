@@ -112,6 +112,19 @@
   } catch (e) {}
 })();
 
+/* ✍️ 2026-11-13 廣告圖系統壓字(ad-textlayer.js,只在首頁載入):客人打的大標/副標由系統用真字型壓上(20 款排法、去背找空位),不再交給 AI 畫。
+ *    緊急關閉:Console 打 window.AD_TEXTLAYER = false。失敗不影響網站(照舊 AI 畫字)。 */
+(function(){
+  if (window.__adtlLoader || !/^\/(index(\.html)?)?$/.test(location.pathname)) return;
+  window.__adtlLoader = true;
+  try {
+    var s = document.createElement('script');
+    s.src = 'ad-textlayer.js?v=1.1';
+    s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {}
+})();
+
 /* 🛟 2026-11-03 網站備份在客人瀏覽器(sw.js):Cloudflare 慢超過 3 秒就先開備份,登入頁/換頁不再卡。
  *    緊急關閉這台:網址加 ?sw=off;全站關閉:sw.js 的 KILL 改 true 再部署。失敗不影響網站。 */
 (function(){
