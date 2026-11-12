@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  ad-typeguard.js · v1.1(2026-11-04)廣告圖「類型選錯」防呆
+ *  ad-typeguard.js · v1.2(2026-11-13)廣告圖「類型選錯」防呆
+ *  v1.2:判斷照片有沒有人最多等 12 秒(Worker 卡住時,客人按生成會永遠停在「先看一下商品照…」)
  *  v1.1:RA 11/04 抓到 —— 推薦改「保留原模特兒」會讓每張都是原照片的姿勢和角度(MOZ 員工 30 天都長一樣);
  *        好看又多變的(低角度藍天、伸手入鏡、聖誕紅牆)都是「服飾穿搭 · 重拍」。改成主推重拍,保留原模特兒已從選單收起(admaker.js 同日),視窗只留「改重拍」和「照原本」。
  * ───────────────────────────────────────────────────────────────────
@@ -14,7 +15,7 @@
 (function () {
   'use strict';
   if (window.__adTypeGuard) return;
-  window.__adTypeGuard = 'v1.1';
+  window.__adTypeGuard = 'v1.2';
   var KOL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
   var seen = {};     // 照片網址 → true/false(這次開頁判斷過的)
   var kept = {};     // 照片網址 → 客人選了「照原本」就不再問
@@ -37,8 +38,14 @@
   async function hasPerson(url) {
     if (url in seen) return seen[url];
     var pw = ''; try { pw = (typeof GAS_PASSWORD !== 'undefined') ? GAS_PASSWORD : ''; } catch (e) {}
-    var r = await fetch(KOL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'photo_person_check', url: url, password: pw, token: tok(), email: mail() }) }).then(function (x) { return x.json(); });
+    //  v1.2 最多等 12 秒:11/13 實測 Worker 判斷卡住沒回 → 客人按生成後整個停在「先看一下商品照…」永遠不動
+    //   逾時 = 當作判斷失敗,照原本生成(不擋客人),也不記住結果,下次再判斷
+    var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, 12000);
+    var r;
+    try {
+      r = await fetch(KOL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
+        body: JSON.stringify({ action: 'photo_person_check', url: url, password: pw, token: tok(), email: mail() }) }).then(function (x) { return x.json(); });
+    } finally { clearTimeout(tm); }
     seen[url] = !!(r && r.ok && r.person);
     return seen[url];
   }
