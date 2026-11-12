@@ -3,6 +3,7 @@
 //  v2.4 RA 11-12「不是事後品管,是送出提示詞前就要想過 —— 眼鏡包被當一般包包、商品照拍很大但其實才裝得下一副眼鏡」
 //       → 美術指導先寫【思考】(是什麼 / 實際多大跟人比 / 材質姿態 / 照片拍到哪些面 / 風格世界 / 畫面主意 / 字與 LOGO)再寫【提示詞】
 //       → 商品實際大小(product-size.js 存的 realSize)第一次交給美術指導;思考內容存在 _adDirectorLast.think 給後台查
+//  v2.7.2 實測:fetch 被晚載入的檔案再包一層 → 客人開商品運鏡視窗時再確認一次接手;同一筆只想一次
 //  v2.7.1 實測眼鏡包選「落地回彈」:AI 導演想對了(硬殼改成沉穩落定、扣蓋微顫),但寫了 1,610 字 > 原本 1,356 被丟掉
 //         → 太長先再壓一次(保留時間碼與 [Image]),壓完重新驗收
 //  v2.7 RA 11-12「商品影片也要跟照片、KOL 影片一樣先思考」→ 商品運鏡影片送給 Seedance 前,AI 導演先看廣告圖 + 商品照想清楚
@@ -66,7 +67,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.7.1';
+  var VERSION = '2.7.2';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -373,7 +374,7 @@
     } catch (e) { L.error = (e && e.name === 'AbortError') ? '逾時' : String(e && e.message || e); console.warn('[AI 導演 · 商品運鏡] 略過:', L.error); return draft; }
   }
   //  送出那一刻接手:只動 kol-proxy 的 seedance_submit、而且是商品運鏡(kolName 開頭「商品運鏡_」)
-  (function hookMotion() {
+  function hookMotion() {
     if (window.fetch && window.fetch.__motionDir) return;
     var orig = window.fetch;
     var w = async function (input, init) {
@@ -382,7 +383,8 @@
         var body = init && typeof init.body === 'string' ? init.body : '';
         if (window.MOTION_DIRECTOR !== false && /kol-proxy/.test(u) && body.indexOf('seedance_submit') >= 0 && body.indexOf('商品運鏡_') >= 0) {
           var b = JSON.parse(body);
-          if (b.action === 'seedance_submit' && /^商品運鏡_/.test(String(b.kolName || '')) && b.prompt) {
+          if (b.action === 'seedance_submit' && /^商品運鏡_/.test(String(b.kolName || '')) && b.prompt && !b._md) {
+            b._md = 1;   // 同一筆只想一次(fetch 被別的檔案再包一層時,不會重複)
             var key = String(b.kolName).replace(/^商品運鏡_/, '');
             var mv = (((window.AdMotion && window.AdMotion.MOVES) || []).filter(function (m) { return m.key === key; })[0]) || { key: key };
             if (typeof setPrStatus === 'function') setPrStatus('🎬 AI 導演看商品、調整運鏡中…', 'var(--t3)');
@@ -396,6 +398,17 @@
     };
     w.__motionDir = true;
     window.fetch = w;
+  }
+  hookMotion();
+  //  v2.7.2 實測:Errlog.js 等檔案晚一步再包 fetch,我們被包在裡面看不出來 → 客人按「商品運鏡」那一刻再確認一次,保證走得到
+  (function hookPicker() {
+    var f = window.posterToVideo;
+    if (typeof f !== 'function') { setTimeout(hookPicker, 800); return; }
+    if (f.__motionDir) return;
+    var g = function () { hookMotion(); return f.apply(this, arguments); };
+    g.__motionDir = true;
+    window.posterToVideo = g;
+    setTimeout(hookPicker, 3000);   // 被別的檔案換掉時再包回來
   })();
 
   //  v1.4 不在安裝時鎖死提示詞函式:每次用之前看一眼,被別的檔案(例如晚載入的精簡引擎)換掉了就重新包
