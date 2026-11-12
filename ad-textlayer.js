@@ -1,12 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════════
  *  ad-textlayer.js · v1.1(2026-11-13)廣告圖「系統壓字」
+ *  v1.2 HH 實測:人臉佔滿下半部,舊版只試 15 個固定點全失敗 → 掉到深色色帶。改成整張細掃找空位 + 放不下先縮字 + 一定放得下的色帶/毛玻璃排到最後 + 最後退路改輕的毛玻璃(促銷才用色帶)
  *  v1.1 實測 19 款:07/15/17 字疊到 LOGO → 先猜 LOGO 會放的角,字避開;05 字靠左把右邊讓給 LOGO;28 小字改壓在人前面
  *  RA 11-13:「客人打大標跟小標,就能精準地畫字」→ 字不再交給 AI 畫,改由系統用真字型壓上去
  *           (跟 KOL 字幕燒字機同一個道理)。排法 = RA 從 Pinterest 研究 32 款裡挑的 20 款。
  *  RA 定的規則:
  *   · 不預約空位:AI 只管把照片拍好看,構圖自由;生完圖系統自己找空位壓字
  *   · 找空位:去背拿主體輪廓(fal birefnet,不扣客人點數)+ 量畫面亂不亂 → 字不壓到人與商品
- *   · 找不到空位 → 改用自帶底的排法(05 毛玻璃橫條 / 25 底部色帶),字永遠讀得到
+ *   · 找不到空位 → 字縮 80% 再找一次 → 還是不行才用自帶底的排法(05 毛玻璃 / 促銷用 25 色帶),字永遠讀得到
  *   · 字旁邊不放短橫線(RA:會被看成「一」)
  *   · 28 款「字在主體後面」用去背遮罩把人疊回字的前面
  *   · 先壓字、再疊 LOGO:LOGO 量四角時會把字當成「有東西」自動避開
@@ -20,7 +21,7 @@
 (function () {
   'use strict';
   if (window.AdTextLayer) return;
-  var VERSION = '1.1';
+  var VERSION = '1.2';
   var ON = function () { return window.AD_TEXTLAYER !== false; };
   var SANS = '"Noto Sans TC", sans-serif', SERIF = '"Noto Serif TC", serif';
   var INK = '#1a1a1c', WHITE = '#ffffff';
@@ -347,6 +348,30 @@
     return head.concat(c).filter(function (v, i, a) { return a.indexOf(v) === i; });
   }
 
+  // 找位置:整張畫面細掃(不是只試幾個固定點)。對齊左邊界 / 右邊界 / 置中的位置優先,
+  // 自由浮動的位置只在對齊位置都放不下時才用;b.pref 指定的方向(底部 / 右邊 / 側邊)小幅加分
+  function findSpot(A, b, W, H, M, u) {
+    var step = Math.max(6, Math.round(Math.min(W, H) / 40)), best = null;
+    var xl = M, xr = W - M - b.w, xc = (W - b.w) / 2, yMax = H - M - b.h, xMax = W - M - b.w;
+    if (xMax < M || yMax < M) return null;
+    for (var y = M; y <= yMax + 0.5; y += step) {
+      for (var x = M; x <= xMax + 0.5; x += step) {
+        var X = Math.min(x, xMax), Y = Math.min(y, yMax);
+        var snap = [xl, xr, xc].reduce(function (a, v) { return Math.abs(X - v) < Math.abs(X - a) ? v : a; }, xl);
+        var aligned = Math.abs(X - snap) < step;   // 靠近對齊線就吸過去
+        if (aligned) X = snap;
+        if (hitLogo(A, X, Y, b.w, b.h, 24 * u)) continue;
+        var r = score(A, X, Y, b.w, b.h);
+        var bias = aligned ? 0 : 0.12;
+        if (b.pref === 'bottom') bias += 0.15 * (1 - (Y - M) / Math.max(1, yMax - M));
+        if (b.pref === 'right' || b.pref === 'side') bias += 0.1 * (1 - (X - M) / Math.max(1, xMax - M));
+        var tot = r.s + bias;
+        if (!best || tot < best.t) best = { x: X, y: Y, r: r, t: tot };
+      }
+    }
+    return best;
+  }
+
   // ── 主流程:畫好照片之後、疊 LOGO 之前 ─────────────────────────────
   var planCache = {};   // 同一張圖重畫(換 LOGO 大小)時用同一款同一個位置
   async function drawText(ctx) {
@@ -365,26 +390,24 @@
     A.logo = predictLogo(ctx, W, H, u);
     var key = src + '|' + T.h + '|' + T.s + '|' + W + 'x' + H, plan = planCache[key];
     var order = plan ? [plan.style] : pickOrder(T), M = 48 * u, done = null;
-    for (var oi = 0; oi < order.length && !done; oi++) {
-      var n = order[oi];
-      if ([5, 9, 18, 25, 28].indexOf(n) >= 0) { done = drawFull(n, ctx, W, H, u, T, A, maskImg, imgRect); continue; }
-      var b = makeBlock(n, ctx, W, H, u, T); if (!b || b.w > W - 2 * M || b.h > H - 2 * M) continue;
-      var xs = [W - M - b.w, M, (W - b.w) / 2], ys = [H * 0.2, (H - b.h) / 2, H * 0.58, M + 70 * u, H - M - b.h];
-      if (b.pref === 'bottom') ys = [H - M - b.h, H * 0.72, M];
-      if (b.pref === 'right') xs = [W - M - b.w, M];
-      if (b.pref === 'side') { xs = [W - M - b.w, M]; ys = [(H - b.h) / 2, M + 40 * u]; }
-      var best = plan && plan.style === n ? { x: plan.x, y: plan.y, r: { m: 0, s: 0 } } : null;
-      if (!best) xs.forEach(function (x) { ys.forEach(function (y) {
-        if (y < M || y + b.h > H - M) return;
-        if (hitLogo(A, x, y, b.w, b.h, 24 * u)) return;
-        var r = score(A, x, y, b.w, b.h); if (!best || r.s < best.r.s) best = { x: x, y: y, r: r };
-      }); });
-      if (!best || best.r.m > 0.03 || (!A.mask && best.r.e > 0.35)) continue;   // 會壓到主體 / 太花 → 換下一款
-      var col = lum(ctx, best.x, best.y, b.w, b.h) > 140 ? INK : WHITE;
-      b.draw(ctx, best.x, best.y, col);
-      done = { style: n, x: best.x, y: best.y, m: best.r.m, e: best.r.e };
-    }
-    if (!done) done = drawFull(25, ctx, W, H, u, T, A, maskImg, imgRect);   // 全都放不下 → 底部色帶,保證讀得到
+    // 自帶底 / 整張畫的款(05 09 18 25 28):05 09 25 一定放得下,所以排在最後當退路;美術指導指定的才放第一個
+    var FULL = [5, 9, 18, 25, 28];
+    if (!plan && suggested && FULL.indexOf(suggested) >= 0) done = drawFull(suggested, ctx, W, H, u, T, A, maskImg, imgRect);
+    // 兩輪找空位:先正常字級;整輪都放不下 → 字縮到 80% 再找一輪(小字也比蓋一條色帶好看)
+    (plan && plan.k ? [plan.k] : [1, 0.8]).forEach(function (k) {
+      for (var oi = 0; oi < order.length && !done; oi++) {
+        var n = order[oi]; if (FULL.indexOf(n) >= 0) continue;
+        var b = makeBlock(n, ctx, W, H, u * k, T); if (!b || b.w > W - 2 * M || b.h > H - 2 * M) continue;
+        var best = plan && plan.style === n && plan.x != null ? { x: plan.x, y: plan.y, r: { m: 0, s: 0, e: 0 } } : findSpot(A, b, W, H, M, u);
+        if (!best || best.r.m > 0.03 || (!A.mask && best.r.e > 0.35)) continue;   // 會壓到主體 / 太花 → 換下一款
+        var col = lum(ctx, best.x, best.y, b.w, b.h) > 140 ? INK : WHITE;
+        b.draw(ctx, best.x, best.y, col);
+        done = { style: n, x: best.x, y: best.y, m: best.r.m, e: best.r.e, k: k };
+      }
+    });
+    for (var fi = 0; fi < order.length && !done; fi++) if (FULL.indexOf(order[fi]) >= 0) done = drawFull(order[fi], ctx, W, H, u, T, A, maskImg, imgRect);
+    // 全都放不下 → 自帶底的排法,保證讀得到:促銷用 25 色帶,其他用 05 毛玻璃(比較輕)
+    if (!done) done = drawFull(PROMO.test(String(g('SELECTED_CONTEXT') || '')) ? 25 : 5, ctx, W, H, u, T, A, maskImg, imgRect);
     planCache[key] = done;
     try { localStorage.setItem('bos_textlayer_last', String(done.style)); } catch (e) {}
     window._adTextLast = { at: Date.now(), style: done.style, name: NAMES[done.style], mask: !!maskImg, plan: done, suggested: suggested };
