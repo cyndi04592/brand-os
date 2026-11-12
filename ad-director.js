@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 ad-director.js v1.5(2026-11-12)廣告圖「AI 美術指導」—— 每一張廣告圖都經過美術指導
+//  v2.8 RA 11-12「後台生成紀錄要看得到影片的導演思考」→ 商品運鏡寫進 gen_log 時(admaker_motion)一起存
+//       AI 導演的思考、真正送出的運鏡、系統草稿與客人選的運鏡/秒數/光線;後台「看詳細」直接看得到
 //  v2.7.4 實測 HH 美睫:簡報寫「沒寫,用 MOZ 黑體」→ 美術指導把「MOZ Gothic」寫進別的品牌的提示詞(不存在的字型 + 別家品牌名)
 //         → 簡報直接給字型的描述(乾淨黑體 Inter / 思源黑體),不再出現 MOZ 這個字
 //  v2.4 RA 11-12「不是事後品管,是送出提示詞前就要想過 —— 眼鏡包被當一般包包、商品照拍很大但其實才裝得下一副眼鏡」
@@ -71,7 +73,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.7.4';
+  var VERSION = '2.8';
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -268,6 +270,7 @@
   //  v2.6 生成紀錄加料:客人當下的輸入 + 美術指導怎麼想 + 送出的提示詞 + 系統草稿
   function logRow(row) {
     if (!row || !/^admaker_/.test(String(row.action || ''))) return row;
+    if (row.action === 'admaker_motion') return row;   // 商品運鏡的紀錄由 motionLogRow 加料(v2.8)
     var L = window._adDirectorLast;
     if (!L || !L.at || Date.now() - L.at > 20 * 60000 || L.logged) return row;   // 只用這一次生成的,不拿舊的
     L.logged = true;
@@ -383,6 +386,25 @@
       return out;
     } catch (e) { L.error = (e && e.name === 'AbortError') ? '逾時' : String(e && e.message || e); console.warn('[AI 導演 · 商品運鏡] 略過:', L.error); return draft; }
   }
+  //  v2.8 商品運鏡的生成紀錄加料:AI 導演怎麼想 + 真正送出的運鏡 + 系統草稿(後台「看詳細」跟廣告圖同一個畫面)
+  function motionLogRow(row) {
+    var L = window._motionDirectorLast;
+    if (!row || row.action !== 'admaker_motion' || !L || !L.at || Date.now() - L.at > 30 * 60000 || L.logged) return row;
+    L.logged = true;
+    var p = (row.params && typeof row.params === 'object') ? row.params : {};
+    if (typeof row.params === 'string') { try { p = JSON.parse(row.params) || {}; } catch (e) { p = {}; } }
+    p.director = {
+      ver: VERSION, kind: 'motion', used: !!L.used, tries: 1, error: L.error || '', ms: L.ms || 0,
+      draftLen: (L.draft || '').length, finalLen: (L.final || '').length, longBefore: L.longBefore || 0, think: L.think || ''
+    };
+    row.params = (typeof row.params === 'string') ? JSON.stringify(p) : p;
+    var lt = { ad: '照廣告圖' }[p.light] || p.light || '照廣告圖';
+    row.prompt = '【客人選擇】運鏡:' + (p.label || p.move || L.move || '') + ' · ' + (p.sec || '') + ' 秒 · 光線:' + lt
+      + '\n\n【美術指導 v' + VERSION + ' · 商品運鏡' + (L.used ? '' : ' ⚠️沒用上:' + (L.error || '')) + '】\n' + (L.think || '(沒有思考紀錄)')
+      + '\n\n【送給生圖的提示詞】' + (L.final || L.draft || row.prompt || '')
+      + '\n\n【系統草稿】' + (L.draft || '');
+    return row;
+  }
   //  送出那一刻接手:只動 kol-proxy 的 seedance_submit、而且是商品運鏡(kolName 開頭「商品運鏡_」)
   function hookMotion() {
     if (window.fetch && window.fetch.__motionDir) return;
@@ -391,6 +413,10 @@
       try {
         var u = (typeof input === 'string') ? input : ((input && input.url) || '');
         var body = init && typeof init.body === 'string' ? init.body : '';
+        if (/kol-proxy/.test(u) && body.indexOf('admaker_motion') >= 0 && body.indexOf('gen_log') >= 0) {
+          var g = JSON.parse(body);
+          if (g.action === 'gen_log' && g.row && g.row.action === 'admaker_motion') { g.row = motionLogRow(g.row); init = Object.assign({}, init, { body: JSON.stringify(g) }); }
+        }
         if (window.MOTION_DIRECTOR !== false && /kol-proxy/.test(u) && body.indexOf('seedance_submit') >= 0 && body.indexOf('商品運鏡_') >= 0) {
           var b = JSON.parse(body);
           if (b.action === 'seedance_submit' && /^商品運鏡_/.test(String(b.kolName || '')) && b.prompt && !b._md) {
