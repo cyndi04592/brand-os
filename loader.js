@@ -119,7 +119,7 @@
   window.__adtlLoader = true;
   try {
     var s = document.createElement('script');
-    s.src = 'ad-textlayer.js?v=1.2';
+    s.src = 'ad-textlayer.js?v=1.3';
     s.defer = true;
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {}
