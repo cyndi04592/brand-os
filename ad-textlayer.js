@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  ad-textlayer.js · v1.0(2026-11-13)廣告圖「系統壓字」
+ *  ad-textlayer.js · v1.1(2026-11-13)廣告圖「系統壓字」
+ *  v1.1 實測 19 款:07/15/17 字疊到 LOGO → 先猜 LOGO 會放的角,字避開;05 字靠左把右邊讓給 LOGO;28 小字改壓在人前面
  *  RA 11-13:「客人打大標跟小標,就能精準地畫字」→ 字不再交給 AI 畫,改由系統用真字型壓上去
  *           (跟 KOL 字幕燒字機同一個道理)。排法 = RA 從 Pinterest 研究 32 款裡挑的 20 款。
  *  RA 定的規則:
@@ -19,7 +20,7 @@
 (function () {
   'use strict';
   if (window.AdTextLayer) return;
-  var VERSION = '1.0';
+  var VERSION = '1.1';
   var ON = function () { return window.AD_TEXTLAYER !== false; };
   var SANS = '"Noto Sans TC", sans-serif', SERIF = '"Noto Serif TC", serif';
   var INK = '#1a1a1c', WHITE = '#ffffff';
@@ -258,8 +259,8 @@
         var tmp = document.createElement('canvas'); tmp.width = W; tmp.height = bh;
         var tx = tmp.getContext('2d'); tx.filter = 'blur(' + Math.round(18 * u) + 'px)'; tx.drawImage(ctx.canvas, 0, by, W, bh, 0, 0, W, bh);
         ctx.drawImage(tmp, 0, by); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(0, by, W, bh);
-        var f1 = font(300, 50 * u), w1 = tw(ctx, h, f1, 14 * u); put(ctx, (W - w1) / 2, by + bh * 0.2, h, f1, INK, 14 * u);
-        if (s) { var f2 = font(300, 24 * u), w2 = tw(ctx, s, f2, 6 * u); put(ctx, (W - w2) / 2, by + bh * 0.62, s, f2, INK, 6 * u); }
+        var f1 = font(300, 50 * u); put(ctx, 64 * u, by + bh * 0.2, h, f1, INK, 14 * u);   // 靠左:右邊留給 LOGO
+        if (s) { var f2 = font(300, 24 * u); put(ctx, 66 * u, by + bh * 0.62, s, f2, INK, 6 * u); }
       } else {
         ctx.fillStyle = 'rgba(28,28,30,0.9)'; ctx.fillRect(0, by, W, bh);
         var f3 = font(900, Math.min(76 * u, bh * 0.5)); put(ctx, 64 * u, by + bh * 0.24, h, f3, WHITE);
@@ -294,15 +295,35 @@
       var szB = Math.min(360 * u, (W * 0.86) / bigT.length), fB = font(900, szB), wB = tw(ctx, bigT, fB);
       var yB = H * 0.1, colB = lum(ctx, (W - wB) / 2, yB, wB, szB) > 150 ? INK : WHITE;
       put(ctx, (W - wB) / 2, yB, bigT, fB, colB);
-      if (rest) { var fr = font(700, 56 * u), wr = tw(ctx, rest, fr, 18 * u); put(ctx, (W - wr) / 2, H * 0.84, rest, fr, colB, 18 * u); }
       // 把人疊回字的前面
       var cut = document.createElement('canvas'); cut.width = W; cut.height = H; var cx = cut.getContext('2d');
       cx.drawImage(maskImg, imgRect.x, imgRect.y, imgRect.w, imgRect.h); cx.globalCompositeOperation = 'source-in';
       cx.drawImage(window.__atlBase || ctx.canvas, 0, 0);
       ctx.drawImage(cut, 0, 0);
+      if (rest) {   // 小字壓在人的前面,一定讀得到;放在主體旁邊空的那一側
+        var fr = font(500, 30 * u), wr = tw(ctx, rest, fr, 8 * u), yr = H * 0.86;
+        var xr = score(A, W - 64 * u - wr, yr, wr, 40 * u).m < score(A, 64 * u, yr, wr, 40 * u).m ? W - 64 * u - wr : 64 * u;
+        put(ctx, xr, yr, rest, fr, lum(ctx, xr, yr, wr, 40 * u) > 140 ? INK : WHITE, 8 * u);
+      }
       return { style: 28, pos: 'behind' };
     }
     return null;
+  }
+
+  //  LOGO 會放哪(跟 admaker 量四角同一套:先猜好,字就不放那裡;字畫完 LOGO 再量一次也會選回那個角)
+  function predictLogo(ctx, W, H, u) {
+    try {
+      if (document.getElementById('showBrandMark') && document.getElementById('showBrandMark').checked === false) return null;
+      if (typeof getBrandLogoUrls === 'function' && !getBrandLogoUrls()) return null;
+      var k = (document.getElementById('logoSize') || {}).value || 'normal', sz = g('LOGO_SIZES'), mg = g('LOGO_MARGIN');
+      var bw = W * ((sz && sz[k]) || 0.14), bh = bw * 0.55, m = W * (mg || 0.045);
+      var sp = pickLogoSpot(ctx, bw, bh, m);
+      return sp ? { x: sp.x, y: sp.y, w: bw, h: bh } : null;
+    } catch (e) { return null; }
+  }
+  function hitLogo(A, x, y, w, h, pad) {
+    var L = A.logo; if (!L) return false;
+    return x < L.x + L.w + pad && x + w > L.x - pad && y < L.y + L.h + pad && y + h > L.y - pad;
   }
 
   // ── 自動挑款(之後 AI 美術指導會直接指定)────────────────────────
@@ -341,6 +362,7 @@
     if (maskImg) { var sc = Math.min(W / maskImg.naturalWidth, H / maskImg.naturalHeight); imgRect = { w: maskImg.naturalWidth * sc, h: maskImg.naturalHeight * sc }; imgRect.x = (W - imgRect.w) / 2; imgRect.y = (H - imgRect.h) / 2; }
     var base = document.createElement('canvas'); base.width = W; base.height = H; base.getContext('2d').drawImage(ctx.canvas, 0, 0); window.__atlBase = base;
     var A = analyse(ctx, W, H, maskImg, imgRect);
+    A.logo = predictLogo(ctx, W, H, u);
     var key = src + '|' + T.h + '|' + T.s + '|' + W + 'x' + H, plan = planCache[key];
     var order = plan ? [plan.style] : pickOrder(T), M = 48 * u, done = null;
     for (var oi = 0; oi < order.length && !done; oi++) {
@@ -354,6 +376,7 @@
       var best = plan && plan.style === n ? { x: plan.x, y: plan.y, r: { m: 0, s: 0 } } : null;
       if (!best) xs.forEach(function (x) { ys.forEach(function (y) {
         if (y < M || y + b.h > H - M) return;
+        if (hitLogo(A, x, y, b.w, b.h, 24 * u)) return;
         var r = score(A, x, y, b.w, b.h); if (!best || r.s < best.r.s) best = { x: x, y: y, r: r };
       }); });
       if (!best || best.r.m > 0.03 || (!A.mask && best.r.e > 0.35)) continue;   // 會壓到主體 / 太花 → 換下一款
