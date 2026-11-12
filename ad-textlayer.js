@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
  *  ad-textlayer.js · v1.1(2026-11-13)廣告圖「系統壓字」
+ *  v1.4 素材庫多存一份有字 + LOGO 的版本(原圖照存,影片和美編用原圖)
  *  v1.3 美術指導指定的款先試縮字,不輕易換款;主體外擴 2 格,字離臉遠一點
  *  v1.2 HH 實測:人臉佔滿下半部,舊版只試 15 個固定點全失敗 → 掉到深色色帶。改成整張細掃找空位 + 放不下先縮字 + 一定放得下的色帶/毛玻璃排到最後 + 最後退路改輕的毛玻璃(促銷才用色帶)
  *  v1.1 實測 19 款:07/15/17 字疊到 LOGO → 先猜 LOGO 會放的角,字避開;05 字靠左把右邊讓給 LOGO;28 小字改壓在人前面
@@ -22,7 +23,7 @@
 (function () {
   'use strict';
   if (window.AdTextLayer) return;
-  var VERSION = '1.3';
+  var VERSION = '1.4';
   var ON = function () { return window.AD_TEXTLAYER !== false; };
   var SANS = '"Noto Sans TC", sans-serif', SERIF = '"Noto Serif TC", serif';
   var INK = '#1a1a1c', WHITE = '#ffffff';
@@ -436,6 +437,24 @@
       el.__atl = true;
     });
   }
+  // ── 素材庫多存一份「有字 + LOGO」的版本(RA 11-13:原圖照存給影片 / 美編用,有字版給發文用)──
+  //   等畫面停 3 秒(客人換 LOGO 大小會重畫)再存;同一張圖 + 同一組字只存一次;失敗不影響出圖
+  var savedCopy = {}, saveTimer = null;
+  function saveTextCopy(canvas) {
+    var T = title(), key = String(g('PR_BG_IMG') || '') + '|' + T.h + '|' + T.s;
+    if (!T.h || savedCopy[key]) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async function () {
+      if (savedCopy[key]) return; savedCopy[key] = true;
+      try {
+        if (typeof uploadToFal !== 'function' || typeof saveAdImageSilently !== 'function') return;
+        var url = await uploadToFal(canvas.toDataURL('image/jpeg', 0.92));
+        await saveAdImageSilently(url, 'poster_text', 'poster_text_' + Date.now());
+        console.log('[壓字] 有字版已多存一份進素材庫');
+      } catch (e) { savedCopy[key] = false; console.warn('[壓字] 有字版存素材庫失敗(不影響出圖):', e && e.message); }
+    }, 3000);
+  }
+
   function install() {
     var ap = window.applyPhotoroomBg, cl = window.compositeBrandLogo;
     if (typeof ap !== 'function' || typeof cl !== 'function') return false;
@@ -451,9 +470,12 @@
     }
     if (!cl.__atl) {
       var w2 = async function (ctx) {
-        try { if (ON() && g('PR_MODE') === 'gpt_poster' && ctx && ctx.canvas) await drawText(ctx); }
+        var drew = null;
+        try { if (ON() && g('PR_MODE') === 'gpt_poster' && ctx && ctx.canvas) drew = await drawText(ctx); }
         catch (e) { console.warn('[壓字] 失敗,照原樣出圖:', e && e.message); }
-        return cl.apply(this, arguments);
+        var out = await cl.apply(this, arguments);
+        if (drew && ctx && ctx.canvas) saveTextCopy(ctx.canvas);
+        return out;
       };
       w2.__atl = true; window.compositeBrandLogo = w2;
     }
