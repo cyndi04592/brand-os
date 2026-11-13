@@ -1713,6 +1713,13 @@ function showSubOrderInfo(o) {
 
 <!-- Google OAuth -->
 <script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth();startSystem();" async defer></script>
+<script>
+// 2026-11-14 大陸網路(沒開 VPN)載不到上面的 Google 元件 → 它的 onload 不會跑 → 「自動接回上次登入」也不會跑,畫面空的要重登。
+// 保底:頁面好了 3 秒還沒啟動,就自己啟動。台灣 / 香港 Google 元件 3 秒內就到,照舊由上面那行啟動;startSystem 本身有防重複。
+document.addEventListener('DOMContentLoaded', function () {
+  setTimeout(function () { try { if (typeof _systemStarted !== 'undefined' && !_systemStarted) startSystem(); } catch (e) {} }, 3000);
+});
+</script>
 
 <script>
 // ══ 待付款「!」徽章:登入後查 GAS,有待付款就亮 ══
