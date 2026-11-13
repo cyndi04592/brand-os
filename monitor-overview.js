@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-overview.js · v1.6(2026-11-13)v1.6 漏斗下面加「這些購買是怎麼來的」(點了才買 / 只看過就買)、訊息品牌加「私訊裡有幾個是新面孔」;v1.5(2026-11-13)v1.5 趨勢可切換指標(含影片 3 秒留住率)、購物漏斗加「頁面真的打開」;v1.4(2026-11-13)v1.4 主要目標是訊息 / 名單的品牌:六大數字、直客指標、漏斗、趨勢整套換成私訊(名單)版;v1.0(2026-11-11)
+   Brand OS · monitor-overview.js · v1.7(2026-11-13)v1.7 漏斗卡加「給客戶看的白話版」(每 1,000 / 1 萬次曝光換到幾筆,可一鍵複製);v1.6(2026-11-13)v1.6 漏斗下面加「這些購買是怎麼來的」(點了才買 / 只看過就買)、訊息品牌加「私訊裡有幾個是新面孔」;v1.5(2026-11-13)v1.5 趨勢可切換指標(含影片 3 秒留住率)、購物漏斗加「頁面真的打開」;v1.4(2026-11-13)v1.4 主要目標是訊息 / 名單的品牌:六大數字、直客指標、漏斗、趨勢整套換成私訊(名單)版;v1.0(2026-11-11)
    新版廣告監控頁「總覽」區塊。資料一律跟 monitor-data.js(window.MON)拿。
 
    這區不是照抄 Meta 後台——是把直客經理開會才會算給你看的數字算出來:
@@ -215,9 +215,32 @@
       tip = '<b>最大漏洞:</b>「' + a + ' → ' + b + '」只留下 ' + (worstRate * 100).toFixed(1) + '%。' + hint;
     }
     return '<div class="mo-card"><div class="mo-h">客人在哪一步跑掉 <small>以人次計</small></div><div class="mo-funnel">' + rows + '</div>'
-      + '<div class="mo-note">' + (tip || '<b>怎麼看:</b>每一列是上一關「留下來的比例」,紅字是掉最多的那一關。') + ' 漏斗後段(加購 → 購買)的問題通常在網站,不在廣告。</div></div>';
+      + '<div class="mo-note">' + (tip || '<b>怎麼看:</b>每一列是上一關「留下來的比例」,紅字是掉最多的那一關。') + ' 漏斗後段(加購 → 購買)的問題通常在網站,不在廣告。</div>' + plainBox(d, '購買', '筆', [1, 3]) + '</div>';
   }
 
+
+  //  v1.7 給客戶看的白話版:曝光這麼多,為什麼轉換這麼少(用這個品牌自己的數字)
+  function plainBox(d, conv, unit, convBench) {
+    var t = d.totals; if (!t.impressions) return '';
+    var per = t.impressions >= 100000 ? 10000 : 1000, perTxt = per === 10000 ? '1 萬' : '1,000';
+    var c = t.linkClicks / t.impressions * per, b = t.purchases / t.impressions * per;
+    var cr = t.linkClicks ? t.purchases / t.linkClicks * 100 : 0, ctr = t.linkClicks / t.impressions * 100;
+    var fmt = function (v) { return v >= 10 ? Math.round(v).toLocaleString() : v.toFixed(1); };
+    var imp = t.impressions >= 10000 ? (t.impressions / 10000).toFixed(1) + ' 萬' : F.num(t.impressions);
+    var verdict;
+    if (ctr < 0.7) verdict = '停下來看的人偏少(點擊率 ' + ctr.toFixed(2) + '%,一般約 1%),要換素材:開頭 3 秒、主圖、標題先改。';
+    else if (convBench && cr < convBench[0]) verdict = '點進來的人夠,但' + conv + '的比例偏低(' + cr.toFixed(1) + '%,一般 ' + convBench[0] + '~' + convBench[1] + '%),問題在網站或商品頁,看上面紅字那一關。';
+    else verdict = '兩關都在一般行情內。轉換看起來少,是因為廣告本來就要被滑過很多次才換到一' + unit + ',不是廣告沒效。';
+    var txt = '這段期間廣告被滑過 ' + imp + ' 次。每 ' + perTxt + ' 次曝光,大約 ' + fmt(c) + ' 人停下來點進來看,最後 ' + fmt(b) + ' ' + unit + conv + '。'
+      + '就像夜市人潮走過攤位,走過去的很多,停下來看的少,真的買的更少,每一關本來就會掉人。'
+      + (convBench ? '一般電商行情:每 1 萬次曝光約 100 人點進來、' + convBench[0] + '~' + convBench[1] + ' 筆購買。' : '一般行情:每 1 萬次曝光約 100 人點進來。')
+      + verdict;
+    return '<div style="margin-top:12px;padding:12px 14px;border-radius:11px;background:rgba(124,109,250,0.08);border:1px solid rgba(124,109,250,0.25)">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b style="font-size:11.5px;color:var(--t1,#fff)">給客戶看的白話版</b>'
+      + '<small style="font-size:10px;color:var(--t3,#8a8aa0)">客戶問「曝光這麼多,為什麼轉換這麼少」時,直接複製傳給他</small>'
+      + '<button onclick="var t=this.parentNode.nextSibling.textContent,b=this;try{navigator.clipboard.writeText(t).then(function(){b.textContent=\'已複製\'})}catch(e){}" style="margin-left:auto;padding:4px 10px;border-radius:7px;border:1px solid var(--gold,#7C6DFA);background:rgba(124,109,250,0.12);color:var(--t1,#fff);font-size:10.5px;cursor:pointer;font-family:inherit">複製</button></div>'
+      + '<div style="font-size:12px;line-height:1.85;color:var(--t2,#c8c8d8)">' + esc(txt) + '</div></div>';
+  }
   // ── ④ 近 28 天趨勢(手畫 SVG,不用載圖表套件)────────────
   function trendBlock(d) {
     var today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
@@ -328,7 +351,7 @@
       ? '點進來會私訊的比例 ' + rate.toFixed(1) + '%。偏低時先看自動回覆、開場白、回覆速度,以及粉專上的課程資訊有沒有寫清楚。'
       : '點進來會留資料的比例 ' + rate.toFixed(1) + '%。偏低時先看表單欄位是不是太多、誘因夠不夠。';
     return '<div class="mo-card"><div class="mo-h">客人在哪一步跑掉 <small>看到 → 點進來 → ' + w.conv + '</small></div><div class="mo-funnel">' + rows + '</div>'
-      + '<div class="mo-note"><b>怎麼看:</b>' + hint + '最後一關「' + w.conv + '後成交」Meta 拿不到,之後可以接 LINE 或手動回填。</div></div>';
+      + '<div class="mo-note"><b>怎麼看:</b>' + hint + '最後一關「' + w.conv + '後成交」Meta 拿不到,之後可以接 LINE 或手動回填。</div>' + plainBox(d, w.conv, w.unit, null) + '</div>';
   }
   function trendBlockG(d, w) {
     var today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
@@ -504,5 +527,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_OVERVIEW = { version: 'monitor-overview v1.6', render: render };
+  window.MON_OVERVIEW = { version: 'monitor-overview v1.7', render: render };
 })();
