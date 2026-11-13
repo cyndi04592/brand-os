@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   admin-adbind.js v1.1(2026-11-13)v1.1 登入通行證過期自動換新的再試;v1.0後台「廣告監控綁定」分頁
+   admin-adbind.js v1.2(2026-11-13)v1.2 廣告帳號清單每次都抓最新(剛分給系統帳號的馬上看得到);v1.1 登入通行證過期自動換新的再試;v1.0後台「廣告監控綁定」分頁
    ・哪個品牌對到哪個 Meta 廣告帳號、主要看什麼目標(購物 / 訊息 / 名單),在這裡設,不用再改程式
    ・資料來源:ads-monitor v2.0 bind_list / bind_set / bind_off + accounts(系統帳號看得到的廣告帳號)
    ・只有 RA 本人(owner)看得到這個分頁;Worker 也會擋
@@ -95,7 +95,7 @@
     if (!$('adbindRoot')) return;
     shell(fresh ? '重新讀取中,廣告帳號清單要問 Meta,大約 5 秒...' : '');
     try {
-      const [b, a] = await Promise.all([call('bind_list'), call('accounts', { fresh: !!fresh }).catch(e => ({ accounts: [], _err: e.message }))]);
+      const [b, a] = await Promise.all([call('bind_list'), call('accounts', { fresh: true }).catch(e => ({ accounts: [], _err: e.message }))]);
       S.brands = b.brands || []; S.off = b.off || []; S.goals = b.goals || S.goals; S.canEdit = !!b.canEdit;
       S.accounts = (a.data && a.data.accounts) || a.accounts || [];
       $('abMsg').textContent = a._err ? '廣告帳號清單讀取失敗:' + a._err : '';
@@ -178,5 +178,5 @@
   let _n = 0; const _iv = setInterval(function () { tick(); if (++_n > 120 || isOwner()) clearInterval(_iv); }, 1000);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
 
-  window.AdminAdBind = { load: load, show: show, bind: bind, saveGoal: saveGoal, off: off, on: on, version: '1.1' };
+  window.AdminAdBind = { load: load, show: show, bind: bind, saveGoal: saveGoal, off: off, on: on, version: '1.2' };
 })();
