@@ -63,7 +63,6 @@ body{
     <span class="tt">廣告監控</span>
     <span class="sp"></span>
     <a class="mn-link" href="index.html">← 回首頁</a>
-    <a class="mn-link" id="mnOld" href="monitor-old.html" style="display:none">舊版監控</a>
     <a class="mn-link" id="mnAdmin" href="admin.html" style="display:none">後台</a>
   </div>
   <div class="mn-bar">
@@ -152,7 +151,6 @@ body{
 
   M.on('me', function (me) {
     var boss = me.all || me.role === 'owner' || me.role === 'reviewer';
-    $('mnOld').style.display = boss ? '' : 'none';
     $('mnAdmin').style.display = boss ? '' : 'none';
     drawBrands(); drawRange();
   });
