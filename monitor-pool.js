@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    Brand OS · monitor-pool.js · v1.0(2026-11-13)
-   新版廣告監控頁「🐟 魚池地圖」區塊:一眼看懂這個品牌的廣告帳號是怎麼「撒網」的。
+   新版廣告監控頁「魚池地圖」區塊:一眼看懂這個品牌的廣告帳號是怎麼「撒網」的。
    資料一律跟 window.MON 拿(需要 ads-monitor v1.8:廣告帶出價方式 / CPA 目標 / ROAS 下限 / 廣告組合預算)。
 
    RA 11-13:「ASC 在哪一層?流量、觸及在哪?轉換在哪?CIBS 在哪?CPA 800 限制、CPA 1200 限制在哪撈多少?」
@@ -53,11 +53,11 @@
 
   //  魚池分層(由淺到深)
   var LAYERS = [
-    { k: 'reach',  name: '🌊 觸及 / 知名度', color: '#7FD6FF', desc: '撒大網,讓沒聽過的人先認識品牌;不看單數,看觸及人數' },
-    { k: 'traffic', name: '🚶 流量 / 互動',   color: '#B9A8FF', desc: '把人帶進網站或粉專;看點擊、互動,單數只是順便' },
-    { k: 'auto',   name: '🎣 轉換・不設門檻', color: '#6DFAC2', desc: '自動出價,預算內能撈的都撈(ASC 大多在這層)' },
-    { k: 'gate',   name: '🛡 轉換・有門檻',   color: '#FFD36D', desc: 'CIBS / CPA 上限 / ROAS 下限:網子撐大,但只撈划算的魚' },
-    { k: 'rt',     name: '🔁 再行銷(回撈池)', color: '#FA6D9B', desc: '看過、加過購物車的人再撈一次,池子小、轉換率高' }
+    { k: 'reach',  name: '觸及 / 知名度', color: '#7FD6FF', desc: '撒大網,讓沒聽過的人先認識品牌;不看單數,看觸及人數' },
+    { k: 'traffic', name: '流量 / 互動',   color: '#B9A8FF', desc: '把人帶進網站或粉專;看點擊、互動,單數只是順便' },
+    { k: 'auto',   name: '轉換・不設門檻', color: '#6DFAC2', desc: '自動出價,預算內能撈的都撈(ASC 大多在這層)' },
+    { k: 'gate',   name: '轉換・有門檻',   color: '#FFD36D', desc: 'CIBS / CPA 上限 / ROAS 下限:網子撐大,但只撈划算的魚' },
+    { k: 'rt',     name: '再行銷(回撈池)', color: '#FA6D9B', desc: '看過、加過購物車的人再撈一次,池子小、轉換率高' }
   ];
   var BID = {
     LOWEST_COST_WITHOUT_CAP: '自動出價(不設門檻)', COST_CAP: 'CPA 上限', LOWEST_COST_WITH_BID_CAP: '出價上限',
@@ -154,7 +154,7 @@
         + '<div style="font-size:10.5px;color:var(--t3,#8a8aa0);margin-top:2px">' + L.desc + '</div>'
         + '<div class="mp-scroll"><table class="mp-tbl"><thead><tr><th>行銷活動</th><th>出價門檻</th><th>日預算</th><th>平均每天花</th><th>期間花費</th><th>' + (top ? '觸及 / 點擊' : '撈到') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
     });
-    return '<div class="mo-card"><div class="mo-h">🗺 各層怎麼撒網 <small>' + list.length + ' 個進行中的行銷活動 · 期間 ' + rangeDays(d) + ' 天</small></div>' + html
+    return '<div class="mo-card"><div class="mo-h">各層怎麼撒網 <small>' + list.length + ' 個進行中的行銷活動 · 期間 ' + rangeDays(d) + ' 天</small></div>' + html
       + '<div class="mo-note"><b>怎麼看:</b>上面三條是同一個帳號的錢怎麼分:每天預算放在哪一層、實際花在哪一層、單是哪一層撈到的。'
       + '「平均每天花」÷「日預算」= 網子撐開了幾成。「出價門檻」= 這張網只撈多划算的魚(ROAS ≥ 3 = 每花 1 元至少要賺回 3 元;CPA ≤ 800 = 一單成本超過 800 就不搶)。'
       + '門檻越嚴,單越便宜但量越少;花費、單數只算進行中的廣告。</div></div>';
@@ -179,12 +179,12 @@
       return '<div class="mp-q" style="border-left:3px solid ' + color + '"><b class="t">' + title + '</b>' + txt
         + '<div class="c">' + (Q[k].length ? Q[k].join('') : '<span class="mo-flat">目前沒有</span>') + '</div></div>';
     }
-    return '<div class="mo-card"><div class="mo-h">🧭 每張網卡在哪一格 <small>Meta 簡報「出價 × 預算」圖 · 只看轉換活動</small></div>'
+    return '<div class="mo-card"><div class="mo-h">每張網卡在哪一格 <small>Meta 簡報「出價 × 預算」圖 · 只看轉換活動</small></div>'
       + '<div class="mp-quad">'
-      + box('a', '💰 錢花滿了、還達標 = 預算受限', '魚還很多、網子太小。可以加預算,或改用 CIBS(預算放大 + 設門檻)把多的魚撈回來。', '#6DFAC2')
-      + box('b', '🧱 錢花滿了、沒達標 = 魚不咬', '預算夠,是轉換率不夠。先換多元素材、換開頭與主圖,不是加預算。', '#FA6D9B')
-      + box('c', '🧊 沒花滿、但達標 = 門檻卡住', '有設門檻的(CIBS):平日待命是正常的,週末 / 檔期才放量。連旺日都放不出來,才代表門檻比盈虧平衡點還嚴。不設門檻的:受眾太小或素材不夠。', '#FFD36D')
-      + box('d', '🌱 沒花滿、也沒達標 = 還在找魚', '多半是學習期還沒過,或受眾太窄。學習中先別頻繁改預算;一週湊不到 50 單就合併相似的活動。', '#B9A8FF')
+      + box('a', '錢花滿了、還達標 = 預算受限', '魚還很多、網子太小。可以加預算,或改用 CIBS(預算放大 + 設門檻)把多的魚撈回來。', '#6DFAC2')
+      + box('b', '錢花滿了、沒達標 = 魚不咬', '預算夠,是轉換率不夠。先換多元素材、換開頭與主圖,不是加預算。', '#FA6D9B')
+      + box('c', '沒花滿、但達標 = 門檻卡住', '有設門檻的(CIBS):平日待命是正常的,週末 / 檔期才放量。連旺日都放不出來,才代表門檻比盈虧平衡點還嚴。不設門檻的:受眾太小或素材不夠。', '#FFD36D')
+      + box('d', '沒花滿、也沒達標 = 還在找魚', '多半是學習期還沒過,或受眾太窄。學習中先別頻繁改預算;一週湊不到 50 單就合併相似的活動。', '#B9A8FF')
       + '</div><div class="mp-axis"><span>← 沒花滿</span><span>花滿了 →</span></div>'
       + '<div class="mo-note"><b>標準:</b>平均每天花到日預算 85% 以上算「花滿」。有設門檻的活動用它自己的門檻判斷;沒設門檻的用'
       + (beRoas ? '這個品牌的損益兩平 ROAS ' + beRoas.toFixed(2) + '(總覽右上角填的毛利率算出來的)' : '目標 ROAS ' + (cfg.roasTarget || 3) + '(在總覽右上角填毛利率,會改用損益兩平 ROAS)') + '。</div></div>';
@@ -194,7 +194,7 @@
     var el = document.getElementById('mon-pool'); if (!el) return;
     injectCss();
     var list = build(d);
-    if (!list.length) { el.innerHTML = '<div class="mo-card"><div class="mo-h">🐟 魚池地圖</div><div class="mo-flat" style="font-size:11px">目前沒有進行中的行銷活動。</div></div>'; return; }
+    if (!list.length) { el.innerHTML = '<div class="mo-card"><div class="mo-h">魚池地圖</div><div class="mo-flat" style="font-size:11px">目前沒有進行中的行銷活動。</div></div>'; return; }
     el.innerHTML = layerBlock(list, d) + quadBlock(list);
   }
 

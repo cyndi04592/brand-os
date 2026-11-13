@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    Brand OS · monitor-diagnose.js · v1.2(2026-11-11)v1.2 加時段出單 + 每天穩定度、捲到才抓;v1.1 大盤
-   新版廣告監控頁「🩺 CPA 為什麼變貴」診斷區。資料:MON.state.data(主畫面)+ MON.diag()(診斷包)
+   新版廣告監控頁「CPA 為什麼變貴」診斷區。資料:MON.state.data(主畫面)+ MON.diag()(診斷包)
 
    核心:CPA = CPM ÷ 1000 ÷ 點擊率 ÷ 購買率(點進來的人有幾 % 買)
    → CPA 變貴只有三條路,每條要動的地方不一樣,不用一個一個猜:
@@ -90,7 +90,7 @@
     var c = { spend: t.spend, impressions: t.impressions, clicks: t.linkClicks, purchases: t.purchases };
     var q = { spend: p.spend, impressions: p.impressions, clicks: p.linkClicks, purchases: p.purchases };
     var x = decompose(c, q);
-    if (!x) return '<div class="mo-card"><div class="mo-h">🩺 CPA 為什麼變貴</div><div class="dg-wait">這期或上一期沒有購買,拆不出來。</div></div>';
+    if (!x) return '<div class="mo-card"><div class="mo-h">CPA 為什麼變貴</div><div class="dg-wait">這期或上一期沒有購買,拆不出來。</div></div>';
     var nz = noise(c, q);
     var verdict;
     if (Math.abs(x.ratio - 1) < 0.05) verdict = 'CPA 跟上一期差不多(' + pctTxt(x.ratio) + '),沒有明顯變貴。';
@@ -110,18 +110,18 @@
 
     //  三個「其實沒壞」檢查
     var checks = [];
-    if (nz.small) checks.push(['bad', '🎲 <b>單數太少,先別急著改:</b>這期 ' + c.purchases + ' 單、上期 ' + q.purchases + ' 單。少於 20 單時,一天 3 單、隔天 1 單是正常起伏,不代表廣告壞了。建議看 14 或 30 天再判斷。']);
-    else if (nz.within) checks.push(['ok', '🎲 <b>在正常起伏內:</b>照上一期的效率,這期花的錢「應該」有約 ' + Math.round(nz.exp) + ' 單,實際 ' + c.purchases + ' 單,差距還在統計上的正常範圍。']);
-    else checks.push(['', '🎲 單數夠多(' + c.purchases + ' 單),這次的變化不是隨機起伏,是真的變了。']);
+    if (nz.small) checks.push(['bad', '<b>單數太少,先別急著改:</b>這期 ' + c.purchases + ' 單、上期 ' + q.purchases + ' 單。少於 20 單時,一天 3 單、隔天 1 單是正常起伏,不代表廣告壞了。建議看 14 或 30 天再判斷。']);
+    else if (nz.within) checks.push(['ok', '<b>在正常起伏內:</b>照上一期的效率,這期花的錢「應該」有約 ' + Math.round(nz.exp) + ' 單,實際 ' + c.purchases + ' 單,差距還在統計上的正常範圍。']);
+    else checks.push(['', '單數夠多(' + c.purchases + ' 單),這次的變化不是隨機起伏,是真的變了。']);
 
     var yest = new Date(Date.now() + 8 * 3600 * 1000 - 86400000).toISOString().slice(0, 10);
     if (d.range && d.range.until >= yest) checks.push(['', '⏳ <b>最近 2 天還在補單:</b>Meta 把購買算回「看到廣告那天」,點擊後 7 天內的購買都會回補。區間包含昨天、今天時,最後兩天的 CPA 通常偏高,過兩三天會變好看。']);
 
     var resets = g && g.events ? g.events.filter(function (e) { return /budget|bid_strategy|bid_amount|optimization_goal|target_spec|create_ad_set/.test(e.type) && e.time.slice(0, 10) >= d.range.since; }) : [];
-    if (resets.length) checks.push(['bad', '🔄 <b>這期有 ' + resets.length + ' 次「會讓學習期重來」的修改</b>(預算 / 出價 / 受眾 / 最佳化目標 / 新廣告組合),改完幾天內 CPA 偏高是正常的。明細看最下面的變更紀錄。']);
-    else if (g && g.events) checks.push(['ok', '🔄 這期沒有改預算、出價、受眾——CPA 變化不是學習期重來造成的。']);
+    if (resets.length) checks.push(['bad', '<b>這期有 ' + resets.length + ' 次「會讓學習期重來」的修改</b>(預算 / 出價 / 受眾 / 最佳化目標 / 新廣告組合),改完幾天內 CPA 偏高是正常的。明細看最下面的變更紀錄。']);
+    else if (g && g.events) checks.push(['ok', '這期沒有改預算、出價、受眾——CPA 變化不是學習期重來造成的。']);
 
-    return '<div class="mo-card"><div class="mo-h">🩺 CPA 為什麼變貴 <small>這期 vs 上一期 · 整個帳號</small></div>'
+    return '<div class="mo-card"><div class="mo-h">CPA 為什麼變貴 <small>這期 vs 上一期 · 整個帳號</small></div>'
       + '<div class="dg-verdict">' + verdict + '<small>CPA = CPM ÷ 點擊率 ÷ 購買率。CPA 變貴只有這三條路,先看是哪一條,再決定動什麼。</small></div>'
       + '<div class="dg-parts">' + parts + '</div>'
       + '<div class="dg-checks">' + checks.map(function (z) { return '<div class="dg-check ' + z[0] + '">' + z[1] + '</div>'; }).join('') + '</div></div>';
@@ -148,7 +148,7 @@
         + '<td>' + (r.prev ? r.prev.purchases : 0) + ' → ' + r.cur.purchases + '</td>'
         + '<td>' + cause + '</td></tr>';
     }).join('');
-    return '<div class="mo-card"><div class="mo-h">🎯 是哪個行銷活動在拖 <small>花費佔 3% 以上的</small></div>'
+    return '<div class="mo-card"><div class="mo-h">是哪個行銷活動在拖 <small>花費佔 3% 以上的</small></div>'
       + '<div class="dg-scroll"><table class="dg-tbl"><thead><tr><th>行銷活動</th><th>這期花費</th><th>上期 CPA</th><th>這期 CPA</th><th>變化</th><th>購買數</th><th>主因</th></tr></thead><tbody>' + body + '</tbody></table></div>'
       + '<div class="mo-note"><b>怎麼看:</b>整個帳號 CPA 變貴,常常只是其中一兩個行銷活動在拖。先找花最多、變最多的那個,看它的主因,再對症下藥。「單數太少」的先別動。</div></div>';
   }
@@ -166,7 +166,7 @@
       return '<tr><td>' + esc(r.key) + ' 歲</td><td>' + F.pct(sh, 0) + '</td><td>' + (c0 ? F.money(c0) : '—') + '</td><td>' + (c1 ? F.money(c1) : '—') + '</td>'
         + '<td>' + (ch ? '<span class="' + (ch > 1 ? 'mo-down' : 'mo-up') + '">' + pctTxt(ch) + '</span>' : '—') + '</td><td>' + (r.prev ? r.prev.purchases : 0) + ' → ' + r.cur.purchases + '</td></tr>';
     }).join('');
-    return '<div class="mo-card"><div class="mo-h">👥 是哪個年齡層變貴 <small>整個帳號</small></div>'
+    return '<div class="mo-card"><div class="mo-h">是哪個年齡層變貴 <small>整個帳號</small></div>'
       + '<div class="dg-scroll"><table class="dg-tbl"><thead><tr><th>年齡</th><th>花費佔比</th><th>上期 CPA</th><th>這期 CPA</th><th>變化</th><th>購買數</th></tr></thead><tbody>' + body + '</tbody></table></div>'
       + '<div class="mo-note">' + (worst ? '<b>' + esc(worst.key) + ' 歲變貴最多(' + pctTxt(worst.ch) + ')而且花費不小。</b>' : '<b>各年齡層沒有特別突出的變貴。</b>— 所以「調整年齡」不是這次的解法。')
       + ' 提醒:ASC / Advantage+ 受眾是系統自動分配年齡,<b>通常不建議手動鎖年齡</b>;這張表是用來確認「是不是某個年齡層在拖」,不是要你去改設定。</div></div>';
@@ -188,34 +188,34 @@
         + '<td>' + F.money(m1) + (m0 ? ' <span class="' + (m1 > m0 ? 'mo-down' : 'mo-up') + '">' + pctTxt(m1 / m0) + '</span>' : '') + '</td>'
         + '<td>' + t1.toFixed(2) + '%' + (t0 ? ' <span class="' + (t1 < t0 ? 'mo-down' : 'mo-up') + '">' + pctTxt(t1 / t0) + '</span>' : '') + '</td></tr>';
     }).join('');
-    return '<div class="mo-card"><div class="mo-h">🗺 各縣市 <small>前 10 名 · 只看 CPM 與點擊率</small></div>'
+    return '<div class="mo-card"><div class="mo-h">各縣市 <small>前 10 名 · 只看 CPM 與點擊率</small></div>'
       + '<div class="dg-scroll"><table class="dg-tbl"><thead><tr><th>縣市</th><th>花費佔比</th><th>CPM(vs 上期)</th><th>點擊率(vs 上期)</th></tr></thead><tbody>' + body + '</tbody></table></div>'
       + '<div class="mo-note"><b>為什麼沒有各縣市 CPA:</b>Meta 的地區拆解不回報網站購買數(隱私限制),只能看哪個城市變貴、變不愛點。之後會把<b>氣象</b>(例如寒流)和 <b>Google 搜尋熱度</b>疊在這張表上,判斷是「需求變了」還是「廣告變差」。</div></div>';
   }
 
   // ── ⑤ 變更紀錄 ──────────────────────────────────────────
   function eventsBlock(g) {
-    if (g.events === null) return '<div class="mo-card"><div class="mo-h">📝 期間內改了什麼</div><div class="dg-wait">這個帳號的權杖讀不到變更紀錄。</div></div>';
+    if (g.events === null) return '<div class="mo-card"><div class="mo-h">期間內改了什麼</div><div class="dg-wait">這個帳號的權杖讀不到變更紀錄。</div></div>';
     var ev = g.events || [];
-    if (!ev.length) return '<div class="mo-card"><div class="mo-h">📝 期間內改了什麼</div><div class="dg-wait">上一期到今天沒有任何預算、出價、受眾或開關的修改。</div></div>';
+    if (!ev.length) return '<div class="mo-card"><div class="mo-h">期間內改了什麼</div><div class="dg-wait">上一期到今天沒有任何預算、出價、受眾或開關的修改。</div></div>';
     var RESET = /budget|bid_strategy|bid_amount|optimization_goal|target_spec|create_ad_set/;
     var list = ev.map(function (e) {
       var t = new Date(e.time), tw = new Date(t.getTime() + 8 * 3600 * 1000).toISOString();
-      return '<div><b>' + tw.slice(5, 10).replace('-', '/') + ' ' + tw.slice(11, 16) + '</b><span>' + (RESET.test(e.type) ? '🔄 ' : '') + esc(e.label) + ' · ' + esc(e.object) + '</span></div>';
+      return '<div><b>' + tw.slice(5, 10).replace('-', '/') + ' ' + tw.slice(11, 16) + '</b><span>' + (RESET.test(e.type) ? '' : '') + esc(e.label) + ' · ' + esc(e.object) + '</span></div>';
     }).join('');
     var nReset = ev.filter(function (e) { return RESET.test(e.type); }).length;
-    return '<div class="mo-card"><div class="mo-h">📝 期間內改了什麼 <small>從上一期開始到今天 · ' + ev.length + ' 筆 · 🔄 會讓學習期重來 ' + nReset + ' 筆</small></div>'
+    return '<div class="mo-card"><div class="mo-h">期間內改了什麼 <small>從上一期開始到今天 · ' + ev.length + ' 筆 · 會讓學習期重來 ' + nReset + ' 筆</small></div>'
       + '<div class="dg-ev">' + list + '</div>'
       + '<div class="mo-note"><b>對照用:</b>CPA 哪天開始變貴,就往上找那幾天改了什麼。預算一次加太多(一般建議一次不超過 2 成)、換出價方式、改受眾,都會讓學習期重來,前幾天 CPA 偏高是正常的。</div></div>';
   }
 
   // ── ⑦ 時段:上午 / 中午 / 下午 / 晚上 / 半夜 各幾筆 ────────
   var SLOTS = [
-    { name: '半夜', from: 0, to: 5,   icon: '🌙' },
-    { name: '上午', from: 6, to: 10,  icon: '🌅' },
-    { name: '中午', from: 11, to: 13, icon: '🍱' },
-    { name: '下午', from: 14, to: 17, icon: '☕' },
-    { name: '晚上', from: 18, to: 23, icon: '🌃' }
+    { name: '半夜', from: 0, to: 5,   icon: '' },
+    { name: '上午', from: 6, to: 10,  icon: '' },
+    { name: '中午', from: 11, to: 13, icon: '' },
+    { name: '下午', from: 14, to: 17, icon: '' },
+    { name: '晚上', from: 18, to: 23, icon: '' }
   ];
   function hourlyBlock(d, g) {
     var hs = g.hourly;
@@ -264,7 +264,7 @@
         + (zero ? ',其中 ' + zero + ' 天掛零' : '') + '。';
     }
     var noSale = slots.filter(function (x) { return !x.p && !x.future; }).map(function (x) { return x.sl.name; });
-    return '<div class="mo-card"><div class="mo-h">🕐 哪個時段出單 <small>這段期間 · 共 ' + tot + ' 筆 · 依「看到廣告的時間」</small></div>'
+    return '<div class="mo-card"><div class="mo-h">哪個時段出單 <small>這段期間 · 共 ' + tot + ' 筆 · 依「看到廣告的時間」</small></div>'
       + '<div class="dg-parts">' + cards + '</div>' + svg
       + '<div class="mo-note">' + (onlyToday ? '<b>現在看的是「今天」(現在 ' + nowHour + ' 點),還沒到的時段先不算。看時段分佈建議選近 7 或 14 天。</b><br>' : '') + stab + (noSale.length ? ' <b>' + noSale.join('、') + '沒有成交</b>,如果花費也不少,可以考慮用預算排程把那段的預算挪到出單多的時段。' : '')
       + '<br><b>怎麼看:</b>「划算時段」= 佔成交的比例比佔花費高(花得少、帶回的單多)。時間是 Meta 記的「看到廣告的時間」,不是付款時間;想看真實下單時間要看 SMR。'
@@ -306,7 +306,7 @@
         else if (my > 1.05) line += ' → <b>大盤沒漲、只有你在漲</b>,問題在自己的帳號(受眾太窄、出價、頻率太高),不是旺季。';
       }
     }
-    return '<div class="mo-card"><div class="mo-h">🌐 大盤:競價擁擠度 <small>' + mk.brands + ' 個品牌的 CPM 疊起來 · 最新 ' + last.date.slice(5) + ' = ' + last.cpmIdx + '</small></div>' + svg
+    return '<div class="mo-card"><div class="mo-h">大盤:競價擁擠度 <small>' + mk.brands + ' 個品牌的 CPM 疊起來 · 最新 ' + last.date.slice(5) + ' = ' + last.cpmIdx + '</small></div>' + svg
       + '<div class="mo-note">' + line + '<br><b>怎麼算:</b>每個品牌的每日 CPM 先除以它自己近 28 天的平均(100 = 那個品牌的平常價),再把所有品牌平均起來。'
       + '紅柱 = 比平常貴 2 成以上(檔期搶量)。品牌接越多越準;之後會再疊 Google 搜尋熱度(需求)和 SMR 真實成交(成交熱度)。</div></div>';
   }
@@ -329,7 +329,7 @@
     Promise.all([M.diag(), M.market ? M.market().catch(function () { return null; }) : null]).then(function (res) {
       var g = res[0], mk = res[1];
       if (my !== seq) return;
-      if (!g || !g.ok) { el.innerHTML = headBlock(d, null) + marketBlock(d, mk) + '<div class="mo-card"><div class="dg-wait">⚠️ 診斷細項讀不到:' + esc((g && g.error) || '請稍後再試') + '</div></div>'; return; }
+      if (!g || !g.ok) { el.innerHTML = headBlock(d, null) + marketBlock(d, mk) + '<div class="mo-card"><div class="dg-wait">診斷細項讀不到:' + esc((g && g.error) || '請稍後再試') + '</div></div>'; return; }
       el.innerHTML = headBlock(d, g) + marketBlock(d, mk) + hourlyBlock(d, g) + campBlock(g) + ageBlock(g) + regionBlock(g) + eventsBlock(g);
     });
   }

@@ -77,7 +77,7 @@
   // ── ① 今天各行銷活動 ────────────────────────────────────
   function campaignBlock(d) {
     var camps = d.campaigns || [];
-    if (!camps.length) return '<div class="mo-card"><div class="mo-h">🎯 今天的行銷活動</div><div class="ma-empty">目前沒有進行中的行銷活動。</div></div>';
+    if (!camps.length) return '<div class="mo-card"><div class="mo-h">今天的行銷活動</div><div class="ma-empty">目前沒有進行中的行銷活動。</div></div>';
     var cfg = M.state.cfg, frac = dayFraction();
     var byCamp = sumBy(d.ads || [], function (a) { return a.campaign; });
     var groups = { asc: [], cibs: [], rt: [], other: [] };
@@ -127,13 +127,13 @@
     });
 
     var notes = [];
-    if (flags.constrained.length) notes.push('💰 <b>預算卡住了:</b>' + flags.constrained.map(esc).join('、') + ' 今天已花滿,而且 CPA 還在目標內——這就是簡報說的「受限於預算」。可以考慮改用 CIBS(設 CPA 目標 + 日預算拉高到 CPA 的 20~50 倍)。');
-    if (flags.thin.length) notes.push('📉 <b>日預算太小:</b>' + flags.thin.map(esc).join('、') + ' 的日預算不到 CPA 的 10 倍,一週湊不滿 50 次轉換,學習期很難跑完。');
-    if (flags.cibsIdle.length) notes.push('🧊 <b>CIBS 待命中:</b>' + flags.cibsIdle.map(esc).join('、') + ' 今天幾乎沒花——<b>這是設計,不是故障</b>。Meta 官方:CIBS = 成本目標 + 超額預算,轉換率穩定時花不出去是正常的,平日自動縮、旺日(週末 / 檔期)才放量。只有<b>連旺日都放不出量</b>,才代表目標設得比盈虧平衡點還嚴,這時再小步調整(一次一點、等學習)。');
-    if (flags.fewAds.length) notes.push('🧩 <b>ASC 素材太少:</b>' + flags.fewAds.map(esc).join('、') + '。Meta 建議每個 ASC 行銷活動<b>不少於 20 則</b>廣告,系統才有得挑;素材多可用「彈性廣告」把相似的分組。');
-    if (flags.cibsAds.length) notes.push('🧪 <b>CIBS 素材數:</b>' + flags.cibsAds.map(esc).join('、') + '。CIBS 建議用<b>新素材 10 則左右、越多元越好</b>(避免素材疲乏;旺季大家加預算推高競價,多元素材能拉高轉換率)。');
+    if (flags.constrained.length) notes.push('<b>預算卡住了:</b>' + flags.constrained.map(esc).join('、') + ' 今天已花滿,而且 CPA 還在目標內——這就是簡報說的「受限於預算」。可以考慮改用 CIBS(設 CPA 目標 + 日預算拉高到 CPA 的 20~50 倍)。');
+    if (flags.thin.length) notes.push('<b>日預算太小:</b>' + flags.thin.map(esc).join('、') + ' 的日預算不到 CPA 的 10 倍,一週湊不滿 50 次轉換,學習期很難跑完。');
+    if (flags.cibsIdle.length) notes.push('<b>CIBS 待命中:</b>' + flags.cibsIdle.map(esc).join('、') + ' 今天幾乎沒花——<b>這是設計,不是故障</b>。Meta 官方:CIBS = 成本目標 + 超額預算,轉換率穩定時花不出去是正常的,平日自動縮、旺日(週末 / 檔期)才放量。只有<b>連旺日都放不出量</b>,才代表目標設得比盈虧平衡點還嚴,這時再小步調整(一次一點、等學習)。');
+    if (flags.fewAds.length) notes.push('<b>ASC 素材太少:</b>' + flags.fewAds.map(esc).join('、') + '。Meta 建議每個 ASC 行銷活動<b>不少於 20 則</b>廣告,系統才有得挑;素材多可用「彈性廣告」把相似的分組。');
+    if (flags.cibsAds.length) notes.push('<b>CIBS 素材數:</b>' + flags.cibsAds.map(esc).join('、') + '。CIBS 建議用<b>新素材 10 則左右、越多元越好</b>(避免素材疲乏;旺季大家加預算推高競價,多元素材能拉高轉換率)。');
 
-    return '<div class="mo-card"><div class="mo-h">🎯 今天的行銷活動 <small>白線 = 現在時間(一天過了 ' + Math.round(frac * 100) + '%)</small></div>'
+    return '<div class="mo-card"><div class="mo-h">今天的行銷活動 <small>白線 = 現在時間(一天過了 ' + Math.round(frac * 100) + '%)</small></div>'
       + '<div class="ma-scroll"><table class="ma-tbl"><thead><tr><th>行銷活動</th><th>今日花費 / 日預算</th><th>速度</th><th>今日 CPA</th><th>期間 CPA</th><th>日預算是 CPA 幾倍</th><th>廣告數</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       + '<div class="mo-note">' + (notes.length ? notes.join('<br>') + '<br>' : '')
       + '<b>怎麼看:</b>紫條比白線短很多 = 錢花不出去(出價太低或受眾太窄);粉紅 = 跑太快,下午就會停。分組照行銷活動名稱的【ASC/】【CIBS/】【再行銷】判斷。「期間 CPA」與「廣告數」只算進行中的廣告。</div></div>';
@@ -159,7 +159,7 @@
         + '<td><div class="ma-pace"><i class="' + (pct >= 100 ? 'full' : '') + '" style="width:' + pct.toFixed(0) + '%"></i><span>' + s.weekly.toFixed(0) + ' / 50</span></div></td>'
         + '<td class="num">' + (s.weekly >= 50 ? '<span class="mo-up">夠了</span>' : s.st === 'SUCCESS' ? '<span class="mo-flat">Meta 判定已學完</span>' : '還差 ' + Math.ceil(50 - s.weekly)) + '</td></tr>';
     }).join('');
-    return '<div class="mo-card"><div class="mo-h">🎓 學習期進度 <small>' + sets.length + ' 個廣告組合 · 受限 ' + nFail + ' · 學習中 ' + nLearn + '</small></div>'
+    return '<div class="mo-card"><div class="mo-h">學習期進度 <small>' + sets.length + ' 個廣告組合 · 受限 ' + nFail + ' · 學習中 ' + nLearn + '</small></div>'
       + '<div class="ma-scroll"><table class="ma-tbl"><thead><tr><th>行銷活動 › 廣告組合</th><th>狀態</th><th>一週轉換(換算)</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       + '<div class="mo-note"><b>怎麼看:</b>Meta 要每個廣告組合<b>一週 50 次轉換</b>才算學完。「學習受限」= 系統判斷湊不到 50 次,成效會一直不穩。解法:合併相似的廣告組合、放寬受眾,或把日預算拉到 CPA 的 10 倍以上。學習中不要頻繁改預算——簡報原話:計畫的重要性遠大於調整。</div></div>';
   }
@@ -177,7 +177,7 @@
     if (!fresh.length) { fTag = tag('warn', '近 7 天沒上新素材'); fTxt = '舊素材遲早會疲乏。旺季前建議每週補新素材;開 CIBS 時用新素材 10 則左右。'; }
     else if (fShare < cShare * 0.5) { fTag = tag('bad', '新素材分不到錢'); fTxt = '新素材佔廣告數 ' + cShare.toFixed(0) + '%,卻只分到 ' + fShare.toFixed(0) + '% 花費——系統一直推舊的。建議先放「預熱行銷活動」小預算跑到約 50 次轉換,表現好的再複製進 ASC。'; }
     else { fTag = tag('good', '新素材有在跑'); fTxt = '新素材佔廣告數 ' + cShare.toFixed(0) + '%,分到 ' + fShare.toFixed(0) + '% 花費。'; }
-    boxes.push('<div class="ma-box"><div class="t">🔥 新素材(7 天內)</div><div class="v">' + fresh.length + ' 則 · ' + F.pct(fShare, 0) + ' 花費</div>' + fTag + '<div style="margin-top:6px">' + fTxt + '</div></div>');
+    boxes.push('<div class="ma-box"><div class="t">新素材(7 天內)</div><div class="v">' + fresh.length + ' 則 · ' + F.pct(fShare, 0) + ' 花費</div>' + fTag + '<div style="margin-top:6px">' + fTxt + '</div></div>');
 
     //  9:16 直式版位
     var pl = d.placements || [], pTot = pl.reduce(function (s, p) { return s + p.spend; }, 0);
@@ -186,14 +186,14 @@
     if (pTot) {
       var vs = v.s / pTot * 100, vr = v.s ? v.r / v.s : 0, hr = h.s ? h.r / h.s : 0;
       var vTag = vr && hr ? (vr >= hr * 1.1 ? tag('good', '直式比較會賣') : vr < hr * 0.8 ? tag('warn', '直式比較差') : tag('good', '差不多')) : '';
-      boxes.push('<div class="ma-box"><div class="t">📱 9:16 直式版位(Reels / 限動)</div><div class="v">' + F.pct(vs, 0) + ' 花費</div>'
+      boxes.push('<div class="ma-box"><div class="t">9:16 直式版位(Reels / 限動)</div><div class="v">' + F.pct(vs, 0) + ' 花費</div>'
         + '<div class="ma-split"><i style="width:' + vs.toFixed(1) + '%;background:var(--pink,#FA6D9B)"></i><i style="width:' + (100 - vs).toFixed(1) + '%;background:rgba(124,109,250,0.5)"></i></div>'
         + '直式 ROAS ' + vr.toFixed(2) + ' / 其他 ' + hr.toFixed(2) + ' ' + vTag
         + '<div style="margin-top:6px">直式素材要:9:16、有聲音、主要文字在安全區。直式佔比低,通常是缺直式影片,不是系統不給。</div></div>');
       var top = pl.slice(0, 5).map(function (p) {
-        return '<tr><td>' + esc(placeName(p)) + (p.vertical ? ' 📱' : '') + '</td><td class="num">' + F.money(p.spend) + '</td><td class="num">' + (p.spend ? (p.revenue / p.spend).toFixed(2) : '—') + '</td></tr>';
+        return '<tr><td>' + esc(placeName(p)) + (p.vertical ? ' ' : '') + '</td><td class="num">' + F.money(p.spend) + '</td><td class="num">' + (p.spend ? (p.revenue / p.spend).toFixed(2) : '—') + '</td></tr>';
       }).join('');
-      boxes.push('<div class="ma-box"><div class="t">📍 花最多錢的版位</div><table class="ma-tbl" style="margin-top:4px"><tbody>' + top + '</tbody></table></div>');
+      boxes.push('<div class="ma-box"><div class="t">花最多錢的版位</div><table class="ma-tbl" style="margin-top:4px"><tbody>' + top + '</tbody></table></div>');
     }
 
     //  影片 vs 圖片
@@ -203,9 +203,9 @@
       var o = fm[k];
       return k + ' ' + o.n + ' 則 · 花費 ' + F.pct(tot ? o.s / tot * 100 : 0, 0) + ' · ROAS ' + (o.s ? (o.r / o.s).toFixed(2) : '—');
     }).join('<br>');
-    if (fmRows) boxes.push('<div class="ma-box"><div class="t">🎬 素材格式</div><div style="margin-top:4px">' + fmRows + '</div><div style="margin-top:6px">素材越多元越好(不同格式、不同角度),彈性廣告格式也是靠素材量取勝。</div></div>');
+    if (fmRows) boxes.push('<div class="ma-box"><div class="t">素材格式</div><div style="margin-top:4px">' + fmRows + '</div><div style="margin-top:6px">素材越多元越好(不同格式、不同角度),彈性廣告格式也是靠素材量取勝。</div></div>');
 
-    return '<div class="mo-card"><div class="mo-h">🧪 素材與版位 <small>只算進行中的廣告 · 這段期間</small></div><div class="ma-grid">' + boxes.join('') + '</div>'
+    return '<div class="mo-card"><div class="mo-h">素材與版位 <small>只算進行中的廣告 · 這段期間</small></div><div class="ma-grid">' + boxes.join('') + '</div>'
       + '<div class="mo-note"><b>為什麼重要:</b>簡報重點——預估轉換率(eCVR)才是影響成效最重要的因素,而素材多元化是拉高它最直接的方法。旺季大家都加預算、競價變貴,素材是唯一不用多花錢就能贏的地方。</div></div>';
   }
 

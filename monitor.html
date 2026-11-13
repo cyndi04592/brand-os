@@ -75,7 +75,7 @@ body{
     <button class="mn-rng" data-r="14d">近 14 天</button>
     <button class="mn-rng" data-r="30d">近 30 天</button>
     <input class="mn-date" type="date" id="mnSince"><span style="color:var(--t3);font-size:10px">~</span><input class="mn-date" type="date" id="mnUntil">
-    <div class="mn-meta"><span id="mnUpd">載入中…</span><button class="mn-btn" id="mnRefresh">🔄 重抓最新</button></div>
+    <div class="mn-meta"><span id="mnUpd">載入中…</span><button class="mn-btn" id="mnRefresh">重抓最新</button></div>
   </div>
   <div class="mn-tabs">
     <a class="mn-tab on" href="#sec-overview">總覽</a>
@@ -89,12 +89,12 @@ body{
 <div class="mn-loading" id="mnLoading"><div id="mnLoadingBox"></div></div>
 <div class="mn-wrap">
   <div class="mn-err" id="mnErr"></div>
-  <div class="mn-smr" id="mnSmr">🧾 這個品牌有接 SMR:Meta 回報的營收會灌水(像素重複算),<b>真實成交、口袋錢以 SMR 為準</b> → <a href="https://smr.raby.com.tw/" target="_blank" rel="noopener">打開 SMR 真實成交</a></div>
-  <section class="mn-sec"><h2 id="sec-overview">📊 總覽</h2><div id="mon-overview"></div></section>
-  <section class="mn-sec"><h2 id="sec-pool">🐟 魚池地圖</h2><div id="mon-pool"></div></section>
-  <section class="mn-sec"><h2 id="sec-diag">🩺 CPA 為什麼變貴</h2><div id="mon-diag"></div></section>
-  <section class="mn-sec"><h2 id="sec-asc">🎯 ASC / CIBS 策略</h2><div id="mon-asc"></div></section>
-  <section class="mn-sec"><h2 id="sec-ads">📋 進行中廣告</h2><div id="mon-ads"></div></section>
+  <div class="mn-smr" id="mnSmr">這個品牌有接 SMR:Meta 回報的營收會灌水(像素重複算),<b>真實成交、口袋錢以 SMR 為準</b> → <a href="https://smr.raby.com.tw/" target="_blank" rel="noopener">打開 SMR 真實成交</a></div>
+  <section class="mn-sec"><h2 id="sec-overview">總覽</h2><div id="mon-overview"></div></section>
+  <section class="mn-sec"><h2 id="sec-pool">魚池地圖</h2><div id="mon-pool"></div></section>
+  <section class="mn-sec"><h2 id="sec-diag">CPA 為什麼變貴</h2><div id="mon-diag"></div></section>
+  <section class="mn-sec"><h2 id="sec-asc">ASC / CIBS 策略</h2><div id="mon-asc"></div></section>
+  <section class="mn-sec"><h2 id="sec-ads">進行中廣告</h2><div id="mon-ads"></div></section>
   <div class="mn-foot" id="mnFoot"></div>
 </div>
 
@@ -172,8 +172,8 @@ body{
     $('mnFoot').textContent = M.version + ' · ' + (window.MON_OVERVIEW || {}).version + ' · ' + (window.MON_DIAG || {}).version + ' · ' + (window.MON_ASC || {}).version + ' · ' + (window.MON_ADS || {}).version + ' · ' + (window.MON_POOL || {}).version + ' · 資料每 5 分鐘自動更新';
     drawBrands(); drawRange();
   });
-  M.on('warn', function (msg) { $('mnErr').style.display = 'block'; $('mnErr').textContent = 'ℹ️ ' + msg; });
-  M.on('error', function (msg) { hideLoading(); $('mnErr').style.display = 'block'; $('mnErr').textContent = '⚠️ ' + msg; $('mnUpd').textContent = '讀取失敗'; });
+  M.on('warn', function (msg) { $('mnErr').style.display = 'block'; $('mnErr').textContent = '' + msg; });
+  M.on('error', function (msg) { hideLoading(); $('mnErr').style.display = 'block'; $('mnErr').textContent = '' + msg; $('mnUpd').textContent = '讀取失敗'; });
 
   M.init();
   //  每 5 分鐘自動更新(分頁在背景時不抓)

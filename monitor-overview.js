@@ -82,7 +82,7 @@
       ['CPA 單次購買成本', t.purchases ? F.money(t.cpa) : '—', deltaHtml(t.cpa, p.cpa, false), '越低越好'],
       ['點擊率 CTR', F.pct(t.ctr), deltaHtml(t.ctr, p.ctr, true), '連結點擊 ÷ 曝光']
     ];
-    return '<div class="mo-card"><div class="mo-h">📊 這段期間成績 <small>' + esc(rangeText(d.range)) + '</small></div>'
+    return '<div class="mo-card"><div class="mo-h">這段期間成績 <small>' + esc(rangeText(d.range)) + '</small></div>'
       + '<div class="mo-kpis">' + items.map(function (x) {
         return '<div class="mo-kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="d">' + x[2] + '</div>'
           + (x[3] ? '<div class="s">' + x[3] + '</div>' : '') + '</div>';
@@ -171,7 +171,7 @@
       fq >= fw ? '<span class="mo-tag bad">同一群人看太多次</span>' : fq >= fw * 0.75 ? '<span class="mo-tag warn">快飽和</span>' : '<span class="mo-tag good">還有新客可觸及</span>',
       '每個人平均看到幾次 = 曝光 ÷ 觸及人數。超過 ' + fw + ' 次,點擊率通常開始往下掉(疲乏)。']);
 
-    return '<div class="mo-card"><div class="mo-h">🧠 直客經理才會算的數字'
+    return '<div class="mo-card"><div class="mo-h">直客經理才會算的數字'
       + '<label class="mo-margin">毛利率 <input id="mo-margin" type="number" min="1" max="99" step="1" value="' + (mg || '') + '" placeholder="%"> %</label></div>'
       + '<div class="mo-kpis">' + cards.map(function (x) {
         return '<div class="mo-kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="d">' + x[2] + '</div><div class="s">' + x[3] + '</div></div>';
@@ -198,7 +198,7 @@
         var prev = steps[i - 1][1], keep = prev ? s[1] / prev * 100 : 0;
         drop = keep > 100
           ? '<div class="mo-drop">每人看 ' + (keep / 100).toFixed(1) + ' 頁</div>'      // 像素每看一頁算一次,會比點擊多
-          : '<div class="mo-drop' + (i === worst ? ' worst' : '') + '">留下 ' + keep.toFixed(keep < 1 ? 2 : 1) + '%' + (i === worst ? ' ⚠️' : '') + '</div>';
+          : '<div class="mo-drop' + (i === worst ? ' worst' : '') + '">留下 ' + keep.toFixed(keep < 1 ? 2 : 1) + '%' + (i === worst ? ' ' : '') + '</div>';
       } else drop = '<div class="mo-drop"></div>';
       return '<div class="mo-step"><div class="n">' + s[0] + '</div><div class="mo-bar"><i style="width:' + w.toFixed(1) + '%"></i><span>' + F.num(s[1]) + '</span></div>' + drop + '</div>';
     }).join('');
@@ -213,7 +213,7 @@
       }[b] || '';
       tip = '<b>最大漏洞:</b>「' + a + ' → ' + b + '」只留下 ' + (worstRate * 100).toFixed(1) + '%。' + hint;
     }
-    return '<div class="mo-card"><div class="mo-h">🔻 客人在哪一步跑掉 <small>以人次計</small></div><div class="mo-funnel">' + rows + '</div>'
+    return '<div class="mo-card"><div class="mo-h">客人在哪一步跑掉 <small>以人次計</small></div><div class="mo-funnel">' + rows + '</div>'
       + '<div class="mo-note">' + (tip || '<b>怎麼看:</b>每一列是上一關「留下來的比例」,紅字是掉最多的那一關。') + ' 漏斗後段(加購 → 購買)的問題通常在網站,不在廣告。</div></div>';
   }
 
@@ -253,7 +253,7 @@
       line = '<b>五六日 ROAS ' + weR.toFixed(2) + ' / 平日 ' + wkR.toFixed(2) + '(' + better + ')。</b>'
         + (weR > wkR * 1.1 ? '可以用 ASC「預算排程」把五~日預算加高、平日降低(一週總額不變),Meta 簡報建議測 2~4 週。' : '');
     }
-    return '<div class="mo-card mo-trend"><div class="mo-h">📈 近 28 天走勢 <small>不含今天(還沒跑完)· 滑鼠移到柱子看當天</small></div>' + svg
+    return '<div class="mo-card mo-trend"><div class="mo-h">近 28 天走勢 <small>不含今天(還沒跑完)· 滑鼠移到柱子看當天</small></div>' + svg
       + '<div class="mo-legend"><span><i style="background:rgba(124,109,250,0.55)"></i>每日花費</span><span><i style="background:#FA6D9B"></i>ROAS</span><span><i style="background:rgba(109,250,194,0.25)"></i>週末</span></div>'
       + '<div class="mo-note">' + (line || '') + ' 固定看 28 天,不跟著上面的日期變,才看得出週期。</div></div>';
   }

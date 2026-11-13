@@ -125,7 +125,7 @@
       var fatCls = r.fat == null ? 'na' : r.fat >= 60 ? 'hi' : r.fat >= 35 ? 'mid' : 'ok';
       var fatTxt = r.fat == null ? '—' : (r.fat >= 60 ? '換 ' : r.fat >= 35 ? '注意 ' : '') + r.fat;
       var learn = r.learning === 'FAIL' ? ' · <span class="mo-down">學習受限</span>' : r.learning === 'LEARNING' ? ' · 學習中' : '';
-      var fmtIcon = r.format === 'video' ? '🎬' : '🖼';
+      var fmtIcon = r.format === 'video' ? '' : '';
       return '<tr>'
         + '<td><div class="md-ad">' + (r.thumb ? '<img loading="lazy" src="' + esc(r.thumb) + '" alt="">' : '<div class="ph"></div>')
         + '<div style="min-width:0"><div class="nm" title="' + esc(r.name) + '">' + fmtIcon + ' ' + esc(r.name) + '</div><div class="cp" title="' + esc(r.campaign + ' › ' + r.adset) + '">' + esc(r.campaign) + learn + '</div></div></div></td>'
@@ -148,13 +148,13 @@
     var tired = rows.filter(function (r) { return r.fat != null && r.fat >= 60; }).sort(function (a, b) { return b.spend - a.spend; });
     var lose = rows.filter(function (r) { return r.losing; }).sort(function (a, b) { return b.spend - a.spend; });
     var items = [];
-    tired.slice(0, 3).forEach(function (r) { items.push('<div>🔁 <b>' + esc(r.name) + '</b> 疲乏 ' + r.fat + '(' + r.why.map(esc).join('、') + ')——準備接棒素材,或先放預熱活動。</div>'); });
+    tired.slice(0, 3).forEach(function (r) { items.push('<div><b>' + esc(r.name) + '</b> 疲乏 ' + r.fat + '(' + r.why.map(esc).join('、') + ')——準備接棒素材,或先放預熱活動。</div>'); });
     if (lose.length) {
       var lost = lose.reduce(function (s, r) { return s + r.spend; }, 0);
-      items.push('<div>💸 有 <b>' + lose.length + '</b> 則廣告 ROAS 低於 ' + (lose[0].be || 0).toFixed(2) + '(' + (parseFloat(M.state.cfg['margin_' + M.state.brand]) ? '損益兩平' : 'ROAS 目標') + '),共花了 ' + F.money(lost) + '。點上方「虧錢的」看是哪幾則。</div>');
+      items.push('<div>有 <b>' + lose.length + '</b> 則廣告 ROAS 低於 ' + (lose[0].be || 0).toFixed(2) + '(' + (parseFloat(M.state.cfg['margin_' + M.state.brand]) ? '損益兩平' : 'ROAS 目標') + '),共花了 ' + F.money(lost) + '。點上方「虧錢的」看是哪幾則。</div>');
     }
     if (!items.length) return '';
-    return '<div class="mo-card"><div class="mo-h">🚨 現在該處理的廣告</div><div class="md-alert">' + items.join('') + '</div></div>';
+    return '<div class="mo-card"><div class="mo-h">現在該處理的廣告</div><div class="md-alert">' + items.join('') + '</div></div>';
   }
 
   function render(d) {
@@ -171,7 +171,7 @@
       return '<button class="md-chip' + (view.filter === c[0] ? ' on' : '') + '" data-f="' + c[0] + '">' + c[1] + ' ' + counts[c[0]] + '</button>';
     }).join('');
     el.innerHTML = alertHtml()
-      + '<div class="mo-card"><div class="mo-h">📋 進行中的廣告 <small>' + rows.length + ' 則 · 關掉的不列 · 點欄位標題排序</small></div>'
+      + '<div class="mo-card"><div class="mo-h">進行中的廣告 <small>' + rows.length + ' 則 · 關掉的不列 · 點欄位標題排序</small></div>'
       + '<div class="md-bar">' + chips + '<input class="md-search" id="md-q" placeholder="搜尋廣告 / 行銷活動名稱" value="' + esc(view.q) + '"></div>'
       + '<div id="md-tblwrap">' + tableHtml(filtered()) + '</div>'
       + '<div class="mo-note"><b>疲乏怎麼算:</b>看「近 3 天 vs 前 7 天」的變化,不是只看平均——點擊率掉 + CPM 漲 + 頻率高,三個一起出現就是同一群人看膩了。<b>≥60 該換素材、35~59 注意。</b>「上線」是廣告建立到今天幾天。'
