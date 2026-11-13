@@ -79,6 +79,7 @@ body{
   </div>
   <div class="mn-tabs">
     <a class="mn-tab on" href="#sec-overview">總覽</a>
+    <a class="mn-tab" href="#sec-pool">魚池地圖</a>
     <a class="mn-tab" href="#sec-diag">CPA 診斷</a>
     <a class="mn-tab" href="#sec-asc">ASC / CIBS 策略</a>
     <a class="mn-tab" href="#sec-ads">進行中廣告</a>
@@ -90,17 +91,19 @@ body{
   <div class="mn-err" id="mnErr"></div>
   <div class="mn-smr" id="mnSmr">🧾 這個品牌有接 SMR:Meta 回報的營收會灌水(像素重複算),<b>真實成交、口袋錢以 SMR 為準</b> → <a href="https://smr.raby.com.tw/" target="_blank" rel="noopener">打開 SMR 真實成交</a></div>
   <section class="mn-sec"><h2 id="sec-overview">📊 總覽</h2><div id="mon-overview"></div></section>
+  <section class="mn-sec"><h2 id="sec-pool">🐟 魚池地圖</h2><div id="mon-pool"></div></section>
   <section class="mn-sec"><h2 id="sec-diag">🩺 CPA 為什麼變貴</h2><div id="mon-diag"></div></section>
   <section class="mn-sec"><h2 id="sec-asc">🎯 ASC / CIBS 策略</h2><div id="mon-asc"></div></section>
   <section class="mn-sec"><h2 id="sec-ads">📋 進行中廣告</h2><div id="mon-ads"></div></section>
   <div class="mn-foot" id="mnFoot"></div>
 </div>
 
-<script src="monitor-data.js?v=1.3"></script>
+<script src="monitor-data.js?v=1.4"></script>
 <script src="monitor-overview.js?v=1.3"></script>
 <script src="monitor-diagnose.js?v=1.2.1"></script>
-<script src="monitor-asc.js?v=1.0"></script>
+<script src="monitor-asc.js?v=1.2"></script>
 <script src="monitor-ads.js?v=1.0"></script>
+<script src="monitor-pool.js?v=1.0"></script>
 <script>
 (function () {
   var M = window.MON;
@@ -143,7 +146,7 @@ body{
   var tabs = document.querySelectorAll('.mn-tab');
   window.addEventListener('scroll', function () {
     var cur = 'sec-overview';
-    ['sec-overview', 'sec-diag', 'sec-asc', 'sec-ads'].forEach(function (id) { var el = $(id); if (el && el.getBoundingClientRect().top < 200) cur = id; });
+    ['sec-overview', 'sec-pool', 'sec-diag', 'sec-asc', 'sec-ads'].forEach(function (id) { var el = $(id); if (el && el.getBoundingClientRect().top < 200) cur = id; });
     tabs.forEach(function (t) { t.classList.toggle('on', t.getAttribute('href') === '#' + cur); });
   }, { passive: true });
 
@@ -166,7 +169,7 @@ body{
     if (!d.warn) $('mnErr').style.display = 'none';
     var t = new Date(d.fetchedAt);
     $('mnUpd').textContent = (d.stale ? '上次的 ' : d.cached ? '暫存 ' : '最新 ') + t.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) + (d.loadMs != null && d.loadMs > 50 ? ' · ' + (d.loadMs / 1000).toFixed(1) + ' 秒' : '');
-    $('mnFoot').textContent = M.version + ' · ' + (window.MON_OVERVIEW || {}).version + ' · ' + (window.MON_DIAG || {}).version + ' · ' + (window.MON_ASC || {}).version + ' · ' + (window.MON_ADS || {}).version + ' · 資料每 5 分鐘自動更新';
+    $('mnFoot').textContent = M.version + ' · ' + (window.MON_OVERVIEW || {}).version + ' · ' + (window.MON_DIAG || {}).version + ' · ' + (window.MON_ASC || {}).version + ' · ' + (window.MON_ADS || {}).version + ' · ' + (window.MON_POOL || {}).version + ' · 資料每 5 分鐘自動更新';
     drawBrands(); drawRange();
   });
   M.on('warn', function (msg) { $('mnErr').style.display = 'block'; $('mnErr').textContent = 'ℹ️ ' + msg; });
