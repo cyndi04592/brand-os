@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand OS 連線測試</title>
+<!--
+  nettest.html v1.0(2026-11-14)Brand OS 連線測試
+  給在香港 / 深圳 / 開不開 VPN 的人打開:一鍵測完 Brand OS 用到的每個服務連不連得到、
+  連到哪個 Cloudflare 機房、AI(Claude)從那個機房會不會被擋,結果自動回報給 RA(ads-monitor geo_report)。
+  ⚠️ 這頁故意放在 ai.raby.com.tw(不放 workers.dev):workers.dev 在大陸常被擋,放那邊連測試頁都打不開。
+  不用登入、不扣點數、不存 IP。
+-->
+<style>
+:root{--bg:#0a0a0f;--card:rgba(255,255,255,0.04);--line:rgba(255,255,255,0.08);--t1:#fff;--t2:#c8c8d8;--t3:#8a8aa0;--ok:#6DFAC2;--bad:#FA6D9B;--warn:#ffce6b;--gold:#7C6DFA}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t2);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;line-height:1.7}
+.wrap{max-width:560px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:20px;color:var(--t1);margin:0 0 4px}
+.sub{font-size:12.5px;color:var(--t3);margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+label{font-size:12px;color:var(--t3);display:block;margin-bottom:6px}
+input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,0.3);color:#fff;font-size:16px;font-family:inherit}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+button{padding:14px 10px;border-radius:12px;border:0;font-size:15px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,var(--gold),#FA6D9B)}
+button.alt{background:transparent;border:1px solid var(--gold)}
+button:disabled{opacity:.5}
+.row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border-bottom:0}
+.row .n{color:var(--t1)}
+.ok{color:var(--ok);font-weight:800}.bad{color:var(--bad);font-weight:800}.wait{color:var(--t3)}.warn{color:var(--warn);font-weight:800}
+.big{font-size:17px;font-weight:800;margin:4px 0}
+.note{font-size:12px;color:var(--t3);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Brand OS 連線測試</h1>
+  <div class="sub">約 15 秒測完。不用登入、不扣點數。結果會自動傳給 RA。</div>
+
+  <div class="card" id="start">
+    <label for="who">你是誰 / 在哪裡(選填,例:Alex 深圳辦公室)</label>
+    <input id="who" maxlength="30" placeholder="名字或地點">
+    <div class="btns">
+      <button data-vpn="no">我沒開 VPN</button>
+      <button class="alt" data-vpn="yes">我有開 VPN</button>
+    </div>
+    <div class="note">如果方便,請兩種各測一次:先不開 VPN 測,再打開 VPN 測。</div>
+  </div>
+
+  <div class="card" id="res" style="display:none">
+    <div id="where" class="note" style="margin-top:0"></div>
+    <div id="ai" class="big wait">AI 功能:檢查中…</div>
+    <div id="list"></div>
+    <div id="sent" class="note"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var MON = 'https://ads-monitor.calm-sunset-6b66.workers.dev';
+  var CHECKS = [
+    ['Brand OS 網站', location.origin + '/favicon.ico', 'same'],
+    ['Brand OS 主系統', 'https://kol-proxy.calm-sunset-6b66.workers.dev/', 'nc'],
+    ['廣告圖系統', 'https://photoroom-proxy.calm-sunset-6b66.workers.dev/', 'nc'],
+    ['廣告監控系統', MON + '/?geo=json', 'geo'],
+    ['Google 登入元件', 'https://accounts.google.com/gsi/client', 'nc'],
+    ['Google 字型', 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC', 'nc'],
+    ['素材圖庫', 'https://cdn.raby.com.tw/favicon.ico', 'nc'],
+    ['廣告數據(Meta)', 'https://www.facebook.com/favicon.ico', 'nc']
+  ];
+  var $ = function (id) { return document.getElementById(id); };
+  var running = false;
+
+  function withTimeout(p, ms) {
+    return new Promise(function (res) {
+      var done = false;
+      var t = setTimeout(function () { if (!done) { done = true; res({ ok: false, timeout: true }); } }, ms);
+      p.then(function (v) { if (!done) { done = true; clearTimeout(t); res(v); } },
+             function () { if (!done) { done = true; clearTimeout(t); res({ ok: false }); } });
+    });
+  }
+  function one(c) {
+    var t0 = Date.now(), u = c[1] + (c[1].indexOf('?') < 0 ? '?' : '&') + 'x=' + t0;
+    var p;
+    if (c[2] === 'geo') p = fetch(u, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { return { ok: !!j.ok, geo: j }; });
+    else if (c[2] === 'same') p = fetch(u, { cache: 'no-store' }).then(function () { return { ok: true }; });
+    else p = fetch(u, { mode: 'no-cors', cache: 'no-store' }).then(function () { return { ok: true }; });
+    return withTimeout(p, 12000).then(function (r) { r.s = Math.round((Date.now() - t0) / 100) / 10; r.n = c[0]; return r; });
+  }
+
+  function run(vpn) {
+    if (running) return; running = true;
+    document.querySelectorAll('[data-vpn]').forEach(function (b) { b.disabled = true; });
+    $('res').style.display = 'block';
+    $('list').innerHTML = CHECKS.map(function (c, i) {
+      return '<div class="row"><span class="n">' + c[0] + '</span><span class="wait" id="c' + i + '">檢查中…</span></div>';
+    }).join('');
+    $('ai').className = 'big wait'; $('ai').textContent = 'AI 功能:檢查中…';
+    $('sent').textContent = '';
+    var results = [], geo = null;
+    Promise.all(CHECKS.map(function (c, i) {
+      return one(c).then(function (r) {
+        results[i] = r;
+        var el = $('c' + i);
+        el.className = r.ok ? 'ok' : 'bad';
+        el.textContent = r.ok ? '連得到(' + r.s + ' 秒)' : '連不到';
+        if (r.ok && r.s > 4) { el.className = 'warn'; el.textContent = '很慢(' + r.s + ' 秒)'; }
+        if (r.geo) geo = r.geo;
+      });
+    })).then(function () {
+      if (geo) {
+        $('where').textContent = '你連到的機房:' + (geo.colo || '?') + '(' + [geo.city, geo.country].filter(Boolean).join(' ') + ')' + (geo.isp ? ' · ' + geo.isp : '');
+        var v = geo.claude && geo.claude.verdict;
+        $('ai').className = 'big ' + (v === 'ok' ? 'ok' : v === 'blocked' ? 'bad' : 'warn');
+        $('ai').textContent = v === 'ok' ? 'AI 功能:可以用' : v === 'blocked' ? 'AI 功能:會被擋(寫腳本、產人設會失敗)' : 'AI 功能:看不出來';
+      } else {
+        $('ai').className = 'big bad';
+        $('ai').textContent = 'AI 功能:連不到後台,沒辦法測';
+      }
+      var report = {
+        who: $('who').value.trim(), vpn: vpn,
+        checks: results.map(function (r) { return { n: r.n, ok: !!r.ok, s: r.s }; }),
+        claude: geo ? { colo: geo.colo, verdict: geo.claude && geo.claude.verdict } : null
+      };
+      return withTimeout(fetch(MON, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'geo_report', report: report }) })
+        .then(function (r) { return r.json(); }), 12000);
+    }).then(function (j) {
+      $('sent').innerHTML = j && j.ok ? '<span class="ok">結果已自動傳給 RA,謝謝!</span>' : '<span class="bad">沒辦法自動回傳,請把這個畫面截圖傳給 RA。</span>';
+    }).catch(function () {
+      $('sent').innerHTML = '<span class="bad">沒辦法自動回傳,請把這個畫面截圖傳給 RA。</span>';
+    }).then(function () {
+      running = false;
+      document.querySelectorAll('[data-vpn]').forEach(function (b) { b.disabled = false; });
+    });
+  }
+  document.querySelectorAll('[data-vpn]').forEach(function (b) { b.addEventListener('click', function () { run(b.getAttribute('data-vpn')); }); });
+})();
+</script>
+</body>
+</html>
