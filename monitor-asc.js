@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-asc.js · v1.1(2026-11-13)
-   v1.1:素材數照簡報改回「10 則左右」(v1.0 誤寫 20 則以上,跟同一份簡報打架);CIBS / ASC 素材太多也提醒(實測 13 則 vs 60 則,CPA 差約 4 成)
+   Brand OS · monitor-asc.js · v1.2(2026-11-13)
+   v1.2:重讀整份簡報 —— 兩個數字都對、講的是不同東西:一般 ASC「不少於 20 則」(彈性廣告那段,給系統挑);
+        CIBS 測試「新素材 10 則左右、越多元越好」(CIBS 那段)。v1.1 把兩個混成 10,改回分開判斷。
    新版廣告監控頁「ASC / CIBS 策略」區塊。資料一律跟 window.MON 拿。
    規則全部照 Meta 台灣香港電商團隊「ASC 高效推廣 - 測試進階策略」簡報:
 
@@ -9,7 +10,7 @@
       · 日預算 ≥ CPA × 10 才跑得完學習期;CIBS 建議 CPA × 20~50
       · 花滿了而且 CPA 還在目標內 = 「預算卡住」,這就是 CIBS 要解的問題
    ② 學習期:每個廣告組合一週要 50 次轉換,差幾次一起算
-   ③ 素材:每個 ASC / CIBS 10 則左右、越多元越好;新素材有沒有分到錢(沒分到 → 先預熱)
+   ③ 素材:一般 ASC 不少於 20 則;CIBS 新素材 10 則左右、越多元越好;新素材有沒有分到錢(沒分到 → 先預熱)
    ④ 9:16 直式版位 + 影片/圖片 花費佔比與 ROAS
 
    掛載點:<div id="mon-asc"></div>
@@ -82,7 +83,7 @@
     var groups = { asc: [], cibs: [], rt: [], other: [] };
     camps.forEach(function (c) { groups[M.campaignGroup(c)].push(c); });
 
-    var flags = { constrained: [], thin: [], fewAds: [], manyAds: [], cibsIdle: [] };
+    var flags = { constrained: [], thin: [], fewAds: [], cibsAds: [], cibsIdle: [] };
     var rows = '';
     ['asc', 'cibs', 'rt', 'other'].forEach(function (g) {
       if (!groups[g].length) return;
@@ -111,8 +112,8 @@
         //  預算卡住:花滿 + CPA 在目標內(有設 CPA 警戒就用它,沒有就用區間 CPA)
         var target = cfg.cpaWarn || rangeCpa;
         if (used >= 0.9 && c.todayPurchases && c.todayCpa <= target) flags.constrained.push(c.name);
-        if ((g === 'asc' || g === 'cibs') && agg.n && agg.n < 6) flags.fewAds.push(c.name + '(' + agg.n + ' 則)');
-        if ((g === 'asc' || g === 'cibs') && agg.n > 20) flags.manyAds.push(c.name + '(' + agg.n + ' 則)');
+        if (g === 'asc' && agg.n && agg.n < 20) flags.fewAds.push(c.name + '(' + agg.n + ' 則)');
+        if (g === 'cibs' && agg.n && (agg.n < 6 || agg.n > 20)) flags.cibsAds.push(c.name + '(' + agg.n + ' 則)');
 
         rows += '<tr><td><div class="ma-name" title="' + esc(c.name) + '">' + esc(c.name) + '</div></td>'
           + '<td><div class="ma-pace"><i class="' + barCls + '" style="width:' + Math.min(100, used * 100).toFixed(0) + '%"></i><b style="left:' + (frac * 100).toFixed(0) + '%"></b><span>'
@@ -129,8 +130,8 @@
     if (flags.constrained.length) notes.push('💰 <b>預算卡住了:</b>' + flags.constrained.map(esc).join('、') + ' 今天已花滿,而且 CPA 還在目標內——這就是簡報說的「受限於預算」。可以考慮改用 CIBS(設 CPA 目標 + 日預算拉高到 CPA 的 20~50 倍)。');
     if (flags.thin.length) notes.push('📉 <b>日預算太小:</b>' + flags.thin.map(esc).join('、') + ' 的日預算不到 CPA 的 10 倍,一週湊不滿 50 次轉換,學習期很難跑完。');
     if (flags.cibsIdle.length) notes.push('🧊 <b>CIBS 待命中:</b>' + flags.cibsIdle.map(esc).join('、') + ' 今天幾乎沒花——<b>這是設計,不是故障</b>。Meta 官方:CIBS = 成本目標 + 超額預算,轉換率穩定時花不出去是正常的,平日自動縮、旺日(週末 / 檔期)才放量。只有<b>連旺日都放不出量</b>,才代表目標設得比盈虧平衡點還嚴,這時再小步調整(一次一點、等學習)。');
-    if (flags.fewAds.length) notes.push('🧩 <b>素材太少:</b>' + flags.fewAds.map(esc).join('、') + '。Meta 簡報建議每個 ASC / CIBS 放 <b>10 則左右、越多元越好</b>,系統才有得挑,也比較不會疲乏。');
-    if (flags.manyAds.length) notes.push('🧺 <b>素材太多:</b>' + flags.manyAds.map(esc).join('、') + '。簡報建議 10 則左右;放太多,錢會被分散、每則都分不到量。實測過:同一個帳號放 13 則,CPA 比放 60 則低快 4 成。先留表現好、風格不同的 10 則左右。');
+    if (flags.fewAds.length) notes.push('🧩 <b>ASC 素材太少:</b>' + flags.fewAds.map(esc).join('、') + '。Meta 建議每個 ASC 行銷活動<b>不少於 20 則</b>廣告,系統才有得挑;素材多可用「彈性廣告」把相似的分組。');
+    if (flags.cibsAds.length) notes.push('🧪 <b>CIBS 素材數:</b>' + flags.cibsAds.map(esc).join('、') + '。CIBS 建議用<b>新素材 10 則左右、越多元越好</b>(避免素材疲乏;旺季大家加預算推高競價,多元素材能拉高轉換率)。');
 
     return '<div class="mo-card"><div class="mo-h">🎯 今天的行銷活動 <small>白線 = 現在時間(一天過了 ' + Math.round(frac * 100) + '%)</small></div>'
       + '<div class="ma-scroll"><table class="ma-tbl"><thead><tr><th>行銷活動</th><th>今日花費 / 日預算</th><th>速度</th><th>今日 CPA</th><th>期間 CPA</th><th>日預算是 CPA 幾倍</th><th>廣告數</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
@@ -173,7 +174,7 @@
     var fSpend = fresh.reduce(function (s, a) { return s + a.spend; }, 0);
     var fShare = tot ? fSpend / tot * 100 : 0, cShare = ads.length ? fresh.length / ads.length * 100 : 0;
     var fTag, fTxt;
-    if (!fresh.length) { fTag = tag('warn', '近 7 天沒上新素材'); fTxt = '舊素材遲早會疲乏。旺季前建議每週補新素材,ASC 一次放 10 則左右。'; }
+    if (!fresh.length) { fTag = tag('warn', '近 7 天沒上新素材'); fTxt = '舊素材遲早會疲乏。旺季前建議每週補新素材;開 CIBS 時用新素材 10 則左右。'; }
     else if (fShare < cShare * 0.5) { fTag = tag('bad', '新素材分不到錢'); fTxt = '新素材佔廣告數 ' + cShare.toFixed(0) + '%,卻只分到 ' + fShare.toFixed(0) + '% 花費——系統一直推舊的。建議先放「預熱行銷活動」小預算跑到約 50 次轉換,表現好的再複製進 ASC。'; }
     else { fTag = tag('good', '新素材有在跑'); fTxt = '新素材佔廣告數 ' + cShare.toFixed(0) + '%,分到 ' + fShare.toFixed(0) + '% 花費。'; }
     boxes.push('<div class="ma-box"><div class="t">🔥 新素材(7 天內)</div><div class="v">' + fresh.length + ' 則 · ' + F.pct(fShare, 0) + ' 花費</div>' + fTag + '<div style="margin-top:6px">' + fTxt + '</div></div>');
