@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-asc.js · v1.3(2026-11-13)v1.3 訊息 / 名單品牌:只留「今天的行銷活動」和「學習期」(換字),素材與版位(看 ROAS)不出;v1.2(2026-11-13)
+   Brand OS · monitor-asc.js · v1.4(2026-11-13)v1.4 加「ASC 的錢花在誰身上」(新客 / 舊客,Meta 依帳號的現有顧客設定分);v1.3(2026-11-13)v1.3 訊息 / 名單品牌:只留「今天的行銷活動」和「學習期」(換字),素材與版位(看 ROAS)不出;v1.2(2026-11-13)
    v1.2:重讀整份簡報 —— 兩個數字都對、講的是不同東西:一般 ASC「不少於 20 則」(彈性廣告那段,給系統挑);
         CIBS 測試「新素材 10 則左右、越多元越好」(CIBS 那段)。v1.1 把兩個混成 10,改回分開判斷。
    新版廣告監控頁「ASC / CIBS 策略」區塊。資料一律跟 window.MON 拿。
@@ -209,6 +209,34 @@
       + '<div class="mo-note"><b>為什麼重要:</b>簡報重點——預估轉換率(eCVR)才是影響成效最重要的因素,而素材多元化是拉高它最直接的方法。旺季大家都加預算、競價變貴,素材是唯一不用多花錢就能贏的地方。</div></div>';
   }
 
+  //  v1.4 ASC 的錢花在誰身上(Meta 依帳號設定的「現有顧客」分;沒設定就全部是 unknown)
+  function segBlock(d) {
+    var sg = d.segments; if (!sg) return '';
+    var head = '<div class="mo-card"><div class="mo-h">ASC 的錢花在誰身上 <small>ASC / CIBS 行銷活動 · 這段期間</small></div>';
+    if (!Array.isArray(sg)) return head + '<div class="mo-note" style="margin-top:0;border:0;padding:0">Meta 這次沒給新客 / 舊客的數字(' + esc(sg.error || '') + '),晚點再看。</div></div>';
+    var NAME = { prospecting: ['新客', '從沒買過'], new_customers: ['新客', '從沒買過'], engaged: ['有互動過', '看過粉專、加過購物車'], engaged_customers: ['有互動過', '看過粉專、加過購物車'],
+      existing: ['舊客', '已經買過'], existing_customers: ['舊客', '已經買過'], unknown: ['分不出來', 'Meta 沒辦法判斷'] };
+    var tot = sg.reduce(function (s, x) { return s + x.spend; }, 0) || 1;
+    var known = sg.filter(function (x) { return x.key !== 'unknown'; });
+    if (!known.length || known.reduce(function (s, x) { return s + x.spend; }, 0) < tot * 0.05) {
+      return head + '<div style="padding:14px;border-radius:10px;background:rgba(250,109,155,.07);border:1px dashed rgba(250,109,155,.35);font-size:11.5px;line-height:1.8">'
+        + '這個廣告帳號還沒告訴 Meta「誰是你的舊客」,Meta 分不出來。<br>設定一次就好:廣告管理員 → 廣告帳號設定 → <b style="color:#fff">受眾區隔</b> → 選「已購買的人」(像素購買事件)或上傳顧客名單。設定後隔天開始有數字,以前的分不回來。</div></div>';
+    }
+    var order = ['prospecting', 'new_customers', 'engaged', 'engaged_customers', 'existing', 'existing_customers', 'unknown'];
+    sg = sg.slice().sort(function (a, b) { return order.indexOf(a.key) - order.indexOf(b.key); });
+    var oldShare = 0;
+    var rows = sg.map(function (x) {
+      var nm = NAME[x.key] || [x.key, ''], sh = x.spend / tot * 100;
+      if (nm[0] === '舊客') oldShare += sh;
+      return '<tr><td><b>' + nm[0] + '</b> <span style="font-size:10px;color:var(--t3,#8a8aa0)">' + nm[1] + '</span></td><td>' + F.money(x.spend) + '</td><td>' + sh.toFixed(0) + '%</td><td>' + F.num(x.purchases) + '</td><td><b>' + (x.spend ? x.roas.toFixed(2) : '—') + '</b></td></tr>';
+    }).join('');
+    var tg = oldShare > 25 ? '<span class="mo-tag bad">舊客花費偏多</span>' : '<span class="mo-tag good">主要在拓新客</span>';
+    return head.replace('</small></div>', '</small>' + tg + '</div>')
+      + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px"><thead><tr style="color:var(--t3,#8a8aa0)"><th style="text-align:left;padding:6px 4px">對象</th><th>花費</th><th>佔比</th><th>購買</th><th>ROAS</th></tr></thead><tbody>'
+      + rows.replace(/<td>/g, '<td style="text-align:right;padding:7px 4px;border-top:1px solid rgba(255,255,255,.04)">').replace(/<tr><td style="text-align:right;/g, '<tr><td style="text-align:left;') + '</tbody></table></div>'
+      + '<div class="mo-note">舊客 ROAS 通常最漂亮,但他們本來就會回來買。舊客花費超過 25% 標紅:ASC 在撿現成的,不是在拓客,可以在 Meta 設「舊客預算上限」。舊客 ' + oldShare.toFixed(0) + '%。</div></div>';
+  }
+
   // ── 畫 ──────────────────────────────────────────────────
   function render(d) {
     var el = document.getElementById('mon-asc'); if (!el || !d) return;
@@ -218,7 +246,7 @@
         + '<div class="mo-note" style="margin-top:0">這個品牌的主要目標是「' + w.name + '」,ASC / CIBS 是購物用的策略,這區只看預算節奏和學習期(學習期一樣要一週 50 ' + w.unit + w.conv + ')。</div>';
       return;
     }
-    el.innerHTML = campaignBlock(d) + learningBlock(d) + creativeBlock(d);
+    el.innerHTML = campaignBlock(d) + segBlock(d) + learningBlock(d) + creativeBlock(d);
   }
   function skeleton() {
     var el = document.getElementById('mon-asc'); if (!el) return;
@@ -230,5 +258,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_ASC = { version: 'monitor-asc v1.3', render: render };
+  window.MON_ASC = { version: 'monitor-asc v1.4', render: render };
 })();

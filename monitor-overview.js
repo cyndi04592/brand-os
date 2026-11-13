@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-overview.js · v1.5(2026-11-13)v1.5 趨勢可切換指標(含影片 3 秒留住率)、購物漏斗加「頁面真的打開」;v1.4(2026-11-13)v1.4 主要目標是訊息 / 名單的品牌:六大數字、直客指標、漏斗、趨勢整套換成私訊(名單)版;v1.0(2026-11-11)
+   Brand OS · monitor-overview.js · v1.6(2026-11-13)v1.6 漏斗下面加「這些購買是怎麼來的」(點了才買 / 只看過就買)、訊息品牌加「私訊裡有幾個是新面孔」;v1.5(2026-11-13)v1.5 趨勢可切換指標(含影片 3 秒留住率)、購物漏斗加「頁面真的打開」;v1.4(2026-11-13)v1.4 主要目標是訊息 / 名單的品牌:六大數字、直客指標、漏斗、趨勢整套換成私訊(名單)版;v1.0(2026-11-11)
    新版廣告監控頁「總覽」區塊。資料一律跟 monitor-data.js(window.MON)拿。
 
    這區不是照抄 Meta 後台——是把直客經理開會才會算給你看的數字算出來:
@@ -375,7 +375,7 @@
         return '<div class="mo-kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="d">' + x[2] + '</div><div class="s">' + x[3] + '</div></div>';
       }).join('') + keep + '</div>'
       + '<div class="mo-note"><b>為什麼重要:</b>Meta 後台只給你平均,這區算的是變化與底線。右上角填課程 / 服務單價和' + w.conv + '後的成交率(例:100 個' + w.conv + '有 8 個報名 = 8%),就算得出' + w.per + '最多能花多少,下面「進行中廣告」也會用它標出太貴的素材。</div></div>';
-    el.innerHTML = kpiBlockG(d, w) + ins + funnelBlockG(d, w) + trendWrap(d, trendBlockG(d, w));
+    el.innerHTML = kpiBlockG(d, w) + facesBlock(d, w) + ins + funnelBlockG(d, w) + trendWrap(d, trendBlockG(d, w));
     bindTrend(d, function () { return trendBlockG(d, w); });
     ['price', 'close'].forEach(function (k) {
       var inp = document.getElementById('mo-' + k);
@@ -444,12 +444,48 @@
     };
   }
 
+  //  v1.6 兩段式長條(共用)
+  function splitBar(a, aLab, b, bLab, bColor) {
+    var tot = a + b || 1, pa = a / tot * 100;
+    return '<div style="display:flex;height:30px;border-radius:8px;overflow:hidden;margin:6px 0 10px">'
+      + '<div style="width:' + Math.max(pa, 8).toFixed(1) + '%;background:linear-gradient(90deg,var(--gold,#7C6DFA),#9a8dfb);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden">' + aLab + ' ' + F.num(a) + '(' + pa.toFixed(0) + '%)</div>'
+      + '<div style="flex:1;background:' + bColor + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden">' + bLab + ' ' + F.num(b) + '</div></div>';
+  }
+  function kpi2(l1, v1, s1, l2, v2, s2) {
+    var one = function (l, v, s) { return '<div class="mo-kpi"><div class="l">' + l + '</div><div class="v">' + v + '</div><div class="d">' + s + '</div></div>'; };
+    return '<div class="mo-kpis">' + one(l1, v1, s1) + one(l2, v2, s2) + '</div>';
+  }
+  //  v1.6 這些購買是怎麼來的:點了廣告 7 天內買 vs 只看過 1 天內買
+  function attribBlock(d) {
+    var a = d.attrib; if (!a || !(a.click + a.view)) return '';
+    var t = d.totals, vs = a.view / (a.click + a.view) * 100;
+    var roasAll = t.spend ? (a.clickRev + a.viewRev) / t.spend : 0, roasClick = t.spend ? a.clickRev / t.spend : 0;
+    var less = roasAll ? (1 - roasClick / roasAll) * 100 : 0;
+    var tagH = vs > 40 ? '<span class="mo-tag bad">只看過的太多,ROAS 水分偏多</span>' : vs > 25 ? '<span class="mo-tag warn">只看過的偏多</span>' : '<span class="mo-tag good">大部分是點了才買</span>';
+    return '<div class="mo-card"><div class="mo-h">這些購買是怎麼來的 <small>' + esc(rangeText(d.range)) + ' · 購買 ' + F.num(a.click + a.view) + ' 筆</small>' + tagH + '</div>'
+      + splitBar(a.click, '點了廣告才買', a.view, '只看過就買', vs > 40 ? 'rgba(250,109,155,0.75)' : 'rgba(250,109,155,0.45)')
+      + kpi2('Meta 說的 ROAS', roasAll.toFixed(2), '<span style="color:var(--t3,#8a8aa0)">點 + 看過都算</span>',
+        '只算點了才買的 ROAS', roasClick.toFixed(2), less > 0.5 ? '<span class="mo-down">比 Meta 說的少 ' + less.toFixed(0) + '%</span>' : '')
+      + '<div class="mo-note">「只看過就買」= 滑過廣告沒點,1 天內自己去官網買了,Meta 也算成廣告的功勞。有些是真的被廣告影響,有些本來就會買。超過 40% 標紅:看「只算點了才買」那個數字比較準。</div></div>';
+  }
+  //  v1.6 私訊裡有幾個是新面孔(訊息品牌)
+  function facesBlock(d, w) {
+    var t = d.totals; if (w.key !== 'message' || !t.purchases || t.newContacts == null) return '';
+    var nw = Math.min(t.newContacts || 0, t.purchases), old = t.purchases - nw, cap = M.cap(d);
+    var cNew = nw ? t.spend / nw : 0;
+    var sub = !nw ? '' : cap ? (cNew <= cap ? '<span class="mo-up">在「最多能花」' + F.money(cap) + ' 以內</span>' : '<span class="mo-down">超過「最多能花」' + F.money(cap) + '</span>') : '<span class="mo-down">這個才是真的拓客成本</span>';
+    return '<div class="mo-card"><div class="mo-h">私訊裡有幾個是新面孔 <small>' + esc(rangeText(d.range)) + ' · 私訊 ' + F.num(t.purchases) + ' 則</small></div>'
+      + splitBar(nw, '第一次來問', old, '老朋友回來問', 'rgba(255,255,255,0.12)')
+      + kpi2('一則私訊多少', F.money(t.cpa), '<span style="color:var(--t3,#8a8aa0)">新舊都算</span>', '找到一個新面孔多少', nw ? F.money(cNew) : '—', sub)
+      + '<div class="mo-note">老學生回來問上課時間也會算一則私訊。只看「第一次來問」才知道廣告有沒有帶來新學生。填了單價和成交率,這裡會直接跟「最多能花」比。</div></div>';
+  }
+
   // ── 畫 ──────────────────────────────────────────────────
   function mount() { return document.getElementById('mon-overview'); }
   function render(d) {
     var el = mount(); if (!el || !d) return;
     if (M.goal && M.goal(d) !== 'purchase') { renderG(el, d, M.W(d)); return; }
-    el.innerHTML = kpiBlock(d) + insiderBlock(d) + funnelBlock(d) + trendWrap(d, trendBlock(d));
+    el.innerHTML = kpiBlock(d) + insiderBlock(d) + funnelBlock(d) + attribBlock(d) + trendWrap(d, trendBlock(d));
     bindTrend(d, function () { return trendBlock(d); });
     var inp = document.getElementById('mo-margin');
     if (inp) inp.addEventListener('change', function () {
@@ -468,5 +504,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_OVERVIEW = { version: 'monitor-overview v1.5', render: render };
+  window.MON_OVERVIEW = { version: 'monitor-overview v1.6', render: render };
 })();
