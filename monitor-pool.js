@@ -1,5 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-pool.js · v1.2(2026-11-13)
+   Brand OS · monitor-pool.js · v1.3(2026-11-13)
+   v1.3:魚的大小補回三條魚 + 比例欄(沒接 SMR 顯示「待接」);單數圓圈依位數縮字不再爆框;右側文字改直排不再被切
    v1.2:RA 選定「漏斗一張圖」取代魚池剖面:左 = 網子(高度照飼料、深淺照 1 元換回)、中 = 看到→買單漏斗、右 = 客人花的錢;手機改直式
    v1.1:RA「長條看不懂,要一眼看出魚在哪、用什麼網子、網子多少錢、撈出來客人花多少」→ 最上面改成魚池剖面圖
         (照 Meta 簡報『出價 × 預算』圖的畫法:一圈 = 一批成交的客人),明細表留在下面
@@ -166,6 +167,30 @@
     return [['看到廣告', wan(t.reach || 0) + '人'], ['點進網站', wan(t.linkClicks || 0) + '人'], ['看商品', wan(t.viewContent || 0) + '次'],
       ['加購物車', wan(t.addToCart || 0) + '次'], ['結帳', wan(t.checkout || 0) + '次']];
   }
+  //  魚的大小:三條魚 + 比例(d.orderSizes = {big, mid, small} 百分比,接 SMR 後才有)
+  function fishIcon(x, y, L, fill) {
+    var h = L * 0.52;
+    return '<path d="M' + (x - L / 2 + 2) + ' ' + y + ' L' + (x - L / 2 - L * 0.34) + ' ' + (y - h * 0.48) + ' L' + (x - L / 2 - L * 0.34) + ' ' + (y + h * 0.48) + ' Z" fill="' + fill + '"/>'
+      + '<ellipse cx="' + x + '" cy="' + y + '" rx="' + L / 2 + '" ry="' + h / 2 + '" fill="' + fill + '"/>';
+  }
+  function sizeRows(d, x, y, xr, gap, big) {
+    var os = d.orderSizes || null, s = '';
+    [['大魚', 'NT$3,000 以上', 'big', 26], ['小魚', 'NT$1,000–2,999', 'mid', 18], ['幼魚', 'NT$1,000 以下', 'small', 12]].forEach(function (r, i) {
+      var yy = y + i * gap, has = os && os[r[2]] != null;
+      s += fishIcon(x + 16, yy, r[3], FB.b2)
+        + '<text x="' + (x + 44) + '" y="' + (yy + 5) + '" font-size="' + (big ? 14 : 13) + '" font-weight="800" fill="' + FB.ink + '">' + r[0] + '</text>'
+        + '<text x="' + (x + 84) + '" y="' + (yy + 5) + '" font-size="' + (big ? 12.5 : 11.5) + '" fill="' + FB.sub + '">' + r[1] + '</text>'
+        + '<text x="' + xr + '" y="' + (yy + 7) + '" font-size="' + (has ? (big ? 21 : 18) : (big ? 14 : 12)) + '" font-weight="900" fill="' + (has ? FB.b1 : '#b4b9d6') + '" text-anchor="end">' + (has ? Math.round(os[r[2]]) + '%' : '待接') + '</text>';
+    });
+    if (!os) s += '<text x="' + x + '" y="' + (y + gap * 2 + 34) + '" font-size="' + (big ? 12 : 10.5) + '" fill="' + FB.b2 + '">比例要接上 SMR / 電商後台的每筆訂單才算得出來</text>';
+    return s;
+  }
+  function orderCircle(cx, cy, n) {
+    var txt = F.num(n || 0), fs = txt.length >= 6 ? 14 : txt.length === 5 ? 16 : txt.length === 4 ? 18 : 20;
+    return '<circle cx="' + cx + '" cy="' + cy + '" r="40" fill="' + FB.b1 + '" stroke="#fff" stroke-width="6"/>'
+      + '<text x="' + cx + '" y="' + (cy + 2) + '" font-size="' + fs + '" font-weight="900" fill="#fff" text-anchor="middle">' + txt + '</text>'
+      + '<text x="' + cx + '" y="' + (cy + 19) + '" font-size="11" fill="#dfe3ff" text-anchor="middle">單</text>';
+  }
   function dots(n, fn) { var s = '', seed = 7; for (var i = 0; i < n; i++) { seed = (seed * 9301 + 49297) % 233280; var a = seed / 233280; seed = (seed * 9301 + 49297) % 233280; var b = seed / 233280; s += fn(Math.pow(a, 1.6) * 0.93, b * 2 - 1); } return s; }
   function netsOrdered(list) {
     var order = { reach: 0, traffic: 1, auto: 2, gate: 3, rt: 4 };
@@ -210,22 +235,19 @@
     var per = t.purchases ? Math.round((t.reach || 0) / t.purchases) : 0;
     s += '<path d="M' + cx0 + ' ' + (Y0 - 40) + ' v-12 H' + PX + ' v12" fill="none" stroke="' + FB.b2 + '" stroke-width="2"/>'
       + '<text x="' + (cx0 + PX) / 2 + '" y="' + (Y0 - 62) + '" font-size="15" font-weight="900" fill="' + FB.b1 + '" text-anchor="middle">' + (per ? '客人一路往下掉:每 ' + F.num(per) + ' 個看到的人,有 1 個買' : '這段期間還沒有人買') + '</text>'
-      + '<circle cx="' + PX + '" cy="' + PY + '" r="34" fill="' + FB.b1 + '" stroke="#fff" stroke-width="6"/>'
-      + '<text x="' + PX + '" y="' + (PY - 2) + '" font-size="20" font-weight="900" fill="#fff" text-anchor="middle">' + F.num(t.purchases || 0) + '</text>'
-      + '<text x="' + PX + '" y="' + (PY + 17) + '" font-size="11" fill="#dfe3ff" text-anchor="middle">單</text>'
+      + orderCircle(PX, PY, t.purchases)
       + '<rect x="' + (PX - 52) + '" y="' + (Y1 + 40) + '" width="104" height="44" rx="10" fill="' + FB.b1 + '"/>'
       + '<text x="' + PX + '" y="' + (Y1 + 58) + '" font-size="12" fill="#dfe3ff" text-anchor="middle">買單</text>'
       + '<text x="' + PX + '" y="' + (Y1 + 77) + '" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">' + F.num(t.purchases || 0) + ' 單</text>';
     //  右:客人花的錢
     var FX = 1560, aov = t.purchases ? (t.revenue || 0) / t.purchases : 0;
     s += '<path d="M' + PX + ' ' + PY + ' L' + FX + ' ' + (PY - 170) + ' L' + FX + ' ' + (PY + 170) + ' Z" fill="url(#mpFan)" opacity="0.55"/>'
-      + '<path d="M' + (PX + 34) + ' ' + (PY - 12) + ' h70 M' + (PX + 34) + ' ' + (PY + 12) + ' h70" stroke="#fff" stroke-width="5"/>'
+      + '<path d="M' + (PX + 40) + ' ' + (PY - 12) + ' h64 M' + (PX + 40) + ' ' + (PY + 12) + ' h64" stroke="#fff" stroke-width="5"/>'
       + '<text x="' + (PX + 130) + '" y="' + (Y0 + 10) + '" font-size="15" font-weight="900" fill="' + FB.ink + '">客人花的錢</text>'
       + '<text x="' + (PX + 130) + '" y="' + (Y0 + 52) + '" font-size="34" font-weight="900" fill="' + FB.b1 + '">' + F.money(t.revenue || 0) + '</text>'
       + '<text x="' + (PX + 130) + '" y="' + (Y0 + 78) + '" font-size="13" fill="' + FB.sub + '">1 元飼料換回 ' + (t.roas || 0).toFixed(2) + ' 元 · 平均一單 ' + F.money(aov) + '</text>'
       + '<text x="' + (PX + 130) + '" y="' + (PY + 90) + '" font-size="15" font-weight="900" fill="' + FB.ink + '">魚的大小(一單花多少)</text>'
-      + '<text x="' + (PX + 130) + '" y="' + (PY + 116) + '" font-size="12.5" fill="' + FB.sub + '">大魚 NT$3,000 以上 · 小魚 1,000–2,999 · 幼魚 1,000 以下</text>'
-      + '<text x="' + (PX + 130) + '" y="' + (PY + 140) + '" font-size="12.5" fill="' + FB.b2 + '">接上 SMR / 電商後台的每筆訂單後顯示比例</text>';
+      + sizeRows(d, PX + 130, PY + 132, FX - 20, 46, true);
     //  色階
     [[FB.b1, '1 元換回 3 以上'], [FB.b15, '2 ~ 3'], [FB.b2, '1.2 ~ 2'], [FB.b3, '1.2 以下'], [FB.off, '沒開']].forEach(function (c, i) {
       s += '<rect x="' + (70 + i * 130) + '" y="' + (H - 42) + '" width="14" height="14" rx="3" fill="' + c[0] + '" stroke="#d5d8f0"/><text x="' + (70 + i * 130 + 20) + '" y="' + (H - 30) + '" font-size="12" fill="' + FB.sub + '">' + c[1] + '</text>';
@@ -273,17 +295,16 @@
       s += '<text x="' + tx.toFixed(0) + '" y="' + yy.toFixed(0) + '" font-size="11" fill="' + tc + '" text-anchor="' + anc + '" opacity=".85">' + st[0] + '</text>'
         + '<text x="' + tx.toFixed(0) + '" y="' + (yy + 19).toFixed(0) + '" font-size="15" font-weight="900" fill="' + tc + '" text-anchor="' + anc + '">' + st[1] + '</text>';
     });
-    s += '<circle cx="' + PX + '" cy="' + CB + '" r="34" fill="' + FB.b1 + '" stroke="#fff" stroke-width="6"/><text x="' + PX + '" y="' + (CB - 2) + '" font-size="20" font-weight="900" fill="#fff" text-anchor="middle">' + F.num(t.purchases || 0) + '</text>'
-      + '<text x="' + PX + '" y="' + (CB + 16) + '" font-size="11" fill="#dfe3ff" text-anchor="middle">單</text>';
-    y = CB + 50;
+    s += orderCircle(PX, CB, t.purchases);
+    y = CB + 56;
     var aov = t.purchases ? (t.revenue || 0) / t.purchases : 0;
-    s += '<rect x="16" y="' + y + '" width="' + (W - 32) + '" height="170" rx="16" fill="#fff"/>'
+    s += '<rect x="16" y="' + y + '" width="' + (W - 32) + '" height="' + (d.orderSizes ? 232 : 254) + '" rx="16" fill="#fff"/>'
       + '<text x="32" y="' + (y + 28) + '" font-size="13" font-weight="900" fill="' + FB.ink + '">客人花的錢</text>'
       + '<text x="32" y="' + (y + 64) + '" font-size="30" font-weight="900" fill="' + FB.b1 + '">' + F.money(t.revenue || 0) + '</text>'
       + '<text x="32" y="' + (y + 86) + '" font-size="11.5" fill="' + FB.sub + '">1 元飼料換回 ' + (t.roas || 0).toFixed(2) + ' 元 · 平均一單 ' + F.money(aov) + '</text>'
       + '<text x="32" y="' + (y + 120) + '" font-size="12.5" font-weight="900" fill="' + FB.ink + '">魚的大小(一單花多少)</text>'
-      + '<text x="32" y="' + (y + 142) + '" font-size="11" fill="' + FB.b2 + '">接上 SMR / 電商後台的每筆訂單後顯示比例</text>';
-    y += 190;
+      + sizeRows(d, 32, y + 150, W - 32, 34, false);
+    y += (d.orderSizes ? 232 : 254) + 20;
     return { W: W, H: Math.ceil(y), svg: '<rect width="' + W + '" height="' + Math.ceil(y) + '" fill="' + FB.bg + '"/>' + s };
   }
   function funnelBlock(list, d, narrow) {
@@ -344,5 +365,5 @@
 
   M.on('data', render);
   if (M.state.data) render(M.state.data);
-  window.MON_POOL = { version: 'monitor-pool v1.2' };
+  window.MON_POOL = { version: 'monitor-pool v1.3' };
 })();
