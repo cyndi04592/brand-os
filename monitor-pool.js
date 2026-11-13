@@ -1,5 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-pool.js · v1.0(2026-11-13)
+   Brand OS · monitor-pool.js · v1.1(2026-11-13)
+   v1.1:RA「長條看不懂,要一眼看出魚在哪、用什麼網子、網子多少錢、撈出來客人花多少」→ 最上面改成魚池剖面圖
+        (照 Meta 簡報『出價 × 預算』圖的畫法:一圈 = 一批成交的客人),明細表留在下面
    新版廣告監控頁「魚池地圖」區塊:一眼看懂這個品牌的廣告帳號是怎麼「撒網」的。
    資料一律跟 window.MON 拿(需要 ads-monitor v1.8:廣告帶出價方式 / CPA 目標 / ROAS 下限 / 廣告組合預算)。
 
@@ -116,16 +118,7 @@
     var sum = {};
     LAYERS.forEach(function (L) { sum[L.k] = { b: 0, s: 0, p: 0, items: [] }; });
     list.forEach(function (c) { var o = sum[c.layer]; o.b += c.budget || 0; o.s += c.spend; o.p += c.purchases; o.items.push(c); });
-    function bar(key, tot) {
-      return '<div class="mp-split">' + LAYERS.map(function (L) {
-        var v = sum[L.k][key], p = tot ? v / tot * 100 : 0;
-        return p > 0 ? '<i style="width:' + p.toFixed(1) + '%;background:' + L.color + '" title="' + L.name + ' ' + p.toFixed(0) + '%">' + (p >= 9 ? p.toFixed(0) + '%' : '') + '</i>' : '';
-      }).join('') + '</div>';
-    }
-    var legend = '<div class="mo-legend">' + LAYERS.map(function (L) { return '<span><i style="background:' + L.color + '"></i>' + L.name + '</span>'; }).join('') + '</div>';
-    var html = '<div class="mp-row2"><span>每日預算</span>' + bar('b', totB) + '</div>'
-      + '<div class="mp-row2"><span>實際花費</span>' + bar('s', totS) + '</div>'
-      + '<div class="mp-row2"><span>撈到的單</span>' + bar('p', totP) + '</div>' + legend;
+    var html = '';
 
     LAYERS.forEach(function (L) {
       var o = sum[L.k]; if (!o.items.length) return;
@@ -154,10 +147,82 @@
         + '<div style="font-size:10.5px;color:var(--t3,#8a8aa0);margin-top:2px">' + L.desc + '</div>'
         + '<div class="mp-scroll"><table class="mp-tbl"><thead><tr><th>行銷活動</th><th>出價門檻</th><th>日預算</th><th>平均每天花</th><th>期間花費</th><th>' + (top ? '觸及 / 點擊' : '撈到') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
     });
-    return '<div class="mo-card"><div class="mo-h">各層怎麼撒網 <small>' + list.length + ' 個進行中的行銷活動 · 期間 ' + rangeDays(d) + ' 天</small></div>' + html
-      + '<div class="mo-note"><b>怎麼看:</b>上面三條是同一個帳號的錢怎麼分:每天預算放在哪一層、實際花在哪一層、單是哪一層撈到的。'
-      + '「平均每天花」÷「日預算」= 網子撐開了幾成。「出價門檻」= 這張網只撈多划算的魚(ROAS ≥ 3 = 每花 1 元至少要賺回 3 元;CPA ≤ 800 = 一單成本超過 800 就不搶)。'
+    return '<div class="mo-card"><div class="mo-h">各層明細 <small>' + list.length + ' 個進行中的行銷活動 · 期間 ' + rangeDays(d) + ' 天</small></div>' + html
+      + '<div class="mo-note"><b>怎麼看:</b>「平均每天花」÷「日預算」= 網子撐開了幾成。「出價門檻」= 這張網只撈多划算的魚(ROAS ≥ 3 = 每花 1 元至少要賺回 3 元;CPA ≤ 800 = 一單成本超過 800 就不搶)。'
       + '門檻越嚴,單越便宜但量越少;花費、單數只算進行中的廣告。</div></div>';
+  }
+
+  //  ⓪ 魚池剖面圖(v1.1):一層 = 一種魚;一張網 = 一個行銷活動;網子寬 = 花的錢;網裡的圈 = 撈到的客人
+  var FISH = {
+    reach: '還不認識你的人', traffic: '有興趣、會點進來的人', auto: '準備買的新客', gate: '準備買的新客(划算的)', rt: '看過、加過購物車的人'
+  };
+  function short(n, k) { n = String(n || '').replace(/^【[^】]*】/, function (m) { return m; }); return n.length > k ? n.slice(0, k) + '…' : n; }
+  function pondBlock(list, d) {
+    var bands = LAYERS.map(function (L) { return { L: L, items: list.filter(function (c) { return c.layer === L.k; }) }; }).filter(function (b) { return b.items.length; });
+    if (!bands.length) return '';
+    var conv = list.filter(function (c) { return c.layer !== 'reach' && c.layer !== 'traffic'; });
+    var maxP = Math.max.apply(null, conv.map(function (c) { return c.purchases; }).concat([1]));
+    var unitP = Math.max(1, Math.ceil(maxP / 36));
+    var topL = list.filter(function (c) { return c.layer === 'reach' || c.layer === 'traffic'; });
+    var maxR = Math.max.apply(null, topL.map(function (c) { return c.reach || c.clicks; }).concat([1]));
+    var unitR = Math.max(1, Math.ceil(maxR / 36));
+    var W = 1000, X0 = 150, AW = W - X0 - 16, NH = 104, BH = NH + 92, GAP = 14, H = bands.length * BH + 10;
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;min-width:720px" font-family="Noto Sans TC, sans-serif">'
+      + '<defs><pattern id="mpNet" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H12M0 0V12" stroke="rgba(255,255,255,0.10)" stroke-width="1"/></pattern></defs>';
+    bands.forEach(function (bd, bi) {
+      var y0 = bi * BH + 6, L = bd.L, top = L.k === 'reach' || L.k === 'traffic';
+      //  水層底色(越下面越深)
+      svg += '<rect x="0" y="' + y0 + '" width="' + W + '" height="' + (BH - 6) + '" rx="12" fill="' + L.color + '" fill-opacity="' + (0.05 + bi * 0.025).toFixed(3) + '"/>';
+      svg += '<text x="14" y="' + (y0 + 26) + '" font-size="15" font-weight="800" fill="' + L.color + '">' + esc(L.name) + '</text>';
+      svg += '<text x="14" y="' + (y0 + 46) + '" font-size="11" fill="#a9a9bd">魚:' + esc(FISH[L.k]) + '</text>';
+      var tS = bd.items.reduce(function (s, c) { return s + c.spend; }, 0), tR = bd.items.reduce(function (s, c) { return s + c.revenue; }, 0), tP = bd.items.reduce(function (s, c) { return s + c.purchases; }, 0);
+      svg += '<text x="14" y="' + (y0 + 72) + '" font-size="11" fill="#d8d8e6">網子共 ' + esc(F.money(tS)) + '</text>';
+      if (!top) svg += '<text x="14" y="' + (y0 + 90) + '" font-size="11" fill="#d8d8e6">撈到 ' + tP + ' 單</text>'
+        + '<text x="14" y="' + (y0 + 108) + '" font-size="11" fill="#6DFAC2">客人花 ' + esc(F.money(tR)) + '</text>';
+      //  網子:寬度照花費比例(最少 110),同一層排一列
+      var items = bd.items.slice().sort(function (a, b) { return b.spend - a.spend; }).slice(0, 7);
+      var n = items.length, minW = n > 5 ? 96 : 118, free = AW - n * minW - (n - 1) * GAP, totSp = items.reduce(function (s, c) { return s + c.spend; }, 0) || 1;
+      var x = X0;
+      items.forEach(function (c) {
+        var w = minW + Math.max(0, free) * (c.spend / totSp), ny = y0 + 12;
+        //  網子
+        svg += '<g><title>' + esc(c.name) + '\n網子:' + esc(c.gate || BID[c.strat] || '自動出價') + '\n花費 ' + F.money(c.spend) + (top ? '\n觸及 ' + F.num(c.reach) + ' 人 · 點擊 ' + F.num(c.clicks) : '\n撈到 ' + c.purchases + ' 單 · 客人花 ' + F.money(c.revenue) + (c.roas ? ' · ROAS ' + c.roas.toFixed(2) : '')) + '</title>'
+          + '<rect x="' + x + '" y="' + ny + '" width="' + w + '" height="' + NH + '" rx="10" fill="url(#mpNet)" stroke="' + L.color + '" stroke-opacity="0.55" stroke-width="1.5"/>';
+        //  網口:門檻(像簡報的「出價」膠囊)
+        var pill = c.gate || (top ? '' : '不設門檻'), pw = pill ? Math.min(w - 10, 18 + pill.length * 9.5) : 0;
+        if (pill) svg += '<line x1="' + x + '" y1="' + (ny + 14) + '" x2="' + (x + w) + '" y2="' + (ny + 14) + '" stroke="#4d8dff" stroke-width="1.5" stroke-dasharray="5 4"/>'
+          + '<rect x="' + (x + (w - pw) / 2) + '" y="' + (ny + 4) + '" width="' + pw + '" height="20" rx="10" fill="#1452c8"/>'
+          + '<text x="' + (x + w / 2) + '" y="' + (ny + 18) + '" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">' + esc(pill) + '</text>';
+        //  網裡的魚:一圈 = unit 單(上層:unit 人)
+        var cnt = top ? Math.round((c.reach || c.clicks) / unitR) : Math.round(c.purchases / unitP);
+        if (!top && c.purchases > 0 && cnt < 1) cnt = 1;
+        cnt = Math.min(cnt, 60);
+        var r = 5.5, cols = Math.max(1, Math.floor((w - 16) / 15)), fy = ny + (pill ? 34 : 18);
+        for (var i = 0; i < cnt; i++) {
+          var cx = x + 12 + (i % cols) * 15 + (Math.floor(i / cols) % 2 ? 4 : 0), cy = ny + NH - 12 - Math.floor(i / cols) * 14;   // 魚沉在網底
+          if (cy < fy) break;
+          svg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy + '" r="' + r + '" fill="' + (top ? 'none' : 'rgba(109,250,194,0.25)') + '" stroke="' + (top ? '#7FD6FF' : '#6DFAC2') + '" stroke-width="1.6"/>';
+        }
+        if (!cnt) svg += '<text x="' + (x + w / 2) + '" y="' + (ny + 66) + '" font-size="11" fill="#8a8aa0" text-anchor="middle">還沒撈到</text>';
+        //  網子底下:名字 / 網子多少錢 / 撈到 / 客人花
+        var ty = ny + NH + 16;
+        svg += '<text x="' + x + '" y="' + ty + '" font-size="11" font-weight="700" fill="#e8e8f0">' + esc(short(c.name, Math.max(6, Math.floor(w / 11)))) + '</text>'
+          + '<text x="' + x + '" y="' + (ty + 17) + '" font-size="11" fill="#c8c8d8">網子 ' + esc(F.money(c.spend)) + '</text>'
+          + (top
+            ? '<text x="' + x + '" y="' + (ty + 33) + '" font-size="11" fill="#7FD6FF">觸及 ' + esc(F.num(c.reach)) + ' 人</text>'
+            : '<text x="' + x + '" y="' + (ty + 33) + '" font-size="11" fill="#6DFAC2">撈到 ' + c.purchases + ' 單 · 客人花 ' + esc(F.money(c.revenue)) + '</text>')
+          + '</g>';
+        x += w + GAP;
+      });
+    });
+    svg += '</svg>';
+    var legend = '<div class="mo-legend"><span><i style="background:rgba(109,250,194,0.6)"></i>一圈 = ' + unitP + ' 單</span>'
+      + (topL.length ? '<span><i style="background:none;border:1.5px solid #7FD6FF;border-radius:50%"></i>一圈 = ' + F.num(unitR) + ' 人(觸及)</span>' : '')
+      + '<span><i style="background:#1452c8"></i>網口門檻(出價條件)</span><span>網子越寬 = 花越多錢</span></div>';
+    return '<div class="mo-card"><div class="mo-h">魚池剖面 <small>期間 ' + rangeDays(d) + ' 天 · 滑鼠移到網子上看完整數字</small></div>'
+      + '<div class="mp-scroll">' + svg + '</div>' + legend
+      + '<div class="mo-note"><b>怎麼看:</b>由上往下,水越深、魚越接近要買。每一張網 = 一個行銷活動:<b>網口的藍色膠囊</b>是它的出價門檻(不設門檻 = 預算內能撈的都撈;ROAS ≥ 3 = 每花 1 元至少要賺回 3 元的才撈),'
+      + '<b>網子多寬</b>代表花了多少錢,<b>網裡的圈</b>是撈到的客人,底下寫網子花多少、撈到幾單、客人總共花了多少錢。客人花的錢是 Meta 回報的營收,有接 SMR 的品牌以 SMR 為準。</div></div>';
   }
 
   //  ② 四格(只看轉換層)
@@ -195,10 +260,10 @@
     injectCss();
     var list = build(d);
     if (!list.length) { el.innerHTML = '<div class="mo-card"><div class="mo-h">魚池地圖</div><div class="mo-flat" style="font-size:11px">目前沒有進行中的行銷活動。</div></div>'; return; }
-    el.innerHTML = layerBlock(list, d) + quadBlock(list);
+    el.innerHTML = pondBlock(list, d) + quadBlock(list) + layerBlock(list, d);
   }
 
   M.on('data', render);
   if (M.state.data) render(M.state.data);
-  window.MON_POOL = { version: 'monitor-pool v1.0' };
+  window.MON_POOL = { version: 'monitor-pool v1.1' };
 })();
