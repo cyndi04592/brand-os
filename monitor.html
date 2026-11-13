@@ -80,8 +80,8 @@ body{
   <div class="mn-tabs">
     <a class="mn-tab on" href="#sec-overview">總覽</a>
     <a class="mn-tab" href="#sec-pool">魚池地圖</a>
-    <a class="mn-tab" href="#sec-diag">CPA 診斷</a>
-    <a class="mn-tab" href="#sec-asc">ASC / CIBS 策略</a>
+    <a class="mn-tab" href="#sec-diag" id="mnTabDiag">CPA 診斷</a>
+    <a class="mn-tab" href="#sec-asc" id="mnTabAsc">ASC / CIBS 策略</a>
     <a class="mn-tab" href="#sec-ads">進行中廣告</a>
   </div>
 </div>
@@ -98,12 +98,12 @@ body{
   <div class="mn-foot" id="mnFoot"></div>
 </div>
 
-<script src="monitor-data.js?v=1.4"></script>
-<script src="monitor-overview.js?v=1.3"></script>
-<script src="monitor-diagnose.js?v=1.2.1"></script>
-<script src="monitor-asc.js?v=1.2"></script>
-<script src="monitor-ads.js?v=1.0"></script>
-<script src="monitor-pool.js?v=1.3"></script>
+<script src="monitor-data.js?v=1.5"></script>
+<script src="monitor-overview.js?v=1.4"></script>
+<script src="monitor-diagnose.js?v=1.3"></script>
+<script src="monitor-asc.js?v=1.3"></script>
+<script src="monitor-ads.js?v=1.1"></script>
+<script src="monitor-pool.js?v=1.4"></script>
 <script>
 (function () {
   var M = window.MON;
@@ -164,8 +164,15 @@ body{
   }
   function hideLoading() { $('mnLoading').classList.remove('on'); }
   M.on('loading', function () { $('mnUpd').textContent = '讀取中…'; $('mnErr').style.display = 'none'; showLoading(); });
+  //  主要目標是訊息 / 名單的品牌:兩個區塊的標題跟著換
+  function drawTitles(d) {
+    var w = M.W ? M.W(d) : null, g = w ? w.key : 'purchase';
+    var T = g === 'purchase' ? ['CPA 診斷', 'CPA 為什麼變貴', 'ASC / CIBS 策略', 'ASC / CIBS 策略']
+      : [w.conv + '成本診斷', w.per + w.conv + '為什麼變貴', '預算與學習期', '預算節奏與學習期'];
+    $('mnTabDiag').textContent = T[0]; $('sec-diag').textContent = T[1]; $('mnTabAsc').textContent = T[2]; $('sec-asc').textContent = T[3];
+  }
   M.on('data', function (d) {
-    hideLoading();
+    hideLoading(); drawTitles(d);
     if (!d.warn) $('mnErr').style.display = 'none';
     var t = new Date(d.fetchedAt);
     $('mnUpd').textContent = (d.stale ? '上次的 ' : d.cached ? '暫存 ' : '最新 ') + t.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) + (d.loadMs != null && d.loadMs > 50 ? ' · ' + (d.loadMs / 1000).toFixed(1) + ' 秒' : '');

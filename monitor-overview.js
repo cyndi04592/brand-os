@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-overview.js · v1.0(2026-11-11)
+   Brand OS · monitor-overview.js · v1.4(2026-11-13)v1.4 主要目標是訊息 / 名單的品牌:六大數字、直客指標、漏斗、趨勢整套換成私訊(名單)版;v1.0(2026-11-11)
    新版廣告監控頁「總覽」區塊。資料一律跟 monitor-data.js(window.MON)拿。
 
    這區不是照抄 Meta 後台——是把直客經理開會才會算給你看的數字算出來:
@@ -258,10 +258,134 @@
       + '<div class="mo-note">' + (line || '') + ' 固定看 28 天,不跟著上面的日期變,才看得出週期。</div></div>';
   }
 
+  // ══ v1.4 訊息 / 名單版(Worker v2.1 已把 purchases / cpa 換成私訊數 / 一則成本)══
+  function kpiBlockG(d, w) {
+    var t = d.totals, p = d.previous;
+    var rate = t.linkClicks ? t.purchases / t.linkClicks * 100 : 0, rateP = p.linkClicks ? p.purchases / p.linkClicks * 100 : 0;
+    var items = [
+      ['花費', F.money(t.spend), deltaHtml(t.spend, p.spend, true), ''],
+      [w.conv + '數', F.num(t.purchases) + ' ' + w.unit, deltaHtml(t.purchases, p.purchases, true), ''],
+      [w.cpaLong, t.purchases ? F.money(t.cpa) : '—', deltaHtml(t.cpa, p.cpa, false), '花費 ÷ ' + w.conv + '數,越低越好'],
+      ['看到廣告', F.num(t.reach) + ' 人', deltaHtml(t.reach, p.reach, true), '觸及人數'],
+      ['點進來', F.num(t.linkClicks) + ' 次', deltaHtml(t.linkClicks, p.linkClicks, true), '點擊率 ' + F.pct(t.ctr)],
+      [w.rateLong, t.linkClicks ? F.pct(rate, 1) : '—', deltaHtml(rate, rateP, true), w.conv + '數 ÷ 點進來']
+    ];
+    return '<div class="mo-card"><div class="mo-h">這段期間成績 <small>' + esc(rangeText(d.range)) + ' · 主要目標:' + w.name + '</small></div>'
+      + '<div class="mo-kpis">' + items.map(function (x) {
+        return '<div class="mo-kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="d">' + x[2] + '</div>'
+          + (x[3] ? '<div class="s">' + x[3] + '</div>' : '') + '</div>';
+      }).join('') + '</div>'
+      + '<div class="mo-note"><b>怎麼看:</b>「上一期」= 往前推同樣天數。這個品牌的主要目標是「' + w.name + '」(後台設定),所以不看營收和 ROAS,看'
+      + w.conv + '數和' + w.per + '多少錢。' + w.cpaLong + '漲了,往下看「' + w.cpa.replace('成本', '') + '為什麼變貴」。</div></div>';
+  }
+  function insiderBlockG(d, w) {
+    var t = d.totals, p = d.previous, cfg = M.state.cfg, cards = [];
+    var pr = parseFloat(cfg['price_' + d.brand]) || 0, cr = parseFloat(cfg['close_' + d.brand]) || 0, cap = M.cap(d);
+    //  多花的錢換到幾則
+    var dS = t.spend - p.spend, dC = t.purchases - p.purchases, mTxt, mTag, mExp;
+    if (!p.spend || Math.abs(dS) < Math.max(1000, t.spend * 0.05)) {
+      mTxt = '—'; mTag = '<span class="mo-tag warn">花費變化太小,算不準</span>'; mExp = '兩期花費差不到 5%,看不出加減預算的效果。';
+    } else if (dS > 0) {
+      var per1k = dC / dS * 1000, avg1k = t.spend ? t.purchases / t.spend * 1000 : 0;
+      mTxt = (per1k >= 0 ? '多 ' : '少 ') + Math.abs(per1k).toFixed(1) + ' ' + w.unit;
+      mTag = per1k >= avg1k * 0.7 ? '<span class="mo-tag good">加的錢有換到' + w.conv + '</span>' : (per1k > 0 ? '<span class="mo-tag warn">加的錢效率變差</span>' : '<span class="mo-tag bad">加的錢沒換到' + w.conv + '</span>');
+      mExp = '每多花 1,000 元。這期比上期多花 ' + F.money(dS) + ',' + w.conv + (dC >= 0 ? '多了 ' + dC : '反而少了 ' + (-dC)) + ' ' + w.unit + '。';
+    } else {
+      mTxt = '少花 ' + F.money(-dS); mTag = dC >= 0 ? '<span class="mo-tag good">砍的是沒效率的錢</span>' : '<span class="mo-tag warn">' + w.conv + '也跟著少</span>';
+      mExp = '這期比上期少花 ' + F.money(-dS) + ',' + w.conv + (dC >= 0 ? '反而多了 ' + dC : '少了 ' + (-dC)) + ' ' + w.unit + '。';
+    }
+    cards.push(['多花的錢換到幾' + w.unit, mTxt, mTag, mExp]);
+    //  一則最多能花(= 購物版的損益兩平)
+    var cTxt, cTag, cExp;
+    if (cap) {
+      cTxt = F.money(cap);
+      cTag = !t.purchases ? '' : t.cpa <= cap * 0.6 ? '<span class="mo-tag good">還有空間加預算</span>' : t.cpa <= cap ? '<span class="mo-tag warn">接近上限</span>' : '<span class="mo-tag bad">' + w.per + '太貴,在虧</span>';
+      cExp = '單價 ' + F.money(pr) + ' × 成交率 ' + cr + '%。目前' + w.per + ' ' + (t.purchases ? F.money(t.cpa) : '—') + '。';
+    } else {
+      cTxt = '—'; cTag = '<span class="mo-tag warn">右上角填單價和成交率</span>';
+      cExp = '填了課程 / 服務單價和' + w.conv + '後的成交率,才算得出' + w.per + '最多能花多少才不虧。';
+    }
+    cards.push([w.per + '最多能花', cTxt, cTag, cExp]);
+    //  千次曝光換到幾則
+    var k = t.impressions ? t.purchases / t.impressions * 1000 : 0, kp = p.impressions ? p.purchases / p.impressions * 1000 : 0;
+    cards.push(['每千次曝光換到', k.toFixed(2) + ' ' + w.unit, k ? deltaHtml(k, kp, true) : '', '每被看 1000 次換到幾' + w.unit + w.conv + '。CPM 漲(旺季搶量)它沒跟著漲,' + w.per + '就會變貴。CPM 成本 ' + F.money(t.cpm) + '。']);
+    return { cards: cards, pr: pr, cr: cr };
+  }
+  function funnelBlockG(d, w) {
+    var t = d.totals;
+    var steps = [['看到廣告', t.reach], ['點進來', t.linkClicks], [w.conv, t.purchases]];
+    var top = steps[0][1] || 1, worst = 1, worstRate = 2;
+    for (var i = 1; i < steps.length; i++) { var r = steps[i - 1][1] ? steps[i][1] / steps[i - 1][1] : 0; if (i > 1 && r < worstRate) { worstRate = r; worst = i; } }
+    var rows = steps.map(function (s, i) {
+      var wd = Math.max(4, Math.sqrt(s[1] / top) * 100), drop = '<div class="mo-drop"></div>';
+      if (i > 0) { var pv = steps[i - 1][1], keep = pv ? s[1] / pv * 100 : 0; drop = '<div class="mo-drop' + (i === worst ? ' worst' : '') + '">留下 ' + keep.toFixed(keep < 1 ? 2 : 1) + '%</div>'; }
+      return '<div class="mo-step"><div class="n">' + s[0] + '</div><div class="mo-bar"><i style="width:' + wd.toFixed(1) + '%"></i><span>' + F.num(s[1]) + '</span></div>' + drop + '</div>';
+    }).join('');
+    rows += '<div class="mo-step"><div class="n">' + w.conv + '後成交</div><div class="mo-bar"><span class="mo-flat" style="color:var(--t3,#8a8aa0)">待接</span></div><div class="mo-drop">Meta 看不到</div></div>';
+    var rate = t.linkClicks ? t.purchases / t.linkClicks * 100 : 0;
+    var hint = w.key === 'message'
+      ? '點進來會私訊的比例 ' + rate.toFixed(1) + '%。偏低時先看自動回覆、開場白、回覆速度,以及粉專上的課程資訊有沒有寫清楚。'
+      : '點進來會留資料的比例 ' + rate.toFixed(1) + '%。偏低時先看表單欄位是不是太多、誘因夠不夠。';
+    return '<div class="mo-card"><div class="mo-h">客人在哪一步跑掉 <small>看到 → 點進來 → ' + w.conv + '</small></div><div class="mo-funnel">' + rows + '</div>'
+      + '<div class="mo-note"><b>怎麼看:</b>' + hint + '最後一關「' + w.conv + '後成交」Meta 拿不到,之後可以接 LINE 或手動回填。</div></div>';
+  }
+  function trendBlockG(d, w) {
+    var today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+    var days = (d.days || []).filter(function (x) { return x.date !== today; });
+    if (!days.length) return '';
+    var W_ = 760, H = 190, pl = 44, pr = 46, pt = 12, pb = 26, iw = W_ - pl - pr, ih = H - pt - pb, n = days.length, bw = iw / n;
+    var maxS = Math.max.apply(null, days.map(function (x) { return x.spend; })) || 1;
+    var costs = days.map(function (x) { return x.purchases ? x.spend / x.purchases : null; });
+    var maxC = Math.max(1, Math.max.apply(null, costs.filter(function (c) { return c != null; }).concat([1])));
+    var svg = '<svg viewBox="0 0 ' + W_ + ' ' + H + '" preserveAspectRatio="none">';
+    days.forEach(function (x, i) {
+      var wd = new Date(x.date + 'T00:00:00+08:00').getDay();
+      if (wd === 0 || wd === 6) svg += '<rect x="' + (pl + i * bw) + '" y="' + pt + '" width="' + bw + '" height="' + ih + '" fill="rgba(109,250,194,0.06)"/>';
+      var h = x.spend / maxS * ih;
+      svg += '<rect x="' + (pl + i * bw + bw * 0.18) + '" y="' + (pt + ih - h) + '" width="' + (bw * 0.64) + '" height="' + h + '" rx="2" fill="rgba(124,109,250,0.55)"><title>'
+        + x.date + '(' + F.weekday(x.date) + ')花費 ' + F.money(x.spend) + ' · ' + w.conv + ' ' + x.purchases + ' ' + w.unit + (x.purchases ? ' · ' + w.per + ' ' + F.money(x.spend / x.purchases) : '') + '</title></rect>';
+      if (i % Math.ceil(n / 7) === 0 || i === n - 1) svg += '<text x="' + (pl + i * bw + bw / 2) + '" y="' + (H - 8) + '" font-size="10" fill="#8a8aa0" text-anchor="middle">' + x.date.slice(5) + '</text>';
+    });
+    var pts = [];
+    costs.forEach(function (c, i) { if (c != null) pts.push((pl + i * bw + bw / 2).toFixed(1) + ',' + (pt + ih - c / maxC * ih).toFixed(1)); });
+    if (pts.length > 1) svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#FA6D9B" stroke-width="2.2" stroke-linejoin="round"/>';
+    svg += '<text x="' + (pl - 6) + '" y="' + (pt + 9) + '" font-size="10" fill="#8a8aa0" text-anchor="end">' + (maxS >= 1000 ? Math.round(maxS / 1000) + 'K' : Math.round(maxS)) + '</text>';
+    svg += '<text x="' + (W_ - pr + 6) + '" y="' + (pt + 9) + '" font-size="10" fill="#FA6D9B">' + Math.round(maxC) + '</text></svg>';
+    var we = { s: 0, p: 0 }, wk = { s: 0, p: 0 };
+    days.forEach(function (x) { var wd = new Date(x.date + 'T00:00:00+08:00').getDay(), g = (wd === 0 || wd === 6 || wd === 5) ? we : wk; g.s += x.spend; g.p += x.purchases; });
+    var line = '';
+    if (we.p && wk.p) {
+      var a = we.s / we.p, b = wk.s / wk.p;
+      line = '<b>五六日' + w.per + ' ' + F.money(a) + ' / 平日 ' + F.money(b) + '(' + (a < b * 0.9 ? '五六日比較便宜' : b < a * 0.9 ? '平日比較便宜' : '週末平日差不多') + ')。</b>';
+    }
+    return '<div class="mo-card mo-trend"><div class="mo-h">近 28 天走勢 <small>不含今天(還沒跑完)· 滑鼠移到柱子看當天</small></div>' + svg
+      + '<div class="mo-legend"><span><i style="background:rgba(124,109,250,0.55)"></i>每日花費</span><span><i style="background:#FA6D9B"></i>' + w.cpaLong + '(線往上 = 變貴)</span><span><i style="background:rgba(109,250,194,0.25)"></i>週末</span></div>'
+      + '<div class="mo-note">' + line + ' 固定看 28 天,不跟著上面的日期變,才看得出週期。</div></div>';
+  }
+  function renderG(el, d, w) {
+    //  直客指標:前 3 格換成訊息版,後面三格(花費集中度 / 月花費級距 / 頻率)跟購物版一樣,直接借購物版算好的
+    var buy = insiderBlock(d), g = insiderBlockG(d, w);
+    var tmp = document.createElement('div'); tmp.innerHTML = buy;
+    var kp = tmp.querySelectorAll('.mo-kpi'), keep = '';
+    for (var i = 4; i < kp.length; i++) keep += kp[i].outerHTML;
+    var ins = '<div class="mo-card"><div class="mo-h">直客經理才會算的數字'
+      + '<label class="mo-margin">單價 <input id="mo-price" type="number" min="1" step="1" value="' + (g.pr || '') + '" placeholder="NT$" style="width:76px"> 成交率 <input id="mo-close" type="number" min="0.1" max="100" step="0.1" value="' + (g.cr || '') + '" placeholder="%"> %</label></div>'
+      + '<div class="mo-kpis">' + g.cards.map(function (x) {
+        return '<div class="mo-kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="d">' + x[2] + '</div><div class="s">' + x[3] + '</div></div>';
+      }).join('') + keep + '</div>'
+      + '<div class="mo-note"><b>為什麼重要:</b>Meta 後台只給你平均,這區算的是變化與底線。右上角填課程 / 服務單價和' + w.conv + '後的成交率(例:100 個' + w.conv + '有 8 個報名 = 8%),就算得出' + w.per + '最多能花多少,下面「進行中廣告」也會用它標出太貴的素材。</div></div>';
+    el.innerHTML = kpiBlockG(d, w) + ins + funnelBlockG(d, w) + trendBlockG(d, w);
+    ['price', 'close'].forEach(function (k) {
+      var inp = document.getElementById('mo-' + k);
+      if (inp) inp.addEventListener('change', function () { var v = parseFloat(inp.value), patch = {}; patch[k + '_' + d.brand] = v > 0 ? v : 0; M.setCfg(patch); });
+    });
+  }
+
   // ── 畫 ──────────────────────────────────────────────────
   function mount() { return document.getElementById('mon-overview'); }
   function render(d) {
     var el = mount(); if (!el || !d) return;
+    if (M.goal && M.goal(d) !== 'purchase') { renderG(el, d, M.W(d)); return; }
     el.innerHTML = kpiBlock(d) + insiderBlock(d) + funnelBlock(d) + trendBlock(d);
     var inp = document.getElementById('mo-margin');
     if (inp) inp.addEventListener('change', function () {
@@ -280,5 +404,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_OVERVIEW = { version: 'monitor-overview v1.3', render: render };
+  window.MON_OVERVIEW = { version: 'monitor-overview v1.4', render: render };
 })();

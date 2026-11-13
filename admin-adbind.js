@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   admin-adbind.js v1.0(2026-11-13)後台「廣告監控綁定」分頁
+   admin-adbind.js v1.1(2026-11-13)v1.1 登入通行證過期自動換新的再試;v1.0後台「廣告監控綁定」分頁
    ・哪個品牌對到哪個 Meta 廣告帳號、主要看什麼目標(購物 / 訊息 / 名單),在這裡設,不用再改程式
    ・資料來源:ads-monitor v2.0 bind_list / bind_set / bind_off + accounts(系統帳號看得到的廣告帳號)
    ・只有 RA 本人(owner)看得到這個分頁;Worker 也會擋
@@ -19,9 +19,17 @@
   }
   function osBrands() { try { return (typeof DB !== 'undefined' && DB.brands) ? DB.brands : []; } catch (e) { return []; } }
   async function call(action, extra) {
-    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(Object.assign({ action: action, token: token() }, extra || {})) });
-    const j = await r.json().catch(() => ({ ok: false, error: '回應格式不對' }));
+    const send = async (tk) => {
+      const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({ action: action, token: tk }, extra || {})) });
+      return { r: r, j: await r.json().catch(() => ({ ok: false, error: '回應格式不對' })) };
+    };
+    let { r, j } = await send(token());
+    //  v1.1 分頁裡的通行證過期、這台電腦存的是新的 → 換新的再問一次
+    if (j && j.code === 'NEED_LOGIN') {
+      let ls = ''; try { ls = localStorage.getItem('bs_auth_token') || ''; } catch (e) {}
+      if (ls && ls !== token()) ({ r, j } = await send(ls));
+    }
     if (!j.ok && !j.accounts) throw new Error(j.error || ('HTTP ' + r.status));
     return j;
   }
@@ -170,5 +178,5 @@
   let _n = 0; const _iv = setInterval(function () { tick(); if (++_n > 120 || isOwner()) clearInterval(_iv); }, 1000);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
 
-  window.AdminAdBind = { load: load, show: show, bind: bind, saveGoal: saveGoal, off: off, on: on, version: '1.0' };
+  window.AdminAdBind = { load: load, show: show, bind: bind, saveGoal: saveGoal, off: off, on: on, version: '1.1' };
 })();

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-diagnose.js · v1.2(2026-11-11)v1.2 加時段出單 + 每天穩定度、捲到才抓;v1.1 大盤
+   Brand OS · monitor-diagnose.js · v1.3(2026-11-13)v1.3 訊息 / 名單品牌換字(MON.T);v1.2(2026-11-11)v1.2 加時段出單 + 每天穩定度、捲到才抓;v1.1 大盤
    新版廣告監控頁「CPA 為什麼變貴」診斷區。資料:MON.state.data(主畫面)+ MON.diag()(診斷包)
 
    核心:CPA = CPM ÷ 1000 ÷ 點擊率 ÷ 購買率(點進來的人有幾 % 買)
@@ -321,8 +321,11 @@
       if (es.some(function (e) { return e.isIntersecting; }) && !seen) { seen = true; if (pending) render(pending); }
     }, { rootMargin: '600px 0px' }).observe(el);
   }
+  //  v1.3 訊息 / 名單品牌:Worker 已把購買換成私訊 / 名單,這裡只換字
+  function T(h, d) { return M.T ? M.T(h, d) : h; }
   function render(d) {
-    var el = document.getElementById('mon-diag'); if (!el || !d) return;
+    var el0 = document.getElementById('mon-diag'); if (!el0 || !d) return;
+    var el = { set innerHTML(h) { el0.innerHTML = T(h, d); } };
     var my = ++seq;
     if (!seen) { pending = d; el.innerHTML = headBlock(d, null) + '<div class="mo-skel" style="height:160px"></div>'; return; }
     el.innerHTML = headBlock(d, null) + '<div class="mo-skel" style="height:160px"></div>';
@@ -344,5 +347,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_DIAG = { version: 'monitor-diagnose v1.2.1', render: render, decompose: decompose };
+  window.MON_DIAG = { version: 'monitor-diagnose v1.3', render: render, decompose: decompose };
 })();

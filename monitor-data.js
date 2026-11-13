@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-data.js · v1.4(2026-11-13)— v1.4:開頁 0 秒先秀上次看的數據(只限同一次登入),Loading 一開頁就出現,身分和數據同時抓;v1.3:加 MON.market() 大盤;v1.2:加 MON.diag() 診斷包;v1.1:Worker 回舊資料(stale)時,15 秒後自動換新的;自動更新不硬敲 Meta
+   Brand OS · monitor-data.js · v1.5(2026-11-13)— v1.5:每個品牌的主要目標(購物 / 訊息 / 名單,後台設定)→ MON.goal() / MON.W() 字詞 / MON.T() 換字 / MON.cap() 一則上限;v1.4:開頁 0 秒先秀上次看的數據(只限同一次登入),Loading 一開頁就出現,身分和數據同時抓;v1.3:加 MON.market() 大盤;v1.2:加 MON.diag() 診斷包;v1.1:Worker 回舊資料(stale)時,15 秒後自動換新的;自動更新不硬敲 Meta
    新版廣告監控頁的「資料管家」——整頁只有這支檔跟後台講話。
    其他區塊檔(總覽 / ASC / 廣告列表 / 小幫手)只跟這支拿資料,不自己打 API。
 
@@ -57,7 +57,18 @@
   }
 
   // ── 跟 Worker 講話 ───────────────────────────────────────
+  //  v1.5 同一個分頁裡的登入通行證(sessionStorage)過期、但這台電腦存的(localStorage)是新的 → 換新的再問一次,不要直接踢回登入頁
   function post(body, timeoutMs) {
+    return post1(body, timeoutMs).then(function (j) {
+      if (!j || j.code !== 'NEED_LOGIN') return j;
+      var ss = '', ls = '';
+      try { ss = sessionStorage.getItem('bs_auth_token') || ''; ls = localStorage.getItem('bs_auth_token') || ''; } catch (_) {}
+      if (!ss || !ls || ss === ls) return j;
+      try { sessionStorage.removeItem('bs_auth_token'); } catch (_) {}
+      return post1(body, timeoutMs);
+    });
+  }
+  function post1(body, timeoutMs) {
     var ctl = new AbortController();
     var tm = setTimeout(function () { ctl.abort(); }, timeoutMs || 30000);
     body.token = token();
@@ -269,6 +280,54 @@
     weekday: function (ymd) { return '日一二三四五六'.charAt(new Date(ymd + 'T00:00:00+08:00').getDay()); }
   };
 
+  //  v1.5 主要目標:購物 / 訊息 / 名單(後台「廣告監控綁定」設定)
+  //  ads-monitor v2.1 起,訊息 / 名單品牌回來的 purchases / cpa 已經換成私訊數 / 一則成本,各區塊照原本的算法算,只要換字。
+  var WORDS = {
+    purchase: { key: 'purchase', conv: '購買', unit: '單', cpa: 'CPA', cpaLong: 'CPA 單次購買成本', per: '一單', rate: '購買率', rateLong: '點進來會買', name: '購物' },
+    message:  { key: 'message', conv: '私訊', unit: '則', cpa: '一則私訊成本', cpaLong: '一則私訊成本', per: '一則', rate: '私訊率', rateLong: '點進來會私訊', name: '訊息' },
+    lead:     { key: 'lead', conv: '名單', unit: '筆', cpa: '一筆名單成本', cpaLong: '一筆名單成本', per: '一筆', rate: '留單率', rateLong: '點進來會留資料', name: '名單' }
+  };
+  function goal(d) {
+    d = d || state.data;
+    var g = (d && d.goal) || ((brandInfo(d && d.brand) || {}).goal) || 'purchase';
+    return WORDS[g] ? g : 'purchase';
+  }
+  function W(d) { return WORDS[goal(d)]; }
+  //  一則 / 一筆最多能花多少 = 單價 × 成交率(總覽右上角填,每個品牌分開記)
+  function cap(d) {
+    d = d || state.data; if (!d) return 0;
+    var pr = parseFloat(state.cfg['price_' + d.brand]) || 0, cr = parseFloat(state.cfg['close_' + d.brand]) || 0;
+    return pr > 0 && cr > 0 ? pr * cr / 100 : 0;
+  }
+  //  換字:購物版寫好的畫面,訊息 / 名單品牌套這個就會講對的話(長的詞先換)
+  var SWAP = {
+    message: [
+      ['CPA 為什麼變貴', '一則私訊為什麼變貴'], ['CPA 診斷', '私訊成本診斷'], ['CPA 單次購買成本', '一則私訊成本'],
+      ['點進來的人不買了。看價格 / 優惠有沒有變、商品頁、運費門檻、缺貨、競品在打折,或季節需求下降', '點進來的人不私訊了。看自動回覆、開場白、回覆速度,以及粉專上的課程資訊有沒有寫清楚'],
+      ['和網站(購買率)', '和私訊回覆(私訊率)'], ['購買率(點進來會不會買)', '私訊率(點進來會不會私訊)'],
+      ['哪個時段出單', '哪個時段有人私訊'], ['出單很穩', '私訊很穩'], ['出單多', '私訊多'], ['出單', '來私訊'],
+      ['還在補單', '還在補私訊'], ['回補', '回補'], ['網站購買數', '私訊數'], ['佔成交', '佔私訊'], ['沒有成交', '沒有私訊'], ['成交', '私訊'],
+      ['購買率', '私訊率'], ['購買數', '私訊數'], ['購買', '私訊'], ['單數', '私訊數'], ['單次', '一則'],
+      ['一週 50 次轉換', '一週 50 則私訊'], ['50 次轉換', '50 則私訊'], ['轉換', '私訊'],
+      ['CPA 變', '一則成本變'], ['CPA 的', '一則成本的'], ['CPA', '一則成本'], [' 單,', ' 則,'], [' 單)', ' 則)'], [' 單。', ' 則。'], [' 單 ', ' 則 '], [' 單<', ' 則<'], ['0 單', '0 則']
+    ],
+    lead: [
+      ['CPA 為什麼變貴', '一筆名單為什麼變貴'], ['CPA 診斷', '名單成本診斷'], ['CPA 單次購買成本', '一筆名單成本'],
+      ['點進來的人不買了。看價格 / 優惠有沒有變、商品頁、運費門檻、缺貨、競品在打折,或季節需求下降', '點進來的人不留資料了。看表單欄位是不是太多、贈品 / 誘因夠不夠、表單開頭有沒有講清楚'],
+      ['和網站(購買率)', '和表單(留單率)'], ['購買率(點進來會不會買)', '留單率(點進來會不會留資料)'],
+      ['哪個時段出單', '哪個時段有人留資料'], ['出單很穩', '名單很穩'], ['出單多', '名單多'], ['出單', '來名單'],
+      ['還在補單', '還在補名單'], ['網站購買數', '名單數'], ['佔成交', '佔名單'], ['沒有成交', '沒有名單'], ['成交', '名單'],
+      ['購買率', '留單率'], ['購買數', '名單數'], ['購買', '名單'], ['單數', '名單數'], ['單次', '一筆'],
+      ['50 次轉換', '50 筆名單'], ['轉換', '名單'],
+      ['CPA 變', '一筆成本變'], ['CPA 的', '一筆成本的'], ['CPA', '一筆成本'], [' 單,', ' 筆,'], [' 單)', ' 筆)'], [' 單。', ' 筆。'], [' 單 ', ' 筆 '], [' 單<', ' 筆<'], ['0 單', '0 筆']
+    ]
+  };
+  function T(html, d) {
+    var list = SWAP[goal(d)]; if (!list || !html) return html;
+    for (var i = 0; i < list.length; i++) html = html.split(list[i][0]).join(list[i][1]);
+    return html;
+  }
+
   //  行銷活動分組:新版 Advantage+ 不回 ASC 標記,改看名稱與出價方式
   function campaignGroup(c) {
     var n = String((c && c.name) || '');
@@ -281,7 +340,8 @@
   var GROUP_LABEL = { asc: 'ASC 高效推廣', cibs: 'CIBS 超額預算', rt: '再行銷', other: '其他' };
 
   window.MON = {
-    version: 'monitor-data v1.4',
+    version: 'monitor-data v1.5',
+    goal: goal, W: W, T: T, cap: cap, WORDS: WORDS,
     on: on, init: init,
     refresh: function () { return load(true); },                                          // 使用者按「重抓最新」
     softRefresh: function () { delete mem[state.brand + '|' + rangeKey(state.range)]; return load(false); },   // 自動更新:讓 Worker 決定要不要敲 Meta

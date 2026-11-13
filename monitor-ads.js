@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-ads.js · v1.0(2026-11-11)
+   Brand OS · monitor-ads.js · v1.1(2026-11-13)v1.1 訊息 / 名單品牌:欄位換成私訊 / 一則多少 / 點進來會私訊,「太貴的」= 一則超過總覽算出的上限;v1.0(2026-11-11)
    新版廣告監控頁「進行中廣告」列表 + 素材疲乏指數。資料一律跟 window.MON 拿。
    只列 ACTIVE(進行中)的廣告——關掉的不列。
 
@@ -74,15 +74,23 @@
 
   // ── 狀態 ────────────────────────────────────────────────
   var view = { filter: 'all', sort: 'spend', dir: -1, q: '', limit: 30 };
-  var rows = [];
+  var rows = [], G = null;   // G = 訊息 / 名單品牌的字詞(購物品牌是 null)
 
   function prep(d) {
     var cfg = M.state.cfg, mg = parseFloat(cfg['margin_' + d.brand]) || 0;
     var be = mg > 0 && mg < 100 ? 100 / mg : (cfg.roasTarget || 0);   // 有毛利率用損益兩平,沒有用 ROAS 目標
+    G = M.goal && M.goal(d) !== 'purchase' ? M.W(d) : null;
+    var t = d.totals || {}, cap = G ? (M.cap(d) || (t.purchases ? t.cpa * 1.5 : 0)) : 0;   // 沒填單價成交率:比平均貴 5 成算太貴
     rows = (d.ads || []).map(function (a) {
       var f = fatigue(a, cfg);
-      return Object.assign({}, a, { fat: f.score, why: f.why, ctrDrop: f.ctrDrop, cpmRise: f.cpmRise, be: be,
+      var x = Object.assign({}, a, { fat: f.score, why: f.why, ctrDrop: f.ctrDrop, cpmRise: f.cpmRise, be: be,
         losing: be && a.spend >= 500 && a.roas < be });
+      if (G) {
+        x.cap = cap; x.crate = a.linkClicks ? a.purchases / a.linkClicks * 100 : 0;
+        x.losing = !!cap && a.spend >= 500 && a.purchases > 0 && a.cpa > cap;
+        x.cheap = a.purchases > 0 && (!cap || a.cpa <= cap);
+      }
+      return x;
     });
   }
 
@@ -91,7 +99,7 @@
     var list = rows.filter(function (r) {
       if (q && (r.name + ' ' + r.campaign + ' ' + r.adset).toLowerCase().indexOf(q) < 0) return false;
       if (view.filter === 'tired') return r.fat != null && r.fat >= 35;
-      if (view.filter === 'win') return r.be ? r.roas >= r.be : r.roas >= 1;
+      if (view.filter === 'win') return G ? r.cheap : (r.be ? r.roas >= r.be : r.roas >= 1);
       if (view.filter === 'lose') return r.losing;
       if (view.filter === 'nosale') return r.spend >= 500 && !r.purchases;
       return true;
@@ -115,7 +123,8 @@
   }
 
   function tableHtml(list) {
-    var cols = [['name', '廣告'], ['spend', '花費'], ['roas', 'ROAS'], ['cpa', 'CPA'], ['purchases', '購買'], ['ctr', 'CTR'], ['frequency', '頻率'], ['cpm', 'CPM'], ['ageDays', '上線'], ['fat', '疲乏']];
+    var cols = G ? [['name', '廣告'], ['spend', '花費'], ['cpa', G.per + '多少'], ['purchases', G.conv], ['crate', G.rateLong], ['ctr', 'CTR'], ['frequency', '頻率'], ['cpm', 'CPM'], ['ageDays', '上線'], ['fat', '疲乏']]
+      : [['name', '廣告'], ['spend', '花費'], ['roas', 'ROAS'], ['cpa', 'CPA'], ['purchases', '購買'], ['ctr', 'CTR'], ['frequency', '頻率'], ['cpm', 'CPM'], ['ageDays', '上線'], ['fat', '疲乏']];
     var head = '<tr>' + cols.map(function (c) {
       var on = view.sort === c[0];
       return '<th data-k="' + c[0] + '" class="' + (on ? 'on' : '') + '">' + c[1] + (on ? (view.dir < 0 ? ' ▼' : ' ▲') : '') + '</th>';
@@ -130,9 +139,13 @@
         + '<td><div class="md-ad">' + (r.thumb ? '<img loading="lazy" src="' + esc(r.thumb) + '" alt="">' : '<div class="ph"></div>')
         + '<div style="min-width:0"><div class="nm" title="' + esc(r.name) + '">' + fmtIcon + ' ' + esc(r.name) + '</div><div class="cp" title="' + esc(r.campaign + ' › ' + r.adset) + '">' + esc(r.campaign) + learn + '</div></div></div></td>'
         + '<td>' + F.money(r.spend) + '</td>'
-        + '<td class="' + (r.losing ? 'mo-down' : '') + '">' + (r.spend ? r.roas.toFixed(2) : '—') + '</td>'
-        + '<td>' + (r.purchases ? F.money(r.cpa) : '—') + (t && t.prev7.cpa && t.last3.cpa ? trendCell(t.last3.cpa, t.prev7.cpa, false) : '') + '</td>'
-        + '<td>' + F.num(r.purchases) + '</td>'
+        + (G
+          ? '<td class="' + (r.losing ? 'mo-down' : '') + '">' + (r.purchases ? F.money(r.cpa) : (r.spend >= 500 ? '<span class="mo-down">0 ' + G.unit + '</span>' : '—')) + (t && t.prev7.cpa && t.last3.cpa ? trendCell(t.last3.cpa, t.prev7.cpa, false) : '') + '</td>'
+            + '<td>' + F.num(r.purchases) + '</td>'
+            + '<td>' + (r.linkClicks ? F.pct(r.crate, 1) : '—') + '</td>'
+          : '<td class="' + (r.losing ? 'mo-down' : '') + '">' + (r.spend ? r.roas.toFixed(2) : '—') + '</td>'
+            + '<td>' + (r.purchases ? F.money(r.cpa) : '—') + (t && t.prev7.cpa && t.last3.cpa ? trendCell(t.last3.cpa, t.prev7.cpa, false) : '') + '</td>'
+            + '<td>' + F.num(r.purchases) + '</td>')
         + '<td>' + F.pct(r.ctr) + (t ? trendCell(t.last3.ctr, t.prev7.ctr, true) : '') + '</td>'
         + '<td class="' + (r.frequency >= (M.state.cfg.freqWarn || 3.5) ? 'mo-down' : '') + '">' + r.frequency.toFixed(2) + '</td>'
         + '<td>' + F.money(r.cpm) + (t ? trendCell(t.last3.cpm, t.prev7.cpm, false) : '') + '</td>'
@@ -149,7 +162,9 @@
     var lose = rows.filter(function (r) { return r.losing; }).sort(function (a, b) { return b.spend - a.spend; });
     var items = [];
     tired.slice(0, 3).forEach(function (r) { items.push('<div><b>' + esc(r.name) + '</b> 疲乏 ' + r.fat + '(' + r.why.map(esc).join('、') + ')——準備接棒素材,或先放預熱活動。</div>'); });
-    if (lose.length) {
+    if (lose.length && G) {
+      items.push('<div>有 <b>' + lose.length + '</b> 則廣告' + G.per + '超過 ' + F.money(lose[0].cap) + '(' + (M.cap() ? '總覽填的單價 × 成交率' : '比平均貴 5 成') + '),共花了 ' + F.money(lose.reduce(function (s, r) { return s + r.spend; }, 0)) + '。點上方「太貴的」看是哪幾則。</div>');
+    } else if (lose.length) {
       var lost = lose.reduce(function (s, r) { return s + r.spend; }, 0);
       items.push('<div>有 <b>' + lose.length + '</b> 則廣告 ROAS 低於 ' + (lose[0].be || 0).toFixed(2) + '(' + (parseFloat(M.state.cfg['margin_' + M.state.brand]) ? '損益兩平' : 'ROAS 目標') + '),共花了 ' + F.money(lost) + '。點上方「虧錢的」看是哪幾則。</div>');
     }
@@ -163,11 +178,12 @@
     var counts = {
       all: rows.length,
       tired: rows.filter(function (r) { return r.fat != null && r.fat >= 35; }).length,
-      win: rows.filter(function (r) { return r.be ? r.roas >= r.be : r.roas >= 1; }).length,
+      win: rows.filter(function (r) { return G ? r.cheap : (r.be ? r.roas >= r.be : r.roas >= 1); }).length,
       lose: rows.filter(function (r) { return r.losing; }).length,
       nosale: rows.filter(function (r) { return r.spend >= 500 && !r.purchases; }).length
     };
-    var chips = [['all', '全部'], ['tired', '疲乏的'], ['win', '賺錢的'], ['lose', '虧錢的'], ['nosale', '花了錢沒成交']].map(function (c) {
+    var chips = (G ? [['all', '全部'], ['tired', '疲乏的'], ['win', '划算的'], ['lose', '太貴的'], ['nosale', '花了錢沒' + G.conv]]
+      : [['all', '全部'], ['tired', '疲乏的'], ['win', '賺錢的'], ['lose', '虧錢的'], ['nosale', '花了錢沒成交']]).map(function (c) {
       return '<button class="md-chip' + (view.filter === c[0] ? ' on' : '') + '" data-f="' + c[0] + '">' + c[1] + ' ' + counts[c[0]] + '</button>';
     }).join('');
     el.innerHTML = alertHtml()
@@ -175,8 +191,10 @@
       + '<div class="md-bar">' + chips + '<input class="md-search" id="md-q" placeholder="搜尋廣告 / 行銷活動名稱" value="' + esc(view.q) + '"></div>'
       + '<div id="md-tblwrap">' + tableHtml(filtered()) + '</div>'
       + '<div class="mo-note"><b>疲乏怎麼算:</b>看「近 3 天 vs 前 7 天」的變化,不是只看平均——點擊率掉 + CPM 漲 + 頻率高,三個一起出現就是同一群人看膩了。<b>≥60 該換素材、35~59 注意。</b>「上線」是廣告建立到今天幾天。'
-      + '「虧錢的」= ROAS 低於' + (parseFloat(M.state.cfg['margin_' + d.brand]) ? '損益兩平點(總覽填的毛利率算出來)' : ' ROAS 目標(總覽填毛利率會改用損益兩平點)') + ',而且花費超過 NT$500。'
-      + '<br>Meta 簡報提醒:舊素材分到大部分預算、新素材跑不動時,先用小預算預熱新素材(約 50 次轉換)再放進 ASC。</div></div>';
+      + (G ? '「太貴的」= ' + G.per + '超過' + (M.cap(d) ? '總覽填的單價 × 成交率算出的上限' : '平均的 1.5 倍(在總覽右上角填單價和成交率會改用上限)') + ',而且花費超過 NT$500。「' + G.rateLong + '」= ' + G.conv + '數 ÷ 點進來次數,偏低先看'
+          + (G.key === 'message' ? '自動回覆和開場白' : '表單') + ',不是素材。</div></div>'
+        : '「虧錢的」= ROAS 低於' + (parseFloat(M.state.cfg['margin_' + d.brand]) ? '損益兩平點(總覽填的毛利率算出來)' : ' ROAS 目標(總覽填毛利率會改用損益兩平點)') + ',而且花費超過 NT$500。'
+      + '<br>Meta 簡報提醒:舊素材分到大部分預算、新素材跑不動時,先用小預算預熱新素材(約 50 次轉換)再放進 ASC。</div></div>');
     bind(el);
   }
   function redrawTable() {
@@ -207,5 +225,5 @@
   M.on('brand', function () { view.filter = 'all'; view.q = ''; view.limit = 30; });
   if (M.state.data) render(M.state.data);
 
-  window.MON_ADS = { version: 'monitor-ads v1.0', render: render };
+  window.MON_ADS = { version: 'monitor-ads v1.1', render: render };
 })();

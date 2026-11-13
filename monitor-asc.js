@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-asc.js · v1.2(2026-11-13)
+   Brand OS · monitor-asc.js · v1.3(2026-11-13)v1.3 訊息 / 名單品牌:只留「今天的行銷活動」和「學習期」(換字),素材與版位(看 ROAS)不出;v1.2(2026-11-13)
    v1.2:重讀整份簡報 —— 兩個數字都對、講的是不同東西:一般 ASC「不少於 20 則」(彈性廣告那段,給系統挑);
         CIBS 測試「新素材 10 則左右、越多元越好」(CIBS 那段)。v1.1 把兩個混成 10,改回分開判斷。
    新版廣告監控頁「ASC / CIBS 策略」區塊。資料一律跟 window.MON 拿。
@@ -212,6 +212,12 @@
   // ── 畫 ──────────────────────────────────────────────────
   function render(d) {
     var el = document.getElementById('mon-asc'); if (!el || !d) return;
+    if (M.goal && M.goal(d) !== 'purchase') {
+      var w = M.W(d);
+      el.innerHTML = M.T(campaignBlock(d) + learningBlock(d), d).split(' 筆</span>').join(' ' + w.unit + '</span>')
+        + '<div class="mo-note" style="margin-top:0">這個品牌的主要目標是「' + w.name + '」,ASC / CIBS 是購物用的策略,這區只看預算節奏和學習期(學習期一樣要一週 50 ' + w.unit + w.conv + ')。</div>';
+      return;
+    }
     el.innerHTML = campaignBlock(d) + learningBlock(d) + creativeBlock(d);
   }
   function skeleton() {
@@ -224,5 +230,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_ASC = { version: 'monitor-asc v1.0', render: render };
+  window.MON_ASC = { version: 'monitor-asc v1.3', render: render };
 })();

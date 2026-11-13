@@ -1,5 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-pool.js · v1.3(2026-11-13)
+   Brand OS · monitor-pool.js · v1.4(2026-11-13)
+   v1.4:訊息 / 名單品牌:網子顏色看「一則多便宜」、漏斗到「私訊你」、右邊改成素材私訊成本排行;四格(購物出價用)不出
    v1.3:魚的大小補回三條魚 + 比例欄(沒接 SMR 顯示「待接」);單數圓圈依位數縮字不再爆框;右側文字改直排不再被切
    v1.2:RA 選定「漏斗一張圖」取代魚池剖面:左 = 網子(高度照飼料、深淺照 1 元換回)、中 = 看到→買單漏斗、右 = 客人花的錢;手機改直式
    v1.1:RA「長條看不懂,要一眼看出魚在哪、用什麼網子、網子多少錢、撈出來客人花多少」→ 最上面改成魚池剖面圖
@@ -159,11 +160,50 @@
   var FB = { bg: '#f5f6fb', ink: '#1e2140', sub: '#7a7f9a', b1: '#2a3bdc', b15: '#4555e3', b2: '#6d7cf0', b3: '#c8cdfa', off: '#eef0fd' };
   function short(n, k) { n = String(n || ''); var m = n.match(/^【([^】]+)】/); if (m) n = m[1]; return n.length > k ? n.slice(0, k) + '…' : n; }   // 【ASC/包】1008>… → ASC/包
   function wan(n) { return n >= 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, '') + ' 萬' : F.num(n); }
+  //  v1.4 訊息 / 名單品牌:GW = 字詞、REF = 比較基準(總覽填的上限,沒填用平均一則)
+  var GW = null, REF = 0;
+  function netLine(c, long) {
+    if (!GW) return long ? '飼料 ' + F.money(c.spend) + ' · 1 元換 ' + c.roas.toFixed(2) : F.money(c.spend) + ' · ' + c.roas.toFixed(2);
+    return F.money(c.spend) + ' · ' + c.purchases + ' ' + GW.unit + (long ? ' · ' + (c.purchases ? GW.per + ' ' + F.money(c.cpa) : '沒有' + GW.conv) : '');
+  }
+  function rankPanel(d, x, y, xr, gap, big) {
+    var ads = (d.ads || []).filter(function (a) { return a.spend > 0; });
+    var good = ads.filter(function (a) { return a.purchases > 0; }).sort(function (a, b) { return a.cpa - b.cpa; });
+    var zero = ads.filter(function (a) { return !a.purchases && a.spend >= 100; });
+    var mx = Math.max.apply(null, good.map(function (a) { return a.cpa; }).concat([REF * 1.3, 1]));
+    var s = '<text x="' + x + '" y="' + y + '" font-size="' + (big ? 16 : 13) + '" font-weight="900" fill="' + FB.ink + '">哪支素材' + GW.conv + '最便宜</text>'
+      + '<text x="' + x + '" y="' + (y + (big ? 22 : 19)) + '" font-size="' + (big ? 12 : 11) + '" fill="' + FB.sub + '">' + GW.per + '花多少,越短越便宜</text>';
+    var yy = y + (big ? 54 : 46), bw = xr - x;
+    good.slice(0, zero.length ? 6 : 7).forEach(function (a) {
+      var w = Math.max(8, (bw - 70) * a.cpa / mx), col = netColor(a);
+      s += '<text x="' + x + '" y="' + yy + '" font-size="' + (big ? 13 : 12) + '" font-weight="800" fill="' + FB.ink + '">' + esc(short(a.name, 10)) + ' · ' + esc(short(a.campaign, big ? 12 : 8)) + '</text>'
+        + '<text x="' + xr + '" y="' + yy + '" font-size="' + (big ? 12 : 10.5) + '" fill="' + FB.sub + '" text-anchor="end">花 ' + F.money(a.spend) + ' · ' + a.purchases + ' ' + GW.unit + '</text>'
+        + '<rect x="' + x + '" y="' + (yy + 8) + '" width="' + w.toFixed(0) + '" height="14" rx="7" fill="' + col[0] + '"/>'
+        + '<text x="' + (x + w + 8).toFixed(0) + '" y="' + (yy + 20) + '" font-size="' + (big ? 13 : 12) + '" font-weight="900" fill="' + FB.b1 + '">' + F.money(a.cpa) + '</text>';
+      yy += gap;
+    });
+    if (zero.length) {
+      var zs = zero.reduce(function (t, a) { return t + a.spend; }, 0);
+      s += '<text x="' + x + '" y="' + yy + '" font-size="' + (big ? 13 : 12) + '" font-weight="800" fill="' + FB.ink + '">' + esc(zero.slice(0, 3).map(function (a) { return short(a.name, 6); }).join(' / ')) + (zero.length > 3 ? ' 等 ' + zero.length + ' 支' : '') + '</text>'
+        + '<text x="' + xr + '" y="' + yy + '" font-size="' + (big ? 12 : 10.5) + '" fill="' + FB.sub + '" text-anchor="end">花 ' + F.money(zs) + ' · 0 ' + GW.unit + '</text>'
+        + '<rect x="' + x + '" y="' + (yy + 8) + '" width="' + bw + '" height="16" rx="8" fill="#fbe3e9"/>'
+        + '<text x="' + (x + 10) + '" y="' + (yy + 21) + '" font-size="' + (big ? 12 : 11) + '" font-weight="800" fill="#d65a6e">花了錢、0 ' + GW.unit + GW.conv + ' → 建議關掉</text>';
+      yy += gap;
+    }
+    if (!good.length && !zero.length) s += '<text x="' + x + '" y="' + yy + '" font-size="12" fill="' + FB.sub + '">這段期間還沒有素材帶來' + GW.conv + '</text>';
+    return { svg: s, y: yy };
+  }
   function netColor(c) {
     if (!c.spend) return [FB.off, '#a9aed0'];
+    if (GW) {
+      if (!c.purchases || !REF) return [FB.b3, FB.b1];
+      var q = c.cpa / REF;
+      return q <= 0.6 ? [FB.b1, '#fff'] : q <= 0.85 ? [FB.b15, '#fff'] : q <= 1.15 ? [FB.b2, '#fff'] : [FB.b3, FB.b1];
+    }
     var r = c.roas; return r >= 3 ? [FB.b1, '#fff'] : r >= 2 ? [FB.b15, '#fff'] : r >= 1.2 ? [FB.b2, '#fff'] : [FB.b3, FB.b1];
   }
   function stages(t) {
+    if (GW) return [['看到廣告', wan(t.reach || 0) + '人'], ['點進來', wan(t.linkClicks || 0) + '次']];
     return [['看到廣告', wan(t.reach || 0) + '人'], ['點進網站', wan(t.linkClicks || 0) + '人'], ['看商品', wan(t.viewContent || 0) + '次'],
       ['加購物車', wan(t.addToCart || 0) + '次'], ['結帳', wan(t.checkout || 0) + '次']];
   }
@@ -189,7 +229,7 @@
     var txt = F.num(n || 0), fs = txt.length >= 6 ? 14 : txt.length === 5 ? 16 : txt.length === 4 ? 18 : 20;
     return '<circle cx="' + cx + '" cy="' + cy + '" r="40" fill="' + FB.b1 + '" stroke="#fff" stroke-width="6"/>'
       + '<text x="' + cx + '" y="' + (cy + 2) + '" font-size="' + fs + '" font-weight="900" fill="#fff" text-anchor="middle">' + txt + '</text>'
-      + '<text x="' + cx + '" y="' + (cy + 19) + '" font-size="11" fill="#dfe3ff" text-anchor="middle">單</text>';
+      + '<text x="' + cx + '" y="' + (cy + 19) + '" font-size="11" fill="#dfe3ff" text-anchor="middle">' + (GW ? GW.unit + GW.conv : '單') + '</text>';
   }
   function dots(n, fn) { var s = '', seed = 7; for (var i = 0; i < n; i++) { seed = (seed * 9301 + 49297) % 233280; var a = seed / 233280; seed = (seed * 9301 + 49297) % 233280; var b = seed / 233280; s += fn(Math.pow(a, 1.6) * 0.93, b * 2 - 1); } return s; }
   function netsOrdered(list) {
@@ -204,19 +244,22 @@
     var gap = 6, usable = (Y1 - Y0) - gap * (nets.length - 1), alloc = nets.map(function (c) { return Math.max(30, usable * c.spend / tot * 0.82); });
     var k = usable / alloc.reduce(function (a, b) { return a + b; }, 0); alloc = alloc.map(function (a) { return a * k; });
     var s = '<rect width="' + W + '" height="' + H + '" fill="' + FB.bg + '"/>'
-      + '<text x="70" y="62" font-size="24" font-weight="900" fill="' + FB.ink + '">' + esc(d.brandName || '') + ' 這 ' + rangeDays(d) + ' 天:飼料撒進哪些網,最後撈回多少客人的錢</text>'
-      + '<text x="70" y="94" font-size="14" fill="' + FB.sub + '">左邊每一塊是一張網(廣告設計),越高 = 花越多飼料、顏色越深 = 1 元換回越多;中間是客人一路從「看到」到「買單」,右邊是客人花的錢。</text>'
+      + '<text x="70" y="62" font-size="24" font-weight="900" fill="' + FB.ink + '">' + esc(d.brandName || '') + ' 這 ' + rangeDays(d) + ' 天:飼料撒進哪些網,' + (GW ? '最後撈到幾' + GW.unit + GW.conv : '最後撈回多少客人的錢') + '</text>'
+      + '<text x="70" y="94" font-size="14" fill="' + FB.sub + '">' + (GW
+        ? '主要目標 = ' + GW.name + '。左邊每一塊是一張網,越高 = 花越多、顏色越深 = ' + GW.per + GW.conv + '越便宜;中間是客人從「看到」到「' + GW.conv + '你」;右邊是每支素材' + GW.per + '多少錢。'
+        : '左邊每一塊是一張網(廣告設計),越高 = 花越多飼料、顏色越深 = 1 元換回越多;中間是客人一路從「看到」到「買單」,右邊是客人花的錢。') + '</text>'
       + '<rect x="' + (X0 - 10) + '" y="' + (Y0 - 12) + '" width="' + (X1 - X0 + 20) + '" height="' + (Y1 - Y0 + 24) + '" rx="20" fill="#e3e6fb"/>'
       + '<text x="' + (X0 + X1) / 2 + '" y="' + (Y0 - 26) + '" font-size="14" fill="' + FB.sub + '" text-anchor="middle">網子(飼料撒在哪)</text>';
     var y = Y0;
     nets.forEach(function (c, i) {
       var h = alloc[i], col = netColor(c);
-      s += '<g><title>' + esc(c.name) + (c.spend ? '\n飼料 ' + F.money(c.spend) + '\n撈到 ' + c.purchases + ' 單 · 客人花 ' + F.money(c.revenue) + '\n1 元換回 ' + c.roas.toFixed(2) : '\n沒開') + '</title>'
+      s += '<g><title>' + esc(c.name) + (!c.spend ? '\n沒開' : GW ? '\n花費 ' + F.money(c.spend) + '\n' + GW.conv + ' ' + c.purchases + ' ' + GW.unit + (c.purchases ? ' · ' + GW.per + ' ' + F.money(c.cpa) : '')
+        : '\n飼料 ' + F.money(c.spend) + '\n撈到 ' + c.purchases + ' 單 · 客人花 ' + F.money(c.revenue) + '\n1 元換回 ' + c.roas.toFixed(2)) + '</title>'
         + '<rect x="' + X0 + '" y="' + y.toFixed(1) + '" width="' + (X1 - X0) + '" height="' + h.toFixed(1) + '" rx="10" fill="' + col[0] + '"/>';
       if (h >= 46) s += '<text x="' + (X0 + X1) / 2 + '" y="' + (y + h / 2 - 3).toFixed(1) + '" font-size="14" font-weight="900" fill="' + col[1] + '" text-anchor="middle">' + esc(short(c.name, 16)) + '</text>'
-        + '<text x="' + (X0 + X1) / 2 + '" y="' + (y + h / 2 + 16).toFixed(1) + '" font-size="12" fill="' + col[1] + '" text-anchor="middle">飼料 ' + F.money(c.spend) + ' · 1 元換 ' + c.roas.toFixed(2) + '</text>';
+        + '<text x="' + (X0 + X1) / 2 + '" y="' + (y + h / 2 + 16).toFixed(1) + '" font-size="12" fill="' + col[1] + '" text-anchor="middle">' + netLine(c, true) + '</text>';
       else s += '<text x="' + (X0 + 14) + '" y="' + (y + h / 2 + 5).toFixed(1) + '" font-size="12.5" font-weight="800" fill="' + col[1] + '">' + esc(short(c.name, 9)) + '</text>'
-        + '<text x="' + (X1 - 14) + '" y="' + (y + h / 2 + 5).toFixed(1) + '" font-size="11.5" fill="' + col[1] + '" text-anchor="end">' + (c.spend ? F.money(c.spend) + ' · ' + c.roas.toFixed(2) : '沒開') + '</text>';
+        + '<text x="' + (X1 - 14) + '" y="' + (y + h / 2 + 5).toFixed(1) + '" font-size="11.5" fill="' + col[1] + '" text-anchor="end">' + (c.spend ? netLine(c, false) : '沒開') + '</text>';
       s += '</g>'; y += h + gap;
     });
     s += '<line x1="40" y1="' + Y0 + '" x2="40" y2="' + Y1 + '" stroke="' + FB.b3 + '" stroke-width="4" stroke-linecap="round"/>'
@@ -224,7 +267,7 @@
     //  錐形
     s += '<path d="M' + cx0 + ' ' + Y0 + ' L' + PX + ' ' + PY + ' L' + cx0 + ' ' + Y1 + ' Z" fill="url(#mpCone)"/>';
     s += dots(240, function (tt, u) { var x = cx0 + (PX - cx0) * tt, half = (Y1 - Y0) / 2 * (1 - tt) * 0.9; return '<circle cx="' + x.toFixed(0) + '" cy="' + (PY + u * half).toFixed(0) + '" r="2.6" fill="#fff" fill-opacity="' + (0.35 + 0.5 * tt).toFixed(2) + '"/>'; });
-    var T = [0, 0.22, 0.42, 0.62, 0.8];
+    var T = GW ? [0, 0.45] : [0, 0.22, 0.42, 0.62, 0.8];
     stages(t).forEach(function (st, i) {
       var x = cx0 + (PX - cx0) * T[i], pcx = i ? x : x + 56;
       if (i) s += '<line x1="' + x.toFixed(0) + '" y1="' + (Y0 - 30) + '" x2="' + x.toFixed(0) + '" y2="' + (Y1 + 30) + '" stroke="' + FB.b2 + '" stroke-opacity="0.45" stroke-dasharray="5 6"/>';
@@ -234,11 +277,21 @@
     });
     var per = t.purchases ? Math.round((t.reach || 0) / t.purchases) : 0;
     s += '<path d="M' + cx0 + ' ' + (Y0 - 40) + ' v-12 H' + PX + ' v12" fill="none" stroke="' + FB.b2 + '" stroke-width="2"/>'
-      + '<text x="' + (cx0 + PX) / 2 + '" y="' + (Y0 - 62) + '" font-size="15" font-weight="900" fill="' + FB.b1 + '" text-anchor="middle">' + (per ? '客人一路往下掉:每 ' + F.num(per) + ' 個看到的人,有 1 個買' : '這段期間還沒有人買') + '</text>'
+      + '<text x="' + (cx0 + PX) / 2 + '" y="' + (Y0 - 62) + '" font-size="15" font-weight="900" fill="' + FB.b1 + '" text-anchor="middle">' + (!per ? '這段期間還沒有人' + (GW ? GW.conv : '買') : GW
+        ? '每 ' + F.num(per) + ' 個看到的人,有 1 個' + GW.conv + '你 · 點進來的人有 ' + (t.linkClicks ? (t.purchases / t.linkClicks * 100).toFixed(1) : '0') + '% 會' + GW.conv
+        : '客人一路往下掉:每 ' + F.num(per) + ' 個看到的人,有 1 個買') + '</text>'
       + orderCircle(PX, PY, t.purchases)
       + '<rect x="' + (PX - 52) + '" y="' + (Y1 + 40) + '" width="104" height="44" rx="10" fill="' + FB.b1 + '"/>'
-      + '<text x="' + PX + '" y="' + (Y1 + 58) + '" font-size="12" fill="#dfe3ff" text-anchor="middle">買單</text>'
-      + '<text x="' + PX + '" y="' + (Y1 + 77) + '" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">' + F.num(t.purchases || 0) + ' 單</text>';
+      + '<text x="' + PX + '" y="' + (Y1 + 58) + '" font-size="12" fill="#dfe3ff" text-anchor="middle">' + (GW ? GW.conv + '你' : '買單') + '</text>'
+      + '<text x="' + PX + '" y="' + (Y1 + 77) + '" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">' + F.num(t.purchases || 0) + (GW ? ' ' + GW.unit : ' 單') + '</text>';
+    if (GW) {
+      s += rankPanel(d, PX + 80, Y0 + 10, W - 50, 56, true).svg;
+      var r = REF;
+      [[FB.b1, GW.per + ' ' + F.money(r * 0.6) + ' 以下'], [FB.b15, F.money(r * 0.6) + ' ~ ' + F.money(r * 0.85)], [FB.b2, F.money(r * 0.85) + ' ~ ' + F.money(r * 1.15)], [FB.b3, F.money(r * 1.15) + ' 以上 / 沒有' + GW.conv], [FB.off, '沒開']].forEach(function (c, i) {
+        s += '<rect x="' + (70 + i * 170) + '" y="' + (H - 42) + '" width="14" height="14" rx="3" fill="' + c[0] + '" stroke="#d5d8f0"/><text x="' + (70 + i * 170 + 20) + '" y="' + (H - 30) + '" font-size="12" fill="' + FB.sub + '">' + c[1] + '</text>';
+      });
+      return { W: W, H: H, svg: s };
+    }
     //  右:客人花的錢
     var FX = 1560, aov = t.purchases ? (t.revenue || 0) / t.purchases : 0;
     s += '<path d="M' + PX + ' ' + PY + ' L' + FX + ' ' + (PY - 170) + ' L' + FX + ' ' + (PY + 170) + ' Z" fill="url(#mpFan)" opacity="0.55"/>'
@@ -257,8 +310,9 @@
   function funnelNarrow(list, d) {
     var t = d.totals || {}, W = 390, s = '', y = 20, nets = netsOrdered(list);
     s += '<text x="16" y="' + (y + 18) + '" font-size="19" font-weight="900" fill="' + FB.ink + '">' + esc(d.brandName || '') + ' 這 ' + rangeDays(d) + ' 天</text>'
-      + '<text x="16" y="' + (y + 40) + '" font-size="12" fill="' + FB.sub + '">飼料撒進哪些網,最後撈回多少客人的錢</text>'; y += 62;
-    [['飼料', wan(t.spend || 0), '#b8862f'], ['客人花', wan(t.revenue || 0), FB.b1], ['1 元換回', (t.roas || 0).toFixed(2) + ' 元', FB.b1]].forEach(function (b, i) {
+      + '<text x="16" y="' + (y + 40) + '" font-size="12" fill="' + FB.sub + '">飼料撒進哪些網,' + (GW ? '最後撈到幾' + GW.unit + GW.conv : '最後撈回多少客人的錢') + '</text>'; y += 62;
+    (GW ? [['飼料', wan(t.spend || 0), '#b8862f'], [GW.conv, F.num(t.purchases || 0) + ' ' + GW.unit, FB.b1], [GW.per, t.purchases ? F.money(t.cpa) : '—', FB.b1]]
+      : [['飼料', wan(t.spend || 0), '#b8862f'], ['客人花', wan(t.revenue || 0), FB.b1], ['1 元換回', (t.roas || 0).toFixed(2) + ' 元', FB.b1]]).forEach(function (b, i) {
       var x = 16 + i * 122;
       s += '<rect x="' + x + '" y="' + y + '" width="114" height="58" rx="12" fill="#fff"/><text x="' + (x + 12) + '" y="' + (y + 20) + '" font-size="11" fill="' + FB.sub + '">' + b[0] + '</text>'
         + '<text x="' + (x + 12) + '" y="' + (y + 45) + '" font-size="19" font-weight="900" fill="' + b[2] + '">' + b[1] + '</text>';
@@ -270,7 +324,7 @@
       var h = 34 + 70 * c.spend / top, col = netColor(c);
       inner += '<rect x="16" y="' + y + '" width="' + (W - 32) + '" height="' + h.toFixed(0) + '" rx="10" fill="' + col[0] + '"/>'
         + '<text x="' + W / 2 + '" y="' + (y + h / 2 - 3).toFixed(0) + '" font-size="14" font-weight="900" fill="' + col[1] + '" text-anchor="middle">' + esc(short(c.name, 18)) + '</text>'
-        + '<text x="' + W / 2 + '" y="' + (y + h / 2 + 15).toFixed(0) + '" font-size="11.5" fill="' + col[1] + '" text-anchor="middle">飼料 ' + F.money(c.spend) + ' · 撈到 ' + c.purchases + ' 單 · 1 元換 ' + c.roas.toFixed(2) + '</text>';
+        + '<text x="' + W / 2 + '" y="' + (y + h / 2 + 15).toFixed(0) + '" font-size="11.5" fill="' + col[1] + '" text-anchor="middle">' + (GW ? netLine(c, true) : '飼料 ' + F.money(c.spend) + ' · 撈到 ' + c.purchases + ' 單 · 1 元換 ' + c.roas.toFixed(2)) + '</text>';
       y += h + 6;
     });
     var cw = (W - 38) / 2;
@@ -278,16 +332,16 @@
       var x = 16 + (i % 2) * (cw + 6), yy = y + Math.floor(i / 2) * 50, col = netColor(c);
       inner += '<rect x="' + x.toFixed(0) + '" y="' + yy + '" width="' + cw.toFixed(0) + '" height="44" rx="10" fill="' + col[0] + '"/>'
         + '<text x="' + (x + 10).toFixed(0) + '" y="' + (yy + 19) + '" font-size="12.5" font-weight="900" fill="' + col[1] + '">' + esc(short(c.name, 11)) + '</text>'
-        + '<text x="' + (x + 10).toFixed(0) + '" y="' + (yy + 35) + '" font-size="10.5" fill="' + col[1] + '">' + (c.spend ? F.money(c.spend) + ' · ' + c.purchases + ' 單 · ' + c.roas.toFixed(2) : '沒開') + '</text>';
+        + '<text x="' + (x + 10).toFixed(0) + '" y="' + (yy + 35) + '" font-size="10.5" fill="' + col[1] + '">' + (!c.spend ? '沒開' : GW ? netLine(c, true) : F.money(c.spend) + ' · ' + c.purchases + ' 單 · ' + c.roas.toFixed(2)) + '</text>';
     });
     y += Math.ceil(small.length / 2) * 50 + 14;
     s += '<rect x="10" y="' + (y0 - 8) + '" width="' + (W - 20) + '" height="' + (y - y0) + '" rx="16" fill="#e3e6fb"/>' + inner;
     var per = t.purchases ? Math.round((t.reach || 0) / t.purchases) : 0;
-    s += '<text x="' + W / 2 + '" y="' + (y + 16) + '" font-size="13" font-weight="900" fill="' + FB.b1 + '" text-anchor="middle">' + (per ? '每 ' + F.num(per) + ' 個看到的人,有 1 個買' : '這段期間還沒有人買') + '</text>'; y += 30;
+    s += '<text x="' + W / 2 + '" y="' + (y + 16) + '" font-size="13" font-weight="900" fill="' + FB.b1 + '" text-anchor="middle">' + (per ? '每 ' + F.num(per) + ' 個看到的人,有 1 個' + (GW ? GW.conv + '你' : '買') : '這段期間還沒有人' + (GW ? GW.conv : '買')) + '</text>'; y += 30;
     var CT = y, CB = y + 420, L = 16, R = W - 16, PX = W / 2;
     s += '<path d="M' + L + ' ' + CT + ' L' + R + ' ' + CT + ' L' + PX + ' ' + CB + ' Z" fill="url(#mpConeV)"/>';
     s += dots(150, function (tt, u) { var yy = CT + (CB - CT) * tt, half = (R - L) / 2 * (1 - tt) * 0.9; return '<circle cx="' + (PX + u * half).toFixed(0) + '" cy="' + yy.toFixed(0) + '" r="2" fill="#fff" fill-opacity="' + (0.35 + 0.5 * tt).toFixed(2) + '"/>'; });
-    var T = [0.02, 0.22, 0.42, 0.62, 0.8];
+    var T = GW ? [0.02, 0.45] : [0.02, 0.22, 0.42, 0.62, 0.8];
     stages(t).forEach(function (st, i) {
       var yy = CT + (CB - CT) * T[i] + 22, tx = PX, anc = 'middle', tc = T[i] < 0.5 ? FB.ink : '#fff';
       if (i) s += '<line x1="' + L + '" y1="' + (yy - 22).toFixed(0) + '" x2="' + R + '" y2="' + (yy - 22).toFixed(0) + '" stroke="#fff" stroke-opacity=".5" stroke-dasharray="4 5"/>';
@@ -297,6 +351,12 @@
     });
     s += orderCircle(PX, CB, t.purchases);
     y = CB + 56;
+    if (GW) {
+      var rp = rankPanel(d, 32, y + 30, W - 32, 46, false), hh = rp.y - y + 4;
+      s += '<rect x="16" y="' + y + '" width="' + (W - 32) + '" height="' + hh + '" rx="16" fill="#fff"/>' + rp.svg;
+      y += hh + 20;
+      return { W: W, H: Math.ceil(y), svg: '<rect width="' + W + '" height="' + Math.ceil(y) + '" fill="' + FB.bg + '"/>' + s };
+    }
     var aov = t.purchases ? (t.revenue || 0) / t.purchases : 0;
     s += '<rect x="16" y="' + y + '" width="' + (W - 32) + '" height="' + (d.orderSizes ? 232 : 254) + '" rx="16" fill="#fff"/>'
       + '<text x="32" y="' + (y + 28) + '" font-size="13" font-weight="900" fill="' + FB.ink + '">客人花的錢</text>'
@@ -313,7 +373,8 @@
       + '<linearGradient id="mpConeV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6e9ff"/><stop offset="0.55" stop-color="#7b8bf5"/><stop offset="1" stop-color="' + FB.b1 + '"/></linearGradient>'
       + '<linearGradient id="mpFan" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9aa1c4"/><stop offset="1" stop-color="' + FB.bg + '" stop-opacity="0"/></linearGradient></defs>';
     return '<div style="border-radius:16px;overflow:hidden;background:' + FB.bg + '"><svg viewBox="0 0 ' + f.W + ' ' + f.H + '" width="100%" style="display:block" font-family="Noto Sans TC, sans-serif">' + defs + f.svg + '</svg></div>'
-      + '<div class="mo-note" style="border-top:0">滑鼠移到左邊的網子上看完整數字。花費、單數只算進行中的廣告;客人花的錢是 Meta 回報的營收,有接 SMR 的品牌以 SMR 為準。</div>';
+      + '<div class="mo-note" style="border-top:0">' + (GW ? '滑鼠移到左邊的網子上看完整數字。花費、' + GW.conv + '數只算進行中的廣告。顏色深淺跟' + (M.cap(d) ? '總覽填的上限 ' + F.money(REF) : '這段期間平均' + GW.per + ' ' + F.money(REF) + '(總覽右上角填單價和成交率會改用上限)') + '比。'
+        : '滑鼠移到左邊的網子上看完整數字。花費、單數只算進行中的廣告;客人花的錢是 Meta 回報的營收,有接 SMR 的品牌以 SMR 為準。') + '</div>';
   }
 
   //  ② 四格(只看轉換層)
@@ -352,6 +413,15 @@
     var list = build(d);
     if (!list.length) { el.innerHTML = '<div class="mo-card"><div class="mo-h">魚池地圖</div><div class="mo-flat" style="font-size:11px">目前沒有進行中的行銷活動。</div></div>'; return; }
     var narrow = el.clientWidth && el.clientWidth < 640; el.__narrow = narrow;
+    GW = M.goal && M.goal(d) !== 'purchase' ? M.W(d) : null;
+    REF = GW ? (M.cap(d) || ((d.totals || {}).purchases ? d.totals.cpa : 0)) : 0;
+    if (GW) {
+      var lay = layerBlock(list, d).split('單數只是順便').join(GW.conv + '品牌的主力網,看' + GW.per + '多少錢')
+        .split('「出價門檻」= 這張網只撈多划算的魚(ROAS ≥ 3 = 每花 1 元至少要賺回 3 元;CPA ≤ 800 = 一單成本超過 800 就不搶)。').join('')
+        .split('門檻越嚴,單越便宜但量越少;').join('');
+      el.innerHTML = funnelBlock(list, d, narrow) + M.T(lay, d);
+      return;
+    }
     el.innerHTML = funnelBlock(list, d, narrow) + quadBlock(list) + layerBlock(list, d);
   }
   //  手機 / 電腦切換時重畫(橫的 ↔ 直的)
@@ -365,5 +435,5 @@
 
   M.on('data', render);
   if (M.state.data) render(M.state.data);
-  window.MON_POOL = { version: 'monitor-pool v1.3' };
+  window.MON_POOL = { version: 'monitor-pool v1.4' };
 })();
