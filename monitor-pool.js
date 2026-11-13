@@ -1,5 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-pool.js · v1.1(2026-11-13)
+   Brand OS · monitor-pool.js · v1.2(2026-11-13)
+   v1.2:RA 選定「漏斗一張圖」取代魚池剖面:左 = 網子(高度照飼料、深淺照 1 元換回)、中 = 看到→買單漏斗、右 = 客人花的錢;手機改直式
    v1.1:RA「長條看不懂,要一眼看出魚在哪、用什麼網子、網子多少錢、撈出來客人花多少」→ 最上面改成魚池剖面圖
         (照 Meta 簡報『出價 × 預算』圖的畫法:一圈 = 一批成交的客人),明細表留在下面
    新版廣告監控頁「魚池地圖」區塊:一眼看懂這個品牌的廣告帳號是怎麼「撒網」的。
@@ -152,77 +153,146 @@
       + '門檻越嚴,單越便宜但量越少;花費、單數只算進行中的廣告。</div></div>';
   }
 
-  //  ⓪ 魚池剖面圖(v1.1):一層 = 一種魚;一張網 = 一個行銷活動;網子寬 = 花的錢;網裡的圈 = 撈到的客人
-  var FISH = {
-    reach: '還不認識你的人', traffic: '有興趣、會點進來的人', auto: '準備買的新客', gate: '準備買的新客(划算的)', rt: '看過、加過購物車的人'
-  };
-  function short(n, k) { n = String(n || '').replace(/^【[^】]*】/, function (m) { return m; }); return n.length > k ? n.slice(0, k) + '…' : n; }
-  function pondBlock(list, d) {
-    var bands = LAYERS.map(function (L) { return { L: L, items: list.filter(function (c) { return c.layer === L.k; }) }; }).filter(function (b) { return b.items.length; });
-    if (!bands.length) return '';
-    var conv = list.filter(function (c) { return c.layer !== 'reach' && c.layer !== 'traffic'; });
-    var maxP = Math.max.apply(null, conv.map(function (c) { return c.purchases; }).concat([1]));
-    var unitP = Math.max(1, Math.ceil(maxP / 36));
-    var topL = list.filter(function (c) { return c.layer === 'reach' || c.layer === 'traffic'; });
-    var maxR = Math.max.apply(null, topL.map(function (c) { return c.reach || c.clicks; }).concat([1]));
-    var unitR = Math.max(1, Math.ceil(maxR / 36));
-    var W = 1000, X0 = 150, AW = W - X0 - 16, NH = 104, BH = NH + 92, GAP = 14, H = bands.length * BH + 10;
-    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;min-width:720px" font-family="Noto Sans TC, sans-serif">'
-      + '<defs><pattern id="mpNet" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H12M0 0V12" stroke="rgba(255,255,255,0.10)" stroke-width="1"/></pattern></defs>';
-    bands.forEach(function (bd, bi) {
-      var y0 = bi * BH + 6, L = bd.L, top = L.k === 'reach' || L.k === 'traffic';
-      //  水層底色(越下面越深)
-      svg += '<rect x="0" y="' + y0 + '" width="' + W + '" height="' + (BH - 6) + '" rx="12" fill="' + L.color + '" fill-opacity="' + (0.05 + bi * 0.025).toFixed(3) + '"/>';
-      svg += '<text x="14" y="' + (y0 + 26) + '" font-size="15" font-weight="800" fill="' + L.color + '">' + esc(L.name) + '</text>';
-      svg += '<text x="14" y="' + (y0 + 46) + '" font-size="11" fill="#a9a9bd">魚:' + esc(FISH[L.k]) + '</text>';
-      var tS = bd.items.reduce(function (s, c) { return s + c.spend; }, 0), tR = bd.items.reduce(function (s, c) { return s + c.revenue; }, 0), tP = bd.items.reduce(function (s, c) { return s + c.purchases; }, 0);
-      svg += '<text x="14" y="' + (y0 + 72) + '" font-size="11" fill="#d8d8e6">網子共 ' + esc(F.money(tS)) + '</text>';
-      if (!top) svg += '<text x="14" y="' + (y0 + 90) + '" font-size="11" fill="#d8d8e6">撈到 ' + tP + ' 單</text>'
-        + '<text x="14" y="' + (y0 + 108) + '" font-size="11" fill="#6DFAC2">客人花 ' + esc(F.money(tR)) + '</text>';
-      //  網子:寬度照花費比例(最少 110),同一層排一列
-      var items = bd.items.slice().sort(function (a, b) { return b.spend - a.spend; }).slice(0, 7);
-      var n = items.length, minW = n > 5 ? 96 : 118, free = AW - n * minW - (n - 1) * GAP, totSp = items.reduce(function (s, c) { return s + c.spend; }, 0) || 1;
-      var x = X0;
-      items.forEach(function (c) {
-        var w = minW + Math.max(0, free) * (c.spend / totSp), ny = y0 + 12;
-        //  網子
-        svg += '<g><title>' + esc(c.name) + '\n網子:' + esc(c.gate || BID[c.strat] || '自動出價') + '\n花費 ' + F.money(c.spend) + (top ? '\n觸及 ' + F.num(c.reach) + ' 人 · 點擊 ' + F.num(c.clicks) : '\n撈到 ' + c.purchases + ' 單 · 客人花 ' + F.money(c.revenue) + (c.roas ? ' · ROAS ' + c.roas.toFixed(2) : '')) + '</title>'
-          + '<rect x="' + x + '" y="' + ny + '" width="' + w + '" height="' + NH + '" rx="10" fill="url(#mpNet)" stroke="' + L.color + '" stroke-opacity="0.55" stroke-width="1.5"/>';
-        //  網口:門檻(像簡報的「出價」膠囊)
-        var pill = c.gate || (top ? '' : '不設門檻'), pw = pill ? Math.min(w - 10, 18 + pill.length * 9.5) : 0;
-        if (pill) svg += '<line x1="' + x + '" y1="' + (ny + 14) + '" x2="' + (x + w) + '" y2="' + (ny + 14) + '" stroke="#4d8dff" stroke-width="1.5" stroke-dasharray="5 4"/>'
-          + '<rect x="' + (x + (w - pw) / 2) + '" y="' + (ny + 4) + '" width="' + pw + '" height="20" rx="10" fill="#1452c8"/>'
-          + '<text x="' + (x + w / 2) + '" y="' + (ny + 18) + '" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">' + esc(pill) + '</text>';
-        //  網裡的魚:一圈 = unit 單(上層:unit 人)
-        var cnt = top ? Math.round((c.reach || c.clicks) / unitR) : Math.round(c.purchases / unitP);
-        if (!top && c.purchases > 0 && cnt < 1) cnt = 1;
-        cnt = Math.min(cnt, 60);
-        var r = 5.5, cols = Math.max(1, Math.floor((w - 16) / 15)), fy = ny + (pill ? 34 : 18);
-        for (var i = 0; i < cnt; i++) {
-          var cx = x + 12 + (i % cols) * 15 + (Math.floor(i / cols) % 2 ? 4 : 0), cy = ny + NH - 12 - Math.floor(i / cols) * 14;   // 魚沉在網底
-          if (cy < fy) break;
-          svg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy + '" r="' + r + '" fill="' + (top ? 'none' : 'rgba(109,250,194,0.25)') + '" stroke="' + (top ? '#7FD6FF' : '#6DFAC2') + '" stroke-width="1.6"/>';
-        }
-        if (!cnt) svg += '<text x="' + (x + w / 2) + '" y="' + (ny + 66) + '" font-size="11" fill="#8a8aa0" text-anchor="middle">還沒撈到</text>';
-        //  網子底下:名字 / 網子多少錢 / 撈到 / 客人花
-        var ty = ny + NH + 16;
-        svg += '<text x="' + x + '" y="' + ty + '" font-size="11" font-weight="700" fill="#e8e8f0">' + esc(short(c.name, Math.max(6, Math.floor(w / 11)))) + '</text>'
-          + '<text x="' + x + '" y="' + (ty + 17) + '" font-size="11" fill="#c8c8d8">網子 ' + esc(F.money(c.spend)) + '</text>'
-          + (top
-            ? '<text x="' + x + '" y="' + (ty + 33) + '" font-size="11" fill="#7FD6FF">觸及 ' + esc(F.num(c.reach)) + ' 人</text>'
-            : '<text x="' + x + '" y="' + (ty + 33) + '" font-size="11" fill="#6DFAC2">撈到 ' + c.purchases + ' 單 · 客人花 ' + esc(F.money(c.revenue)) + '</text>')
-          + '</g>';
-        x += w + GAP;
-      });
+  //  ⓪ 漏斗一張圖(v1.2,RA 11-13 選定):左 = 網子(高度照飼料、顏色深淺照 1 元換回)→ 中 = 客人一路往下掉 → 右 = 客人花的錢
+  //   寬畫面橫的、手機直的;淺色底卡片(照 RA 給的參考圖)
+  var FB = { bg: '#f5f6fb', ink: '#1e2140', sub: '#7a7f9a', b1: '#2a3bdc', b15: '#4555e3', b2: '#6d7cf0', b3: '#c8cdfa', off: '#eef0fd' };
+  function short(n, k) { n = String(n || ''); var m = n.match(/^【([^】]+)】/); if (m) n = m[1]; return n.length > k ? n.slice(0, k) + '…' : n; }   // 【ASC/包】1008>… → ASC/包
+  function wan(n) { return n >= 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, '') + ' 萬' : F.num(n); }
+  function netColor(c) {
+    if (!c.spend) return [FB.off, '#a9aed0'];
+    var r = c.roas; return r >= 3 ? [FB.b1, '#fff'] : r >= 2 ? [FB.b15, '#fff'] : r >= 1.2 ? [FB.b2, '#fff'] : [FB.b3, FB.b1];
+  }
+  function stages(t) {
+    return [['看到廣告', wan(t.reach || 0) + '人'], ['點進網站', wan(t.linkClicks || 0) + '人'], ['看商品', wan(t.viewContent || 0) + '次'],
+      ['加購物車', wan(t.addToCart || 0) + '次'], ['結帳', wan(t.checkout || 0) + '次']];
+  }
+  function dots(n, fn) { var s = '', seed = 7; for (var i = 0; i < n; i++) { seed = (seed * 9301 + 49297) % 233280; var a = seed / 233280; seed = (seed * 9301 + 49297) % 233280; var b = seed / 233280; s += fn(Math.pow(a, 1.6) * 0.93, b * 2 - 1); } return s; }
+  function netsOrdered(list) {
+    var order = { reach: 0, traffic: 1, auto: 2, gate: 3, rt: 4 };
+    var out = list.slice().sort(function (a, b) { return (order[a.layer] - order[b.layer]) || (b.spend - a.spend); });
+    ['reach', 'traffic'].forEach(function (k, i) { if (!list.some(function (c) { return c.layer === k; })) out.splice(i, 0, { name: k === 'reach' ? '觸及網' : '流量網', spend: 0, purchases: 0, revenue: 0, roas: 0, ghost: true }); });
+    return out;
+  }
+  function funnelWide(list, d) {
+    var t = d.totals || {}, W = 1600, H = 960, X0 = 70, X1 = 330, Y0 = 190, Y1 = 800, PX = 1130, PY = (Y0 + Y1) / 2, cx0 = X1 + 30;
+    var nets = netsOrdered(list), tot = nets.reduce(function (s, c) { return s + c.spend; }, 0) || 1;
+    var gap = 6, usable = (Y1 - Y0) - gap * (nets.length - 1), alloc = nets.map(function (c) { return Math.max(30, usable * c.spend / tot * 0.82); });
+    var k = usable / alloc.reduce(function (a, b) { return a + b; }, 0); alloc = alloc.map(function (a) { return a * k; });
+    var s = '<rect width="' + W + '" height="' + H + '" fill="' + FB.bg + '"/>'
+      + '<text x="70" y="62" font-size="24" font-weight="900" fill="' + FB.ink + '">' + esc(d.brandName || '') + ' 這 ' + rangeDays(d) + ' 天:飼料撒進哪些網,最後撈回多少客人的錢</text>'
+      + '<text x="70" y="94" font-size="14" fill="' + FB.sub + '">左邊每一塊是一張網(廣告設計),越高 = 花越多飼料、顏色越深 = 1 元換回越多;中間是客人一路從「看到」到「買單」,右邊是客人花的錢。</text>'
+      + '<rect x="' + (X0 - 10) + '" y="' + (Y0 - 12) + '" width="' + (X1 - X0 + 20) + '" height="' + (Y1 - Y0 + 24) + '" rx="20" fill="#e3e6fb"/>'
+      + '<text x="' + (X0 + X1) / 2 + '" y="' + (Y0 - 26) + '" font-size="14" fill="' + FB.sub + '" text-anchor="middle">網子(飼料撒在哪)</text>';
+    var y = Y0;
+    nets.forEach(function (c, i) {
+      var h = alloc[i], col = netColor(c);
+      s += '<g><title>' + esc(c.name) + (c.spend ? '\n飼料 ' + F.money(c.spend) + '\n撈到 ' + c.purchases + ' 單 · 客人花 ' + F.money(c.revenue) + '\n1 元換回 ' + c.roas.toFixed(2) : '\n沒開') + '</title>'
+        + '<rect x="' + X0 + '" y="' + y.toFixed(1) + '" width="' + (X1 - X0) + '" height="' + h.toFixed(1) + '" rx="10" fill="' + col[0] + '"/>';
+      if (h >= 46) s += '<text x="' + (X0 + X1) / 2 + '" y="' + (y + h / 2 - 3).toFixed(1) + '" font-size="14" font-weight="900" fill="' + col[1] + '" text-anchor="middle">' + esc(short(c.name, 16)) + '</text>'
+        + '<text x="' + (X0 + X1) / 2 + '" y="' + (y + h / 2 + 16).toFixed(1) + '" font-size="12" fill="' + col[1] + '" text-anchor="middle">飼料 ' + F.money(c.spend) + ' · 1 元換 ' + c.roas.toFixed(2) + '</text>';
+      else s += '<text x="' + (X0 + 14) + '" y="' + (y + h / 2 + 5).toFixed(1) + '" font-size="12.5" font-weight="800" fill="' + col[1] + '">' + esc(short(c.name, 9)) + '</text>'
+        + '<text x="' + (X1 - 14) + '" y="' + (y + h / 2 + 5).toFixed(1) + '" font-size="11.5" fill="' + col[1] + '" text-anchor="end">' + (c.spend ? F.money(c.spend) + ' · ' + c.roas.toFixed(2) : '沒開') + '</text>';
+      s += '</g>'; y += h + gap;
     });
-    svg += '</svg>';
-    var legend = '<div class="mo-legend"><span><i style="background:rgba(109,250,194,0.6)"></i>一圈 = ' + unitP + ' 單</span>'
-      + (topL.length ? '<span><i style="background:none;border:1.5px solid #7FD6FF;border-radius:50%"></i>一圈 = ' + F.num(unitR) + ' 人(觸及)</span>' : '')
-      + '<span><i style="background:#1452c8"></i>網口門檻(出價條件)</span><span>網子越寬 = 花越多錢</span></div>';
-    return '<div class="mo-card"><div class="mo-h">魚池剖面 <small>期間 ' + rangeDays(d) + ' 天 · 滑鼠移到網子上看完整數字</small></div>'
-      + '<div class="mp-scroll">' + svg + '</div>' + legend
-      + '<div class="mo-note"><b>怎麼看:</b>由上往下,水越深、魚越接近要買。每一張網 = 一個行銷活動:<b>網口的藍色膠囊</b>是它的出價門檻(不設門檻 = 預算內能撈的都撈;ROAS ≥ 3 = 每花 1 元至少要賺回 3 元的才撈),'
-      + '<b>網子多寬</b>代表花了多少錢,<b>網裡的圈</b>是撈到的客人,底下寫網子花多少、撈到幾單、客人總共花了多少錢。客人花的錢是 Meta 回報的營收,有接 SMR 的品牌以 SMR 為準。</div></div>';
+    s += '<line x1="40" y1="' + Y0 + '" x2="40" y2="' + Y1 + '" stroke="' + FB.b3 + '" stroke-width="4" stroke-linecap="round"/>'
+      + '<text x="30" y="' + PY + '" font-size="13" fill="' + FB.sub + '" text-anchor="middle" transform="rotate(-90 30 ' + PY + ')">這些網共花 ' + F.money(tot) + '</text>';
+    //  錐形
+    s += '<path d="M' + cx0 + ' ' + Y0 + ' L' + PX + ' ' + PY + ' L' + cx0 + ' ' + Y1 + ' Z" fill="url(#mpCone)"/>';
+    s += dots(240, function (tt, u) { var x = cx0 + (PX - cx0) * tt, half = (Y1 - Y0) / 2 * (1 - tt) * 0.9; return '<circle cx="' + x.toFixed(0) + '" cy="' + (PY + u * half).toFixed(0) + '" r="2.6" fill="#fff" fill-opacity="' + (0.35 + 0.5 * tt).toFixed(2) + '"/>'; });
+    var T = [0, 0.22, 0.42, 0.62, 0.8];
+    stages(t).forEach(function (st, i) {
+      var x = cx0 + (PX - cx0) * T[i], pcx = i ? x : x + 56;
+      if (i) s += '<line x1="' + x.toFixed(0) + '" y1="' + (Y0 - 30) + '" x2="' + x.toFixed(0) + '" y2="' + (Y1 + 30) + '" stroke="' + FB.b2 + '" stroke-opacity="0.45" stroke-dasharray="5 6"/>';
+      s += '<rect x="' + (pcx - 52).toFixed(0) + '" y="' + (Y1 + 40) + '" width="104" height="44" rx="10" fill="' + (i ? '#3d4fe0' : FB.b1) + '"/>'
+        + '<text x="' + pcx.toFixed(0) + '" y="' + (Y1 + 58) + '" font-size="12" fill="#dfe3ff" text-anchor="middle">' + st[0] + '</text>'
+        + '<text x="' + pcx.toFixed(0) + '" y="' + (Y1 + 77) + '" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">' + st[1] + '</text>';
+    });
+    var per = t.purchases ? Math.round((t.reach || 0) / t.purchases) : 0;
+    s += '<path d="M' + cx0 + ' ' + (Y0 - 40) + ' v-12 H' + PX + ' v12" fill="none" stroke="' + FB.b2 + '" stroke-width="2"/>'
+      + '<text x="' + (cx0 + PX) / 2 + '" y="' + (Y0 - 62) + '" font-size="15" font-weight="900" fill="' + FB.b1 + '" text-anchor="middle">' + (per ? '客人一路往下掉:每 ' + F.num(per) + ' 個看到的人,有 1 個買' : '這段期間還沒有人買') + '</text>'
+      + '<circle cx="' + PX + '" cy="' + PY + '" r="34" fill="' + FB.b1 + '" stroke="#fff" stroke-width="6"/>'
+      + '<text x="' + PX + '" y="' + (PY - 2) + '" font-size="20" font-weight="900" fill="#fff" text-anchor="middle">' + F.num(t.purchases || 0) + '</text>'
+      + '<text x="' + PX + '" y="' + (PY + 17) + '" font-size="11" fill="#dfe3ff" text-anchor="middle">單</text>'
+      + '<rect x="' + (PX - 52) + '" y="' + (Y1 + 40) + '" width="104" height="44" rx="10" fill="' + FB.b1 + '"/>'
+      + '<text x="' + PX + '" y="' + (Y1 + 58) + '" font-size="12" fill="#dfe3ff" text-anchor="middle">買單</text>'
+      + '<text x="' + PX + '" y="' + (Y1 + 77) + '" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">' + F.num(t.purchases || 0) + ' 單</text>';
+    //  右:客人花的錢
+    var FX = 1560, aov = t.purchases ? (t.revenue || 0) / t.purchases : 0;
+    s += '<path d="M' + PX + ' ' + PY + ' L' + FX + ' ' + (PY - 170) + ' L' + FX + ' ' + (PY + 170) + ' Z" fill="url(#mpFan)" opacity="0.55"/>'
+      + '<path d="M' + (PX + 34) + ' ' + (PY - 12) + ' h70 M' + (PX + 34) + ' ' + (PY + 12) + ' h70" stroke="#fff" stroke-width="5"/>'
+      + '<text x="' + (PX + 130) + '" y="' + (Y0 + 10) + '" font-size="15" font-weight="900" fill="' + FB.ink + '">客人花的錢</text>'
+      + '<text x="' + (PX + 130) + '" y="' + (Y0 + 52) + '" font-size="34" font-weight="900" fill="' + FB.b1 + '">' + F.money(t.revenue || 0) + '</text>'
+      + '<text x="' + (PX + 130) + '" y="' + (Y0 + 78) + '" font-size="13" fill="' + FB.sub + '">1 元飼料換回 ' + (t.roas || 0).toFixed(2) + ' 元 · 平均一單 ' + F.money(aov) + '</text>'
+      + '<text x="' + (PX + 130) + '" y="' + (PY + 90) + '" font-size="15" font-weight="900" fill="' + FB.ink + '">魚的大小(一單花多少)</text>'
+      + '<text x="' + (PX + 130) + '" y="' + (PY + 116) + '" font-size="12.5" fill="' + FB.sub + '">大魚 NT$3,000 以上 · 小魚 1,000–2,999 · 幼魚 1,000 以下</text>'
+      + '<text x="' + (PX + 130) + '" y="' + (PY + 140) + '" font-size="12.5" fill="' + FB.b2 + '">接上 SMR / 電商後台的每筆訂單後顯示比例</text>';
+    //  色階
+    [[FB.b1, '1 元換回 3 以上'], [FB.b15, '2 ~ 3'], [FB.b2, '1.2 ~ 2'], [FB.b3, '1.2 以下'], [FB.off, '沒開']].forEach(function (c, i) {
+      s += '<rect x="' + (70 + i * 130) + '" y="' + (H - 42) + '" width="14" height="14" rx="3" fill="' + c[0] + '" stroke="#d5d8f0"/><text x="' + (70 + i * 130 + 20) + '" y="' + (H - 30) + '" font-size="12" fill="' + FB.sub + '">' + c[1] + '</text>';
+    });
+    return { W: W, H: H, svg: s };
+  }
+  function funnelNarrow(list, d) {
+    var t = d.totals || {}, W = 390, s = '', y = 20, nets = netsOrdered(list);
+    s += '<text x="16" y="' + (y + 18) + '" font-size="19" font-weight="900" fill="' + FB.ink + '">' + esc(d.brandName || '') + ' 這 ' + rangeDays(d) + ' 天</text>'
+      + '<text x="16" y="' + (y + 40) + '" font-size="12" fill="' + FB.sub + '">飼料撒進哪些網,最後撈回多少客人的錢</text>'; y += 62;
+    [['飼料', wan(t.spend || 0), '#b8862f'], ['客人花', wan(t.revenue || 0), FB.b1], ['1 元換回', (t.roas || 0).toFixed(2) + ' 元', FB.b1]].forEach(function (b, i) {
+      var x = 16 + i * 122;
+      s += '<rect x="' + x + '" y="' + y + '" width="114" height="58" rx="12" fill="#fff"/><text x="' + (x + 12) + '" y="' + (y + 20) + '" font-size="11" fill="' + FB.sub + '">' + b[0] + '</text>'
+        + '<text x="' + (x + 12) + '" y="' + (y + 45) + '" font-size="19" font-weight="900" fill="' + b[2] + '">' + b[1] + '</text>';
+    }); y += 76;
+    s += '<text x="16" y="' + (y + 12) + '" font-size="13" font-weight="900" fill="' + FB.ink + '">網子(飼料撒在哪)</text><text x="' + (W - 16) + '" y="' + (y + 12) + '" font-size="11" fill="' + FB.sub + '" text-anchor="end">越大 = 花越多 · 越深 = 越划算</text>'; y += 24;
+    var y0 = y, top = nets.reduce(function (m, c) { return Math.max(m, c.spend); }, 1);
+    var big = nets.filter(function (c) { return c.spend >= top * 0.25; }), small = nets.filter(function (c) { return c.spend < top * 0.25; }), inner = '';
+    big.forEach(function (c) {
+      var h = 34 + 70 * c.spend / top, col = netColor(c);
+      inner += '<rect x="16" y="' + y + '" width="' + (W - 32) + '" height="' + h.toFixed(0) + '" rx="10" fill="' + col[0] + '"/>'
+        + '<text x="' + W / 2 + '" y="' + (y + h / 2 - 3).toFixed(0) + '" font-size="14" font-weight="900" fill="' + col[1] + '" text-anchor="middle">' + esc(short(c.name, 18)) + '</text>'
+        + '<text x="' + W / 2 + '" y="' + (y + h / 2 + 15).toFixed(0) + '" font-size="11.5" fill="' + col[1] + '" text-anchor="middle">飼料 ' + F.money(c.spend) + ' · 撈到 ' + c.purchases + ' 單 · 1 元換 ' + c.roas.toFixed(2) + '</text>';
+      y += h + 6;
+    });
+    var cw = (W - 38) / 2;
+    small.forEach(function (c, i) {
+      var x = 16 + (i % 2) * (cw + 6), yy = y + Math.floor(i / 2) * 50, col = netColor(c);
+      inner += '<rect x="' + x.toFixed(0) + '" y="' + yy + '" width="' + cw.toFixed(0) + '" height="44" rx="10" fill="' + col[0] + '"/>'
+        + '<text x="' + (x + 10).toFixed(0) + '" y="' + (yy + 19) + '" font-size="12.5" font-weight="900" fill="' + col[1] + '">' + esc(short(c.name, 11)) + '</text>'
+        + '<text x="' + (x + 10).toFixed(0) + '" y="' + (yy + 35) + '" font-size="10.5" fill="' + col[1] + '">' + (c.spend ? F.money(c.spend) + ' · ' + c.purchases + ' 單 · ' + c.roas.toFixed(2) : '沒開') + '</text>';
+    });
+    y += Math.ceil(small.length / 2) * 50 + 14;
+    s += '<rect x="10" y="' + (y0 - 8) + '" width="' + (W - 20) + '" height="' + (y - y0) + '" rx="16" fill="#e3e6fb"/>' + inner;
+    var per = t.purchases ? Math.round((t.reach || 0) / t.purchases) : 0;
+    s += '<text x="' + W / 2 + '" y="' + (y + 16) + '" font-size="13" font-weight="900" fill="' + FB.b1 + '" text-anchor="middle">' + (per ? '每 ' + F.num(per) + ' 個看到的人,有 1 個買' : '這段期間還沒有人買') + '</text>'; y += 30;
+    var CT = y, CB = y + 420, L = 16, R = W - 16, PX = W / 2;
+    s += '<path d="M' + L + ' ' + CT + ' L' + R + ' ' + CT + ' L' + PX + ' ' + CB + ' Z" fill="url(#mpConeV)"/>';
+    s += dots(150, function (tt, u) { var yy = CT + (CB - CT) * tt, half = (R - L) / 2 * (1 - tt) * 0.9; return '<circle cx="' + (PX + u * half).toFixed(0) + '" cy="' + yy.toFixed(0) + '" r="2" fill="#fff" fill-opacity="' + (0.35 + 0.5 * tt).toFixed(2) + '"/>'; });
+    var T = [0.02, 0.22, 0.42, 0.62, 0.8];
+    stages(t).forEach(function (st, i) {
+      var yy = CT + (CB - CT) * T[i] + 22, tx = PX, anc = 'middle', tc = T[i] < 0.5 ? FB.ink : '#fff';
+      if (i) s += '<line x1="' + L + '" y1="' + (yy - 22).toFixed(0) + '" x2="' + R + '" y2="' + (yy - 22).toFixed(0) + '" stroke="#fff" stroke-opacity=".5" stroke-dasharray="4 5"/>';
+      if (T[i] >= 0.6) { tx = PX + (R - L) / 2 * (1 - T[i] - 0.06) + 14; anc = 'start'; tc = FB.ink; }
+      s += '<text x="' + tx.toFixed(0) + '" y="' + yy.toFixed(0) + '" font-size="11" fill="' + tc + '" text-anchor="' + anc + '" opacity=".85">' + st[0] + '</text>'
+        + '<text x="' + tx.toFixed(0) + '" y="' + (yy + 19).toFixed(0) + '" font-size="15" font-weight="900" fill="' + tc + '" text-anchor="' + anc + '">' + st[1] + '</text>';
+    });
+    s += '<circle cx="' + PX + '" cy="' + CB + '" r="34" fill="' + FB.b1 + '" stroke="#fff" stroke-width="6"/><text x="' + PX + '" y="' + (CB - 2) + '" font-size="20" font-weight="900" fill="#fff" text-anchor="middle">' + F.num(t.purchases || 0) + '</text>'
+      + '<text x="' + PX + '" y="' + (CB + 16) + '" font-size="11" fill="#dfe3ff" text-anchor="middle">單</text>';
+    y = CB + 50;
+    var aov = t.purchases ? (t.revenue || 0) / t.purchases : 0;
+    s += '<rect x="16" y="' + y + '" width="' + (W - 32) + '" height="170" rx="16" fill="#fff"/>'
+      + '<text x="32" y="' + (y + 28) + '" font-size="13" font-weight="900" fill="' + FB.ink + '">客人花的錢</text>'
+      + '<text x="32" y="' + (y + 64) + '" font-size="30" font-weight="900" fill="' + FB.b1 + '">' + F.money(t.revenue || 0) + '</text>'
+      + '<text x="32" y="' + (y + 86) + '" font-size="11.5" fill="' + FB.sub + '">1 元飼料換回 ' + (t.roas || 0).toFixed(2) + ' 元 · 平均一單 ' + F.money(aov) + '</text>'
+      + '<text x="32" y="' + (y + 120) + '" font-size="12.5" font-weight="900" fill="' + FB.ink + '">魚的大小(一單花多少)</text>'
+      + '<text x="32" y="' + (y + 142) + '" font-size="11" fill="' + FB.b2 + '">接上 SMR / 電商後台的每筆訂單後顯示比例</text>';
+    y += 190;
+    return { W: W, H: Math.ceil(y), svg: '<rect width="' + W + '" height="' + Math.ceil(y) + '" fill="' + FB.bg + '"/>' + s };
+  }
+  function funnelBlock(list, d, narrow) {
+    var f = narrow ? funnelNarrow(list, d) : funnelWide(list, d);
+    var defs = '<defs><linearGradient id="mpCone" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e6e9ff"/><stop offset="0.55" stop-color="#7b8bf5"/><stop offset="1" stop-color="' + FB.b1 + '"/></linearGradient>'
+      + '<linearGradient id="mpConeV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6e9ff"/><stop offset="0.55" stop-color="#7b8bf5"/><stop offset="1" stop-color="' + FB.b1 + '"/></linearGradient>'
+      + '<linearGradient id="mpFan" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9aa1c4"/><stop offset="1" stop-color="' + FB.bg + '" stop-opacity="0"/></linearGradient></defs>';
+    return '<div style="border-radius:16px;overflow:hidden;background:' + FB.bg + '"><svg viewBox="0 0 ' + f.W + ' ' + f.H + '" width="100%" style="display:block" font-family="Noto Sans TC, sans-serif">' + defs + f.svg + '</svg></div>'
+      + '<div class="mo-note" style="border-top:0">滑鼠移到左邊的網子上看完整數字。花費、單數只算進行中的廣告;客人花的錢是 Meta 回報的營收,有接 SMR 的品牌以 SMR 為準。</div>';
   }
 
   //  ② 四格(只看轉換層)
@@ -260,10 +330,19 @@
     injectCss();
     var list = build(d);
     if (!list.length) { el.innerHTML = '<div class="mo-card"><div class="mo-h">魚池地圖</div><div class="mo-flat" style="font-size:11px">目前沒有進行中的行銷活動。</div></div>'; return; }
-    el.innerHTML = pondBlock(list, d) + quadBlock(list) + layerBlock(list, d);
+    var narrow = el.clientWidth && el.clientWidth < 640; el.__narrow = narrow;
+    el.innerHTML = funnelBlock(list, d, narrow) + quadBlock(list) + layerBlock(list, d);
   }
+  //  手機 / 電腦切換時重畫(橫的 ↔ 直的)
+  var rt = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(rt); rt = setTimeout(function () {
+      var el = document.getElementById('mon-pool'); if (!el || !M.state.data) return;
+      if ((el.clientWidth < 640) !== !!el.__narrow) render(M.state.data);
+    }, 250);
+  });
 
   M.on('data', render);
   if (M.state.data) render(M.state.data);
-  window.MON_POOL = { version: 'monitor-pool v1.1' };
+  window.MON_POOL = { version: 'monitor-pool v1.2' };
 })();
