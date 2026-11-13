@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   admin-adbind.js v1.2(2026-11-13)v1.2 廣告帳號清單每次都抓最新(剛分給系統帳號的馬上看得到);v1.1 登入通行證過期自動換新的再試;v1.0後台「廣告監控綁定」分頁
+   admin-adbind.js v1.3(2026-11-13)v1.3 綁定可以不選品牌(只做廣告監控),名稱自動用廣告帳號名稱;v1.2 廣告帳號清單每次都抓最新(剛分給系統帳號的馬上看得到);v1.1 登入通行證過期自動換新的再試;v1.0後台「廣告監控綁定」分頁
    ・哪個品牌對到哪個 Meta 廣告帳號、主要看什麼目標(購物 / 訊息 / 名單),在這裡設,不用再改程式
    ・資料來源:ads-monitor v2.0 bind_list / bind_set / bind_off + accounts(系統帳號看得到的廣告帳號)
    ・只有 RA 本人(owner)看得到這個分頁;Worker 也會擋
@@ -71,7 +71,7 @@
     const used = new Set(S.brands.map(b => b.id));
     const opts = osBrands().filter(b => b && b.id && !used.has(String(b.id).toLowerCase()))
       .map(b => '<option value="' + esc(String(b.id).toLowerCase()) + '" data-name="' + esc(b.name || b.id) + '">' + esc(b.name || b.id) + '(' + esc(b.id) + ')</option>').join('');
-    return '<select class="field-input" id="' + id + '" style="padding:6px 8px;min-width:170px"><option value="">選品牌</option>' + opts + '<option value="__new">其他:自己取名稱和代號</option></select>';
+    return '<select class="field-input" id="' + id + '" style="padding:6px 8px;min-width:170px"><option value="">不用選(只做廣告監控)</option>' + opts + '<option value="__new">其他:自己取名稱和代號</option></select>';
   }
 
   function shell(msg) {
@@ -144,8 +144,14 @@
   }
 
   async function bind(i, account) {
-    const sel = $('abB' + i); if (!sel || !sel.value) { say('先選要綁到哪個品牌', true); return; }
-    let brand = sel.value, name = sel.options[sel.selectedIndex].getAttribute('data-name') || sel.value;
+    const sel = $('abB' + i); if (!sel) return;
+    let brand = sel.value, name = brand ? (sel.options[sel.selectedIndex].getAttribute('data-name') || brand) : '';
+    //  v1.3 不選品牌 = 只做廣告監控:名稱用廣告帳號名稱(去掉 Shopline- / 廣告帳號 這類字),代號自動取 ad + 帳號末 6 碼
+    if (!brand) {
+      const acc = S.accounts.filter(x => x.id === account)[0] || {};
+      name = String(acc.name || account).replace(/^Shopline[-\s]*/i, '').replace(/[-\s]*廣告帳號\s*$/, '').trim() || account;
+      brand = 'ad' + String(account).slice(-6);
+    }
     if (brand === '__new') {
       name = (prompt('品牌名稱(監控頁上顯示的名字)') || '').trim(); if (!name) return;
       brand = (prompt('品牌代號(英文小寫或數字,例:ww;客戶帳號白名單要填同一個代號)') || '').trim().toLowerCase(); if (!brand) return;
@@ -178,5 +184,5 @@
   let _n = 0; const _iv = setInterval(function () { tick(); if (++_n > 120 || isOwner()) clearInterval(_iv); }, 1000);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
 
-  window.AdminAdBind = { load: load, show: show, bind: bind, saveGoal: saveGoal, off: off, on: on, version: '1.2' };
+  window.AdminAdBind = { load: load, show: show, bind: bind, saveGoal: saveGoal, off: off, on: on, version: '1.3' };
 })();
