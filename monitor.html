@@ -54,6 +54,8 @@ body{
 .mn-loading>div{width:min(420px,90vw)}
 .mn-foot{text-align:center;font-size:10px;color:var(--t3);padding:10px}
 @media(max-width:640px){.mn-meta{margin-left:0;width:100%}.mn-sep{display:none}.mn-nav .tt{display:none}}
+/* 2026-11-13 RWD:body 是 flex,沒有 min-width:0 時寬表格會把整頁撐到 1000px+ → 手機整頁縮小、魚池也誤判成電腦版 */
+.mn-wrap{min-width:0;width:100%;box-sizing:border-box}.mn-tabs{overflow-x:auto;scrollbar-width:none}.mn-tabs::-webkit-scrollbar{display:none}.mn-tab{white-space:nowrap;flex:none}.mo-tag{white-space:nowrap}
 </style>
 </head>
 <body>
