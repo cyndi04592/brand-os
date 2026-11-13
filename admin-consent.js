@@ -114,3 +114,9 @@
   if (window.__admSeasonLoader) return; window.__admSeasonLoader = true;
   try { var s = document.createElement('script'); s.src = 'admin-season.js?v=20261102'; s.defer = true; document.body.appendChild(s); } catch (e) {}
 })();
+
+/* 2026-11-13 後台「廣告監控綁定」分頁(admin-adbind.js)也搭這支的車載入,理由同上。失敗不影響授權書分頁。 */
+(function () {
+  if (window.__admAdBindLoader) return; window.__admAdBindLoader = true;
+  try { var s = document.createElement('script'); s.src = 'admin-adbind.js?v=20261113'; s.defer = true; document.body.appendChild(s); } catch (e) {}
+})();
