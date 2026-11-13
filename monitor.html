@@ -56,6 +56,9 @@ body{
 @media(max-width:640px){.mn-meta{margin-left:0;width:100%}.mn-sep{display:none}.mn-nav .tt{display:none}}
 /* 2026-11-13 RWD:body 是 flex,沒有 min-width:0 時寬表格會把整頁撐到 1000px+ → 手機整頁縮小、魚池也誤判成電腦版 */
 .mn-wrap{min-width:0;width:100%;box-sizing:border-box}.mn-tabs{overflow-x:auto;scrollbar-width:none}.mn-tabs::-webkit-scrollbar{display:none}.mn-tab{white-space:nowrap;flex:none}.mo-tag{white-space:nowrap}
+/* 2026-11-13 iPhone Safari:輸入框字小於 16px 時,一點下去整頁會自動放大、回不來;轉橫向時字也會被自動放大 */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@media(max-width:640px){input,select,textarea{font-size:16px!important}.mn-date{min-width:0;max-width:44vw}}
 </style>
 </head>
 <body>
