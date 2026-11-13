@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-data.js · v1.3(2026-11-11)— v1.3:加 MON.market() 大盤;v1.2:加 MON.diag() 診斷包;v1.1:Worker 回舊資料(stale)時,15 秒後自動換新的;自動更新不硬敲 Meta
+   Brand OS · monitor-data.js · v1.4(2026-11-13)— v1.4:開頁 0 秒先秀上次看的數據(只限同一次登入),Loading 一開頁就出現,身分和數據同時抓;v1.3:加 MON.market() 大盤;v1.2:加 MON.diag() 診斷包;v1.1:Worker 回舊資料(stale)時,15 秒後自動換新的;自動更新不硬敲 Meta
    新版廣告監控頁的「資料管家」——整頁只有這支檔跟後台講話。
    其他區塊檔(總覽 / ASC / 廣告列表 / 小幫手)只跟這支拿資料,不自己打 API。
 
@@ -94,6 +94,26 @@
     return x && (Date.now() - x.at < MEM_TTL) ? x.data : null;
   }
 
+  //  v1.4 開頁秒開:上次看的數據存在這台電腦(只認同一張登入通行證;換人登入就不會看到)
+  var LS_SNAP = 'mon2_snap';
+  function tk() { return token().slice(-24); }
+  function snapRead() {
+    try { var s = JSON.parse(lsGet(LS_SNAP, '') || 'null'); return (s && s.tk && s.tk === tk()) ? s : null; } catch (_) { return null; }
+  }
+  function snapWrite(patch) {
+    try {
+      var s = snapRead() || { tk: tk(), dash: {} };
+      if (patch.me) s.me = patch.me;
+      if (patch.k) {
+        s.dash[patch.k] = { at: Date.now(), data: patch.data };
+        var ks = Object.keys(s.dash).sort(function (a, b) { return s.dash[b].at - s.dash[a].at; });
+        ks.slice(6).forEach(function (k) { delete s.dash[k]; });   // 最多留 6 包,約 200KB
+      }
+      lsSet(LS_SNAP, JSON.stringify(s));
+    } catch (_) {}
+  }
+  var snapShown = {};   // 'brand|range' → 這次開頁已經先秀了上次的數據(背景更新時不再蓋 Loading)
+
   function fetchDash(brand, range, fresh) {
     var k = brand + '|' + rangeKey(range);
     if (!fresh) {
@@ -103,7 +123,7 @@
     }
     var p = post({ action: 'dashboard', brand: brand, range: range, fresh: !!fresh }, 45000).then(function (j) {
       delete inflight[k];
-      if (j && j.ok) { mem[k] = { at: Date.now(), data: j }; }
+      if (j && j.ok) { mem[k] = { at: Date.now(), data: j }; if (brand === state.brand) snapWrite({ k: k, data: j }); }
       return j;
     });
     inflight[k] = p;
@@ -124,7 +144,7 @@
     if (!state.brand) return Promise.resolve(null);
     var my = ++seq;
     var cachedNow = !fresh && memGet(state.brand + '|' + rangeKey(state.range));
-    if (!cachedNow) emit('loading', { brand: state.brand, range: state.range });
+    if (!cachedNow && !snapShown[state.brand + '|' + rangeKey(state.range)]) emit('loading', { brand: state.brand, range: state.range });
     var t0 = Date.now();
     return fetchDash(state.brand, state.range, fresh).then(function (j) {
       if (my !== seq) return null;           // 中途又切了品牌,這包作廢
@@ -167,10 +187,24 @@
   // ── 對外 ────────────────────────────────────────────────
   function init() {
     if (!token()) { location.href = 'index.html'; return Promise.resolve(null); }
+    //  v1.4 ① 一開頁就秀 Loading(以前要等身分查完才出現,中間空白像當掉)
+    //       ② 同一次登入看過 → 先秀上次的數據,背景換新的
+    //       ③ 身分和數據同時抓(以前先查身分、再抓數據,排隊多等一輪)
+    var snap = snapRead(), k0 = state.brand + '|' + rangeKey(state.range);
+    var hit = snap && snap.me && state.brand && snap.dash && snap.dash[k0];
+    if (hit) {
+      state.me = snap.me; snapShown[k0] = true;
+      emit('me', snap.me);
+      state.data = Object.assign({}, hit.data, { stale: true, cached: true, fetchedAt: hit.data.fetchedAt });
+      emit('data', state.data);
+    } else {
+      emit('loading', { brand: state.brand, range: state.range });
+    }
+    if (state.brand) fetchDash(state.brand, state.range, false);   // 先跑,身分查完直接接上(沒權限的品牌 Worker 會擋,結果丟掉)
     return post({ action: 'me' }, 15000).then(function (j) {
       if (!j || !j.ok) { handleFail(j); return null; }
       if (!j.brands || !j.brands.length) { emit('error', '這個帳號目前沒有可以看的品牌廣告數據'); return null; }
-      state.me = j;
+      state.me = j; snapWrite({ me: j });
       var ids = j.brands.map(function (b) { return b.id; });
       if (ids.indexOf(state.brand) < 0) state.brand = ids[0];
       emit('me', j);
@@ -247,7 +281,7 @@
   var GROUP_LABEL = { asc: 'ASC 高效推廣', cibs: 'CIBS 超額預算', rt: '再行銷', other: '其他' };
 
   window.MON = {
-    version: 'monitor-data v1.3',
+    version: 'monitor-data v1.4',
     on: on, init: init,
     refresh: function () { return load(true); },                                          // 使用者按「重抓最新」
     softRefresh: function () { delete mem[state.brand + '|' + rangeKey(state.range)]; return load(false); },   // 自動更新:讓 Worker 決定要不要敲 Meta
