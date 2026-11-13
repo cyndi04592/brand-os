@@ -58,6 +58,9 @@ body{
 .mn-wrap{min-width:0;width:100%;box-sizing:border-box}.mn-tabs{overflow-x:auto;scrollbar-width:none}.mn-tabs::-webkit-scrollbar{display:none}.mn-tab{white-space:nowrap;flex:none}.mo-tag{white-space:nowrap}
 /* 2026-11-13 iPhone Safari:輸入框字小於 16px 時,一點下去整頁會自動放大、回不來;轉橫向時字也會被自動放大 */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.mn-bsel{appearance:none;-webkit-appearance:none;padding:7px 34px 7px 14px;border-radius:999px;border:1px solid transparent;background:linear-gradient(#14141c,#14141c) padding-box,linear-gradient(135deg,var(--gold,#7C6DFA),var(--pink,#FA6D9B)) border-box;color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;min-width:180px;max-width:100%}
+#mnBrands{position:relative}#mnBrands:has(.mn-bsel)::after{content:'';position:absolute;right:15px;top:50%;width:7px;height:7px;border-right:2px solid #fff;border-bottom:2px solid #fff;transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.mn-bsel option{background:#14141c;color:#fff}
 @media(max-width:640px){input,select,textarea{font-size:16px!important}.mn-date{min-width:0;max-width:44vw}}
 </style>
 </head>
@@ -117,9 +120,16 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   //  品牌按鈕
   function drawBrands() {
     var me = M.state.me; if (!me) return;
-    $('mnBrands').innerHTML = me.brands.map(function (b) {
-      return '<button class="mn-chip' + (b.id === M.state.brand ? ' on' : '') + '" data-b="' + b.id + '">' + b.name + '</button>';
-    }).join('');
+    //  2026-11-13 品牌超過 5 個 → 改下拉選單(一排按鈕在手機上會佔掉半個畫面)
+    if (me.brands.length > 5) {
+      $('mnBrands').innerHTML = '<select class="mn-bsel" id="mnBsel">' + me.brands.map(function (b) {
+        return '<option value="' + b.id + '"' + (b.id === M.state.brand ? ' selected' : '') + '>' + b.name + '</option>';
+      }).join('') + '</select>';
+    } else {
+      $('mnBrands').innerHTML = me.brands.map(function (b) {
+        return '<button class="mn-chip' + (b.id === M.state.brand ? ' on' : '') + '" data-b="' + b.id + '">' + b.name + '</button>';
+      }).join('');
+    }
     var bi = M.brandInfo();
     $('mnSmr').style.display = bi && bi.hasSmr ? 'block' : 'none';
   }
@@ -131,6 +141,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     if (d && d.range) { $('mnSince').value = d.range.since; $('mnUntil').value = d.range.until; }
   }
 
+  $('mnBrands').addEventListener('change', function (e) {
+    if (e.target.id !== 'mnBsel' || e.target.value === M.state.brand) return;
+    M.setBrand(e.target.value); drawBrands();
+  });
   $('mnBrands').addEventListener('click', function (e) {
     var b = e.target.closest('[data-b]'); if (!b || b.dataset.b === M.state.brand) return;
     M.setBrand(b.dataset.b); drawBrands();
