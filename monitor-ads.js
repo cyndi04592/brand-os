@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-ads.js · v1.1(2026-11-13)v1.1 訊息 / 名單品牌:欄位換成私訊 / 一則多少 / 點進來會私訊,「太貴的」= 一則超過總覽算出的上限;v1.0(2026-11-11)
+   Brand OS · monitor-ads.js · v1.2(2026-11-13)v1.2 加影片「前 3 秒留住」「看完率」兩欄;v1.1(2026-11-13)v1.1 訊息 / 名單品牌:欄位換成私訊 / 一則多少 / 點進來會私訊,「太貴的」= 一則超過總覽算出的上限;v1.0(2026-11-11)
    新版廣告監控頁「進行中廣告」列表 + 素材疲乏指數。資料一律跟 window.MON 拿。
    只列 ACTIVE(進行中)的廣告——關掉的不列。
 
@@ -85,6 +85,9 @@
       var f = fatigue(a, cfg);
       var x = Object.assign({}, a, { fat: f.score, why: f.why, ctrDrop: f.ctrDrop, cpmRise: f.cpmRise, be: be,
         losing: be && a.spend >= 500 && a.roas < be });
+      //  v1.2 影片:前 3 秒留住 = 3 秒觀看 ÷ 曝光;看完率 = 看完 ÷ 3 秒觀看(圖片素材沒有,顯示 —)
+      x.hook = a.views3s && a.impressions ? a.views3s / a.impressions * 100 : null;
+      x.hold = a.views3s ? (a.thruplay || 0) / a.views3s * 100 : null;
       if (G) {
         x.cap = cap; x.crate = a.linkClicks ? a.purchases / a.linkClicks * 100 : 0;
         x.losing = !!cap && a.spend >= 500 && a.purchases > 0 && a.cpa > cap;
@@ -123,8 +126,8 @@
   }
 
   function tableHtml(list) {
-    var cols = G ? [['name', '廣告'], ['spend', '花費'], ['cpa', G.per + '多少'], ['purchases', G.conv], ['crate', G.rateLong], ['ctr', 'CTR'], ['frequency', '頻率'], ['cpm', 'CPM'], ['ageDays', '上線'], ['fat', '疲乏']]
-      : [['name', '廣告'], ['spend', '花費'], ['roas', 'ROAS'], ['cpa', 'CPA'], ['purchases', '購買'], ['ctr', 'CTR'], ['frequency', '頻率'], ['cpm', 'CPM'], ['ageDays', '上線'], ['fat', '疲乏']];
+    var cols = G ? [['name', '廣告'], ['spend', '花費'], ['cpa', G.per + '多少'], ['purchases', G.conv], ['crate', G.rateLong], ['ctr', 'CTR'], ['frequency', '頻率'], ['cpm', 'CPM'], ['hook', '前 3 秒留住'], ['hold', '看完率'], ['ageDays', '上線'], ['fat', '疲乏']]
+      : [['name', '廣告'], ['spend', '花費'], ['roas', 'ROAS'], ['cpa', 'CPA'], ['purchases', '購買'], ['ctr', 'CTR'], ['frequency', '頻率'], ['cpm', 'CPM'], ['hook', '前 3 秒留住'], ['hold', '看完率'], ['ageDays', '上線'], ['fat', '疲乏']];
     var head = '<tr>' + cols.map(function (c) {
       var on = view.sort === c[0];
       return '<th data-k="' + c[0] + '" class="' + (on ? 'on' : '') + '">' + c[1] + (on ? (view.dir < 0 ? ' ▼' : ' ▲') : '') + '</th>';
@@ -149,11 +152,13 @@
         + '<td>' + F.pct(r.ctr) + (t ? trendCell(t.last3.ctr, t.prev7.ctr, true) : '') + '</td>'
         + '<td class="' + (r.frequency >= (M.state.cfg.freqWarn || 3.5) ? 'mo-down' : '') + '">' + r.frequency.toFixed(2) + '</td>'
         + '<td>' + F.money(r.cpm) + (t ? trendCell(t.last3.cpm, t.prev7.cpm, false) : '') + '</td>'
+        + '<td>' + (r.hook != null ? F.pct(r.hook, 0) : '<span class="mo-flat">—</span>') + '</td>'
+        + '<td>' + (r.hold != null ? F.pct(r.hold, 0) : '<span class="mo-flat">—</span>') + '</td>'
         + '<td>' + (r.ageDays == null ? '—' : r.ageDays + ' 天') + '</td>'
         + '<td><span class="md-fat ' + fatCls + '">' + fatTxt + '</span>' + (r.why.length ? '<div class="md-why">' + r.why.map(esc).join(' · ') + '</div>' : '') + '</td>'
         + '</tr>';
     }).join('');
-    return '<div class="md-scroll"><table class="md-tbl"><thead>' + head + '</thead><tbody>' + (body || '<tr><td colspan="10" class="mo-flat" style="text-align:center;padding:18px">沒有符合條件的廣告</td></tr>') + '</tbody></table></div>'
+    return '<div class="md-scroll"><table class="md-tbl"><thead>' + head + '</thead><tbody>' + (body || '<tr><td colspan="12" class="mo-flat" style="text-align:center;padding:18px">沒有符合條件的廣告</td></tr>') + '</tbody></table></div>'
       + (list.length > view.limit ? '<div class="md-more"><button data-more="1">再顯示 30 則(共 ' + list.length + ' 則)</button></div>' : '');
   }
 
@@ -190,7 +195,7 @@
       + '<div class="mo-card"><div class="mo-h">進行中的廣告 <small>' + rows.length + ' 則 · 關掉的不列 · 點欄位標題排序</small></div>'
       + '<div class="md-bar">' + chips + '<input class="md-search" id="md-q" placeholder="搜尋廣告 / 行銷活動名稱" value="' + esc(view.q) + '"></div>'
       + '<div id="md-tblwrap">' + tableHtml(filtered()) + '</div>'
-      + '<div class="mo-note"><b>疲乏怎麼算:</b>看「近 3 天 vs 前 7 天」的變化,不是只看平均——點擊率掉 + CPM 漲 + 頻率高,三個一起出現就是同一群人看膩了。<b>≥60 該換素材、35~59 注意。</b>「上線」是廣告建立到今天幾天。'
+      + '<div class="mo-note"><b>影片兩欄:</b>前 3 秒留住 = 3 秒觀看 ÷ 曝光,低於 15% 先換開頭(前 3 秒),不用整支重拍;看完率 = 看完 ÷ 3 秒觀看,偏低代表中段沒料或太長。圖片素材顯示 —。<br><b>疲乏怎麼算:</b>看「近 3 天 vs 前 7 天」的變化,不是只看平均——點擊率掉 + CPM 漲 + 頻率高,三個一起出現就是同一群人看膩了。<b>≥60 該換素材、35~59 注意。</b>「上線」是廣告建立到今天幾天。'
       + (G ? '「太貴的」= ' + G.per + '超過' + (M.cap(d) ? '總覽填的單價 × 成交率算出的上限' : '平均的 1.5 倍(在總覽右上角填單價和成交率會改用上限)') + ',而且花費超過 NT$500。「' + G.rateLong + '」= ' + G.conv + '數 ÷ 點進來次數,偏低先看'
           + (G.key === 'message' ? '自動回覆和開場白' : '表單') + ',不是素材。</div></div>'
         : '「虧錢的」= ROAS 低於' + (parseFloat(M.state.cfg['margin_' + d.brand]) ? '損益兩平點(總覽填的毛利率算出來)' : ' ROAS 目標(總覽填毛利率會改用損益兩平點)') + ',而且花費超過 NT$500。'
@@ -225,5 +230,5 @@
   M.on('brand', function () { view.filter = 'all'; view.q = ''; view.limit = 30; });
   if (M.state.data) render(M.state.data);
 
-  window.MON_ADS = { version: 'monitor-ads v1.1', render: render };
+  window.MON_ADS = { version: 'monitor-ads v1.2', render: render };
 })();

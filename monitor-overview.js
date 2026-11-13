@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Brand OS · monitor-overview.js · v1.4(2026-11-13)v1.4 主要目標是訊息 / 名單的品牌:六大數字、直客指標、漏斗、趨勢整套換成私訊(名單)版;v1.0(2026-11-11)
+   Brand OS · monitor-overview.js · v1.5(2026-11-13)v1.5 趨勢可切換指標(含影片 3 秒留住率)、購物漏斗加「頁面真的打開」;v1.4(2026-11-13)v1.4 主要目標是訊息 / 名單的品牌:六大數字、直客指標、漏斗、趨勢整套換成私訊(名單)版;v1.0(2026-11-11)
    新版廣告監控頁「總覽」區塊。資料一律跟 monitor-data.js(window.MON)拿。
 
    這區不是照抄 Meta 後台——是把直客經理開會才會算給你看的數字算出來:
@@ -183,9 +183,9 @@
   function funnelBlock(d) {
     var t = d.totals;
     var steps = [
-      ['曝光', t.impressions], ['點連結', t.linkClicks], ['看商品', t.viewContent],
+      ['曝光', t.impressions], ['點連結', t.linkClicks], ['頁面真的打開', t.landingViews || 0], ['看商品', t.viewContent],
       ['加購物車', t.addToCart], ['結帳', t.checkout], ['購買', t.purchases]
-    ].filter(function (s, i) { return i < 2 || s[1] > 0 || i === 5; });
+    ].filter(function (s, i) { return i < 2 || s[1] > 0 || i === 6; });
     var top = steps[0][1] || 1, worst = -1, worstRate = 2;
     for (var i = 2; i < steps.length; i++) {           // 從「點連結→看商品」開始找最大漏洞
       var r = steps[i - 1][1] ? steps[i][1] / steps[i - 1][1] : 0;
@@ -206,6 +206,7 @@
     if (worst > 0) {
       var a = steps[worst - 1][0], b = steps[worst][0];
       var hint = {
+        '頁面真的打開': '點了廣告、卻沒等到網頁載完就走 → 網站太慢(圖太大、外掛太多),問題在網站不在廣告。',
         '看商品': '點了卻沒看到商品頁 → 網頁太慢或落地頁跟廣告講的不一樣。',
         '加購物車': '看了不加購 → 價格、規格說明、評價或主圖說服力不夠。',
         '結帳': '加了不結帳 → 運費門檻、優惠碼欄位、要註冊會員都是常見原因。',
@@ -374,11 +375,73 @@
         return '<div class="mo-kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="d">' + x[2] + '</div><div class="s">' + x[3] + '</div></div>';
       }).join('') + keep + '</div>'
       + '<div class="mo-note"><b>為什麼重要:</b>Meta 後台只給你平均,這區算的是變化與底線。右上角填課程 / 服務單價和' + w.conv + '後的成交率(例:100 個' + w.conv + '有 8 個報名 = 8%),就算得出' + w.per + '最多能花多少,下面「進行中廣告」也會用它標出太貴的素材。</div></div>';
-    el.innerHTML = kpiBlockG(d, w) + ins + funnelBlockG(d, w) + trendBlockG(d, w);
+    el.innerHTML = kpiBlockG(d, w) + ins + funnelBlockG(d, w) + trendWrap(d, trendBlockG(d, w));
+    bindTrend(d, function () { return trendBlockG(d, w); });
     ['price', 'close'].forEach(function (k) {
       var inp = document.getElementById('mo-' + k);
       if (inp) inp.addEventListener('change', function () { var v = parseFloat(inp.value), patch = {}; patch[k + '_' + d.brand] = v > 0 ? v : 0; M.setCfg(patch); });
     });
+  }
+
+  // ══ v1.5 趨勢可切換:柱子固定每天花費,線可以換 ══
+  var trendKey = 'base';
+  function trendOpts(d) {
+    var w = M.W ? M.W(d) : null, g = !w || w.key === 'purchase';
+    return [['base', g ? '花費 + ROAS' : '花費 + ' + w.cpaLong], ['purchases', g ? '購買數' : w.conv + '數']]
+      .concat(g ? [['addToCart', '加購']] : [])
+      .concat([['ctr', '點擊率 CTR'], ['cpm', 'CPM'], ['impressions', '曝光'], ['reach', '觸及'], ['hook', '影片 3 秒留住率']]);
+  }
+  function trendVal(x, k) {
+    if (k === 'hook') return x.impressions ? (x.views3s || 0) / x.impressions * 100 : 0;
+    return x[k] || 0;
+  }
+  function trendFmt(v, k) {
+    return k === 'ctr' || k === 'hook' ? v.toFixed(2) + '%' : k === 'cpm' ? F.money(v) : F.num(v);
+  }
+  function trendGeneric(d, k, label) {
+    var today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+    var days = (d.days || []).filter(function (x) { return x.date !== today; });
+    if (!days.length) return '';
+    var W_ = 760, H = 190, pl = 44, pr = 46, pt = 12, pb = 26, iw = W_ - pl - pr, ih = H - pt - pb, n = days.length, bw = iw / n;
+    var maxS = Math.max.apply(null, days.map(function (x) { return x.spend; })) || 1;
+    var vals = days.map(function (x) { return trendVal(x, k); }), maxV = Math.max.apply(null, vals) || 1;
+    var svg = '<svg viewBox="0 0 ' + W_ + ' ' + H + '" preserveAspectRatio="none">';
+    days.forEach(function (x, i) {
+      var wd = new Date(x.date + 'T00:00:00+08:00').getDay();
+      if (wd === 0 || wd === 6) svg += '<rect x="' + (pl + i * bw) + '" y="' + pt + '" width="' + bw + '" height="' + ih + '" fill="rgba(109,250,194,0.06)"/>';
+      var h = x.spend / maxS * ih;
+      svg += '<rect x="' + (pl + i * bw + bw * 0.18) + '" y="' + (pt + ih - h) + '" width="' + (bw * 0.64) + '" height="' + h + '" rx="2" fill="rgba(124,109,250,0.55)"><title>'
+        + x.date + '(' + F.weekday(x.date) + ')花費 ' + F.money(x.spend) + ' · ' + label + ' ' + trendFmt(vals[i], k) + '</title></rect>';
+      if (i % Math.ceil(n / 7) === 0 || i === n - 1) svg += '<text x="' + (pl + i * bw + bw / 2) + '" y="' + (H - 8) + '" font-size="10" fill="#8a8aa0" text-anchor="middle">' + x.date.slice(5) + '</text>';
+    });
+    svg += '<polyline points="' + vals.map(function (v, i) { return (pl + i * bw + bw / 2).toFixed(1) + ',' + (pt + ih - v / maxV * ih).toFixed(1); }).join(' ') + '" fill="none" stroke="#FA6D9B" stroke-width="2.2" stroke-linejoin="round"/>';
+    svg += '<text x="' + (pl - 6) + '" y="' + (pt + 9) + '" font-size="10" fill="#8a8aa0" text-anchor="end">' + (maxS >= 1000 ? Math.round(maxS / 1000) + 'K' : Math.round(maxS)) + '</text>';
+    svg += '<text x="' + (W_ - pr + 6) + '" y="' + (pt + 9) + '" font-size="10" fill="#FA6D9B">' + trendFmt(maxV, k) + '</text></svg>';
+    var tip = { ctr: '點擊率一路往下 = 素材疲乏,該換素材了。', cpm: 'CPM 一路往上 = 市場在搶量(檔期、旺季),不一定是你的廣告變差。',
+      hook: '影片前 3 秒留住率往下 = 開頭看膩了,換開頭就好,不用整支重拍。沒有影片的日子是 0。', impressions: '曝光跟著花費走是正常的;花費沒變、曝光掉 = CPM 變貴。',
+      reach: '觸及往下、頻率往上 = 一直打同一群人,受眾快用完了。' }[k] || '';
+    return '<div class="mo-card mo-trend"><div class="mo-h">近 28 天走勢 <small>不含今天(還沒跑完)· 滑鼠移到柱子看當天</small></div>' + svg
+      + '<div class="mo-legend"><span><i style="background:rgba(124,109,250,0.55)"></i>每日花費</span><span><i style="background:#FA6D9B"></i>' + label + '</span><span><i style="background:rgba(109,250,194,0.25)"></i>週末</span></div>'
+      + '<div class="mo-note">' + tip + ' 固定看 28 天,不跟著上面的日期變,才看得出週期。</div></div>';
+  }
+  function trendWrap(d, baseHtml) {
+    var opts = trendOpts(d);
+    if (!opts.some(function (o) { return o[0] === trendKey; })) trendKey = 'base';
+    var chips = '<div class="mo-tchips" style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px">' + opts.map(function (o) {
+      return '<button data-tk="' + o[0] + '" style="padding:5px 12px;border-radius:999px;font-size:11px;cursor:pointer;font-family:inherit;'
+        + (o[0] === trendKey ? 'border:0;background:linear-gradient(90deg,var(--gold,#7C6DFA),var(--pink,#FA6D9B));color:#fff' : 'border:1px solid rgba(255,255,255,0.12);background:transparent;color:var(--t2,#c8c8d8)') + '">' + o[1] + '</button>';
+    }).join('') + '</div>';
+    var lab = opts.filter(function (o) { return o[0] === trendKey; })[0][1];
+    return '<div id="mo-trendbox">' + chips + (trendKey === 'base' ? baseHtml : trendGeneric(d, trendKey, lab)) + '</div>';
+  }
+  function bindTrend(d, baseFn) {
+    var box = document.getElementById('mo-trendbox'); if (!box) return;
+    box.onclick = function (e) {
+      var b = e.target.closest('[data-tk]'); if (!b) return;
+      trendKey = b.dataset.tk;
+      box.outerHTML = trendWrap(d, baseFn());
+      bindTrend(d, baseFn);
+    };
   }
 
   // ── 畫 ──────────────────────────────────────────────────
@@ -386,7 +449,8 @@
   function render(d) {
     var el = mount(); if (!el || !d) return;
     if (M.goal && M.goal(d) !== 'purchase') { renderG(el, d, M.W(d)); return; }
-    el.innerHTML = kpiBlock(d) + insiderBlock(d) + funnelBlock(d) + trendBlock(d);
+    el.innerHTML = kpiBlock(d) + insiderBlock(d) + funnelBlock(d) + trendWrap(d, trendBlock(d));
+    bindTrend(d, function () { return trendBlock(d); });
     var inp = document.getElementById('mo-margin');
     if (inp) inp.addEventListener('change', function () {
       var v = parseFloat(inp.value), patch = {};
@@ -404,5 +468,5 @@
   M.on('data', render);
   if (M.state.data) render(M.state.data);
 
-  window.MON_OVERVIEW = { version: 'monitor-overview v1.4', render: render };
+  window.MON_OVERVIEW = { version: 'monitor-overview v1.5', render: render };
 })();
