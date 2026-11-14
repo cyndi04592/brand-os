@@ -676,6 +676,15 @@ function renderGrid(){
   const _note = _rd > 0
     ? '<div class="ret-note">📦 您的方案:<b>AI 生成的廣告圖與短影片保存 '+_rd+' 天</b>,到期會自動刪除,需要長期保存請先下載。您自己上傳的素材不會被刪除。</div>'
     : '';
+  const _friendlyName = function(it, vid){
+    const raw  = String(it.name || '').replace(/\.[a-z0-9]{2,4}$/i, '');
+    const cat  = String(it.category || '') || (vid ? '影片' : '圖片');
+    const mach = !raw || (!/[\u4e00-\u9fff]/.test(raw) && /\d{8,}/.test(raw)) || /_sheet_|_ai_\d|^poster_text_/i.test(raw);
+    if (!mach) return esc(raw);
+    const d = new Date(it.ts);
+    const tm = isNaN(d.getTime()) ? '' : ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    return '<span>' + esc(cat) + '</span>' + (it.kol_name ? ' · <span>' + esc(it.kol_name) + '</span>' : '') + (tm ? ' · ' + tm : '');
+  };
   const _left = function(it){
     if(!_rd) return null;
     const t = new Date(it.ts).getTime();
@@ -684,7 +693,10 @@ function renderGrid(){
   };
   $('body').innerHTML = _note + '<div class="grid">' + list.map(function(it,i){
     const vid = isVideo(it.url);
-    const nm  = it.name || (vid ? '影片' : '圖片');
+    //  🏷 2026-11-14 卡片標題:機器檔名(poster_text_1794514091…、1794513140918_2026…)客人看不懂
+    //    → 改成「類別 · 時間」(例:廣告圖 · 14:32);客人自己取的檔名(有中文或看得懂的字)照舊、只拿掉副檔名。
+    //    原檔名仍在搜尋索引裡(下面 sidx),下載檔名不受影響。類別放在獨立 <span>,日文/英文語言包照常翻。
+    const nmHtml = _friendlyName(it, vid);
     const th  = vid
       ? '<video data-lazy="'+esc(it.url)+'#t=0.5" preload="none" muted playsinline></video><div class="play">▶</div>'   // 🎞 2026-10-21 捲到才載(見下方 _lazyVideos)
       : '<img src="'+esc(thumbUrl(it.url,400))+'" loading="lazy" decoding="async" alt="">';
@@ -695,7 +707,7 @@ function renderGrid(){
       +     (function(){ if(!isAI) return ''; const d = _left(it); if(d === null) return '';
                 return d <= 7 ? '<div class="exp soon">'+(d <= 0 ? '即將刪除' : d+' 天後刪除')+'</div>' : '<div class="exp">還剩 '+d+' 天</div>'; })()
       +   '</div>'
-      +   '<div class="meta"><div class="nm">'+esc(nm)+'</div><div class="dt">'+fmtDate(it.ts)+'</div></div>'
+      +   '<div class="meta"><div class="nm">'+nmHtml+'</div><div class="dt">'+fmtDate(it.ts)+'</div></div>'
       + '</div>';
   }).join('') + '</div>';
 
