@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Brand OS 語言包載入器 i18n-loader.js  v1.0(2026-11-08)
+   Brand OS 語言包載入器 i18n-loader.js  v1.0(2026-11-08)· v1.12(2026-11-14)手機語言鈕縮成圓鈕＋捲動自動躲開
    ───────────────────────────────────────────────────────────────────
    像 Adobe 的語言包:主系統(kol.html、index.html…)照舊寫中文,
    這支只在「日文 / 英文」客人身上把畫面上的字換掉。
@@ -83,7 +83,9 @@
     var st = document.createElement('style');
     st.textContent = 'body:has(.rs-actionbar.show) #bos-lang-sw{display:none!important}' +
       '#bos-lang-pad{display:none}@media(max-width:768px){#bos-lang-pad{display:block;height:calc(52px + env(safe-area-inset-bottom,0px))}}' +
-      '@media(max-width:768px){#bos-lang-sw{left:calc(8px + env(safe-area-inset-left,0px))!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;font-size:11px!important;gap:2px!important;opacity:.9}#bos-lang-sw button{padding:5px 8px!important;font-size:11px!important}}';
+      '@media(max-width:768px){#bos-lang-sw{left:calc(8px + env(safe-area-inset-left,0px))!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;font-size:11px!important;gap:2px!important;opacity:.9}#bos-lang-sw button{padding:5px 8px!important;font-size:11px!important}' +
+        '#bos-lang-sw .bos-lang-name{display:none}#bos-lang-sw .bos-lang-main{width:34px;height:34px;padding:0!important;font-size:16px!important;display:flex;align-items:center;justify-content:center}' +
+        '#bos-lang-sw{transition:transform .25s ease,opacity .25s ease}#bos-lang-sw.bos-lang-away{transform:translateY(140%);opacity:0;pointer-events:none}}';
     box.appendChild(st);
     function btn(txt, on, fn) {
       var b = document.createElement('button');
@@ -103,8 +105,30 @@
         });
       });
     });
+    //  v1.12 手機:收起時只剩一顆 🌐 圓鈕(名字藏起來),捲動往下時先躲開、停下或往上捲再回來 —— 不再蓋住頁面內容
+    main.textContent = '';
+    main.className = 'bos-lang-main';
+    main.appendChild(document.createTextNode('🌐'));
+    var nm = document.createElement('span');
+    nm.className = 'bos-lang-name';
+    nm.textContent = ' ' + NAMES[LANG];
+    main.appendChild(nm);
     main.title = 'Language / 言語 / 語言';
     document.body.appendChild(box);
+    if (!window.__bosLangScroll) {
+      window.__bosLangScroll = true;
+      var lastY = window.scrollY || 0, idle = null;
+      window.addEventListener('scroll', function () {
+        var sw = document.getElementById('bos-lang-sw');
+        if (!sw || window.innerWidth > 768) return;
+        var y = window.scrollY || 0;
+        if (y > lastY + 4 && y > 80) sw.classList.add('bos-lang-away');
+        else if (y < lastY - 4) sw.classList.remove('bos-lang-away');
+        lastY = y;
+        clearTimeout(idle);
+        idle = setTimeout(function () { var s = document.getElementById('bos-lang-sw'); if (s) s.classList.remove('bos-lang-away'); }, 1200);
+      }, { passive: true });
+    }
     //  手機:頁面最底下多留一條空白,捲到底時頁尾版權那行不會被按鈕蓋住(電腦版不顯示)
     if (document.getElementById('bos-lang-pad')) return;
     var pad = document.createElement('div');
