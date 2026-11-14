@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Brand OS 語言包載入器 i18n-loader.js  v1.0(2026-11-08)· v1.12(2026-11-14)手機語言鈕縮成圓鈕＋捲動自動躲開
+   Brand OS 語言包載入器 i18n-loader.js  v1.0(2026-11-08)· v1.12(2026-11-14)手機語言鈕縮成圓鈕＋捲動自動躲開 · v1.13 日英文大標題不斷在單字中間
    ───────────────────────────────────────────────────────────────────
    像 Adobe 的語言包:主系統(kol.html、index.html…)照舊寫中文,
    這支只在「日文 / 英文」客人身上把畫面上的字換掉。
@@ -159,6 +159,10 @@
   hide.id = 'bos-i18n-hide';
   hide.textContent = 'body{visibility:hidden!important}';
   if (!CACHED) (document.head || document.documentElement).appendChild(hide);
+  //  v1.13 日文/英文:大標題不要從單字中間斷行(例:スタ/ジオ)—— 只在空白或語言包放的斷點(\u200b)換行,真的放不下才任意斷
+  var tidy = document.createElement('style');
+  tidy.textContent = 'h1,h2{word-break:keep-all;overflow-wrap:anywhere}';
+  (document.head || document.documentElement).appendChild(tidy);
   function reveal() { var h = document.getElementById('bos-i18n-hide'); if (h) h.remove(); }
   var revealTimer = setTimeout(reveal, 2500);
 
