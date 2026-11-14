@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════
 //  brands.js — 左側品牌樹、商品列表、Nav品牌按鈕
+//  v8.7: 📱 手機改成由上往下三步(品牌 → 系列 → 商品大卡片),桌機不變
 //  v8.6: ★ 商品改成「子系列下方展開」(3 層樹狀:品牌 › 系列 › 商品)
 //  v8.5: 點品牌自動收合其他品牌(這版保留)
 //  v8.4: 移除 emoji icon 渲染(試算表 icon 欄位保留不動)
@@ -14,7 +15,100 @@ function renderNavBrands() {
   ).join('');
 }
 
+// ══════════════════════════════════════════
+//  📱 v8.7(2026-11-15 RA:手機選商品不直覺,重新設計)
+//   以前手機上是「橫向滑軌」:品牌、系列、商品擠在同一條往右長,商品長在螢幕外面,
+//   客人不知道要往右滑,系列名稱也被切掉。
+//   現在手機改成「由上往下三步」:
+//     ① 品牌(一排小膠囊,可左右滑)→ ② 系列(膠囊自動換行)→ ③ 商品(整排大卡片,一列一個,好點)
+//   最上面一行顯示「目前選到哪裡」。點擊照用原本的 clickBrand / clickSub / clickProd,其他程式不用改。
+//   桌機(> 768px)完全照舊。
+// ══════════════════════════════════════════
+function _btIsMobile() {
+  try { return !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches); } catch (e) { return false; }
+}
+function _btCss() {
+  if (document.getElementById('bt-m-css')) return;
+  var s = document.createElement('style');
+  s.id = 'bt-m-css';
+  s.textContent = '@media (max-width:768px){'
+    + '#brandTree{display:block!important;overflow:visible!important;white-space:normal!important;width:100%!important}'
+    + '.btm{display:flex;flex-direction:column;gap:10px;width:100%}'
+    + '.btm-path{font-size:13px;color:var(--t2,#b9b9c8);line-height:1.5;padding:2px 2px 4px}'
+    + '.btm-path b{color:var(--t1,#fff)}'
+    + '.btm-lbl{font-size:12px;font-weight:700;letter-spacing:1px;color:var(--t3,#8a8aa0);margin-top:4px}'
+    + '.btm-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}'
+    + '.btm-chips::-webkit-scrollbar{display:none}'
+    + '.btm-chips.wrap{flex-wrap:wrap;overflow:visible}'
+    + '.btm-chip{flex:0 0 auto;padding:9px 14px;border-radius:999px;border:1px solid var(--line,rgba(255,255,255,.12));background:rgba(255,255,255,.03);color:var(--t1,#f0f0f8);font:600 14px "Noto Sans TC",sans-serif;cursor:pointer;white-space:nowrap}'
+    + '.btm-chip span{margin-left:6px;font-size:12px;color:var(--t3,#8a8aa0)}'
+    + '.btm-chip.on{border-color:var(--accent,#7c6dfa);background:rgba(124,109,250,.16);color:#fff}'
+    + '.btm-list{display:flex;flex-direction:column;gap:8px}'
+    + '.btm-prod{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:13px 14px;border-radius:12px;border:1px solid var(--line,rgba(255,255,255,.12));background:rgba(255,255,255,.03);color:var(--t1,#f0f0f8);cursor:pointer;font-family:"Noto Sans TC",sans-serif}'
+    + '.btm-prod .tx{flex:1;min-width:0}'
+    + '.btm-prod .n{display:block;font-size:15px;font-weight:700;line-height:1.4}'
+    + '.btm-prod .t{display:block;font-size:12.5px;color:var(--t3,#8a8aa0);margin-top:2px}'
+    + '.btm-prod .ck{flex:0 0 22px;height:22px;border-radius:50%;border:1.5px solid var(--line,rgba(255,255,255,.25));display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent}'
+    + '.btm-prod.on{border-color:rgba(91,200,200,.6);background:rgba(91,200,200,.10)}'
+    + '.btm-prod.on .ck{background:#5bc8c8;border-color:#5bc8c8;color:#0a0a0b}'
+    + '.btm-hint{font-size:13px;color:var(--t3,#8a8aa0);padding:4px 2px}'
+    + '}';
+  document.head.appendChild(s);
+}
+function renderBrandTreeMobile() {
+  _btCss();
+  var S = window.S, list = window.BRANDS || [];
+  var brand = list.find(function (b) { return b.id === S.brandId; });
+  var sub = brand && brand.subs.find(function (s) { return s.id === S.subId; });
+  var h = '<div class="btm">';
+  h += '<div class="btm-path">' + (brand
+        ? brand.name + (sub ? ' › ' + sub.name : '') + (S.prod ? ' › <b>' + S.prod.name + '</b>' : '')
+        : '先選品牌') + '</div>';
+  h += '<div class="btm-lbl">① 品牌</div><div class="btm-chips" id="btmBrands">'
+     + list.map(function (b) {
+         return '<button type="button" class="btm-chip' + (S.brandId === b.id ? ' on' : '') + '" onclick="clickBrandM(\'' + b.id + '\')">' + b.name + '</button>';
+       }).join('') + '</div>';
+  if (brand) {
+    h += '<div class="btm-lbl">② 系列</div><div class="btm-chips wrap">'
+       + brand.subs.map(function (sb) {
+           return '<button type="button" class="btm-chip' + (S.subId === sb.id ? ' on' : '') + '" onclick="clickSub(\'' + brand.id + '\',\'' + sb.id + '\')">' + sb.name + '<span>' + ((sb.prods || []).length) + '</span></button>';
+         }).join('') + '</div>';
+    if (sub) {
+      h += '<div class="btm-lbl">③ 商品</div><div class="btm-list">'
+         + (sub.prods || []).map(function (p) {
+             var on = S.prod && S.prod.id === p.id;
+             return '<button type="button" class="btm-prod' + (on ? ' on' : '') + '" onclick="clickProd(\'' + sub.id + '\',\'' + p.id + '\')">'
+               + '<span class="tx"><span class="n">' + p.name + '</span>' + (p.tag ? '<span class="t">' + p.tag + '</span>' : '') + '</span>'
+               + '<span class="ck">✓</span></button>';
+           }).join('') + '</div>';
+    } else {
+      h += '<div class="btm-hint">選一個系列,商品就會出現在下面</div>';
+    }
+  }
+  h += '</div>';
+  document.getElementById('brandTree').innerHTML = h;
+  try {   // 選到的品牌滑進畫面(品牌多時)
+    var on = document.querySelector('#btmBrands .btm-chip.on');
+    if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'center' });
+  } catch (e) {}
+  updateCtx();
+}
+//  手機上點已選的品牌 → 維持選取(桌機那邊是「再點一次收合」,手機不需要收合)
+function clickBrandM(id) {
+  if (window.S.brandId === id) { renderBrandTree(); return; }
+  clickBrand(id);
+}
+//  轉螢幕 / 視窗大小跨過 768 時重畫一次
+try {
+  if (window.matchMedia) {
+    var _btMq = window.matchMedia('(max-width: 768px)');
+    var _btRe = function () { try { if (window.BRANDS && window.S) renderBrandTree(); } catch (e) {} };
+    if (_btMq.addEventListener) _btMq.addEventListener('change', _btRe); else if (_btMq.addListener) _btMq.addListener(_btRe);
+  }
+} catch (e) {}
+
 function renderBrandTree() {
+  if (_btIsMobile()) { renderBrandTreeMobile(); return; }
   document.getElementById('brandTree').innerHTML = window.BRANDS.map(b => {
     const isOpen = window.S.openBrand === b.id;
 
