@@ -1,5 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  ad-layouts-extra.js · v1.1 (2026-11-12)
+//  ad-layouts-extra.js · v1.2 (2026-11-15)
+//  v1.2 RA 11-15 兆亨車業實測:「⓪ 我要拍的是什麼」沒有汽車類,只能硬選「專業形象」→ 會拍成辦公室裡的律師
+//       → 新增「汽車買賣與服務」+ 5 種版型(估價檢車 / 車主洽談 / 交車儀式 / 車輛主角 / 展間門面)
+//       真正的拍法在 photoroom-proxy 的 adlean.js SVC.auto(同一天一起上)
+//       + 服務類行業的 ③ 情境收起只屬於實體商品的那幾個(日本直送、藥妝掃貨、免稅店、限量現貨、每日保養、開箱時刻)
 //  v1.1 RA 11-12「前後對比、多格、條列這三種排版圖,不如刪除」→ 從 ① 選單收起(程式仍認得,要恢復把 key 從 HIDE 拿掉)
 //       以前存過這三種的選擇也一併清掉,不會在畫面空白時偷偷生出舊排版圖
 //  廣告圖「新增照片版型」—— 參考韓國醫美 / 日本旅遊 / IG 大品牌常見拍法補進 ① 版型選單
@@ -21,7 +25,7 @@
     return;
   }
   if (window._adLayoutsExtra) return;   // 重複載入保護
-  window._adLayoutsExtra = '1.1';
+  window._adLayoutsExtra = '1.2';
 
   var NO_TEXT = '\n- Photograph only; no lettering is added to the image (the customer types any text later).';
   function T(label, desc, comp) { return { label: label, desc: desc, composition: comp + NO_TEXT }; }
@@ -56,6 +60,12 @@
     pr_meeting: T('客戶洽談型', '跟客戶討論中的自然瞬間', 'The same professional in a calm meeting with a client, faces natural, soft window light.'),
     pr_daily:   T('工作日常型', '看資料、寫字、走在辦公室', 'The same professional at work in their office, a natural unposed moment, soft window light.'),
     pr_object:  T('靈魂物件型', '鋼筆、印章、書本 —— 不露臉的質感照', 'A still life of the tools of this profession on a desk, soft window light.'),
+    // 🚗 v1.2 汽車買賣與服務(中古車行、估價收購、交車)
+    au_appraise: T('估價檢車型', '專員檢查車況、看里程、看輪胎 —— 專業又透明', 'A dealership staff member carefully inspecting a car for appraisal, tablet in hand, in a bright tidy showroom.'),
+    au_consult:  T('車主洽談型', '跟車主坐下來談價格的自然瞬間', 'A dealership staff member talking a car owner through the price at a small table, a car softly behind.'),
+    au_handover: T('交車儀式型', '鑰匙交到客人手上、車子洗得發亮', 'Car keys being handed over beside a freshly cleaned car in the showroom, a warm natural moment.'),
+    au_car:      T('車輛主角型', '上傳車子照片 → 換個場景重拍這台車', 'The same car kept exactly as it is, photographed from a low three-quarter angle in a clean setting.'),
+    au_showroom: T('展間門面型', '上傳店面 / 展場照片 → 拍出整齊有氣勢的門面', 'An architectural photograph of the same dealership front, kept exactly as it is, cars lined up neatly.'),
   });
 
   // ── 放進各行業的分組 ─────────────────────────────────────────────
@@ -76,6 +86,29 @@
     ['pro',     '人物',       ['pr_meeting', 'pr_daily']],
     ['pro',     '空間',       ['pr_object']],
   ];
+
+  // 🚗 v1.2 新行業:汽車買賣與服務 —— 加進 ⓪ 選單(接在「旅遊與行程」後面)+ 自己的版型分組
+  if (typeof PRODTYPE_OPTIONS !== 'undefined' && Array.isArray(PRODTYPE_OPTIONS) && !PRODTYPE_OPTIONS.some(function (o) { return o.value === 'auto'; })) {
+    var _ti = PRODTYPE_OPTIONS.findIndex(function (o) { return o.value === 'travel'; });
+    PRODTYPE_OPTIONS.splice(_ti >= 0 ? _ti + 1 : PRODTYPE_OPTIONS.length, 0,
+      { value: 'auto', label: '汽車買賣與服務 — 中古車 / 車行 / 估價收購 / 交車' });
+    var _pts = document.getElementById('prodTypeSel');
+    if (_pts) delete _pts.dataset.rendered;   // 選單若已畫過,下次打開重畫
+  }
+  if (!LAYOUT_BY_PRODTYPE.auto) LAYOUT_BY_PRODTYPE.auto = [
+    { group: '服務過程', keys: ['au_appraise', 'au_consult', 'au_handover'] },
+    { group: '車與場地', keys: ['au_car', 'au_showroom'] },
+  ];
+
+  // v1.2 服務類行業:③ 情境收起只屬於「實體商品」的檔期(醫美原本的合規清單照舊,只往裡面加)
+  if (typeof CONTEXT_BLOCKED_BY_PRODTYPE !== 'undefined') {
+    var GOODS_ONLY = ['jp_direct', 'jp_drugstore_haul', 'duty_free', 'limited_stock', 'daily_supplement', 'unboxing'];
+    ['beauty', 'medical', 'course', 'mystic', 'travel', 'equip', 'screen', 'pro', 'auto'].forEach(function (pt) {
+      var cur = CONTEXT_BLOCKED_BY_PRODTYPE[pt] || [];
+      GOODS_ONLY.forEach(function (k) { if (cur.indexOf(k) === -1) cur.push(k); });
+      CONTEXT_BLOCKED_BY_PRODTYPE[pt] = cur;
+    });
+  }
   GROUPS.forEach(function (g) {
     var list = LAYOUT_BY_PRODTYPE[g[0]];
     if (!Array.isArray(list)) return;
@@ -106,5 +139,5 @@
   var sel = document.getElementById('layoutSel');
   if (sel) delete sel.dataset.pt;
 
-  console.log('[版型+] v1.1 已載入:新增 20 種照片版型 · 收起前後對比 / 多格展示 / 重點條列');
+  console.log('[版型+] v1.2 已載入:新增 25 種照片版型(含汽車買賣)· 收起前後對比 / 多格展示 / 重點條列 · 服務業情境只留適用的');
 })();
