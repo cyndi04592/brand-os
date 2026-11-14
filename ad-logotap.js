@@ -1,5 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
-//  🏷 ad-logotap.js v1.4(2026-11-15)
+//  🏷 ad-logotap.js v1.5(2026-11-15)
+//  v1.5 RA 11-15 兆亨實測兩個問題:
+//   ① LOGO 視窗在「AI 美術指導」想完(約 30 秒)之後才跳出來 → 客人先乾等,按取消等於白等
+//      病根:ad-director.js 晚載入,包在最外層,先跑美術指導才輪到這層問 LOGO
+//      → 再加一層包在最外面:先問 LOGO,問完才交給美術指導(裡面那層看到已經問過就不再問)
+//   ② 服務類(汽車 / 美業 / 專業形象 / 課程…)照片裡沒有「商品」,還在問「商品上的 LOGO 在哪裡」
+//      → 這些類型不問,直接生成;只有會保留實物的版型(車輛主角型、儀器細節型)才問
 //  v1.4 RA 11-15 手機實測:「確定,開始生成」沒寫要扣幾點,客人按下去才知道 → 兩顆會開始生成的按鈕都寫上點數
 //       點數讀 admaker.js 的 _adCost()(跟 Worker 同一套按尺寸算的公式),讀不到就不寫數字、只寫「開始生成」
 //  v1.3:點完 LOGO,系統先自己讀 LOGO 字、幫客人填好(kol-proxy v7.81 logo_read,不扣點)
@@ -28,7 +34,7 @@
 (function () {
   'use strict';
   if (window.AdLogoTap) return;
-  var VERSION = '1.4';
+  var VERSION = '1.5';
   var memo = {};            // 商品照 → { x, y, text } 或 'skip'
 
   function photoNow() {
@@ -45,6 +51,17 @@
   function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function lsSet(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
   function cleanText(t) { return String(t || '').replace(/["“”「」]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40); }
+
+  //  v1.5 照片裡沒有要保留的「商品」→ 不用問 LOGO
+  var NO_PRODUCT_PT = ['beauty', 'medical', 'course', 'mystic', 'travel', 'pro', 'auto', 'screen'];
+  var KEEP_THING_LY = ['au_car', 'med_device'];   // 這幾個版型會照原樣保留實物,LOGO 要對準
+  function noLogoNeeded() {
+    try {
+      var pt = (typeof SELECTED_PRODTYPE !== 'undefined' && SELECTED_PRODTYPE) || '';
+      var ly = (typeof SELECTED_LAYOUT !== 'undefined' && SELECTED_LAYOUT) || '';
+      return NO_PRODUCT_PT.indexOf(pt) !== -1 && KEEP_THING_LY.indexOf(ly) === -1;
+    } catch (e) { return false; }
+  }
 
   function costTxt() {
     try { if (typeof _adCost === 'function') { var n = Number(_adCost()); if (n > 0) return ' · 扣 ' + n + ' 點'; } } catch (e) {}
@@ -279,7 +296,7 @@
         var src = srcOf(p), key = keyOf(p);
         if (src) {
           var got = memo[key];
-          if (got === undefined) {
+          if (got === undefined && !noLogoNeeded()) {
             got = await ask(src, null, key);
             if (got === null) return;                 // 取消 → 不生成
             memo[key] = got;
@@ -301,6 +318,33 @@
   }
   // admaker.js 已載入 → 立刻包;精簡引擎之後再包一層也沒關係(它最後會呼叫到這層)
   if (!wrap()) { var n = 0, t = setInterval(function () { if (wrap() || ++n > 40) clearInterval(t); }, 250); }
+
+  //  v1.5 最外層:等 ad-director 包好之後,再包一層「先問 LOGO」→ 客人不用先乾等美術指導
+  //   問過就記在 memo,裡面那層看到 memo 有值就不會再問一次
+  function wrapOuter() {
+    var g = window.generateGptPoster;
+    if (typeof g !== 'function' || !g.__director) return false;   // 美術指導還沒包上
+    if (g.__ltOuter) return true;
+    var outer = async function () {
+      var p = photoNow();
+      if (p && !noLogoNeeded()) {
+        try { if (typeof ensureFullRes === 'function') await ensureFullRes(p, true); } catch (e) {}
+        var src = srcOf(p), key = keyOf(p);
+        if (src && memo[key] === undefined) {
+          var got = await ask(src, null, key);
+          if (got === null) return;                 // 取消 → 不生成(也不會跑美術指導)
+          memo[key] = got;
+        }
+      }
+      return g.apply(this, arguments);
+    };
+    outer.__ltOuter = true;
+    outer.__director = true;    // 讓 ad-director 認得「已經包過」,不會再包一次蓋掉這層
+    outer.__lt = true;
+    window.generateGptPoster = outer;
+    return true;
+  }
+  var no = 0, to = setInterval(function () { if (wrapOuter() || ++no > 120) clearInterval(to); }, 500);
 
   //  重點 LOGO 位置:Console 或之後的按鈕可用 AdLogoTap.reset()
   window.AdLogoTap = { version: VERSION, reset: function () { memo = {}; }, fixLogo: fixLogo, _ask: ask };
