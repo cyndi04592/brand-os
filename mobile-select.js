@@ -1,5 +1,11 @@
 /* ════════════════════════════════════════════════════════════════════
- *  mobile-select.js · v1.0 (2026-08-23)
+ *  mobile-select.js · v1.2 (2026-11-15)
+ *  v1.2 RA 11-15 手機實測(兆亨車業做廣告圖):
+ *    ① 「設計風格」看起來有 10 個重複 —— 其實是「點綴」和「半版」兩組同名,挑選層沒把分組標題畫出來
+ *       → 有 <optgroup> 就把分組標題畫出來(搜尋時也標在項目右邊)
+ *    ② 打字搜尋後,挑選層縮成一小條掉到螢幕最底 → iPhone 鍵盤一彈出來就把結果蓋住
+ *       → 有搜尋框的長清單,挑選層固定高度,結果永遠從上面開始排
+ *    ③ 打開時清單停在上次滑到的位置(看不到「請選擇」「無」)→ 打開一律回到最上面,有選過就捲到選中的那一項
  *
  *  手機長下拉挑選層(全站共用)
  *
@@ -67,6 +73,9 @@
       + '.bp-item:active{background:#1a1a24;}'
       + '.bp-item.on{background:rgba(124,109,250,.18);color:#f0f0f8;font-weight:700;}'
       + '.bp-item .tk{color:#6dfac2;font-size:13px;width:14px;flex:none;}'
+      + '.bp-item .g{margin-left:auto;font-size:11px;color:rgba(240,240,248,.4);flex:none;padding-left:8px;}'
+      + '.bp-grp{padding:14px 14px 6px;font-size:12px;font-weight:800;letter-spacing:1px;color:#9d93ff;}'
+      + '.bp-panel.tall{height:82vh;}'
       + '.bp-close{position:absolute;top:-46px;right:16px;width:36px;height:36px;border-radius:50%;'
       + 'background:rgba(255,255,255,.16);border:none;color:#fff;font-size:17px;cursor:pointer;}';
     var st = document.createElement('style');
@@ -92,7 +101,7 @@
     document.body.appendChild(sh);
     sh.addEventListener('click', function (e) { if (e.target === sh) close(); });
     sh.querySelector('.bp-close').addEventListener('click', close);
-    sh.querySelector('.bp-search').addEventListener('input', function () { render(this.value); });
+    sh.querySelector('.bp-search').addEventListener('input', function () { render(this.value); var bx = sh.querySelector('.bp-list'); if (bx) bx.scrollTop = 0; });
     return sh;
   }
 
@@ -103,15 +112,22 @@
     var q = String(kw || '').trim().toLowerCase();
     var cur = target.value;
     var opts = Array.prototype.filter.call(target.options, function (o) {
-      if (o.disabled) return false;
+      if (o.disabled || o.hidden) return false;
       if (!q) return true;
       return (o.textContent || '').toLowerCase().indexOf(q) !== -1;
     });
+    //  v1.2 分組標題:沒搜尋 → 每組上面一條標題;有搜尋 → 組名標在項目右邊
+    var lastG = null;
     box.innerHTML = opts.length
       ? opts.map(function (o) {
           var on = o.value === cur;
-          return '<div class="bp-item' + (on ? ' on' : '') + '" data-v="' + esc(o.value) + '">'
-               + '<span class="tk">' + (on ? '✓' : '') + '</span>' + esc(o.textContent) + '</div>';
+          var g = (o.parentNode && o.parentNode.tagName === 'OPTGROUP') ? String(o.parentNode.label || '').replace(/[─—\-\s]+/g, ' ').trim() : '';
+          var head = '';
+          if (!q && g && g !== lastG) head = '<div class="bp-grp">' + esc(g) + '</div>';
+          lastG = g;
+          return head + '<div class="bp-item' + (on ? ' on' : '') + '" data-v="' + esc(o.value) + '">'
+               + '<span class="tk">' + (on ? '✓' : '') + '</span>' + esc(o.textContent)
+               + (q && g ? '<span class="g">' + esc(g) + '</span>' : '') + '</div>';
         }).join('')
       : '<div style="padding:28px 14px;text-align:center;color:rgba(240,240,248,.45);font-size:13px">找不到符合的項目</div>';
     Array.prototype.forEach.call(box.querySelectorAll('.bp-item'), function (el) {
@@ -145,12 +161,24 @@
     var t = sh.querySelector('.bp-head .t');
     if (t) t.textContent = labelOf(sel) || '選擇';
     var inp = sh.querySelector('.bp-search');
+    var tall = sel.options.length >= SEARCH_FROM;
     if (inp) {
       inp.value = '';
-      inp.style.display = sel.options.length >= SEARCH_FROM ? '' : 'none';
+      inp.style.display = tall ? '' : 'none';
     }
+    var pn = sh.querySelector('.bp-panel');
+    if (pn) pn.classList.toggle('tall', tall);     // v1.2 長清單固定高度:搜尋後不縮成一小條
     render('');
     sh.classList.add('on');
+    //  v1.2 打開一律從最上面開始;有選過就把選中那項捲到中間
+    try {
+      var bx = sh.querySelector('.bp-list');
+      if (bx) {
+        bx.scrollTop = 0;
+        var onEl = bx.querySelector('.bp-item.on');
+        if (onEl && onEl.getAttribute('data-v')) bx.scrollTop = Math.max(0, onEl.offsetTop - bx.clientHeight / 2);
+      }
+    } catch (e) {}
     document.body.style.overflow = 'hidden';   // 背景不要跟著捲
   }
 
@@ -209,5 +237,5 @@
   document.addEventListener('touchcancel', function () { tSel = null; }, true);
 
   window.MobileSelect = { open: open, close: close, MIN_OPTIONS: MIN_OPTIONS };
-  console.log('[mobile-select] v1.1 就緒(放開才算點) · 手機 ≥' + MIN_OPTIONS + ' 項的下拉自動接管(桌機不變)');
+  console.log('[mobile-select] v1.2 就緒(放開才算點 · 分組標題 · 搜尋不被鍵盤蓋) · 手機 ≥' + MIN_OPTIONS + ' 項的下拉自動接管(桌機不變)');
 })();
