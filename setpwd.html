@@ -41,6 +41,12 @@
   .state{text-align:center;padding:20px 0;color:#9a92a0;font-size:13px}
   a{color:#a78bfa}
 </style>
+<style>
+/* 📱 2026-11-14 iPhone:輸入框字小於 16px 時,一點下去 Safari 會自動把整頁放大。手機上輸入框統一 16px(電腦版不變) */
+@media (max-width:640px){
+  input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea,select{font-size:16px!important}
+}
+</style>
 </head>
 <body>
 
