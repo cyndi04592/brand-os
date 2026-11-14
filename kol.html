@@ -8286,7 +8286,9 @@ function _pgcCostLine(opts, faceless, rate) {
     var hi = /1080|1k|2k|4k/i.test(res);
     var pts = secs * rate * (hi ? 3 : 1);
     return '即將生成約 <b>' + secs + ' 秒</b>影片(' + res + '),預計扣 <b>' + pts.toLocaleString() + ' 點</b>'
-      + '<span style="color:var(--text-dim);font-size:12px;">(' + (rate === 80 ? '本人真人角色 · ' : '') + '每秒 ' + rate + ' 點' + (hi ? '、1080P 三倍' : '') + ';失敗會自動退還)</span>';
+      + '<span style="color:var(--text-dim);font-size:12px;">(' + (rate === 80 ? '本人真人角色 · ' : '') + '每秒 ' + rate + ' 點' + (hi ? '、1080P 三倍' : '') + ';失敗會自動退還)</span>'
+      //  💰 2026-11-14 客人看到「900 點」實際扣 1,000:第一次用某套造型拍,會先幫角色換好衣服(另扣 100 點,做好會存起來,同一套之後再拍不再扣)→ 要先講
+      + (faceless ? '' : '<div style="margin-top:6px;font-size:12px;color:var(--text-dim);line-height:1.6;">第一次用這套造型拍,會另扣 <b>100 點</b>幫角色換好衣服(同一套之後再拍不再扣)</div>');
   } catch (e) { return '即將開始生成影片,會消耗生成額度。'; }
 }
 function preGenConfirm(opts) {
