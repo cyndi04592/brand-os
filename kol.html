@@ -12014,5 +12014,13 @@ window.addEventListener('load', () => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
+<script>
+/* 🪟 2026-11-14 人設書編輯視窗搬到 body:它原本放在 .main 裡,.main 有 z-index:1,所以視窗再高也會被頂部的標題列(z-index:100)蓋住,
+   手機上看不到「人設書編輯」標題、「AI 幫我寫」和關閉 ✕。搬到 body 之後就會蓋在最上層。persona-editor-modal 搬到 body,打開/關閉的程式不用改。 */
+(function () {
+  var m = document.getElementById('persona-editor-modal');
+  if (m && m.parentElement !== document.body) document.body.appendChild(m);
+})();
+</script>
 </body>
 </html>
