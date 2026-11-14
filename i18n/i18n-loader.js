@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Brand OS 語言包載入器 i18n-loader.js  v1.0(2026-11-08)· v1.12(2026-11-14)手機語言鈕縮成圓鈕＋捲動自動躲開 · v1.13 日英文大標題不斷在單字中間
+   Brand OS 語言包載入器 i18n-loader.js  v1.0(2026-11-08)· v1.12(2026-11-14)手機語言鈕縮成圓鈕＋捲動自動躲開 · v1.13 日英文大標題不斷在單字中間 · v1.18 數字單位(元萬筆單天頁人倍)+英文萬→K/M
    ───────────────────────────────────────────────────────────────────
    像 Adobe 的語言包:主系統(kol.html、index.html…)照舊寫中文,
    這支只在「日文 / 英文」客人身上把畫面上的字換掉。
@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var VER = '1.17';
+  var VER = '1.18';
   var SUP = ['zh', 'ja', 'en'];
 
   function detect() {
@@ -171,7 +171,19 @@
   var TD = {};        // 去頭尾空白後的字典(句子裡局部比對用)
   var TRIE = {};
   var done = new WeakMap();   // node → 我們設過的字(避免日文漢字又被拿去比對)
-  var UNIT_RE = /(\d\s*)([點秒張段支個位字分次件集歲])/g;
+  //  v1.18 數字後的單位多加:元 萬 筆 單 天 頁 人 倍(只有語言包裡有那個字才會換,沒有就不動)
+  var UNIT_RE = /(\d\s*)([點秒張段支個位字分次件集歲元萬筆單天頁人倍])/g;
+  //  v1.18 英文:「36.9 萬」→「369K」、「150 萬」→「1.5M」(英文沒有「萬」這個單位,直接換算)
+  function wan(x) {
+    function one(n) {
+      var v = parseFloat(n) * 10000;
+      if (v >= 1e6) return (Math.round(v / 1e5) / 10).toString() + 'M';
+      return (Math.round(v / 100) / 10).toString() + 'K';
+    }
+    return String(x)
+      .replace(/(\d+(?:\.\d+)?)\s*([~～-])\s*(\d+(?:\.\d+)?)\s*萬/g, function (all, a, sep, b) { return one(a) + sep + one(b); })   // 10~50 萬 → 100K~500K
+      .replace(/(\d+(?:\.\d+)?)\s*萬/g, function (all, n) { return one(n); });
+  }
   var SPACE_LANG = LANG === 'en';
 
   //  ★ v1.12 字典是從 HTML 原始碼抽出來的,裡面有「&amp;」「&gt;」這種寫法,畫面上的字卻是「&」「>」
@@ -235,6 +247,7 @@
   function tr(text) {
     if (SPACE_LANG && text) { var pt = text.trim(); if (PUNC_EN[pt]) return text.replace(pt, PUNC_EN[pt]); }
     if (!text || !CJK.test(text)) return text;
+    if (SPACE_LANG && text.indexOf('萬') >= 0 && /\d\s*萬/.test(text)) { text = wan(text); if (!CJK.test(text)) return text; }
     var t = text.trim();
     if (DICT[t]) return text.replace(t, function () { return DICT[t]; });
     var lead = text.match(/^\s*/)[0], tail = text.match(/\s*$/)[0];
