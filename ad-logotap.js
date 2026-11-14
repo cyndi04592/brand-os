@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
-//  🏷 ad-logotap.js v1.3(2026-11-04)
+//  🏷 ad-logotap.js v1.4(2026-11-15)
+//  v1.4 RA 11-15 手機實測:「確定,開始生成」沒寫要扣幾點,客人按下去才知道 → 兩顆會開始生成的按鈕都寫上點數
+//       點數讀 admaker.js 的 _adCost()(跟 Worker 同一套按尺寸算的公式),讀不到就不寫數字、只寫「開始生成」
 //  v1.3:點完 LOGO,系統先自己讀 LOGO 字、幫客人填好(kol-proxy v7.81 logo_read,不扣點)
 //   實測:帶品牌名當對照 → MOZ 小刺繡讀對「MOZ sweden」;不帶 → 讀成「MVPZ ARMY」還自稱確定
 //   → 一律帶品牌名;AI 的「確定」不可信 → 一律請客人看一眼確認(不對直接改)
@@ -26,7 +28,7 @@
 (function () {
   'use strict';
   if (window.AdLogoTap) return;
-  var VERSION = '1.3';
+  var VERSION = '1.4';
   var memo = {};            // 商品照 → { x, y, text } 或 'skip'
 
   function photoNow() {
@@ -43,6 +45,11 @@
   function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function lsSet(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
   function cleanText(t) { return String(t || '').replace(/["“”「」]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40); }
+
+  function costTxt() {
+    try { if (typeof _adCost === 'function') { var n = Number(_adCost()); if (n > 0) return ' · 扣 ' + n + ' 點'; } } catch (e) {}
+    return '';
+  }
 
   function css() {
     if (document.getElementById('lt-css')) return;
@@ -83,8 +90,8 @@
         '  <div class="lt-tip">照商品上的大小寫打,兩行就用空格分開。LOGO 很小、AI 看不清楚的時候,靠這一格把字寫對。</div>' +
         '</div>' +
         '<div class="lt-row">' +
-        '  <button class="lt-b" data-lt="skip">跳過</button>' +
-        '  <button class="lt-b go" data-lt="ok" disabled>確定,開始生成</button>' +
+        '  <button class="lt-b" data-lt="skip">跳過,直接生成' + costTxt() + '</button>' +
+        '  <button class="lt-b go" data-lt="ok" disabled>確定,開始生成' + costTxt() + '</button>' +
         '  <button class="lt-b" data-lt="cancel">取消</button>' +
         '</div>';
       document.body.appendChild(w);
