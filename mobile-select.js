@@ -164,19 +164,50 @@
   // ── 全域攔截 ──────────────────────────────────────────────
   //   用 capture 事件委派:動態產生的 select 也蓋得到,
   //   逐一 addEventListener 一定會漏。
-  function handler(e) {
-    if (!isMobile()) return;                                  // 桌機照舊
+  //  🩹 2026-11-15 RA(iPhone 實測):滑頁面時手指剛好按在下拉選單上 → 一碰就跳出挑選層,
+  //   手指放開那一下又點到挑選層裡的選項(自己選了東西),要關掉還得多點好幾次。
+  //   病根:以前是「手指一碰到(touchstart)就打開」。
+  //   改成:手指【放開】、而且幾乎沒移動(10px 內)、按住不到 0.6 秒,才算「點一下」→ 這時才打開;
+  //   在滑頁面就不打開。挑選層是放開之後才出現,不會再被同一下點到裡面的選項。
+  function pick(e) {
+    if (!isMobile()) return null;                             // 桌機照舊
     var sel = e.target && e.target.closest && e.target.closest('select');
-    if (!sel || sel.disabled || sel.multiple) return;
-    if (sel.getAttribute('data-bp-skip') === '1') return;
-    if (sel.options.length < MIN_OPTIONS) return;             // 短下拉原生就好
+    if (!sel || sel.disabled || sel.multiple) return null;
+    if (sel.getAttribute('data-bp-skip') === '1') return null;
+    if (sel.options.length < MIN_OPTIONS) return null;        // 短下拉原生就好
+    return sel;
+  }
+  var tSel = null, tx = 0, ty = 0, tt = 0, lastTouch = 0;
+  function onTouchStart(e) {
+    tSel = pick(e);
+    if (!tSel) return;
+    var p = e.touches && e.touches[0];
+    tx = p ? p.clientX : 0; ty = p ? p.clientY : 0; tt = Date.now();
+  }
+  function onTouchEnd(e) {
+    lastTouch = Date.now();
+    var sel = tSel; tSel = null;
+    if (!sel) return;
+    var p = e.changedTouches && e.changedTouches[0];
+    var dx = p ? Math.abs(p.clientX - tx) : 0, dy = p ? Math.abs(p.clientY - ty) : 0;
+    if (dx > 10 || dy > 10 || Date.now() - tt > 600) return;  // 在滑,不是點
+    e.preventDefault();                                       // 擋掉原生下拉和接下來的 click
+    sel.blur();
+    open(sel);
+  }
+  function onMouseDown(e) {
+    if (Date.now() - lastTouch < 800) return;                 // 觸控之後瀏覽器補發的滑鼠事件不理
+    var sel = pick(e);
+    if (!sel) return;
     e.preventDefault();
     sel.blur();
     open(sel);
   }
-  document.addEventListener('mousedown', handler, true);
-  document.addEventListener('touchstart', handler, { capture: true, passive: false });
+  document.addEventListener('mousedown', onMouseDown, true);
+  document.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
+  document.addEventListener('touchend', onTouchEnd, { capture: true, passive: false });
+  document.addEventListener('touchcancel', function () { tSel = null; }, true);
 
   window.MobileSelect = { open: open, close: close, MIN_OPTIONS: MIN_OPTIONS };
-  console.log('[mobile-select] v1.0 就緒 · 手機 ≥' + MIN_OPTIONS + ' 項的下拉自動接管(桌機不變)');
+  console.log('[mobile-select] v1.1 就緒(放開才算點) · 手機 ≥' + MIN_OPTIONS + ' 項的下拉自動接管(桌機不變)');
 })();
