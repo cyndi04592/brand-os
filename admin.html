@@ -1472,6 +1472,15 @@ tr:hover td { background: rgba(124,109,250,0.04); }
 }
 .enrich-product-name b { color: var(--purple); font-weight: 700; }
 </style>
+<style>
+/* 📱 2026-11-14 手機版不再整頁左右滑:頂部按鈕列可以換行、員工卡片的長 email 會自己折行(電腦版不受影響) */
+@media (max-width:640px){
+  .top-bar{flex-wrap:wrap;row-gap:6px}
+  .staff-card{flex-wrap:wrap}
+  .staff-info{min-width:0}
+  .staff-info *{overflow-wrap:anywhere}
+}
+</style>
 </head>
 <body>
 
@@ -4297,5 +4306,34 @@ function hideLoading() { document.getElementById('loadingOverlay').classList.rem
 <script src="admin-referral.js"></script><!-- 🤝 2026-09-17 推薦分潤分頁 -->
 <script src="admin-logs.js?v=20261021"></script><!-- 🧯 2026-10-21 錯誤紀錄 / 生成紀錄分頁 -->
 <script src="admin-consent.js"></script><!-- 📜 2026-10-26 授權書分頁(使用自己建立 KOL;只限管理者) -->
+<script>
+/* 📱 2026-11-14 手機字級下限(跟廣告監控同一套,RA 同意):寬度 ≤ 640 時,畫面上小於 12px 的字放大到 12–12.5px、太暗的灰字調亮一點。
+   深色設計、顏色、版面都不動;電腦版完全不跑。各分頁是動態畫出來的 → 有新內容就再掃一次(只看新增節點,不看樣式變動,不會無限迴圈)。 */
+(function () {
+  if (!window.matchMedia || !window.matchMedia('(max-width: 640px)').matches) return;
+  function floor(root) {
+    var all = (root || document.body).querySelectorAll('*');
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i];
+      if (e.closest && e.closest('svg')) continue;
+      var has = false;
+      for (var j = 0; j < e.childNodes.length; j++) { var c = e.childNodes[j]; if (c.nodeType === 3 && c.textContent.trim()) { has = true; break; } }
+      if (!has) continue;
+      var cs = getComputedStyle(e), fs = parseFloat(cs.fontSize);
+      if (!(fs < 12)) continue;
+      e.style.fontSize = (fs < 10.5 ? 12 : 12.5) + 'px';
+      var m = cs.color.match(/\d+/g);
+      if (m && +m[0] < 170 && +m[0] === +m[1]) e.style.color = 'rgb(185,185,200)';
+    }
+  }
+  var timer = null;
+  function later() { clearTimeout(timer); timer = setTimeout(function () { floor(); }, 250); }
+  function start() {
+    floor();
+    try { new MutationObserver(later).observe(document.body, { childList: true, subtree: true }); } catch (_) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
 </body>
 </html>
