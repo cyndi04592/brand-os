@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════
 //  brands.js — 左側品牌樹、商品列表、Nav品牌按鈕
+//  v8.8: 📱 品牌只有一個系列 → 點品牌就直接選好系列、商品馬上出現;商品卡小字跟系列同名就不重複寫
 //  v8.7: 📱 手機改成由上往下三步(品牌 → 系列 → 商品大卡片),桌機不變
 //  v8.6: ★ 商品改成「子系列下方展開」(3 層樹狀:品牌 › 系列 › 商品)
 //  v8.5: 點品牌自動收合其他品牌(這版保留)
@@ -78,7 +79,7 @@ function renderBrandTreeMobile() {
          + (sub.prods || []).map(function (p) {
              var on = S.prod && S.prod.id === p.id;
              return '<button type="button" class="btm-prod' + (on ? ' on' : '') + '" onclick="clickProd(\'' + sub.id + '\',\'' + p.id + '\')">'
-               + '<span class="tx"><span class="n">' + p.name + '</span>' + (p.tag ? '<span class="t">' + p.tag + '</span>' : '') + '</span>'
+               + '<span class="tx"><span class="n">' + p.name + '</span>' + (p.tag && p.tag !== sub.name ? '<span class="t">' + p.tag + '</span>' : '') + '</span>'
                + '<span class="ck">✓</span></button>';
            }).join('') + '</div>';
     } else {
@@ -97,6 +98,11 @@ function renderBrandTreeMobile() {
 function clickBrandM(id) {
   if (window.S.brandId === id) { renderBrandTree(); return; }
   clickBrand(id);
+  //  v8.8 只有一個系列 → 不用再多點一次,直接選好
+  try {
+    var b = (window.BRANDS || []).find(function (x) { return x.id === id; });
+    if (b && b.subs && b.subs.length === 1 && window.S.brandId === id && !window.S.subId) clickSub(id, b.subs[0].id);
+  } catch (e) {}
 }
 //  轉螢幕 / 視窗大小跨過 768 時重畫一次
 try {
