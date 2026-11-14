@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 //  🎬 ad-director.js v1.5(2026-11-12)廣告圖「AI 美術指導」—— 每一張廣告圖都經過美術指導
+//  v2.9.2 RA 11-15「美術指導不另外扣點」:兆亨實測做一張圖畫面寫 240、實際扣 480(美術指導 2 次 × 120 被當成生成文案扣)
+//       → 每次呼叫帶 purpose:'ad_director',photoroom-proxy 看到就不扣(只放行 max_tokens ≤ 3000,生成文案照扣)
 //  v2.9.1 生成紀錄記下美術指導挑的壓字排法(params.director.textStyle,例如「7 兩行大標」;思考第 7 項也看得到)
 //  v2.9 RA 11-13 系統壓字(ad-textlayer.js):照片裡不畫字、不替字留白;美術指導從 RA 定案的 20 款排法挑一款(思考第 7 項寫編號)交給壓字模組
 //  v2.8.1 RA 11-13「LOGO 也是自己判斷,你才是智能」→ 拿掉「右下角先留給 LOGO」的預約;構圖自由,LOGO 由 admaker 生完圖量四角挑最乾淨的
@@ -216,7 +218,7 @@
     var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, layout ? TIMEOUT_MS * 1.5 : TIMEOUT_MS);
     return fetch(WORKER, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
-      body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: layout ? 3000 : 1700 })
+      body: JSON.stringify({ action: 'claude_generate', purpose: 'ad_director', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: layout ? 3000 : 1700 })
     }).then(function (r) { return r.json(); }).then(function (j) {
       clearTimeout(tm);
       var raw = String((j && j.ok && j.text) || ''), cut = raw.lastIndexOf('【提示詞】'), mk = 5;
@@ -244,7 +246,7 @@
     var ask = '下面是一段要交給' + (tgt ? '影片' : '生圖') + '模型的英文提示詞,太長了。把它壓縮到 ' + target + ' 字元以內:每一句的意思都保留、改成更短的說法,先刪最不重要的形容;描述商品保持照片原樣、畫面上的字的句子一字不改' + (tgt ? ';時間碼 [00:00-00:00] 與 [Image] 標記全部保留、順序不變' : '') + '。只輸出壓縮後的提示詞本身,不加任何說明。\n\n' + text;
     var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, TIMEOUT_MS);
     return fetch(WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
-      body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: [{ type: 'text', text: ask }], max_tokens: layout ? 1500 : 800 })
+      body: JSON.stringify({ action: 'claude_generate', purpose: 'ad_director', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: [{ type: 'text', text: ask }], max_tokens: layout ? 1500 : 800 })
     }).then(function (r) { return r.json(); }).then(function (j) {
       clearTimeout(tm);
       var o = clean((j && j.ok && j.text) || '');
@@ -368,7 +370,7 @@
       content.push({ type: 'text', text: motionBrief(draft, mv, sec) });
       var ctl = new AbortController(), tm = setTimeout(function () { ctl.abort(); }, TIMEOUT_MS);
       var r = await fetch(WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
-        body: JSON.stringify({ action: 'claude_generate', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: 1800 }) });
+        body: JSON.stringify({ action: 'claude_generate', purpose: 'ad_director', password: (typeof GAS_PASSWORD !== 'undefined' ? GAS_PASSWORD : 'raby2026'), prompt: content, max_tokens: 1800 }) });
       clearTimeout(tm);
       var j = await r.json(), raw = String((j && j.ok && j.text) || ''), cut = raw.lastIndexOf('【提示詞】');
       L.think = cut > 0 ? raw.slice(0, cut).replace(/^[\s\S]*?【思考】/, '').trim() : '';
