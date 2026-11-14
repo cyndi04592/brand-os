@@ -10788,7 +10788,10 @@ async function aiGeneratePersona() {
     if (!res.ok) throw new Error(res.error || 'AI 生成失敗');
 
     // 把結果填進 Modal 欄位(若 Modal 已開)或直接存 GAS
-    const modalOpen = document.getElementById('persona-editor-modal')?.classList.contains('open');
+    // 🩹 2026-11-14:視窗是用 style.display='flex' 打開的,不會有 'open' class → 以前永遠判斷成「沒開」,
+    //   又呼叫一次 openPersonaEditor(),把客人剛選的性別/國籍/職業蓋回舊值(例:男性 KOL 被改回女性)。兩種都認。
+    const _pm = document.getElementById('persona-editor-modal');
+    const modalOpen = !!_pm && (_pm.classList.contains('open') || _pm.style.display === 'flex');
     const data = res.persona || {};
 
     if (modalOpen) {
