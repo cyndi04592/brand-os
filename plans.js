@@ -123,7 +123,7 @@ function ensureBrandosPlanStyle() {
 .bos-card.top .bos-bar>i{background:linear-gradient(90deg,var(--bp-amber),var(--bp-gold));}
 .bos-spec{font-size:12.5px;color:var(--bp-t2);line-height:1.5;}
 .bos-spec .r{display:flex;gap:8px;margin-top:7px;}
-.bos-spec .k{color:var(--bp-t3);flex-shrink:0;width:58px;}
+.bos-spec .k{color:var(--bp-t3);flex-shrink:0;min-width:58px;white-space:nowrap;}
 .bos-spec .vv{color:#fff;}
 .bos-spec .vv.grade{color:var(--bp-gold);font-weight:700;}
 .bos-meta{margin-top:auto;padding-top:14px;border-top:1px dashed var(--bp-line);}
