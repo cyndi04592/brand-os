@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour-kol.js v1.1(2026-11-15)KOL 數字人工作室 新手導覽
+//  🧭 guided-tour-kol.js v1.2(2026-11-15)KOL 數字人工作室 新手導覽
 //  需要先載入 guided-tour.js(提供 BosTour:黃框 + 白卡 + 紅字建議/注意)
 //
 //  兩段導覽:
@@ -12,7 +12,7 @@
   'use strict';
   if (window.__bosTourKol) return;
   window.__bosTourKol = true;
-  var VERSION = '1.1';
+  var VERSION = '1.2';
 
   function TIP(t) { return '<div class="bt-r"><i>建議</i>' + t + '</div>'; }
   function PIT(t) { return '<div class="bt-r"><i>注意</i>' + t + '</div>'; }
@@ -32,15 +32,23 @@
           PIT('選錯品牌,角色和商品照都會是別家的。') },
       { t: '#rs-roster', title: '選一位 KOL 當主角',
         body: '這是品牌的 <b>KOL 形象庫</b>,點一位就選好了,選好會繼續教你下一步。<br>沒有合適的人選,按<b>「＋ 建新角色」</b>讓 AI 做一位新面孔。' +
-          TIP('「＋ 使用自己建立」是用你自己的照片,當品牌代言人最有說服力。') }
+          TIP('「＋ 使用自己建立」是用你自己的照片,當品牌代言人最有說服力。') },
+      { t: ['#rs-persona-panel', '#rs-ab-edit'], title: '人設:決定他怎麼講話',
+        body: '年紀、住哪、做什麼工作、在意什麼。<br>AI 寫台詞時會照這個人設說話。' +
+          TIP('人設寫得越具體,台詞越像真人,不像在念廣告。要改按「編輯人設」。') },
+      { t: ['#look-picker', '#rs-pane-look'], title: '多角度參考照',
+        body: '正臉、側臉這幾張是<b>拍影片時自動用的參考照</b>,讓每一個鏡頭都是同一張臉。' +
+          TIP('系統會自己挑,不用動它。') },
+      { t: '#rs-actionbar', title: '選好就按「用這位角色拍片 →」',
+        body: '按右邊那顆,就會進到 <b>STEP 2 拍電影鏡頭</b>。' }
     ]);
 
     // ── 點選一位 KOL 之後(人設、參考照、拍片按鈕這時才出現)──────
     BosTour.register('kol1b', [
-      { t: '#rs-persona-panel', title: '人設:決定他怎麼講話',
+      { t: ['#rs-persona-panel', '#rs-ab-edit'], title: '人設:決定他怎麼講話',
         body: '年紀、住哪、做什麼工作、在意什麼。<br>AI 寫台詞時會照這個人設說話。' +
-          TIP('人設寫得越具體,台詞越像真人,不像在念廣告。要改按下面「編輯人設」。') },
-      { t: '#look-picker', title: '多角度參考照',
+          TIP('人設寫得越具體,台詞越像真人,不像在念廣告。要改按「編輯人設」。') },
+      { t: ['#look-picker', '#rs-pane-look'], title: '多角度參考照',
         body: '正臉、側臉這幾張是<b>拍影片時自動用的參考照</b>,讓每一個鏡頭都是同一張臉。' +
           TIP('系統會自己挑,不用動它。') },
       { t: '#rs-actionbar', title: '選好就按「用這位角色拍片 →」',
@@ -100,6 +108,8 @@
 
   // ── 什麼時候自動跑 ───────────────────────────────────────────
   var registered = false, tried = {};
+  function done(n) { try { return !!localStorage.getItem('bos_tour_done_' + n); } catch (e) { return true; } }
+  function setDone(n) { try { localStorage.setItem('bos_tour_done_' + n, '1'); } catch (e) {} }
   function tryStart(name) {
     if (tried[name]) return;
     var c = document.querySelector('.bt-card');
@@ -114,7 +124,9 @@
     var roster = document.getElementById('rs-roster');
     if (shown('main-layout-cinematic')) tryStart('kol2');
     else if (shown('main-layout-talking') && roster && roster.children.length) {
-      if (shown('rs-actionbar')) tryStart('kol1b'); else tryStart('kol1');
+      //  先跑完整的 kol1;那時已經選好 KOL(人設、拍片鈕都在)就一起教,kol1b 不再重複
+      if (!done('kol1')) { if (!tried.kol1 && shown('rs-actionbar')) setDone('kol1b'); tryStart('kol1'); }
+      else if (shown('rs-actionbar') && !done('kol1b')) tryStart('kol1b');
     }
   }, 800);
 
