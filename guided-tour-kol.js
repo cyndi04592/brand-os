@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour-kol.js v2.0(2026-11-15)KOL 數字人工作室 新手導覽
+//  🧭 guided-tour-kol.js v2.1(2026-11-15)KOL 數字人工作室 新手導覽
 //  需要先載入 guided-tour.js v2.0+(提供 BosTour:黃框 + 白卡 + 紅字建議/注意 + 中/日/英)
 //
 //  三段導覽:
@@ -13,7 +13,7 @@
   'use strict';
   if (window.__bosTourKol) return;
   window.__bosTourKol = true;
-  var VERSION = '2.0';
+  var VERSION = '2.1';
 
   function shown(id) {
     var e = document.getElementById(id); if (!e) return false;
@@ -60,12 +60,12 @@
           PIT('選錯品牌,角色和商品照都會是別家的。', 'ブランドを間違えると、キャラも商品写真も別ブランドのものになります。', 'Pick the wrong brand and you get another brand\'s characters and product photos.') },
       { t: '#rs-roster',
         title: T('選一位 KOL 當主角', 'KOL を1人選ぶ', 'Pick a KOL as the lead'),
-        body: T('這是品牌的 <b>KOL 形象庫</b>,點一位就選好了,選好會繼續教你下一步。<br>沒有合適的人選,按<b>「＋ 建新角色」</b>讓 AI 做一位新面孔。',
-                'ブランドの <b>KOL キャラライブラリ</b>です。1人タップすれば選択完了、続けて次の手順をご案内します。<br>合う人がいなければ<b>「＋ 新しいキャラを作成」</b>で AI が新しい顔を作ります。',
-                'This is the brand\'s <b>KOL library</b>. Tap one to select — the guide continues from there.<br>No one fits? Tap <b>"+ New character"</b> and the AI creates a new face.') +
+        body: T('這是品牌的 <b>KOL 形象庫</b>,點一位就選好了。<br>沒有合適的,按<b>「＋ 建新角色」</b>讓 AI 做新面孔。',
+                '<b>KOL キャラライブラリ</b>です。1人タップで選択。<br>いなければ<b>「＋ 新しいキャラを作成」</b>。',
+                'The brand\'s <b>KOL library</b>. Tap one to select.<br>No one fits? Tap <b>"+ New character"</b>.') +
           TIP('「＋ 使用自己建立」是用你自己的照片,當品牌代言人最有說服力。',
-              '「＋ 自分の写真で作成」はあなた自身の写真を使います。ブランドの顔として一番説得力があります。',
-              '"+ Use my own" builds from your own photo — the most convincing brand ambassador.') }
+              '自分の写真で作ると、ブランドの顔として一番説得力があります。',
+              '"+ Use my own" uses your photo — the most convincing ambassador.') }
     ].concat(picked()); });
 
     // ── 點了某位 KOL 之後 ───────────────────────────────────────
@@ -85,26 +85,22 @@
       { t: '#cine-sbp-entry',
         title: T('第一步:用 AI 分鏡寫腳本', 'まず AI 絵コンテで台本を作る', 'First: write the script with AI storyboard'),
         body: T('把想講的內容丟進去,AI 會寫成<b>有台詞、時間對得上</b>的腳本,也可以自己在分鏡卡上改。',
-                '伝えたい内容を入れると、AI が<b>セリフ付きで尺の合った</b>台本にします。絵コンテカードで自分で直すこともできます。',
-                'Drop in what you want to say; the AI turns it into a script <b>with lines that fit the timing</b>. You can edit the storyboard cards yourself.') +
+                '伝えたい内容を入れると、AI が<b>尺の合ったセリフ付き</b>台本にします。',
+                'Type what you want to say; the AI writes a script <b>with lines that fit the time</b>.') +
           PIT('自己硬塞很長的台詞,影片時間不夠會被切掉。用 AI 分鏡,系統會自動鎖好時長。',
-              '長いセリフを無理に入れると、時間が足りず途中で切れます。AI 絵コンテなら尺を自動で合わせます。',
-              'Cram in long lines yourself and they get cut off. The AI storyboard locks the timing for you.') +
-          TIP('有字唸錯(例如「抽屜」),換個說法或用別的詞就好。',
-              '読み間違える言葉があれば、言い方や単語を変えれば直ります。',
-              'If a word is mispronounced, just rephrase or use a different word.') },
+              '長いセリフは途中で切れます。AI 絵コンテなら尺を自動調整。',
+              'Long lines get cut off. The AI storyboard fits the timing for you.') },
       { t: ['#ref-panel-drive', '#ref-tab-drive'],
         title: T('選商品照', '商品写真を選ぶ', 'Pick product photos'),
-        body: T('從素材庫點<b>這支要推的商品照</b>。', '素材ライブラリから<b>今回宣伝する商品の写真</b>をタップ。', 'Tap the <b>photos of the product you\'re promoting</b> from the library.') +
-          TIP('外包裝和內容物都放,AI 才知道打開長什麼樣子。', 'パッケージと中身の両方を入れると、開けた時の見た目も AI が分かります。', 'Add both the package and what\'s inside so the AI knows how it looks opened.') +
-          PIT('商品尺寸要在後台填對,填錯 AI 就會把商品畫太大或太小。', '商品サイズは管理画面で正しく入力を。間違えると大きすぎ・小さすぎに描かれます。', 'Enter the correct product size in admin, or the AI draws it too big or too small.') },
+        body: T('從素材庫點<b>這支要推的商品照</b>,外包裝和內容物都放。', '<b>宣伝する商品の写真</b>をタップ(パッケージと中身の両方)。', 'Tap the <b>product photos</b> to use — both package and contents.') +
+          PIT('商品尺寸要在後台填對,填錯 AI 就會把商品畫太大或太小。', '商品サイズが間違っていると、大きさがおかしく描かれます。', 'A wrong product size makes it drawn too big or small.') },
       { t: '#product-mode-s2',
         title: T('商品呈現方式', '商品の見せ方', 'How the product appears'),
         body: T('告訴 AI 你賣的是<b>「東西」還是「體驗」</b>:手拿小物、包裝零食、盛盤料理、穿戴…',
-                '売っているのが<b>「モノ」か「体験」か</b>を AI に伝えます:手に持つ小物、袋菓子、盛り付け料理、身につける物…',
+                '売っているのが<b>モノ</b>か<b>体験</b>かを選びます(小物、袋菓子、料理、身につける物…)。',
                 'Tell the AI whether you sell <b>a "thing" or an "experience"</b>: handheld items, packaged snacks, plated food, wearables…') +
           PIT('選錯,拿法和擺法就會錯(例如把衣服拿在手上晃)。不確定就選「自動」。',
-              '間違えると持ち方・置き方がおかしくなります(服を手に持って振る等)。迷ったら「自動」。',
+              '間違えると持ち方がおかしくなります。迷ったら「自動」。',
               'Pick wrong and it\'s held or placed oddly (like waving clothes around). Unsure? Choose "Auto".') },
       { t: ['#scene-grid-cine', '#scn-lib-s2'],
         title: T('場景:在哪裡拍', 'シーン:どこで撮る?', 'Scene: where to shoot'),
@@ -114,9 +110,9 @@
               'Upload real photos of your own shop and the video uses your actual space — most convincing.') },
       { t: '#cine-lock-zone',
         title: T('解析度、秒數、比例', '解像度・秒数・比率', 'Resolution, length, ratio'),
-        body: T('IG / 抖音用 <b>9:16</b>;YouTube 用 16:9。', 'Instagram / TikTok は <b>9:16</b>、YouTube は 16:9。', 'Instagram / TikTok: <b>9:16</b>; YouTube: 16:9.') +
-          PIT('「生成聲音」關掉,影片完全沒聲音,連台詞都不會唸!', '「音声を生成」をオフにすると、無音になりセリフも読まれません!', 'Turn off "Generate audio" and the video is silent — not even the lines are spoken!') +
-          PIT('解析度越高、秒數越長,等越久、扣的點數也越多。', '解像度が高く秒数が長いほど、時間もポイントも多くかかります。', 'Higher resolution and longer clips take longer and cost more points.') },
+        body: T('IG / 抖音用 <b>9:16</b>;YouTube 用 16:9。', 'IG・TikTok は <b>9:16</b>、YouTube は 16:9。', 'Instagram / TikTok: <b>9:16</b>; YouTube: 16:9.') +
+          PIT('「生成聲音」關掉,影片完全沒聲音,連台詞都不會唸!', '「音声を生成」オフ=無音、セリフも出ません!', '"Generate audio" off = silent video, no spoken lines!') +
+          PIT('解析度越高、秒數越長,扣點越多。', '高画質・長尺ほどポイント増。', 'Higher resolution and longer clips cost more points.') },
       { t: '#create-seedance-btn',
         title: T('最後:按這顆開始拍', '最後:このボタンで撮影開始', 'Last step: tap to shoot'),
         body: T('大約 <b>5–10 分鐘</b>出片,可以先去做別的事。', '完成まで約 <b>5〜10 分</b>。その間ほかの作業をしていて大丈夫です。', 'Takes about <b>5–10 minutes</b> — feel free to do something else.') +
