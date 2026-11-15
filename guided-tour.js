@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour.js v1.4(2026-11-15)新手導覽(一步一步教學)
+//  🧭 guided-tour.js v1.5(2026-11-15)新手導覽(一步一步教學)
 //  RA 11-15:參考她做過的表單教學 —— 把「現在要做的那一格」框起來,
 //   下面一張白卡片寫「第 X 步,共 Y 步」+ 白話說明 +「下一步 →」。
 //
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
   if (window.BosTour) return;
-  var VERSION = '1.4';
+  var VERSION = '1.5';
   var MOBILE = '(max-width: 768px)';
   var TOURS = {};
   var cur = null;          // { name, steps, i, el }
@@ -109,6 +109,15 @@
       var lower = r.top > (window.innerHeight - r.bottom);
       ui.card.style.top = lower ? 'calc(12px + env(safe-area-inset-top,0px))' : 'auto';
       ui.card.style.bottom = lower ? 'auto' : 'calc(14px + env(safe-area-inset-bottom,0px))';
+      //  v1.5:卡片還是蓋到框(卡片變高時)→ 等捲動停了,把內容再推開一點(每步最多 3 次)
+      if (cur.adj < 3 && Date.now() - cur.t0 > 700) {
+        var cr = ui.card.getBoundingClientRect();
+        var ov = lower ? (cr.bottom + 10 - (r.top - pad)) : ((r.bottom + pad) + 10 - cr.top);
+        if (ov > 2 && cr.height + r.height + 40 < window.innerHeight) {
+          var sc = scroller(el); cur.adj++; cur.t0 = Date.now() - 400;
+          try { sc.scrollBy({ top: lower ? -ov : ov, behavior: 'smooth' }); } catch (e) { sc.scrollTop += lower ? -ov : ov; }
+        }
+      }
     } else {
       ui.ring.style.display = 'none';
       ui.card.style.top = 'auto'; ui.card.style.bottom = 'calc(14px + env(safe-area-inset-bottom,0px))';
@@ -116,10 +125,18 @@
     raf = requestAnimationFrame(place);
   }
 
+  function scroller(el) {
+    for (var p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      var oy = window.getComputedStyle(p).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight + 2) return p;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+
   function show() {
     var st = cur.steps[cur.i];
     var el = findTarget(st);
-    cur.el = el;
+    cur.el = el; cur.adj = 0; cur.t0 = Date.now();
     //  v1.2:手機卡片很高 → 首頁的框捲到畫面上方(卡片在下面);產生器視窗裡維持置中
     var top = el && isMobile() && !(el.closest && el.closest('#adMakerModal'));
     if (top) { document.body.style.paddingBottom = '70vh'; el.style.scrollMarginTop = '70px'; }
