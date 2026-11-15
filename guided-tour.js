@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour.js v1.0(2026-11-15)新手導覽(一步一步教學)
+//  🧭 guided-tour.js v1.1(2026-11-15)新手導覽(一步一步教學)
 //  RA 11-15:參考她做過的表單教學 —— 把「現在要做的那一格」框起來,
 //   下面一張白卡片寫「第 X 步,共 Y 步」+ 白話說明 +「下一步 →」。
 //
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
   if (window.BosTour) return;
-  var VERSION = '1.0';
+  var VERSION = '1.1';
   var MOBILE = '(max-width: 768px)';
   var TOURS = {};
   var cur = null;          // { name, steps, i, el }
@@ -102,7 +102,8 @@
       ui.ring.style.display = 'block';
       ui.ring.style.left = (r.left - pad) + 'px'; ui.ring.style.top = (r.top - pad) + 'px';
       ui.ring.style.width = (r.width + pad * 2) + 'px'; ui.ring.style.height = (r.height + pad * 2) + 'px';
-      var lower = (r.top + r.height / 2) > window.innerHeight * 0.55;
+      //  v1.1:卡片放到「框外空間比較大」的那一邊(手機卡片高,不能只看中心點)
+      var lower = r.top > (window.innerHeight - r.bottom);
       ui.card.style.top = lower ? 'calc(12px + env(safe-area-inset-top,0px))' : 'auto';
       ui.card.style.bottom = lower ? 'auto' : 'calc(14px + env(safe-area-inset-bottom,0px))';
     } else {
@@ -171,7 +172,7 @@
       body: '選<b>目標受眾</b>,AI 會照這群人的口味寫字、選畫面。<br>沒有剛好的,選最接近的就好。' },
     { t: '#adBtn', title: '按「做廣告圖」',
       body: '商品選好就按這顆。<br>如果還沒選照片,畫面會帶你到素材庫,<b>點一張照片就會自動打開廣告圖產生器</b>。' },
-    { t: '.right', title: '素材庫:你的照片都在這',
+    { m: '.right .drive-cfg', d: '.right', title: '素材庫:你的照片都在這',
       body: '這裡是這個品牌的<b>商品照、場景照</b>。<br>做廣告圖前先<b>點一張</b>;要加新照片,按上面的「+ 商品照」。' },
     { t: '#genBtn', title: '只要文案也可以',
       body: '不做圖、只要廣告文案,按<b>「生成文案」</b>。<br>長度、語言(中文 / 日本語 / English)在上面選。' }
