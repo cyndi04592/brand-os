@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour-kol.js v1.2(2026-11-15)KOL 數字人工作室 新手導覽
+//  🧭 guided-tour-kol.js v1.3(2026-11-15)KOL 數字人工作室 新手導覽
 //  需要先載入 guided-tour.js(提供 BosTour:黃框 + 白卡 + 紅字建議/注意)
 //
 //  兩段導覽:
@@ -12,7 +12,7 @@
   'use strict';
   if (window.__bosTourKol) return;
   window.__bosTourKol = true;
-  var VERSION = '1.2';
+  var VERSION = '1.3';
 
   function TIP(t) { return '<div class="bt-r"><i>建議</i>' + t + '</div>'; }
   function PIT(t) { return '<div class="bt-r"><i>注意</i>' + t + '</div>'; }
@@ -20,7 +20,10 @@
   function shown(id) {
     var e = document.getElementById(id); if (!e) return false;
     var r = e.getBoundingClientRect();
-    return r.width > 4 && r.height > 4 && window.getComputedStyle(e).display !== 'none';
+    if (!(r.width > 4 && r.height > 4 && window.getComputedStyle(e).display !== 'none')) return false;
+    //  底部那條平常滑在畫面外藏著,露出來才算
+    if (window.getComputedStyle(e).position === 'fixed' && (r.top >= window.innerHeight - 1 || r.bottom <= 1)) return false;
+    return true;
   }
   function ready() { return !!(window.BosTour && window.BosTour.register); }
 
