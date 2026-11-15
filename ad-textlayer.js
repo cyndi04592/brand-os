@@ -53,7 +53,8 @@
     var step = size * (gap || 1.12); ctx.font = f; ctx.fillStyle = col; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
     for (var i = 0; i < s.length; i++) {
       var c = s[i];
-      if (/[，、。,]/.test(c)) { ctx.fillText('，', x + size * 0.55, y - size * 0.55); y += step * 0.35; continue; }
+      //  2026-11-15 RA:日文主標「台中の夜、ゆっくりと」的「、」被畫成「,」→ 標點照原字畫(、。保留),只有英文逗點換成全形「，」
+      if (/[，、。,]/.test(c)) { ctx.fillText(c === ',' ? '，' : c, x + size * 0.55, y - size * 0.55); y += step * 0.35; continue; }
       if (c === ' ') { y += step * 0.5; continue; }
       ctx.fillText(c, x, y); y += step;
     }
