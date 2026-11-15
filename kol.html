@@ -2410,7 +2410,7 @@ const _LOG_KIND = {
       case 'ai_generate_script':
       case 'ai_generate_script_v2':    return 120;
       case 'ai_generate_social_posts': return 120;
-      case 'fal_image_submit':         return 96 * (parseInt(o.num_images || 1, 10) || 1);
+      case 'fal_image_submit':         return 100 * (parseInt(o.num_images || 1, 10) || 1);
       //  🔤 2026-09-19 加上字幕:與 Worker v5.74、kol-subtitle.js costOf 同一個公式(三邊同步)
       case 'subtitle_burn':            return Math.max(100, Math.ceil(Math.max(1, Math.min(600, Number(o.durationSec) || 60)) / 60 * 100));
       case 'heygen_create_video': {
@@ -2420,7 +2420,7 @@ const _LOG_KIND = {
       case 'seedance_submit': {
         const _sec = parseInt(o.duration || 5, 10) || 5;
         const _hi  = /1080|1k|2k|4k/i.test(String(o.resolution || ''));
-        return Math.round(64 * _sec * (_hi ? 2.8 : 1));
+        return 60 * _sec * (_hi ? 3 : 1);   // 💰 2026-11-16 跟 Worker 同價:每秒 60、1080P 三倍(舊 64 / 2.8 會讓頂端點數先扣錯)
       }
       default: return 0;
     }
@@ -8281,11 +8281,14 @@ function _pgcCostLine(opts, faceless, rate) {
     var secs = 0;
     if (sb && sb.length) secs = sb.reduce(function (a, x) { return a + (Number(x && x.seconds) || 0); }, 0);
     if (!secs) secs = parseInt(opts && opts.duration, 10) || 0;
-    if (!secs) return '即將開始生成影片,會消耗生成額度。';
+    //  💰 2026-11-16 時長選 auto:Worker 照 5 秒扣 → 照實寫出點數,不再只寫「會消耗額度」
+      var _autoDur = !secs && String(opts && opts.duration) === 'auto';
+      if (_autoDur) secs = 5;
+      if (!secs) return '即將開始生成影片,會消耗生成額度。';
     var res = String(((step3 ? S.episodeParams : S.seedanceParams) || {}).resolution || '720p');
     var hi = /1080|1k|2k|4k/i.test(res);
     var pts = secs * rate * (hi ? 3 : 1);
-    return '即將生成約 <b>' + secs + ' 秒</b>影片(' + res + '),預計扣 <b>' + pts.toLocaleString() + ' 點</b>'
+    return (_autoDur ? '影片長度由 AI 自動決定(' + res + '),預計扣 <b>' : '即將生成約 <b>' + secs + ' 秒</b>影片(' + res + '),預計扣 <b>') + pts.toLocaleString() + ' 點</b>'
       + '<span style="color:var(--text-dim);font-size:12px;">(' + (rate === 80 ? '本人真人角色 · ' : '') + '每秒 ' + rate + ' 點' + (hi ? '、1080P 三倍' : '') + ';失敗會自動退還)</span>'
       //  💰 2026-11-14 客人看到「900 點」實際扣 1,000:第一次用某套造型拍,會先幫角色換好衣服(另扣 100 點,做好會存起來,同一套之後再拍不再扣)→ 要先講
       + (faceless ? '' : '<div style="margin-top:6px;font-size:12px;color:var(--text-dim);line-height:1.6;">第一次用這套造型拍,會另扣 <b>100 點</b>幫角色換好衣服(同一套之後再拍不再扣)</div>');
