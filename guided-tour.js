@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour.js v1.5(2026-11-15)新手導覽(一步一步教學)
+//  🧭 guided-tour.js v1.6(2026-11-15)新手導覽(一步一步教學)
 //  RA 11-15:參考她做過的表單教學 —— 把「現在要做的那一格」框起來,
 //   下面一張白卡片寫「第 X 步,共 Y 步」+ 白話說明 +「下一步 →」。
 //
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
   if (window.BosTour) return;
-  var VERSION = '1.5';
+  var VERSION = '1.6';
   var MOBILE = '(max-width: 768px)';
   var TOURS = {};
   var cur = null;          // { name, steps, i, el }
@@ -133,13 +133,26 @@
     return document.scrollingElement || document.documentElement;
   }
 
+  //  v1.6:頁面上方固定的導覽列有多高(KOL 頁手機約 100px),框要捲到它下面,不能被蓋住
+  function headerBottom() {
+    var b = 0;
+    try {
+      var e = document.elementFromPoint(window.innerWidth / 2, 4);
+      for (var p = e; p && p !== document.body; p = p.parentElement) {
+        var ps = window.getComputedStyle(p).position;
+        if (ps === 'fixed' || ps === 'sticky') { b = p.getBoundingClientRect().bottom; break; }
+      }
+    } catch (x) {}
+    return (b > 0 && b < window.innerHeight * 0.4) ? b : 0;
+  }
+
   function show() {
     var st = cur.steps[cur.i];
     var el = findTarget(st);
     cur.el = el; cur.adj = 0; cur.t0 = Date.now();
     //  v1.2:手機卡片很高 → 首頁的框捲到畫面上方(卡片在下面);產生器視窗裡維持置中
     var top = el && isMobile() && !(el.closest && el.closest('#adMakerModal'));
-    if (top) { document.body.style.paddingBottom = '70vh'; el.style.scrollMarginTop = '70px'; }
+    if (top) { document.body.style.paddingBottom = '70vh'; el.style.scrollMarginTop = (headerBottom() + 16) + 'px'; }
     if (el) { try { el.scrollIntoView({ block: top ? 'start' : 'center', behavior: 'smooth' }); } catch (e) { el.scrollIntoView(); } }
     var c = ui.card;
     c.querySelector('.bt-n').textContent = '第 ' + (cur.i + 1) + ' 步,共 ' + cur.steps.length + ' 步';
