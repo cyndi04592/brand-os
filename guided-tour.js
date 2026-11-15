@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour.js v2.0(2026-11-15)新手導覽(一步一步教學)
+//  🧭 guided-tour.js v2.1(2026-11-15)新手導覽(一步一步教學)
 //  RA 11-15:參考她做過的表單教學 —— 把「現在要做的那一格」框起來,
 //   下面一張白卡片寫「第 X 步,共 Y 步」+ 白話說明 +「下一步 →」。
 //
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
   if (window.BosTour) return;
-  var VERSION = '2.0';
+  var VERSION = '2.1';
   var MOBILE = '(max-width: 768px)';
   var TOURS = {};
   var cur = null;          // { name, steps, i, el }
@@ -240,11 +240,11 @@
     { t: '#brandTree',
       title: T('再選系列和商品', 'シリーズと商品を選ぶ', 'Pick a series and product'),
       body: T('點<b>系列</b>,再點<b>要推的那個商品</b>。<br>選好的會打勾,最上面那行會顯示你選到哪裡。',
-              '<b>シリーズ</b>を選んでから、<b>宣伝したい商品</b>をタップ。<br>選んだものにはチェックが付き、一番上に今の選択が表示されます。',
-              'Tap a <b>series</b>, then the <b>product</b> you want to promote.<br>Your pick gets a check mark and shows in the top line.') +
+              '<b>シリーズ</b>→<b>宣伝する商品</b>の順にタップ。選ぶとチェックが付きます。',
+              'Tap a <b>series</b>, then the <b>product</b> to promote. It gets a check mark.') +
         PIT('選錯商品,AI 會照錯的商品資料寫字,一定要確認打勾的是這次要推的。',
-            '商品を間違えると、AI が違う商品の情報で文章を書きます。チェックが付いた商品を必ず確認してください。',
-            'Pick the wrong product and the AI writes about the wrong one. Double-check the ticked item.') },
+            '商品を間違えると、AI が別の商品について書きます。必ず確認を。',
+            'Wrong product = the AI writes about the wrong one. Double-check.') },
     { t: '#selAud',
       title: T('這次要給誰看?', '誰に見せる?', 'Who is it for?'),
       body: T('選<b>目標受眾</b>,AI 會照這群人的口味寫字、選畫面。',
@@ -261,14 +261,11 @@
     { t: ['.right .drive-cfg', '.right'],
       title: T('素材庫:你的照片都在這', '素材ライブラリ:写真はここ', 'Asset library: your photos'),
       body: T('這裡是這個品牌的<b>商品照、場景照</b>。<br>做廣告圖前先<b>點一張</b>;要加新照片,按上面的「+ 商品照」。',
-              'このブランドの<b>商品写真・シーン写真</b>です。<br>広告画像を作る前に<b>1枚タップ</b>。新しい写真は上の「＋ 商品写真」から追加します。',
-              'This brand\'s <b>product and scene photos</b>.<br><b>Tap one</b> before making an ad; add new ones with "+ Product photo" above.') +
+              'このブランドの<b>商品・シーン写真</b>です。広告を作る前に<b>1枚タップ</b>。追加は「＋ 商品写真」から。',
+              'This brand\'s <b>product and scene photos</b>. <b>Tap one</b> first; add more with "+ Product photo".') +
         PIT('LOGO 請放「+ LOGO」,不要放成商品照,不然會被當成照片拿去拍。',
-            'ロゴは「＋ LOGO」へ。商品写真に入れると、写真として撮影に使われてしまいます。',
-            'Put your logo under "+ LOGO", not as a product photo, or it gets used as a photo.') +
-        TIP('照片越清楚、主角越大,出來的圖越好。',
-            '写真が鮮明で、主役が大きいほど仕上がりが良くなります。',
-            'Sharper photos with a bigger subject give better results.') },
+            'ロゴは「＋ LOGO」へ。商品写真にすると撮影に使われます。',
+            'Put logos under "+ LOGO", not product photos, or they get shot as photos.') },
     { t: '#genBtn',
       title: T('只要文案也可以', 'コピーだけでもOK', 'Just need copy?'),
       body: T('不做圖、只要廣告文案,按<b>「生成文案」</b>。<br>長度、語言(中文 / 日本語 / English)在上面選。',
@@ -286,19 +283,19 @@
         TIP('選主角最清楚、最大的那張。', '主役が一番はっきり大きく写っている写真を選びましょう。', 'Choose the shot where the subject is clearest and largest.') },
     { t: '#prodTypeSel',
       title: T('⓪ 我要拍的是什麼?', '⓪ 何を撮る?', '⓪ What are you shooting?'),
-      body: T('先選你的<b>行業</b>(商品、服飾、汽車、飯店婚宴…)。<br>選對了,AI 才不會亂生出你沒在賣的東西。',
-              'まず<b>業種</b>を選びます(商品・アパレル・自動車・ホテル/ウェディング…)。<br>正しく選ぶと、AI が売っていない物を勝手に描きません。',
-              'First pick your <b>industry</b> (products, fashion, cars, hotels & weddings…).<br>Get this right and the AI won\'t invent things you don\'t sell.') +
+      body: T('先選你的<b>行業</b>(商品、服飾、汽車、飯店婚宴…)。',
+              'まず<b>業種</b>を選びます(商品・アパレル・自動車・ホテル/ウェディング…)。',
+              'First pick your <b>industry</b> (products, fashion, cars, hotels & weddings…).') +
         PIT('飯店、婚宴、汽車、美業這類<b>服務</b>,不要選「商品」!選商品,AI 會把它當成擺在桌上的東西拍。',
-            'ホテル・ウェディング・自動車・美容などの<b>サービス業</b>は「商品」を選ばないでください!商品を選ぶと、テーブルに置いた物として撮影されます。',
-            'For <b>services</b> like hotels, weddings, cars or beauty, don\'t pick "Products"! The AI would shoot it like an object on a table.') },
+            'ホテル・ウェディング・自動車・美容などの<b>サービス業</b>は「商品」を選ばないで!テーブルに置いた物として撮られます。',
+            'Hotels, weddings, cars, beauty are <b>services</b> — don\'t pick "Products", or it\'s shot like an object on a table.') },
     { t: ['#layoutSel', '#layoutLock'],
       title: T('① 排版:要什麼畫面', '① レイアウト:どんな画面?', '① Layout: what scene?'),
       body: T('選一種<b>畫面</b>,例如客房實景、新人入場、估價檢車。<br>選完 ⓪ 這格才會出現。',
-              '<b>画面</b>を1つ選びます(客室の実景、新郎新婦の入場、査定・点検など)。<br>⓪ を選ぶとここが表示されます。',
+              '<b>画面</b>を1つ選びます(客室、入場シーン、査定など)。⓪ の後に表示。',
               'Choose a <b>scene</b>, e.g. guest room, couple\'s entrance, car inspection.<br>This appears after you pick ⓪.') +
         PIT('畫面要跟你選的照片對得上:客房照就選客房類,不要選婚宴場地。',
-            '画面は選んだ写真と合わせてください。客室の写真なら客室系を。宴会場は選ばないで。',
+            '写真に合う画面を。客室の写真なら客室系を。',
             'Match the scene to your photo: a guest-room photo needs a room layout, not a banquet hall.') },
     { t: ['#flavorSel', '#flavorLock'],
       title: T('② 設計風格', '② デザインスタイル', '② Design style'),
@@ -325,11 +322,11 @@
     { t: '#prApplyBtn',
       title: T('最後:按這顆開始生成', '最後:このボタンで生成', 'Last step: tap to generate'),
       body: T('按鈕上<b>直接寫著要扣幾點</b>,約 2 分鐘出圖。<br>出圖後才會出現「下載廣告圖」。',
-              'ボタンに<b>消費ポイントが表示</b>されています。約2分で完成。<br>完成後に「広告画像をダウンロード」が出ます。',
-              'The button <b>shows the points it will use</b>. Takes about 2 minutes.<br>"Download ad image" appears when it\'s done.') +
+              'ボタンに<b>消費ポイント</b>が出ています。約2分で完成し、「ダウンロード」が表示されます。',
+              'The button <b>shows the points used</b>. About 2 minutes, then "Download" appears.') +
         PIT('一按就扣點,按之前先往上看一遍 ⓪~⑤ 都選對了。',
-            '押した時点でポイントが消費されます。押す前に ⓪〜⑤ をもう一度確認してください。',
-            'Points are used the moment you tap. Check ⓪–⑤ once more before you do.') }
+            '押すとすぐポイント消費。⓪〜⑤ を先に確認。',
+            'Points are used on tap — recheck ⓪–⑤ first.') }
   ]; });
 
   // ── 什麼時候自動跑 ────────────────────────────────────────
