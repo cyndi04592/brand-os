@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  ad-textlayer.js · v1.1(2026-11-13)廣告圖「系統壓字」
+ *  ad-textlayer.js · v1.2(2026-11-16)廣告圖「系統壓字」
  *  v1.4 素材庫多存一份有字 + LOGO 的版本(原圖照存,影片和美編用原圖)
  *  v1.3 美術指導指定的款先試縮字,不輕易換款;主體外擴 2 格,字離臉遠一點
  *  v1.2 HH 實測:人臉佔滿下半部,舊版只試 15 個固定點全失敗 → 掉到深色色帶。改成整張細掃找空位 + 放不下先縮字 + 一定放得下的色帶/毛玻璃排到最後 + 最後退路改輕的毛玻璃(促銷才用色帶)
@@ -46,11 +46,12 @@
   function font(w, px, serif) { return w + ' ' + Math.round(px) + 'px ' + (serif ? SERIF : SANS); }
   function tw(ctx, s, f, tr) { ctx.font = f; var w = 0; for (var i = 0; i < s.length; i++) w += ctx.measureText(s[i]).width + (tr || 0); return s.length ? w - (tr || 0) : 0; }
   function put(ctx, x, y, s, f, col, tr) {   // y = 字的上緣
-    ctx.font = f; ctx.fillStyle = col; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+    ctx.font = f; ctx.fillStyle = col; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; halo(ctx, col, f);
     for (var i = 0; i < s.length; i++) { ctx.fillText(s[i], x, y); x += ctx.measureText(s[i]).width + (tr || 0); }
+    unhalo(ctx);
   }
   function vert(ctx, x, y, s, size, f, col, gap) {
-    var step = size * (gap || 1.12); ctx.font = f; ctx.fillStyle = col; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+    var step = size * (gap || 1.12); ctx.font = f; ctx.fillStyle = col; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; halo(ctx, col, f);
     for (var i = 0; i < s.length; i++) {
       var c = s[i];
       //  2026-11-15 RA:日文主標「台中の夜、ゆっくりと」的「、」被畫成「,」→ 標點照原字畫(、。保留),只有英文逗點換成全形「，」
@@ -59,6 +60,7 @@
       ctx.fillText(c, x, y); y += step;
     }
     return y;
+    unhalo(ctx);
   }
   function vlen(s) { var n = 0; for (var i = 0; i < s.length; i++) n += /[，、。,]/.test(s[i]) ? 0.35 : (s[i] === ' ' ? 0.5 : 1); return n; }
   // 把標題拆成幾行:先照標點拆,沒有標點就從中間拆
@@ -76,6 +78,24 @@
       return s / n;
     } catch (e) { return 128; }
   }
+
+  //  v1.2(2026-11-16 RA:「右上角字太飄」)字的顏色改看「對比」,不看亮度門檻
+  //   舊:平均亮度 >140 才用黑字 → 米色天花板這種中間亮度會選到白字,白字壓淺底就飄、看不清楚。
+  //   新:白字、黑字各算一次對比,挑高的;兩個都不夠(<4.5)→ 字加一圈柔和光暈,任何底都讀得到。
+  var WHITE_H = '#fffffe', INK_H = '#1a1a1d';
+  function pick(ctx, x, y, w, h) {
+    var Y = Math.pow(lum(ctx, x, y, w, h) / 255, 2.2);
+    var cw = 1.05 / (Y + 0.05), ci = (Y + 0.05) / 0.06, white = cw >= ci;
+    if ((white ? cw : ci) >= 4.5) return white ? WHITE : INK;
+    return white ? WHITE_H : INK_H;
+  }
+  function halo(ctx, col, f) {
+    if (col !== WHITE_H && col !== INK_H) return;
+    var m = String(f).match(/(\d+(?:\.\d+)?)px/), px = m ? parseFloat(m[1]) : 30;
+    ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; ctx.shadowBlur = Math.max(6, px * 0.45);
+    ctx.shadowColor = col === WHITE_H ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.75)';
+  }
+  function unhalo(ctx) { ctx.shadowBlur = 0; ctx.shadowColor = 'rgba(0,0,0,0)'; }
 
   // ── 畫面分析:主體遮罩 + 邊緣密度(縮小到 96 格寬來算,快)───────────
   var maskCache = {};
@@ -289,9 +309,9 @@
       var sz = Math.min(220 * u, (H * 0.6) / Math.max(Lt.length, Rt.length)), xl = W * 0.04, xr = W - W * 0.04 - sz, yy = H * 0.24;
       var sl = score(A, xl, yy, sz, sz * Lt.length), sr = score(A, xr, yy, sz, sz * Rt.length);
       if (sl.m > 0.04 || sr.m > 0.04) return null;
-      var cl = lum(ctx, xl, yy, sz, sz * Lt.length) > 140 ? INK : WHITE, cr = lum(ctx, xr, yy, sz, sz * Rt.length) > 140 ? INK : WHITE;
+      var cl = pick(ctx, xl, yy, sz, sz * Lt.length), cr = pick(ctx, xr, yy, sz, sz * Rt.length);
       vert(ctx, xl, yy, Lt, sz, font(700, sz, true), cl, 1.0); vert(ctx, xr, yy, Rt, sz, font(700, sz, true), cr, 1.0);
-      if (s) { var f18 = font(400, 24 * u), w18 = tw(ctx, s, f18, 6 * u); put(ctx, W - 64 * u - w18, H - 70 * u, s, f18, lum(ctx, W - 64 * u - w18, H - 70 * u, w18, 30 * u) > 140 ? INK : WHITE, 6 * u); }
+      if (s) { var f18 = font(400, 24 * u), w18 = tw(ctx, s, f18, 6 * u); put(ctx, W - 64 * u - w18, H - 70 * u, s, f18, pick(ctx, W - 64 * u - w18, H - 70 * u, w18, 30 * u), 6 * u); }
       return { style: 18, pos: 'split' };
     }
     if (n === 28) {
@@ -299,7 +319,7 @@
       var parts = split(h, 2), bigT = parts[0].replace(/[，,、。\s]/g, ''), rest = (parts.slice(1).join('') + (s ? '  ' + s : '')).trim();
       if (bigT.length > 4) return null;
       var szB = Math.min(360 * u, (W * 0.86) / bigT.length), fB = font(900, szB), wB = tw(ctx, bigT, fB);
-      var yB = H * 0.1, colB = lum(ctx, (W - wB) / 2, yB, wB, szB) > 150 ? INK : WHITE;
+      var yB = H * 0.1, colB = pick(ctx, (W - wB) / 2, yB, wB, szB);
       put(ctx, (W - wB) / 2, yB, bigT, fB, colB);
       // 把人疊回字的前面
       var cut = document.createElement('canvas'); cut.width = W; cut.height = H; var cx = cut.getContext('2d');
@@ -309,7 +329,7 @@
       if (rest) {   // 小字壓在人的前面,一定讀得到;放在主體旁邊空的那一側
         var fr = font(500, 30 * u), wr = tw(ctx, rest, fr, 8 * u), yr = H * 0.86;
         var xr = score(A, W - 64 * u - wr, yr, wr, 40 * u).m < score(A, 64 * u, yr, wr, 40 * u).m ? W - 64 * u - wr : 64 * u;
-        put(ctx, xr, yr, rest, fr, lum(ctx, xr, yr, wr, 40 * u) > 140 ? INK : WHITE, 8 * u);
+        put(ctx, xr, yr, rest, fr, pick(ctx, xr, yr, wr, 40 * u), 8 * u);
       }
       return { style: 28, pos: 'behind' };
     }
@@ -411,7 +431,7 @@
       var b = makeBlock(n, ctx, W, H, u * k, T); if (!b || b.w > W - 2 * M || b.h > H - 2 * M) continue;
       var best = plan && plan.style === n && plan.x != null ? { x: plan.x, y: plan.y, r: { m: 0, s: 0, e: 0 } } : findSpot(A, b, W, H, M, u);
       if (!best || best.r.m > 0.03 || (!A.mask && best.r.e > 0.35)) continue;   // 會壓到主體 / 太花 → 換下一個
-      var col = lum(ctx, best.x, best.y, b.w, b.h) > 140 ? INK : WHITE;
+      var col = pick(ctx, best.x, best.y, b.w, b.h);
       b.draw(ctx, best.x, best.y, col);
       done = { style: n, x: best.x, y: best.y, m: best.r.m, e: best.r.e, k: k };
     }
