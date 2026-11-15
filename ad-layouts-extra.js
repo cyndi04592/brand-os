@@ -1,5 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  ad-layouts-extra.js · v1.3 (2026-11-15)
+//  ad-layouts-extra.js · v1.4 (2026-11-15)
+//  v1.4 RA 11-15 長榮桂冠:新婚之夜房(前一晚入住、隔天在飯店辦婚禮)+ 訪台旅客(日本 / 外國旅客)
+//       拍法在 photoroom-proxy adlean v2.32;飯店類整體改走日系飯店攝影的氣質(安靜、自然光、在地感)
+//  v1.3 ↓
 //  v1.3 RA 11-15 長榮桂冠(上市公司)要推住房與婚宴 → 新增「飯店住宿與婚宴」+ 8 種版型
 //       客房實景 / 浴室細節 / 入住時光 / 早餐時光 / 宴會廳佈置 / 新人入場 / 婚宴餐桌 / 新娘房
 //       真正的拍法在 photoroom-proxy 的 adlean.js SVC.hotel(同一天一起上)
@@ -29,7 +32,7 @@
     return;
   }
   if (window._adLayoutsExtra) return;   // 重複載入保護
-  window._adLayoutsExtra = '1.3';
+  window._adLayoutsExtra = '1.4';
 
   var NO_TEXT = '\n- Photograph only; no lettering is added to the image (the customer types any text later).';
   function T(label, desc, comp) { return { label: label, desc: desc, composition: comp + NO_TEXT }; }
@@ -77,6 +80,8 @@
     wd_hall:      T('宴會廳佈置型', '上傳宴會廳照片 → 佈置成婚宴當天的樣子', 'An architectural photograph of the same banquet hall, dressed for a wedding with flowers and set tables.'),
     wd_couple:    T('新人入場型', '新人牽手入場、舉杯的那一刻(新面孔,不用真新人的臉)', 'A bride and groom walking into a hotel ballroom under warm stage light, faces partly turned.'),
     wd_table:     T('婚宴餐桌型', '花藝、餐具、菜色的婚宴桌面特寫', 'A close still life of a wedding banquet table: flowers, plates and a plated course, the hall softly lit behind.'),
+    wd_night:     T('新婚之夜房型', '上傳客房照片 → 佈置成新婚之夜(玫瑰花瓣、香檳、暖光),前一晚入住隔天辦婚禮', 'The same hotel room kept as it is, dressed for a wedding night with rose petals, champagne and warm lamplight.'),
+    ht_visitor:   T('訪台旅客型', '外國旅客攤開地圖、窗外台中市景,或在早餐嚐台灣味(新面孔)', 'Travellers from abroad in a calm hotel room with a city map and the skyline outside, faces partly turned.'),
     wd_bridal:    T('新娘房型', '婚禮當天早上,新娘在套房準備的畫面', 'The bride getting ready by the suite window on the wedding morning, soft daylight, faces partly turned.'),
     au_showroom: T('展間門面型', '上傳店面 / 展場照片 → 拍出整齊有氣勢的門面', 'An architectural photograph of the same dealership front, kept exactly as it is, cars lined up neatly.'),
   });
@@ -117,8 +122,8 @@
     if (_pts2) delete _pts2.dataset.rendered;
   }
   if (!LAYOUT_BY_PRODTYPE.hotel) LAYOUT_BY_PRODTYPE.hotel = [
-    { group: '住宿', keys: ['ht_room', 'ht_bath', 'ht_stay', 'ht_breakfast'] },
-    { group: '婚宴', keys: ['wd_hall', 'wd_couple', 'wd_table', 'wd_bridal'] },
+    { group: '住宿', keys: ['ht_room', 'ht_bath', 'ht_stay', 'ht_breakfast', 'ht_visitor'] },
+    { group: '婚宴', keys: ['wd_hall', 'wd_couple', 'wd_table', 'wd_bridal', 'wd_night'] },
   ];
   if (!LAYOUT_BY_PRODTYPE.auto) LAYOUT_BY_PRODTYPE.auto = [
     { group: '服務過程', keys: ['au_appraise', 'au_consult', 'au_handover'] },
@@ -164,5 +169,5 @@
   var sel = document.getElementById('layoutSel');
   if (sel) delete sel.dataset.pt;
 
-  console.log('[版型+] v1.3 已載入:新增 33 種照片版型(含汽車買賣、飯店婚宴)· 收起前後對比 / 多格展示 / 重點條列 · 服務業情境只留適用的');
+  console.log('[版型+] v1.4 已載入:新增 35 種照片版型(含汽車買賣、飯店婚宴)· 收起前後對比 / 多格展示 / 重點條列 · 服務業情境只留適用的');
 })();
