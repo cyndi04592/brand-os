@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour-library.js v2.0(2026-11-15)素材庫 新手導覽
+//  🧭 guided-tour-library.js v2.1(2026-11-15)素材庫 新手導覽
 //  需要先載入 guided-tour.js v2.0+(提供 BosTour:黃框 + 白卡 + 紅字建議/注意 + 中/日/英)
 //
 //  兩段導覽:
@@ -12,7 +12,7 @@
   'use strict';
   if (window.__bosTourLib) return;
   window.__bosTourLib = true;
-  var VERSION = '2.0';
+  var VERSION = '2.1';
 
   function shown(id) {
     var e = document.getElementById(id); if (!e) return false;
@@ -45,10 +45,10 @@
         title: T('分類', 'カテゴリ', 'Categories'),
         body: T('素材會照<b>分類</b>放好:商品照、人物照、未分類…;做好的<b>廣告圖、短影片</b>也都存在這裡。',
                 '素材は<b>カテゴリ</b>ごとに整理されます(商品写真、人物写真、未分類…)。作った<b>広告画像やショート動画</b>もここに保存されます。',
-                'Assets are sorted into <b>categories</b> (product photos, people photos, uncategorized…). Your finished <b>ad images and short videos</b> are saved here too.') +
+                'Assets are sorted by <b>category</b>; your finished <b>ad images and videos</b> are here too.') +
           PIT('廣告圖產生器只會列出「商品照」。放在「未分類」的照片,做廣告圖時找不到。',
-              '広告画像ジェネレーターに出るのは「商品写真」だけ。「未分類」の写真は広告作成時に見つかりません。',
-              'The ad image generator only lists "Product photos". Photos left in "Uncategorized" won\'t show up there.') },
+              '広告作成に出るのは「商品写真」だけ。「未分類」は表示されません。',
+              'The ad maker only lists "Product photos" — "Uncategorized" ones won\'t appear.') },
       { t: ['#body .grid > :first-child', '#body'],
         title: T('你的素材和成品', '素材と完成品', 'Your assets and results'),
         body: T('上面選哪一類,下面就顯示哪一類的照片和影片,往下滑看更多。',
@@ -64,14 +64,11 @@
       { t: '#upCat',
         title: T('先選「放到哪一類」', 'まず「どこに入れるか」を選ぶ', 'First choose where it goes'),
         body: T('<b>商品照</b>:要拍廣告的商品。<b>場景照</b>:門市、店面、教室的實景。<br><b>人物照</b>:代言人或你自己。<b>LOGO</b>:品牌標誌。',
-                '<b>商品写真</b>:広告にする商品。<b>シーン写真</b>:店舗・教室などの実景。<br><b>人物写真</b>:アンバサダーやあなた自身。<b>LOGO</b>:ブランドロゴ。',
-                '<b>Product photos</b>: what you\'re advertising. <b>Scene photos</b>: your real shop, store or classroom.<br><b>People photos</b>: your ambassador or yourself. <b>LOGO</b>: your brand logo.') +
+                '<b>商品写真</b>:広告の商品 <b>シーン写真</b>:店舗の実景<br><b>人物写真</b>:本人・アンバサダー <b>LOGO</b>:ロゴ',
+                '<b>Product</b>: what you advertise. <b>Scene</b>: your real shop.<br><b>People</b>: you or your ambassador. <b>LOGO</b>: your logo.') +
           PIT('LOGO 一定要選「LOGO」,放成商品照會被當成照片拿去拍!',
-              'ロゴは必ず「LOGO」へ。商品写真にすると、写真として撮影に使われてしまいます!',
-              'Logos must go under "LOGO" — as a product photo it gets used as a photo!') +
-          PIT('商品照沒選「商品照」,做廣告圖時會找不到。',
-              '商品写真は「商品写真」を選ばないと、広告作成時に見つかりません。',
-              'Product photos not filed as "Product photos" won\'t show up when making ads.') },
+              'ロゴは必ず「LOGO」へ。商品写真にすると撮影に使われます!',
+              'Logos go under "LOGO", or they get shot as a photo!') },
       { t: '#upPick',
         title: T('選照片', '写真を選ぶ', 'Choose photos'),
         body: T('按<b>「選擇檔案」</b>,一次可以選好幾張;電腦也可以直接把圖片拖進這個框。',
