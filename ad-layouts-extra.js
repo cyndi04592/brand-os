@@ -1,5 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  ad-layouts-extra.js · v1.2 (2026-11-15)
+//  ad-layouts-extra.js · v1.3 (2026-11-15)
+//  v1.3 RA 11-15 長榮桂冠(上市公司)要推住房與婚宴 → 新增「飯店住宿與婚宴」+ 8 種版型
+//       客房實景 / 浴室細節 / 入住時光 / 早餐時光 / 宴會廳佈置 / 新人入場 / 婚宴餐桌 / 新娘房
+//       真正的拍法在 photoroom-proxy 的 adlean.js SVC.hotel(同一天一起上)
+//  v1.2 ↓
 //  v1.2 RA 11-15 兆亨車業實測:「⓪ 我要拍的是什麼」沒有汽車類,只能硬選「專業形象」→ 會拍成辦公室裡的律師
 //       → 新增「汽車買賣與服務」+ 5 種版型(估價檢車 / 車主洽談 / 交車儀式 / 車輛主角 / 展間門面)
 //       真正的拍法在 photoroom-proxy 的 adlean.js SVC.auto(同一天一起上)
@@ -25,7 +29,7 @@
     return;
   }
   if (window._adLayoutsExtra) return;   // 重複載入保護
-  window._adLayoutsExtra = '1.2';
+  window._adLayoutsExtra = '1.3';
 
   var NO_TEXT = '\n- Photograph only; no lettering is added to the image (the customer types any text later).';
   function T(label, desc, comp) { return { label: label, desc: desc, composition: comp + NO_TEXT }; }
@@ -65,6 +69,15 @@
     au_consult:  T('車主洽談型', '跟車主坐下來談價格的自然瞬間', 'A dealership staff member talking a car owner through the price at a small table, a car softly behind.'),
     au_handover: T('交車儀式型', '鑰匙交到客人手上、車子洗得發亮', 'Car keys being handed over beside a freshly cleaned car in the showroom, a warm natural moment.'),
     au_car:      T('車輛主角型', '上傳車子照片 → 換個場景重拍這台車', 'The same car kept exactly as it is, photographed from a low three-quarter angle in a clean setting.'),
+    // 🏨 v1.3 飯店住宿與婚宴
+    ht_room:      T('客房實景型', '上傳客房照片 → 拍出五星飯店等你入住的樣子', 'An architectural photograph of the same hotel room, kept exactly as it is, the bed freshly made, soft daylight.'),
+    ht_bath:      T('浴室細節型', '上傳浴室照片 → 浴缸、備品、毛巾的質感特寫', 'An architectural photograph of the same hotel bathroom, kept exactly as it is, fresh towels and amenities set out.'),
+    ht_stay:      T('入住時光型', '房客在房間放鬆、一家人入住的片刻', 'Guests relaxing in a calm five-star hotel room, soft window light, faces partly turned.'),
+    ht_breakfast: T('早餐時光型', '靠窗的早餐、自助早餐的豐盛', 'Breakfast by the window at a five-star hotel, coffee and pastries, soft morning light.'),
+    wd_hall:      T('宴會廳佈置型', '上傳宴會廳照片 → 佈置成婚宴當天的樣子', 'An architectural photograph of the same banquet hall, dressed for a wedding with flowers and set tables.'),
+    wd_couple:    T('新人入場型', '新人牽手入場、舉杯的那一刻(新面孔,不用真新人的臉)', 'A bride and groom walking into a hotel ballroom under warm stage light, faces partly turned.'),
+    wd_table:     T('婚宴餐桌型', '花藝、餐具、菜色的婚宴桌面特寫', 'A close still life of a wedding banquet table: flowers, plates and a plated course, the hall softly lit behind.'),
+    wd_bridal:    T('新娘房型', '婚禮當天早上,新娘在套房準備的畫面', 'The bride getting ready by the suite window on the wedding morning, soft daylight, faces partly turned.'),
     au_showroom: T('展間門面型', '上傳店面 / 展場照片 → 拍出整齊有氣勢的門面', 'An architectural photograph of the same dealership front, kept exactly as it is, cars lined up neatly.'),
   });
 
@@ -95,6 +108,18 @@
     var _pts = document.getElementById('prodTypeSel');
     if (_pts) delete _pts.dataset.rendered;   // 選單若已畫過,下次打開重畫
   }
+  // 🏨 v1.3 飯店住宿與婚宴(接在汽車後面)
+  if (typeof PRODTYPE_OPTIONS !== 'undefined' && Array.isArray(PRODTYPE_OPTIONS) && !PRODTYPE_OPTIONS.some(function (o) { return o.value === 'hotel'; })) {
+    var _ai = PRODTYPE_OPTIONS.findIndex(function (o) { return o.value === 'auto'; });
+    PRODTYPE_OPTIONS.splice(_ai >= 0 ? _ai + 1 : PRODTYPE_OPTIONS.length, 0,
+      { value: 'hotel', label: '飯店住宿與婚宴 — 客房 / 婚宴 / 宴會廳 / 早餐' });
+    var _pts2 = document.getElementById('prodTypeSel');
+    if (_pts2) delete _pts2.dataset.rendered;
+  }
+  if (!LAYOUT_BY_PRODTYPE.hotel) LAYOUT_BY_PRODTYPE.hotel = [
+    { group: '住宿', keys: ['ht_room', 'ht_bath', 'ht_stay', 'ht_breakfast'] },
+    { group: '婚宴', keys: ['wd_hall', 'wd_couple', 'wd_table', 'wd_bridal'] },
+  ];
   if (!LAYOUT_BY_PRODTYPE.auto) LAYOUT_BY_PRODTYPE.auto = [
     { group: '服務過程', keys: ['au_appraise', 'au_consult', 'au_handover'] },
     { group: '車與場地', keys: ['au_car', 'au_showroom'] },
@@ -103,7 +128,7 @@
   // v1.2 服務類行業:③ 情境收起只屬於「實體商品」的檔期(醫美原本的合規清單照舊,只往裡面加)
   if (typeof CONTEXT_BLOCKED_BY_PRODTYPE !== 'undefined') {
     var GOODS_ONLY = ['jp_direct', 'jp_drugstore_haul', 'duty_free', 'limited_stock', 'daily_supplement', 'unboxing'];
-    ['beauty', 'medical', 'course', 'mystic', 'travel', 'equip', 'screen', 'pro', 'auto'].forEach(function (pt) {
+    ['beauty', 'medical', 'course', 'mystic', 'travel', 'equip', 'screen', 'pro', 'auto', 'hotel'].forEach(function (pt) {
       var cur = CONTEXT_BLOCKED_BY_PRODTYPE[pt] || [];
       GOODS_ONLY.forEach(function (k) { if (cur.indexOf(k) === -1) cur.push(k); });
       CONTEXT_BLOCKED_BY_PRODTYPE[pt] = cur;
@@ -139,5 +164,5 @@
   var sel = document.getElementById('layoutSel');
   if (sel) delete sel.dataset.pt;
 
-  console.log('[版型+] v1.2 已載入:新增 25 種照片版型(含汽車買賣)· 收起前後對比 / 多格展示 / 重點條列 · 服務業情境只留適用的');
+  console.log('[版型+] v1.3 已載入:新增 33 種照片版型(含汽車買賣、飯店婚宴)· 收起前後對比 / 多格展示 / 重點條列 · 服務業情境只留適用的');
 })();
