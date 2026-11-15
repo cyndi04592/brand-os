@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour.js v1.3(2026-11-15)新手導覽(一步一步教學)
+//  🧭 guided-tour.js v1.4(2026-11-15)新手導覽(一步一步教學)
 //  RA 11-15:參考她做過的表單教學 —— 把「現在要做的那一格」框起來,
 //   下面一張白卡片寫「第 X 步,共 Y 步」+ 白話說明 +「下一步 →」。
 //
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
   if (window.BosTour) return;
-  var VERSION = '1.3';
+  var VERSION = '1.4';
   var MOBILE = '(max-width: 768px)';
   var TOURS = {};
   var cur = null;          // { name, steps, i, el }
@@ -64,6 +64,9 @@
       '.bt-card .bt-t{font-size:20px;font-weight:900;color:#1f5f63;margin:0 0 10px;line-height:1.35}' +
       '.bt-card .bt-b{font-size:15.5px;line-height:1.75;color:#2a2a33}' +
       '.bt-card .bt-b b{font-weight:900;color:#111}' +
+      '.bt-card .bt-r{margin-top:10px;padding:8px 10px;border-radius:10px;background:#fdecea;color:#c62828;font-weight:800;font-size:15px;line-height:1.6}' +
+      '.bt-card .bt-r i{font-style:normal;display:inline-block;background:#c62828;color:#fff;border-radius:6px;padding:0 7px;margin-right:6px;font-size:13px}' +
+      '.bt-card .bt-r b{color:#b71c1c}' +
       '.bt-card .bt-x{position:absolute;top:10px;right:12px;width:34px;height:34px;border:none;background:none;font-size:22px;color:#888;cursor:pointer;line-height:1}' +
       '.bt-card .bt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}' +
       '.bt-card .bt-prev{border:none;background:none;color:#777;font-size:15px;font-weight:700;padding:10px 4px;cursor:pointer}' +
@@ -167,17 +170,25 @@
   function register(name, steps) { TOURS[name] = steps; }
 
   // ── 品牌投放實驗室(首頁)────────────────────────────────────
+  //  v1.4(RA 11-15):建議 / 坑 一律紅字標出來
+  function TIP(t) { return '<div class="bt-r"><i>建議</i>' + t + '</div>'; }
+  function PIT(t) { return '<div class="bt-r"><i>注意</i>' + t + '</div>'; }
+
   register('lab', [
     { m: '#btmBrands', d: '#brandTree', title: '先選品牌',
       body: '這裡是你的<b>品牌</b>。點一下要做廣告的那個品牌,下面就會出現它的系列和商品。' },
     { t: '#brandTree', title: '再選系列和商品',
-      body: '點<b>系列</b>,再點<b>要推的那個商品</b>。<br>選好的會打勾,最上面那行會顯示你選到哪裡。' },
+      body: '點<b>系列</b>,再點<b>要推的那個商品</b>。<br>選好的會打勾,最上面那行會顯示你選到哪裡。' +
+        PIT('選錯商品,AI 會照錯的商品資料寫字,一定要確認打勾的是這次要推的。') },
     { t: '#selAud', title: '這次要給誰看?',
-      body: '選<b>目標受眾</b>,AI 會照這群人的口味寫字、選畫面。<br>沒有剛好的,選最接近的就好。' },
+      body: '選<b>目標受眾</b>,AI 會照這群人的口味寫字、選畫面。' +
+        TIP('沒有剛好的,選最接近的就好,不用想太久。') },
     { t: '#adBtn', title: '按「做廣告圖」',
       body: '商品選好就按這顆。<br>如果還沒選照片,畫面會帶你到素材庫,<b>點一張照片就會自動打開廣告圖產生器</b>。' },
     { t: ['.right .drive-cfg', '.right'], title: '素材庫:你的照片都在這',
-      body: '這裡是這個品牌的<b>商品照、場景照</b>。<br>做廣告圖前先<b>點一張</b>;要加新照片,按上面的「+ 商品照」。' },
+      body: '這裡是這個品牌的<b>商品照、場景照</b>。<br>做廣告圖前先<b>點一張</b>;要加新照片,按上面的「+ 商品照」。' +
+        PIT('LOGO 請放「+ LOGO」,不要放成商品照,不然會被當成照片拿去拍。') +
+        TIP('照片越清楚、主角越大,出來的圖越好。') },
     { t: '#genBtn', title: '只要文案也可以',
       body: '不做圖、只要廣告文案,按<b>「生成文案」</b>。<br>長度、語言(中文 / 日本語 / English)在上面選。' }
   ]);
@@ -185,21 +196,29 @@
   // ── 廣告圖產生器(第一次打開時)──────────────────────────────
   register('admaker', [
     { t: '#amPhotoThumbRow', title: '確認用哪張照片',
-      body: '有<b>金色框</b>的就是這次要用的照片,想換就點別張。' },
+      body: '有<b>金色框</b>的就是這次要用的照片,想換就點別張。' +
+        TIP('選主角最清楚、最大的那張。') },
     { t: '#prodTypeSel', title: '⓪ 我要拍的是什麼?',
-      body: '先選你的<b>行業</b>(商品、服飾、汽車、飯店婚宴…)。<br>選對了,AI 才不會亂生出你沒在賣的東西。' },
+      body: '先選你的<b>行業</b>(商品、服飾、汽車、飯店婚宴…)。<br>選對了,AI 才不會亂生出你沒在賣的東西。' +
+        PIT('飯店、婚宴、汽車、美業這類<b>服務</b>,不要選「商品」!選商品,AI 會把它當成擺在桌上的東西拍。') },
     { t: ['#layoutSel', '#layoutLock'], title: '① 排版:要什麼畫面',
-      body: '選一種<b>畫面</b>,例如客房實景、新人入場、估價檢車。<br>選完 ⓪ 這格才會出現。' },
+      body: '選一種<b>畫面</b>,例如客房實景、新人入場、估價檢車。<br>選完 ⓪ 這格才會出現。' +
+        PIT('畫面要跟你選的照片對得上:客房照就選客房類,不要選婚宴場地。') },
     { t: ['#flavorSel', '#flavorLock'], title: '② 設計風格',
-      body: '想要什麼<b>感覺</b>。<b>不想指定就選「無」</b>,交給 AI 美術指導判斷。' },
+      body: '想要什麼<b>感覺</b>,選一個就好。' +
+        TIP('不想指定就選「無」,交給 AI 美術指導判斷。') },
     { t: ['#contextSel', '#contextLock'], title: '③ 情境',
-      body: '有檔期(中秋、聖誕、週年慶…)就選;<b>沒有就選「無」</b>。' },
+      body: '有檔期(中秋、聖誕、週年慶…)就選。' +
+        PIT('沒有檔期就選「無」,亂選節日,圖上會多出不相干的節慶裝飾。') },
     { t: '#gptHeadline', title: '④ 圖上要寫的字',
-      body: '打一句<b>主標</b>,系統會用真字型壓上去,不會歪。<br><b>留空</b> = 給你一張乾淨沒字的圖,自己上字。' },
+      body: '打一句<b>主標</b>,系統會用真字型壓上去,不會歪。<br><b>留空</b> = 給你一張乾淨沒字的圖,自己上字。' +
+        TIP('主標越短越好看,太長字會被縮小。') },
     { t: '#gptAdSize', title: '⑤ 尺寸',
-      body: '投廣告用<b>正方形</b>就好;IG 直式、限動、FB 橫式也都有,<b>尺寸越大扣越多點</b>。' },
+      body: '投廣告用<b>正方形</b>就好;IG 直式、限動、FB 橫式也都有。' +
+        PIT('尺寸越大,扣的點數越多。') },
     { t: '#prApplyBtn', title: '最後:按這顆開始生成',
-      body: '按鈕上<b>直接寫著要扣幾點</b>,約 2 分鐘出圖。<br>出圖後才會出現「下載廣告圖」。' }
+      body: '按鈕上<b>直接寫著要扣幾點</b>,約 2 分鐘出圖。<br>出圖後才會出現「下載廣告圖」。' +
+        PIT('一按就扣點,按之前先往上看一遍 ⓪~⑤ 都選對了。') }
   ]);
 
   // ── 什麼時候自動跑 ────────────────────────────────────────
