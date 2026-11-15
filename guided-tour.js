@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour.js v1.9(2026-11-15)新手導覽(一步一步教學)
+//  🧭 guided-tour.js v2.0(2026-11-15)新手導覽(一步一步教學)
 //  RA 11-15:參考她做過的表單教學 —— 把「現在要做的那一格」框起來,
 //   下面一張白卡片寫「第 X 步,共 Y 步」+ 白話說明 +「下一步 →」。
 //
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
   if (window.BosTour) return;
-  var VERSION = '1.9';
+  var VERSION = '2.0';
   var MOBILE = '(max-width: 768px)';
   var TOURS = {};
   var cur = null;          // { name, steps, i, el }
@@ -32,6 +32,21 @@
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
   function doneKey(name) { return 'bos_tour_done_' + name; }
+
+  //  v2.0:跟著網站語言走(右下角 🌐 切換,i18n-loader 存在 BOS_LANG / localStorage bos_lang;切換會重新整理頁面)
+  function lang() {
+    var l = window.BOS_LANG; if (!l) l = lsGet('bos_lang');
+    return (l === 'ja' || l === 'en') ? l : 'zh';
+  }
+  var UI = {
+    zh: { step: function (i, n) { return '第 ' + i + ' 步,共 ' + n + ' 步'; }, prev: '← 上一步', next: '下一步 →', done: '知道了 ✓', close: '關閉', pill: '? 教學', tip: '建議', pit: '注意' },
+    ja: { step: function (i, n) { return 'ステップ ' + i + ' / ' + n; }, prev: '← 戻る', next: '次へ →', done: 'わかった ✓', close: '閉じる', pill: '? 使い方', tip: 'ヒント', pit: '注意' },
+    en: { step: function (i, n) { return 'Step ' + i + ' of ' + n; }, prev: '← Back', next: 'Next →', done: 'Got it ✓', close: 'Close', pill: '? Guide', tip: 'Tip', pit: 'Heads-up' }
+  };
+  function U() { return UI[lang()]; }
+  function T(zh, ja, en) { var l = lang(); return l === 'ja' ? (ja || zh) : l === 'en' ? (en || zh) : zh; }
+  function TIP(zh, ja, en) { return '<div class="bt-r"><i>' + U().tip + '</i>' + T(zh, ja, en) + '</div>'; }
+  function PIT(zh, ja, en) { return '<div class="bt-r"><i>' + U().pit + '</i>' + T(zh, ja, en) + '</div>'; }
 
   function visible(el) {
     if (!el || !el.getBoundingClientRect) return false;
@@ -93,8 +108,8 @@
     css();
     var ring = document.createElement('div'); ring.className = 'bt-ring';
     var card = document.createElement('div'); card.className = 'bt-card'; card.setAttribute('data-i18n-skip', '');
-    card.innerHTML = '<button class="bt-x" aria-label="關閉">✕</button><div class="bt-n"></div><h3 class="bt-t"></h3>' +
-      '<div class="bt-b"></div><div class="bt-row"><button class="bt-prev">← 上一步</button><button class="bt-next">下一步 →</button></div>';
+    card.innerHTML = '<button class="bt-x" aria-label="' + U().close + '">✕</button><div class="bt-n"></div><h3 class="bt-t"></h3>' +
+      '<div class="bt-b"></div><div class="bt-row"><button class="bt-prev">' + U().prev + '</button><button class="bt-next">' + U().next + '</button></div>';
     document.body.appendChild(ring); document.body.appendChild(card);
     card.querySelector('.bt-x').onclick = function () { stop(true); };
     card.querySelector('.bt-next').onclick = function () { go(1); };
@@ -170,11 +185,11 @@
     //  v1.8:不用 smooth(KOL 頁的平滑捲動會被打斷,停在半路)
     if (el) { try { el.scrollIntoView({ block: top ? 'start' : 'center' }); } catch (e) { el.scrollIntoView(); } }
     var c = ui.card;
-    c.querySelector('.bt-n').textContent = '第 ' + (cur.i + 1) + ' 步,共 ' + cur.steps.length + ' 步';
+    c.querySelector('.bt-n').textContent = U().step(cur.i + 1, cur.steps.length);
     c.querySelector('.bt-t').textContent = st.title;
     c.querySelector('.bt-b').innerHTML = st.body;
     c.querySelector('.bt-prev').style.visibility = cur.i > 0 ? 'visible' : 'hidden';
-    c.querySelector('.bt-next').textContent = cur.i === cur.steps.length - 1 ? '知道了 ✓' : '下一步 →';
+    c.querySelector('.bt-next').textContent = cur.i === cur.steps.length - 1 ? U().done : U().next;
   }
 
   //  往前 / 往後;看不到的步驟自動跳過(手機、電腦版面不同時不會卡住)
@@ -189,6 +204,7 @@
 
   function start(name, force) {
     var steps = TOURS[name];
+    if (typeof steps === 'function') steps = steps();      // v2.0:開始時才依語言產生文字
     if (!steps || !steps.length) return false;
     if (!force && lsGet(doneKey(name))) return false;
     if (cur) stop(false);
@@ -215,56 +231,106 @@
   function register(name, steps) { TOURS[name] = steps; }
 
   // ── 品牌投放實驗室(首頁)────────────────────────────────────
-  //  v1.4(RA 11-15):建議 / 坑 一律紅字標出來
-  function TIP(t) { return '<div class="bt-r"><i>建議</i>' + t + '</div>'; }
-  function PIT(t) { return '<div class="bt-r"><i>注意</i>' + t + '</div>'; }
-
-  register('lab', [
-    { m: '#btmBrands', d: '#brandTree', title: '先選品牌',
-      body: '這裡是你的<b>品牌</b>。點一下要做廣告的那個品牌,下面就會出現它的系列和商品。' },
-    { t: '#brandTree', title: '再選系列和商品',
-      body: '點<b>系列</b>,再點<b>要推的那個商品</b>。<br>選好的會打勾,最上面那行會顯示你選到哪裡。' +
-        PIT('選錯商品,AI 會照錯的商品資料寫字,一定要確認打勾的是這次要推的。') },
-    { t: '#selAud', title: '這次要給誰看?',
-      body: '選<b>目標受眾</b>,AI 會照這群人的口味寫字、選畫面。' +
-        TIP('沒有剛好的,選最接近的就好,不用想太久。') },
-    { t: '#adBtn', title: '按「做廣告圖」',
-      body: '商品選好就按這顆。<br>如果還沒選照片,畫面會帶你到素材庫,<b>點一張照片就會自動打開廣告圖產生器</b>。' },
-    { t: ['.right .drive-cfg', '.right'], title: '素材庫:你的照片都在這',
-      body: '這裡是這個品牌的<b>商品照、場景照</b>。<br>做廣告圖前先<b>點一張</b>;要加新照片,按上面的「+ 商品照」。' +
-        PIT('LOGO 請放「+ LOGO」,不要放成商品照,不然會被當成照片拿去拍。') +
-        TIP('照片越清楚、主角越大,出來的圖越好。') },
-    { t: '#genBtn', title: '只要文案也可以',
-      body: '不做圖、只要廣告文案,按<b>「生成文案」</b>。<br>長度、語言(中文 / 日本語 / English)在上面選。' }
-  ]);
+  register('lab', function () { return [
+    { m: '#btmBrands', d: '#brandTree',
+      title: T('先選品牌', 'まずブランドを選ぶ', 'Pick your brand'),
+      body: T('這裡是你的<b>品牌</b>。點一下要做廣告的那個品牌,下面就會出現它的系列和商品。',
+              'ここが<b>ブランド</b>一覧です。広告を作るブランドをタップすると、下にシリーズと商品が出てきます。',
+              'These are your <b>brands</b>. Tap the one you want to advertise and its series and products appear below.') },
+    { t: '#brandTree',
+      title: T('再選系列和商品', 'シリーズと商品を選ぶ', 'Pick a series and product'),
+      body: T('點<b>系列</b>,再點<b>要推的那個商品</b>。<br>選好的會打勾,最上面那行會顯示你選到哪裡。',
+              '<b>シリーズ</b>を選んでから、<b>宣伝したい商品</b>をタップ。<br>選んだものにはチェックが付き、一番上に今の選択が表示されます。',
+              'Tap a <b>series</b>, then the <b>product</b> you want to promote.<br>Your pick gets a check mark and shows in the top line.') +
+        PIT('選錯商品,AI 會照錯的商品資料寫字,一定要確認打勾的是這次要推的。',
+            '商品を間違えると、AI が違う商品の情報で文章を書きます。チェックが付いた商品を必ず確認してください。',
+            'Pick the wrong product and the AI writes about the wrong one. Double-check the ticked item.') },
+    { t: '#selAud',
+      title: T('這次要給誰看?', '誰に見せる?', 'Who is it for?'),
+      body: T('選<b>目標受眾</b>,AI 會照這群人的口味寫字、選畫面。',
+              '<b>ターゲット</b>を選ぶと、AI がその人たちに合わせて文章と画面を決めます。',
+              'Choose a <b>target audience</b>; the AI writes and picks visuals for them.') +
+        TIP('沒有剛好的,選最接近的就好,不用想太久。',
+            'ぴったりのものがなければ、一番近いものでOKです。',
+            'No exact match? The closest one is fine.') },
+    { t: '#adBtn',
+      title: T('按「做廣告圖」', '「広告画像を作る」を押す', 'Tap "Make an ad image"'),
+      body: T('商品選好就按這顆。<br>如果還沒選照片,畫面會帶你到素材庫,<b>點一張照片就會自動打開廣告圖產生器</b>。',
+              '商品を選んだらこのボタン。<br>写真をまだ選んでいなければ素材ライブラリに移動します。<b>写真を1枚タップすると広告画像ジェネレーターが自動で開きます</b>。',
+              'Tap this once your product is chosen.<br>If no photo is picked yet you\'ll be taken to the asset library — <b>tap a photo and the ad image generator opens automatically</b>.') },
+    { t: ['.right .drive-cfg', '.right'],
+      title: T('素材庫:你的照片都在這', '素材ライブラリ:写真はここ', 'Asset library: your photos'),
+      body: T('這裡是這個品牌的<b>商品照、場景照</b>。<br>做廣告圖前先<b>點一張</b>;要加新照片,按上面的「+ 商品照」。',
+              'このブランドの<b>商品写真・シーン写真</b>です。<br>広告画像を作る前に<b>1枚タップ</b>。新しい写真は上の「＋ 商品写真」から追加します。',
+              'This brand\'s <b>product and scene photos</b>.<br><b>Tap one</b> before making an ad; add new ones with "+ Product photo" above.') +
+        PIT('LOGO 請放「+ LOGO」,不要放成商品照,不然會被當成照片拿去拍。',
+            'ロゴは「＋ LOGO」へ。商品写真に入れると、写真として撮影に使われてしまいます。',
+            'Put your logo under "+ LOGO", not as a product photo, or it gets used as a photo.') +
+        TIP('照片越清楚、主角越大,出來的圖越好。',
+            '写真が鮮明で、主役が大きいほど仕上がりが良くなります。',
+            'Sharper photos with a bigger subject give better results.') },
+    { t: '#genBtn',
+      title: T('只要文案也可以', 'コピーだけでもOK', 'Just need copy?'),
+      body: T('不做圖、只要廣告文案,按<b>「生成文案」</b>。<br>長度、語言(中文 / 日本語 / English)在上面選。',
+              '画像なしで広告コピーだけ欲しいときは<b>「コピーを生成」</b>。<br>長さと言語(中文 / 日本語 / English)は上で選べます。',
+              'Want ad copy without an image? Tap <b>"Generate copy"</b>.<br>Length and language (中文 / 日本語 / English) are set above.') }
+  ]; });
 
   // ── 廣告圖產生器(第一次打開時)──────────────────────────────
-  register('admaker', [
-    { t: '#amPhotoThumbRow', title: '確認用哪張照片',
-      body: '有<b>金色框</b>的就是這次要用的照片,想換就點別張。' +
-        TIP('選主角最清楚、最大的那張。') },
-    { t: '#prodTypeSel', title: '⓪ 我要拍的是什麼?',
-      body: '先選你的<b>行業</b>(商品、服飾、汽車、飯店婚宴…)。<br>選對了,AI 才不會亂生出你沒在賣的東西。' +
-        PIT('飯店、婚宴、汽車、美業這類<b>服務</b>,不要選「商品」!選商品,AI 會把它當成擺在桌上的東西拍。') },
-    { t: ['#layoutSel', '#layoutLock'], title: '① 排版:要什麼畫面',
-      body: '選一種<b>畫面</b>,例如客房實景、新人入場、估價檢車。<br>選完 ⓪ 這格才會出現。' +
-        PIT('畫面要跟你選的照片對得上:客房照就選客房類,不要選婚宴場地。') },
-    { t: ['#flavorSel', '#flavorLock'], title: '② 設計風格',
-      body: '想要什麼<b>感覺</b>,選一個就好。' +
-        TIP('不想指定就選「無」,交給 AI 美術指導判斷。') },
-    { t: ['#contextSel', '#contextLock'], title: '③ 情境',
-      body: '有檔期(中秋、聖誕、週年慶…)就選。' +
-        PIT('沒有檔期就選「無」,亂選節日,圖上會多出不相干的節慶裝飾。') },
-    { t: '#gptHeadline', title: '④ 圖上要寫的字',
-      body: '打一句<b>主標</b>,系統會用真字型壓上去,不會歪。<br><b>留空</b> = 給你一張乾淨沒字的圖,自己上字。' +
-        TIP('主標越短越好看,太長字會被縮小。') },
-    { t: '#gptAdSize', title: '⑤ 尺寸',
-      body: '投廣告用<b>正方形</b>就好;IG 直式、限動、FB 橫式也都有。' +
-        PIT('尺寸越大,扣的點數越多。') },
-    { t: '#prApplyBtn', title: '最後:按這顆開始生成',
-      body: '按鈕上<b>直接寫著要扣幾點</b>,約 2 分鐘出圖。<br>出圖後才會出現「下載廣告圖」。' +
-        PIT('一按就扣點,按之前先往上看一遍 ⓪~⑤ 都選對了。') }
-  ]);
+  register('admaker', function () { return [
+    { t: '#amPhotoThumbRow',
+      title: T('確認用哪張照片', '使う写真を確認', 'Check your photo'),
+      body: T('有<b>金色框</b>的就是這次要用的照片,想換就點別張。',
+              '<b>金色の枠</b>が付いた写真が今回使う写真です。変えたいときは別の写真をタップ。',
+              'The photo with the <b>gold frame</b> is the one being used. Tap another to switch.') +
+        TIP('選主角最清楚、最大的那張。', '主役が一番はっきり大きく写っている写真を選びましょう。', 'Choose the shot where the subject is clearest and largest.') },
+    { t: '#prodTypeSel',
+      title: T('⓪ 我要拍的是什麼?', '⓪ 何を撮る?', '⓪ What are you shooting?'),
+      body: T('先選你的<b>行業</b>(商品、服飾、汽車、飯店婚宴…)。<br>選對了,AI 才不會亂生出你沒在賣的東西。',
+              'まず<b>業種</b>を選びます(商品・アパレル・自動車・ホテル/ウェディング…)。<br>正しく選ぶと、AI が売っていない物を勝手に描きません。',
+              'First pick your <b>industry</b> (products, fashion, cars, hotels & weddings…).<br>Get this right and the AI won\'t invent things you don\'t sell.') +
+        PIT('飯店、婚宴、汽車、美業這類<b>服務</b>,不要選「商品」!選商品,AI 會把它當成擺在桌上的東西拍。',
+            'ホテル・ウェディング・自動車・美容などの<b>サービス業</b>は「商品」を選ばないでください!商品を選ぶと、テーブルに置いた物として撮影されます。',
+            'For <b>services</b> like hotels, weddings, cars or beauty, don\'t pick "Products"! The AI would shoot it like an object on a table.') },
+    { t: ['#layoutSel', '#layoutLock'],
+      title: T('① 排版:要什麼畫面', '① レイアウト:どんな画面?', '① Layout: what scene?'),
+      body: T('選一種<b>畫面</b>,例如客房實景、新人入場、估價檢車。<br>選完 ⓪ 這格才會出現。',
+              '<b>画面</b>を1つ選びます(客室の実景、新郎新婦の入場、査定・点検など)。<br>⓪ を選ぶとここが表示されます。',
+              'Choose a <b>scene</b>, e.g. guest room, couple\'s entrance, car inspection.<br>This appears after you pick ⓪.') +
+        PIT('畫面要跟你選的照片對得上:客房照就選客房類,不要選婚宴場地。',
+            '画面は選んだ写真と合わせてください。客室の写真なら客室系を。宴会場は選ばないで。',
+            'Match the scene to your photo: a guest-room photo needs a room layout, not a banquet hall.') },
+    { t: ['#flavorSel', '#flavorLock'],
+      title: T('② 設計風格', '② デザインスタイル', '② Design style'),
+      body: T('想要什麼<b>感覺</b>,選一個就好。', 'どんな<b>雰囲気</b>にしたいか、1つ選ぶだけ。', 'Pick the <b>mood</b> you want — just one.') +
+        TIP('不想指定就選「無」,交給 AI 美術指導判斷。', '指定しないなら「なし」を選んで、AI アートディレクターに任せましょう。', 'No preference? Choose "None" and let the AI art director decide.') },
+    { t: ['#contextSel', '#contextLock'],
+      title: T('③ 情境', '③ シーン設定', '③ Occasion'),
+      body: T('有檔期(中秋、聖誕、週年慶…)就選。', 'キャンペーン(中秋節、クリスマス、周年祭…)があれば選びます。', 'Running a campaign (Mid-Autumn, Christmas, anniversary sale…)? Pick it.') +
+        PIT('沒有檔期就選「無」,亂選節日,圖上會多出不相干的節慶裝飾。',
+            'キャンペーンがなければ「なし」。適当に行事を選ぶと、関係ない飾りが入ってしまいます。',
+            'No campaign? Choose "None" — a random holiday adds unrelated decorations.') },
+    { t: '#gptHeadline',
+      title: T('④ 圖上要寫的字', '④ 画像に入れる文字', '④ Text on the image'),
+      body: T('打一句<b>主標</b>,系統會用真字型壓上去,不會歪。<br><b>留空</b> = 給你一張乾淨沒字的圖,自己上字。',
+              '<b>メインコピー</b>を1行。本物のフォントで載せるので崩れません。<br><b>空欄</b>なら文字なしのきれいな画像になります。',
+              'Type one <b>headline</b>; it\'s set in a real font, so no warped letters.<br><b>Leave blank</b> for a clean image without text.') +
+        TIP('主標越短越好看,太長字會被縮小。', 'コピーは短いほどきれい。長いと文字が小さくなります。', 'Shorter headlines look better; long ones get shrunk.') },
+    { t: '#gptAdSize',
+      title: T('⑤ 尺寸', '⑤ サイズ', '⑤ Size'),
+      body: T('投廣告用<b>正方形</b>就好;IG 直式、限動、FB 橫式也都有。',
+              '広告なら<b>正方形</b>でOK。Instagram 縦長・ストーリーズ・Facebook 横長もあります。',
+              'For ads, <b>square</b> is fine; Instagram portrait, Stories and Facebook landscape are also available.') +
+        PIT('尺寸越大,扣的點數越多。', 'サイズが大きいほど消費ポイントが増えます。', 'Bigger sizes cost more points.') },
+    { t: '#prApplyBtn',
+      title: T('最後:按這顆開始生成', '最後:このボタンで生成', 'Last step: tap to generate'),
+      body: T('按鈕上<b>直接寫著要扣幾點</b>,約 2 分鐘出圖。<br>出圖後才會出現「下載廣告圖」。',
+              'ボタンに<b>消費ポイントが表示</b>されています。約2分で完成。<br>完成後に「広告画像をダウンロード」が出ます。',
+              'The button <b>shows the points it will use</b>. Takes about 2 minutes.<br>"Download ad image" appears when it\'s done.') +
+        PIT('一按就扣點,按之前先往上看一遍 ⓪~⑤ 都選對了。',
+            '押した時点でポイントが消費されます。押す前に ⓪〜⑤ をもう一度確認してください。',
+            'Points are used the moment you tap. Check ⓪–⑤ once more before you do.') }
+  ]; });
 
   // ── 什麼時候自動跑 ────────────────────────────────────────
   function modalOpen() { var m = document.getElementById('adMakerModal'); return !!(m && m.style.display !== 'none' && visible(m)); }
@@ -276,7 +342,7 @@
       css();
       pill = document.createElement('button'); pill.id = 'bt-tour-pill'; pill.className = 'bt-pill'; pill.type = 'button';
       pill.setAttribute('data-i18n-skip', '');
-      pill.textContent = '? 教學';
+      pill.textContent = U().pill;
       pill.onclick = function () { lsSet(doneKey('admaker'), null); start('lab', true); };
       document.body.appendChild(pill);
     }
@@ -292,6 +358,6 @@
     }
   }, 700);
 
-  window.BosTour = { version: VERSION, register: register, start: start, stop: stop, reset: function (n) { lsSet(doneKey(n || 'lab'), null); lsSet(doneKey('admaker'), null); } };
+  window.BosTour = { version: VERSION, register: register, start: start, stop: stop, T: T, TIP: TIP, PIT: PIT, ui: U, lang: lang, reset: function (n) { lsSet(doneKey(n || 'lab'), null); lsSet(doneKey('admaker'), null); } };
   console.log('[BosTour] 🧭 v' + VERSION + ' 新手導覽就緒(重看:左下「教學」;BosTour.reset() 清除看過紀錄)');
 })();
