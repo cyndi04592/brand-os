@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour.js v1.8(2026-11-15)新手導覽(一步一步教學)
+//  🧭 guided-tour.js v1.9(2026-11-15)新手導覽(一步一步教學)
 //  RA 11-15:參考她做過的表單教學 —— 把「現在要做的那一格」框起來,
 //   下面一張白卡片寫「第 X 步,共 Y 步」+ 白話說明 +「下一步 →」。
 //
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
   if (window.BosTour) return;
-  var VERSION = '1.8';
+  var VERSION = '1.9';
   var MOBILE = '(max-width: 768px)';
   var TOURS = {};
   var cur = null;          // { name, steps, i, el }
@@ -73,6 +73,11 @@
       '.bt-card .bt-r{margin-top:10px;padding:8px 10px;border-radius:10px;background:#fdecea;color:#c62828;font-weight:800;font-size:15px;line-height:1.6}' +
       '.bt-card .bt-r i{font-style:normal;display:inline-block;background:#c62828;color:#fff;border-radius:6px;padding:0 7px;margin-right:6px;font-size:13px}' +
       '.bt-card .bt-r b{color:#b71c1c}' +
+      //  v1.9:手機卡片縮小,少蓋一點畫面
+      '@media (max-width:768px){.bt-card{padding:14px 16px 12px}.bt-card .bt-n{font-size:13px;margin-bottom:4px}' +
+      '.bt-card .bt-t{font-size:18px;margin-bottom:6px}.bt-card .bt-b{font-size:14.5px;line-height:1.6}' +
+      '.bt-card .bt-r{font-size:14px;padding:6px 9px;margin-top:8px}.bt-card .bt-row{margin-top:10px}' +
+      '.bt-card .bt-next{padding:11px 22px;font-size:16px;min-width:130px}}' +
       '.bt-card .bt-x{position:absolute;top:10px;right:12px;width:34px;height:34px;border:none;background:none;font-size:22px;color:#888;cursor:pointer;line-height:1}' +
       '.bt-card .bt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}' +
       '.bt-card .bt-prev{border:none;background:none;color:#777;font-size:15px;font-weight:700;padding:10px 4px;cursor:pointer}' +
