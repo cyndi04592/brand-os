@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour-kol.js v1.3(2026-11-15)KOL 數字人工作室 新手導覽
+//  🧭 guided-tour-kol.js v1.4(2026-11-15)KOL 數字人工作室 新手導覽
 //  需要先載入 guided-tour.js(提供 BosTour:黃框 + 白卡 + 紅字建議/注意)
 //
 //  兩段導覽:
@@ -12,7 +12,7 @@
   'use strict';
   if (window.__bosTourKol) return;
   window.__bosTourKol = true;
-  var VERSION = '1.3';
+  var VERSION = '1.4';
 
   function TIP(t) { return '<div class="bt-r"><i>建議</i>' + t + '</div>'; }
   function PIT(t) { return '<div class="bt-r"><i>注意</i>' + t + '</div>'; }
@@ -39,7 +39,7 @@
       { t: ['#rs-persona-panel', '#rs-ab-edit'], title: '人設:決定他怎麼講話',
         body: '年紀、住哪、做什麼工作、在意什麼。<br>AI 寫台詞時會照這個人設說話。' +
           TIP('人設寫得越具體,台詞越像真人,不像在念廣告。要改按「編輯人設」。') },
-      { t: ['#look-picker', '#rs-pane-look'], title: '多角度參考照',
+      { t: '#look-picker', title: '多角度參考照',
         body: '正臉、側臉這幾張是<b>拍影片時自動用的參考照</b>,讓每一個鏡頭都是同一張臉。' +
           TIP('系統會自己挑,不用動它。') },
       { t: '#rs-actionbar', title: '選好就按「用這位角色拍片 →」',
@@ -51,7 +51,7 @@
       { t: ['#rs-persona-panel', '#rs-ab-edit'], title: '人設:決定他怎麼講話',
         body: '年紀、住哪、做什麼工作、在意什麼。<br>AI 寫台詞時會照這個人設說話。' +
           TIP('人設寫得越具體,台詞越像真人,不像在念廣告。要改按「編輯人設」。') },
-      { t: ['#look-picker', '#rs-pane-look'], title: '多角度參考照',
+      { t: '#look-picker', title: '多角度參考照',
         body: '正臉、側臉這幾張是<b>拍影片時自動用的參考照</b>,讓每一個鏡頭都是同一張臉。' +
           TIP('系統會自己挑,不用動它。') },
       { t: '#rs-actionbar', title: '選好就按「用這位角色拍片 →」',
