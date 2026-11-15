@@ -1,5 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 ad-ux.js v1.0(2026-11-15)廣告圖產生器的操作順暢度(index.html 用)
+//  🧭 ad-ux.js v1.1(2026-11-15)廣告圖產生器的操作順暢度(index.html 用)
+//  v1.1 RA 11-15 手機實測(長榮桂冠):
+//   ⑤ 左下角語言切換鈕(🌐)蓋住產生器底部的進度與「完成」文字 → 產生器開著時先藏起來,關掉再出現
+//   ⑥ 從外面換照片(素材庫點選)後,產生器裡照片列下的檔名還是上一張 → 換照片時順便重畫產生器的照片列
 //  RA 11-15 用手機當客人走一遍「做廣告圖」,抓到這幾個卡點:
 //   ① 「套用 AI 效果」沒寫要扣幾點 → 按鈕直接寫「套用 AI 效果 · 扣 240 點」(換尺寸會跟著變)
 //   ② 沒選照片就按「做廣告圖」→ 畫面跳到最底下素材庫;選完照片什麼都沒發生,要自己滑回去再按一次
@@ -13,7 +16,7 @@
 (function () {
   'use strict';
   if (window._adUx) return;
-  window._adUx = '1.0';
+  window._adUx = '1.1';
 
   //  ③ 手機預覽縮小(index.html 原本的手機規則讓預覽 sticky 在頂端,這裡只限制它的高度)
   var s = document.createElement('style');
@@ -45,6 +48,8 @@
       var sa = window.selectAsset;
       window.selectAsset = function (type, i) {
         var r = sa.apply(this, arguments);
+        //  ⑥ 產生器開著 → 照片列與檔名跟著更新
+        try { var mm = document.getElementById('adMakerModal'); if (mm && mm.style.display !== 'none' && typeof window.renderAmPhotoRow === 'function') window.renderAmPhotoRow(); } catch (e) {}
         try {
           if (wantOpen && type === 'photo' && window.S && window.S.selPhoto !== null && window.S.selPhoto !== undefined) {
             wantOpen = false;
@@ -70,7 +75,11 @@
   }
   setInterval(function () {
     var m = document.getElementById('adMakerModal');
-    if (!m || m.style.display === 'none') return;
+    var open = !!(m && m.style.display !== 'none');
+    //  ⑤ 產生器開著就藏語言鈕(關掉就恢復)
+    var sw = document.getElementById('bos-lang-sw');
+    if (sw) { if (open && sw.style.visibility !== 'hidden') sw.style.visibility = 'hidden'; else if (!open && sw.style.visibility === 'hidden') sw.style.visibility = ''; }
+    if (!open) return;
     var b = document.getElementById('prApplyBtn');
     if (b && !b.disabled && /^套用 AI 效果/.test(b.textContent)) {
       var c = cost(), want = '套用 AI 效果' + (c ? ' · 扣 ' + c + ' 點' : '');
@@ -80,5 +89,5 @@
     if (d) { var show = hasResult(); if ((d.style.display === 'none') === show) d.style.display = show ? '' : 'none'; }
   }, 500);
 
-  console.log('[ad-ux] v1.0 就緒 · 按鈕寫點數 · 選完照片自動開產生器 · 手機預覽縮小 · 出圖才顯示下載');
+  console.log('[ad-ux] v1.1 就緒 · 產生器開著藏語言鈕 · 換照片更新檔名 · 按鈕寫點數 · 選完照片自動開產生器 · 手機預覽縮小 · 出圖才顯示下載');
 })();
