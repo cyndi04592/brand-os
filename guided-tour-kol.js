@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour-kol.js v1.0(2026-11-15)KOL 數字人工作室 新手導覽
+//  🧭 guided-tour-kol.js v1.1(2026-11-15)KOL 數字人工作室 新手導覽
 //  需要先載入 guided-tour.js(提供 BosTour:黃框 + 白卡 + 紅字建議/注意)
 //
 //  兩段導覽:
@@ -12,7 +12,7 @@
   'use strict';
   if (window.__bosTourKol) return;
   window.__bosTourKol = true;
-  var VERSION = '1.0';
+  var VERSION = '1.1';
 
   function TIP(t) { return '<div class="bt-r"><i>建議</i>' + t + '</div>'; }
   function PIT(t) { return '<div class="bt-r"><i>注意</i>' + t + '</div>'; }
@@ -31,8 +31,12 @@
         body: '這裡選<b>要拍哪個品牌</b>,下面會自動載入這個品牌的 KOL 和素材。' +
           PIT('選錯品牌,角色和商品照都會是別家的。') },
       { t: '#rs-roster', title: '選一位 KOL 當主角',
-        body: '這是品牌的 <b>KOL 形象庫</b>,點一位就選好了。<br>沒有合適的人選,按<b>「＋ 建新角色」</b>讓 AI 做一位新面孔。' +
-          TIP('「＋ 使用自己建立」是用你自己的照片,當品牌代言人最有說服力。') },
+        body: '這是品牌的 <b>KOL 形象庫</b>,點一位就選好了,選好會繼續教你下一步。<br>沒有合適的人選,按<b>「＋ 建新角色」</b>讓 AI 做一位新面孔。' +
+          TIP('「＋ 使用自己建立」是用你自己的照片,當品牌代言人最有說服力。') }
+    ]);
+
+    // ── 點選一位 KOL 之後(人設、參考照、拍片按鈕這時才出現)──────
+    BosTour.register('kol1b', [
       { t: '#rs-persona-panel', title: '人設:決定他怎麼講話',
         body: '年紀、住哪、做什麼工作、在意什麼。<br>AI 寫台詞時會照這個人設說話。' +
           TIP('人設寫得越具體,台詞越像真人,不像在念廣告。要改按下面「編輯人設」。') },
@@ -84,7 +88,7 @@
       p.style.cssText = 'position:fixed;z-index:99997;left:calc(12px + env(safe-area-inset-left,0px));' +
         'border:1px solid rgba(255,255,255,.18);background:rgba(20,20,24,.85);color:#f5c542;' +
         'font:800 13px/1 "Noto Sans TC",system-ui,sans-serif;border-radius:999px;padding:9px 13px;cursor:pointer';
-      p.onclick = function () { BosTour.start(shown('main-layout-cinematic') ? 'kol2' : 'kol1', true); };
+      p.onclick = function () { BosTour.start(shown('main-layout-cinematic') ? 'kol2' : (shown('rs-actionbar') ? 'kol1b' : 'kol1'), true); };
       document.body.appendChild(p);
     }
     //  底下那條「已選定 · 用這位角色拍片」出現時,往上讓開
@@ -98,6 +102,8 @@
   var registered = false, tried = {};
   function tryStart(name) {
     if (tried[name]) return;
+    var c = document.querySelector('.bt-card');
+    if (c && c.style.display !== 'none') return;          // 別的導覽還在跑,等它跑完
     tried[name] = true;
     setTimeout(function () { BosTour.start(name, false); }, 1200);
   }
@@ -107,7 +113,9 @@
     pill();
     var roster = document.getElementById('rs-roster');
     if (shown('main-layout-cinematic')) tryStart('kol2');
-    else if (shown('main-layout-talking') && roster && roster.children.length) tryStart('kol1');
+    else if (shown('main-layout-talking') && roster && roster.children.length) {
+      if (shown('rs-actionbar')) tryStart('kol1b'); else tryStart('kol1');
+    }
   }, 800);
 
   console.log('[BosTour] 🧭 KOL 導覽 v' + VERSION + ' 就緒(左下「? 教學」重看)');
