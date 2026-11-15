@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour.js v1.1(2026-11-15)新手導覽(一步一步教學)
+//  🧭 guided-tour.js v1.2(2026-11-15)新手導覽(一步一步教學)
 //  RA 11-15:參考她做過的表單教學 —— 把「現在要做的那一格」框起來,
 //   下面一張白卡片寫「第 X 步,共 Y 步」+ 白話說明 +「下一步 →」。
 //
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
   if (window.BosTour) return;
-  var VERSION = '1.1';
+  var VERSION = '1.2';
   var MOBILE = '(max-width: 768px)';
   var TOURS = {};
   var cur = null;          // { name, steps, i, el }
@@ -117,7 +117,10 @@
     var st = cur.steps[cur.i];
     var el = findTarget(st);
     cur.el = el;
-    if (el) { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { el.scrollIntoView(); } }
+    //  v1.2:手機卡片很高 → 首頁的框捲到畫面上方(卡片在下面);產生器視窗裡維持置中
+    var top = el && isMobile() && !(el.closest && el.closest('#adMakerModal'));
+    if (top) { document.body.style.paddingBottom = '70vh'; el.style.scrollMarginTop = '70px'; }
+    if (el) { try { el.scrollIntoView({ block: top ? 'start' : 'center', behavior: 'smooth' }); } catch (e) { el.scrollIntoView(); } }
     var c = ui.card;
     c.querySelector('.bt-n').textContent = '第 ' + (cur.i + 1) + ' 步,共 ' + cur.steps.length + ' 步';
     c.querySelector('.bt-t').textContent = st.title;
@@ -155,6 +158,7 @@
   function stop(markDone) {
     if (cur && markDone) lsSet(doneKey(cur.name), '1');
     cur = null;
+    document.body.style.paddingBottom = '';
     cancelAnimationFrame(raf);
     if (ui) { ui.ring.style.display = 'none'; ui.card.style.display = 'none'; }
   }
