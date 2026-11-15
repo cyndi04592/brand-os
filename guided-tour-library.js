@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour-library.js v1.0(2026-11-15)素材庫 新手導覽
+//  🧭 guided-tour-library.js v1.1(2026-11-15)素材庫 新手導覽
 //  需要先載入 guided-tour.js(提供 BosTour:黃框 + 白卡 + 紅字建議/注意)
 //
 //  兩段導覽:
@@ -11,7 +11,7 @@
   'use strict';
   if (window.__bosTourLib) return;
   window.__bosTourLib = true;
-  var VERSION = '1.0';
+  var VERSION = '1.1';
 
   function TIP(t) { return '<div class="bt-r"><i>建議</i>' + t + '</div>'; }
   function PIT(t) { return '<div class="bt-r"><i>注意</i>' + t + '</div>'; }
@@ -31,11 +31,13 @@
           PIT('上傳前一定先確認品牌,放錯品牌,照片會跑到別家的素材庫。') },
       { t: '#upToggle', title: '上傳照片按這裡',
         body: '按<b>「＋ 上傳素材」</b>,就能把商品照、場景照、LOGO 放進來。' },
+      { m: '#libHamburger', title: '上傳照片在右上角選單',
+        body: '手機版按右上角 <b>☰</b>,裡面有<b>「＋ 上傳素材」</b>,就能把商品照、場景照、LOGO 放進來。' },
       { t: '#tabs', title: '分類',
         body: '素材會照<b>分類</b>放好:商品照、人物照、未分類…;做好的<b>廣告圖、短影片</b>也都存在這裡。' +
           PIT('廣告圖產生器只會列出「商品照」。放在「未分類」的照片,做廣告圖時找不到。') },
-      { t: '#body', title: '你的素材和成品',
-        body: '上面選哪一類,這裡就顯示哪一類的照片和影片。' },
+      { t: ['#body .grid > :first-child', '#body'], title: '你的素材和成品',
+        body: '上面選哪一類,下面就顯示哪一類的照片和影片,往下滑看更多。' },
       { t: '#q', title: '找不到照片?',
         body: '在這裡<b>打檔名</b>就能搜尋。' +
           TIP('剛上傳完沒看到,按右上角「重新整理」。') }
