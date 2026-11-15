@@ -1,20 +1,18 @@
 // ═══════════════════════════════════════════════════════════════
-//  🧭 guided-tour-library.js v1.1(2026-11-15)素材庫 新手導覽
-//  需要先載入 guided-tour.js(提供 BosTour:黃框 + 白卡 + 紅字建議/注意)
+//  🧭 guided-tour-library.js v2.0(2026-11-15)素材庫 新手導覽
+//  需要先載入 guided-tour.js v2.0+(提供 BosTour:黃框 + 白卡 + 紅字建議/注意 + 中/日/英)
 //
 //  兩段導覽:
-//   · lib     素材庫本身:品牌 → 上傳按鈕 → 分類 → 你的素材和成品 → 搜尋
+//   · lib     素材庫本身:品牌 → 上傳在哪(電腦按鈕 / 手機右上 ☰)→ 分類 → 素材和成品 → 搜尋
 //   · lib-up  打開「＋ 上傳素材」之後:放到哪一類 → 選擇檔案
-//  第一次自動跑一次;左下角「? 教學」可以重看。只放導覽,不碰素材庫任何功能。
+//  文字跟著網站語言(中文 / 日本語 / English)。第一次自動跑一次;左下角按鈕可以重看。
+//  只放導覽,不碰素材庫任何功能。
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
   if (window.__bosTourLib) return;
   window.__bosTourLib = true;
-  var VERSION = '1.1';
-
-  function TIP(t) { return '<div class="bt-r"><i>建議</i>' + t + '</div>'; }
-  function PIT(t) { return '<div class="bt-r"><i>注意</i>' + t + '</div>'; }
+  var VERSION = '2.0';
 
   function shown(id) {
     var e = document.getElementById(id); if (!e) return false;
@@ -25,33 +23,62 @@
   function done(n) { try { return !!localStorage.getItem('bos_tour_done_' + n); } catch (e) { return true; } }
 
   function registerAll() {
-    BosTour.register('lib', [
-      { t: '#brandSel', title: '先選品牌',
-        body: '這裡選<b>要看哪個品牌</b>的素材。' +
-          PIT('上傳前一定先確認品牌,放錯品牌,照片會跑到別家的素材庫。') },
-      { t: '#upToggle', title: '上傳照片按這裡',
-        body: '按<b>「＋ 上傳素材」</b>,就能把商品照、場景照、LOGO 放進來。' },
-      { m: '#libHamburger', title: '上傳照片在右上角選單',
-        body: '手機版按右上角 <b>☰</b>,裡面有<b>「＋ 上傳素材」</b>,就能把商品照、場景照、LOGO 放進來。' },
-      { t: '#tabs', title: '分類',
-        body: '素材會照<b>分類</b>放好:商品照、人物照、未分類…;做好的<b>廣告圖、短影片</b>也都存在這裡。' +
-          PIT('廣告圖產生器只會列出「商品照」。放在「未分類」的照片,做廣告圖時找不到。') },
-      { t: ['#body .grid > :first-child', '#body'], title: '你的素材和成品',
-        body: '上面選哪一類,下面就顯示哪一類的照片和影片,往下滑看更多。' },
-      { t: '#q', title: '找不到照片?',
-        body: '在這裡<b>打檔名</b>就能搜尋。' +
-          TIP('剛上傳完沒看到,按右上角「重新整理」。') }
-    ]);
+    var T = BosTour.T, TIP = BosTour.TIP, PIT = BosTour.PIT;
+    var UPLOAD_BODY = function () {
+      return T('就能把商品照、場景照、LOGO 放進來。', '商品写真・シーン写真・ロゴを追加できます。', 'to add product photos, scene photos and your logo.');
+    };
 
-    BosTour.register('lib-up', [
-      { t: '#upCat', title: '先選「放到哪一類」',
-        body: '<b>商品照</b>:要拍廣告的商品。<b>場景照</b>:門市、店面、教室的實景。<br><b>人物照</b>:代言人或你自己。<b>LOGO</b>:品牌標誌。' +
-          PIT('LOGO 一定要選「LOGO」,放成商品照會被當成照片拿去拍!') +
-          PIT('商品照沒選「商品照」,做廣告圖時會找不到。') },
-      { t: '#upPick', title: '選照片',
-        body: '按<b>「選擇檔案」</b>,一次可以選好幾張;電腦也可以直接把圖片拖進這個框。' +
-          TIP('照片越清楚、主角越大,做出來的廣告圖越好。') }
-    ]);
+    BosTour.register('lib', function () { return [
+      { t: '#brandSel',
+        title: T('先選品牌', 'まずブランドを選ぶ', 'Pick your brand'),
+        body: T('這裡選<b>要看哪個品牌</b>的素材。', 'ここで<b>どのブランド</b>の素材を見るか選びます。', 'Choose <b>which brand\'s</b> assets to view.') +
+          PIT('上傳前一定先確認品牌,放錯品牌,照片會跑到別家的素材庫。',
+              'アップロード前に必ずブランドを確認。間違えると別ブランドのライブラリに入ります。',
+              'Always check the brand before uploading — the wrong one puts photos in another brand\'s library.') },
+      { t: '#upToggle',
+        title: T('上傳照片按這裡', '写真のアップロードはここ', 'Upload photos here'),
+        body: T('按<b>「＋ 上傳素材」</b>,', '<b>「＋ 素材をアップロード」</b>で', 'Tap <b>"+ Upload assets"</b> ') + UPLOAD_BODY() },
+      { m: '#libHamburger',
+        title: T('上傳照片在右上角選單', 'アップロードは右上のメニュー', 'Upload is in the top-right menu'),
+        body: T('手機版按右上角 <b>☰</b>,裡面有<b>「＋ 上傳素材」</b>,', 'スマホでは右上の <b>☰</b> に<b>「＋ 素材をアップロード」</b>があり、', 'On mobile, tap <b>☰</b> at the top right — <b>"+ Upload assets"</b> is inside, ') + UPLOAD_BODY() },
+      { t: '#tabs',
+        title: T('分類', 'カテゴリ', 'Categories'),
+        body: T('素材會照<b>分類</b>放好:商品照、人物照、未分類…;做好的<b>廣告圖、短影片</b>也都存在這裡。',
+                '素材は<b>カテゴリ</b>ごとに整理されます(商品写真、人物写真、未分類…)。作った<b>広告画像やショート動画</b>もここに保存されます。',
+                'Assets are sorted into <b>categories</b> (product photos, people photos, uncategorized…). Your finished <b>ad images and short videos</b> are saved here too.') +
+          PIT('廣告圖產生器只會列出「商品照」。放在「未分類」的照片,做廣告圖時找不到。',
+              '広告画像ジェネレーターに出るのは「商品写真」だけ。「未分類」の写真は広告作成時に見つかりません。',
+              'The ad image generator only lists "Product photos". Photos left in "Uncategorized" won\'t show up there.') },
+      { t: ['#body .grid > :first-child', '#body'],
+        title: T('你的素材和成品', '素材と完成品', 'Your assets and results'),
+        body: T('上面選哪一類,下面就顯示哪一類的照片和影片,往下滑看更多。',
+                '上で選んだカテゴリの写真・動画が下に表示されます。スクロールでもっと見られます。',
+                'Whatever category you pick above shows here — scroll down for more.') },
+      { t: '#q',
+        title: T('找不到照片?', '写真が見つからない?', 'Can\'t find a photo?'),
+        body: T('在這裡<b>打檔名</b>就能搜尋。', 'ここに<b>ファイル名</b>を入れて検索できます。', 'Type a <b>file name</b> here to search.') +
+          TIP('剛上傳完沒看到,按右上角「重新整理」。', 'アップロード直後に見えなければ、右上の「再読み込み」を。', 'Just uploaded and don\'t see it? Tap "Refresh" at the top right.') }
+    ]; });
+
+    BosTour.register('lib-up', function () { return [
+      { t: '#upCat',
+        title: T('先選「放到哪一類」', 'まず「どこに入れるか」を選ぶ', 'First choose where it goes'),
+        body: T('<b>商品照</b>:要拍廣告的商品。<b>場景照</b>:門市、店面、教室的實景。<br><b>人物照</b>:代言人或你自己。<b>LOGO</b>:品牌標誌。',
+                '<b>商品写真</b>:広告にする商品。<b>シーン写真</b>:店舗・教室などの実景。<br><b>人物写真</b>:アンバサダーやあなた自身。<b>LOGO</b>:ブランドロゴ。',
+                '<b>Product photos</b>: what you\'re advertising. <b>Scene photos</b>: your real shop, store or classroom.<br><b>People photos</b>: your ambassador or yourself. <b>LOGO</b>: your brand logo.') +
+          PIT('LOGO 一定要選「LOGO」,放成商品照會被當成照片拿去拍!',
+              'ロゴは必ず「LOGO」へ。商品写真にすると、写真として撮影に使われてしまいます!',
+              'Logos must go under "LOGO" — as a product photo it gets used as a photo!') +
+          PIT('商品照沒選「商品照」,做廣告圖時會找不到。',
+              '商品写真は「商品写真」を選ばないと、広告作成時に見つかりません。',
+              'Product photos not filed as "Product photos" won\'t show up when making ads.') },
+      { t: '#upPick',
+        title: T('選照片', '写真を選ぶ', 'Choose photos'),
+        body: T('按<b>「選擇檔案」</b>,一次可以選好幾張;電腦也可以直接把圖片拖進這個框。',
+                '<b>「ファイルを選択」</b>で複数枚まとめて選べます。パソコンならこの枠にドラッグしてもOK。',
+                'Tap <b>"Choose files"</b> to pick several at once; on a computer you can also drag images into this box.') +
+          TIP('照片越清楚、主角越大,做出來的廣告圖越好。', '写真が鮮明で主役が大きいほど、広告画像の仕上がりが良くなります。', 'Sharper photos with a bigger subject make better ad images.') }
+    ]; });
   }
 
   // ── 左下角「? 教學」──────────────────────────────────────────
@@ -60,7 +87,7 @@
     if (!p) {
       p = document.createElement('button');
       p.id = 'bt-tour-pill-lib'; p.type = 'button'; p.setAttribute('data-i18n-skip', '');
-      p.textContent = '? 教學';
+      p.textContent = BosTour.ui().pill;
       p.style.cssText = 'position:fixed;z-index:99997;left:calc(12px + env(safe-area-inset-left,0px));' +
         'bottom:calc(54px + env(safe-area-inset-bottom,0px));' +
         'border:1px solid rgba(255,255,255,.18);background:rgba(20,20,24,.85);color:#f5c542;' +
@@ -81,12 +108,12 @@
     setTimeout(function () { BosTour.start(name, false); }, 1000);
   }
   setInterval(function () {
-    if (!(window.BosTour && window.BosTour.register)) return;
+    if (!(window.BosTour && window.BosTour.register && window.BosTour.T)) return;
     if (!registered) { registerAll(); registered = true; }
     pill();
     if (shown('upPanel')) { if (!done('lib-up')) tryStart('lib-up'); }
     else if (shown('tabs') && !done('lib')) tryStart('lib');
   }, 800);
 
-  console.log('[BosTour] 🧭 素材庫導覽 v' + VERSION + ' 就緒(左下「? 教學」重看)');
+  console.log('[BosTour] 🧭 素材庫導覽 v' + VERSION + ' 就緒');
 })();
