@@ -53,7 +53,7 @@
   function cleanText(t) { return String(t || '').replace(/["“”「」]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40); }
 
   //  v1.5 照片裡沒有要保留的「商品」→ 不用問 LOGO
-  var NO_PRODUCT_PT = ['beauty', 'medical', 'course', 'mystic', 'travel', 'pro', 'auto', 'screen'];
+  var NO_PRODUCT_PT = ['beauty', 'medical', 'course', 'mystic', 'travel', 'pro', 'auto', 'screen', 'hotel'];   // v1.5.1 加飯店婚宴
   var KEEP_THING_LY = ['au_car', 'med_device'];   // 這幾個版型會照原樣保留實物,LOGO 要對準
   function noLogoNeeded() {
     try {
