@@ -4380,6 +4380,7 @@ async function pollDriveByReqid(brandId, reqid, maxMs = 240000) {
   const start = Date.now();
   while (Date.now() - start < maxMs) {
     await sleep(5000);
+    if (window.__amStopDrive === reqid) return { found: false };   // 🧯 2026-11-18 生成已明確失敗,不用再等
     try {
       const r = await callWorker({ action: 'query_ai_image', brandId, reqid });
       if (r && r.found && (r.imageBase64 || r.download_url)) {
@@ -4494,7 +4495,11 @@ async function generateGptPoster() {
           return { from: 'fal', imageUrl: r.imageUrl };
         }
         if (r.status === 'FAILED') {
-          console.warn('[雙保險] 影像輪詢失敗,改等 Drive:', r.error);
+          // 🧯 2026-11-18:fal 明確回報失敗(例如商品是槍械零件被安全審查擋)→ 不再空等 Drive 4 分鐘,
+          //   直接把原因告訴客人;Worker v11.48 已自動退點(錯誤訊息裡會寫退了幾點)
+          console.warn('[雙保險] 影像生成失敗:', r.error);
+          window.__amStopDrive = reqid;
+          return { from: 'failed', error: r.error || '圖片生成失敗' };
         }
         return null;
       })(),
@@ -4512,6 +4517,7 @@ async function generateGptPoster() {
     if (!winner) {
       throw new Error(`生成逾時(4分鐘)。圖可能仍在雲端處理,稍後可在「AI生成完成區」找代碼 ${reqid} 的圖`);
     }
+    if (winner.from === 'failed') throw new Error(winner.error);   // 🧯 2026-11-18 明確失敗:講原因,不說逾時
 
     // 🆕 2026-10-22 重拍模式第二步「商品校正」(RA 實測:重拍畫面好看但鞋舌標籤被 AI 自編;
     //   第二步把成品+原商品照一起送,只把商品改回原樣,其他畫面不動 →「可以了」)
