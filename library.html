@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<script src="bs-identity-guard.js?v=1"></script>
+<script src="bs-identity-guard.js?v=2"></script>
 <meta charset="UTF-8">
 <script src="/i18n/i18n-loader.js?v=1.5"></script><!-- 🌐 語言包:中文客人不載入任何東西;日文/英文客人才換字(i18n/ 資料夾) -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -376,7 +376,12 @@ function _tokenEmail() {
   } catch (e) { return ''; }
 }
 
-function myEmail(){ try{ return localStorage.getItem('bs_sso_email') || ''; }catch(e){ return ''; } }
+// 🩹 2026-11-17 跟主系統共用登入:原本只看 bs_sso_email,那一格被清掉時主系統還登入著、這裡卻說「請先登入」。
+//   改問 bs-identity-guard.js 的 BSGuard.email()(身分證 → bs_email → bs_sso_email,順序同 auth.js)。
+function myEmail(){
+  try{ if(window.BSGuard && typeof BSGuard.email === 'function'){ const e = BSGuard.email(); if(e) return e; } }catch(e){}
+  try{ return localStorage.getItem('bs_sso_email') || ''; }catch(e){ return ''; }
+}
 function fmtDate(ts){
   if(!ts) return '';
   const d = new Date(ts);
@@ -459,7 +464,11 @@ async function loadBrands(){
   const sel = $('brandSel');
   if(!myEmail()){
     sel.innerHTML = '<option value="">尚未登入</option>';
-    showState('🔒','請先登入','回主系統登入後再進入素材庫');
+    let _why = '';
+    try{ const d = window.BSGuard && BSGuard.diag ? BSGuard.diag() : null;
+      if(d){ _why = d.token === 'expired' ? '(登入已過期,請回主系統重新登入)' : '';
+        console.log('[素材庫] 找不到登入 · 診斷:', d); } }catch(e){}
+    showState('🔒','請先登入','回主系統登入後再進入素材庫' + _why);
     return;
   }
   //  ⚡ v3.0 ① 上次的品牌清單先擺上去 + 上次看的品牌先開始拿素材(跟品牌清單同時問)
