@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.11 (2026-10-24)  v2.11:選了情境 → 配色讓給情境;v2.10:認品類(餐飲/肉品/家電/手持/睫毛/保健/寵物/親子/戶外/瑜珈/髮型)抽該品類拍法 + 模特兒髮型輪換;v2.9:重拍場景由「版型×風格×情境」組出
+//  admaker-prompt-lean.js · v2.12 (2026-11-19)  v2.12:品類看商品名優先、繁簡都認、新增料理成品/酒飲/醬料瓶罐/包裝食品/內衣蕾絲/療癒器物 6 類、食物拍法拿掉餐具懸空;
+//                                     v2.11 (2026-10-24)  v2.11:選了情境 → 配色讓給情境;v2.10:認品類(餐飲/肉品/家電/手持/睫毛/保健/寵物/親子/戶外/瑜珈/髮型)抽該品類拍法 + 模特兒髮型輪換;v2.9:重拍場景由「版型×風格×情境」組出
 //                                     + RA 參考大片手法庫(44 人像/24 靜物,含 Pinterest 2026 MD拍攝)+ 28 個情境全部改成配色/材質/光,不擺節慶道具
 //                                     v2.8:重拍的字只剩商品印刷+標題(治 AI 自編價格牌)
 //  廣告圖「精簡提示詞引擎」—— 取代 admaker.js 的 buildPosterPrompt(約 7,000 字)
@@ -260,26 +261,86 @@
   //   保健品、寵物、親子、戶外、瑜珈、髮型)—— 看品牌名/商品名/規格認品類,抽該品類的拍法
   //   s = 商品(靜物)手法;m = 有人(模特兒)的手法;studio:false 的品類在白棚/極簡海報版型不用;wear:true = 服飾重拍也能用(看得到整件衣服)
   // ═══════════════════════════════════════════════════════════════════
+  //  v2.12(2026-11-19 RA:「每類商品要有專屬拍法,不再全部套用鞋包的拍法」)
+  //   查出來的病:① 請請「普罗旺斯青酱鲈鱼土豆疙瘩」是簡體字 → 鲈鱼/酱 都對不到,只靠品牌名的「餐」掉進一般食物
+  //     ② 煎好的魚、燉好的菜只要有「魚／蝦／牛」就被當成「生鮮肉品」→ 拿到生肉拍法(手捧生肉、冒煙鐵鍋、懸空)
+  //     ③ 酒、醬料罐、內衣蕾絲、頌缽水晶、真空包禮盒都沒有自己的類別 → 套一般拍法
+  //     ④ 食物拍法裡有「湯匙舉起一口」「筷子夾到半空」→ 廣告圖就擺湯匙,做成影片一動就假
+  //   修:先看「商品名＋規格」再看品牌名(品牌名「餐酒館」不會把料理當成酒);繁簡字都認;
+  //     新增 料理成品 / 酒與飲品 / 醬料瓶罐 / 包裝食品 / 內衣蕾絲 / 療癒器物 六類;食物拍法拿掉餐具懸空的句子
   var CAT_RULES = [
-    ['meat',       /和牛|漁|牛排|牛肉|豬肉|雞肉|羊肉|肉品|生鮮|海鮮|魚|蝦|蟹|wagyu|beef|pork|steak|lamb|seafood|salmon|fish/i],
-    ['pet',        /寵物|貓|狗|犬|毛孩|飼料|pet|dog|cat\b|puppy|kitten/i],
-    ['lash',       /睫毛|眼線|眉|彩妝|美妝|化妝|唇|lash|mascara|brow|makeup|cosmetic|lipstick/i],
-    ['hair',       /美髮|髮|理髮|剪髮|barber|hair|salon/i],
-    ['yoga',       /瑜珈|瑜伽|皮拉提斯|健身|運動內衣|yoga|pilates|fitness|gym|leggings/i],
-    ['outdoor',    /戶外|露營|登山|野餐|outdoor|camping|hiking|trail/i],
-    ['family',     /親子|兒童|童裝|寶寶|嬰|幼|媽媽|kids?\b|baby|toddler|family/i],
-    ['supplement', /保健|益生菌|膠原|維他命|維生素|魚油|葉黃素|錠|膠囊|supplement|vitamin|probiotic|collagen|capsule/i],
-    ['appliance',  /家電|電器|吹風機|吸塵|電鍋|快煮壺|水壺|風扇|清淨機|烤箱|氣炸|果汁機|appliance|vacuum|kettle|blender|fryer|purifier|dryer/i],
-    ['food',       /食|餐|麵|飯|甜點|蛋糕|麵包|茶|咖啡|飲|醬|零食|餅|巧克力|果|food|snack|coffee|tea\b|cake|bakery|sauce|chocolate|drink/i],
-    ['handheld',   /保養|精華|乳液|面霜|香水|護手|身體乳|serum|cream|lotion|perfume|skincare|fragrance/i]
+    ['packaged',   /真空|禮盒|禮袋|包裝|袋裝|盒裝|罐頭|冷凍包|即食包|料理包|香腸|臘腸|肉乾|米腸|gift ?box|vacuum|packaged|sausage/i],
+    ['appliance',  /家電|家电|電器|电器|吹風機|吹风机|吸塵|吸尘|電鍋|电锅|快煮壺|水壺|風扇|风扇|電扇|电扇|暖爐|暖炉|清淨機|净化器|烤箱|氣炸|气炸|果汁機|按摩|appliance|vacuum|kettle|blender|fryer|purifier|dryer|heater|fan\b|massager/i],
+    ['dish',       /料理|套餐|主廚|定食|便當|拼盤|前菜|主菜|佐|疙瘩|燉飯|炖饭|義大利麵|意大利面|排餐|點心|点心|港點|港点|煎|燉|炖|焗|蒸|炒|炸|烤|燒|烧|滷|卤|紅燒|红烧|dish|plated|risotto|pasta|gnocchi|dim ?sum|bistro|fillet|confit/i],
+    ['drink',      /葡萄酒|紅酒|红酒|白酒|氣泡酒|气泡酒|香檳|香槟|粉紅酒|威士忌|啤酒|調酒|调酒|清酒|梅酒|果汁|茶飲|茶饮|飲品|饮品|拿鐵|拿铁|奶昔|汽水|latte|smoothie|prosecco|wine|champagne|whisk(e)?y|beer|cocktail|sake|juice|soda/i],
+    ['jar',        /醬|酱|調味|调味|油膏|橄欖油|橄榄油|松露|醋|蜂蜜|果醬|果酱|抹醬|罐|jar|sauce|condiment|olive oil|honey|jam|vinegar/i],
+    ['lingerie',   /內衣|内衣|胸罩|內褲|内裤|蕾絲|蕾丝|睡衣|bralette|bra\b|lingerie|lace|panty|panties/i],
+    ['ritual',     /頌缽|颂钵|缽|钵|水晶|晶石|香氛|精油|薰香|熏香|線香|冥想|能量|靈氣|灵气|singing bowl|crystal|incense|aroma|meditation/i],
+    ['meat',       /和牛|牛排|牛肉|豬肉|猪肉|雞肉|鸡肉|羊肉|肉品|生鮮|生鲜|海鮮|海鲜|漁|渔|魚|鱼|蝦|虾|蟹|wagyu|beef|pork|steak|lamb|seafood|salmon|fish/i],
+    ['pet',        /寵物|宠物|貓|猫|狗|犬|毛孩|飼料|饲料|牧草|pet|dog|cat\b|puppy|kitten|hay/i],
+    ['lash',       /睫毛|眼線|眼线|眉|彩妝|彩妆|美妝|美妆|化妝|化妆|唇|lash|mascara|brow|makeup|cosmetic|lipstick/i],
+    ['hair',       /美髮|美发|髮|发型|理髮|理发|剪髮|barber|hair|salon/i],
+    ['yoga',       /瑜珈|瑜伽|皮拉提斯|健身|運動內衣|禪舞|禅舞|舞蹈|yoga|pilates|fitness|gym|leggings|dance/i],
+    ['outdoor',    /戶外|户外|露營|露营|登山|野餐|outdoor|camping|hiking|trail/i],
+    ['family',     /親子|亲子|兒童|儿童|童裝|童装|寶寶|宝宝|嬰|婴|幼|媽媽|妈妈|kids?\b|baby|toddler|family/i],
+    ['supplement', /保健|益生菌|膠原|胶原|維他命|维他命|維生素|维生素|魚油|鱼油|葉黃素|叶黄素|錠|膠囊|胶囊|supplement|vitamin|probiotic|collagen|capsule/i],
+    ['food',       /食|餐|麵|面包|飯|饭|甜點|甜点|蛋糕|麵包|茶|咖啡|飲|饮|零食|餅|饼|巧克力|果|food|snack|coffee|tea\b|cake|bakery|chocolate|drink/i],
+    ['handheld',   /保養|保养|精華|精华|乳液|面霜|香水|護手|护手|身體乳|身体乳|serum|cream|lotion|perfume|skincare|fragrance/i]
   ];
   var CAT_ART = {
+    //  v2.12 料理成品(餐廳、餐酒館、港點):盤子是主角,餐具與酒杯靜靜放在旁邊當配角,不舉起、不懸空
+    dish: { s: [
+      'the plate sits at the centre of a dark linen tablecloth, one low warm side light grazing across the food so every glaze and crisp edge shines, cutlery resting flat beside it',
+      'shot from a low three-quarter angle at table height: the plate sharp in front, a glass of wine and a candle soft behind it, evening restaurant warmth',
+      'shot from directly overhead: the plate on a stone table with a folded napkin and one small side dish, hard window light cutting a clean shadow',
+      'the plate on a worn wooden table by a bright window, crisp daylight from the side, steam rising faintly from the hot food',
+      'a tight close-up of the plate filling the frame, the textures of the food in sharp focus, the restaurant falling into soft darkness behind',
+      'the plate on a marble counter of an open kitchen, warm pendant light above, the chef\'s pass blurred behind'
+    ] },
+    //  v2.12 酒與飲品:瓶身標籤正面、玻璃有真實的反光與透光,酒液在杯裡靜止
+    drink: { s: [
+      'the bottle stands upright with its label facing the lens, a filled glass beside it, a single backlight glowing through the liquid and tracing the edges of the glass',
+      'the bottle and a glass on a dark stone bar top, one hard side light, condensation beading on the cold glass',
+      'the bottle stands on a sunlit table outside, long late-afternoon shadows, the colour of the drink glowing in the light',
+      'the bottle lies in a bucket of crushed ice, the label turned to the lens, soft overhead light',
+      'the bottle and glass against a single deep-colour backdrop matched to the label, rim light outlining the glass',
+      'the bottle and glass on a restaurant table with a plate of food softly blurred beside them, warm evening light'
+    ], studio: true },
+    //  v2.12 醬料、油、蜂蜜這類瓶罐:罐身標籤正面,旁邊放「做這道醬的食材」或「用這罐醬做的一道菜」
+    jar: { s: [
+      'the jar stands with its label facing the lens on a dark slate, a few of its raw ingredients arranged around it, one low side light',
+      'the jar stands open beside a finished dish made with it, the sauce visible on the food, warm restaurant light',
+      'the jar on a marble kitchen counter by a window, soft daylight, a wooden spoon resting flat beside it',
+      'the jar on a plinth in a single-colour set matched to its label, a crisp shadow falling behind',
+      'shot from overhead: the jar on linen surrounded by bread, cheese and herbs in one colour story'
+    ], studio: true },
+    //  v2.12 包裝食品(真空包、禮盒、香腸):包裝照原本的樣子,旁邊是煮好的成品,讓人看得到吃起來的樣子
+    packaged: { s: [
+      'the pack lies flat exactly as photographed on a wooden table, the cooked food from it sizzling on a plate beside it, warm low light',
+      'the pack rests on a picnic table at a barbecue, the cooked food on the grill softly blurred behind, golden hour light',
+      'the gift box sits on a table with a ribbon and a few of the foods it contains arranged in front, soft window light',
+      'the pack lies on dark slate beside a cutting board of the sliced cooked food, one hard side light'
+    ] },
+    //  v2.12 內衣、蕾絲:布料的紋理與透光是重點,花紋照原圖
+    lingerie: { s: [
+      'the piece lies smoothly on crisp white bed linen in soft morning window light, every detail of the lace sharp',
+      'the piece hangs from a slim brass hanger against a softly lit plaster wall, light passing through the lace',
+      'the piece lies folded on a silk sheet with one soft side light picking out the texture of the fabric',
+      'the piece rests on a velvet chair in a sunlit dressing room, warm and calm'
+    ] },
+    //  v2.12 療癒器物(頌缽、水晶、香氛):靜、慢、有空氣感;聲音與能量用光和一縷煙表現,不畫波紋與光圈
+    ritual: { s: [
+      'the piece rests on a linen cloth on a low wooden table, a single shaft of window light falling across it, one thin wisp of incense smoke drifting in the light',
+      'the piece sits on a smooth river stone surface in a calm room of warm wood and plaster, soft late-afternoon light',
+      'shot from a low angle: the piece against a dark backdrop, one warm side light glowing on its curved metal surface',
+      'the piece on a woven mat beside a few dried flowers, soft overhead daylight, quiet and spacious'
+    ], studio: true },
     food: { s: [
-      'shot from directly overhead on a red cloth, hands reaching in to serve, the table set around the product',
+      'shot from directly overhead on a red cloth, the table set around the product, cutlery resting flat on the cloth',
       'a dark moody tabletop with one low side light, deep shadows, every surface of the food glistening',
       'hard sun through window blinds lays stripes of light across the table and the product',
-      'a spoon lifts one bite toward the lens, the rest of the table soft behind it',
-      'chopsticks lift a portion up into the air against a solid orange backdrop',
+      'a tight close-up of the product filling the frame, its texture sharp, the rest of the table soft behind it',
+      'the product sits against a solid orange backdrop, one hard side light, its colours vivid',
       'an overhead table setting where plates, glasses and linen share one warm colour story',
       'the product with a glass of wine and one candle beside it, soft drapery behind, evening warmth',
       'the product sits on a plinth-like block beside a drink, block and backdrop in one tone'
@@ -390,8 +451,10 @@
     'a messy half-up bun', 'a sharp asymmetric short cut', 'long hair blown across the face by a fan'
   ];
   function _cat(ctx) {
-    var t = [ctx.brand, ctx.subBrand, ctx.product, ctx.spec, ctx.feature].join(' ');
-    for (var i = 0; i < CAT_RULES.length; i++) if (CAT_RULES[i][1].test(t)) return CAT_RULES[i][0];
+    //  v2.12:先看商品本身(商品名、規格、特色),都對不到才看品牌名 —— 品牌叫「餐酒館」不代表每樣商品都是酒
+    var tp = [ctx.product, ctx.spec, ctx.feature].join(' '), tb = [ctx.brand, ctx.subBrand].join(' ');
+    for (var i = 0; i < CAT_RULES.length; i++) if (CAT_RULES[i][1].test(tp)) return CAT_RULES[i][0];
+    for (var j = 0; j < CAT_RULES.length; j++) if (CAT_RULES[j][1].test(tb)) return CAT_RULES[j][0];
     return '';
   }
 
@@ -727,5 +790,5 @@
       return ORIG.apply(this, arguments);
     }
   };
-  console.log('[AD_LEAN] v2.11 精簡廣告圖提示詞已載入(品類手法+情境配色優先)');
+  console.log('[AD_LEAN] v2.12 精簡廣告圖提示詞已載入(品類手法 17 類,商品名優先)');
 })();
