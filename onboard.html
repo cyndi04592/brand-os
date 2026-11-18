@@ -1257,6 +1257,9 @@ async function doGenerate(){
   document.getElementById('genOverlay').classList.remove('show');
   document.getElementById('sec5').style.display='none';document.getElementById('stepsBar').style.display='none';
   document.getElementById('soulOutput').textContent=generatedSoul;document.getElementById('resultSection').style.display='block';
+  // 🧯 2026-11-18 失敗時不要再顯示綠色「靈魂書已生成!」(RA 實測:上面寫生成失敗、下面還寫已生成,客人以為成功了)
+  var _rn=document.querySelector('#resultSection .result-note');
+  if(_rn){ _rn.style.display = soulFailed ? 'none' : ''; }
   // 生失敗 → 送出鈕改成「重新生成」,不要讓客戶把壞資料送進系統
   var _sb=document.getElementById('btnSubmit');
   if(_sb){
