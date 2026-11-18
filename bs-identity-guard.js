@@ -13,7 +13,9 @@
   'use strict';
   var OWNER_KEY = 'bs_owner';
   //  換人時保留:登入本身(屬於剛登入的人)、跟誰登入無關的裝置偏好
-  var KEEP = ['bs_owner', 'bs_auth_token', 'bs_sso_email', 'bs_sso_token',
+  //  🩹 v1.1(2026-11-17):補 bs_email、bs_worker_mode —— 這兩個是主系統「記住登入」本身,
+  //     換人時被清掉 → 新開的分頁(素材庫等)就認不出剛登入的人。
+  var KEEP = ['bs_owner', 'bs_auth_token', 'bs_sso_email', 'bs_sso_token', 'bs_email', 'bs_worker_mode',
     'bos_lang', 'bs_theme_force', 'kolSubStyle.v1', 'kolAnimMode'];
   var KEEP_PREFIX = ['_claude_', '__'];
 
@@ -67,5 +69,54 @@
       }
     }
   } catch (e) {}
-  window.BSGuard = { version: '1.0', last: result };
+  /* ═══════════════════════════════════════════════════════════════
+     🔑 v1.1(2026-11-17)共用登入判斷 BSGuard.email()
+     病:素材庫只看 localStorage 的 bs_sso_email,主系統(auth.js)看的是
+         身分證 bs_auth_token + sessionStorage/localStorage 的 bs_email + bs_sso_email。
+         bs_sso_email 被別的流程清掉(例如登入過期重登、KOL 頁登出、另一分頁)時,
+         主系統照樣登入,素材庫卻顯示「請先登入」、完全不問後台。
+         另外素材庫是用 noopener 新分頁開的 → 拿不到主系統分頁的 sessionStorage。
+     根治:各頁一律用這支問「現在是誰」,順序跟主系統一樣:
+         ① 沒過期的身分證裡的 email(Worker 也是認這個)
+         ② sessionStorage bs_email → localStorage bs_email → bs_sso_email
+         找到了而 bs_sso_email 是空的 → 順手補回去(只補「同一個人」,不覆蓋別人)。
+     ⚠️ 只讀不驗章,真偽永遠由 Worker 判斷。
+     ═══════════════════════════════════════════════════════════════ */
+  function tokenInfo(t) {
+    try {
+      var p = String(t || '').split('.')[1]; if (!p) return null;
+      p = p.replace(/-/g, '+').replace(/_/g, '/'); while (p.length % 4) p += '=';
+      return JSON.parse(decodeURIComponent(escape(atob(p))));
+    } catch (e) { return null; }
+  }
+  function liveTokenEmail(t) {
+    var o = tokenInfo(t);
+    if (!o || !o.e) return '';
+    if (o.x && Date.now() >= Number(o.x) - 60000) return '';   // 跟 auth.js 一樣:到期前 1 分鐘當過期
+    return String(o.e).toLowerCase();
+  }
+  function sharedEmail() {
+    var Ls = ls(), Ss = ss(), e = '', src = '';
+    try {
+      var st = Ss ? Ss.getItem('bs_auth_token') : '', lt = Ls ? Ls.getItem('bs_auth_token') : '';
+      e = liveTokenEmail(st) || liveTokenEmail(lt); if (e) src = 'token';
+      if (!e && Ss) { e = String(Ss.getItem('bs_email') || ''); if (e) src = 'session'; }
+      if (!e && Ls) { e = String(Ls.getItem('bs_email') || ''); if (e) src = 'remember'; }
+      if (!e && Ls) { e = String(Ls.getItem('bs_sso_email') || ''); if (e) src = 'sso'; }
+      e = e.toLowerCase();
+      if (e && Ls && !Ls.getItem('bs_sso_email')) { try { Ls.setItem('bs_sso_email', e); } catch (x) {} }
+    } catch (x) {}
+    sharedEmail.src = src;
+    return e;
+  }
+  //  診斷用(不含 email):哪幾個登入紀錄在/不在,讓「請先登入」畫面說得出原因
+  function loginDiag() {
+    var Ls = ls(), Ss = ss(), g = function (S, k) { try { return S && S.getItem(k) ? 1 : 0; } catch (e) { return 0; } };
+    var t = (Ss && Ss.getItem('bs_auth_token')) || (Ls && Ls.getItem('bs_auth_token')) || '';
+    var o = tokenInfo(t);
+    return { token: t ? (o && o.x && Date.now() >= Number(o.x) - 60000 ? 'expired' : 'ok') : 'none',
+      s_email: g(Ss, 'bs_email'), l_email: g(Ls, 'bs_email'), sso: g(Ls, 'bs_sso_email'), src: sharedEmail.src || '' };
+  }
+
+  window.BSGuard = { version: '1.1', last: result, email: sharedEmail, diag: loginDiag };
 })();
