@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  admaker-prompt-lean.js · v2.12 (2026-11-19)  v2.12:品類看商品名優先、繁簡都認、新增料理成品/酒飲/醬料瓶罐/包裝食品/內衣蕾絲/療癒器物 6 類、食物拍法拿掉餐具懸空;
+//  admaker-prompt-lean.js · v2.12 (2026-11-19)  v2.12:品類看商品名優先、繁簡都認、新增料理成品/酒飲/醬料瓶罐/包裝食品/內衣蕾絲/療癒器物 6 類、每類拍法取自 Pinterest 頂級作品、品類手法使用率 50%→70%;
 //                                     v2.11 (2026-10-24)  v2.11:選了情境 → 配色讓給情境;v2.10:認品類(餐飲/肉品/家電/手持/睫毛/保健/寵物/親子/戶外/瑜珈/髮型)抽該品類拍法 + 模特兒髮型輪換;v2.9:重拍場景由「版型×風格×情境」組出
 //                                     + RA 參考大片手法庫(44 人像/24 靜物,含 Pinterest 2026 MD拍攝)+ 28 個情境全部改成配色/材質/光,不擺節慶道具
 //                                     v2.8:重拍的字只剩商品印刷+標題(治 AI 自編價格牌)
@@ -165,7 +165,7 @@
     white_studio:    { place: 'on a seamless studio sweep in a soft tone from the brand palette', frame: '', words: 'small and quiet in the empty studio space' },
     minimal_poster:  { place: 'in front of one plain wall painted in a single colour', frame: 'lots of empty wall around the subject', words: 'set in the empty wall space' },
     magazine_cover:  { place: '', frame: 'a magazine-cover frame: the subject centred, close and confident, the top third of the frame open', words: 'across the open top of the frame like a cover title' },
-    scene_lifestyle: { place: '', frame: 'a candid moment from real life, the background softly out of focus', words: 'in a calm corner of the frame' },
+    scene_lifestyle: { place: '', frame: 'a candid moment from real life, the subject large and close in the foreground, the background softly out of focus', words: 'in a calm corner of the frame' },
     hand_hold:       { place: '', frame: 'a hand bringing the subject toward the camera, the subject sharp up front, the world soft behind', words: 'in a calm corner of the frame' },
     '':              { place: '', frame: '', words: 'beside the subject' },
   };
@@ -265,9 +265,9 @@
   //   查出來的病:① 請請「普罗旺斯青酱鲈鱼土豆疙瘩」是簡體字 → 鲈鱼/酱 都對不到,只靠品牌名的「餐」掉進一般食物
   //     ② 煎好的魚、燉好的菜只要有「魚／蝦／牛」就被當成「生鮮肉品」→ 拿到生肉拍法(手捧生肉、冒煙鐵鍋、懸空)
   //     ③ 酒、醬料罐、內衣蕾絲、頌缽水晶、真空包禮盒都沒有自己的類別 → 套一般拍法
-  //     ④ 食物拍法裡有「湯匙舉起一口」「筷子夾到半空」→ 廣告圖就擺湯匙,做成影片一動就假
+  //     ④(RA 11-19 糾正:Pinterest 頂級餐飲廣告大量用手與餐具入鏡,靜態圖反而高級 → 食物拍法保留;影片那邊由運鏡導演讓餐具不動)
   //   修:先看「商品名＋規格」再看品牌名(品牌名「餐酒館」不會把料理當成酒);繁簡字都認;
-  //     新增 料理成品 / 酒與飲品 / 醬料瓶罐 / 包裝食品 / 內衣蕾絲 / 療癒器物 六類;食物拍法拿掉餐具懸空的句子
+  //     新增 料理成品 / 酒與飲品 / 醬料瓶罐 / 包裝食品 / 內衣蕾絲 / 療癒器物 六類(拍法取自 Pinterest 11-19 各品類頂級作品)
   var CAT_RULES = [
     ['packaged',   /真空|禮盒|禮袋|包裝|袋裝|盒裝|罐頭|冷凍包|即食包|料理包|香腸|臘腸|肉乾|米腸|gift ?box|vacuum|packaged|sausage/i],
     ['appliance',  /家電|家电|電器|电器|吹風機|吹风机|吸塵|吸尘|電鍋|电锅|快煮壺|水壺|風扇|风扇|電扇|电扇|暖爐|暖炉|清淨機|净化器|烤箱|氣炸|气炸|果汁機|按摩|appliance|vacuum|kettle|blender|fryer|purifier|dryer|heater|fan\b|massager/i],
@@ -288,59 +288,64 @@
     ['handheld',   /保養|保养|精華|精华|乳液|面霜|香水|護手|护手|身體乳|身体乳|serum|cream|lotion|perfume|skincare|fragrance/i]
   ];
   var CAT_ART = {
-    //  v2.12 料理成品(餐廳、餐酒館、港點):盤子是主角,餐具與酒杯靜靜放在旁邊當配角,不舉起、不懸空
+    //  v2.12 料理成品(餐廳、餐酒館、港點)—— Pinterest fine dining 2026:暗場一束光、整片飽和色桌布、手持刀叉或鑷子正在擺盤的瞬間
     dish: { s: [
-      'the plate sits at the centre of a dark linen tablecloth, one low warm side light grazing across the food so every glaze and crisp edge shines, cutlery resting flat beside it',
-      'shot from a low three-quarter angle at table height: the plate sharp in front, a glass of wine and a candle soft behind it, evening restaurant warmth',
-      'shot from directly overhead: the plate on a stone table with a folded napkin and one small side dish, hard window light cutting a clean shadow',
-      'the plate on a worn wooden table by a bright window, crisp daylight from the side, steam rising faintly from the hot food',
-      'a tight close-up of the plate filling the frame, the textures of the food in sharp focus, the restaurant falling into soft darkness behind',
-      'the plate on a marble counter of an open kitchen, warm pendant light above, the chef\'s pass blurred behind'
+      'shot from directly overhead on a deep red tablecloth: two hands with knife and fork poised over the plate, the plate a bright island in the colour',
+      'a dark room, one narrow spotlight from above falls on the plate alone, every glaze and crisp edge glowing, the rest falling into black',
+      'a hand in a dark sleeve pours sauce from a small copper jug onto the plate, low side light, deep shadows',
+      'shot at table height: the plate sharp in front, a glass of wine and a small candle soft behind it, warm evening restaurant light',
+      'a gloved hand with tweezers sets the final garnish on the plate, the plate sharp, the hand soft, dark backdrop',
+      'the plate on a stone table by a bright window, hard sun cutting one clean shadow across the food and the linen'
     ] },
-    //  v2.12 酒與飲品:瓶身標籤正面、玻璃有真實的反光與透光,酒液在杯裡靜止
+    //  v2.12 酒與飲品 —— Pinterest wine campaign:酒瓶放在意想不到的表面(絨布沙發)、整片跟酒標同色的背景＋一道斜光、暗場只勾輪廓
     drink: { s: [
-      'the bottle stands upright with its label facing the lens, a filled glass beside it, a single backlight glowing through the liquid and tracing the edges of the glass',
-      'the bottle and a glass on a dark stone bar top, one hard side light, condensation beading on the cold glass',
-      'the bottle stands on a sunlit table outside, long late-afternoon shadows, the colour of the drink glowing in the light',
-      'the bottle lies in a bucket of crushed ice, the label turned to the lens, soft overhead light',
-      'the bottle and glass against a single deep-colour backdrop matched to the label, rim light outlining the glass',
-      'the bottle and glass on a restaurant table with a plate of food softly blurred beside them, warm evening light'
+      'the bottle lies on a deep velvet sofa cushion, hard window light falling across the velvet and the glass',
+      'the bottle stands on a block in front of a backdrop the colour of its label, one hard diagonal beam of light cutting across bottle and wall',
+      'pure black backdrop, a single rim light traces only the outline of the bottle and the glass, the drink glowing from behind',
+      'the bottle and a filled glass on a sunlit café table, long late-afternoon shadows, the colour of the drink glowing in the light',
+      'the bottle lies in a bucket of crushed ice, its label turned to the lens, beads of condensation on the glass',
+      'several bottles stand at different heights on coloured blocks in a bright single-colour set, like a shop window'
     ], studio: true },
-    //  v2.12 醬料、油、蜂蜜這類瓶罐:罐身標籤正面,旁邊放「做這道醬的食材」或「用這罐醬做的一道菜」
+    //  v2.12 醬料瓶罐 —— Pinterest sauce jar:手把罐子遞向鏡頭、罐子放在一灘自己的醬汁上俯拍、彩色磁磚台面、從冰箱拿出來的那一下
     jar: { s: [
-      'the jar stands with its label facing the lens on a dark slate, a few of its raw ingredients arranged around it, one low side light',
-      'the jar stands open beside a finished dish made with it, the sauce visible on the food, warm restaurant light',
-      'the jar on a marble kitchen counter by a window, soft daylight, a wooden spoon resting flat beside it',
-      'the jar on a plinth in a single-colour set matched to its label, a crisp shadow falling behind',
-      'shot from overhead: the jar on linen surrounded by bread, cheese and herbs in one colour story'
+      'two hands in a chunky knit sweater hold the jar toward the lens, the label facing the camera, the person soft behind',
+      'shot from directly overhead: the jar stands in a bold splash of its own sauce on a bright single-colour backdrop',
+      'the jar on a sunny tiled kitchen counter, a spoonful of its contents resting beside it, hard sun and crisp shadows',
+      'a hand pulls the jar out of an open fridge door, cool fridge light on the glass',
+      'the jar on a wooden shelf in warm side light, its contents glowing through the glass, the label facing forward'
     ], studio: true },
-    //  v2.12 包裝食品(真空包、禮盒、香腸):包裝照原本的樣子,旁邊是煮好的成品,讓人看得到吃起來的樣子
+    //  v2.12 包裝食品(真空包、冷凍包、禮盒)—— Pinterest frozen food packaging:包裝直立＋煮好的成品、整片飽和色背景、冰塊、彩色階梯、整齊重複排列
     packaged: { s: [
-      'the pack lies flat exactly as photographed on a wooden table, the cooked food from it sizzling on a plate beside it, warm low light',
-      'the pack rests on a picnic table at a barbecue, the cooked food on the grill softly blurred behind, golden hour light',
-      'the gift box sits on a table with a ribbon and a few of the foods it contains arranged in front, soft window light',
-      'the pack lies on dark slate beside a cutting board of the sliced cooked food, one hard side light'
+      'the pack stands upright exactly as photographed beside a plate of the cooked food from it, a bright single-colour backdrop, hard sun',
+      'the pack rests half-buried in clear ice cubes, cold light glinting on the ice and the wrapper',
+      'several identical packs line up in a neat repeating row on a bold coloured surface, shot from overhead',
+      'the pack stands on a set of colourful stepped blocks, crisp shadows falling down the steps',
+      'the pack sits in a wire shopping basket with a few fresh ingredients, bright clean light',
+      'a hand holds the pack toward the lens at a backyard barbecue, the cooked food grilling softly behind'
     ] },
-    //  v2.12 內衣、蕾絲:布料的紋理與透光是重點,花紋照原圖
+    //  v2.12 內衣蕾絲 —— Pinterest lingerie still life:掛在牆上吃樹影、雙色紙平拋、披在燈罩或椅背、從紙袋裡露出來、皺褶床單＋咖啡與書
     lingerie: { s: [
-      'the piece lies smoothly on crisp white bed linen in soft morning window light, every detail of the lace sharp',
-      'the piece hangs from a slim brass hanger against a softly lit plaster wall, light passing through the lace',
-      'the piece lies folded on a silk sheet with one soft side light picking out the texture of the fabric',
-      'the piece rests on a velvet chair in a sunlit dressing room, warm and calm'
+      'the piece hangs from a single hook on a pale wall, hard sun through leaves throwing dappled shadows across the lace and the wall',
+      'shot from overhead: the piece laid flat across a two-tone backdrop split diagonally, a single rose and a lipstick beside it',
+      'the piece is draped over the shade of a table lamp in a softly lit bedroom corner',
+      'the piece spills out of a paper shopping bag tied with ribbon, soft daylight',
+      'the piece lies on rumpled white sheets beside a cup of coffee and an open book, morning window light',
+      'the piece rests on a silver tray with a string of pearls on a deep red surface'
     ] },
-    //  v2.12 療癒器物(頌缽、水晶、香氛):靜、慢、有空氣感;聲音與能量用光和一縷煙表現,不畫波紋與光圈
+    //  v2.12 療癒器物(頌缽、水晶、香氛)—— Pinterest singing bowl:手掌托著缽與木槌、樹影灑在金屬上、俯拍缽裡浮著花瓣、暗場裡槌子碰著缽緣
     ritual: { s: [
-      'the piece rests on a linen cloth on a low wooden table, a single shaft of window light falling across it, one thin wisp of incense smoke drifting in the light',
-      'the piece sits on a smooth river stone surface in a calm room of warm wood and plaster, soft late-afternoon light',
-      'shot from a low angle: the piece against a dark backdrop, one warm side light glowing on its curved metal surface',
-      'the piece on a woven mat beside a few dried flowers, soft overhead daylight, quiet and spacious'
+      'an open palm holds the piece with the mallet resting beside it, clean pale backdrop, soft daylight',
+      'hard sun through leaves throws dappled light across the piece and the table, its metal glowing warm',
+      'shot from directly overhead: the piece holds still water with a few flower petals floating on it',
+      'a dark room, one warm side light, a hand rests the wooden mallet against the rim of the piece',
+      'the piece on a linen cloth on a low wooden table, a single shaft of window light, one thin wisp of incense smoke drifting in it'
     ], studio: true },
     food: { s: [
-      'shot from directly overhead on a red cloth, the table set around the product, cutlery resting flat on the cloth',
+      'shot from directly overhead on a red cloth, hands reaching in to serve, the table set around the product',
       'a dark moody tabletop with one low side light, deep shadows, every surface of the food glistening',
       'hard sun through window blinds lays stripes of light across the table and the product',
-      'a tight close-up of the product filling the frame, its texture sharp, the rest of the table soft behind it',
-      'the product sits against a solid orange backdrop, one hard side light, its colours vivid',
+      'a spoon lifts one bite toward the lens, the rest of the table soft behind it',
+      'chopsticks lift a portion up into the air against a solid orange backdrop',
       'an overhead table setting where plates, glasses and linen share one warm colour story',
       'the product with a glass of wine and one candle beside it, soft drapery behind, evening warmth',
       'the product sits on a plinth-like block beside a drink, block and backdrop in one tone'
@@ -357,6 +362,8 @@
       'the product lies on parchment over white linen with cracked pepper and garlic, soft daylight'
     ] },
     appliance: { s: [
+      'the appliance stands tall and large in a room painted in its own colour family, low camera at its height, soft window light',
+      'a breeze from the appliance lifts a few loose sheets of paper into the air while someone reads nearby, bright airy room',
       'the appliance stands on a raw concrete pedestal, a long soft shadow running behind',
       'arched cut-outs in bold flat colours frame the appliance like a stage',
       'the appliance caught in use, its moment of action frozen mid-air — steam, a pour, a breeze',
@@ -687,8 +694,8 @@
         : 'the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its');
       //  v2.10 品類手法(一半機率):版型沒指定地點 → 品類手法就是整個場景(風格只給色與質感);白棚/極簡海報 → 疊在棚景上
       var catP = CAT_ART[_cat(ctx)], catS = catP && catP.s && !(LP.place && catP.studio === false) ? pick(catP.s) : '', rP = Math.random();
-      if (catS && rP < 0.5) placeP = LP.place ? placeP + '; ' + catS : catS + (fsP ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(_photoOnly(fsP), 160) : '');  // 品類手法自帶光,不再疊第二道光
-      else if (rP < 0.675) placeP += '; ' + pick(REF_STILLS);
+      if (catS && rP < 0.7) placeP = LP.place ? placeP + '; ' + catS : catS + (fsP ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(_photoOnly(fsP), 160) : '');  // 品類手法自帶光,不再疊第二道光
+      else if (rP < 0.85) placeP += '; ' + pick(REF_STILLS);
       p.push('A new product campaign photograph: ' + placeP + '. ' + (LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + _angle(ANGLES_P) : cap(_angle(ANGLES_P))) + '.');
       if (bfP) p.push('Brand feel: ' + bfP + '.');
       if (ctxTheme.context) p.push(_occasion(ctxTheme.context, false));
