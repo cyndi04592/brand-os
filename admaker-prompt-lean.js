@@ -448,7 +448,7 @@
   //   實例:雜誌封面 × 歐系,巴黎公寓斜陽打在牆上,男模卻是正面棚燈、沒影子 → RA「很像貼上去」
   //   三條線(重拍 / 商品 / 保留原圖)全部共用這一段,不再各寫各的
   function LIGHT_LAW(S, pron) {   // v2.33 同樣的意思壓成一句(刺蝟星球:每段長度平均)
-    return 'One light for the whole picture: ' + S + ' is lit only by the light of this place, from the same direction and in the same colour as the background, never brighter or cleaner than the space around ' + pron + '; ' +
+    return 'One light for the whole picture: ' + S + ' is lit only by the light of this place, from the same direction and in the same colour as the background, never brighter or cleaner than the space around ' + pron + ' (its whites no brighter than the other whites, its shaded side in the same shadow as the setting); ' +
       S + ' casts its shadow the same way as every other shadow, takes the colour bounced from nearby surfaces, and sits a touch sharper than the background.';
   }
   //  💡 v2.22 光的鐵律・保留版(RA 2026-11-05「切記,後續都不能有這種狀況」)
@@ -1137,8 +1137,7 @@
       if (_sc) p.push(_sc);
       p.push(LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + angP + '.' : cap(angP) + '.');
       if (_useP && catP.fit) p.push(catP.fit);   // 🔭 v11.29 使用中 → 補一句正確裝法
-      p.push(VIEW_P + (_big ? ' Every foot or wheel touches the floor with its own small contact shadow.' : '') +
-        ' The product shares the light of this place: its bright and white parts are no brighter than the other white things around it, and its shaded side falls into the same shadow as the setting.');   // 📐 v11.28 一個透視 + 一種光
+      p.push(VIEW_P + (_big ? ' Every foot or wheel touches the floor with its own small contact shadow.' : ''));   // 📐 v11.28 一個透視;「一種光」那句併進 LIGHT_LAW(v2.33 不重複)
       if (ctxTheme.context) p.push(_occasion(ctxTheme.context, false));
       if (bfP) p.push(bfP);
       if (note) p.push('Client note: ' + essence(note, 180));
