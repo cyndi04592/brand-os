@@ -839,6 +839,40 @@
   //  🔭 v11.29 瞄具類 = 生存遊戲場景 + 一句正確裝法
   CAT_ART.airsoft_scope = { only: true, u: CAT_ART.airsoft.u, s: CAT_ART.airsoft.s,
     fit: 'How it is fitted: a rifle-style scope sits on top of the replica, parallel to the barrel, clamped to the top rail by two scope rings with its adjustment turrets between them; the wide front lens faces the muzzle and the small eyepiece faces the player. The product is pressed onto the very end of the scope tube, its lid swinging open on a hinge at the rim of that end and standing upright beside the lens.' };
+  //  v2.31 每個品牌、每個商品自己的拍法(RA 2026-11-20「超過 17 樣板就變白痴」→ 不再靠手寫品類)
+  //   來源:/shoots/<品牌ID>.json(雲端每日工作去圖釘網查該商品的頂級拍法、整理成句子後寫進 GitHub)
+  //   格式:{ brand:{ s:[...] }, products:{ "商品名":{ s:[...], refs:[...] } } };沒有檔或抓不到 → 照舊用通用品類
+  var SHOOTS_CACHE = {};
+  function _shootKey(x) { return String(x || '').replace(/\s+/g, '').toLowerCase(); }
+  function _loadShoots(bid) {
+    if (!bid || SHOOTS_CACHE[bid] !== undefined) return;
+    SHOOTS_CACHE[bid] = null;
+    try {
+      fetch('/shoots/' + encodeURIComponent(bid) + '.json?v=' + Math.floor(Date.now() / 3600000))
+        .then(function (r) { return r.ok ? r.json() : false; })
+        .then(function (j) { SHOOTS_CACHE[bid] = j || false; })
+        .catch(function () { SHOOTS_CACHE[bid] = false; });
+    } catch (e) { SHOOTS_CACHE[bid] = false; }
+  }
+  setInterval(function () { try { _loadShoots(window.S && window.S.brandId); } catch (e) {} }, 1500);
+  function _ownShoots(ctx) {
+    var j = SHOOTS_CACHE[window.S && window.S.brandId];
+    if (!j) return null;
+    var ps = j.products || {}, k = _shootKey(ctx && ctx.product);
+    for (var n in ps) if (k && _shootKey(n) === k && ps[n] && ps[n].s && ps[n].s.length) return ps[n];
+    return (j.brand && j.brand.s && j.brand.s.length) ? j.brand : null;
+  }
+  window.AdLeanShoots = { cache: SHOOTS_CACHE, own: _ownShoots };
+  //  v2.32 通用拍法庫(RA 2026-11-20「第 999 樣商品怎麼辦」):拍法跟商品脫鉤 —— 全部拍法合成一個庫,
+  //   交給美術指導看懂商品後自己挑最適合的(不再靠商品名對到哪一類)
+  window.AdLeanLib = function (n) {
+    var all = [];
+    try { for (var k in CAT_ART) { var a = CAT_ART[k]; if (a && a.s && !a.only) all = all.concat(a.s); } } catch (e) {}
+    try { if (typeof REF_STILLS !== 'undefined') all = all.concat(REF_STILLS); } catch (e) {}
+    var out = [], seen = {};
+    for (var i = 0; i < 400 && out.length < (n || 8) && all.length; i++) { var x = all[Math.floor(Math.random() * all.length)]; if (!seen[x]) { seen[x] = 1; out.push(x); } }
+    return out;
+  };
   function _cat(ctx) {
     //  v2.30:先看商品本身(商品名、規格、特色),都對不到才看品牌名 —— 品牌叫「餐酒館」不代表每樣商品都是酒
     var tp = [ctx.product, ctx.spec, ctx.feature].join(' '), tb = [ctx.brand, ctx.subBrand].join(' ');
@@ -1088,7 +1122,8 @@
         ? (SHOOT_NOW && fsP === SHOOT_NOW && !LP.place ? 'the product stands in a real setting: ' + SHOOT_NOW.replace(/the subject's/g, 'its').replace(/the subject/g, 'the product') : 'the product stands on ' + pick(SURFACES) + ' ' + _world(fsP, '') + (lP ? '; ' + lP : ''))
         : 'the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its');
       //  v2.10 品類手法(一半機率):版型沒指定地點 → 品類手法就是整個場景(風格只給色與質感);白棚/極簡海報 → 疊在棚景上
-      var catP = CAT_ART[_cat(ctx)], catS = catP && catP.s && !(LP.place && catP.studio === false) ? pick(catP.s) : '', rP = Math.random();
+      var _own = _ownShoots(ctx);   // v2.31 品牌/商品自己的拍法優先(85%),沒有才用通用品類
+      var catP = _own ? { s: _own.s } : CAT_ART[_cat(ctx)], catS = catP && catP.s && !(LP.place && catP.studio === false) ? pick(catP.s) : '', rP = Math.random() * (_own ? 0.82 : 1);
       if (_big) { /* 靜物手法(桌面、疊塔、手伸進來)都是給小東西的,大件不用 */ }
       var _useP = false;
       if (_big) { /* 已處理 */ }
@@ -1624,7 +1659,7 @@
       try { SELECTED_LAYOUT = _keepLy; SELECTED_FLAVOR = _keepFl; SELECTED_PRODTYPE = _keepPt; } catch (_) {}
     }
   };
-  console.log('[AD_LEAN] v2.30 🍽品類專屬拍法 17+ 類(商品名優先、繁簡都認、選了風格也用)、鏡頭靠近 · v2.29 🏭機台標示英文 · v2.28 📌Pinterest補漏(商品 44 手法 · MD 54 手法) · v2.27 ➕各行業新版型(日韓參照) · v2.26 🧩醫美/命理/旅遊/機台/螢幕重拍 · v2.25 ⚖️國際/日本大所形象照手法 · v2.24 ⚖️專業形象重拍 · v2.23 🧘課程重拍 · v2.22 💅美業重拍·💡保留版光的鐵律(場景跟著原圖的光) · v2.21 🧥照片沒拍到的那一面不加字 · v2.20 💡光的鐵律(人和背景同一盞光)· v2.19 精簡廣告圖提示詞已載入(養生能量走重拍·版型與插畫也走重拍·62 種風格拍攝通告單·背景輪流·大件同視角·生存遊戲使用中·擺放方式)');
+  console.log('[AD_LEAN] v2.32 📚通用拍法庫給美術指導挑 · v2.31 🔎品牌/商品專屬拍法(/shoots/,圖釘網每日自動查) · v2.30 🍽品類專屬拍法 17+ 類(商品名優先、繁簡都認、選了風格也用)、鏡頭靠近 · v2.29 🏭機台標示英文 · v2.28 📌Pinterest補漏(商品 44 手法 · MD 54 手法) · v2.27 ➕各行業新版型(日韓參照) · v2.26 🧩醫美/命理/旅遊/機台/螢幕重拍 · v2.25 ⚖️國際/日本大所形象照手法 · v2.24 ⚖️專業形象重拍 · v2.23 🧘課程重拍 · v2.22 💅美業重拍·💡保留版光的鐵律(場景跟著原圖的光) · v2.21 🧥照片沒拍到的那一面不加字 · v2.20 💡光的鐵律(人和背景同一盞光)· v2.19 精簡廣告圖提示詞已載入(養生能量走重拍·版型與插畫也走重拍·62 種風格拍攝通告單·背景輪流·大件同視角·生存遊戲使用中·擺放方式)');
 })();
 
 })();
