@@ -898,9 +898,9 @@
   };
   function _cat(ctx) {
     //  v2.30:先看商品本身(商品名、規格、特色),都對不到才看品牌名 —— 品牌叫「餐酒館」不代表每樣商品都是酒
-    var tp = [ctx.product, ctx.spec, ctx.feature].join(' '), tb = [ctx.brand, ctx.subBrand].join(' ');
-    for (var i = 0; i < CAT_RULES.length; i++) if (CAT_RULES[i][1].test(tp)) return CAT_RULES[i][0];
-    for (var j = 0; j < CAT_RULES.length; j++) if (CAT_RULES[j][1].test(tb)) return CAT_RULES[j][0];
+    //  v2.34 整盤推演抓到:牧草的規格寫「袋裝」→ 被認成包裝食品、拍成泡在冰塊裡。→ 商品名自己先比一輪,對不到才看規格特色,最後才看品牌
+    var passes = [String(ctx.product || ''), [ctx.spec, ctx.feature].join(' '), [ctx.brand, ctx.subBrand].join(' ')];
+    for (var q = 0; q < passes.length; q++) for (var i = 0; i < CAT_RULES.length; i++) if (passes[q] && CAT_RULES[i][1].test(passes[q])) return CAT_RULES[i][0];
     return '';
   }
 
