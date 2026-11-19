@@ -435,7 +435,7 @@
     'framed a little wider, the setting reading clearly around the product',
     'a tight crop on the product with the setting just readable around it',
   ];
-  var VIEW_P = 'The camera keeps the height and angle of the product photo but stands close, the product filling about two-thirds of the frame, and the setting is built around that viewpoint: its table edges, floor lines and horizon run in the same perspective as the product, which rests on its surface with a soft contact shadow.';
+  var VIEW_P = 'The camera keeps the height and angle of the product photo; table edges, floor lines and horizon follow that same perspective, and the product rests on its surface with a soft contact shadow.';
   // 商品:站在什麼表面上(風格沒寫表面時用)
   var SURFACES = [
     'a slab of pale travertine', 'a weathered oak table', 'a block of raw concrete', 'a fold of washed linen',
@@ -447,11 +447,9 @@
   //   KOL 影片 v5.59 早就踩過:舊版只寫「光從哪來」,從沒說【照主體的就是背景那盞光】→ 模型各打各的 → 像貼上去
   //   實例:雜誌封面 × 歐系,巴黎公寓斜陽打在牆上,男模卻是正面棚燈、沒影子 → RA「很像貼上去」
   //   三條線(重拍 / 商品 / 保留原圖)全部共用這一段,不再各寫各的
-  function LIGHT_LAW(S, pron) {
-    return 'One light for the whole picture, as on a real set: ' + S + ' is lit only by the light of this place — the same direction, the same colour temperature and the same exposure as the background; ' +
-      'if the space is warm and sunlit, ' + S + ' is warm and sunlit by that same sun; if it is cool and dim, ' + S + ' is cool and dim too. No separate light is added on ' + S + ', never brighter, cleaner or more evenly lit than the space around ' + pron + '. ' +
-      'Where that light lands on the walls and floor it lands on ' + S + ' too, and ' + S + ' casts a shadow onto what lies behind and below, in the same direction as every other shadow; nearby surfaces bounce their colour onto ' + S + '. ' +
-      'One moment through one lens: the background sits a touch softer in focus than ' + S + '.';
+  function LIGHT_LAW(S, pron) {   // v2.33 同樣的意思壓成一句(刺蝟星球:每段長度平均)
+    return 'One light for the whole picture: ' + S + ' is lit only by the light of this place, from the same direction and in the same colour as the background, never brighter or cleaner than the space around ' + pron + '; ' +
+      S + ' casts its shadow the same way as every other shadow, takes the colour bounced from nearby surfaces, and sits a touch sharper than the background.';
   }
   //  💡 v2.22 光的鐵律・保留版(RA 2026-11-05「切記,後續都不能有這種狀況」)
   //   要照原圖保留的人(美業成果、保留原模特兒)→ 臉上的光是原圖的光,改不了 →【反過來讓場景跟著那道光】
@@ -1114,7 +1112,7 @@
       var bfP = _brandColour();
       var LP = LAYOUT_SHOT[ly] || LAYOUT_SHOT[''];
       // v2.6 認可的商品句一字不動(RA:「我要這個版本」);數量交給第二步「商品校正」
-      p.push('The product is the real one in this photo' + (name ? ' (' + name + ')' : '') + ': it keeps its exact shape, panels, colours, materials and logos; small labels and lettering stay exactly as photographed, and where a label is too small to read it stays plain.');
+      var _protP = 'The product is the real one in this photo' + (name ? ' (' + name + ')' : '') + ': it keeps its exact shape, panels, colours, materials and logos; small labels and lettering stay exactly as photographed, and where a label is too small to read it stays plain.';   // v2.33 保護句先存起來,排在畫面主意後面
       var lP = _light(fsP);
       var PP = window.ProductPlace, _big = !!(PP && PP.isFloorish());   // v2.13 落地/大型/鋪地
       var placeP = _big ? 'the product is ' + PP.setting() + (fsP ? (ctxTheme.context ? ', in the texture of ' : ', in the world of ') + essence(_photoOnly(fsP), 160) : '') + (lP ? '; ' + lP : '')
@@ -1131,10 +1129,13 @@
       else if (catS && rP < 0.7) placeP = LP.place ? placeP + '; ' + catS : catS + (fsP ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(_photoOnly(fsP), 160) : '');  // 品類手法自帶光,不再疊第二道光
       else if (rP < 0.85 && !(fsP && styleHasLight(fsP))) placeP += '; ' + pick(REF_STILLS);
       var _sc = PP ? [PP.scaleLine(), PP.noteLine()].filter(Boolean).join(' ') : '';
-      if (_sc) p.push(_sc);
       //  📐 v11.28 大件:鏡頭站在商品照當初的位置,房間照這個視角蓋(不抽隨機機位 → 治「貼上去」的透視錯位)
       var angP = _useP ? 'framed close on the product where it is fitted, the product filling most of the frame, only the nearby part of the replica showing' : _angle(ANGLES_P);   // 🔭 v11.30 使用中一律特寫
-      p.push('A new product campaign photograph: ' + placeP + '. ' + (LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + angP : cap(angP)) + '.');
+      //  v2.33 順序就是權重(刺蝟星球):① 畫面主意 ② 主體(保護句+尺寸) ③ 構圖機位 ④ 情境品牌 ⑤ 物理 ⑥ 相機 ⑦ 字
+      p.push('A new product campaign photograph: ' + placeP + '.');
+      p.push(_protP);
+      if (_sc) p.push(_sc);
+      p.push(LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + angP + '.' : cap(angP) + '.');
       if (_useP && catP.fit) p.push(catP.fit);   // 🔭 v11.29 使用中 → 補一句正確裝法
       p.push(VIEW_P + (_big ? ' Every foot or wheel touches the floor with its own small contact shadow.' : '') +
         ' The product shares the light of this place: its bright and white parts are no brighter than the other white things around it, and its shaded side falls into the same shadow as the setting.');   // 📐 v11.28 一個透視 + 一種光
@@ -1659,7 +1660,7 @@
       try { SELECTED_LAYOUT = _keepLy; SELECTED_FLAVOR = _keepFl; SELECTED_PRODTYPE = _keepPt; } catch (_) {}
     }
   };
-  console.log('[AD_LEAN] v2.32 📚通用拍法庫給美術指導挑 · v2.31 🔎品牌/商品專屬拍法(/shoots/,圖釘網每日自動查) · v2.30 🍽品類專屬拍法 17+ 類(商品名優先、繁簡都認、選了風格也用)、鏡頭靠近 · v2.29 🏭機台標示英文 · v2.28 📌Pinterest補漏(商品 44 手法 · MD 54 手法) · v2.27 ➕各行業新版型(日韓參照) · v2.26 🧩醫美/命理/旅遊/機台/螢幕重拍 · v2.25 ⚖️國際/日本大所形象照手法 · v2.24 ⚖️專業形象重拍 · v2.23 🧘課程重拍 · v2.22 💅美業重拍·💡保留版光的鐵律(場景跟著原圖的光) · v2.21 🧥照片沒拍到的那一面不加字 · v2.20 💡光的鐵律(人和背景同一盞光)· v2.19 精簡廣告圖提示詞已載入(養生能量走重拍·版型與插畫也走重拍·62 種風格拍攝通告單·背景輪流·大件同視角·生存遊戲使用中·擺放方式)');
+  console.log('[AD_LEAN] v2.33 ⚖️畫面主意放第一句、光與鏡頭段壓成一句 · v2.32 📚通用拍法庫給美術指導挑 · v2.31 🔎品牌/商品專屬拍法(/shoots/,圖釘網每日自動查) · v2.30 🍽品類專屬拍法 17+ 類(商品名優先、繁簡都認、選了風格也用)、鏡頭靠近 · v2.29 🏭機台標示英文 · v2.28 📌Pinterest補漏(商品 44 手法 · MD 54 手法) · v2.27 ➕各行業新版型(日韓參照) · v2.26 🧩醫美/命理/旅遊/機台/螢幕重拍 · v2.25 ⚖️國際/日本大所形象照手法 · v2.24 ⚖️專業形象重拍 · v2.23 🧘課程重拍 · v2.22 💅美業重拍·💡保留版光的鐵律(場景跟著原圖的光) · v2.21 🧥照片沒拍到的那一面不加字 · v2.20 💡光的鐵律(人和背景同一盞光)· v2.19 精簡廣告圖提示詞已載入(養生能量走重拍·版型與插畫也走重拍·62 種風格拍攝通告單·背景輪流·大件同視角·生存遊戲使用中·擺放方式)');
 })();
 
 })();
