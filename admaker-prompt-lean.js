@@ -448,15 +448,16 @@
   //   實例:雜誌封面 × 歐系,巴黎公寓斜陽打在牆上,男模卻是正面棚燈、沒影子 → RA「很像貼上去」
   //   三條線(重拍 / 商品 / 保留原圖)全部共用這一段,不再各寫各的
   function LIGHT_LAW(S, pron) {   // v2.33 同樣的意思壓成一句(刺蝟星球:每段長度平均)
-    return 'One light for the whole picture: ' + S + ' is lit only by the light of this place, from the same direction and in the same colour as the background, never brighter or cleaner than the space around ' + pron + ' (its whites no brighter than the other whites, its shaded side in the same shadow as the setting); ' +
-      S + ' casts its shadow the same way as every other shadow, takes the colour bounced from nearby surfaces, and sits a touch sharper than the background.';
+    //  v2.34 再壓一次:意思不變(同方向、同色、不比環境亮、影子同向、帶到反光),長度跟其他段平均
+    return 'One light for the whole picture: ' + S + ' is lit only by the light of this place, from the same direction and in the same colour, never brighter than the setting around ' + pron + '; ' +
+      S + ' casts its shadow the same way as every other shadow and picks up the colour bounced from nearby surfaces.';
   }
   //  💡 v2.22 光的鐵律・保留版(RA 2026-11-05「切記,後續都不能有這種狀況」)
   //   要照原圖保留的人(美業成果、保留原模特兒)→ 臉上的光是原圖的光,改不了 →【反過來讓場景跟著那道光】
   //   實測 HH 眉睫:工作室斜陽+原圖手機平光 = 「超級假」;窗紗柔光(剛好跟原圖的光一樣)=「很自然」
   function LIGHT_FOLLOW(S, pron) {
-    return 'The light follows the photo: this place is lit the way ' + S + ' is already lit in the photo — the same direction, the same softness and the same colour of light — so the background is lit by that same light and nothing in it is brighter, harder or warmer than the light on ' + pron + '; ' +
-      'no sun patches or beams fall anywhere that light does not also reach ' + S + '. Skin and surfaces stay exactly as photographed, real texture untouched. One moment through one lens: the background sits softer in focus than ' + S + '.';
+    return 'The light follows the photo: this place is lit the way ' + S + ' is already lit in the photo, the same direction, softness and colour, and nothing in the background is brighter, harder or warmer than the light on ' + pron + '; ' +
+      'surfaces keep their real photographed texture, and the background sits a little softer in focus.';
   }
   var MOMENTS = [
     'hard late-afternoon sun from one side, long crisp shadows',
@@ -629,22 +630,25 @@
     ['airsoft',    /生存遊戲|airsoft|漆彈|戰術|tactical|瞄準|射擊運動/i],
     //  v2.30(2026-11-19 RA「每類商品給專屬拍法」)先認商品名、繁簡都認、新增 料理成品/酒飲/醬料罐/包裝食品/內衣蕾絲/療癒器物
     ['packaged',   /真空|禮盒|禮袋|包裝|袋裝|盒裝|罐頭|冷凍包|即食包|料理包|香腸|臘腸|肉乾|米腸|gift ?box|vacuum|packaged|sausage/i],
-    ['appliance',  /家電|家电|電器|电器|吹風機|吹风机|吸塵|吸尘|電鍋|电锅|快煮壺|水壺|風扇|风扇|電扇|电扇|暖爐|暖炉|清淨機|净化器|烤箱|氣炸|气炸|果汁機|按摩|appliance|vacuum|kettle|blender|fryer|purifier|dryer|heater|fan\b|massager/i],
-    ['dish',       /料理|套餐|主廚|定食|便當|拼盤|前菜|主菜|佐|疙瘩|燉飯|炖饭|義大利麵|意大利面|排餐|點心|点心|港點|港点|煎|燉|炖|焗|蒸|炒|炸|烤|燒|烧|滷|卤|紅燒|红烧|dish|plated|risotto|pasta|gnocchi|dim ?sum|bistro|fillet|confit/i],
+    ['appliance',  /調理機|调理机|料理機|料理机|破壁|攪拌機|搅拌机|豆漿機|豆浆机|咖啡機|咖啡机|blender|mixer|家電|家电|電器|电器|吹風機|吹风机|吸塵|吸尘|電鍋|电锅|快煮壺|水壺|風扇|风扇|電扇|电扇|暖爐|暖炉|清淨機|净化器|烤箱|氣炸|气炸|果汁機|按摩|appliance|vacuum|kettle|blender|fryer|purifier|dryer|heater|fan\b|massager/i],
+    //  v2.34 RA 2026-11-20 西華鍋具 / 水晶飾品:鍋具(電鍋等家電已在上一行先認走)、配戴型飾品(水晶手鍊歸這裡,頌缽、晶洞仍是療癒器物)
+    ['cookware',   /鍋|锅|平底|湯鍋|汤锅|炒鍋|炒锅|鑄鐵|铸铁|不鏽鋼|不锈钢|琺瑯|珐琅|砂鍋|砂锅|壓力鍋|压力锅|鍋具|廚具|厨具|刀具|菜刀|砧板|cookware|saucepan|frying pan|skillet|casserole|dutch oven|stockpot|wok\b|knife set/i],
+    ['jewelry',    /手鍊|手链|手鏈|手環|手环|項鍊|项链|項鏈|戒指|耳環|耳环|耳針|墜子|吊墜|吊坠|胸針|珠寶|珠宝|飾品|饰品|串珠|bracelet|necklace|pendant|earring|\bring\b|jewel|bead/i],
+    ['dish',       /餃|饺|燒賣|烧卖|小籠|小笼|腸粉|肠粉|叉燒|叉烧|蘿蔔糕|萝卜糕|dumpling|dim sum|料理|套餐|主廚|定食|便當|拼盤|前菜|主菜|佐|疙瘩|燉飯|炖饭|義大利麵|意大利面|排餐|點心|点心|港點|港点|煎|燉|炖|焗|蒸|炒|炸|烤|燒|烧|滷|卤|紅燒|红烧|dish|plated|risotto|pasta|gnocchi|dim ?sum|bistro|fillet|confit/i],
     ['drink',      /葡萄酒|紅酒|红酒|白酒|氣泡酒|气泡酒|香檳|香槟|粉紅酒|威士忌|啤酒|調酒|调酒|清酒|梅酒|果汁|茶飲|茶饮|飲品|饮品|拿鐵|拿铁|奶昔|汽水|latte|smoothie|prosecco|wine|champagne|whisk(e)?y|beer|cocktail|sake|juice|soda/i],
     ['jar',        /醬|酱|調味|调味|油膏|橄欖油|橄榄油|松露|醋|蜂蜜|果醬|果酱|抹醬|罐|jar|sauce|condiment|olive oil|honey|jam|vinegar/i],
     ['lingerie',   /內衣|内衣|胸罩|內褲|内裤|蕾絲|蕾丝|睡衣|bralette|bra\b|lingerie|lace|panty|panties/i],
     ['ritual',     /頌缽|颂钵|缽|钵|水晶|晶石|香氛|精油|薰香|熏香|線香|冥想|能量|靈氣|灵气|singing bowl|crystal|incense|aroma|meditation/i],
     ['meat',       /和牛|牛排|牛肉|豬肉|猪肉|雞肉|鸡肉|羊肉|肉品|生鮮|生鲜|海鮮|海鲜|漁|渔|魚|鱼|蝦|虾|蟹|wagyu|beef|pork|steak|lamb|seafood|salmon|fish/i],
     ['pet',        /寵物|宠物|貓|猫|狗|犬|毛孩|飼料|饲料|牧草|pet|dog|cat\b|puppy|kitten|hay/i],
-    ['lash',       /睫毛|眼線|眼线|眉|彩妝|彩妆|美妝|美妆|化妝|化妆|唇|lash|mascara|brow|makeup|cosmetic|lipstick/i],
+    ['lash',       /睫毛|眼線|眼线|眉|lash|mascara|brow|eyeliner/i],   // v2.34 只留眼周(護唇膏曾被拍成「舉在眼睛旁邊」);唇彩、底妝歸手持保養
     ['hair',       /美髮|美发|髮|发型|理髮|理发|剪髮|barber|hair|salon/i],
     ['yoga',       /瑜珈|瑜伽|皮拉提斯|健身|運動內衣|禪舞|禅舞|舞蹈|yoga|pilates|fitness|gym|leggings|dance/i],
     ['outdoor',    /戶外|户外|露營|露营|登山|野餐|outdoor|camping|hiking|trail/i],
     ['family',     /親子|亲子|兒童|儿童|童裝|童装|寶寶|宝宝|嬰|婴|幼|媽媽|妈妈|kids?\b|baby|toddler|family/i],
     ['supplement', /保健|益生菌|膠原|胶原|維他命|维他命|維生素|维生素|魚油|鱼油|葉黃素|叶黄素|錠|膠囊|胶囊|supplement|vitamin|probiotic|collagen|capsule/i],
     ['food',       /食|餐|麵|面包|飯|饭|甜點|甜点|蛋糕|麵包|茶|咖啡|飲|饮|零食|餅|饼|巧克力|果|food|snack|coffee|tea\b|cake|bakery|chocolate|drink/i],
-    ['handheld',   /保養|保养|精華|精华|乳液|面霜|香水|護手|护手|身體乳|身体乳|serum|cream|lotion|perfume|skincare|fragrance/i]
+    ['handheld',   /彩妝|彩妆|美妝|美妆|化妝|化妆|唇|口紅|口红|粉底|粉餅|防曬|防晒|lipstick|lip balm|makeup|cosmetic|sunscreen|保養|保养|精華|精华|乳液|面霜|香水|護手|护手|身體乳|身体乳|serum|cream|lotion|perfume|skincare|fragrance/i]
   ];
   var CAT_ART = {
     //  v2.12 料理成品(餐廳、餐酒館、港點)—— Pinterest fine dining 2026:暗場一束光、整片飽和色桌布、手持刀叉或鑷子正在擺盤的瞬間
@@ -699,6 +703,27 @@
       'a dark room, one warm side light, a hand rests the wooden mallet against the rim of the piece',
       'the piece on a linen cloth on a low wooden table, a single shaft of window light, one thin wisp of incense smoke drifting in it'
     ], studio: true },
+    //  v2.34 鍋具(西華):不鏽鋼會照出周圍一切 → 周圍乾淨、一大片柔光從側面拉出一條長而乾淨的漸層高光、鍋底有接觸影;用起來的蒸氣與燉菜才有溫度
+    cookware: { s: [
+      'the product on a dark stone counter, one large soft window light along one side drawing a long clean highlight down its polished surface, a thin curl of steam escaping from under the lid',
+      'a hand lifts the lid off the product on a stove, a soft cloud of steam rising into low side light, the steel reflecting only the warm kitchen around it',
+      'shot from directly overhead: the open pot of a finished stew on a linen cloth, a ladle resting inside, bowls and fresh herbs around it',
+      'the product alone on a seamless warm-grey sweep, one big soft light from the side, a clean graded highlight on its body and a soft contact shadow beneath',
+      'the product at the centre of a wooden table set for a family dinner, hands reaching in with bowls, warm evening light',
+      'the product on a gas hob, a low blue flame beneath it, the kitchen dark and warm behind, the rim catching a thin line of light'
+    ], studio: true },
+    //  v2.34 水晶 / 串珠飾品:間接柔光(直射會刺眼反光)、微距看得到每顆珠子裡的顏色、天然素材當配角;戴在手上用柔和日光
+    jewelry: { s: [
+      'the piece resting on a smooth pale stone beside a few dried flowers, soft indirect window light, every bead glowing with its own inner colour',
+      'a macro close-up of the piece coiled on raw linen, one soft light from the side giving each bead a small bright highlight',
+      'the piece draped over a small piece of driftwood in bright open shade, a shallow depth of field',
+      'shot from directly overhead on cream paper: the piece in a loose circle among a few raw crystal chips',
+      'the piece on a small ceramic dish on a wooden table, a single shaft of morning light catching it'
+    ], m: [
+      'a close shot of the wrist wearing the piece, the hand resting on a soft knit sleeve, gentle daylight',
+      'a hand wrapped around a cup of tea, the piece on the wrist sharp, the face out of frame',
+      'a close side shot of the wrist and collarbone in soft window light, the piece the first thing the eye lands on'
+    ], studio: true, wear: true },
     food: { s: [
       'shot from directly overhead on a red cloth, hands reaching in to serve, the table set around the product',
       'a dark moody tabletop with one low side light, deep shadows, every surface of the food glistening',
@@ -1058,8 +1083,10 @@
     var lockColor = (document.getElementById('lockBrandColor') || {}).checked !== false;
     var showMark  = (document.getElementById('showBrandMark') || {}).checked !== false;
     var strip = function (t) { return typeof _stripPriceFigures === 'function' ? _stripPriceFigures(t) : t; };
-    var name = String(ctx.product || '').replace(/\b[A-Za-z]{1,5}[-\s]?\d{2,6}[A-Za-z]{0,3}\b/g, '').replace(/\s{2,}/g, ' ').trim();
-    var spec = essence(strip(ctx.spec), 160), feat = essence(strip(ctx.feature), 160);
+    var _noCJK = function (t) { return String(t || '').replace(/[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef\u3000-\u303f]+/g, ' ').replace(/\s{2,}/g, ' ').replace(/^[\s,;:\-]+|[\s,;:\-]+$/g, ''); };   // v2.34 中文不進提示詞(照片自己會說商品長怎樣,中文只會被畫成字)
+    var name = _noCJK(ctx.product).replace(/\b[A-Za-z]{1,5}[-\s]?\d{2,6}[A-Za-z]{0,3}\b/g, '').replace(/\s{2,}/g, ' ').trim();
+    var spec = essence(_noCJK(strip(ctx.spec)), 160), feat = essence(_noCJK(strip(ctx.feature)), 160);
+    if (name.length < 3 || !/[a-z]{3}/i.test(name)) name = '';   // v2.34 只剩型號碎片或數字 → 不寫
     var sz = (typeof _adSize === 'function') ? _adSize() : { w: 1080, h: 1080 };
     var p = [];
 
@@ -1121,13 +1148,21 @@
         : 'the product stands on a real surface in front of ' + conceptFor(pb.colour).replace(/\{S\}/g, 'the product').replace(/\{P\}/g, 'its');
       //  v2.10 品類手法(一半機率):版型沒指定地點 → 品類手法就是整個場景(風格只給色與質感);白棚/極簡海報 → 疊在棚景上
       var _own = _ownShoots(ctx);   // v2.31 品牌/商品自己的拍法優先(85%),沒有才用通用品類
-      var catP = _own ? { s: _own.s } : CAT_ART[_cat(ctx)], catS = catP && catP.s && !(LP.place && catP.studio === false) ? pick(catP.s) : '', rP = Math.random() * (_own ? 0.82 : 1);
+      //  v2.34 整盤推演抓到:地點句 + 品類拍法 + 參考靜物三句疊在一起 → 一張圖裡兩個桌面、兩道光、兩個機位(鍋子被「貼在肩膀上」)
+      //   原則:一張照片只有一個畫面主意。版型自己決定地點(白棚、極簡海報的單色牆)→ 不再疊品類拍法;
+      //   其他版型 → 品類拍法就是整個畫面主意(它自帶桌面、光、機位),跟版型動作衝突的拍法(手持版不抽俯拍 / 別的手)先濾掉
+      var _clash = { hand_hold: /overhead|directly above|\bhands?\b|floats|mid-air|hangs/i, magazine_cover: /overhead|directly above/i }[ly] || null;
+      var _lyFrom = window._leanFrom || ly;   // 客人選的原版型(美食版 / 飛濺借別的版型拍)
+      window._leanCatNow = _cat(ctx);
+      if (_lyFrom === 'dramatic_splash') _clash = /^(?![\s\S]*(pour|splash|spill|mid-air|falling|floats|steam|smoke|breeze|toss|drifting|lifts|rising))/i;   // 飛濺版:只抽有動態的拍法,沒有就交給版型句
+      var catP = _own ? { s: _own.s } : CAT_ART[window._leanCatNow];
+      var _pool = catP && catP.s && !LP.place ? catP.s.filter(function (x) { return !_clash || !_clash.test(x); }) : [];
+      var catS = _pool.length ? pick(_pool) : '', rP = 0;
       if (_big) { /* 靜物手法(桌面、疊塔、手伸進來)都是給小東西的,大件不用 */ }
       var _useP = false;
       if (_big) { /* 已處理 */ }
       else if (catP && catP.only && catS) { _useP = !!(catP.u && Math.random() < 0.7); placeP = (_useP ? pick(catP.u) : catS) + (fsP ? ', in the colour and texture of ' + essence(_photoOnly(fsP), 160) : ''); }   // v11.28 70% 使用中   // 🎯 v11.27 只屬於這個品類的場景(生存遊戲)
-      else if (catS && rP < 0.7) placeP = LP.place ? placeP + '; ' + catS : catS + (fsP ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(_photoOnly(fsP), 160) : '');  // 品類手法自帶光,不再疊第二道光
-      else if (rP < 0.85 && !(fsP && styleHasLight(fsP))) placeP += '; ' + pick(REF_STILLS);
+      else if (catS) placeP = catS + (fsP ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(_photoOnly(fsP), 160) : '');  // 品類手法自帶地點和光 = 整個畫面主意(v2.34 不再疊第二個地點 / 參考靜物)
       var _sc = PP ? [PP.scaleLine(), PP.noteLine()].filter(Boolean).join(' ') : '';
       //  📐 v11.28 大件:鏡頭站在商品照當初的位置,房間照這個視角蓋(不抽隨機機位 → 治「貼上去」的透視錯位)
       var angP = _useP ? 'framed close on the product where it is fitted, the product filling most of the frame, only the nearby part of the replica showing' : _angle(ANGLES_P);   // 🔭 v11.30 使用中一律特寫
@@ -1151,7 +1186,7 @@
       var fsR = flavorSet(flavor);
       var bfR = _brandColour();
       var LR = LAYOUT_SHOT[ly] || LAYOUT_SHOT[''];
-      p.push('The product is the garment in this photo: same cut, fabric, colour, zips, drawstrings and every logo or embroidery exactly as it is. Each print and embroidery stays on the panel where it sits in the photo, so the camera sees it only when that panel faces the lens; a side of the garment the photo does not show, such as the back when only the front is photographed, is plain fabric with no print, logo or embroidery.');   // 🧥 v2.21 RA 11/05:背影沒秀字就不能自己加(照客人給的照片為主)
+      var _protR = ('The product is the garment in this photo: same cut, fabric, colour, zips, drawstrings and every logo or embroidery exactly as it is. Each print and embroidery stays on the panel where it sits in the photo, so the camera sees it only when that panel faces the lens; a side of the garment the photo does not show, such as the back when only the front is photographed, is plain fabric with no print, logo or embroidery.');   // 🧥 v2.21 RA 11/05:背影沒秀字就不能自己加(照客人給的照片為主)
       //  沒選風格、品牌包也沒寫場景、版型也沒指定地點 → 用舊的 6 張完整場景當備案(RA 認可過的等級)
       var catR = CAT_ART[_cat(ctx)], catM = catR && catR.m && catR.wear && (catR.studio || !LR.place) ? catR.m : null;  // 只用看得到整件衣服的品類(睫毛大特寫、髮型側臉看不到衣服)
       var rR = Math.random();
@@ -1169,6 +1204,7 @@
           p.push('A new fashion campaign photograph of a young model wearing this garment, ' + wR + (lR ? '; ' + lR : '') + '. The model is ' + _pose() + '. ' + (LR.frame ? cap(LR.frame.replace(/the subject/g, 'the model')) + '; ' : '') + cap(_angle(ANGLES_M)) + '.');
         }
       }
+      p.push(_protR);   // v2.34 保護句排在畫面主意後面(順序 = 權重)
       if (Math.random() < 0.6) p.push('Hair: ' + pick(HAIRS) + '.');
       p.push('Everything else the model wears is plain, unbranded everyday basics, so the garment is the only branded piece in the picture.');
       if (ctxTheme.context) p.push(_occasion(ctxTheme.context, true));
@@ -1501,6 +1537,34 @@
       au_showroom: { k: 'scene', what: 'this used-car dealership — its storefront and the clean cars lined up outside', shots: ['the dealership front at dusk, the windows glowing, rows of clean cars lined up neatly outside, seen from across the forecourt', 'a wide view down a row of polished cars inside a bright showroom, the space tidy and calm'] },
       places: ['a bright, tidy used-car showroom with polished concrete floors and tall glass walls', 'an open-air dealership forecourt in late-afternoon light, rows of clean cars softly behind', 'a clean covered inspection bay with even white light and a car on a lift softly behind'],
     },
+    //  v2.34 RA 2026-11-20「賣房、房屋代管、租屋」—— 圖釘網 / Zillow / Redfin / StreetEasy 頂級物件攝影的共同原則:
+    //   空間照原樣(不能美化成不存在的房子,買方會看屋)、相機水平在胸口高度、垂直線全直、廣角但不變形、站角落看到三面牆、
+    //   開窗開簾用自然光、窗外景色和室內同時曝光正確、收乾淨去個人化、顏色真實不過度 HDR;外觀拍藍調時刻、窗戶亮燈
+    realty: {
+      re_room:     { k: 'space', what: 'the real room in this photo — its layout, windows, floor, built-ins, furniture, materials and colours', look: 'shot from a corner at chest height so three walls read, every vertical line perfectly straight, curtains open, tidy and depersonalised, the view through the window as clear as the room' },
+      re_kitchen:  { k: 'space', what: 'the real kitchen or bathroom in this photo — its cabinets, counters, fittings, tiles and colours', look: 'counters cleared to one bowl of fruit or a folded towel, the camera level at counter height, cabinet lines straight, surfaces clean and true in colour' },
+      re_exterior: { k: 'space', what: 'the real building in this photo — its facade, windows, entrance, materials and surroundings', look: 'the building seen straight and level at blue hour, every window glowing warm from inside against a deep evening sky, the street tidy and calm' },
+      re_view:     { k: 'space', what: 'the real room in this photo — its windows, layout, materials and colours', look: 'the window and its view are the subject: the room and the view outside both correctly exposed in soft daylight, the city or greenery outside clear and real' },
+      re_agent:    { k: 'person', who: 'the real agent of this agency', shots: ['standing in a bright, empty living room by the window, relaxed and friendly, at eye level', 'holding a folder at the front door of a home, a warm natural smile, the house softly behind'] },
+      re_handover: { k: 'scene', what: 'a home handover by this agency', shots: ['the agent placing a set of house keys in the new owner\'s open hand at the front door, faces partly turned, warm daylight', 'a young couple stepping into their new empty living room for the first time, seen from behind, sunlight across the floor'] },
+      re_life:     { k: 'scene', what: 'everyday life in this kind of home', shots: ['a family having breakfast at the dining table by the window, faces partly turned, soft morning light', 'someone reading on the sofa with a cup of tea, afternoon sun falling across the floor', 'a tenant unpacking a box of books in a bright room, seen from the side'] },
+      re_area:     { k: 'place', what: 'the same real neighbourhood in this photo — its streets, park, shops and transport exactly as they are', shots: ['a quiet tree-lined street of the neighbourhood with a resident walking past, seen at eye level', 'the nearby park in the morning with a parent and child walking, the homes softly behind'] },
+      places: ['a bright, tidy apartment living room with pale wood floors and large windows', 'a calm modern home with white walls, soft linen and a few plants'],
+      lights: ['soft daylight from the windows, curtains open', 'bright overcast daylight filling the room evenly', 'warm late-afternoon sun falling through the windows onto the floor'],
+      mood: 'Real-estate photography rules: the camera is level at chest height, every wall edge and door frame perfectly vertical, a wide view with no fisheye bending, natural light from the windows doing the work, colours true and never over-processed, the space shown exactly as it really is.',
+    },
+    //  v2.34 RA 2026-11-20「賣演唱會門票」—— 演唱會 / 活動票券宣傳的共同拍法:觀眾背影剪影對著舞台燈、舉手與手機燈海、
+    //   手上一張票前景清楚舞台在後面糊、場館外排隊的期待感;不畫任何可辨認的真人藝人(表演者只是遠處光裡的剪影)
+    event: {
+      ev_crowd:   { k: 'scene', what: 'a live concert this seller has tickets for', shots: ['seen from inside the crowd: a sea of raised hands and phone lights in silhouette against a blaze of stage light, the performer a tiny silhouette far away', 'fans in the front rows cheering with arms up, lit from the front by warm stage light, haze in the beams above'] },
+      ev_ticket:  { k: 'still', what: 'a concert ticket', shots: ['a hand holds a plain paper ticket up toward the stage, the ticket sharp in front, the stage lights a glowing blur of colour behind', 'a plain ticket and a wristband resting on a phone on a café table, the evening city lights soft behind'] },
+      ev_stage:   { k: 'scene', what: 'the stage of a big live show', shots: ['a wide view of a huge stage washed in coloured beams and haze, the crowd a dark silhouette in the foreground, the performer a tiny figure in the light', 'beams of light fanning out over a packed arena from a high seat at the back'] },
+      ev_venue:   { k: 'place', what: 'the same real venue in this photo — its building, entrance and surroundings exactly as they are', shots: ['fans queueing outside the venue at dusk, the entrance glowing, excitement in the air, faces partly turned', 'a wide view of the venue at blue hour, lights on, a stream of people walking toward it'] },
+      ev_fans:    { k: 'scene', what: 'fans heading to a concert', shots: ['two friends in matching fan shirts holding up light sticks and laughing outside the venue at dusk, faces partly turned', 'a fan taking a selfie with a friend in the crowd before the show, stage lights glowing behind'] },
+      places: ['a packed indoor arena with haze hanging in coloured stage beams', 'an open-air festival ground at dusk with a big lit stage'],
+      lights: ['the coloured stage beams and haze are the only light', 'warm amber and magenta stage light from the front, deep darkness above', 'cool blue stage wash with one white spotlight cutting through the haze'],
+      mood: 'Live-show photography: the only light comes from the stage and the phones in the crowd, so faces are rim-lit and coloured by the beams, haze makes the light visible; no performer is recognisable, and there are no real artist names, logos or printed words anywhere.',
+    },
     //  v2.31 RA 2026-11-15 長榮桂冠(上市公司):要推住房與婚宴 → 新增「飯店住宿與婚宴」
     //   客房 / 宴會廳照片 = 建築攝影重拍(空間原樣保留);婚宴人物 = 新面孔(不用到真新人的臉)
     hotel: {
@@ -1535,7 +1599,8 @@
     var lk = look ? ', in the colours and textures of ' + essence(look, 140) : '';
     var shot = c.shots ? cap(pickFresh(c.shots, 'svc_' + ly)) : '';
     var place = cfg.places ? pickFresh(cfg.places, 'svcplace_' + pt) : '';
-    var lt = pickFresh(SVC_LIGHT, 'svclight');
+    var lt = pickFresh(cfg.lights || SVC_LIGHT, 'svclight_' + pt);   // v2.34 行業自己的光(演唱會不會出現陰天日光)
+    if (c.look && styleHasLight(c.look)) lt = '';
     var p = [];
     if (c.k === 'person' || c.k === 'team') {
       var team = c.k === 'team';
@@ -1544,11 +1609,11 @@
       p.push(LIGHT_LAW(team ? 'everyone' : 'the person', 'them'));
     } else if (c.k === 'space') {
       p.push('This photo shows ' + c.what.replace(' in this photo', '') + '. An architectural photographer re-shoots the same space, keeping all of it exactly as it is, including any sign or logo — the same letters, shape and colours, in the same place.');
-      p.push('A new brand photograph of this space: ' + (c.look || pickFresh(PRO_OFFICE, 'svcspace')) + '; ' + lt + '; tidy and calm, clutter out of sight' + lk + '.');
+      p.push('A new brand photograph of this space: ' + (c.look || pickFresh(PRO_OFFICE, 'svcspace')) + (lt ? '; ' + lt : '') + '; tidy and calm, clutter out of sight' + lk + '.');
       p.push('One light for the whole room, as in a real photograph: all light comes from its real sources — the windows and the lamps in the room — so surfaces facing them are bright and the rest falls gently into shade; furniture casts its soft shadows on the floor in the same direction.');
     } else if (c.k === 'place') {
-      p.push('This photo shows ' + c.what.replace(' in this photo', '') + '. A travel photographer re-shoots it from a fresh viewpoint at a better moment; the place itself stays real and recognisable, nothing invented or moved.');
-      p.push('A new travel campaign photograph ' + pickFresh(cfg.times || SVC_LIGHT, 'svctime') + lk + '. ' + shot + '.');
+      p.push('This photo shows ' + c.what.replace(' in this photo', '') + '. A ' + (pt === 'travel' ? 'travel ' : '') + 'photographer re-shoots it from a fresh viewpoint at a better moment; the place itself stays real and recognisable, nothing invented or moved.');
+      p.push('A new ' + (pt === 'travel' ? 'travel ' : '') + 'campaign photograph ' + pickFresh(cfg.times || cfg.lights || SVC_LIGHT, 'svctime_' + pt) + lk + '. ' + shot + '.');
       p.push('One light for the whole picture, as on a real set: the people are lit only by the light of this place — the same direction, the same colour temperature and the same exposure as the place around them. No separate light is added on them, never brighter or cleaner than the place; whatever lights the streets and buildings lights them too, and their shadows fall the same way as every other shadow. One moment through one lens: the far background sits a touch softer in focus.');
     } else if (c.k === 'thing') {
       p.push('The subject is ' + c.what + '. It stays exactly as it is in the photo, nothing redrawn, added or removed; a photographer re-shoots it in a new setting from a new angle.');
@@ -1567,9 +1632,11 @@
       p.push('A new product photograph of that screen ' + pickFresh(c.shots, 'svc_' + ly) + lk + '; ' + lt + '.');
       p.push('One light for the whole picture: the device, desk and room share the same light and shadows; the screen glows at a natural brightness with a faint real reflection of the room on its glass.');
     }
+    //  v2.34 順序就是權重(刺蝟星球 / MOZ):畫面主意第一句,主體保護句第二句
+    if (c.k !== 'still' && p.length >= 2) { var _t0 = p[0]; p[0] = p[1]; p[1] = _t0; }
     if (cfg.mood) p.push(cfg.mood);   // v2.32 行業整體的拍攝氣質(目前只有飯店婚宴)
     if (ctxTheme.context) p.push(_occasion(ctxTheme.context, c.k === 'person' || c.k === 'team'));
-    var bf = (pb.colour && (document.getElementById('lockBrandColor') || {}).checked !== false && !ctxTheme.context) ? essence(pb.colour, 90) : '';
+    var bf = (pb.colour && (document.getElementById('lockBrandColor') || {}).checked !== false && !ctxTheme.context && c.k !== 'space' && c.k !== 'place') ? essence(pb.colour, 90) : '';   // v2.34 空間 / 地點照原樣,不刷品牌色
     if (bf) p.push('Brand colour: ' + bf + '.');
     if (note) p.push('Client note: ' + essence(note, 180));
     p.push('Shot on ' + (c.k === 'space' ? 'Canon EOS R5 with a TS-E 24mm tilt-shift lens at f/8, ISO 100: straight lines, clean true colour' : camFor(SELECTED_FLAVOR, ly, '')) + '. Real textures; ' + sz.w + 'x' + sz.h + ', edge to edge.');
@@ -1585,6 +1652,12 @@
   }
   //  v2.19 哪些舊類型借哪一種重拍(之後美業、醫美…一個一個加進來)
   var WELLNESS_AS = { wellness: 'physical_reshoot' };
+  //  v2.34 順序就是權重:保護句(The subject is… / This photo shows…)若排在第一句,跟第二句的畫面主意對調
+  function _ideaFirst(t) {
+    var L = String(t || '').split('\n');
+    if (L.length > 1 && /^(The subject is|This photo shows)/.test(L[0]) && /^A (new|real)/.test(L[1])) { var x = L[0]; L[0] = L[1]; L[1] = x; }
+    return L.join('\n');
+  }
   window.buildPosterPromptLean = lean;
   window.buildPosterPrompt = function () {
     var pt = (typeof SELECTED_PRODTYPE !== 'undefined' && SELECTED_PRODTYPE) || '';
@@ -1603,7 +1676,7 @@
       try {
         window._amReshoot = !!SVC[pt][ly].fix;   // 機台類:出圖後走「商品校正」把標籤 / LOGO 對回原圖
         var so = svcLean(pt, ly);
-        if (overlay) so += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, ''), 560) + '.';
+        if (overlay) so += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, '').replace(/\b[A-Z]{3,}\b/g, function (w) { return w.toLowerCase(); }), 260) + '.';
         console.log('[AD_LEAN] 🧩 ' + pt + ' 重拍 ' + so.length + ' 字');
         return so;
       } catch (e) { console.warn('[AD_LEAN] ' + pt + ' 重拍出錯,改用舊版:', e.message); return ORIG.apply(this, arguments); }
@@ -1612,8 +1685,8 @@
     if (window.AD_LEAN !== false && pt === 'pro' && /^(pr_portrait|pr_team|pr_office)$/.test(ly)) {
       try {
         window._amReshoot = false;
-        var po = proLean(ly);
-        if (overlay) po += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, ''), 560) + '.';
+        var po = _ideaFirst(proLean(ly));
+        if (overlay) po += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, '').replace(/\b[A-Z]{3,}\b/g, function (w) { return w.toLowerCase(); }), 260) + '.';
         console.log('[AD_LEAN] ⚖️ 專業形象重拍 ' + po.length + ' 字');
         return po;
       } catch (e) { console.warn('[AD_LEAN] 專業形象重拍出錯,改用舊版:', e.message); return ORIG.apply(this, arguments); }
@@ -1622,8 +1695,8 @@
     if (window.AD_LEAN !== false && pt === 'course' && COURSE_SHOTS.hasOwnProperty(ly)) {
       try {
         window._amReshoot = false;
-        var co = courseLean(ly);
-        if (overlay) co += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, ''), 560) + '.';
+        var co = _ideaFirst(courseLean(ly));
+        if (overlay) co += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, '').replace(/\b[A-Z]{3,}\b/g, function (w) { return w.toLowerCase(); }), 260) + '.';
         console.log('[AD_LEAN] 🧘 課程重拍 ' + co.length + ' 字');
         return co;
       } catch (e) { console.warn('[AD_LEAN] 課程重拍出錯,改用舊版:', e.message); return ORIG.apply(this, arguments); }
@@ -1632,8 +1705,8 @@
     if (window.AD_LEAN !== false && pt === 'beauty' && BEAUTY_FRAMES.hasOwnProperty(ly)) {
       try {
         window._amReshoot = false;
-        var bo = beautyLean(ly);
-        if (overlay) bo += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, ''), 560) + '.';
+        var bo = _ideaFirst(beautyLean(ly));
+        if (overlay) bo += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, '').replace(/\b[A-Z]{3,}\b/g, function (w) { return w.toLowerCase(); }), 260) + '.';
         console.log('[AD_LEAN] 💅 美業重拍 ' + bo.length + ' 字');
         return bo;
       } catch (e) { console.warn('[AD_LEAN] 美業重拍出錯,改用舊版:', e.message); return ORIG.apply(this, arguments); }
@@ -1646,9 +1719,13 @@
       if (asPt) SELECTED_PRODTYPE = asPt;
       if (lyMap !== ly) SELECTED_LAYOUT = lyMap;
       if (overlay) SELECTED_FLAVOR = 'none';
+      window._leanFrom = ly; window._leanCatNow = '';
       var out = lean();
-      if (lyMap !== ly) out += '\n' + LEAN_LAYOUT_MAP[ly].say;
-      if (overlay) out += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, ''), 560) + '.';
+      window._leanFrom = '';
+      //  v2.34 美食版只對吃的東西說「這是一道菜」(鍋子、頌缽選到美食版 → 照情境寫真拍,不叫 AI 把它拍成菜)
+      var _nonFood = window._leanCatNow && !/^(dish|food|meat|drink|jar|packaged|supplement)$/.test(window._leanCatNow);
+      if (lyMap !== ly && !(ly === 'food_special' && _nonFood)) out += '\n' + LEAN_LAYOUT_MAP[ly].say;
+      if (overlay) out += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, '').replace(/\b[A-Z]{3,}\b/g, function (w) { return w.toLowerCase(); }), 260) + '.';
       console.log('[AD_LEAN] 精簡提示詞 ' + out.length + ' 字(舊版保險絲:window.AD_LEAN=false)');
       return out;
     } catch (e) {
