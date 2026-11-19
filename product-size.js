@@ -350,7 +350,10 @@
     var g = window.generateGptPoster;
     if (typeof g !== 'function' || g.__sizeReq) return;
     var req = async function () {
-      if (_adSize && document.body.contains(document.querySelector('.psz-host')) && _adSize.missing()) {
+      //  v1.9 2026-11-20 整盤實測:飯店客房、房屋物件被「請先選商品實際大小」擋住 —— 服務 / 空間類沒有「一件商品」可以量,不必選
+      var _pt = (typeof SELECTED_PRODTYPE !== 'undefined' && SELECTED_PRODTYPE) || '';
+      var _noSize = ['beauty', 'medical', 'course', 'mystic', 'travel', 'pro', 'auto', 'screen', 'hotel', 'realty', 'event'].indexOf(_pt) !== -1;
+      if (!_noSize && _adSize && document.body.contains(document.querySelector('.psz-host')) && _adSize.missing()) {
         _adSize.remind();
         if (typeof setPrStatus === 'function') setPrStatus('📏 請先選「商品實際大小」並按「存起來」,再按生成', '#ff9d9d');
         return;
