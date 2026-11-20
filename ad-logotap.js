@@ -97,12 +97,12 @@
       css();
       var w = document.createElement('div'); w.className = 'lt-wrap';
       w.innerHTML =
-        '<h3>🏷 商品上的 LOGO 在哪裡?</h3>' +
-        '<div class="lt-hint">在商品照上<b>點一下品牌 LOGO</b>,生出來的廣告圖會照這裡把 LOGO 對準。<br>商品上沒有 LOGO 就按「跳過」。</div>' +
+        '<h3>🏷 商品上有印字或標籤嗎?</h3>' +
+        '<div class="lt-hint">在商品照上<b>點一下最重要的那塊印字</b>(不一定是你的品牌:賣別家的酒就點酒標、賣別家的鞋就點鞋舌),生出來的廣告圖會照這裡把字對準。<br>商品上沒有印字、或這個角度看不到 LOGO(菜、甜點、模特兒側身)就按「跳過」—— 不會影響出圖,畫面會更自然。</div>' +
         '<div class="lt-box"><img alt=""><div class="lt-dot" style="display:none"></div></div>' +
         '<div class="lt-txt" style="display:none">' +
-        '  <label>LOGO 上寫的字 <small>(選填,填了字最準)</small></label>' +
-        '  <input type="text" maxlength="40" placeholder="例如:MOZ sweden">' +
+        '  <label>上面寫的字 <small>(選填,填了字最準)</small></label>' +
+        '  <input type="text" maxlength="40" placeholder="例如:MOZ sweden、The Macallan 12">' +
         '  <div class="lt-ai"></div>' +
         '  <div class="lt-tip">照商品上的大小寫打,兩行就用空格分開。LOGO 很小、AI 看不清楚的時候,靠這一格把字寫對。</div>' +
         '</div>' +
