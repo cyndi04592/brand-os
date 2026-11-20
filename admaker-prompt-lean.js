@@ -434,6 +434,8 @@
     'framed close and sharp, the background melting away',
     'framed a little wider, the setting reading clearly around the product',
     'a tight crop on the product with the setting just readable around it',
+    'a wide establishing frame, the setting telling the story and the product small but the first thing the eye finds, isolated by light and open space',   // v2.41 RA:MOZ 也要遠景
+    'an extreme close-up, one detail of the product\'s material and craftsmanship filling the frame, very shallow depth of field',   // v2.41 超近
   ];
   var VIEW_P = 'The camera keeps the height and angle of the product photo; table edges, floor lines and horizon follow that same perspective, and the product rests on its surface with a soft contact shadow.';
   // 商品:站在什麼表面上(風格沒寫表面時用)
@@ -1773,6 +1775,11 @@
       var _nonFood = window._leanCatNow && !/^(dish|food|meat|drink|jar|packaged|supplement)$/.test(window._leanCatNow);
       if (lyMap !== ly && !(ly === 'food_special' && _nonFood)) out += '\n' + LEAN_LAYOUT_MAP[ly].say;
       if (overlay) out += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, '').replace(/\b[A-Z]{3,}\b/g, function (w) { return w.toLowerCase(); }), 260) + '.';
+      //  v2.41 客人選了鏡頭距離 → 草稿裡寫死的近拍句換掉,最後一句講清楚(美術指導會照這句寫)
+      if (window.AD_SHOT && window.AD_SHOT_EN && window.AD_SHOT_EN[window.AD_SHOT]) {
+        out = out.replace(/,?\s*(the (subject|product) large and close in the foreground|framed close(?: and sharp)?, the (?:product|background) [^.;]*|a tight crop on the product with the setting just readable around it|framed close, the product filling most of the frame)/g, '');
+        out += '\n' + window.AD_SHOT_EN[window.AD_SHOT];
+      }
       console.log('[AD_LEAN] 精簡提示詞 ' + out.length + ' 字(舊版保險絲:window.AD_LEAN=false)');
       return out;
     } catch (e) {
