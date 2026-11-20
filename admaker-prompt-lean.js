@@ -437,7 +437,7 @@
     'a wide establishing frame, the setting telling the story and the product small but the first thing the eye finds, isolated by light and open space',   // v2.41 RA:MOZ 也要遠景
     'an extreme close-up, one detail of the product\'s material and craftsmanship filling the frame, very shallow depth of field',   // v2.41 超近
   ];
-  var VIEW_P = 'The camera keeps the height and angle of the product photo; table edges, floor lines and horizon follow that same perspective, and the product rests on its surface with a soft contact shadow. Gravity wins over the photo angle: a thin, flat or soft product (a sheet, a strip, a card, a pouch, fabric) lies flat on its surface or leans against something solid, never standing upright or hovering on its own.';
+  var VIEW_P = 'The camera keeps the height and angle of the product photo; table edges, floor lines and horizon follow that same perspective, and the product rests on its surface with a soft contact shadow. Unless the picture idea is a deliberate floating shot, gravity wins over the photo angle: a thin, flat or soft product lies flat or leans against something solid; when the idea is floating, the product clearly levitates as the hero against open sky or a clean backdrop with a soft shadow below, never ambiguously hovering just above a table or plate.';
   // 商品:站在什麼表面上(風格沒寫表面時用)
   var SURFACES = [
     'a slab of pale travertine', 'a weathered oak table', 'a block of raw concrete', 'a fold of washed linen',
