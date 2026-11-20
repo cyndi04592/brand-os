@@ -106,7 +106,7 @@
   window.__addirLoader = true;
   try {
     var s = document.createElement('script');
-    s.src = 'ad-director.js?v=20261121e';   // 每次改美術指導要換這個號碼,不然 CDN 會給舊版
+    s.src = 'ad-director.js?v=20261121f';   // 每次改美術指導要換這個號碼,不然 CDN 會給舊版
     s.defer = true;
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {}

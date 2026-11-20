@@ -589,7 +589,7 @@
             var L = window._adDirectorLast || {};
             //  v2.20 照片核對:美術指導看出照片不是客人選的那個商品 → 出圖、扣點之前先問一次
             try {
-              var _pm = String(L.think || '').match(/照片核對\s*[::]\s*不符\s*[—\-–]*\s*(?:照片裡是)?\s*([^\n。]{1,24})/);
+              var _pm = String(L.think || '').match(/照片核對\s*[:\uFF1A]\s*不符[\s—\-–,,:\uFF1A]*(?:照片裡是)?\s*[「『"]?([^\n。」』"]{1,24})/);
               if (_pm && !(await photoMismatchAsk(_pm[1]))) {
                 pending = null;
                 if (typeof setPrStatus === 'function') setPrStatus('已取消:請在上面換一張這個商品的照片再生成(沒有扣點)', 'var(--t3)');
