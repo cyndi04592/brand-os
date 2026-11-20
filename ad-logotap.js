@@ -100,6 +100,11 @@
         '<h3>🏷 商品上有印字或標籤嗎?</h3>' +
         '<div class="lt-hint">在商品照上<b>點一下最重要的那塊印字</b>(不一定是你的品牌:賣別家的酒就點酒標、賣別家的鞋就點鞋舌),生出來的廣告圖會照這裡把字對準。<br>商品上沒有印字、或這個角度看不到 LOGO(菜、甜點、模特兒側身)就按「跳過」—— 不會影響出圖,畫面會更自然。</div>' +
         '<div class="lt-box"><img alt=""><div class="lt-dot" style="display:none"></div></div>' +
+        '<div class="lt-sz" style="display:none;gap:6px;align-items:center;font-size:13px;color:#eee">印字範圍:' +
+        '  <button class="lt-b" data-sz="1" style="padding:6px 12px">小(LOGO)</button>' +
+        '  <button class="lt-b" data-sz="1.8" style="padding:6px 12px">中</button>' +
+        '  <button class="lt-b" data-sz="3" style="padding:6px 12px">大(整張酒標/標籤)</button>' +
+        '</div>' +
         '<div class="lt-txt" style="display:none">' +
         '  <label>上面寫的字 <small>(選填,填了字最準)</small></label>' +
         '  <input type="text" maxlength="40" placeholder="例如:MOZ sweden、The Macallan 12">' +
@@ -116,6 +121,9 @@
       var txtBox = w.querySelector('.lt-txt'), inp = w.querySelector('.lt-txt input');
       inp.value = (prev && prev.text) || lsGet('lt_txt_' + key) || lsGet('lt_txt_b_' + brandNow());
       var pt = (prev && prev.x != null) ? { x: prev.x, y: prev.y } : null;
+      var szK = (prev && prev.k) || 1, szRow = w.querySelector('.lt-sz');   // v1.6 RA 11-20:酒標字超多、超出圈圈 → 客人選印字範圍
+      function paintSz() { [].forEach.call(szRow.querySelectorAll('[data-sz]'), function (b) { b.style.borderColor = (+b.getAttribute('data-sz') === szK) ? '#ff3b5c' : '#555'; }); var d = Math.round(56 * szK); dot.style.width = dot.style.height = d + 'px'; dot.style.margin = (-d / 2) + 'px 0 0 ' + (-d / 2) + 'px'; }
+      szRow.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-sz]'); if (!b) return; szK = +b.getAttribute('data-sz'); paintSz(); typed || readSoon(); });
       //  🤖 v1.3 自動讀 LOGO 字:格子空的才讀;客人自己打過字(typed)就不覆蓋
       var aiLine = w.querySelector('.lt-ai'), typed = !!inp.value, autoVal = '', seq = 0, rt = null;
       inp.addEventListener('input', function () { if (inp.value !== autoVal) typed = true; });
@@ -127,7 +135,7 @@
           aiLine.textContent = '🤖 讀取 LOGO 上的字中…';
           var r = null;
           try {
-            var tight = await cropAt(src, pt, 0.075, 160), wide = await cropAt(src, pt, 0.18, 240);
+            var tight = await cropAt(src, pt, Math.min(0.6, 0.075 * szK), 160), wide = await cropAt(src, pt, Math.min(0.7, 0.18 * szK), 240);
             var u1 = await put(tight), u2 = await put(wide);
             r = await kp({ action: 'logo_read', urls: [u1, u2], brandName: brandName() });
           } catch (e) { r = null; }
@@ -146,6 +154,7 @@
         dot.style.left = (pt.x * img.clientWidth) + 'px';
         dot.style.top = (pt.y * img.clientHeight) + 'px';
         txtBox.style.display = 'flex';
+        szRow.style.display = 'flex'; paintSz();
         ok.disabled = false;
         readSoon();
       }
@@ -166,7 +175,7 @@
           var t = cleanText(inp.value);
           lsSet('lt_txt_' + key, t);
           if (t) lsSet('lt_txt_b_' + brandNow(), t);
-          resolve({ x: pt.x, y: pt.y, text: t });
+          resolve({ x: pt.x, y: pt.y, text: t, k: szK });
         } else resolve(k === 'skip' ? 'skip' : null);
       });
     });
@@ -247,7 +256,7 @@
       var b2 = brandBox(await kp({ action: 'product_detail_boxes', url: await put(cut(im, p2[0], p2[1], s2, 1024)) }));
       if (b2) { cx = p2[0] + (b2.x + b2.w / 2) * s2; cy = p2[1] + (b2.y + b2.h / 2) * s2; }
       //  ③ 修字的那塊:短邊 32%(偏 60px 也一定包得到 LOGO),放大到 1024 給 AI
-      var s3 = Math.round(m * 0.32), p3 = square(W, H, cx, cy, s3);
+      var s3 = Math.round(m * Math.min(0.85, 0.32 * (lt.k || 1))), p3 = square(W, H, cx, cy, s3);   // v1.6 大範圍標籤(酒標)修整塊
       var patchUrl = await put(cut(im, p3[0], p3[1], s3, 1024));
       var what = isApp ? 'garment' : 'product';
       var how = isApp ? 'stitched into this same fabric' : 'applied to this same surface the same way as in image 2';
@@ -303,9 +312,10 @@
           }
           if (got && got !== 'skip') {
             try {
-              var crop = await cropAt(src, got, 0.18, 240);
-              var tight = null; try { tight = await cropAt(src, got, 0.075, 160); } catch (e2) {}
-              if (crop) window._amLogoTap = { crop: crop, tight: tight, text: got.text || '', x: got.x, y: got.y };
+              var gk = got.k || 1;
+              var crop = await cropAt(src, got, Math.min(0.7, 0.18 * gk), 240);
+              var tight = null; try { tight = await cropAt(src, got, Math.min(0.6, 0.075 * gk), 160); } catch (e2) {}
+              if (crop) window._amLogoTap = { crop: crop, tight: tight, text: got.text || '', x: got.x, y: got.y, k: gk };
             } catch (e) { console.warn('[LOGO 點選] 切近景失敗(照常生成,不影響):', e.message); }
           }
         }
