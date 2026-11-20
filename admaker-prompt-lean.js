@@ -868,7 +868,9 @@
   var SHOOTS_CACHE = {};
   function _shootKey(x) { return String(x || '').replace(/\s+/g, '').toLowerCase(); }
   function _loadShoots(bid) {
-    if (!bid || SHOOTS_CACHE[bid] !== undefined) return;
+    if (!bid) return;
+    if (SHOOTS_CACHE[bid] !== undefined && !(SHOOTS_CACHE[bid] === false && Date.now() - (SHOOTS_CACHE['_t_' + bid] || 0) > 600000)) return;
+    SHOOTS_CACHE['_t_' + bid] = Date.now();
     SHOOTS_CACHE[bid] = null;
     try {
       fetch('/shoots/' + encodeURIComponent(bid) + '.json?v=' + Math.floor(Date.now() / 3600000))
@@ -1160,7 +1162,7 @@
       var catS = _pool.length ? pick(_pool) : '', rP = 0;
       if (_big) { /* 靜物手法(桌面、疊塔、手伸進來)都是給小東西的,大件不用 */ }
       var _useP = false;
-      if (_big) { /* 已處理 */ }
+      if (_big && !(_own && catS)) { /* 已處理 */ }   // v2.35 品牌/商品自己的拍法是照這件商品的大小寫的 → 大件也用
       else if (catP && catP.only && catS) { _useP = !!(catP.u && Math.random() < 0.7); placeP = (_useP ? pick(catP.u) : catS) + (fsP ? ', in the colour and texture of ' + essence(_photoOnly(fsP), 160) : ''); }   // v11.28 70% 使用中   // 🎯 v11.27 只屬於這個品類的場景(生存遊戲)
       else if (catS) placeP = catS + (fsP ? (ctxTheme.context ? ', in the texture of ' : ', in the colour and texture of ') + essence(_photoOnly(fsP), 160) : '');  // 品類手法自帶地點和光 = 整個畫面主意(v2.34 不再疊第二個地點 / 參考靜物)
       var _sc = PP ? [PP.scaleLine(), PP.noteLine()].filter(Boolean).join(' ') : '';
