@@ -3551,8 +3551,12 @@ function fillShootGenres() {
   document.querySelectorAll('[data-shoot-bid]').forEach(function (el) {
     const bid = el.getAttribute('data-shoot-bid');
     const show = function (v) {
-      el.textContent = v ? ('✅ ' + v.zh + '｜' + v.n + ' 樣商品有專屬拍法' + (v.b ? '｜品牌通用拍法 ' + v.b + ' 句' : '')) : '— 還沒有(新品牌當晚補好、23:15 自動上線)';
-      el.style.color = v ? '#b9a8ff' : 'var(--t3)';
+      el.textContent = '';
+      if (!v) { el.textContent = '— 還沒有美術指導(新品牌當晚自動補好、23:15 上線;這之前先用通用拍法)'; el.style.color = 'var(--t3)'; return; }
+      const t = document.createElement('div'); t.textContent = '🎬 ' + v.zh; t.style.cssText = 'font-size:15px;font-weight:700;color:#b9a8ff;margin-bottom:4px';
+      const d = document.createElement('div'); d.style.cssText = 'font-size:11.5px;color:var(--t2);line-height:1.6';
+      d.textContent = (v.b ? '品牌通用拍法 ' + v.b + ' 句｜' : '') + v.n + ' 樣商品有專屬拍法' + (v.n ? ':' + v.names.slice(0, 12).join('、') + (v.n > 12 ? ' …等' : '') : '');
+      el.appendChild(t); el.appendChild(d);
     };
     if (_SHOOT_INFO[bid] !== undefined) { if (_SHOOT_INFO[bid] !== null) show(_SHOOT_INFO[bid]); return; }
     _SHOOT_INFO[bid] = null;
@@ -3560,7 +3564,7 @@ function fillShootGenres() {
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
         const gn = j && j.genre;
-        _SHOOT_INFO[bid] = (gn && gn.en) ? { zh: gn.zh || gn.en, n: Object.keys(j.products || {}).length, b: ((j.brand || {}).s || []).length } : false;
+        _SHOOT_INFO[bid] = (gn && gn.en) ? { zh: gn.zh || gn.en, n: Object.keys(j.products || {}).length, b: ((j.brand || {}).s || []).length, names: Object.keys(j.products || {}) } : false;
       })
       .catch(function () { _SHOOT_INFO[bid] = false; })
       .then(function () { document.querySelectorAll('[data-shoot-bid="' + bid + '"]').forEach(function () {}); fillShootGenres(); });
@@ -3585,11 +3589,12 @@ function renderBrands() {
         <input class="field-input" style="font-weight:700;font-size:15px" value="${esc(b.name)}" oninput="DB.brands[${i}].name=this.value" data-t="brands" data-i="${i}" data-f="name">
       </div>
       <div class="field-row"><label>品牌ID(代號不能改)</label><input class="field-input" value="${esc(b.id)}" readonly style="font-family:var(--font-mono);font-size:12px;opacity:.6"></div>
-      <div class="field-row"><label>🎬 美術指導拍攝類型(前台有這個才會出現發光框;每晚自動補)</label><div class="field-input" data-shoot-bid="${esc(b.id)}" style="font-size:12.5px;line-height:1.5;min-height:34px;opacity:.9">讀取中…</div></div>
 
       <div class="field-row" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">
-        <label style="color:var(--purple)">品牌色票(目前只供參考,這裡改了不會存;AI 生圖用的是品牌包色票)</label>
+        <label style="color:var(--purple)">美術指導・這個品牌用哪種頂級拍法(系統自動判斷,AI 生圖照這個拍;前台有發光框的就是有)</label>
+        <div class="field-input" data-shoot-bid="${esc(b.id)}" style="font-size:12.5px;line-height:1.5;min-height:34px">讀取中…</div>
       </div>
+      <details style="margin-bottom:10px"><summary style="font-size:11px;color:var(--t3);cursor:pointer">舊色票(只供參考,改了不會存,不影響生圖)</summary>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
         <div>
           <label style="font-size:9px;color:var(--t3);display:block;margin-bottom:4px;">主色</label>
@@ -3613,6 +3618,7 @@ function renderBrands() {
           </div>
         </div>
       </div>
+      </details>
       <div class="field-row">
         <label>視覺調性形容詞(給 AI 抓 mood)</label>
         <input class="field-input" value="${esc(colorMood)}" oninput="DB.brands[${i}].colorMood=this.value" placeholder="例:溫暖居家、自然手作、復古質感">
