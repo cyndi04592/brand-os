@@ -609,6 +609,6 @@ function buildDataFromSheets(data) {
 })();
 
 // 📦 2026-10-27 商品擺放方式:小視窗與提示詞句子都在 product-placement.js(一個檔案一個職責,config.js 只負責載入)
-(function(){ try { if (document.querySelector('script[src*="product-placement.js"]')) return; var s=document.createElement('script'); s.src='product-placement.js?v=20261120'; document.head.appendChild(s); } catch(e){} })();
+(function(){ try { if (document.querySelector('script[src*="product-placement.js"]')) return; var s=document.createElement('script'); s.src='product-placement.js?v=20261120b'; document.head.appendChild(s); } catch(e){} })();
 // 📏 2026-11-02 商品尺寸點選器(跟 KOL 工作室同一支 product-size.js,掛在「📦 擺放方式」下面;尺寸存同一筆商品,廣告圖、KOL 影片共用)
-(function(){ try { if (document.querySelector('script[src*="product-size.js"]') || window.ProductSize) return; var s=document.createElement('script'); s.src='product-size.js?v=20261120'; document.head.appendChild(s); } catch(e){} })();
+(function(){ try { if (document.querySelector('script[src*="product-size.js"]') || window.ProductSize) return; var s=document.createElement('script'); s.src='product-size.js?v=20261120b'; document.head.appendChild(s); } catch(e){} })();
