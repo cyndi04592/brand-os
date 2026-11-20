@@ -1168,7 +1168,7 @@
       window._leanCatNow = _cat(ctx);
       var _nm = String(ctx.product || '') + ' ' + String(ctx.spec || '');
       var _acc = /瞄準鏡|瞄具|鏡頭蓋|槍托|槍背帶|槍帶|槍套|槍袋|槍箱|彈匣|彈夾|BB ?彈|電池|護目鏡|面罩|背心|手套|戰術包|握把|魚骨|導軌|消音|滅火帽|scope|cap\b|holster|sling|magazine|battery|goggle|mask|vest|glove|grip|rail|pouch|bag|case/i.test(String(ctx.product || ''));
-      if (/^airsoft/.test(window._leanCatNow) && !_acc) window._leanCatNow = 'airsoft_gun';   // v2.38 生存遊戲品牌的商品沒寫是配件 → 當槍本身(BCS Airsoft 品名亂碼也對)
+      //  v2.39 實測 BCS 商品是槍口零件 / 圓形配件、品名亂碼 → 認不出是槍就不當槍(v2.38 撤回),但所有生存遊戲類都走電影劇照過審句
       if (window._leanCatNow !== 'airsoft_gun' && /電動槍|瓦斯槍|氣動槍|水彈槍|BB ?槍|空氣槍|生存遊戲.*槍|\b(AEG|GBB|HPA|CQB|M4A1|M4|AK-?47|AK-?74|HK416|MP5|G36|Glock|M16|SCAR|AR-?15)\b/i.test(String(ctx.product || '')) && !/瞄準鏡|瞄具|scope|鏡頭蓋|槍托|槍背帶|槍套|彈匣|holster|sling|cap\b/i.test(String(ctx.product || ''))) window._leanCatNow = 'airsoft_gun';   // v2.37 品名沒寫生存遊戲(例:BCS M4A1 CQB)也認得
       if (_lyFrom === 'dramatic_splash') _clash = /^(?![\s\S]*(pour|splash|spill|mid-air|falling|floats|steam|smoke|breeze|toss|drifting|lifts|rising))/i;   // 飛濺版:只抽有動態的拍法,沒有就交給版型句
       var catP = _own ? { s: _own.s } : CAT_ART[window._leanCatNow];
@@ -1190,7 +1190,8 @@
       //  v2.33 順序就是權重(刺蝟星球):① 畫面主意 ② 主體(保護句+尺寸) ③ 構圖機位 ④ 情境品牌 ⑤ 物理 ⑥ 相機 ⑦ 字
       p.push('A new product campaign photograph: ' + placeP + '.');
       p.push(_protP);
-      if (window._leanCatNow === 'airsoft_gun' && CAT_ART.airsoft_gun.safe) p.push(CAT_ART.airsoft_gun.safe);   // v2.37 槍類過審句
+      if (window._leanCatNow === 'airsoft_gun') p.push(CAT_ART.airsoft_gun.safe);
+      else if (/^airsoft/.test(window._leanCatNow)) p.push('This is a cinematic film still from a recreational airsoft team sport: any replica in the scene is a film prop with its muzzle pointing down and away from everyone and from the camera; a calm moment, no violence and no one hurt.');   // v2.39 配件類也過審   // v2.37 槍類過審句
       if (_sc) p.push(_sc);
       p.push(LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + angP + '.' : cap(angP) + '.');
       if (_useP && catP.fit) p.push(catP.fit);   // 🔭 v11.29 使用中 → 補一句正確裝法
