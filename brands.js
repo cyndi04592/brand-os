@@ -150,7 +150,7 @@ function renderBrandTree() {
     }).join('') : '';
 
     return `<div>
-      <div class="brand-row ${window.S.brandId===b.id&&!window.S.subId?'on':''}"
+      <div class="brand-row ${window.S.brandId===b.id&&!window.S.subId?'on':''}" data-bid="${b.id}"
         onclick="clickBrand('${b.id}')">
         <div class="br-info">
           <div class="br-name">${b.name}</div>
@@ -169,7 +169,58 @@ function renderBrandTree() {
   //   renderBrandTree() 是初始化一定會跑到的地方(auth.js 三處都會呼叫),
   //   在這裡補叫一次,進站當下就會正確判斷該亮還是該暗。
   updateCtx();
+  try { window.AdShootBadge && window.AdShootBadge.paint(); } catch (_) {}
 }
+
+// 🎬 2026-11-21 RA:「有美術指導的品牌要有一層框框,我一眼就知道它有沒有」
+//   判斷標準只有一個:正式站上有沒有這個品牌的拍法檔(/shoots/<品牌ID>.json)而且裡面定了頂級拍攝類型(genre)。
+//   有 → 品牌卡加金框 + 小標「🎬 拍攝類型｜N 樣商品有專屬拍法」;沒有 → 維持原樣(新品牌當晚補好、23:15 上線後自動出現)。
+//   每個品牌一小時只問一次,結果記在這次開頁的記憶裡,不會每次重畫都重抓。
+window.AdShootBadge = (function () {
+  var C = {}, Q = [], busy = 0;
+  function css() {
+    if (document.getElementById('adShootBadgeCss')) return;
+    var st = document.createElement('style'); st.id = 'adShootBadgeCss';
+    st.textContent = '.brand-row.has-ad{border-color:#e6be5a !important;box-shadow:0 0 0 1px rgba(230,190,90,.55),0 0 14px rgba(230,190,90,.18)}'
+      + '.br-ad{margin-top:3px;font-size:10.5px;line-height:1.35;color:#e6be5a;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}';
+    document.head.appendChild(st);
+  }
+  function apply(row, info) {
+    if (!row || !info) return;
+    row.classList.add('has-ad');
+    var box = row.querySelector('.br-info'); if (!box || box.querySelector('.br-ad')) return;
+    var d = document.createElement('div'); d.className = 'br-ad';
+    d.textContent = '🎬 ' + info.zh + (info.n ? '｜' + info.n + ' 樣商品有專屬拍法' : '');
+    d.title = '美術指導已定這個品牌的頂級拍攝類型:' + info.zh + (info.n ? '(' + info.n + ' 樣商品有專屬拍法)' : '');
+    box.appendChild(d);
+  }
+  function pump() {
+    while (busy < 4 && Q.length) {
+      (function (bid) {
+        busy++;
+        fetch('/shoots/' + encodeURIComponent(bid) + '.json?v=' + Math.floor(Date.now() / 3600000))
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            var g = j && j.genre;
+            C[bid] = (g && g.en) ? { zh: String(g.zh || g.en).split(/[((]/)[0].trim().slice(0, 18), n: Object.keys(j.products || {}).length } : false;
+          })
+          .catch(function () { C[bid] = false; })
+          .then(function () { busy--; paint(); pump(); });
+      })(Q.shift());
+    }
+  }
+  function paint() {
+    css();
+    var rows = document.querySelectorAll('.brand-row[data-bid]');
+    for (var i = 0; i < rows.length; i++) {
+      var bid = rows[i].getAttribute('data-bid');
+      if (C[bid] === undefined) { C[bid] = null; Q.push(bid); }
+      else if (C[bid]) apply(rows[i], C[bid]);
+    }
+    pump();
+  }
+  return { paint: paint, cache: C };
+})();
 
 function renderProds() {
   const el = document.getElementById('prodList');
