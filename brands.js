@@ -202,7 +202,7 @@ window.AdShootBadge = (function () {
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (j) {
             var g = j && j.genre;
-            C[bid] = (g && g.en) ? { zh: String(g.zh || g.en).split(/[((]/)[0].trim().slice(0, 18), n: Object.keys(j.products || {}).length } : false;
+            C[bid] = (g && g.en) ? { zh: String(g.zh || g.en).split(/[(\uFF08]/)[0].trim().slice(0, 18), n: Object.keys(j.products || {}).length } : false;
           })
           .catch(function () { C[bid] = false; })
           .then(function () { busy--; paint(); pump(); });
