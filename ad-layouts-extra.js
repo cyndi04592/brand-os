@@ -211,6 +211,24 @@
   LAYOUT_BY_PRODTYPE.apparel = _clone(WEAR);
   LAYOUT_BY_PRODTYPE.apparel_keep = _clone(WEAR);
   LAYOUT_BY_PRODTYPE.wellness = _clone(WELL);
+  //  🍽🎯 v1.6 RA 11-20:餐廳客人都選成「商品實拍」+ 美食版、生存遊戲一直被擋 → 兩個行業自己一個選項
+  //   餐廳與餐飲 = 菜上桌(連盤子)、店裡的光;生存遊戲 = 一律用電影劇照方式拍(過審)
+  [['dining', '餐廳與餐飲 — 餐廳 / 餐酒館 / 咖啡廳 / 小吃 / 手搖飲'], ['airsoft', '生存遊戲 — 電動槍 / 瓦斯槍 / 配件 / 戰術裝備(用電影劇照的方式拍)']].forEach(function (o, i) {
+    if (typeof PRODTYPE_OPTIONS === 'undefined' || !Array.isArray(PRODTYPE_OPTIONS) || PRODTYPE_OPTIONS.some(function (x) { return x.value === o[0]; })) return;
+    var at = PRODTYPE_OPTIONS.findIndex(function (x) { return x.value === (i ? 'dining' : 'wellness'); });
+    PRODTYPE_OPTIONS.splice(at >= 0 ? at + 1 : PRODTYPE_OPTIONS.length, 0, { value: o[0], label: o[1] });
+    var el = document.getElementById('prodTypeSel'); if (el) delete el.dataset.rendered;
+  });
+  LAYOUT_BY_PRODTYPE.dining = [
+    { group: '餐飲專用', keys: ['food_special'] },
+    { group: '經典版式', keys: ['scene_lifestyle', 'magazine_cover', 'dramatic_splash', 'hand_hold'] },
+    { group: '', keys: ['minimal_poster'] },
+  ];
+  LAYOUT_BY_PRODTYPE.airsoft = [
+    { group: '電影劇照', keys: ['scene_lifestyle', 'magazine_cover', 'hand_hold'] },
+    { group: '', keys: ['minimal_poster'] },
+    { group: '攝影棚', keys: ['white_studio'] },
+  ];
   var HIDE = DROP;
   Object.keys(LAYOUT_BY_PRODTYPE).forEach(function (pt) {
     var list = LAYOUT_BY_PRODTYPE[pt];

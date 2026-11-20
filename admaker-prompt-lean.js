@@ -627,6 +627,7 @@
   // ═══════════════════════════════════════════════════════════════════
   var CAT_RULES = [
     ['airsoft_scope', /(生存遊戲|airsoft).*(瞄準鏡|瞄具|scope)|(瞄準鏡|瞄具|scope).*(生存遊戲|airsoft)/i],   // 🔭 v11.29 先認瞄具類
+    ['airsoft_flash', /消焰器|火光模擬|火光器|曳光|發光彈|tracer|flash ?hider|muzzle ?flash/i],   // 🔥 v2.40 RA:生存遊戲的消焰器是「仿真冒出火光」(跟真槍相反)
     ['airsoft',    /生存遊戲|airsoft|漆彈|戰術|tactical|瞄準|射擊運動/i],
     //  v2.30(2026-11-19 RA「每類商品給專屬拍法」)先認商品名、繁簡都認、新增 料理成品/酒飲/醬料罐/包裝食品/內衣蕾絲/療癒器物
     ['packaged',   /真空|禮盒|禮袋|包裝|袋裝|盒裝|罐頭|冷凍包|即食包|料理包|香腸|臘腸|肉乾|米腸|gift ?box|vacuum|packaged|sausage/i],
@@ -871,6 +872,23 @@
     'a cinematic film still: an actor in full protective goggles and a face mask stands at ease at a sandbag bunker on a forest set, holding the product low with its muzzle pointed at the ground, dust hanging in the light',
     'a cinematic film still: the product leans against a stack of tyres in a misty woodland sport field, dappled light through pine trees',
     'a cinematic film still on an urban sport-arena set: the product rests on a concrete ledge, spray-painted plywood walls and team flags behind'
+  ] };
+  //  🔥 v2.40 生存遊戲消焰器 / 火光模擬器(RA 11-20:真槍消焰是讓火光消失,生存遊戲是仿真冒出火光)→ 拍它裝在槍口、在暗場景冒出仿真火光的那一刻
+  CAT_ART.airsoft_flash = { only: true, s: [
+    'a cinematic film still at dusk on a woodland film set: the product fitted on the muzzle of an airsoft replica, a bright simulated muzzle-flash glow bursting from it in orange and white light, the replica pointed down-range away from everyone, haze lit by the glow',
+    'a cinematic night film still in an urban sport-arena set: the product on the muzzle of an airsoft replica throws a burst of simulated flame-coloured light, the glow lighting the concrete wall and the player\'s gloved hands, muzzle pointed away from everyone',
+    'a behind-the-scenes film still: the product rests on a dark prop table beside the airsoft replica it fits, a faint warm glow still fading inside its vents, a clapperboard blurred behind'
+  ] };
+  //  ☕ v2.40 餐廳 / 咖啡廳 / 手搖飲的飲料是「一杯」(不是一瓶酒泡在冰桶裡);熱飲不放冰
+  CAT_ART.cup_hot = { only: true, s: [
+    'the cup sits on a worn wooden café counter, a slow curl of steam rising, hard morning sun through the front window throwing a long shadow of the cup across the wood',
+    'a barista\'s hand sets the cup down on a saucer at the bar, steam rising, warm side light from the window, the espresso machine blurred behind',
+    'the cup on a small marble café table by the window, hard afternoon sun drawing the window-frame shadow across the table and the cup'
+  ] };
+  CAT_ART.cup_cold = { only: true, s: [
+    'the cup held up by a hand on a sunny street outside the shop, beads of condensation on the cup, hard noon sun and crisp short shadows',
+    'the cup stands on a café table in hard window light, condensation running down its side, ice catching the light, a clean shadow on the table',
+    'shot close at counter height: the freshly made cup set on the pick-up counter, a few drops of condensation, the shop softly blurred behind'
   ] };
   //  v2.31 每個品牌、每個商品自己的拍法(RA 2026-11-20「超過 17 樣板就變白痴」→ 不再靠手寫品類)
   //   來源:/shoots/<品牌ID>.json(雲端每日工作去圖釘網查該商品的頂級拍法、整理成句子後寫進 GitHub)
@@ -1167,6 +1185,11 @@
       var _lyFrom = window._leanFrom || ly;   // 客人選的原版型(美食版 / 飛濺借別的版型拍)
       window._leanCatNow = _cat(ctx);
       var _nm = String(ctx.product || '') + ' ' + String(ctx.spec || '');
+      //  v2.40 客人選了「生存遊戲」→ 一定走生存遊戲類(電影劇照過審句);選了「餐廳與餐飲」→ 不是飲料 / 甜點類就當一道菜
+      if (window._leanPtFrom === 'airsoft' && !/^airsoft/.test(window._leanCatNow)) window._leanCatNow = 'airsoft';
+      if (window._leanPtFrom === 'dining' && !/^(dish|food|meat|drink|jar|packaged)$/.test(window._leanCatNow)) window._leanCatNow = 'dish';
+      if (window._leanPtFrom === 'dining' && /奶茶|珍奶|茶飲|手搖|紅茶|綠茶|烏龍|奶綠|果茶|拿鐵|咖啡|美式|卡布|摩卡|可可|果汁|冰沙|氣泡飲|檸檬飲|tea|latte|coffee|mocha|smoothie|juice/i.test(String(ctx.product || ''))) window._leanCatNow = 'drink';
+      if (window._leanPtFrom === 'dining' && window._leanCatNow === 'drink' && !/酒|瓶|罐|bottle|wine|beer|whisk|sake|can\b/i.test(String(ctx.product || ''))) window._leanCatNow = /熱|hot|拿鐵|latte|咖啡|coffee|美式|卡布|cappuccino|熱茶/i.test(String(ctx.product || '')) && !/冰|iced?\b|cold/i.test(String(ctx.product || '')) ? 'cup_hot' : 'cup_cold';   // ☕ 一杯飲料
       var _acc = /瞄準鏡|瞄具|鏡頭蓋|槍托|槍背帶|槍帶|槍套|槍袋|槍箱|彈匣|彈夾|BB ?彈|電池|護目鏡|面罩|背心|手套|戰術包|握把|魚骨|導軌|消音|滅火帽|scope|cap\b|holster|sling|magazine|battery|goggle|mask|vest|glove|grip|rail|pouch|bag|case/i.test(String(ctx.product || ''));
       //  v2.39 實測 BCS 商品是槍口零件 / 圓形配件、品名亂碼 → 認不出是槍就不當槍(v2.38 撤回),但所有生存遊戲類都走電影劇照過審句
       if (window._leanCatNow !== 'airsoft_gun' && /電動槍|瓦斯槍|氣動槍|水彈槍|BB ?槍|空氣槍|生存遊戲.*槍|\b(AEG|GBB|HPA|CQB|M4A1|M4|AK-?47|AK-?74|HK416|MP5|G36|Glock|M16|SCAR|AR-?15)\b/i.test(String(ctx.product || '')) && !/瞄準鏡|瞄具|scope|鏡頭蓋|槍托|槍背帶|槍套|彈匣|holster|sling|cap\b/i.test(String(ctx.product || ''))) window._leanCatNow = 'airsoft_gun';   // v2.37 品名沒寫生存遊戲(例:BCS M4A1 CQB)也認得
@@ -1674,7 +1697,7 @@
     return p.join('\n');
   }
   //  v2.19 哪些舊類型借哪一種重拍(之後美業、醫美…一個一個加進來)
-  var WELLNESS_AS = { wellness: 'physical_reshoot' };
+  var WELLNESS_AS = { wellness: 'physical_reshoot', dining: 'physical_reshoot', airsoft: 'physical_reshoot' };   // v2.40 餐廳與餐飲、生存遊戲 = 實體商品重拍 + 強制品類
   //  v2.34 順序就是權重:保護句(The subject is… / This photo shows…)若排在第一句,跟第二句的畫面主意對調
   function _ideaFirst(t) {
     var L = String(t || '').split('\n');
@@ -1742,8 +1765,9 @@
       if (asPt) SELECTED_PRODTYPE = asPt;
       if (lyMap !== ly) SELECTED_LAYOUT = lyMap;
       if (overlay) SELECTED_FLAVOR = 'none';
-      window._leanFrom = ly; window._leanCatNow = '';
+      window._leanFrom = ly; window._leanCatNow = ''; window._leanPtFrom = pt;
       var out = lean();
+      window._leanPtFrom = '';
       window._leanFrom = '';
       //  v2.34 美食版只對吃的東西說「這是一道菜」(鍋子、頌缽選到美食版 → 照情境寫真拍,不叫 AI 把它拍成菜)
       var _nonFood = window._leanCatNow && !/^(dish|food|meat|drink|jar|packaged|supplement)$/.test(window._leanCatNow);
