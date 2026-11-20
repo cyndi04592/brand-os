@@ -174,25 +174,31 @@ function renderBrandTree() {
 
 // 🎬 2026-11-21 RA:「有美術指導的品牌要有一層框框,我一眼就知道它有沒有」
 //   判斷標準只有一個:正式站上有沒有這個品牌的拍法檔(/shoots/<品牌ID>.json)而且裡面定了頂級拍攝類型(genre)。
-//   有 → 品牌卡加金框 + 小標「🎬 拍攝類型｜N 樣商品有專屬拍法」;沒有 → 維持原樣(新品牌當晚補好、23:15 上線後自動出現)。
+//   有 → 品牌卡加一圈太空科技感的發光框(不寫字;拍攝類型在後台看);沒有 → 維持原樣(新品牌當晚補好、23:15 上線後自動出現)。
 //   每個品牌一小時只問一次,結果記在這次開頁的記憶裡,不會每次重畫都重抓。
 window.AdShootBadge = (function () {
   var C = {}, Q = [], busy = 0;
   function css() {
     if (document.getElementById('adShootBadgeCss')) return;
     var st = document.createElement('style'); st.id = 'adShootBadgeCss';
-    st.textContent = '.brand-row.has-ad{border-color:#e6be5a !important;box-shadow:0 0 0 1px rgba(230,190,90,.55),0 0 14px rgba(230,190,90,.18)}'
-      + '.br-ad{margin-top:3px;font-size:10.5px;line-height:1.35;color:#e6be5a;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}';
+    //  v2(RA 00:34「不要寫字,太空科技感的框框就好」):發光的霓虹框 + 四個角的 HUD 括號 + 一道慢慢掃過的光。不放任何字。
+    st.textContent = '.brand-row.has-ad{position:relative;border-color:rgba(150,130,255,.95) !important;'
+      + 'box-shadow:0 0 0 1px rgba(150,130,255,.55),0 0 14px rgba(124,109,250,.55),0 0 34px rgba(90,200,255,.16),inset 0 0 18px rgba(124,109,250,.14);overflow:hidden}'
+      + '.brand-row.has-ad::before{content:"";position:absolute;inset:3px;pointer-events:none;border-radius:inherit;'
+      + 'background:linear-gradient(#bfe9ff,#bfe9ff) left top/14px 2px no-repeat,linear-gradient(#bfe9ff,#bfe9ff) left top/2px 14px no-repeat,'
+      + 'linear-gradient(#bfe9ff,#bfe9ff) right top/14px 2px no-repeat,linear-gradient(#bfe9ff,#bfe9ff) right top/2px 14px no-repeat,'
+      + 'linear-gradient(#bfe9ff,#bfe9ff) left bottom/14px 2px no-repeat,linear-gradient(#bfe9ff,#bfe9ff) left bottom/2px 14px no-repeat,'
+      + 'linear-gradient(#bfe9ff,#bfe9ff) right bottom/14px 2px no-repeat,linear-gradient(#bfe9ff,#bfe9ff) right bottom/2px 14px no-repeat;'
+      + 'filter:drop-shadow(0 0 4px rgba(120,200,255,.9));opacity:.9}'
+      + '.brand-row.has-ad::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:34%;pointer-events:none;'
+      + 'background:linear-gradient(100deg,transparent,rgba(170,150,255,.16),rgba(140,220,255,.10),transparent);animation:adHudSweep 5.5s linear infinite}'
+      + '@keyframes adHudSweep{0%{left:-40%}55%,100%{left:120%}}'
+      + '@media (prefers-reduced-motion:reduce){.brand-row.has-ad::after{animation:none;display:none}}';
     document.head.appendChild(st);
   }
   function apply(row, info) {
     if (!row || !info) return;
-    row.classList.add('has-ad');
-    var box = row.querySelector('.br-info'); if (!box || box.querySelector('.br-ad')) return;
-    var d = document.createElement('div'); d.className = 'br-ad';
-    d.textContent = '🎬 ' + info.zh + (info.n ? '｜' + info.n + ' 樣商品有專屬拍法' : '');
-    d.title = '美術指導已定這個品牌的頂級拍攝類型:' + info.zh + (info.n ? '(' + info.n + ' 樣商品有專屬拍法)' : '');
-    box.appendChild(d);
+    row.classList.add('has-ad');   // 只加框,不寫字(哪個品牌用哪個拍攝類型,在後台看)
   }
   function pump() {
     while (busy < 4 && Q.length) {
