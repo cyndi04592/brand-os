@@ -136,7 +136,7 @@
     try {
       var bid = (window.S || {}).brandId; if (!bid || genreNow()) return;
       var m = String(think || '').match(/類型[::]\s*([^\n]{2,120}?[—-]+\s*[A-Za-z][^\n]{8,300})/);
-      if (m) { localStorage.setItem('bs_genre_' + bid, m[1].trim()); window._adGenreNew = { brandId: bid, genre: m[1].trim() }; }
+      if (m) { var g = m[1].replace(/^類型[::]\s*/, '').trim(); localStorage.setItem('bs_genre_' + bid, g); window._adGenreNew = { brandId: bid, genre: g }; }
     } catch (e) {}
   }
   function val(id) { var el = document.getElementById(id); return (el && el.value || '').trim(); }
