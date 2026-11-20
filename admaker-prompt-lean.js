@@ -1167,7 +1167,8 @@
       var _lyFrom = window._leanFrom || ly;   // 客人選的原版型(美食版 / 飛濺借別的版型拍)
       window._leanCatNow = _cat(ctx);
       var _nm = String(ctx.product || '') + ' ' + String(ctx.spec || '');
-      if (/^airsoft/.test(window._leanCatNow) && /槍|步槍|手槍|衝鋒槍|狙擊|狙击|枪|\b(rifle|pistol|gun|replica|AEG|GBB)\b/i.test(String(ctx.product || '')) && !/瞄準鏡|瞄具|scope|槍托|槍背帶|槍套|彈匣|holster|sling/i.test(String(ctx.product || ''))) window._leanCatNow = 'airsoft_gun';
+      var _acc = /瞄準鏡|瞄具|鏡頭蓋|槍托|槍背帶|槍帶|槍套|槍袋|槍箱|彈匣|彈夾|BB ?彈|電池|護目鏡|面罩|背心|手套|戰術包|握把|魚骨|導軌|消音|滅火帽|scope|cap\b|holster|sling|magazine|battery|goggle|mask|vest|glove|grip|rail|pouch|bag|case/i.test(String(ctx.product || ''));
+      if (/^airsoft/.test(window._leanCatNow) && !_acc) window._leanCatNow = 'airsoft_gun';   // v2.38 生存遊戲品牌的商品沒寫是配件 → 當槍本身(BCS Airsoft 品名亂碼也對)
       if (window._leanCatNow !== 'airsoft_gun' && /電動槍|瓦斯槍|氣動槍|水彈槍|BB ?槍|空氣槍|生存遊戲.*槍|\b(AEG|GBB|HPA|CQB|M4A1|M4|AK-?47|AK-?74|HK416|MP5|G36|Glock|M16|SCAR|AR-?15)\b/i.test(String(ctx.product || '')) && !/瞄準鏡|瞄具|scope|鏡頭蓋|槍托|槍背帶|槍套|彈匣|holster|sling|cap\b/i.test(String(ctx.product || ''))) window._leanCatNow = 'airsoft_gun';   // v2.37 品名沒寫生存遊戲(例:BCS M4A1 CQB)也認得
       if (_lyFrom === 'dramatic_splash') _clash = /^(?![\s\S]*(pour|splash|spill|mid-air|falling|floats|steam|smoke|breeze|toss|drifting|lifts|rising))/i;   // 飛濺版:只抽有動態的拍法,沒有就交給版型句
       var catP = _own ? { s: _own.s } : CAT_ART[window._leanCatNow];
