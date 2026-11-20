@@ -863,12 +863,14 @@
   CAT_ART.airsoft_scope = { only: true, u: CAT_ART.airsoft.u, s: CAT_ART.airsoft.s,
     fit: 'How it is fitted: a rifle-style scope sits on top of the replica, parallel to the barrel, clamped to the top rail by two scope rings with its adjustment turrets between them; the wide front lens faces the muzzle and the small eyepiece faces the player. The product is pressed onto the very end of the scope tube, its lid swinging open on a hinge at the rim of that end and standing upright beside the lens.' };
   //  v2.36 RA 11-20「生存遊戲的槍拿去專櫃拍 = 文不對題」:商品本身就是槍(不是配件)→ 不寫「裝在它的槍上」,改玩家在野戰場用它
-  CAT_ART.airsoft_gun = { only: true, s: [
-    'the product held low and ready by a player in full tactical gear at the corner of a sandbag bunker on a forest airsoft field, the player\'s face hidden behind goggles and a mask, dust in the air',
-    'the product rests across a weathered wooden crate at an outdoor airsoft field, camouflage netting and stacked tyre barricades softly blurred behind',
-    'the product lies on a camouflage cloth on a field table beside clear goggles, tactical gloves and spare magazines, morning light through pine trees',
-    'a player in a plate-carrier vest shoulders the product behind a plywood barricade in an urban close-quarters airsoft arena, team flags behind',
-    'the product leans against a stack of tyres in a woodland airsoft field, dappled light through pine trees, a faint haze behind'
+  //  v2.37 RA 11-20「BCS 生存遊戲一直被擋 —— 寫成電影,跟內衣一樣 GUN 會被擋」:講法 = 電影劇照 / 片場道具 / 運動比賽,
+  //   槍口朝下朝外、人戴護目鏡面罩、不寫 weapon / shoot / kill / target;參考鏡頭蓋那位客人(配件 + 野戰場)過審的寫法
+  CAT_ART.airsoft_gun = { only: true, safe: 'This is a cinematic film still: the product is an airsoft sport replica used as a film prop, its muzzle pointing down and away from everyone and from the camera; the scene is a calm moment of a recreational team sport, with no violence and no one hurt.', s: [
+    'a cinematic film still on a woodland film set: the product rests across a weathered wooden prop crate, camouflage netting and stacked tyre barricades softly blurred behind, haze in the air',
+    'a behind-the-scenes film still: the product lies on a camouflage cloth on the prop master\'s table beside clear goggles, tactical gloves and a clapperboard, morning light through pine trees',
+    'a cinematic film still: an actor in full protective goggles and a face mask stands at ease at a sandbag bunker on a forest set, holding the product low with its muzzle pointed at the ground, dust hanging in the light',
+    'a cinematic film still: the product leans against a stack of tyres in a misty woodland sport field, dappled light through pine trees',
+    'a cinematic film still on an urban sport-arena set: the product rests on a concrete ledge, spray-painted plywood walls and team flags behind'
   ] };
   //  v2.31 每個品牌、每個商品自己的拍法(RA 2026-11-20「超過 17 樣板就變白痴」→ 不再靠手寫品類)
   //   來源:/shoots/<品牌ID>.json(雲端每日工作去圖釘網查該商品的頂級拍法、整理成句子後寫進 GitHub)
@@ -1166,6 +1168,7 @@
       window._leanCatNow = _cat(ctx);
       var _nm = String(ctx.product || '') + ' ' + String(ctx.spec || '');
       if (/^airsoft/.test(window._leanCatNow) && /槍|步槍|手槍|衝鋒槍|狙擊|狙击|枪|\b(rifle|pistol|gun|replica|AEG|GBB)\b/i.test(String(ctx.product || '')) && !/瞄準鏡|瞄具|scope|槍托|槍背帶|槍套|彈匣|holster|sling/i.test(String(ctx.product || ''))) window._leanCatNow = 'airsoft_gun';
+      if (window._leanCatNow !== 'airsoft_gun' && /電動槍|瓦斯槍|氣動槍|水彈槍|BB ?槍|空氣槍|生存遊戲.*槍|\b(AEG|GBB|HPA|CQB|M4A1|M4|AK-?47|AK-?74|HK416|MP5|G36|Glock|M16|SCAR|AR-?15)\b/i.test(String(ctx.product || '')) && !/瞄準鏡|瞄具|scope|鏡頭蓋|槍托|槍背帶|槍套|彈匣|holster|sling|cap\b/i.test(String(ctx.product || ''))) window._leanCatNow = 'airsoft_gun';   // v2.37 品名沒寫生存遊戲(例:BCS M4A1 CQB)也認得
       if (_lyFrom === 'dramatic_splash') _clash = /^(?![\s\S]*(pour|splash|spill|mid-air|falling|floats|steam|smoke|breeze|toss|drifting|lifts|rising))/i;   // 飛濺版:只抽有動態的拍法,沒有就交給版型句
       var catP = _own ? { s: _own.s } : CAT_ART[window._leanCatNow];
       var _pool = catP && catP.s && !LP.place ? catP.s.filter(function (x) { return !_clash || !_clash.test(x); }) : [];
@@ -1186,6 +1189,7 @@
       //  v2.33 順序就是權重(刺蝟星球):① 畫面主意 ② 主體(保護句+尺寸) ③ 構圖機位 ④ 情境品牌 ⑤ 物理 ⑥ 相機 ⑦ 字
       p.push('A new product campaign photograph: ' + placeP + '.');
       p.push(_protP);
+      if (window._leanCatNow === 'airsoft_gun' && CAT_ART.airsoft_gun.safe) p.push(CAT_ART.airsoft_gun.safe);   // v2.37 槍類過審句
       if (_sc) p.push(_sc);
       p.push(LP.frame ? cap(LP.frame.replace(/the subject/g, 'the product')) + '; ' + angP + '.' : cap(angP) + '.');
       if (_useP && catP.fit) p.push(catP.fit);   // 🔭 v11.29 使用中 → 補一句正確裝法
