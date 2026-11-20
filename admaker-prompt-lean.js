@@ -944,9 +944,9 @@
     limited_stock:    { c: ['deep dark tones around one bright pool of light'], m: ['matte black surfaces'], l: 'one hard spotlight falling away into darkness' },
     daily_supplement: { c: ['soft morning whites and warm neutrals'], m: ['linen, a glass of water and pale stone'], l: 'early sun through a window' },
     gift_choice:      { c: ['one rich tone-on-tone colour across the whole set'], m: ['satin ribbon and heavy paper folded around the set'], l: 'a warm soft glow' },
-    summer:           { c: ['saturated sky blue, sun yellow and white'], m: ['glass, water ripples and light cotton'], l: 'hard high midday sun with crisp short shadows' },
+    summer:           { c: ['saturated sky blue, sun yellow and white'], m: ['glass, water ripples and light cotton'], l: 'hard high midday sun with crisp short shadows', p: ['wide awning stripes in blue and white'] },
     winter_cozy:      { c: ['warm oatmeal, cream and caramel'], m: ['chunky knit, wool and misted glass'], l: 'a warm low tungsten glow against a cold blue evening' },
-    festive_cny:      { c: ['tone-on-tone lucky red with a touch of gold', 'deep crimson against soft grey'], m: ['flowing red silk drapery and lacquer surfaces'], l: 'clean warm studio light' },
+    festive_cny:      { c: ['tone-on-tone lucky red with a touch of gold', 'deep crimson against soft grey'], m: ['flowing red silk drapery and lacquer surfaces'], l: 'clean warm studio light', p: ['a bold red-and-gold geometric repeat'] },
     back_to_school:   { c: ['fresh autumn navy, ivory and leaf tones'], m: ['paper, canvas and pale wood'], l: 'crisp early-autumn morning sun' },
     unboxing:         { c: ['the brand colour carried across the backdrop'], m: ['tissue paper and the open inside of a box'], l: 'soft top light, as if a lid has just lifted' },
     daily_use:        { c: ['natural lived-in home colours'], m: ['real everyday surfaces'], l: 'ordinary daylight from a window' },
@@ -954,15 +954,15 @@
     gift_giving:      { c: ['a warm tone-on-tone set'], m: ['ribbon and wrapping paper wound around and beneath the product'], l: 'a warm soft glow' },
     year_end_sale:    { c: ['bold red and gold'], m: ['glossy lacquer blocks'], l: 'bright hard light' },
     double11:         { c: ['vivid red and magenta colour blocks'], m: ['glossy acrylic blocks'], l: 'hard punchy light' },
-    valentines:       { c: ['blush, rose and deep red tone-on-tone'], m: ['satin and velvet'], l: 'a low candle-warm glow' },
+    valentines:       { c: ['blush, rose and deep red tone-on-tone'], m: ['satin and velvet'], l: 'a low candle-warm glow', p: ['small scattered dots in rose and red', 'soft tonal stripes'] },
     zhongyuan_pudu:   { c: ['the warm red and gold of a temple table'], m: ['red cloth and generous stacks of packs'], l: 'warm amber light' },
-    mid_autumn:       { c: ['deep night blue with warm amber'], m: ['wood, silk and paper-lantern glow'], l: 'a soft moonlit night with one warm lamp' },
-    national_day:     { c: ['crisp blue, white and red'], m: ['clean modern surfaces'], l: 'bright clear daylight' },
-    halloween:        { c: ['deep purple and burnt orange'], m: ['velvet and smoke-dark surfaces'], l: 'low warm side light with deep shadows' },
+    mid_autumn:       { c: ['deep night blue with warm amber'], m: ['wood, silk and paper-lantern glow'], l: 'a soft moonlit night with one warm lamp', p: ['large overlapping circles in amber and night blue', 'a single big soft disc of warm light on the backdrop'] },
+    national_day:     { c: ['crisp blue, white and red'], m: ['clean modern surfaces'], l: 'bright clear daylight', p: ['clean blue, white and red colour blocking'] },
+    halloween:        { c: ['deep purple and burnt orange'], m: ['velvet and smoke-dark surfaces'], l: 'low warm side light with deep shadows', p: ['purple-and-orange stripes', 'an orange-and-black check'] },
     black_friday:     { c: ['matte black with one sharp highlight'], m: ['black glossy surfaces'], l: 'a hard directional spotlight' },
     double12:         { c: ['warm orange and gold'], m: ['glossy colour blocks'], l: 'hard punchy light' },
-    christmas:        { c: ['deep green, red and gold', 'snow white with one red accent', 'an all-red tone-on-tone set'], m: ['satin ribbon, knit wool and soft snow'], l: 'a warm tungsten glow' },
-    nye_countdown:    { c: ['midnight navy with champagne gold'], m: ['sequins and glass'], l: 'sparkling points of light on a dark night' },
+    christmas:        { c: ['deep green, red and gold', 'snow white with one red accent', 'an all-red tone-on-tone set'], m: ['satin ribbon, knit wool and soft snow'], l: 'a warm tungsten glow', p: ['red-and-green polka dots', 'a classic tartan check', 'candy-cane stripes'] },
+    nye_countdown:    { c: ['midnight navy with champagne gold'], m: ['sequins and glass'], l: 'sparkling points of light on a dark night', p: ['scattered gold dots like confetti frozen in the air'] },
     weiya:            { c: ['warm red and gold'], m: ['banquet linen and lacquer'], l: 'warm festive light' },
     brand_anniversary:{ c: ['the brand colour with champagne gold'], m: ['satin ribbon and heavy paper'], l: 'clean premium light' },
   };
@@ -982,8 +982,10 @@
       art.c.forEach(function (c) { w.push('the whole set, backdrop and styling are built from ' + c + ', the way a seasonal campaign is art-directed'); });
       art.m.forEach(function (m) { w.push('the materials of the set itself carry it — ' + m + (people ? ' — woven into the scene and the styling' : ' — around and beneath the product')); });
       w.push('the light carries it: ' + art.l);
+      // v2.45 RA 11/21:節慶用配色／圖案(圓點、條紋、格紋)的概念講,不丟聖誕樹、月餅、柚子這種象徵物
+      (art.p || []).forEach(function (x) { w.push('a graphic pattern carries it — ' + x + ' — printed across the backdrop, the surface or the fabric of the set, in place of any seasonal object'); });
       if (people) w.push('the model\'s styling and accessories carry it, in ' + art.c[0]);
-      return 'The ' + (name ? name.toLowerCase() : 'occasion') + ' feeling: ' + pick(w) + '.';
+      return 'The ' + (name ? name.toLowerCase() : 'occasion') + ' feeling: ' + pick(w) + '.' + ' The season is carried only by colour, pattern, material and light: no seasonal symbol objects anywhere in the frame (no tree, ornament, pumpkin, lantern, moon, mooncake, pomelo, heart-shaped prop or gift box).';
     }
     var bits = t.replace(/^[^:]*:\s*/, '').replace(/\([^)]*\)/g, '').split(/\s*[,;—]\s*/).filter(function (x) { return !/pair of|two |hands|gesture|card|NOT |keep it/i.test(x); });
     var colours = bits.filter(function (x) { return COLOUR_RE.test(x) && !/badge|numeral|tag|typography|price|sale/i.test(x); }).slice(0, 2).join(', ');
