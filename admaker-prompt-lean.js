@@ -1775,6 +1775,8 @@
       var _nonFood = window._leanCatNow && !/^(dish|food|meat|drink|jar|packaged|supplement)$/.test(window._leanCatNow);
       if (lyMap !== ly && !(ly === 'food_special' && _nonFood)) out += '\n' + LEAN_LAYOUT_MAP[ly].say;
       if (overlay) out += '\nIllustration layer, added on top of the finished photograph: ' + cut(fl.replace(/^[^.]*OVERLAY[^.]*\.\s*/i, '').replace(/\b[A-Z]{3,}\b/g, function (w) { return w.toLowerCase(); }), 260) + '.';
+      //  v2.42 品牌的頂級拍攝類型(shoots/<品牌>.json genre)→ 草稿也帶上(美術指導掛掉時草稿直接用)
+      try { var _g = (SHOOTS_CACHE[window.S && window.S.brandId] || {}).genre; if (_g && _g.en) out += '\nShot the way the best of ' + _g.en.split(':')[0] + ' is shot: real materials and a lived-in feel, neither sloppy nor over-polished.'; } catch (_) {}
       //  v2.41 客人選了鏡頭距離 → 草稿裡寫死的近拍句換掉,最後一句講清楚(美術指導會照這句寫)
       if (window.AD_SHOT && window.AD_SHOT_EN && window.AD_SHOT_EN[window.AD_SHOT]) {
         out = out.replace(/,?\s*(the (subject|product) large and close in the foreground|framed close(?: and sharp)?, the (?:product|background) [^.;]*|a tight crop on the product with the setting just readable around it|framed close, the product filling most of the frame)/g, '');
