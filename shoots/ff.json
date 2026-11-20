@@ -8,5 +8,31 @@
    "the dish on a white porcelain plate on a deep-red lacquer table, one warm narrow spotlight from above, the rest falling into shadow, a pot of tea behind",
    "chopsticks lift a piece from the plate toward the lens, warm side light, a jade-green wall softly behind"
   ]
+ },
+ "products": {
+  "大红片皮乳猪": {
+   "s": [
+    "a whole roast suckling pig lies on a worn wooden chopping block in a Hong Kong restaurant kitchen, the lacquered red-gold skin facing a deep-teal tiled wall, a single hard shaft of light from a high kitchen window on the left throwing a sharp, long shadow of the pig across the block",
+    "the sliced crisp skin of the roast pig is fanned in front of the whole pig on a stainless-steel prep counter, the wall behind in a flat terracotta-orange, hard side light from the pass-through hatch on the right casting crisp shadows between every slice, the pig filling most of the frame",
+    "a close low-angle view of the roast pig's head and shoulders on a butcher's wooden block, deep sea-blue tiles behind, hard overhead light from a bare kitchen lamp making the skin glisten and dropping a dark, clear shadow onto the block",
+    "the whole roast pig rests on a round banquet table in an empty dining room, a mustard-yellow wall behind it, hard afternoon sun slanting through the window blinds from the left striping the pig and the tablecloth with sharp shadows, the pig dominating the frame"
+   ]
+  },
+  "当红炸子鸡": {
+   "s": [
+    "a whole fried chicken hangs by its neck from a steel hook in a Hong Kong roast-meat shop window, a tomato-red tiled wall behind, hard morning sun from the street on the left throwing the chicken's sharp shadow onto the tiles, the chicken filling the frame",
+    "the crisp-skinned chicken, chopped into pieces and reassembled, sits on a steel kitchen tray in a restaurant kitchen against a deep-green wall, hard side light from a window on the right giving every crackled ridge of skin a tiny, clear shadow",
+    "a whole fried chicken on a wooden chopping block at a Cantonese kitchen station, a dark ocean-blue wall behind it, hard overhead light from a bare bulb dropping a clear shadow onto the block, a cleaver resting beside it, the chicken large in the frame",
+    "the chicken lies on a round banquet table in a dining room, a terracotta-orange wall behind it, low hard window light from the left stretching the shadow of the chicken across the tablecloth"
+   ]
+  },
+  "酿焗鲜蟹盖": {
+   "s": [
+    "a baked stuffed crab shell sits on a wet stainless-steel counter in a seafood restaurant kitchen, a deep-teal tiled wall behind, hard light from a high window on the left throwing a crisp shadow of the shell's rim, the shell filling most of the frame",
+    "raw fresh crabs lie on crushed ice in a steel tray beside the cooked, baked stuffed crab shell, a tomato-red wall behind, hard overhead kitchen light casting sharp shadows from the crab legs across the ice",
+    "a close view of the golden baked crab shell on a dark-blue enamel plate on a round restaurant table, a mustard-yellow wall behind, hard late sun from the right throwing the shell's shadow long across the table, the shell dominating the frame",
+    "the baked stuffed crab shell rests on a wooden chopping block at a restaurant kitchen station, a terracotta-orange wall behind, hard side light from the pass-through hatch on the left making the browned crust glisten and casting a clear dark shadow"
+   ]
+  }
  }
 }

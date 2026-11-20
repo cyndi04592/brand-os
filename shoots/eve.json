@@ -4,7 +4,125 @@
   "en": "a Condé Nast Traveler hotel feature: real rooms and halls in natural light, a guest's moment, calm luxury"
  },
  "brand": {
-  "s": []
+  "s": [
+   "a king bed made up in crisp unironed linen fills the frame, set against a deep-sea-blue accent wall in a real guest room, a hard shaft of late-afternoon window light raking across the sheets and throwing the curtain's sharp shadow over the headboard",
+   "the hotel's own bathroom seen from the doorway, a freestanding tub huge in frame against terracotta-orange wall tile, one hard beam from a high window casting a crisp diagonal shadow across the floor and rim",
+   "a long breakfast-buffet counter in the real ground-floor restaurant, foreground dishes large, a muted tomato-red back wall behind, hard morning sun from the left laying long shadows of the serving tongs across the white platters",
+   "an empty banquet hall shot from a low chair-level angle, one round table dressed in linen filling the foreground against a deep-teal wall, a single hard spotlight from the ceiling dropping a sharp ring of shadow around the table"
+  ]
  },
- "products": {}
+ "products": {
+  "高級客房(特大床)": {
+   "s": [
+    "a king bed shot from its foot, the rumpled linen filling most of the frame, against a deep-sea-blue wall in the actual guest room, hard low sun from the window on the right throwing the sheer curtain's striped shadow across the duvet",
+    "a pair of slippers and the bed's edge seen from floor level, the bed huge in frame, muted mint-green wall behind, hard morning light from a side window casting a long crisp shadow of the bedside lamp across the carpet",
+    "the plump pillows stacked at the headboard in a tight close crop, a clay-orange headboard wall behind them, a hard beam from the bedside window carving a sharp diagonal shadow across the cotton",
+    "a traveler's open suitcase at the foot of the king bed in the real room, the bed dominating the frame, tomato-red accent wall, hard late-afternoon sun striking from the left with long shadows over the floor and bedspread"
+   ]
+  },
+  "高級家庭房": {
+   "s": [
+    "two beds side by side made up with rumpled sheets and a child's backpack tossed at the end of one, the beds filling the frame against a sage-green wall in the real family room, hard midday sun through the window laying a long window-frame shadow over both duvets",
+    "the family room's bathroom counter in close crop with the DAMANA and tea-seed amenity bottles large in the foreground, terracotta wall tile behind, one hard overhead beam casting crisp bottle shadows across the basin",
+    "a breakfast tray with four place settings of cooked eggs, toast and fruit on the room's window table, table large in frame, deep-navy curtain behind, hard morning sun from the side throwing sharp shadows of the cups across the cloth",
+    "a view from the bed pillow of two kids' feet sticking out of the blanket in the family room, the bed large in frame, mustard-yellow wall behind, a hard stripe of afternoon sun falling across the blanket"
+   ]
+  },
+  "桂冠樓層豪華客房": {
+   "s": [
+    "a deep soaking bathtub filling the frame in the real executive-floor bathroom, a muted ocean-teal tile wall behind, one hard shaft of window light drawing a sharp diagonal shadow across the tub rim and floor",
+    "the in-room tea set and a plate of cookies and chocolate on the writing desk, the tray large in frame, a clay-orange wall behind, hard side light from the window casting long crisp shadows of the cups across the wood",
+    "a glass-walled shower stall seen head-on, wet tiles and chrome fixtures filling the frame, a deep-blue wall beside it, hard overhead light throwing a crisp rain of shadows from the shower head onto the floor",
+    "the king bed with a folded robe and fruit bowl on the bedspread, bed dominating the frame against a tomato-red accent wall, hard low sun from the window raking across the linen and throwing the bowl's shadow long"
+   ]
+  },
+  "桂冠樓層套房": {
+   "s": [
+    "a nespresso-style capsule coffee machine on the suite's living-room sideboard, machine large in frame, a deep-sea-blue wall behind, hard morning sun from the window casting a sharp cup shadow across the wood top",
+    "the suite's doorway between the living room and the bedroom, the open bed visible beyond, a muted terracotta wall framing the opening, a hard blade of window light dropping a sharp rectangle on the floor",
+    "a bride's dress hung on the wardrobe door in the suite's living room, the gown large in frame, a mint-green wall behind it, hard window light from the left throwing the dress's sharp shadow across the wall",
+    "the suite's second bathroom, a double vanity and mirror filling the frame against a dark-teal tile wall, one hard beam from a high window casting crisp shadows of the faucets across the stone"
+   ]
+  },
+  "長榮廳婚宴": {
+   "s": [
+    "the long ceiling of the banquet hall seen from a low seat, round tables in rows below, hard spotlights dropping sharp circles of light on the white linens, the deep-teal walls framing the scene",
+    "the 275-inch seamless screen filling the frame at the front of the real hall, a deep-navy-blue wall surrounding it, a single hard spotlight from the side throwing the empty stage's long shadow across the carpet",
+    "one round table in the foreground of the hall with a plated course of the chef's banquet dishes, table large in frame, a rich-burgundy wall behind, hard overhead beam casting crisp shadows of the glasses across the cloth",
+    "the hall's wide double doors seen from inside with the high ceiling above, doors large in frame against a clay-orange wall, hard light from the lobby streaming through and laying long door-frame shadows across the carpet"
+   ]
+  },
+  "牡丹廳婚宴": {
+   "s": [
+    "the rounded ceiling of the banquet hall filling the frame, coloured wall lights glowing against a mustard-yellow curve, one hard spotlight from above throwing a crisp ring of shadow across a nearby table",
+    "a round table set for a wedding in the real hall, the table large in frame against a deep-plum wall, a hard beam from the left throwing long crisp shadows of the chairs across the carpet",
+    "the head table and its chairs, viewed from the aisle, filling the frame against a dusty-rose wall, a hard stage spot from the right laying sharp shadows across the floor",
+    "a close view of the hall's arched wall and ceiling edge, deep-teal paint, hard light from a ceiling spot casting a sharp curved shadow across the surface"
+   ]
+  },
+  "桂冠廳・玫瑰廳 精緻婚宴": {
+   "s": [
+    "a small round table in the dark-toned hall, table large in frame against a charcoal-navy wall, one hard recessed ceiling light dropping a crisp circle of shadow beneath the glasses and plates",
+    "the curved ceiling of the smaller hall, warm-orange wall washed in low light, one hard beam from the side laying a sharp curved shadow across the plaster",
+    "a plated course on a banquet table in the real hall, the dish large in frame against a deep-wine wall, hard side light from a ceiling spot throwing sharp shadows of the fork across the linen",
+    "an empty row of chairs at a banquet table in the hall, the chairs filling the frame against a terracotta wall, hard late light from a doorway casting long crisp chair shadows across the carpet"
+   ]
+  },
+  "家宴・訂婚小宴(中港/文心/漢口廳)": {
+   "s": [
+    "a family banquet table seen from a low seat, the lazy Susan and plates large in frame against a clay-orange wall, hard side light from the window throwing sharp shadows of the dishes across the cloth",
+    "the private room's door half-open in the hallway, the room large in frame against a deep-green wall, a hard blade of light from inside throwing a long sharp rectangle across the carpet",
+    "a round table for six in a private dining room, table filling the frame against a muted mustard wall, hard overhead spot throwing crisp shadows of the teacups across the linen",
+    "a pair of hands passing a platter across the table in the real private room, platter large in frame, a deep-teal wall behind, hard window light from the left casting sharp shadows across the cloth"
+   ]
+  },
+  "新娘房・新婚住宿": {
+   "s": [
+    "a bride's dress hung on the suite's wardrobe door, gown large in frame against a mint-green wall, hard window light from the left throwing the dress's sharp shadow across the wall",
+    "the suite's vanity mirror and makeup brushes laid out, the vanity filling the frame against a dusty-rose wall, hard window light striking from the right with crisp shadows of the brushes across the counter",
+    "the suite's living-room sofa with family members' shoes and bags set down, sofa large in frame against a terracotta wall, hard afternoon sun from the window throwing long crisp shadows across the carpet",
+    "a breakfast table the morning after in the hotel restaurant, plates and cups large in frame, a deep-blue wall behind, hard morning light from the window throwing sharp shadows of the cups across the cloth"
+   ]
+  },
+  "長園中餐廳": {
+   "s": [
+    "a whole roast Peking duck being carved at the table in the real Chinese restaurant, the duck large in frame against a deep-red wall, hard overhead light throwing a crisp shadow of the knife across the board",
+    "a Boston lobster dish on a lazy Susan in the real private room, the plate large in frame against a deep-teal wall, hard side light throwing sharp shadows of the claws across the cloth",
+    "the round table with hands reaching across for the dishes, platters large in frame, a clay-orange wall behind, hard window light from the left casting long crisp shadows of chopsticks over the linen",
+    "a stack of duck pancakes and sauces on the restaurant table, plates large in frame, a mustard-yellow wall behind, hard late sun from the window throwing sharp shadows across the cloth"
+   ]
+  },
+  "冠品鐵板燒": {
+   "s": [
+    "a chef flipping a steak on the iron griddle at the real counter, the griddle large in frame against a deep-red wall, one hard overhead light throwing the spatula's crisp shadow across the steel",
+    "a plated teppanyaki course in front of a couple at the counter, the plate large in frame, a dark-teal wall behind, hard overhead light throwing sharp shadows of the chopsticks across the counter",
+    "a close view of the griddle with seared vegetables and steam, griddle large in frame against a clay-orange wall, hard side light throwing sharp shadows of the spatula across the steel",
+    "two people seated at the counter watching the chef from behind, counter large in frame, a muted navy wall, hard overhead spotlight dropping crisp shadows of the wine glasses across the counter"
+   ]
+  },
+  "咖啡廳自助百匯": {
+   "s": [
+    "a long buffet counter in the real ground-floor café, foreground dishes large, a tomato-red wall behind, hard morning sun from the window throwing long sharp shadows of the serving tongs across the platters",
+    "a family's plates heaped with hot and cold dishes on a café table, plates large in frame against a mint-green wall, hard window light from the left throwing sharp shadows of the forks across the cloth",
+    "the dessert section of the real buffet, cakes in rows filling the frame against a deep-teal wall, hard overhead light casting crisp shadows of the cake stands across the counter",
+    "a birthday dessert plate carried to a café table, plate large in frame against a mustard wall, hard side sun from the window throwing a long crisp shadow of the plate across the tablecloth"
+   ]
+  },
+  "新婚之夜住房專案": {
+   "s": [
+    "the king bed turned down for the night with rumpled sheets, bed large in frame against a deep-wine wall in the real room, a hard beam from the bedside lamp throwing a sharp lampshade shadow across the headboard",
+    "a pair of wedding shoes at the foot of the bed in the real room, the bed huge behind them, deep-navy wall, hard low light from the window throwing long sharp shoe shadows across the carpet",
+    "the bathtub filled and steaming in the real bathroom, the tub large in frame against a dark-teal tile wall, one hard shaft of window light throwing a crisp diagonal shadow across the rim",
+    "a wedding suit and dress hung side by side on the wardrobe in the room, garments large in frame against a terracotta wall, hard window light from the left throwing sharp garment shadows across the wall"
+   ]
+  },
+  "訪台旅客住房專案": {
+   "s": [
+    "a traveler's open suitcase on the king bed in the real room, the bed filling the frame against a deep-sea-blue wall, hard afternoon sun from the window throwing the curtain's sharp shadow across the sheets",
+    "a breakfast plate of Taiwanese dishes on the real restaurant table, the plate large in frame against a tomato-red wall, hard morning sun from the left throwing sharp shadows of the chopsticks across the cloth",
+    "the room window with the Taichung city view and the desk beside it, desk large in frame against a mint-green wall, hard sun from outside throwing a crisp window-frame shadow across the desk",
+    "a pair of walking shoes by the room door with a city map on the bed, bed large in frame against a clay-orange wall, hard low sun from the window throwing long sharp shadows across the carpet"
+   ]
+  }
+ }
 }

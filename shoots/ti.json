@@ -4,7 +4,107 @@
   "en": "a Monocle magazine business feature: real offices, natural window light, calm confident people at work"
  },
  "brand": {
-  "s": []
+  "s": [
+   "a thick spec binder held open flat on a prototype-strewn machinist's bench, painted terracotta-orange wall behind, hard window light from the left casting crisp shadows of the binder's edges across the steel bench top",
+   "a pair of hands sliding a stamped document across a wooden meeting-room table toward the camera, deep-sea-blue wall behind, a single hard shaft of afternoon sun from the right throwing the sharp shadow of the paper and hands across the grain",
+   "the document folder leaning against a stack of shipping cartons on a loading dock, tomato-red roller door behind, low hard sun from behind-left throwing long shadows across the concrete floor",
+   "a magnifying glass held over a printed patent drawing on a workshop table, mint-green pegboard wall behind, hard overhead-left lamp light casting a sharp circular shadow on the page"
+  ]
  },
- "products": {}
+ "products": {
+  "智財權諮詢服務：國內及各國專利、商標、著作權之規劃、管理及顧問實務": {
+   "s": [
+    "the consultation folder open on a small-factory meeting table beside a fresh product sample, terracotta-orange wall behind, hard side light from a window on the left throwing the folder's sharp shadow across the tabletop",
+    "two chairs pulled close at a wooden workbench with the folder between them, deep-sea-blue wall behind, a hard late-afternoon sunbeam from the right casting long shadows of the chair backs over the floor",
+    "the folder held up large in a designer's hands in a cluttered product studio, mint-green wall behind, hard overhead spotlight from the upper left carving crisp shadows under the folder's edges",
+    "the folder resting on a stool in a workshop beside a half-built prototype, tomato-red wall behind, hard low sun from the right stretching their shadows across the concrete floor"
+   ]
+  },
+  "智財權申請事務：國內及各國專利中英文說明書撰寫、翻譯、修改、及後續答辯": {
+   "s": [
+    "a thick bilingual specification printed in two columns, pages fanned wide across a drafting table, deep-sea-blue backdrop, hard lamp light from the upper right drawing sharp page-edge shadows",
+    "the stack of specification pages beside an engineer's disassembled gadget on a workbench, terracotta wall behind, hard raking light from the right making long shadows of screws and pages",
+    "the bound specification standing upright on a lab bench next to a prototype circuit board, tomato-red wall behind, hard overhead light from the left throwing clean shadows across the bench"
+   ]
+  },
+  "智財權侵害鑑定：國內及各國專利範圍解讀、侵權鑑定、迴避設計、佈局規劃，提供侵害鑑定報告": {
+   "s": [
+    "the assessment report laid beside two near-identical gadgets on a bench, one pair of calipers resting on the report, deep-sea-blue wall behind, hard light from the right casting sharp parallel shadows",
+    "a magnifying glass hovering over the report's claim chart with a small product part beside it, tomato-red backdrop, hard low light from the left stretching the shadows across the page",
+    "the report open on a factory inspection table next to two competing parts under a hard downlight, mint-green wall behind, crisp overlapping shadows from the upper left",
+    "the thick report held flat toward the camera in front of a production-line machine, terracotta wall behind, hard side sun from a high window on the right casting the shadow of the report on the floor"
+   ]
+  },
+  "智財權爭端排除：國內及各國專利復審、舉發撤銷、爭議排除、行政救濟、宣告無效等程序": {
+   "s": [
+    "a thick appeal file tied with string sitting heavy on a scarred workshop table, tomato-red wall behind, hard light from the left throwing a long, sharp shadow of the file across the wood",
+    "two stacks of opposing documents facing each other across a meeting table with a gap between them, deep-sea-blue wall behind, hard shaft of sun from the right casting stark parallel shadows",
+    "the file propped against a toolbox in a garage workshop while a hand points at a marked page, terracotta wall behind, hard overhead light from the upper left carving crisp shadows",
+    "the file box stamped and stacked on a loading-dock trolley, mint-green wall behind, hard low sun from behind-right stretching shadows across the concrete"
+   ]
+  },
+  "國內及各國商標爭議案之處理、商標檢索及情報監控": {
+   "s": [
+    "a printed trademark search report with a magnifier sliding over a row of near-identical logos, filling the frame, mint-green backdrop, hard lamp light from the right casting a sharp lens shadow",
+    "the report pinned beside two look-alike product labels on a night-market stall counter, tomato-red awning wall behind, hard bare-bulb light from above-left throwing crisp shadows over the labels",
+    "the monitoring report held up next to a shop's painted storefront sign on a street, deep-sea-blue shutter door behind, low hard sun from the left casting the shadows of sign and report on the pavement",
+    "the report spread on a packaging factory table amid rolls of printed labels, terracotta wall behind, hard window light from the right making sharp shadows of the label rolls"
+   ]
+  },
+  "智財權維護管理：國內及各國專利權維持、檢索、調查、監視服務登錄": {
+   "s": [
+    "a row of patent certificates in frames leaning along a workshop shelf with a calendar card clipped to the nearest one, deep-sea-blue wall behind, hard side light from the left throwing long shadows of the frames",
+    "the maintenance ledger open on a machine-shop desk with a brass stamp beside it, terracotta-orange wall behind, hard desk-lamp light from the upper right casting crisp stamp and page shadows",
+    "the ledger filling the frame, a finger ticking a due-date column, mint-green desk mat beneath, hard window light from the left carving sharp shadows along the page lines",
+    "the certificate folder standing against a shelf of boxed products in a warehouse aisle, tomato-red wall behind, hard high-window sun from the right making long shadows down the aisle"
+   ]
+  },
+  "國內及各國商標註冊、維護、延展服務登錄": {
+   "s": [
+    "the registration certificate resting against a freshly painted shop sign leaned on a bakery's back-room table, tomato-red wall behind, hard sun from the left throwing sharp shadows of sign and certificate",
+    "a rubber stamp pressing a registered mark onto the certificate, very close with the stamp filling the frame, mint-green backdrop, hard lamp from the upper right casting the stamp's crisp shadow",
+    "the certificate held up in front of a market stall's hand-lettered signboard, terracotta wall behind, low hard sun from behind casting long shadows across the cobbles"
+   ]
+  },
+  "智財權授權實施：國內及各國專利權讓與、授權移轉協商、談判和評估": {
+   "s": [
+    "a signed license agreement with a pen across it on a factory meeting table, a prototype part sitting on one side, deep-sea-blue wall behind, hard light from the right casting a sharp pen shadow",
+    "two hands passing the agreement folder across a workshop bench over an open toolbox, terracotta wall behind, hard window sun from the left throwing long shadows of the hands",
+    "the agreement fanned beside a handshake-sized sample part on a loading-dock table, tomato-red roller door behind, hard low sun from the right casting crisp long shadows",
+    "the agreement folder filling the frame held by a worker beside a running machine, mint-green wall behind, hard overhead light from the upper left carving shadows beneath the folder"
+   ]
+  },
+  "智財權常年顧問：接受委託，擔任常年智財權顧問": {
+   "s": [
+    "a well-worn advisory binder with sticky tabs standing on a small manufacturer's desk beside a coffee mug, mint-green wall behind, hard morning sun from the left throwing its shadow across the desk",
+    "the binder passed across a counter at a family workshop by a hand with a pencil behind the ear, tomato-red wall behind, hard side light from the right with crisp shadows on the counter",
+    "a stack of yearly advisory folders labeled by month on a workshop shelf, deep-sea-blue wall behind, hard low light from the left casting stair-stepped shadows",
+    "the binder open on a kitchen-table-turned-office of a startup founder surrounded by prototype parts, terracotta wall behind, hard window light from the right casting sharp shadows of the parts"
+   ]
+  },
+  "智財權跨國競合：接受委託，介紹本所聯盟之國內及各國法律事務所，辦理專利侵權、商標仿冒等法律訴訟事務及國際智財權之訴訟等": {
+   "s": [
+    "a globe-sized sheaf of multi-country documents stamped with different seals fanned across an export-warehouse table, deep-sea-blue wall behind, hard high light from the left casting sharp page shadows",
+    "a shipping crate with customs stamps beside the case file on a port loading dock, tomato-red container wall behind, hard low sun from the right stretching long shadows across the concrete",
+    "the case file next to a suitcase and passport on a workshop bench, terracotta wall behind, hard window light from the left throwing crisp suitcase and file shadows",
+    "stacked case folders on a freight pallet with international labels, mint-green wall behind, hard overhead light from the upper right carving sharp shadows"
+   ]
+  },
+  "智財權管理顧問：協助客戶建立智財權研發、管理制度、法務諮詢、提供智慧財產權糾紛案例": {
+   "s": [
+    "a management manual with colored tabs open on an R&D lab bench beside a notebook of sketches, mint-green wall behind, hard window light from the left casting the manual's crisp shadow",
+    "a binder of process charts clipped to a factory whiteboard stand, tomato-red wall behind, hard overhead light from the right throwing sharp shadows beside the binder",
+    "the manual lying open among engineer's calipers and sample parts on a workbench, deep-sea-blue backdrop, hard raking light from the left making long shadows of the tools",
+    "a hand placing a labeled case-study folder on a shelf of invention notebooks in a design studio, terracotta wall behind, hard low sun from the right casting stepped shadows"
+   ]
+  },
+  "智財權研實課程：接受客戶委託，提供智慧財產權研習課程": {
+   "s": [
+    "a course handbook open on a front-row desk in a factory training room, a pen across the page, mint-green wall behind, hard window light from the left casting the pen's sharp shadow",
+    "a row of identical handbooks each with a sticky note standing on a classroom table, tomato-red wall behind, hard side sun from the right throwing long parallel shadows",
+    "the handbook held large toward camera by an engineer on a training-room stage beside a projector screen, deep-sea-blue wall behind, hard spotlight from the upper left with crisp shadows",
+    "a workshop table with the handbook and a prototype gadget being examined by students' hands, terracotta wall behind, hard overhead light casting sharp shadows of hands over the pages"
+   ]
+  }
+ }
 }

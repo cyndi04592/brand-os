@@ -4,7 +4,39 @@
   "en": "a beauty-magazine editorial close-up: skin and detail in soft directional light, clean and real, not retouched to plastic"
  },
  "brand": {
-  "s": []
+  "s": [
+   "a single close-up of a lash artist's tweezers lifting one lash fan toward a client's closed eye, the lash studio's wall painted terracotta-orange behind them, one hard window light from camera-left casting a crisp shadow of the tweezers across the eyelid",
+   "the lash bed with its pillow and tape strips, the lash tile and tweezers laid in a row on the artist's work trolley against a deep-teal wall, hard side light from the right throwing long sharp shadows of every tool",
+   "a client lying on the lash bed in a real studio room, eyes taped shut and lashes fully dressed, the wall behind them a muted tomato red, a hard spotlight from above-left drawing a clean shadow of the lash fans onto the cheek",
+   "the artist's gloved hands holding a lash fan under a gooseneck lamp at a worn wooden work desk against a mint-green wall, the lamp's hard beam from the upper right throwing a sharp shadow of the tweezers onto the tile"
+  ]
  },
- "products": {}
+ "products": {
+  "嫁接美睫": {
+   "s": [
+    "a close-up of a client's closed eye mid-application, one lash fan held by tweezers just above the lash line, the studio wall behind a saturated terracotta-orange, hard window light from camera-left casting a crisp shadow of the tweezers across the eyelid",
+    "the client lying on the lash bed with under-eye gel pads on and a full set of lashes visible, the wall behind a deep sea-blue, a hard lamp from above-right throwing a sharp lash shadow down the cheek",
+    "a macro of the finished lashes curling up from a closed eye, a mint-green studio wall behind, low hard light from the left throwing each lash's long thin shadow across the lid",
+    "the artist's hands isolating a single natural lash with fine tweezers in a real lash room, the wall a muted tomato red, a hard gooseneck-lamp beam from the right cutting a clear shadow of the tweezers over the eye pad",
+    "the lash tile of pre-made fans and the tweezers on the work trolley beside the lash bed, a deep-teal wall behind, hard side light from the left casting long sharp shadows of the tweezers and the glue cup"
+   ]
+  },
+  "美睫師體驗班": {
+   "s": [
+    "a beginner's hand holding tweezers over a mannequin head's lash strip at a training desk, the wall behind a bold tomato red, hard window light from camera-left throwing a sharp shadow of the tweezers across the practice lashes",
+    "two pairs of hands, the instructor's guiding the learner's, over a mannequin eye in a real lash classroom, the wall a terracotta-orange, a hard lamp from above-right drawing crisp shadows of both tweezers onto the lash strip",
+    "the practice mannequin head with its lashes half done sits large on a classroom desk, a deep sea-blue wall behind, a hard spotlight from the upper left casting the head's sharp shadow across the desk",
+    "a learner's first lash fan held in tweezers against the lash tile at a training station, the wall mint-green, hard side light from the right throwing a long clean shadow of the tweezers across the tile"
+   ]
+  },
+  "美睫師培訓全科班": {
+   "s": [
+    "a row of mannequin heads with lash sets at increasing levels of finish on a classroom workbench, the wall behind a deep sea-blue, hard window light from camera-left casting a sharp row of shadows across the bench",
+    "the instructor's hands demonstrating a volume fan with tweezers to a learner at a lash training bed, the wall a saturated terracotta-orange, a hard lamp from above-right throwing crisp shadows of the tweezers across the practice eye",
+    "a full training kit laid out on the classroom desk, with tweezers, lash tiles, glue, and a mannequin head dominating the frame, a tomato-red wall behind, hard side light from the left throwing long sharp shadows of every tool",
+    "a student leaning over a mannequin head under a gooseneck lamp in a real lash classroom, the wall mint-green, the lamp's hard beam from the right drawing a sharp shadow of the student's tweezers over the lashes",
+    "a finished full-set mannequin lash close-up on the classroom bed beside a graduation-day practice checklist, a deep-teal wall behind, hard light from the upper left throwing a crisp shadow of each lash fan"
+   ]
+  }
+ }
 }

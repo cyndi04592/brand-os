@@ -4,7 +4,22 @@
   "en": "a cinematic film still: real field and arena sets, calm moments between takes, no violence"
  },
  "brand": {
-  "s": []
+  "s": [
+   "a field-stripped rifle laid out part by part on an olive-drab ammo crate lid in a dusty staging area, hard late sun from the left throwing every part's shadow long across the lid, the product big in the foreground against a deep-green tarp wall",
+   "the product leaning in a sandbag-and-plywood barricade on a real airsoft field, low hard sun from behind casting a sharp shadow toward the camera, a terracotta-orange barrier wall filling the background, the product large and sharp",
+   "a gear table at the field's safe zone with the product laid across it beside a mag and a pack of BBs, one hard sidelight from a open barn door skimming the surface and cutting crisp shadows, a deep-navy tarp behind",
+   "the product held at the ready behind a stacked-pallet cover, harsh noon light slicing through slats to stripe the product with hard shadow, rust-red painted wall behind"
+  ]
  },
- "products": {}
+ "products": {
+  "Dhdjfjfkfmg": {
+   "s": [
+    "the product propped upright against a tire stack at an airsoft field's staging area, one hard low sun from the right throwing its sharp shadow across the packed dirt, a terracotta-orange painted barrier wall behind, the product filling most of the frame",
+    "the product lying across an ammo crate in a plywood bunker, a single hard beam through a gap in the wall cutting a bright stripe over it and a crisp shadow below, deep-green tarp backdrop, close and big",
+    "the product on a worn workbench in the field's gear-prep corner beside a box of BBs and a bag of mags, hard window light from the left casting long shadows over the wood grain, a deep-navy wall behind",
+    "the product resting on a sandbag at a barricade's edge, low hard afternoon sun from behind throwing its shadow toward the lens, a mustard-yellow painted drum wall behind it, the product dominating the frame",
+    "the product shouldered mid-aim from behind a pallet barricade, hard sun striping it through the slats, rust-red wall blurred behind, the muzzle large in the foreground"
+   ]
+  }
+ }
 }

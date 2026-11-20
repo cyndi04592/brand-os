@@ -4,7 +4,37 @@
   "en": "a Wallpaper* design-magazine studio feature: a real working studio, screens and sketches, natural light"
  },
  "brand": {
-  "s": []
+  "s": [
+   "a phone held up filling the frame, its screen showing a finished ad, in front of a tomato-red roll-up shutter of a small night-market stall, hard late-afternoon sun from the left throwing the phone's sharp shadow across the corrugated metal",
+   "a laptop open and huge in frame on a scarred wooden workbench in a small workshop, deep-sea-blue painted wall behind, a single hard shaft of window light from the right cutting a crisp shadow across the keyboard and sawdust",
+   "a phone propped against a terracotta-orange tiled counter of a neighborhood shop, its screen glowing with a vertical video, hard overhead sun from the doorway casting a long sharp shadow of the phone across the tiles",
+   "a tablet leaning on a mint-green bathroom-tile ledge of a barbershop, close and large in frame, hard side light from a window on the left drawing a clean diagonal shadow over the grout lines"
+  ]
  },
- "products": {}
+ "products": {
+  "BRAND OS": {
+   "s": [
+    "a laptop with its screen split into several brand dashboards, wedged between stacked shipping boxes on a packing table, tomato-red wall behind, hard sun from a high left window throwing the box and laptop shadows sharply across the kraft-paper surface",
+    "the phone held in a hand in front of a deep-sea-blue shop-front, screen showing a generated ad image, hard noon sun from above-right with a crisp shadow of the hand and phone on the wall",
+    "the laptop big in the frame on a wooden workbench in a small product studio, terracotta-orange wall behind, one hard beam from the right window slicing a long shadow across the keyboard and the product samples next to it",
+    "a tablet showing a grid of brand profiles leaning against a mint-green tiled counter in a tea shop, hard morning light from the left window casting sharp shadows of the tablet and cups across the tile"
+   ]
+  },
+  "KOL數字人": {
+   "s": [
+    "the phone filling the frame, its screen showing a smiling virtual influencer mid-video, held up in front of a terracotta-orange night-market stall wall, hard low sun from the right throwing a sharp shadow of the phone and fingers across the brick",
+    "a phone on a tripod clamped to a metal shelf in a small clothing shop, screen showing a digital host talking to camera, tomato-red wall behind, hard light from the street door on the left drawing a long crisp shadow across the floor",
+    "the laptop open on a salon counter with the virtual host's face on screen, deep-sea-blue wall behind, a hard beam from a window on the right laying the laptop's shadow across the counter's worn laminate",
+    "a phone leaning on a mint-green painted market stool, screen showing a short vertical video of a virtual influencer, hard afternoon sun from the left casting sharp stool and phone shadows on the concrete floor"
+   ]
+  },
+  "AIO網站租用": {
+   "s": [
+    "the laptop wide open showing a clean shop website, placed on a wooden counter of a small bakery front, tomato-red wall behind, hard sun from the left window throwing its sharp shadow across the flour-dusted wood",
+    "a phone held large in frame showing a mobile website with an order button, in front of a deep-sea-blue shop shutter, hard noon sun from above-left with crisp shadows of the phone and hand",
+    "the laptop standing on a terracotta-orange tiled workshop bench with tools nearby, screen showing a finished website, hard light from a doorway on the right casting a long sharp shadow across the tiles",
+    "a tablet showing a booking page propped on a mint-green tiled barbershop shelf, hard side window light from the left drawing a clean diagonal shadow over the tile and the scissors beside it"
+   ]
+  }
+ }
 }

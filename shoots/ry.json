@@ -4,7 +4,21 @@
   "en": "contemporary dance performance photography: stage light cutting through haze, motion caught mid-move"
  },
  "brand": {
-  "s": []
+  "s": [
+   "a dancer's bare feet mid-step on a worn maple studio floor, a terracotta-orange mirror-less wall behind, hard late-afternoon sun from a tall window on the left stretching the body's shadow long across the boards, the body filling most of the frame",
+   "a woman in work clothes caught mid-sway in her own small apartment living room, a deep sea-blue painted wall behind her, one hard lamp-like beam of evening sun from the right throwing a crisp full-length shadow of her arms across the wall, tight close framing",
+   "a group of after-work students mid-movement in a community-hall class, a tomato-red curtain behind them, a single hard shaft of light from a high side window carving sharp overlapping shadows on the wooden floor, the nearest body large in the foreground"
+  ]
  },
- "products": {}
+ "products": {
+  "動態冥想課程": {
+   "s": [
+    "a pair of hands mid-sweep, blurred at the fingertips, in a real dance studio with a terracotta-orange wall, hard low sun from the left window casting the arm's long sharp shadow across the wood floor, the moving body filling most of the frame",
+    "a woman who just got off work, tie-less shirt and bag dropped on the floor, caught mid-turn in a neighborhood studio against a deep sea-blue wall, one hard overhead spotlight-like shaft of window light from the upper right throwing her crisp shadow beside her, her figure large and close",
+    "the class in session on a rooftop terrace at dusk, students mid-flow in a staggered row against a mint-green painted wall, hard low sun from behind the camera right throwing long sharp shadows of every raised arm across the concrete floor, the front student large in frame",
+    "a close crop of bare feet shifting weight on a bathroom-tile-patterned studio floor in tomato red and cream, the shoes kicked aside, hard sunlight from a side door slicing across the tiles and casting the ankles' shadows long and sharp",
+    "a person sitting on a sofa phone in hand then abruptly rising into a stretch in a small apartment, a mustard-yellow wall behind, hard evening sun from the window on the left throwing a big, clear silhouette shadow on the wall, the body filling the frame"
+   ]
+  }
+ }
 }

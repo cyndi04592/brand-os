@@ -4,7 +4,22 @@
   "en": "a tactical-gear brand catalogue shot like a cinematic film still: real field locations, calm moments, no violence"
  },
  "brand": {
-  "s": []
+  "s": [
+   "the box sits on a splintered plywood barricade at an airsoft field, planted against a deep-sea-blue tarp wall, low late-afternoon sun from the left throwing sharp long shadows across the wood grain",
+   "a gloved hand flips open the product's lens cover on a film-set prop replica scope at the shooting bench of a field staging area, mossy-green painted board behind, hard side sun from the right casting a crisp cover shadow",
+   "the product lies open on a worn gear-sorting table beside magazines and a face mask, terracotta-orange canvas tent wall behind, one shaft of hard morning light raking in from the tent flap",
+   "the product rests on a muddy sandbag bunker top in an outdoor field, tomato-red barrier panel behind it, hard overhead-side sun carving sharp shadows into its hinge and edges"
+  ]
  },
- "products": {}
+ "products": {
+  "瞄準鏡翻蓋護蓋（生存遊戲配件）": {
+   "s": [
+    "the flip-up scope cover snaps open in a gloved hand over the objective lens of a film-set prop replica lying on a sandbag at an airsoft field, deep-sea-blue tarp wall behind, hard low sun from the left throwing a sharp cover-shaped shadow across the scope tube",
+    "the scope cover sits large in the frame, closed and clamped over a scope on a film-set prop replica resting on a gear-sorting table, terracotta-orange canvas tent behind, a shaft of hard window-like light from the tent flap falling across it and the table",
+    "the cover flipped fully open like a small hatch on a scope, filling the frame, set on a splintered plywood barricade, mossy-green painted board behind, hard late-afternoon sun from behind-right drawing long crisp shadows over the wood grain",
+    "a player's hands snap the cover shut over the scope while crouched behind a bunker of stacked tires at a survival-game field, tomato-red barrier panel behind, hard side sun making crisp rim shadows on the rubber and the cover",
+    "the scope cover rests beside a film-set prop replica, a loaded magazine, and a canteen on a muddy field-camp bench, mint-green ammo crate wall behind, hard morning sun from the left casting sharp long shadows across the boards"
+   ]
+  }
+ }
 }

@@ -4,7 +4,67 @@
   "en": "a car-magazine feature: the car on a real road or in a real workshop, golden-hour light, reflections in the paint"
  },
  "brand": {
-  "s": []
+  "s": [
+   "a hand-off of car keys from one palm to another in front of a used sedan's open driver door, a terracotta-orange roller shutter of a car workshop filling the background, hard late-afternoon sun from camera left throwing the key's and the hands' sharp shadows across the door panel",
+   "the front quarter of a used hatchback fills the frame in a lot-side repair bay with deep-sea-blue painted brick walls, a single hard sun shaft from the high right cutting a crisp diagonal shadow of the roofline across the bonnet",
+   "a seller and a buyer lean over an open engine bay together, close and large in frame, against a tomato-red garage door, hard side light from the open bay entrance carving long shadows of their arms across the engine",
+   "the rear of a used SUV with its tailgate open on a tarmac lot, a mint-green painted warehouse wall behind it, low hard sun from behind-left stretching the car's shadow toward the camera"
+  ]
  },
- "products": {}
+ "products": {
+  "中古車高價收購與專業估價": {
+   "s": [
+    "a hand pressing a flashlight beam along a used car's door seam during a pricing inspection, the car's flank filling the frame against a deep-sea-blue garage wall, hard overhead bay light from the upper right throwing a sharp shadow of the hand and the door handle across the paint",
+    "the inspector crouches by a front wheel with a tire-tread gauge, the wheel arch and tire huge in frame, a terracotta-orange workshop shutter behind, hard low sun from the open door on the left casting long crisp shadows of the gauge across the tread",
+    "an open car door with a clipboard of inspection notes resting on the door sill, the interior and door filling the frame, a mint-green painted lot wall behind, hard noon sun from directly right projecting the clipboard's shadow across the seat",
+    "a hand holding up an odometer-lit dashboard through the windshield, the steering wheel and gauge cluster big in frame, a tomato-red wall reflected faintly beyond the glass, hard side sun from the left laying the steering-wheel spokes' shadow across the dash",
+    "the owner and the appraiser stand at the car's bonnet looking at the open engine bay, the bonnet edge large in the foreground, a deep-sea-blue shutter behind, hard afternoon light from the right throwing both of their shadows up the shutter"
+   ]
+  },
+  "國產及進口中古車銷售": {
+   "s": [
+    "a row of three used cars nosed up to a terracotta-orange painted wall on a sunny lot, the nearest car's front end filling the frame, hard low sun from the left throwing long sharp shadows of all three across the asphalt",
+    "a salesperson opening a used car's driver door for a buyer to sit in, the open door and seat big in the foreground, a mint-green showroom-lot wall behind, hard morning sun from the right throwing the door's shadow across the ground",
+    "the headlight and grille of an imported used sedan filling the frame on an open-air lot, a deep-sea-blue storage container wall behind it, hard side sun from the upper left carving crisp shadows under the grille and bumper",
+    "a buyer's hand running along a used wagon's roof rail in a tomato-red-walled car yard, the roof and rail big in frame, hard overhead afternoon sun from the right casting the hand's long shadow down the window",
+    "the open trunk of a used SUV showing its clean cargo area, the trunk filling the frame, a terracotta-orange workshop wall behind, hard late sun from the left throwing the trunk lid's shadow deep into the cargo floor"
+   ]
+  },
+  "車主舊車換新車服務": {
+   "s": [
+    "two cars parked nose to tail, an old compact in front and a newer one behind, the old car's rear filling the frame against a deep-sea-blue lot wall, hard low sun from the left throwing both cars' sharp shadows across the concrete",
+    "an owner hands over the old car's keys while a new set of keys is passed back, both hands big in frame in front of a tomato-red painted garage door, hard late sun from the right casting the key and finger shadows across the door",
+    "the owner loading a last bag from the old car's boot into the new car beside it on a lot, the two open trunks large in frame, a mint-green wall behind, hard morning sun from the left laying long trunk-lid shadows across the ground",
+    "a trade-in car's registration paper held against the old car's windshield by a hand, windshield and hand filling the frame, a terracotta-orange workshop wall behind, hard noon sun from the right throwing the paper's crisp shadow across the dash",
+    "a new used-car's driver seat seen from the open door as the owner sits in for the first time, the door and seat big in the foreground, a deep-sea-blue garage wall beyond, hard side sun from the left casting the door frame's shadow across the seat"
+   ]
+  },
+  "客戶指定車型尋車服務": {
+   "s": [
+    "a hand holding a printed photo of a wanted car model up to a lot of real cars, the printout big in the foreground and the matching car sharp behind it, a terracotta-orange painted wall beyond, hard afternoon sun from the left throwing the printout's shadow across the hood",
+    "a car finder crouching to check the underbody of a candidate used car at a dealer yard, the bumper and wheel huge in frame, a deep-sea-blue container wall behind, hard low sun from the right casting a long crisp shadow of the finder across the gravel",
+    "a phone showing a car listing held beside the real car's door on a lot, phone and car door both large in frame, a tomato-red wall behind, hard side sun from the left laying the phone's sharp shadow across the door paint",
+    "a client stands beside the car just found for them, a hand on the roof, the car's side filling the frame in a mint-green-walled lot, hard late sun from behind-right throwing the car's and the client's shadows toward the camera",
+    "the open driver door of a located used car with the key in the ignition on a yard, the door and wheel big in the foreground, a terracotta-orange wall behind, hard noon sun from the right throwing the door's shadow across the gravel"
+   ]
+  },
+  "中古車行情分析與買賣諮詢": {
+   "s": [
+    "two people lean over a car's bonnet with a printed price sheet laid on it, the bonnet and sheet filling the frame against a deep-sea-blue lot wall, hard afternoon sun from the left throwing the sheet's and the pen's sharp shadows across the paint",
+    "a hand pointing at the odometer through an open car door while another holds a calculator, the dash and door big in frame, a tomato-red wall behind, hard side sun from the right casting the hands' long shadows across the dash",
+    "two used cars of the same model parked side by side in a yard with different mileage stickers on the windshield, the nearer car's windshield filling the frame, a mint-green wall behind, hard low sun from the left throwing both cars' shadows long across the asphalt",
+    "an advisor and a buyer sit on the folding chairs beside a car at the lot's edge, the car's front fender large in the foreground, a terracotta-orange shutter behind, hard late sun from the right throwing the chairs' crisp shadows across the concrete",
+    "a notebook full of handwritten price comparisons resting on a used car's roof, the roof and notebook filling the frame, a deep-sea-blue garage wall beyond, hard overhead noon light from the left casting the pen's shadow across the page"
+   ]
+  },
+  "汽車同業盤售與車源合作": {
+   "s": [
+    "two dealers shaking hands between a row of used cars in a trade lot, hands and cars large in frame, a tomato-red wall behind them, hard late sun from the left throwing their long shadows across the asphalt",
+    "a line of used cars lined nose to tail at a wholesale car yard, the nearest car's grille filling the frame, a deep-sea-blue container wall behind, hard low morning sun from the right carving long sharp shadows between the cars",
+    "a dealer's hand passing a stack of car keys to another dealer over a car's bonnet, keys and hands big in frame, a mint-green lot wall beyond, hard side sun from the left laying the key shadows across the paint",
+    "two dealers inspecting a shared-stock car's open engine bay together on a lot, their heads and the engine large in frame, a terracotta-orange shutter behind, hard noon light from the right throwing the bonnet's shadow across the engine",
+    "the rear of a car-carrier truck unloading a used sedan onto a lot, the sedan's front big in frame, a tomato-red painted fence behind, hard afternoon sun from the left throwing the ramp's and the sedan's long shadows across the ground"
+   ]
+  }
+ }
 }

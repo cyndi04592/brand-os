@@ -4,7 +4,31 @@
   "en": "a classic barbershop documentary: real chairs, mirrors and tools, warm tungsten light, a barber at work"
  },
  "brand": {
-  "s": []
+  "s": [
+   "a barber's hands mid-cut with the comb and scissors close to the lens, the client's hair lifting against a flat terracotta-orange wall of the shop, a single hard window light from the left throwing crisp shadows of the comb teeth across the cape",
+   "a freshly cut head seen from behind in the barber chair facing a deep-teal tiled wall, hard side light from a shop window carving the fade lines and a sharp shadow down the wall, the head filling most of the frame",
+   "a row of barber chairs in the real shop, the nearest chair huge in the foreground against a tomato-red wall, hard late-afternoon sun slanting through the front glass and laying long chair shadows across the checkered floor",
+   "a barber's hand pressing a straight razor edge along a client's neckline in close-up, mid-blue cape behind, a narrow hard light from above-right casting a sharp razor shadow on the skin"
+  ]
  },
- "products": {}
+ "products": {
+  "洗剪$550": {
+   "s": [
+    "a barber's comb mid-pass through a client's freshly washed hair, shot tight at the shop's wash basin against a deep-sea-blue tiled wall, hard side light from the shop window throwing the comb's shadow across the wet hair",
+    "the client in the barber chair mid-conversation with the barber, both looking into the mirror, a mint-green wall behind, a hard shaft of window light from the left casting their crisp shadows across the cape and floor",
+    "the scissors snipping a lock of hair at the client's temple, large in frame, against a terracotta-orange wall, hard light from upper right giving the blades a sharp shadow on the cape",
+    "a finished clean fade seen from the side in the barber chair, head filling the frame against a tomato-red wall, low hard sun from the doorway drawing a long sharp shadow of the head on the wall",
+    "the barber brushing loose hair off the client's shoulders with a neck brush as the cape is lifted, a sage-green wall behind, hard window light from the right showing every flying hair and a long shadow"
+   ]
+  },
+  "燙染2500up": {
+   "s": [
+    "a barber's gloved hand painting dye onto a section of hair with a brush, huge in frame, against a deep-teal tiled wall of the shop, hard overhead spotlight from the upper left throwing a sharp shadow of the brush and foil",
+    "rows of curling rods wound into the client's hair at the barber chair, close and graphic, against a mustard-ochre wall, hard side light from a shop window casting stripy shadows across the rods and cape",
+    "a freshly dyed head of hair seen in the mirror at the shop's styling station, color glowing against a terracotta-orange wall, hard afternoon sun from the left laying a crisp shadow of the head across the counter",
+    "the barber's hand holding a foil-wrapped strand up to the light, dye bowl and brush on the shop trolley beside it, a mid-blue wall behind, a hard beam from the right casting a clear shadow of the foil on the cape",
+    "a client turning to look at a finished perm with soft waves, filling the frame against a tomato-red wall, hard low sun through the shop glass giving a sharp profile shadow"
+   ]
+  }
+ }
 }

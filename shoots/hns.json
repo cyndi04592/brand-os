@@ -4,7 +4,21 @@
   "en": "a fitness-lifestyle magazine feature: real gyms, parks and kitchens, natural light, real bodies in motion"
  },
  "brand": {
-  "s": []
+  "s": [
+   "a pair of hands tying a running shoe on a worn rubber gym floor against a terracotta-orange wall, one hard window shaft from the left throwing the laces and fingers into long crisp shadows",
+   "a tape measure coiled beside a water bottle on a wooden bench in a community gym changing room, tomato-red locker doors behind, hard overhead-left sun from a high window drawing sharp slatted shadows across the bench",
+   "a yoga mat unrolled across a studio floor in front of a deep-sea-blue wall, low hard sunlight from the right stretching the mat's edge and a pair of resting sneakers into long shadows"
+  ]
  },
- "products": {}
+ "products": {
+  "300小時線上教學及500小時線下實體操作": {
+   "s": [
+    "a laptop playing a lesson video fills the frame on a wooden workbench in a real training room, mint-green wall behind, hard morning light from the left window casting the screen frame and a notebook's shadow sharply across the wood",
+    "an instructor's hands guiding a student's arm into a stretch on a mat in a hands-on training room, terracotta-orange wall behind, one hard side light from the right throwing both arms' shadows long across the floor",
+    "a large open notebook with handwritten lesson notes and a pen on a gym bench, deep-sea-blue lockers behind, hard late-afternoon sun from the left laying crisp slatted shadows over the page",
+    "a close shot of a student's hands holding a tablet showing the online lesson while standing on a training-room mat, tomato-red wall behind, hard overhead light from the upper right with a clear shadow falling on the floor",
+    "a row of practice mats and a stack of folded towels filling the lower frame of an empty practice studio, sage-green wall behind, a shaft of hard window light cutting diagonally across the mats and floor"
+   ]
+  }
+ }
 }
