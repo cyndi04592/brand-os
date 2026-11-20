@@ -862,6 +862,14 @@
   //  🔭 v11.29 瞄具類 = 生存遊戲場景 + 一句正確裝法
   CAT_ART.airsoft_scope = { only: true, u: CAT_ART.airsoft.u, s: CAT_ART.airsoft.s,
     fit: 'How it is fitted: a rifle-style scope sits on top of the replica, parallel to the barrel, clamped to the top rail by two scope rings with its adjustment turrets between them; the wide front lens faces the muzzle and the small eyepiece faces the player. The product is pressed onto the very end of the scope tube, its lid swinging open on a hinge at the rim of that end and standing upright beside the lens.' };
+  //  v2.36 RA 11-20「生存遊戲的槍拿去專櫃拍 = 文不對題」:商品本身就是槍(不是配件)→ 不寫「裝在它的槍上」,改玩家在野戰場用它
+  CAT_ART.airsoft_gun = { only: true, s: [
+    'the product held low and ready by a player in full tactical gear at the corner of a sandbag bunker on a forest airsoft field, the player\'s face hidden behind goggles and a mask, dust in the air',
+    'the product rests across a weathered wooden crate at an outdoor airsoft field, camouflage netting and stacked tyre barricades softly blurred behind',
+    'the product lies on a camouflage cloth on a field table beside clear goggles, tactical gloves and spare magazines, morning light through pine trees',
+    'a player in a plate-carrier vest shoulders the product behind a plywood barricade in an urban close-quarters airsoft arena, team flags behind',
+    'the product leans against a stack of tyres in a woodland airsoft field, dappled light through pine trees, a faint haze behind'
+  ] };
   //  v2.31 每個品牌、每個商品自己的拍法(RA 2026-11-20「超過 17 樣板就變白痴」→ 不再靠手寫品類)
   //   來源:/shoots/<品牌ID>.json(雲端每日工作去圖釘網查該商品的頂級拍法、整理成句子後寫進 GitHub)
   //   格式:{ brand:{ s:[...] }, products:{ "商品名":{ s:[...], refs:[...] } } };沒有檔或抓不到 → 照舊用通用品類
@@ -1156,10 +1164,17 @@
       var _clash = { hand_hold: /overhead|directly above|\bhands?\b|floats|mid-air|hangs/i, magazine_cover: /overhead|directly above/i }[ly] || null;
       var _lyFrom = window._leanFrom || ly;   // 客人選的原版型(美食版 / 飛濺借別的版型拍)
       window._leanCatNow = _cat(ctx);
+      var _nm = String(ctx.product || '') + ' ' + String(ctx.spec || '');
+      if (/^airsoft/.test(window._leanCatNow) && /槍|步槍|手槍|衝鋒槍|狙擊|狙击|枪|\b(rifle|pistol|gun|replica|AEG|GBB)\b/i.test(String(ctx.product || '')) && !/瞄準鏡|瞄具|scope|槍托|槍背帶|槍套|彈匣|holster|sling/i.test(String(ctx.product || ''))) window._leanCatNow = 'airsoft_gun';
       if (_lyFrom === 'dramatic_splash') _clash = /^(?![\s\S]*(pour|splash|spill|mid-air|falling|floats|steam|smoke|breeze|toss|drifting|lifts|rising))/i;   // 飛濺版:只抽有動態的拍法,沒有就交給版型句
       var catP = _own ? { s: _own.s } : CAT_ART[window._leanCatNow];
       var _pool = catP && catP.s && !LP.place ? catP.s.filter(function (x) { return !_clash || !_clash.test(x); }) : [];
       var catS = _pool.length ? pick(_pool) : '', rP = 0;
+      //  v2.36 寵物用品對到對的動物(貓抓板配狗 = 文不對題)
+      if (catS && window._leanCatNow === 'pet') {
+        var _sp = /貓|猫|\bcat|kitten/i.test(_nm) ? 'cat' : /兔|鼠|天竺|龍貓|牧草|\bhay\b|rabbit|hamster|guinea/i.test(_nm) ? 'rabbit' : /鳥|鸚鵡|bird|parrot/i.test(_nm) ? 'bird' : '';
+        if (_sp) catS = catS.replace(/\b(small )?dog's\b/g, _sp + '\'s').replace(/\b(small )?dogs?\b/g, _sp).replace(/\bcats?\b/g, _sp).replace(/ in sunglasses/g, '');
+      }
       if (_big) { /* 靜物手法(桌面、疊塔、手伸進來)都是給小東西的,大件不用 */ }
       var _useP = false;
       if (_big && !(_own && catS)) { /* 已處理 */ }   // v2.35 品牌/商品自己的拍法是照這件商品的大小寫的 → 大件也用
