@@ -1215,6 +1215,7 @@
       //  v2.33 順序就是權重(刺蝟星球):① 畫面主意 ② 主體(保護句+尺寸) ③ 構圖機位 ④ 情境品牌 ⑤ 物理 ⑥ 相機 ⑦ 字
       p.push('A new product campaign photograph: ' + placeP + '.');
       p.push(_protP);
+      if (window._amKeepPerson) p.push('The person in the photo is the same real person in the new scene: the same face, features, hair, skin texture, body shape and clothes, moving naturally and caught in a real moment, not posing for the camera.');   // v2.43 RA:用真人比較沒有 AI 感
       if (window._leanCatNow === 'airsoft_gun') p.push(CAT_ART.airsoft_gun.safe);
       else if (/^airsoft/.test(window._leanCatNow)) p.push('This is a cinematic film still from a recreational airsoft team sport: any replica in the scene is a film prop with its muzzle pointing down and away from everyone and from the camera; a calm moment, no violence and no one hurt.');   // v2.39 配件類也過審   // v2.37 槍類過審句
       if (_sc) p.push(_sc);

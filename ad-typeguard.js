@@ -15,7 +15,7 @@
 (function () {
   'use strict';
   if (window.__adTypeGuard) return;
-  window.__adTypeGuard = 'v1.2';
+  window.__adTypeGuard = 'v1.3';   // v1.3 RA 11-20「巧福 AI 沒真人參考?」+ 刺蝟星球:場景要有生活感,要抓真人來用 → 新增「保留照片裡的真人」
   var KOL = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
   var seen = {};     // 照片網址 → true/false(這次開頁判斷過的)
   var kept = {};     // 照片網址 → 客人選了「照原本」就不再問
@@ -60,7 +60,8 @@
       + '<div style="font-size:12.5px;color:#a9a9b8;line-height:1.7;margin-bottom:14px;">「商品實拍」會把照片裡的東西當成商品擺在桌上或層架上,有人的照片會變成人站在台子上。<br>建議改用<b style="color:#e8e8f0">服飾穿搭 · 重拍</b>:衣服照原樣,模特兒換姿勢、角度和場景,每張都不一樣。</div>'
       + '<div style="display:flex;flex-direction:column;gap:8px;">'
       + '<button data-g="re" style="padding:11px;border-radius:9px;border:none;background:linear-gradient(135deg,#7c6dfa,#fa6d9b);color:#fff;font-weight:900;cursor:pointer;">改用服飾穿搭 · 重拍(推薦)</button>'
-      + '<button data-g="keep" style="padding:10px;border-radius:9px;border:1px solid #3a3a4a;background:transparent;color:#bbb;cursor:pointer;">照原本的商品實拍(我就是要拍成商品)</button>'
+      + '<button data-g="person" style="padding:11px;border-radius:9px;border:1px solid #7c6dfa;background:rgba(124,109,250,.15);color:#fff;font-weight:900;cursor:pointer;">保留照片裡的真人 · 換場景(商品和人都照原樣,用真人比較不會有 AI 感)</button>'
+      + '<button data-g="keep" style="padding:10px;border-radius:9px;border:1px solid #3a3a4a;background:transparent;color:#bbb;cursor:pointer;">只拍商品(把人拿掉)</button>'
       + '</div></div>';
     mask.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('[data-g]');
@@ -68,7 +69,7 @@
       if (!b) return;
       mask.remove();
       var g = b.getAttribute('data-g');
-      if (g === 're') onSwitch('apparel'); else if (g === 'sw') onSwitch('apparel_keep'); else onKeep();
+      if (g === 're') onSwitch('apparel'); else if (g === 'sw') onSwitch('apparel_keep'); else if (g === 'person') onKeep(true); else onKeep(false);
     });
     document.body.appendChild(mask);
   }
@@ -90,14 +91,16 @@
     var guarded = async function () {
       var self = this, args = arguments;
       var t = curType();
+      window._amKeepPerson = false;
       if (t === 'physical_reshoot' || t === 'physical') {
         var u = photoUrl();
+        window._amKeepPerson = (kept[u] === 'person');
         if (u && !kept[u]) {
           var person = false;
           try { say('⏳ 先看一下商品照…'); person = await hasPerson(u); } catch (e) { person = false; }   // 判斷失敗 → 不擋
           if (person) {
             say('');
-            return ask(switchToApparel, function () { kept[u] = true; orig.apply(self, args); });
+            return ask(switchToApparel, function (keepPerson) { kept[u] = keepPerson ? 'person' : 'product'; window._amKeepPerson = !!keepPerson; orig.apply(self, args); });
           }
         }
       }
