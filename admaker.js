@@ -4523,7 +4523,10 @@ async function generateGptPoster() {
     //   第二步把成品+原商品照一起送,只把商品改回原樣,其他畫面不動 →「可以了」)
     //  🏷 2026-10-31 ad-logotap.js:客人生成前點了商品 LOGO → 一般模式也校正,並多帶 LOGO 近景(圖 3)
     const _lt = (window._amLogoTap && window._amLogoTap.crop) ? window._amLogoTap : null;
-    if ((window._amReshoot || _lt) && winner.from === 'fal' && winner.imageUrl) {
+    //  🩹 2026-11-20 RA「商品跟背景要一起打光,看起來個別打光=致命缺點」:實測巧福桑拿機同一張照片 ——
+    //   有商品校正 → 商品正面被原照片的棚拍平光蓋回去、像貼上;關掉校正 → 商品吃到窗光與陰影、融進場景。
+    //   → 整張商品校正只在客人有點 LOGO(要對字)時才做;一般重拍不再把原照片貼回來。
+    if (_lt && winner.from === 'fal' && winner.imageUrl) {
       try {
         setPrStatus('🔍 商品校正中(把商品細節對回原圖,約 1-2 分鐘)...', 'var(--t3)');
         const _isApp = (SELECTED_PRODTYPE === 'apparel');
