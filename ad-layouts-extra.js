@@ -32,13 +32,28 @@
     return;
   }
   if (window._adLayoutsExtra) return;   // 重複載入保護
-  window._adLayoutsExtra = '1.4';
+  window._adLayoutsExtra = '1.5';
 
   var NO_TEXT = '\n- Photograph only; no lettering is added to the image (the customer types any text later).';
   function T(label, desc, comp) { return { label: label, desc: desc, composition: comp + NO_TEXT }; }
 
   // ── 版型名字與說明(客人在 ① 看到的字)────────────────────────────
   Object.assign(LAYOUT_TEMPLATES, {
+    // 🏠 v1.5 房屋買賣與租賃(RA 2026-11-20 賣房 / 代管 / 租屋)—— 物件攝影:空間照原樣、垂直線直、自然光、窗景也曝光正確
+    re_room:     T('室內空間型', '上傳客廳 / 臥室照片 → 拍出物件攝影的質感(空間照原樣)', 'An architectural photograph of the same room, kept exactly as it is, level camera, straight verticals, soft daylight.'),
+    re_kitchen:  T('廚房衛浴型', '上傳廚房 / 浴室照片 → 乾淨明亮、線條筆直', 'An architectural photograph of the same kitchen or bathroom, kept exactly as it is, clean and bright.'),
+    re_exterior: T('建築外觀型', '上傳外觀照片 → 藍調時刻、窗戶亮燈', 'The same building kept exactly as it is, seen straight and level at blue hour, windows glowing.'),
+    re_view:     T('採光窗景型', '窗景與採光當主角,室內和窗外都清楚', 'The same room with its window and view, both correctly exposed in soft daylight.'),
+    re_agent:    T('經紀人形象型', '房仲 / 代管人員形象照(上傳本人照片)', 'An environmental portrait of the same agent in a bright, empty home.'),
+    re_handover: T('交屋鑰匙型', '鑰匙交到新屋主 / 房客手上的那一刻', 'The agent handing house keys to the new owner at the front door, warm daylight.'),
+    re_life:     T('入住生活型', '一家人 / 房客在家裡生活的樣子(新面孔)', 'Everyday life in a bright home: breakfast by the window, reading on the sofa.'),
+    re_area:     T('周邊生活圈型', '上傳街道 / 公園照片 → 生活機能感', 'The same real neighbourhood street or park, a resident walking past, soft daylight.'),
+    // 🎫 v1.5 活動與票券(RA 2026-11-20 演唱會門票)—— 觀眾剪影對舞台燈、手機燈海、票在前景;不畫可辨認的藝人
+    ev_crowd:  T('現場人潮型', '舉手、手機燈海、舞台光 —— 演唱會的熱度', 'Inside the crowd at a live concert, raised hands in silhouette against stage light.'),
+    ev_ticket: T('票券手持型', '手上一張票,後面是糊開的舞台燈', 'A hand holding a plain ticket up toward a blurred, glowing stage.'),
+    ev_stage:  T('舞台燈光型', '整個舞台的燈光與煙霧,觀眾在前景', 'A wide view of a huge stage in coloured beams and haze, the crowd in silhouette.'),
+    ev_venue:  T('場館外觀型', '上傳場館照片 → 開演前排隊的期待感', 'The same real venue at dusk, fans queueing outside, the entrance glowing.'),
+    ev_fans:   T('粉絲應援型', '拿應援物、穿應援衣的歌迷(新面孔)', 'Fans with light sticks and matching shirts outside the venue at dusk.'),
     // 💅 美業
     bt_hand_result: T('手部成果型', '指尖、手勢帶出成果(美甲、手部保養)', 'A close beauty shot of the hands showing the finished work, an elegant natural gesture, soft daylight.'),
     bt_profile:     T('側臉輪廓型', '側臉看眉型、睫毛翹度最清楚', 'A close side profile from brow to chin, the finished brows and lashes reading clearly, soft daylight.'),
@@ -147,8 +162,56 @@
     g[2].forEach(function (k) { if (LAYOUT_TEMPLATES[k] && grp.keys.indexOf(k) === -1) grp.keys.push(k); });
   });
 
-  // ✂️ v1.1 收起三種排版圖(舊引擎、多格多字,質感達不到 MOZ 標準)
-  var HIDE = ['before_after', 'grid_showcase', 'checklist_info'];
+  // 🏠🎫 v1.5 新行業:房屋買賣與租賃、活動與票券(接在飯店後面)
+  [['realty', '房屋買賣與租賃 — 賣房 / 房屋代管 / 租屋 / 建案'], ['event', '活動與票券 — 演唱會 / 展演 / 市集 / 售票']].forEach(function (o, i) {
+    if (typeof PRODTYPE_OPTIONS === 'undefined' || !Array.isArray(PRODTYPE_OPTIONS) || PRODTYPE_OPTIONS.some(function (x) { return x.value === o[0]; })) return;
+    var at = PRODTYPE_OPTIONS.findIndex(function (x) { return x.value === (i ? 'realty' : 'hotel'); });
+    PRODTYPE_OPTIONS.splice(at >= 0 ? at + 1 : PRODTYPE_OPTIONS.length, 0, { value: o[0], label: o[1] });
+    var el = document.getElementById('prodTypeSel'); if (el) delete el.dataset.rendered;
+  });
+  LAYOUT_BY_PRODTYPE.realty = [
+    { group: '物件空間', keys: ['re_room', 're_kitchen', 're_view', 're_exterior'] },
+    { group: '人與生活', keys: ['re_agent', 're_handover', 're_life', 're_area'] },
+  ];
+  LAYOUT_BY_PRODTYPE.event = [
+    { group: '現場', keys: ['ev_crowd', 'ev_stage', 'ev_fans'] },
+    { group: '票與場館', keys: ['ev_ticket', 'ev_venue'] },
+  ];
+  if (typeof CONTEXT_BLOCKED_BY_PRODTYPE !== 'undefined') ['realty', 'event'].forEach(function (pt) {
+    CONTEXT_BLOCKED_BY_PRODTYPE[pt] = ['jp_direct', 'jp_drugstore_haul', 'duty_free', 'limited_stock', 'daily_supplement', 'unboxing'];
+  });
+
+  // ✂️ v1.5 版型總盤點(RA 2026-11-20「根本不符合版型的就刪除」,以 MOZ 質感為準)
+  //   ① 一張照片做不到 MOZ 質感的:多格、前後對比、條列、規格圖、大字宣言、問句 / 名片 / 預約資訊這種「以字為主」的圖
+  //      (字一律由文字層後製,AI 不畫字) ② 刻意拍不精緻的:鏡子自拍
+  //   ③ 依類型重排選單:服飾不給美食版 / 飛濺 / 手持;水晶養生不給美食版
+  var DROP = ['before_after', 'grid_showcase', 'checklist_info', 'spec_breakdown', 'big_statement', 'beauty_before_after', 'hero_side_grid',
+              'question_headline', 'booking_info', 'med_education', 'eq_spec_hero', 'sc_code_split', 'sc_feature_tile', 'pr_namecard',
+              'pr_viewpoint', 'mystic_headline', 'itinerary_grid', 'mirror_selfie'];
+  DROP.forEach(function (k) { delete LAYOUT_TEMPLATES[k]; });
+  var GOODS = [
+    { group: '', keys: ['minimal_poster'] },
+    { group: '攝影棚', keys: ['white_studio'] },
+    { group: '餐飲專用', keys: ['food_special'] },
+    { group: '經典版式', keys: ['scene_lifestyle', 'magazine_cover', 'dramatic_splash', 'hand_hold'] },
+  ];
+  var WEAR = [
+    { group: '', keys: ['minimal_poster'] },
+    { group: '攝影棚', keys: ['white_studio'] },
+    { group: '經典版式', keys: ['scene_lifestyle', 'magazine_cover'] },
+  ];
+  var WELL = [
+    { group: '', keys: ['minimal_poster'] },
+    { group: '攝影棚', keys: ['white_studio'] },
+    { group: '經典版式', keys: ['scene_lifestyle', 'magazine_cover', 'hand_hold'] },
+  ];
+  function _clone(g) { return g.map(function (x) { return { group: x.group, keys: x.keys.slice() }; }); }
+  LAYOUT_BY_PRODTYPE.physical = _clone(GOODS);
+  LAYOUT_BY_PRODTYPE.physical_reshoot = _clone(GOODS);
+  LAYOUT_BY_PRODTYPE.apparel = _clone(WEAR);
+  LAYOUT_BY_PRODTYPE.apparel_keep = _clone(WEAR);
+  LAYOUT_BY_PRODTYPE.wellness = _clone(WELL);
+  var HIDE = DROP;
   Object.keys(LAYOUT_BY_PRODTYPE).forEach(function (pt) {
     var list = LAYOUT_BY_PRODTYPE[pt];
     if (!Array.isArray(list)) return;
@@ -169,5 +232,5 @@
   var sel = document.getElementById('layoutSel');
   if (sel) delete sel.dataset.pt;
 
-  console.log('[版型+] v1.4 已載入:新增 35 種照片版型(含汽車買賣、飯店婚宴)· 收起前後對比 / 多格展示 / 重點條列 · 服務業情境只留適用的');
+  console.log('[版型+] v1.5 已載入:照片版型(含汽車、飯店婚宴、房屋買賣租賃、活動票券)· 刪除 18 種做不到 MOZ 質感的版型 · 選單依類型重排');
 })();

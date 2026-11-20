@@ -283,7 +283,10 @@
     const orig = window.generateGptPoster;
     const wrapped = async function () {
       const p = curProd();
-      if (p && (!keyOf(p) || needsSize(p))) { const ok = await open(p); if (!ok) return; }   // 📏 v1.2 落地/大型/鋪地還沒選大小 → 也問一次
+      //  v1.6 2026-11-20 整盤實測:飯店客房、房屋物件也跳「這個商品怎麼擺?」卡住 → 服務 / 空間類沒有一件商品可以擺,不問
+      const pt = (typeof SELECTED_PRODTYPE !== 'undefined' && SELECTED_PRODTYPE) || '';
+      const noThing = ['beauty', 'medical', 'course', 'mystic', 'travel', 'pro', 'auto', 'screen', 'hotel', 'realty', 'event'].indexOf(pt) !== -1;
+      if (p && !noThing && (!keyOf(p) || needsSize(p))) { const ok = await open(p); if (!ok) return; }   // 📏 v1.2 落地/大型/鋪地還沒選大小 → 也問一次
       return orig.apply(this, arguments);
     };
     wrapped._ppl = true;

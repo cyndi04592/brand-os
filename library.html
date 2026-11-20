@@ -962,8 +962,56 @@ upBox.addEventListener('drop', function(ev){
 //   ★ 只處理瀏覽器打得開的圖(jpg/png/webp);HEIC、PDF、影片一律原樣送。
 //   ★ 壓縮失敗一律送原圖 —— 壓縮是優化,不可以變成上傳失敗的理由。
 const UP_MAX_PX = 2560;
+//  🧵 2026-11-18 RA「上傳選 10 張以上會 lag」
+//   病:縮圖整段跑在主執行緒 —— 4500 萬畫素的照片解碼、畫上畫布、壓成 JPG,每張卡畫面 0.5～1 秒,
+//     10 張以上就整頁卡住(按鈕、捲動、進度都不動)。不是張數上限的問題,是重活放錯地方。
+//   ★ 改到背景執行緒(Web Worker + OffscreenCanvas)做,主畫面完全不卡;
+//     瀏覽器不支援背景畫布才退回原本的做法,而且每張之間讓畫面喘一口氣。
+let _shrinkWorker = null, _shrinkSeq = 0;
+const _shrinkWait = {};
+function _getShrinkWorker(){
+  if(_shrinkWorker !== null) return _shrinkWorker;
+  try{
+    if(typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined'){ _shrinkWorker = false; return false; }
+    const src = "self.onmessage=async function(e){var d=e.data;try{var bmp=await createImageBitmap(d.file);"
+      + "var w=bmp.width,h=bmp.height;if(Math.max(w,h)<=d.max){bmp.close();self.postMessage({id:d.id,skip:1});return;}"
+      + "var k=d.max/Math.max(w,h),cw=Math.round(w*k),ch=Math.round(h*k);var cv=new OffscreenCanvas(cw,ch);"
+      + "cv.getContext('2d').drawImage(bmp,0,0,cw,ch);bmp.close();"
+      + "var blob=await cv.convertToBlob({type:'image/jpeg',quality:0.9});"
+      + "self.postMessage({id:d.id,blob:blob,w:w,h:h,cw:cw,ch:ch});}catch(err){self.postMessage({id:d.id,err:String(err&&err.message||err)});}};";
+    _shrinkWorker = new Worker(URL.createObjectURL(new Blob([src], { type:'text/javascript' })));
+    _shrinkWorker.onmessage = function(ev){
+      const d = ev.data, cb = _shrinkWait[d.id];
+      if(cb){ delete _shrinkWait[d.id]; cb(d); }
+    };
+    _shrinkWorker.onerror = function(){ _shrinkWorker = false; };
+  }catch(e){ _shrinkWorker = false; }
+  return _shrinkWorker;
+}
+function _shrinkOffThread(f){
+  const wk = _getShrinkWorker();
+  if(!wk) return Promise.resolve(null);
+  return new Promise(function(res){
+    const id = ++_shrinkSeq;
+    const t = setTimeout(function(){ delete _shrinkWait[id]; res(null); }, 60000);
+    _shrinkWait[id] = function(d){ clearTimeout(t); res(d); };
+    wk.postMessage({ id:id, file:f, max:UP_MAX_PX });
+  });
+}
 async function _shrinkForUpload(f){
   try{
+    if(!f || !/^image\/(jpeg|jpg|png|webp)$/i.test(f.type || '')) return f;
+    if(f.size < 900 * 1024) return f;                    // 小於 0.9MB 不折騰
+    const off = await _shrinkOffThread(f);               // 🧵 先在背景執行緒做(不卡畫面)
+    if(off && off.skip) return f;
+    if(off && off.blob){
+      const name0 = String(f.name || 'image').replace(/\.(png|webp|jpeg|jpg)$/i, '') + '.jpg';
+      const out0 = new File([off.blob], name0, { type:'image/jpeg' });
+      console.log('[UP] 🗜(背景) ' + f.name + ' ' + off.w + '×' + off.h + ' ' + Math.round(f.size/1024) + 'KB → '
+                  + off.cw + '×' + off.ch + ' ' + Math.round(out0.size/1024) + 'KB');
+      return out0.size < f.size ? out0 : f;
+    }
+    await new Promise(function(r){ setTimeout(r, 30); });   // 退回主執行緒做:先讓畫面喘口氣
     if(!f || !/^image\/(jpeg|jpg|png|webp)$/i.test(f.type || '')) return f;
     if(f.size < 900 * 1024) return f;                    // 小於 0.9MB 不折騰
     const bmp = await createImageBitmap(f);

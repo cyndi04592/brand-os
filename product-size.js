@@ -273,7 +273,7 @@
         ? '<p class="st">✅ 已存:' + esc(p.realSize || s.bigZh || '') + (s.piece && !_isBig(s.packKey, p) ? ' · 裡面一件約 ' + s.piece + ' cm' : '') + ' —— 系統會照這個大小做尺寸參考照</p>'
         : '<p class="st warn">⚠️ 「' + name + '」還沒填尺寸 —— ' + (opts.required ? '選好按「存起來」才能生成。' : '影片裡商品大小有機會不準(偏大或偏小)。') + '點一下就好:</p>';
       box.innerHTML = '<div class="psz' + (need && !s.filled ? ' need' : '') + '"><h4>' + RULER + '商品實際大小' + REQ + (s.filled ? '<a class="ed" data-x="1">收起</a>' : '') + '</h4>' + status
-        + '<div class="lb">整包(整件)大概多大?</div><div data-g="pack">' + tiles(sel.pack) + '</div>'
+        + '<div class="lb">整包(整件)大概多大?<span style="opacity:.75;font-weight:400">(照片裡看到的整個東西一起算:餐點連盤子、飲料連杯子、有包裝就連包裝)</span></div><div data-g="pack">' + tiles(sel.pack) + '</div>'
         + '<div class="ex"><span class="lb" style="margin:0">想填準一點(公分):</span>寬 <input data-f="w" inputmode="decimal" value="' + esc(sel.w) + '"> × 高 <input data-f="h" inputmode="decimal" value="' + esc(sel.h) + '"> cm</div>'
         + '<div class="psz-piece"' + (_isBig(sel.pack, p) ? ' style="display:none"' : '') + '><div class="lb">裡面一件大概多大?(沒有內容物就不用點)</div><div class="row" data-g="piece">'
         + PIECE.map(function (o) { return '<button type="button" class="c' + (sel.piece === o.k ? ' on' : '') + '" data-k="' + o.k + '">' + o.t + '</button>'; }).join('')
@@ -350,7 +350,10 @@
     var g = window.generateGptPoster;
     if (typeof g !== 'function' || g.__sizeReq) return;
     var req = async function () {
-      if (_adSize && document.body.contains(document.querySelector('.psz-host')) && _adSize.missing()) {
+      //  v1.9 2026-11-20 整盤實測:飯店客房、房屋物件被「請先選商品實際大小」擋住 —— 服務 / 空間類沒有「一件商品」可以量,不必選
+      var _pt = (typeof SELECTED_PRODTYPE !== 'undefined' && SELECTED_PRODTYPE) || '';
+      var _noSize = ['beauty', 'medical', 'course', 'mystic', 'travel', 'pro', 'auto', 'screen', 'hotel', 'realty', 'event'].indexOf(_pt) !== -1;
+      if (!_noSize && _adSize && document.body.contains(document.querySelector('.psz-host')) && _adSize.missing()) {
         _adSize.remind();
         if (typeof setPrStatus === 'function') setPrStatus('📏 請先選「商品實際大小」並按「存起來」,再按生成', '#ff9d9d');
         return;
