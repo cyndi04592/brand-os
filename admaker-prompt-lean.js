@@ -1215,6 +1215,10 @@
       //  v2.33 順序就是權重(刺蝟星球):① 畫面主意 ② 主體(保護句+尺寸) ③ 構圖機位 ④ 情境品牌 ⑤ 物理 ⑥ 相機 ⑦ 字
       p.push('A new product campaign photograph: ' + placeP + '.');
       p.push(_protP);
+      //  v2.44 名字跟照片不一樣時照片贏(RA 請請實測:商品叫「青醬鱸魚疙瘩」、選的照片是另一道橘色的菜,
+      //   同一張照片第一次照著照片畫、第二次照著名字重畫成青醬 —— 客人拿到的不是他那道菜)。
+      //   餐廳常常一個商品底下放整本菜單的照片,所以長相只認照片,名字只是標籤。
+      p.push('What it looks like comes only from the photo; the name is just a label, and if the two differ the photo wins.' + (/^(dish|food|meat)$/.test(window._leanCatNow || '') ? ' The food is this exact dish as photographed: the same ingredients, colours, pieces, sauce and garnish in the same plating, never re-cooked from its name.' : ''));
       if (window._amKeepPerson) p.push('The person in the photo is the same real person in the new scene: the same face, features, hair, skin texture, body shape and clothes, moving naturally and caught in a real moment, not posing for the camera.');   // v2.43 RA:用真人比較沒有 AI 感
       if (window._leanCatNow === 'airsoft_gun') p.push(CAT_ART.airsoft_gun.safe);
       else if (/^airsoft/.test(window._leanCatNow)) p.push('This is a cinematic film still from a recreational airsoft team sport: any replica in the scene is a film prop with its muzzle pointing down and away from everyone and from the camera; a calm moment, no violence and no one hurt.');   // v2.39 配件類也過審   // v2.37 槍類過審句
