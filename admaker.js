@@ -2032,6 +2032,58 @@ async function loadBrandLogos(brandId, force) {
   return _logoFetching[brandId];
 }
 
+// 🧽 2026-11-20:客戶上傳的 logo 沒去背(整張不透明、底是一片純色)→ 自動把底色變透明。
+//   為什麼:請請的 logo 是白底黑字的 PNG,單色重新上色會把「整個長方形」填成白色,
+//   廣告圖右上角就多一塊白板。一萬個客戶不可能每個都會去背,所以程式自己處理。
+//   做法:量四個邊的像素,九成五以上是同一個顏色才算「純色底」;
+//   每個像素離底色越遠越不透明,並把邊緣混到的底色扣掉,避免留一圈白邊。
+//   本來就有透明的 logo、底是照片或漸層的 logo → 不動它。
+function _keyOutSolidBg(img) {
+  try {
+    let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+    const sc = Math.min(1, 2000 / Math.max(w, h));
+    w = Math.max(1, Math.round(w * sc)); h = Math.max(1, Math.round(h * sc));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, w, h);
+    const im = g.getImageData(0, 0, w, h), d = im.data;
+    const edge = [];
+    for (let x = 0; x < w; x++) { edge.push(x * 4, ((h - 1) * w + x) * 4); }
+    for (let y = 0; y < h; y++) { edge.push(y * w * 4, (y * w + w - 1) * 4); }
+    let r = 0, gg = 0, b = 0;
+    for (const i of edge) {
+      if (d[i + 3] < 250) return null;              // 邊上有透明 → 本來就去背過
+      r += d[i]; gg += d[i + 1]; b += d[i + 2];
+    }
+    r /= edge.length; gg /= edge.length; b /= edge.length;
+    let same = 0;
+    for (const i of edge) {
+      if (Math.max(Math.abs(d[i] - r), Math.abs(d[i + 1] - gg), Math.abs(d[i + 2] - b)) < 18) same++;
+    }
+    if (same / edge.length < 0.95) return null;     // 邊不是純色(照片、漸層)→ 不動
+    const LO = 12, HI = 72;
+    let kept = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const dist = Math.max(Math.abs(d[i] - r), Math.abs(d[i + 1] - gg), Math.abs(d[i + 2] - b));
+      let a = (dist - LO) / (HI - LO);
+      a = a < 0 ? 0 : (a > 1 ? 1 : a);
+      if (a > 0 && a < 1) {                         // 邊緣:把混進來的底色扣掉
+        d[i]     = Math.max(0, Math.min(255, (d[i]     - r  * (1 - a)) / a));
+        d[i + 1] = Math.max(0, Math.min(255, (d[i + 1] - gg * (1 - a)) / a));
+        d[i + 2] = Math.max(0, Math.min(255, (d[i + 2] - b  * (1 - a)) / a));
+      }
+      d[i + 3] = Math.round(a * 255);
+      if (a > 0.5) kept++;
+    }
+    if (kept < (w * h) * 0.003) return null;        // 扣完幾乎沒東西 → 判斷錯,不動
+    g.putImageData(im, 0, 0);
+    console.log('[logo] 沒去背的 logo,自動去掉純色底(' + Math.round(r) + ',' + Math.round(gg) + ',' + Math.round(b) + ')');
+    return c;
+  } catch (e) { return null; }
+}
+
 // ✂️ 2026-08-11:自動裁掉 logo 四周的透明空白。
 //   為什麼要做:客戶匯出的 logo 常常是 1200×400 的大畫布、logo 只佔左邊一小塊,
 //   其餘全透明。若照整張圖的比例縮放,疊上去會變超小又偏一邊 ——
@@ -2213,6 +2265,7 @@ async function compositeBrandLogo(ctx) {
     const _firstSrc = urls.mono || urls.color || urls.white || urls.black;
     if (!_firstSrc) return;
     let img = await _loadImg(_firstSrc);
+    img = _keyOutSolidBg(img) || img;       // 🧽 沒去背的 logo 先去底
 
     // ✂️ 先裁掉透明邊,之後的比例、單色偵測、繪製都用裁過的版本
     let trimmed = _trimTransparent(img) || img;
@@ -2237,7 +2290,7 @@ async function compositeBrandLogo(ctx) {
     // 有分白/黑兩版 → 照背景挑那一版(形狀相同,尺寸沿用)
     if (hasPair) {
       const _want = spot.useWhite ? urls.white : urls.black;
-      if (_want && _want !== _firstSrc) { img = await _loadImg(_want); trimmed = _trimTransparent(img) || img; }
+      if (_want && _want !== _firstSrc) { img = await _loadImg(_want); img = _keyOutSolidBg(img) || img; trimmed = _trimTransparent(img) || img; }
     }
 
     // 🔍 模式改成「看圖說話」,不看檔名:
