@@ -261,7 +261,9 @@ async function fetchFromLibrary(brandId, reqId, force) {
         driveUrl: it.url,
         src:     thumb,
         type:    'photo',
-        _src:    'library'
+        _src:    'library',
+        assetId: (it.from === 'upload' && it.id) ? it.id : null,           // 📦 2026-11-21 kol-proxy v8.09:改歸屬用
+        productIds: String(it.product_ids || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)   // ["subId/prodId", …];空 = 整個品牌共用
       };
       window.S.photos.push(_row);
       _fresh.push(_row);
@@ -309,14 +311,46 @@ async function ensureFullRes(photo, thumb) {
   } catch (e) { console.warn('ensureFullRes error', e); }
 }
 
+// ══ 📦 2026-11-21 照片屬於哪個商品(kol-proxy v8.09:上傳時看圖自動分;客人可手動改)══
+function _curProdKey() {
+  const p = window.S && window.S.prod;
+  return (p && p.id) ? String(window.S.subId || '') + '/' + String(p.id) : '';
+}
+function _photoIsProd(f, key) {
+  return (f && Array.isArray(f.productIds) && key && f.productIds.indexOf(key) !== -1) ? 1 : 0;
+}
+async function photoProdToggle(i) {
+  const f = window.S.photos[i], key = _curProdKey();
+  if (!f || !f.assetId || !key) return;
+  const mine = _photoIsProd(f, key);
+  try {
+    const KOL_URL = (typeof KOL_WORKER_URL !== 'undefined' && KOL_WORKER_URL) ? KOL_WORKER_URL : 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+    let tk = ''; try { tk = sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch (e) {}
+    const r = await fetch(KOL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'asset_product_set', password: GAS_PASSWORD, token: tk, assetId: f.assetId, op: mine ? 'remove' : 'add', productId: key }) });
+    const d = await r.json();
+    if (!d || !d.ok) { alert('改不成功:' + ((d && d.error) || '請稍後再試')); return; }
+    f.productIds = String(d.productIds || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    const bid = window.S.brandId;
+    if (bid && _libCache[bid]) { const c = _libCache[bid].find(function (x) { return x.libUrl === f.libUrl; }); if (c) c.productIds = f.productIds.slice(); }
+    renderAssets();
+  } catch (e) { alert('改不成功:' + e.message); }
+}
+
 // ══ 渲染素材列表 ══
 function renderAssets() {
   const grid = document.getElementById('assetGrid');
   let html = '';
   if (window.S.photos.length) {
+    //  📦 2026-11-21 RA「上傳時照片自動分商品」:選了商品 → 屬於這個商品的照片排最前面並標出來,其餘照片照樣看得到(分錯時才救得回來)
+    //   ★ 只改「畫的順序」,onclick 仍用原本的索引 i,S.selPhoto 的意思不變
+    const _pk = _curProdKey();
+    const _order = window.S.photos.map((f, i) => [f, i]);
+    if (_pk) _order.sort((a, b) => (_photoIsProd(b[0], _pk) - _photoIsProd(a[0], _pk)) || (a[1] - b[1]));
+    const _nMine = _pk ? _order.filter(x => _photoIsProd(x[0], _pk)).length : 0;
     html += `<div class="asset-sec">
-      <div class="asset-sec-lbl">圖 照片素材 <span class="asset-count" style="color:var(--sky)">${window.S.photos.length}</span></div>
-      ${window.S.photos.map((f, i) => assetItemHtml(f, i, 'photo', window.S.selPhoto === i)).join('')}
+      <div class="asset-sec-lbl">圖 照片素材 <span class="asset-count" style="color:var(--sky)">${window.S.photos.length}</span>${_nMine ? ` <span style="font-size:10px;color:var(--mint,#6DFAC2)">· 這個商品 ${_nMine} 張排最前面</span>` : ''}</div>
+      ${_order.map(x => assetItemHtml(x[0], x[1], 'photo', window.S.selPhoto === x[1])).join('')}
     </div>`;
   }
   if (SHOW_VIDEO_ASSETS && window.S.videos.length) {
@@ -337,11 +371,21 @@ function assetItemHtml(f, i, type, sel) {
   if (f.src)        thumb = '<img loading="lazy" src="' + f.src   + '" onerror="' + errHandler + '">';
   else if (f.thumb) thumb = '<img loading="lazy" src="' + f.thumb + '" onerror="' + errHandler + '">';
   else              thumb = fallback;
+  //  📦 2026-11-21 照片屬於哪個商品:是這個商品 → 標「📦 這個商品」;可以手動改(只有素材庫上傳的照片才有 assetId)
+  let meta = '品牌素材';
+  const _pk = type === 'photo' ? _curProdKey() : '';
+  if (_pk) {
+    const mine = _photoIsProd(f, _pk);
+    const btn = f.assetId
+      ? ` <a href="javascript:void 0" onclick="event.stopPropagation();photoProdToggle(${i})" style="color:var(--t3);text-decoration:underline;margin-left:4px">${mine ? '不是這個商品' : '設為這個商品'}</a>`
+      : '';
+    meta = (mine ? '<span style="color:var(--mint,#6DFAC2);font-weight:700">📦 這個商品</span>' : '品牌素材') + btn;
+  }
   return `<div class="asset-item ${sel?'on':''} ${type}" onclick="selectAsset('${type}',${i})">
     <div class="ai-thumb">${thumb}</div>
     <div class="ai-info">
       <div class="ai-name">${f.name}</div>
-      <div class="ai-meta">品牌素材</div>
+      <div class="ai-meta">${meta}</div>
     </div>
     <span class="ai-check">✓</span>
   </div>`;

@@ -211,9 +211,25 @@ window.AdShootBadge = (function () {
             C[bid] = (g && g.en) ? { zh: String(g.zh || g.en).split(/[(\uFF08]/)[0].trim().slice(0, 18), n: Object.keys(j.products || {}).length } : false;
           })
           .catch(function () { C[bid] = false; })
-          .then(function () { busy--; paint(); pump(); });
+          .then(function () { if (C[bid] === false) SQ.push(bid); busy--; paint(); pump(); });
       })(Q.shift());
     }
+    if (!busy && !Q.length && SQ.length) srv();
+  }
+  //  \uD83D\uDCE6 2026-11-21 shoots \u6A94\u9084\u6C92\u6709\u7684\u54C1\u724C,\u518D\u554F\u4F3A\u670D\u5668(kol-proxy v8.09 brand_genre_get_many):\u7576\u5929\u7F8E\u8853\u6307\u5C0E\u5B9A\u597D\u7684\u4E5F\u4EAE\u6846
+  var SQ = [];
+  function srv() {
+    var ids = SQ.splice(0, 60);
+    var tk = ''; try { tk = sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch (e) {}
+    fetch('https://kol-proxy.calm-sunset-6b66.workers.dev', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'brand_genre_get_many', password: (typeof GAS_PASSWORD !== 'undefined') ? GAS_PASSWORD : '', token: tk, brandIds: ids }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var m = (d && d.ok && d.genres) || {};
+        ids.forEach(function (b) { if (m[b] && m[b].genre) C[b] = { zh: String(m[b].genre).split(/[\u2014(\uFF08]/)[0].trim().slice(0, 18), n: 0, srv: true }; });
+      })
+      .catch(function () {})
+      .then(function () { paint(); });
   }
   function paint() {
     css();
@@ -299,6 +315,8 @@ function clickProd(subId, prodId) {
   renderBrandTree();
   renderProds();
   updateCtx();
+  //  📦 2026-11-21 換商品 → 素材列重排(屬於這個商品的照片排最前面)
+  try { if (typeof renderAssets === 'function' && document.getElementById('assetGrid')) renderAssets(); } catch (_) {}
 }
 
 function updateCtx() {

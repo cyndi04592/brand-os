@@ -91,7 +91,7 @@
 (function () {
   'use strict';
   if (window.AdDirector) return;
-  var VERSION = '2.20.2';   // 2.20.2 節慶只用配色、圖案、材質、光,不放象徵物(RA 11/21);   // 2.20.1 ⓪-3 照片俯拍的平放商品,新畫面也要俯拍(齊漁實測:真空包和牛被立起來);包裝照原樣不拆;   // 2.20.0 照片核對:照片不是客人選的商品 → 出圖扣點前先問(共用照片庫、幾千家廠商都適用,不用存資料);   // 2.19.4 ⓪-2 長相只認照片,名字只是標籤(請請實測:照菜名重畫成另一道菜);   // 2.19.3 RA:海苔飄浮是參考圖刻意的拍法 → 刻意飄浮保留(要一看就是故意的),只擋不上不下的浮在桌上;   // 2.19.2 重力優先於商品照角度(實測琉宇海苔片直立浮在盤子上);   // 2.19.1 自查加物理常識(實測旺味真空包裝放在烤網上);   // 2.19.0 照片裡的真人可保留(去 AI 感,RA:刺蝟星球說要抓真人與生活感參考);   // 2.18.0 RA 11-20 巧福那張有 AI 感:⑥-1 去 AI 感(真實瞬間不擺拍、普通真實長相、生活痕跡、不完美構圖、紀實底片感、不要米色濾鏡);   // 2.17.0 RA 11-20 致命缺點「商品個別打光」:⑥-0 一起打光(色溫、陰影、銳利度、顆粒跟周圍一樣),自查加一項;   // 2.16.0 一萬家進駐:還沒定頂級類型的品牌,美術指導看品牌靈魂替它定一次、存起來(同品牌每張同調性),每晚再固定進 shoots;   // 2.15.0 RA 11-20 每個品牌一個「它那個世界最頂級的拍攝類型」(shoots/<品牌>.json genre),美術指導照那一類攝影師的眼光拍;不能太爛也不能太完美;   // 2.14.0 RA 11-20 鏡頭距離:客人選遠景/中景/近景/超近特寫,美術指導照選的寫;自動時照主意決定、不預設近拍(主角是第一眼看到,不一定大);   // 2.13.2 類型選生存遊戲一律電影劇照;生存遊戲消焰器 = 仿真冒火光(RA:跟真槍相反);   // 2.13.1 RA 11-20 BCS 生存遊戲一直被擋:槍類寫成電影劇照 / 片場道具,槍口朝下、不寫 weapon/shoot,過審句照抄;   // 2.13.0 RA 11-20「高級但文不對題」:⓪ 對題 —— 場景只來自商品真正的世界(誰買、在哪用),高級感只靠光、構圖、色彩、主意;思考第 2 項列出它絕不會出現的地方、自查第一項查對題;   // 2.12.5 貼身衣物露膚度要低:外穿薄紗罩衫/絲襯衫/開衫拉攏、下身長褲長裙;   // 2.12.4 貼身衣物有模特兒:外披敞開襯衫或拍背面(正面只穿內衣被擋三次);   // 2.12.3 貼身衣物用時裝目錄講法(實測臥室、皮膚、剛穿上被擋);   // 2.12.2 版型要求的動作照做(實測手持版沒有手);   // 2.12.1 貼身衣物的「主角大」= 整個人腰上半身(實測內衣胸口特寫被安全審查擋下);   // 2.12.0 RA 11-20「70 分、不讓人驚豔」:找回 MOZ 等級五件事(主角大、硬方向光的光影圖案、有決定的背景色、一個意想不到的主意)+ 思考第 6 項自查;   // 2.11.3 版型決定的地點(白棚、極簡海報、雜誌封面)不換場景
+  var VERSION = '2.21.0';   // 2.21.0 頂級拍攝類型存伺服器(kol-proxy v8.09 brand_genre_*),讀的順序 shoots → 伺服器 → 這台電腦,換電腦換人都一樣;   // 2.20.2 節慶只用配色、圖案、材質、光,不放象徵物(RA 11/21);   // 2.20.1 ⓪-3 照片俯拍的平放商品,新畫面也要俯拍(齊漁實測:真空包和牛被立起來);包裝照原樣不拆;   // 2.20.0 照片核對:照片不是客人選的商品 → 出圖扣點前先問(共用照片庫、幾千家廠商都適用,不用存資料);   // 2.19.4 ⓪-2 長相只認照片,名字只是標籤(請請實測:照菜名重畫成另一道菜);   // 2.19.3 RA:海苔飄浮是參考圖刻意的拍法 → 刻意飄浮保留(要一看就是故意的),只擋不上不下的浮在桌上;   // 2.19.2 重力優先於商品照角度(實測琉宇海苔片直立浮在盤子上);   // 2.19.1 自查加物理常識(實測旺味真空包裝放在烤網上);   // 2.19.0 照片裡的真人可保留(去 AI 感,RA:刺蝟星球說要抓真人與生活感參考);   // 2.18.0 RA 11-20 巧福那張有 AI 感:⑥-1 去 AI 感(真實瞬間不擺拍、普通真實長相、生活痕跡、不完美構圖、紀實底片感、不要米色濾鏡);   // 2.17.0 RA 11-20 致命缺點「商品個別打光」:⑥-0 一起打光(色溫、陰影、銳利度、顆粒跟周圍一樣),自查加一項;   // 2.16.0 一萬家進駐:還沒定頂級類型的品牌,美術指導看品牌靈魂替它定一次、存起來(同品牌每張同調性),每晚再固定進 shoots;   // 2.15.0 RA 11-20 每個品牌一個「它那個世界最頂級的拍攝類型」(shoots/<品牌>.json genre),美術指導照那一類攝影師的眼光拍;不能太爛也不能太完美;   // 2.14.0 RA 11-20 鏡頭距離:客人選遠景/中景/近景/超近特寫,美術指導照選的寫;自動時照主意決定、不預設近拍(主角是第一眼看到,不一定大);   // 2.13.2 類型選生存遊戲一律電影劇照;生存遊戲消焰器 = 仿真冒火光(RA:跟真槍相反);   // 2.13.1 RA 11-20 BCS 生存遊戲一直被擋:槍類寫成電影劇照 / 片場道具,槍口朝下、不寫 weapon/shoot,過審句照抄;   // 2.13.0 RA 11-20「高級但文不對題」:⓪ 對題 —— 場景只來自商品真正的世界(誰買、在哪用),高級感只靠光、構圖、色彩、主意;思考第 2 項列出它絕不會出現的地方、自查第一項查對題;   // 2.12.5 貼身衣物露膚度要低:外穿薄紗罩衫/絲襯衫/開衫拉攏、下身長褲長裙;   // 2.12.4 貼身衣物有模特兒:外披敞開襯衫或拍背面(正面只穿內衣被擋三次);   // 2.12.3 貼身衣物用時裝目錄講法(實測臥室、皮膚、剛穿上被擋);   // 2.12.2 版型要求的動作照做(實測手持版沒有手);   // 2.12.1 貼身衣物的「主角大」= 整個人腰上半身(實測內衣胸口特寫被安全審查擋下);   // 2.12.0 RA 11-20「70 分、不讓人驚豔」:找回 MOZ 等級五件事(主角大、硬方向光的光影圖案、有決定的背景色、一個意想不到的主意)+ 思考第 6 項自查;   // 2.11.3 版型決定的地點(白棚、極簡海報、雜誌封面)不換場景
   var WORKER = 'https://photoroom-proxy.calm-sunset-6b66.workers.dev';
   var TIMEOUT_MS = 55000;    // 單次等待(排版圖 60 秒);失敗會再試一次
   //  v1.3 舊引擎(前後對比 / 多格 / 清單排版圖)的提示詞有「=== 區塊標題 ===」→ 看標記判斷,不看長度
@@ -124,11 +124,41 @@
   }
   setInterval(mountShot, 1500);
   //  v2.16 頂級拍攝類型的來源:① shoots/<品牌>.json(每晚定好上線)② 這台電腦上次美術指導替這個品牌定的(進駐第一天就固定,同一品牌每張同一調性)
+  //  v2.21 RA 11-21:類型只存在那台電腦 → 換電腦、換人登入就不見、每張調性不一樣
+  //   → 定出來當下送 kol-proxy brand_genre_set(v8.09)存伺服器;讀的順序改成 ① shoots 檔 ② 伺服器 ③ 這台電腦
+  //   伺服器已經有就不會被蓋(第一次定了就固定),回來的那份蓋掉本機的
+  var KOL_G = 'https://kol-proxy.calm-sunset-6b66.workers.dev';
+  var GSRV = window._bsGenreSrv = window._bsGenreSrv || {};   // brandId → 伺服器那份(字串;'' = 伺服器沒有;undefined = 還沒問)
+  function gPost(payload) {
+    payload.password = (typeof GAS_PASSWORD !== 'undefined') ? GAS_PASSWORD : '';
+    try { payload.token = payload.token || sessionStorage.getItem('bs_auth_token') || localStorage.getItem('bs_auth_token') || ''; } catch (e) {}
+    return fetch(KOL_G, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json(); });
+  }
+  function loadGenre(bid) {
+    if (!bid || GSRV[bid] !== undefined) return;
+    GSRV[bid] = null;   // 問的中途不重複問
+    gPost({ action: 'brand_genre_get', brandId: bid }).then(function (d) {
+      if (d && d.ok) {
+        GSRV[bid] = String(d.genre || '');
+        if (GSRV[bid]) { try { localStorage.setItem('bs_genre_' + bid, GSRV[bid]); } catch (e) {} }
+        else {   // 伺服器還沒有、這台電腦以前定過 → 補送上去(沒 shoots 檔時才補)
+          var c0 = window.AdLeanShoots && window.AdLeanShoots.cache[bid], loc = '';
+          try { loc = localStorage.getItem('bs_genre_' + bid) || ''; } catch (e) {}
+          if (loc && !(c0 && c0.genre && c0.genre.en)) gPost({ action: 'brand_genre_set', brandId: bid, genre: loc, source: 'local_backfill' })
+            .then(function (d2) { if (d2 && d2.ok && d2.genre) GSRV[bid] = String(d2.genre); }).catch(function () {});
+        }
+      }
+      else delete GSRV[bid];   // 舊版 Worker 沒這個動作 / 沒登入 → 下次再問,照舊用本機那份
+    }).catch(function () { delete GSRV[bid]; });
+  }
+  setInterval(function () { try { loadGenre((window.S || {}).brandId); } catch (e) {} }, 2000);
   function genreNow() {
     try {
       var bid = (window.S || {}).brandId; if (!bid) return '';
       var c = window.AdLeanShoots && window.AdLeanShoots.cache[bid];
       if (c && c.genre && c.genre.en) return c.genre.zh + ' —— ' + c.genre.en;
+      if (GSRV[bid]) return GSRV[bid];
       return localStorage.getItem('bs_genre_' + bid) || '';
     } catch (e) { return ''; }
   }
@@ -136,7 +166,12 @@
     try {
       var bid = (window.S || {}).brandId; if (!bid || genreNow()) return;
       var m = String(think || '').match(/類型[::]\s*([^\n]{2,120}?[—-]+\s*[A-Za-z][^\n]{8,300})/);
-      if (m) { var g = m[1].replace(/^類型[::]\s*/, '').trim(); localStorage.setItem('bs_genre_' + bid, g); window._adGenreNew = { brandId: bid, genre: g }; }
+      if (m) {
+        var g = m[1].replace(/^類型[::]\s*/, '').trim(); localStorage.setItem('bs_genre_' + bid, g); window._adGenreNew = { brandId: bid, genre: g };
+        gPost({ action: 'brand_genre_set', brandId: bid, genre: g, source: 'ad_director' }).then(function (d) {
+          if (d && d.ok && d.genre) { GSRV[bid] = String(d.genre); try { localStorage.setItem('bs_genre_' + bid, GSRV[bid]); } catch (e) {} }
+        }).catch(function () {});   // 存不上 → 本機那份照用,下次定類型時再送
+      }
     } catch (e) {}
   }
   function val(id) { var el = document.getElementById(id); return (el && el.value || '').trim(); }

@@ -3547,6 +3547,23 @@ const BRAND_COLOR_PRESETS = {
 // 🎬 2026-11-21 RA:前台只放發光框不寫字,哪個品牌用哪個拍攝類型在後台看。
 //   來源跟前台同一份:正式站 /shoots/<品牌ID>.json 的 genre;這裡只讀不改。
 const _SHOOT_INFO = {};
+//  📦 2026-11-21 只有老闆/員工能改伺服器上的拍攝類型(kol-proxy v8.09 brand_genre_set force;Worker 自己也會擋非管理員)
+function _shootEditBtn(el, bid) {
+  if (el.querySelector('.shoot-edit')) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'shoot-edit'; b.textContent = '改拍攝類型';
+  b.style.cssText = 'margin-top:6px;font-size:11px;padding:2px 8px;cursor:pointer';
+  b.onclick = async function () {
+    const v = (window.prompt('這個品牌的頂級拍攝類型(格式:中文 —— English,例:北歐生活型錄 —— Scandinavian lifestyle catalogue)') || '').trim();
+    if (!v) return;
+    try {
+      const r = await fetch(KOL_WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: PASSWORD, action: 'brand_genre_set', brandId: bid, genre: v, force: true }) });
+      const d = await r.json();
+      alert(d && d.ok ? (d.kept ? '沒改(只有管理員能改)' : '已存:' + d.genre + '\n(拍法檔已有類型的品牌,前台仍以拍法檔為準)') : '存不成功:' + ((d && d.error) || ''));
+      delete _SHOOT_INFO[bid]; fillShootGenres();
+    } catch (e) { alert('存不成功:' + e.message); }
+  };
+  el.appendChild(b);
+}
 function fillShootGenres() {
   document.querySelectorAll('[data-shoot-bid]').forEach(function (el) {
     const bid = el.getAttribute('data-shoot-bid');
@@ -3558,7 +3575,7 @@ function fillShootGenres() {
       d.textContent = (v.b ? '品牌通用拍法 ' + v.b + ' 句｜' : '') + v.n + ' 樣商品有專屬拍法' + (v.n ? ':' + v.names.slice(0, 12).join('、') + (v.n > 12 ? ' …等' : '') : '');
       el.appendChild(t); el.appendChild(d);
     };
-    if (_SHOOT_INFO[bid] !== undefined) { if (_SHOOT_INFO[bid] !== null) show(_SHOOT_INFO[bid]); return; }
+    if (_SHOOT_INFO[bid] !== undefined) { if (_SHOOT_INFO[bid] !== null) { show(_SHOOT_INFO[bid]); _shootEditBtn(el, bid); } return; }
     _SHOOT_INFO[bid] = null;
     fetch('/shoots/' + encodeURIComponent(bid) + '.json?v=' + Math.floor(Date.now() / 600000))
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -3567,6 +3584,13 @@ function fillShootGenres() {
         _SHOOT_INFO[bid] = (gn && gn.en) ? { zh: gn.zh || gn.en, n: Object.keys(j.products || {}).length, b: ((j.brand || {}).s || []).length, names: Object.keys(j.products || {}) } : false;
       })
       .catch(function () { _SHOOT_INFO[bid] = false; })
+      .then(function () {   // 📦 2026-11-21 shoots 檔還沒有 → 看伺服器上當天美術指導定的(kol-proxy v8.09)
+        if (_SHOOT_INFO[bid]) return;
+        return fetch(KOL_WORKER, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: PASSWORD, action: 'brand_genre_get', brandId: bid }) })
+          .then(function (r) { return r.json(); })
+          .then(function (d) { if (d && d.ok && d.genre) _SHOOT_INFO[bid] = { zh: d.genre + '(當天美術指導定的,今晚寫進拍法檔)', n: 0, b: 0, names: [] }; })
+          .catch(function () {});
+      })
       .then(function () { document.querySelectorAll('[data-shoot-bid="' + bid + '"]').forEach(function () {}); fillShootGenres(); });
   });
 }
