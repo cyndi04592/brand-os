@@ -971,7 +971,7 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
   <div style="width:100%;max-width:880px;max-height:88vh;overflow-y:auto;background:#13131c;border:1px solid rgba(255,190,90,0.25);border-radius:18px;box-shadow:0 30px 90px rgba(0,0,0,0.7);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;background:#13131c;border-radius:18px 18px 0 0;">
       <div style="display:flex;align-items:center;gap:9px;">
-        <span style="color:#ffce6b;font-size:18px;">💎</span>
+        <span aria-hidden="true" style="display:inline-flex;width:22px;height:22px;"><svg viewBox="0 0 24 24" width="22" height="22"><defs><linearGradient id="bxg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EAF3FF"/><stop offset=".5" stop-color="#5AA0FF"/><stop offset="1" stop-color="#1D3456"/></linearGradient></defs><path d="M12 2 19 9 12 22 5 9Z" fill="url(#bxg)" stroke="#CFE3FF" stroke-width=".8"/><path d="M5 9h14M12 2 9 9l3 13 3-13Z" fill="none" stroke="rgba(255,255,255,.55)" stroke-width=".6"/></svg></span>
         <div>
           <div style="font-size:16px;font-weight:900;color:#fff;letter-spacing:0.5px;">Bits 補給包商城</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px;">能量條用完了?補給包 Bits 永久保留、不歸零</div>
@@ -1253,10 +1253,10 @@ function renderShopGrid() {
     const avail = holiday ? !!(_shopHoliday && _shopHoliday.available) : true;
     const per = (p.price / p.bits).toFixed(2);
     const tag = _SHOP_TAGS[k]
-      ? `<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;padding:2px 9px;border-radius:999px;background:${holiday?'linear-gradient(135deg,#ff5d8f,#ff8c42)':hot?'linear-gradient(135deg,#7c6cff,#ff7ac3)':'linear-gradient(135deg,#ffb347,#ffce6b)'};color:#13131c;">${_SHOP_TAGS[k]}</div>`
+      ? `<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;padding:2px 9px;border-radius:999px;background:${holiday?'linear-gradient(180deg,#FFE7C2,#C99A5B)':hot?'linear-gradient(180deg,#CFE3FF,#5AA0FF)':'linear-gradient(180deg,#FFFFFF,#9AA3B1)'};color:#13131c;">${_SHOP_TAGS[k]}</div>`
       : '';
-    const border = !avail ? 'rgba(255,255,255,0.08)' : hot ? 'rgba(124,108,255,0.6)' : holiday ? 'rgba(255,93,143,0.55)' : 'rgba(255,255,255,0.1)';
-    const glow = (avail && hot) ? 'box-shadow:0 0 18px rgba(124,108,255,0.25);' : '';
+    const border = !avail ? 'rgba(255,255,255,0.08)' : hot ? 'rgba(156,200,255,0.75)' : holiday ? 'rgba(255,217,168,0.55)' : 'rgba(255,255,255,0.14)';
+    const glow = (avail && hot) ? 'box-shadow:0 0 24px rgba(90,160,255,0.35);' : '';
     const dim = !avail ? 'opacity:0.45;' : '';
     const clickAttr = avail ? `onclick="buyPack('${k}')"` : '';
     const cursor = avail ? 'pointer' : 'not-allowed';
@@ -1273,16 +1273,17 @@ function renderShopGrid() {
       : (holiday && _shopHoliday.reason === 'sold_out') ? '已售完'
       : (holiday && _shopHoliday.reason === 'ended')    ? '已結束'
       : '暫不開放';
-    const btnBg = avail ? 'linear-gradient(135deg,#7c6cff,#ff7ac3)' : 'rgba(255,255,255,0.12)';
-    html += `<div ${clickAttr} style="position:relative;cursor:${cursor};${dim}background:rgba(255,255,255,0.03);border:1.5px solid ${border};border-radius:14px;padding:20px 14px 16px;text-align:center;transition:transform .15s,border-color .2s;${glow}" ${hover}>
+    const btnBg = avail ? '#fff' : 'rgba(255,255,255,0.12)';   // 2026-11-22 太空版:白色方形按鈕
+    html += `<div ${clickAttr} style="position:relative;cursor:${cursor};${dim}background:rgba(255,255,255,0.03);border:1px solid ${border};border-radius:0;padding:20px 14px 16px;text-align:center;transition:transform .15s,border-color .2s;${glow}" ${hover}>
       ${tag}
+      <img src="/raby/bits/${k}.jpg" alt="" loading="lazy" onerror="this.remove()" style="display:block;width:100%;aspect-ratio:1/1;object-fit:cover;margin:0 0 12px;${avail?'':'filter:grayscale(1);'}">
       <div style="font-size:13px;color:rgba(255,255,255,0.6);font-weight:700;margin-bottom:8px;">${p.name}</div>
-      <div style="font-size:26px;font-weight:900;color:#ffce6b;line-height:1;">${p.bits.toLocaleString()}</div>
+      <div style="font-size:26px;font-weight:700;color:#CFE3FF;line-height:1;font-variant-numeric:tabular-nums;">${p.bits.toLocaleString()}</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.45);margin:2px 0 12px;">Bits</div>
       <div style="font-size:18px;font-weight:900;color:#fff;">NT$${p.price.toLocaleString()}</div>
       <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:3px;">每點約 NT$${per}</div>
       ${extra}
-      <div style="margin-top:12px;font-size:12px;font-weight:800;color:#fff;background:${btnBg};border-radius:8px;padding:8px 0;">${btnText}</div>
+      <div style="margin-top:12px;font-size:12px;font-weight:700;letter-spacing:.2em;color:${avail?'#000':'#fff'};background:${btnBg};border:2px solid ${avail?'#fff':'transparent'};border-radius:0;padding:9px 0;">${btnText}</div>
     </div>`;
   });
   document.getElementById('bitsShopGrid').innerHTML = html;
