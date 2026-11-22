@@ -259,6 +259,45 @@
       return null;
     });
   }
+  //  同品牌跨帳號互搶(2026-11-22;Worker v2.8 action 'overlap',只讀):跟主畫面分開抓,30 分鐘記一次
+  var ovMem = {};
+  function overlap() {
+    var brand = state.brand, range = state.range, k = brand + '|' + rangeKey(range);
+    var x = ovMem[k];
+    if (x && Date.now() - x.at < 30 * 60 * 1000) return Promise.resolve(x.data);
+    return post({ action: 'overlap', brand: brand, range: range }, 60000).then(function (j) {
+      if (j && j.ok) ovMem[k] = { at: Date.now(), data: j };
+      return j;
+    });
+  }
+  //  國際對標資料包(2026-11-22;Worker v2.9 action 'intl',只讀):年齡×性別、國家、平台×裝置、歸因窗口、每支廣告 14 天走勢;10 分鐘記一次
+  var inMem = {};
+  function intl() {
+    var brand = state.brand, range = state.range, k = brand + '|' + rangeKey(range);
+    var x = inMem[k];
+    if (x && Date.now() - x.at < 10 * 60 * 1000) return Promise.resolve(x.data);
+    return post({ action: 'intl', brand: brand, range: range }, 60000).then(function (j) {
+      if (j && j.ok) inMem[k] = { at: Date.now(), data: j };
+      return j;
+    });
+  }
+  //  跟真實訂單對帳(2026-11-22;Worker action 'recon' 只讀 Meta、'orders_set' 存客戶後台的訂單數):每次都問 Worker(它自己記 30 分鐘)
+  function recon(cut) {
+    return post({ action: 'recon', brand: state.brand, range: state.range, cut: cut || '' }, 60000);
+  }
+  function ordersSet(rows) {
+    return post({ action: 'orders_set', brand: state.brand, rows: rows }, 30000);
+  }
+  //  芮比大盤指數(2026-11-22;Worker action 'raby_index',只讀;只拿得到指數,拿不到別家數字):每個品牌 30 分鐘記一次
+  var ixMem = {};
+  function rabyIndex() {
+    var brand = state.brand, x = ixMem[brand];
+    if (x && Date.now() - x.at < 30 * 60 * 1000) return Promise.resolve(x.data);
+    return post({ action: 'raby_index', brand: brand }, 60000).then(function (j) {
+      if (j && j.ok) ixMem[brand] = { at: Date.now(), data: j };
+      return j;
+    });
+  }
   function brandInfo(id) {
     id = id || state.brand;
     return (state.me && state.me.brands.filter(function (b) { return b.id === id; })[0]) || null;
@@ -346,7 +385,7 @@
     refresh: function () { return load(true); },                                          // 使用者按「重抓最新」
     softRefresh: function () { delete mem[state.brand + '|' + rangeKey(state.range)]; return load(false); },   // 自動更新:讓 Worker 決定要不要敲 Meta
     setBrand: setBrand, setRange: setRange, setCfg: setCfg,
-    brandInfo: brandInfo, state: state, fmt: fmt, diag: diag, market: market,
+    brandInfo: brandInfo, state: state, fmt: fmt, diag: diag, market: market, overlap: overlap, intl: intl, recon: recon, ordersSet: ordersSet, rabyIndex: rabyIndex,
     campaignGroup: campaignGroup, GROUP_LABEL: GROUP_LABEL,
     CFG_DEFAULT: CFG_DEFAULT
   };

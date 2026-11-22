@@ -1,4 +1,4 @@
-/* Brand OS 太空版 brandos-space.css  v20261122c（2026-11-22）
+/* Brand OS 太空版 brandos-space.css  v20261122e（2026-11-22）
  * 由 build_space.py 產生：A 自動換色段＋B 手寫段。只換外觀，不改任何 id／class／onclick。
  * 全部規則都在 html.sp 底下；網址加 ?space=off 回舊外觀。請不要直接改這個檔，改 parts 後重建。 */
 
@@ -2505,19 +2505,19 @@ html.sp .psz .ed{color:#9CC8FF}
    主圖 /raby/bits/<key>.jpg（黑底，用 screen 混色融進面板）；視窗外殼在 45-plans.css B 段。
    數字、價格、文字內容、onclick 都不動。 */
 /* 標題 💎 → 能量晶體小圖示 */
-html.sp.sp-index #bitsShopModal>div>div:first-child>div>span:first-child{font-size:0!important;width:26px;height:26px;display:inline-block;flex:0 0 26px;background:url(/raby/bits/icon.jpg?v=2) center/contain no-repeat;mix-blend-mode:screen;color:transparent!important}
+html.sp.sp-index #bitsShopModal>div>div:first-child>div>span:first-child{font-size:0!important;width:26px;height:26px;display:inline-block;flex:0 0 26px;background:url(/raby/bits/icon.jpg?v=20261122g) center/contain no-repeat;mix-blend-mode:screen;color:transparent!important}
 
 /* 卡片：錶盤格紋＋金屬斜邊（排除「載入中／沒訂閱」那種整列訊息） */
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"]){background-color:#06080b!important;background-image:var(--sp-tap)!important;background-size:8px 8px,8px 8px,8px 8px,100% 100%!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:0!important;box-shadow:var(--sp-bezel)!important;padding:14px 12px 14px!important;isolation:isolate}
 /* 主圖 */
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"])::before{content:"";display:block;width:100%;max-width:170px;aspect-ratio:1/1;margin:4px auto 6px;background:center/contain no-repeat;mix-blend-mode:screen;pointer-events:none}
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'test30'"]::before,
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'entry'"]::before{background-image:url(/raby/bits/entry.jpg?v=2)}
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'advance'"]::before{background-image:url(/raby/bits/advance.jpg?v=2)}
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'pro'"]::before{background-image:url(/raby/bits/pro.jpg?v=2)}
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'max'"]::before{background-image:url(/raby/bits/max.jpg?v=2)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'entry'"]::before{background-image:url(/raby/bits/entry.jpg?v=20261122e)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'advance'"]::before{background-image:url(/raby/bits/advance.jpg?v=20261122e)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'pro'"]::before{background-image:url(/raby/bits/pro.jpg?v=20261122e)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'max'"]::before{background-image:url(/raby/bits/max.jpg?v=20261122e)}
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'holiday'"]::before,
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="grid-column"])::before{background-image:url(/raby/bits/holiday.jpg?v=2)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="grid-column"])::before{background-image:url(/raby/bits/holiday.jpg?v=20261122e)}
 
 /* 最熱賣那張：藍框發光 */
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'pro'"]{border-color:rgba(156,200,255,.75)!important;box-shadow:var(--sp-bezel),0 0 0 1px rgba(156,200,255,.55),0 0 26px rgba(90,160,255,.35)!important}
@@ -2550,6 +2550,54 @@ html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="gr
   html.sp.sp-index #bitsShopModal #bitsShopGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
   html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"])>div:last-child{min-height:44px}
 }
+/* ── parts/87-ic.css ── */
+/* 87-ic：手機版選單＋左下浮動鈕的圖示換成 PiAPI 生的金屬圖示（交代 20261122-1625，老闆 11/22 16:23）
+   只用 CSS、不改 html／js：原本的按鈕、onclick、文字都不動，只把 emoji／線條 svg 藏起來，用 ::before（KOL 頁選單用 ::after）放圖。
+   圖 /raby/ic/<key>.jpg（512 黑底，用 screen 混色融進黑底）：plan account monitor kol library admin logout tour lang。
+   11/22 16:50 老闆更正（交代 1652）：鑽石＝直接用 Bits 商城那顆 /raby/bits/icon.jpg（同一個檔、不提亮，兩邊一致）；第三格＝目前登入的帳號，圖是艙員識別證 account.jpg（不是訊息；舊的天線 mail.jpg 留著沒用）。
+   換圖：tools\assetlib\gen_ic.py export <key>=<候選號>，再把下面 ?v= 數字加 1。 */
+
+/* ── 左下浮動鈕（全寬度）── */
+/* 語言鈕：🌐 是按鈕裡的純文字 → 字縮成 0、圖示用 ::before，語言名字另外放回 12px */
+html.sp #bos-lang-sw button.bos-lang-main{font-size:0!important;display:inline-flex!important;align-items:center;justify-content:center;gap:6px}
+html.sp #bos-lang-sw button.bos-lang-main::before{content:"";flex:0 0 24px;width:24px;height:24px;background:url(/raby/ic/lang.jpg?v=1) center/contain no-repeat;mix-blend-mode:screen}
+html.sp #bos-lang-sw button.bos-lang-main .bos-lang-name{font-size:12px}
+/* 教學鈕：圖示放字的左邊，開頭的「?」縮掉 */
+html.sp .bt-pill::before,html.sp #bt-tour-pill-kol::before,html.sp #bt-tour-pill-lib::before,html.sp #bt-tour-pill-onb::before{content:"";display:inline-block;width:24px;height:24px;margin:0 6px 0 -4px;vertical-align:middle;background:url(/raby/ic/tour.jpg?v=1) center/contain no-repeat;mix-blend-mode:screen}
+
+@media (max-width:768px){
+  /* ── 首頁：選單上方那排（訂閱方案／補給包／帳號）── */
+  html.sp #subMenuBtn>svg,html.sp #bitsShopBtn>svg,html.sp .nav-email-chip>svg{display:none!important}
+  html.sp #subMenuBtn::before,html.sp #bitsShopBtn::before,html.sp .nav-email-chip::before{content:"";display:block;flex:0 0 26px;width:26px;height:26px;background:center/contain no-repeat;mix-blend-mode:screen;pointer-events:none}
+  html.sp #subMenuBtn::before{background-image:url(/raby/ic/plan.jpg?v=2)}
+  html.sp #bitsShopBtn::before{background-image:url(/raby/bits/icon.jpg?v=20261122g)}
+  html.sp .nav-email-chip::before{background-image:url(/raby/ic/account.jpg?v=1)}
+  html.sp .nav-email-chip.show-email{gap:6px}
+
+  /* ── 首頁：漢堡選單每一列，圖示在文字左邊 ── */
+  html.sp body .nav-right .nav-btn-monitor>svg,html.sp body .nav-right .nav-btn-kol>svg{display:none!important}
+  html.sp body .nav-right .nav-btn-monitor,html.sp body .nav-right .nav-btn-kol,html.sp body .nav-right .nav-btn-admin,html.sp body .nav-right .nav-btn-logout{align-items:center;gap:0}
+  html.sp body .nav-right .nav-btn-monitor::before,html.sp body .nav-right .nav-btn-kol::before,html.sp body .nav-right .nav-btn-admin::before,html.sp body .nav-right .nav-btn-logout::before{content:""!important;display:inline-block!important;position:static!important;inset:auto!important;flex:0 0 24px;width:24px!important;height:24px!important;margin:0 12px 0 0!important;vertical-align:middle;background:center/contain no-repeat!important;mix-blend-mode:screen;opacity:1!important;transform:none!important;animation:none!important;border-radius:0!important;pointer-events:none}
+  html.sp body .nav-right .nav-btn-monitor::before{background-image:url(/raby/ic/monitor.jpg?v=1)!important}
+  html.sp body .nav-right .nav-btn-kol::before{background-image:url(/raby/ic/kol.jpg?v=1)!important}
+  html.sp body .nav-right .nav-btn-kol[href*="library"]::before{background-image:url(/raby/ic/library.jpg?v=1)!important}
+  html.sp body .nav-right .nav-btn-admin::before{background-image:url(/raby/ic/admin.jpg?v=1)!important}
+  html.sp body .nav-right .nav-btn-logout::before{background-image:url(/raby/ic/logout.jpg?v=1)!important}
+
+  /* ── KOL 頁：選單每一列（::before 已經是英文標籤，圖示用 ::after 排到最左）── */
+  html.sp.sp-kol .kol-menu > a::after,html.sp.sp-kol .kol-menu > button::after{content:"";order:-1;flex:0 0 24px;width:24px;height:24px;margin-right:12px;background:center/contain no-repeat;mix-blend-mode:screen;pointer-events:none}
+  html.sp.sp-kol .kol-menu > a::before,html.sp.sp-kol .kol-menu > button::before{margin-right:auto}
+  html.sp.sp-kol .kol-menu > a[href="library.html"]::after{background-image:url(/raby/ic/library.jpg?v=1)}
+  html.sp.sp-kol .kol-menu > #navAdminBtn::after{background-image:url(/raby/ic/admin.jpg?v=1)}
+  html.sp.sp-kol .kol-menu > #navLogoutBtn::after{background-image:url(/raby/ic/logout.jpg?v=1)}
+  /* KOL 頁：上方 💎、帳號信封 */
+  html.sp.sp-kol .topbar > a[href^="index.html?openBits"]{font-size:0!important}
+  html.sp.sp-kol .topbar > a[href^="index.html?openBits"]::before{content:"";width:26px;height:26px;background:url(/raby/bits/icon.jpg?v=20261122g) center/contain no-repeat;mix-blend-mode:screen}
+  html.sp.sp-kol #navUserEmail>svg{display:none!important}
+  html.sp.sp-kol #navUserEmail::before{content:"";flex:0 0 26px;width:26px;height:26px;background:url(/raby/ic/account.jpg?v=1) center/contain no-repeat;mix-blend-mode:screen}
+}
+/* 小尺寸看得清楚：圖示整體提亮一點 */
+html.sp #bos-lang-sw button.bos-lang-main::before,html.sp .bt-pill::before,html.sp #bt-tour-pill-kol::before,html.sp #bt-tour-pill-lib::before,html.sp #bt-tour-pill-onb::before,html.sp #subMenuBtn::before,html.sp .nav-email-chip::before,html.sp body .nav-right>a::before,html.sp body .nav-right>button::before,html.sp.sp-kol .kol-menu>a::after,html.sp.sp-kol .kol-menu>button::after,html.sp.sp-kol #navUserEmail::before{filter:brightness(1.45) contrast(1.08)}
 /* ── parts/90-fix.css ── */
 ﻿/* 90-fix：主線收尾修正 */
 /* 進駐頁的登入卡：大標是中文句子，不用航太字、可換行 */
@@ -2562,12 +2610,77 @@ html.sp.sp-monitor .mo-kpi{min-width:0;overflow:visible}
 @media (max-width:640px){html.sp.sp-monitor .mo-kpi .v,html.sp.sp-monitor .dg-part .v,html.sp.sp-monitor .ma-box .v{font-size:20px!important}}
 /* 2026-11-22 15:00 主機補：百萬級金額（NT$1,348,200 共 12 個字）在 1440 寬的 160px 小卡還是會壓到隔壁卡 → 六大數字的字級改跟著「自己那張卡」的寬度縮（一般金額大小不變） */
 @media (min-width:641px){html.sp.sp-monitor .mo-kpi{container-type:inline-size}html.sp.sp-monitor .mo-kpi .v{font-size:clamp(14px,13.2cqw,24px)!important}}
-/* 2026-11-22 14:55 修(RA 截圖):上方導覽 ① 四個項目等寬、左緣整齊 ② 「廣告監控」前面多出的小點(LIVE 燈被程式打開)藏掉 */
+/* ── parts/96-cloud-nav.css ── */
+/* 2026-11-22 14:55 雲端修(RA 截圖):上方導覽 ① 四個項目等寬、左緣整齊 ② 「廣告監控」前面多出的小點(LIVE 燈被程式打開)藏掉 */
 @media (min-width:769px){
   html.sp .nav-right{gap:22px}
   html.sp .nav-right .nav-btn-monitor,html.sp .nav-right .nav-btn-kol,html.sp .nav-right .nav-btn-admin{min-width:112px;align-items:flex-start;text-align:left}
   html.sp .nav-right .monitor-live-dot,html.sp .nav-right .kol-pulse-dots,html.sp .nav-right .nav-btn-monitor>svg,html.sp .nav-right .nav-btn-kol>svg{display:none!important}
 }
+/* ── parts/97-fix1600.css ── */
+/* ══ 97-fix1600：太空版收尾細修（2026-11-22 交代 20261122-1600）手機寬度＋中英日，只修跑版，不重做 ══ */
+
+/* ───────── KOL ───────── */
+/* 1 英／日文：形象照表單掉到頁面最下面（kol-ai-generator.js 靠中文字「KOL 形象庫」找位置，翻譯後找不到 → 退回塞在 main 最後面）。
+     中文版它在 STEP 1 版面裡，切到 STEP 2／3 會一起收起來；英日文版卻每個 STEP 都看得到 → 別的 STEP 一樣收起來。
+     （根治要改那支 JS 一行，這裡只能擋；STEP 1 時表單仍在頁面下方。） */
+html.sp.sp-kol main.main:has(> #main-layout-talking[style*="display: none"]) > div:has(> #kai-panel),html.sp.sp-kol main.main:has(> #main-layout-talking[style*="display:none"]) > div:has(> #kai-panel){display:none}
+@media(max-width:900px){
+  html.sp.sp-kol main.main > div:has(> #kai-panel){max-width:none !important;padding:0 14px 28px !important;margin:0 !important}
+}
+/* 2 角色卡最下面兩行字（名字／下一步）手機上疊在一起：留固定兩行的位置給「下一步」 */
+@media(max-width:600px){
+  html.sp.sp-kol .rs-card .todo2{font-size:10.5px !important;line-height:12px;height:26px;bottom:0;display:flex;align-items:center;justify-content:center;text-align:center;letter-spacing:0;padding:0 2px;overflow:hidden}
+  html.sp.sp-kol .rs-card.rs-wip .nm{bottom:26px}
+  html.sp.sp-kol .rs-card.rs-wip .progbar{bottom:44px}
+}
+/* 3 年齡拉桿下面的刻度字（英文會黏在一起） */
+html.sp.sp-kol .kai-panel .kai-age-range + div{gap:4px}
+html.sp.sp-kol .kai-panel .kai-age-range + div span{font-size:10.5px !important;white-space:nowrap;letter-spacing:0}
+/* 4 種子號碼輸入框：提示字用了大標字體、右邊超出面板 */
+html.sp.sp-kol #seed-value,html.sp.sp-kol #ep-seed-value{font-family:var(--sp-font);letter-spacing:0;width:100%;min-width:0;max-width:100%;box-sizing:border-box;flex:1 1 auto;min-height:44px;text-overflow:ellipsis}
+html.sp.sp-kol #seed-value::placeholder,html.sp.sp-kol #ep-seed-value::placeholder{font-family:var(--sp-font);font-size:12.5px;letter-spacing:0}
+/* 5 「已加 0/6 件」那行：英文用大標字體兩行疊在一起 */
+html.sp.sp-kol .ref-counter.ref-counter{font-family:var(--sp-font);line-height:1.6;letter-spacing:.04em;text-transform:none}
+/* 6 手機上可點的高度不到 44 */
+@media(max-width:900px){
+  html.sp.sp-kol .scn-up{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  html.sp.sp-kol .scn-foot .scn-toggle{min-height:44px;display:inline-flex;align-items:center;text-align:left}
+  html.sp.sp-kol .advanced-head{min-height:44px}
+  html.sp.sp-kol [onclick="toggleSeedanceAudio()"],html.sp.sp-kol [onclick="toggleEpAudio()"]{min-height:44px}
+}
+
+/* ───────── 監控 ───────── */
+/* 1 轉換漏斗長條上的數字看不到（淺字壓在亮藍條上）：條子壓深、字改白字加深色邊 */
+html.sp.sp-monitor .mo-bar i{background:linear-gradient(90deg,#2F6FD8,#5AA0FF)}
+html.sp.sp-monitor .mo-bar span{color:#fff !important;font-weight:600;text-shadow:0 0 3px #000,0 0 2px #000,0 1px 1px #000}
+/* 2 疲乏指數「中」那格在手機卡片裡被拉成一整條，跟其他格不一樣 */
+html.sp.sp-monitor .bos-cards td .md-fat,html.sp.sp-monitor .md-fat.mid{display:inline-block;width:auto;flex:0 0 auto;position:static}
+/* 3 手機：日期快選鈕一區、兩個日期固定同一排（英文會把「近 30 天」跟日期擠在同一排、波浪號掉到行尾） */
+@media(max-width:640px){
+  html.sp.sp-monitor .mn-bar > #mnBrands{order:0}
+  html.sp.sp-monitor .mn-bar > .mn-rng{order:1}
+  html.sp.sp-monitor .mn-bar > .mn-sep{display:block;order:2;flex:0 0 100%;width:100%;height:0;margin:0;background:none}
+  html.sp.sp-monitor .mn-bar > .mn-date,html.sp.sp-monitor .mn-bar > .mn-date + span{order:3}
+  html.sp.sp-monitor .mn-bar > .mn-date{flex:1 1 0;max-width:none}
+  html.sp.sp-monitor .mn-bar > .mn-meta{order:4}
+}
+
+/* ───────── 素材庫 ───────── */
+/* 1 類別標籤英文用大標字體，比卡片還寬被切掉 → 改內文字體、一行、放不下才省略 */
+html.sp.sp-library .thumb .badge{font-family:var(--sp-font);letter-spacing:.05em;line-height:1.35;max-width:calc(100% - 14px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
+/* 2 「幾天後刪除」淺字壓在淺底上看不到 */
+html.sp.sp-library .thumb .exp.soon{color:#2a1800 !important;font-weight:700}
+/* 3 窄卡片上「類別」和「還剩幾天」兩個標籤疊在一起（英、日文）→ 期限標籤放到縮圖右下角 */
+@media(max-width:900px){
+  html.sp.sp-library .thumb .exp{top:auto;bottom:8px;right:8px;max-width:calc(100% - 16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
+}
+
+/* ───────── 方案 ───────── */
+/* 1 方案名英文兩行時上下黏在一起 */
+html.sp.sp-plans .bos-pname{line-height:1.25}
+/* 2 頁尾與登入那行的連結不要從中間斷行 */
+html.sp.sp-plans a[href="privacy.html"],html.sp.sp-plans a[href="terms.html"],html.sp.sp-plans a[href*="aio.raby.com.tw"],html.sp.sp-plans a[href^="mailto:"],html.sp.sp-plans a[href="onboard.html"],html.sp.sp-plans a[href="index.html"]{white-space:nowrap;display:inline-block}
 /* 15:40 再修:「廣告監控」前面那個小記號 → 導覽按鈕裡除了中文字那一段，其他子元素一律不顯示 */
 @media (min-width:769px){
   html.sp .nav-right .nav-btn-monitor>*:not(span:first-of-type),html.sp .nav-right .nav-btn-kol>*:not(span:first-of-type){display:none!important}
