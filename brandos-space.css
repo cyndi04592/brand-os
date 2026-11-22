@@ -2724,3 +2724,7 @@ html.sp .nav-right .nav-btn-kol[data-ext="mp3"]::before{content:'MUSIC'}
   html.sp #subMenuBtn{font-size:0!important;padding:5px 8px!important}       /* 只留圖示 */
   html.sp .nav-right .nav-btn-logout{padding:6px 8px!important}
 }
+@media (min-width:769px) and (max-width:1100px){
+  html.sp #bitsChip .bits-bar-track{display:none!important}           /* 點數只留數字 */
+  html.sp #bitsChip{padding:4px 8px!important}
+}
