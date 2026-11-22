@@ -2469,3 +2469,8 @@ html.sp #bos-lang-sw button[style*="226, 69, 107"],html.sp #bos-lang-sw button[s
 /* 進駐頁的登入卡：大標是中文句子，不用航太字、可換行 */
 html.sp.sp-onboard #loginOverlay .login-footer{font-family:var(--sp-font);font-size:clamp(18px,2.6vw,28px);letter-spacing:.14em;text-transform:none;white-space:normal;line-height:1.5;filter:none}
 html.sp.sp-onboard #loginOverlay .login-footer::after{display:none}
+
+/* 2026-11-22 14:40 修：廣告監控大數字被「…」截掉（RA 截圖 NT$34,3…）→ 數字改窄字 Barlow、等寬數字、隨卡片寬度縮放，不截字 */
+html.sp.sp-monitor .mo-kpi .v,html.sp.sp-monitor .dg-part .v,html.sp.sp-monitor .ma-box .v{font-family:'Barlow',var(--sp-aero),sans-serif!important;font-weight:600!important;font-variant-numeric:tabular-nums;letter-spacing:0!important;font-size:clamp(16px,1.55vw,24px)!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
+html.sp.sp-monitor .mo-kpi{min-width:0;overflow:visible}
+@media (max-width:640px){html.sp.sp-monitor .mo-kpi .v,html.sp.sp-monitor .dg-part .v,html.sp.sp-monitor .ma-box .v{font-size:20px!important}}
