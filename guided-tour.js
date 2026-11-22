@@ -234,7 +234,7 @@
       st.textContent = 'body .mid.bt-lit,body .right.bt-lit,body .left.bt-lit{opacity:1!important;filter:none!important}'
         + '.bt-lit-el,.bt-lit-el *{opacity:1!important;filter:none!important}'
         + '.bt-lit-el{position:relative;z-index:2;box-shadow:0 0 0 1px rgba(255,255,255,.35),0 0 28px rgba(90,160,255,.45)!important}'
-        + 'button.bt-lit-el,.bt-lit-el button{color:#fff!important;border-color:rgba(255,255,255,.6)!important}';
+        + '';   // 19:05 RA:按鈕原本白底,不能強制白字(會變白一塊)→ 按鈕顏色保留原樣,只取消變淡
       (document.head || document.documentElement).appendChild(st);
     }
   }
