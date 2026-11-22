@@ -1,5 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════
- *  theme-season.js · v1.4(2026-11-02)節慶換膚(全站共用,由 loader.js 自動載入)
+ *  theme-season.js · v1.6(2026-11-22)節慶換膚(全站共用,由 loader.js 自動載入)
+ *  v1.6:加「總開關」SEASON_MASTER_ON。RA 11/22 08:12「可以先把聖誕節造型先移除」(Brand OS 要改太空版)
+ *        → 總開關 = false:飄雪、小樹、配色全部不載入(連 ?theme=xmas 強制預覽也不開)。
+ *        後台「🎄 節慶」分頁照舊留著;以後要再開節慶 = 把下面 SEASON_MASTER_ON 改回 true 就好,其他不用動
  *  v1.4:首頁(廣告圖頁)LOGO 旁也掛小樹(.nav-logo-wrap);右下角大樹會擋到面板 → 改成「角落是空的才出現」
  *  v1.5:檔期改成 RA 在 Admin 後台「🎄 節慶」分頁設定(kol-proxy v7.61 /season.json)。
  *        記在這台瀏覽器 10 分鐘;讀不到後台就用下面內建的 SEASONS(網站照常,不會壞)。後台關掉 → 下次換頁自動換回原樣
@@ -13,7 +16,12 @@
 (function () {
   'use strict';
   if (window.__bsSeasonTheme) return;
-  window.__bsSeasonTheme = 'v1.5';
+
+  // ★ v1.6 總開關:false = 全站不套任何節慶造型(下面整段都不跑)。要再開節慶改成 true。
+  var SEASON_MASTER_ON = false;
+  if (!SEASON_MASTER_ON) { window.__bsSeasonTheme = 'v1.6-off'; return; }
+
+  window.__bsSeasonTheme = 'v1.6';
 
   // 日期用「月-日」,含頭含尾;跨年的檔期把 from 寫大於 to 即可(例:12-28 ~ 01-05)
   var SEASONS = [

@@ -70,7 +70,7 @@
   window.__bsSeasonLoader = true;
   try {
     var s = document.createElement('script');
-    s.src = 'theme-season.js';
+    s.src = 'theme-season.js?v=20261122';
     s.defer = true;
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {}
