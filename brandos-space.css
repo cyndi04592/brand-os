@@ -2730,3 +2730,14 @@ html.sp .nav-right .nav-btn-kol[data-ext="mp3"]::before{content:'MUSIC'}
 }
 html.sp.sp-kol .kol-menu > a[data-ext="ttf"]::before{content:'FONTS'}
 html.sp.sp-kol .kol-menu > a[data-ext="mp3"]::before{content:'MUSIC'}
+/* 19:58 RA:加了芮字/芮聲後,右上「訂閱方案」被擠成直的 → 右上那排不准被壓縮、字不准斷行;導覽項目改窄一點 */
+html.sp .nav-account-row,html.sp .nav-account-row>*{flex-shrink:0!important}
+html.sp #subMenuBtn,html.sp .nav-btn-logout,html.sp #bitsChip{white-space:nowrap!important;writing-mode:horizontal-tb}
+@media (min-width:1280px){
+  html.sp .nav-right{gap:16px!important;min-width:0}
+  html.sp .nav-right .nav-btn-monitor,html.sp .nav-right .nav-btn-kol,html.sp .nav-right .nav-btn-admin{min-width:84px!important}
+}
+@media (min-width:1280px) and (max-width:1599px){
+  html.sp .nav-version-tag{display:none!important}
+  html.sp .nav-right .nav-btn-monitor,html.sp .nav-right .nav-btn-kol,html.sp .nav-right .nav-btn-admin{min-width:0!important}
+}
