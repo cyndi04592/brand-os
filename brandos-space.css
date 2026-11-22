@@ -2728,3 +2728,5 @@ html.sp .nav-right .nav-btn-kol[data-ext="mp3"]::before{content:'MUSIC'}
   html.sp #bitsChip .bits-bar-track{display:none!important}           /* 點數只留數字 */
   html.sp #bitsChip{padding:4px 8px!important}
 }
+html.sp.sp-kol .kol-menu > a[data-ext="ttf"]::before{content:'FONTS'}
+html.sp.sp-kol .kol-menu > a[data-ext="mp3"]::before{content:'MUSIC'}
