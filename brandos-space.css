@@ -2766,3 +2766,4 @@ html.sp #subMenuBtn,html.sp .nav-btn-logout,html.sp #bitsChip{white-space:nowrap
 html.sp .nav-right .nav-more{flex-shrink:0;min-width:84px}
 html.sp .nav-more-btn,html.sp .nav-more-btn::before{white-space:nowrap!important;writing-mode:horizontal-tb!important}
 @media (max-width:768px){ html.sp .nav-right .nav-more{min-width:0} }
+html.sp .nav-more-btn::before,.nav-more-btn::before,.nav-more[open]>.nav-more-btn::before{transform:none!important;transition:none!important}
