@@ -2763,3 +2763,6 @@ html.sp #subMenuBtn,html.sp .nav-btn-logout,html.sp #bitsChip{white-space:nowrap
   .nav-more-btn span::after{content:' ▾'}
   .nav-more-menu{position:static;min-width:0;border:1px solid rgba(255,255,255,.12);border-top:0;box-shadow:none}
 }
+html.sp .nav-right .nav-more{flex-shrink:0;min-width:84px}
+html.sp .nav-more-btn,html.sp .nav-more-btn::before{white-space:nowrap!important;writing-mode:horizontal-tb!important}
+@media (max-width:768px){ html.sp .nav-right .nav-more{min-width:0} }
