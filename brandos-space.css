@@ -2790,3 +2790,9 @@ html.sp .nav-more-btn::before,.nav-more-btn::before,.nav-more[open]>.nav-more-bt
   html.sp .nav-email-chip:not(.show-email) #userEmailNav{display:none}
   html.sp .nav-email-chip::before{margin:0}
 }
+/* 02:50 RA(iPad):平板寬「其他」下拉被導覽列 overflow:hidden 切掉 → 只切左右、上下放行 */
+@media (min-width:769px) and (max-width:1279px){
+  html.sp .nav{overflow:visible!important;overflow-x:clip!important;overflow-y:visible!important}
+  html.sp .nav-right,html.sp .nav-right .nav-more{overflow:visible!important}
+  html.sp .nav-more-menu{z-index:10060}
+}
