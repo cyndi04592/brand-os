@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>RABY loader demo</title>
+<link rel="stylesheet" href="raby-space.css"></head>
+<body class="rb" style="padding:40px">
+<button class="rb-btn" onclick="RabyLoader.show('c2');setTimeout(RabyLoader.hide,4000)">C2 艙門</button>
+<button class="rb-btn rb-btn-ghost" onclick="demo3()">C3 發射前檢查</button>
+<script src="raby-loader.js" data-assets="./"></script>
+<script>
+function demo3(){RabyLoader.show('c3',{title:'RENDERING',steps:['BRAND PACK','SCENE','RENDER','LOGO'],manual:true});var p=0,t=setInterval(function(){p+=5;RabyLoader.progress(p);RabyLoader.step(Math.floor(p/25)-1);if(p>=100){clearInterval(t);setTimeout(RabyLoader.hide,600)}},150)}
+</script></body></html>

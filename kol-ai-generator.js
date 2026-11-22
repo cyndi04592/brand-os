@@ -2124,6 +2124,10 @@ async function generate() {
   meta.textContent = '';
 
   const t0 = performance.now();
+  //  🚪 2026-11-22 太空版等待畫面(c3):三行照真的做到哪亮(送出 → 形象生好 → 存好);/raby/ 讀不到就什麼都不做
+  const _rw = window.RabyWait;
+  let _rwOk = false;
+  if (_rw && _rw.start('kai', 'CREATING KOL', ['SUBMIT', 'PORTRAIT', 'ARCHIVE'], _isBoard ? '正在生成真人底圖,約 40–90 秒' : '正在生成 KOL 形象,約 10–25 秒')) _rw.step('kai', 0);
   try {
     // v3.16: 改走 Cloudflare proxy(action=fal_image_submit),金鑰留後端
     const res = await fetch(WORKER_URL, {
@@ -2147,6 +2151,7 @@ async function generate() {
       throw new Error('回應無 images');
     }
 
+    if (_rw) _rw.step('kai', 1);
     S.lastBoard = !!data.board;
     S.lastImages = data.images.map((img, i) => ({
       ...img,
@@ -2162,8 +2167,9 @@ async function generate() {
       S.lastImages.forEach((im, i) => { if (_urls[i]) im.url = _urls[i]; });
     } catch (_) {}
 
+    _rwOk = true;
     renderGallery();
-    if (!S.lastBoard) _kaiFramingCheck();   // 📏 v3.46(底圖本來就有上半特寫,不用查構圖) 背景看構圖,太近的那張加提醒(不動照片、不動提示詞)
+    if (!S.lastBoard) _kaiFramingCheck();  // 📏 v3.46(底圖本來就有上半特寫,不用查構圖) 背景看構圖,太近的那張加提醒(不動照片、不動提示詞)
 
     // 自動填 seed 到輸入框
     const seedInp = document.getElementById('kai-seed');
@@ -2182,6 +2188,7 @@ async function generate() {
     gallery.innerHTML = '';
     showStatus('❌ 生成失敗:' + e.message, 'err');
   } finally {
+    if (_rw) _rw.end('kai', _rwOk, 2);
     S.generating = false;
     btn.disabled = false;
     btn.innerHTML = '生成 AI KOL';

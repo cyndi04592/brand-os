@@ -1,0 +1,48 @@
+/* 芮比設計規範・太空版 v1（2026-11-22 老闆定稿）
+ * 原則：只用太空元素；暗色、高端腕錶質地；AI 圖不放字（真字用程式疊）
+ * 字：大標＝芮字航太（接縫/一般）＋鈦金屬漸層｜英文內文＝Barlow｜中文內文＝芮字書（做好前暫用 LXGW WenKai TC / Noto Sans TC）
+ * 素材：/raby/ 資料夾＝earth.jpg 軌道藍光、metal.jpg 拉絲黑金屬、nebula.jpg 星雲、aurora.jpg 極光、aero.ttf、aero-seam.ttf
+ */
+@font-face{font-family:'RuiAero';src:url(/raby/aero.ttf) format('truetype');font-display:swap}
+@font-face{font-family:'RuiAeroSeam';src:url(/raby/aero-seam.ttf) format('truetype');font-display:swap}
+:root{
+  --rb-black:#000;--rb-panel:#06080b;--rb-line:rgba(255,255,255,.12);--rb-line-strong:rgba(255,255,255,.3);
+  --rb-text:#fff;--rb-text-2:rgba(255,255,255,.72);--rb-text-3:rgba(255,255,255,.55);
+  --rb-blue:#5AA0FF;--rb-blue-soft:#9CC8FF;--rb-blue-pale:#CFE3FF;--rb-warm:#FFD9A8;
+  --rb-ti:linear-gradient(180deg,#FFFFFF 0%,#D9E0EA 36%,#6E7786 50%,#B9C3D1 60%,#F4F7FB 100%);
+  --rb-ti-warm:linear-gradient(180deg,#FFFFFF 0%,#F0E6DA 38%,#8A8378 50%,#E2D6C6 58%,#FFFFFF 100%);
+  --rb-font:'Barlow','Noto Sans TC',sans-serif;--rb-aero:'RuiAero','Barlow',sans-serif;--rb-seam:'RuiAeroSeam','RuiAero','Barlow',sans-serif;
+  --rb-gap:28px;--rb-max:1100px;
+}
+body.rb{margin:0;background:var(--rb-black);color:var(--rb-text);font-family:var(--rb-font)}
+/* 字 */
+.rb-h1{font-family:var(--rb-seam);font-size:clamp(36px,5vw,62px);line-height:1.18;letter-spacing:.14em;margin:0}
+.rb-h2{font-family:var(--rb-aero);font-size:28px;letter-spacing:.2em;margin:0}
+.rb-ti{background:var(--rb-ti);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rb-ti-warm{background:var(--rb-ti-warm);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rb-glow{filter:drop-shadow(0 1px 0 rgba(255,255,255,.35)) drop-shadow(0 0 22px rgba(90,160,255,.35))}
+.rb-lab{font-size:11px;letter-spacing:.32em;color:var(--rb-text-3);text-transform:uppercase}
+.rb-zh{letter-spacing:.06em;line-height:1.8;color:var(--rb-text-2)}  /* 中文小標：字距 .04–.2em、行高 1.45–1.8 */
+/* 錶盤格紋 */
+.rb-tap{background-color:var(--rb-panel);background-image:linear-gradient(90deg,rgba(0,0,0,.7) 0 1px,transparent 1px),linear-gradient(0deg,rgba(0,0,0,.7) 0 1px,transparent 1px),linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,0) 48%,rgba(0,0,0,.45)),radial-gradient(120% 90% at 50% 0%,rgba(120,150,195,.16),rgba(0,0,0,0) 70%);background-size:8px 8px,8px 8px,8px 8px,100% 100%}
+/* 金屬斜邊外框＋螺絲 */
+.rb-bezel{position:relative;border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 0 rgba(0,0,0,.9),0 0 0 1px #000,0 0 0 2px rgba(205,214,228,.26),0 0 0 3px #000,0 40px 80px rgba(0,0,0,.7)}
+.rb-screws::before,.rb-screws::after{content:'';position:absolute;top:12px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#EEF2F7,#7B8492 55%,#15181d);box-shadow:0 0 0 1px #000}
+.rb-screws::before{left:12px}.rb-screws::after{right:12px}
+/* 刻度線 */
+.rb-ticks{height:10px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.4) 0 1px,transparent 1px 14px);-webkit-mask:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);mask:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent)}
+/* 按鈕：白實心／白框，方角 */
+.rb-btn{display:inline-block;min-width:200px;text-align:center;text-decoration:none;font:600 12px var(--rb-font);letter-spacing:.28em;padding:16px 0;border:2px solid #fff;background:#fff;color:#000;cursor:pointer}
+.rb-btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.85)}
+.rb-btn:focus-visible,.rb-btn-ghost:focus-visible{outline:2px solid var(--rb-blue-soft);outline-offset:3px}
+/* 輸入框 */
+.rb-input{width:100%;box-sizing:border-box;font:15px var(--rb-font);letter-spacing:.04em;padding:15px 16px;border:1px solid rgba(255,255,255,.2);color:#fff;background:#000}
+.rb-input:focus{outline:2px solid #fff;outline-offset:2px}
+/* 能量條（跟讀取動畫同一款） */
+.rb-energy{position:relative;height:10px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.rb-energy>b{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#5AA0FF,#CFE3FF);box-shadow:0 0 14px rgba(90,160,255,.7)}
+.rb-energy::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 9px,#000 9px 12px)}
+/* 版面 */
+.rb-wrap{max-width:var(--rb-max);margin:0 auto;padding:100px 24px 40px;display:flex;flex-direction:column;gap:var(--rb-gap)}
+.rb-band{background-size:cover;background-position:center;background-repeat:no-repeat}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}

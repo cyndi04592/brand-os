@@ -140,3 +140,279 @@
     if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
   } catch (e) {}
 })();
+
+/* 🚪 2026-11-22 太空版讀取動畫(老闆 01:59 定稿;共用元件 /raby/raby-loader.js):
+ *    ① 原本的太空人讀取(showSpaceLoader)→ c2 艙門開啟。
+ *    ② 首頁跑廣告圖 → c3 發射前檢查,四行照「真的做到哪」亮(聽 setPrStatus 的訊息);
+ *       沒有真實百分比,所以不給進度,能量條自己循環。
+ *    緊急關閉:網址加 ?raby=off(回到太空人)。/raby/ 讀不到也自動回到太空人。失敗不影響網站。 */
+(function(){
+  if (window.__rabyBridge) return;
+  window.__rabyBridge = true;
+  try {
+    if (/[?&]raby=off\b/.test(location.search)) return;
+    var oldShow = window.showSpaceLoader;
+    var state = 0;            // 0 載入中 · 1 可用 · -1 讀不到(回到太空人)
+    var mode = null;          // 'c2' | 'c3' | null
+    var cur = null;           // 目前這次 c2:{ el, text, obs, timer, t0 }
+    var gen = false;          // 廣告圖生成中
+    var genTimer = null;
+    var MIN_MS = 1900;        // 艙門完整開完才收
+    var C2_MAX_MS = 20000;    // c2 最久蓋 20 秒(之後留下容器裡的小字,不擋操作)
+    var GEN_MAX_MS = 420000;  // c3 最久 7 分鐘(保險)
+
+    function label(text, cls) {
+      var box = document.querySelector('.rl .rl-box');
+      if (!box || !text) return;
+      var s = document.createElement('span');
+      s.className = 'rl-lab' + (cls ? ' ' + cls : '');
+      s.textContent = text;
+      box.appendChild(s);
+    }
+    function marker(el, text) {
+      // 容器裡留一行小字(沿用原本樣式,不放太空人):蓋板收掉後還看得到在讀取
+      var d = document.createElement('div');
+      d.className = 'bsSpaceLoader rabySL';
+      var t = document.createElement('div');
+      t.className = 'bsSL-txt';
+      t.textContent = text + ' ';
+      var dots = document.createElement('span');
+      dots.className = 'bsSL-dots';
+      dots.innerHTML = '<i></i><i></i><i></i>';
+      t.appendChild(dots); d.appendChild(t);
+      el.innerHTML = ''; el.appendChild(d);
+    }
+    function closeC2(now) {
+      if (!cur) return;
+      var c = cur; cur = null;
+      try { c.obs && c.obs.disconnect(); } catch (e) {}
+      clearTimeout(c.timer);
+      var wait = now ? 0 : Math.max(0, MIN_MS - (Date.now() - c.t0));
+      setTimeout(function () {
+        if (!cur && mode === 'c2') { mode = null; try { window.RabyLoader.hide(); } catch (e) {} }
+      }, wait);
+    }
+    function openC2(el, text) {
+      if (cur) { try { cur.obs && cur.obs.disconnect(); } catch (e) {} clearTimeout(cur.timer); cur = null; }
+      if (gen && mode === 'c3') return;                  // 正在跑廣告圖:不搶畫面
+      window.RabyLoader.show('c2');
+      label(text);
+      mode = 'c2';
+      cur = { el: el, t0: Date.now() };
+      try {
+        cur.obs = new MutationObserver(function () { if (!el.querySelector('.rabySL')) closeC2(); });
+        cur.obs.observe(el, { childList: true, subtree: true });
+      } catch (e) {}
+      cur.timer = setTimeout(function () { closeC2(true); }, C2_MAX_MS);
+    }
+    var pending = [];
+    window.showSpaceLoader = function (target, text) {
+      var el = (typeof target === 'string') ? document.getElementById(target) : target;
+      if (!el) return;
+      text = text || '載入中';
+      if (state === -1) { if (oldShow) oldShow(el, text); return; }
+      marker(el, text);
+      if (state === 1) openC2(el, text); else pending.push([el, text]);
+    };
+
+    var s = document.createElement('script');
+    s.src = '/raby/raby-loader.js?v=1';
+    s.setAttribute('data-assets', '/raby/');
+    s.onload = function () {
+      if (!window.RabyLoader) { s.onerror(); return; }
+      state = 1;
+      var last = null;
+      pending.forEach(function (p) { if (p[0].querySelector('.rabySL')) last = p; });
+      pending = [];
+      if (last) openC2(last[0], last[1]);
+      hookGen();
+    };
+    s.onerror = function () {
+      state = -1;
+      var p = pending; pending = [];
+      p.forEach(function (x) { if (oldShow && x[0].querySelector('.rabySL')) oldShow(x[0], x[1]); });
+    };
+    (document.head || document.documentElement).appendChild(s);
+
+    // ── ② 跑廣告圖:c3,照真實階段亮 ──
+    function genHide(delay) {
+      gen = false; clearTimeout(genTimer);
+      setTimeout(function () {
+        if (mode === 'c3') { mode = null; try { window.RabyLoader.hide(); } catch (e) {} }
+      }, delay || 0);
+    }
+    function genShow() {
+      if (cur) closeC2(true);
+      gen = true; mode = 'c3';
+      window.RabyLoader.show('c3', { title: 'RENDERING', steps: ['BRAND PACK', 'SCENE', 'RENDER', 'LOGO'], manual: true });
+      window.RabyLoader.step(-1);
+      label('廣告圖生成中,約 2–4 分鐘');
+      var ov = document.querySelector('.rl');
+      if (ov) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = '縮小,先做別的(圖照樣在做)';
+        b.style.cssText = 'position:absolute;left:50%;bottom:max(28px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2;'
+          + 'padding:12px 20px;min-height:44px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);color:#fff;'
+          + 'font-size:13px;letter-spacing:.08em;cursor:pointer;border-radius:2px';
+        b.onclick = function () { if (mode === 'c3') { mode = null; try { window.RabyLoader.hide(); } catch (e) {} } };
+        ov.appendChild(b);
+      }
+      clearTimeout(genTimer);
+      genTimer = setTimeout(function () { genHide(); }, GEN_MAX_MS);
+    }
+    function onStatus(m) {
+      if (m.indexOf('上傳商品照處理中') >= 0) { genShow(); return; }   // 開始:讀商品照、組品牌包
+      if (!gen) return;
+      var L = window.RabyLoader;
+      if (m.indexOf('品牌包+版式合成') >= 0) L.step(0);                // 品牌包組好,送出場景
+      else if (m.indexOf('出圖中') >= 0) L.step(1);                    // 場景送出成功,開始出圖
+      else if (m.indexOf('商品校正中') >= 0 || m.indexOf('LOGO 對字中') >= 0) L.step(2);   // 圖出來了,在校正商品／LOGO
+      else if (m.indexOf('✅') === 0) { L.step(3); genHide(900); }      // 完成
+      else if (m.indexOf('❌') === 0 || m.indexOf('⚠️') === 0) genHide();   // 失敗:馬上收,訊息在頁面上
+    }
+    function hookGen() {
+      var f = window.setPrStatus;
+      if (typeof f !== 'function') return false;
+      if (f.__raby) return true;
+      var w = function (msg) {
+        try { if (state === 1) onStatus(String(msg == null ? '' : msg)); } catch (e) {}
+        return f.apply(this, arguments);
+      };
+      w.__raby = true;
+      window.setPrStatus = w;
+      return true;
+    }
+    if (/^\/(index(\.html)?)?$/.test(location.pathname)) {
+      var tries = 0;
+      var iv = setInterval(function () { if ((state === 1 && hookGen()) || state === -1 || ++tries > 60) clearInterval(iv); }, 500);
+    }
+
+    // ── ③ KOL 數字人(2026-11-22):生成影片、生成數字人 → c3 ──
+    //    四行只在「真的做到那一步」才亮(聽 kol.html 本來就有的進度回報:_genProgress／_stitchProgress／任務狀態);
+    //    頁面自己的百分比是照時間估的,所以不接進能量條(不給假進度),能量條自己循環。
+    //    頁面上原本的進度條照舊在跑,按「縮小」就看得到。
+    var kw = null;                 // 目前這次 KOL 等待:{ key, n, st }
+    var KOL_MAX_MS = 2100000;      // 最久 35 分鐘(保險;影片上限約 31 分鐘)
+    function kolShow(key, title, steps, text) {
+      if (state !== 1 || kw) return false;
+      if (cur) closeC2(true);
+      gen = true; mode = 'c3'; kw = { key: key, n: -1, st: false };
+      window.RabyLoader.show('c3', { title: title, steps: steps, manual: true });
+      window.RabyLoader.step(-1);
+      label(text);
+      var ov = document.querySelector('.rl');
+      if (ov) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = '縮小,看詳細進度(照樣在做)';
+        b.style.cssText = 'position:absolute;left:50%;bottom:max(28px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2;'
+          + 'padding:12px 20px;min-height:44px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);color:#fff;'
+          + 'font-size:13px;letter-spacing:.08em;cursor:pointer;border-radius:2px;white-space:nowrap';
+        b.onclick = function () { if (mode === 'c3') { mode = null; try { window.RabyLoader.hide(); } catch (e) {} } };
+        ov.appendChild(b);
+      }
+      clearTimeout(genTimer);
+      genTimer = setTimeout(function () { kolEnd(key); }, KOL_MAX_MS);
+      return true;
+    }
+    function kolStep(key, i) {
+      if (!kw || kw.key !== key || i <= kw.n) return;
+      kw.n = i;
+      if (mode === 'c3') window.RabyLoader.step(i);
+    }
+    function kolEnd(key, ok, last) {
+      if (!kw || kw.key !== key) return;
+      kw = null;
+      if (ok && mode === 'c3') window.RabyLoader.step(last);
+      genHide(ok ? 900 : 0);
+    }
+    // 給 kol-ai-generator.js 用(讀不到 /raby/ 時這三個都安靜不做事)
+    window.RabyWait = {
+      start: function (k, t, s, x) { try { return kolShow(k, t, s, x); } catch (e) { return false; } },
+      step: function (k, i) { try { kolStep(k, i); } catch (e) {} },
+      end: function (k, ok, last) { try { kolEnd(k, ok, last); } catch (e) {} }
+    };
+    function hookKol() {
+      var g = window._genProgress;
+      if (typeof g !== 'function') return false;
+      if (g.__raby) return true;
+      // (a) 多鏡頭影片(STEP2 生成電影鏡頭、STEP3 全套／只影片):準備素材 → 參考圖鎖定 → 各段畫面 → 合成成片
+      var w = function () {
+        var o = g.apply(this, arguments);
+        try {
+          if (kolShow('video', 'VIDEO PRODUCTION', ['ASSETS', 'REFERENCE LOCK', 'SHOOT', 'FINAL CUT'], '影片生成中,請留在這一頁')) {
+            var st = o.step;
+            o.step = function (i) {
+              try { if (i >= 1) kolStep('video', 0); if (i >= 3) kolStep('video', 1); } catch (e) {}
+              return st.apply(o, arguments);
+            };
+          }
+        } catch (e) {}
+        return o;
+      };
+      w.__raby = true;
+      window._genProgress = w;
+      var sp = null;
+      try { sp = _stitchProgress; } catch (e) {}
+      if (sp && !sp.__raby) {
+        sp.__raby = true;
+        var box = null, total = 1, segs = {};
+        var s0 = sp.start, s1 = sp.segDone, s2 = sp.note, s3 = sp.stop;
+        sp.start = function (b, n) {
+          box = b; total = Math.max(1, n || 1); segs = {};
+          if (kw && kw.key === 'video') kw.st = true;
+          return s0.apply(sp, arguments);
+        };
+        sp.segDone = function (idx) {
+          try { segs[idx | 0] = 1; if (Object.keys(segs).length >= total) kolStep('video', 2); } catch (e) {}
+          return s1.apply(sp, arguments);
+        };
+        sp.note = function (m) {
+          try { if (/正在(下載畫面|處理畫面|合成影片|輸出影片|上傳|儲存影片)/.test(String(m || ''))) kolStep('video', 2); } catch (e) {}
+          return s2.apply(sp, arguments);
+        };
+        sp.stop = function () {
+          var r = s3.apply(sp, arguments), b = box;
+          setTimeout(function () {
+            var done = false;
+            try { done = !!(b && b.querySelector('video')); } catch (e) {}
+            kolEnd('video', done, 3);          // 有成片才亮最後一行;失敗／缺段直接收,訊息在頁面上
+          }, 60);
+          return r;
+        };
+      }
+      // 前置階段(還沒開始接片)出錯:原程式沒有接住,這裡把蓋板收掉,不留卡住的畫面
+      window.addEventListener('unhandledrejection', function () { if (kw && kw.key === 'video' && !kw.st) kolEnd('video'); });
+      // (b) 單支影片:任務送出 → 成片回來(中間排隊／生成分不出來,所以只有兩行)
+      var rt = window.renderSeedanceTasks;
+      if (typeof rt === 'function' && !rt.__raby) {
+        var seen = {};
+        var w2 = function () {
+          var out = rt.apply(this, arguments);
+          try {
+            var t = S.seedanceTasks && S.seedanceTasks[0];
+            if (t && t.requestId) {
+              var k = 'one:' + t.requestId, s = String(t.status || '').toUpperCase();
+              var fin = /COMPLETED|SUCCESS|FINISHED/.test(s), bad = /FAILED|ERROR|CANCELLED/.test(s);
+              if (!seen[k]) {
+                seen[k] = 1;
+                if (!fin && !bad && Date.now() - (t.startTime || 0) < 8000
+                    && kolShow(k, 'VIDEO PRODUCTION', ['SUBMIT', 'RENDER'], '影片生成中,約 4 分鐘,請留在這一頁')) kolStep(k, 0);
+              }
+              if (fin) kolEnd(k, true, 1); else if (bad) kolEnd(k);
+            }
+          } catch (e) {}
+          return out;
+        };
+        w2.__raby = true;
+        window.renderSeedanceTasks = w2;
+      }
+      return true;
+    }
+    if (/^\/kol(\.html)?$/.test(location.pathname)) {
+      var kt = 0;
+      var kiv = setInterval(function () { if ((state === 1 && hookKol()) || state === -1 || ++kt > 80) clearInterval(kiv); }, 500);
+    }
+  } catch (e) {}
+})();
