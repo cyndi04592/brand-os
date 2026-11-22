@@ -23,9 +23,13 @@
 (function () {
   'use strict';
   if (window.AdTextLayer) return;
-  var VERSION = '1.4';
+  var VERSION = '1.5';   // 1.5(2026-11-22)簡體字(香港客人)改用同一家族的 Noto Sans/Serif SC 補字,不再混到系統字型
   var ON = function () { return window.AD_TEXTLAYER !== false; };
-  var SANS = '"Noto Sans TC", sans-serif', SERIF = '"Noto Serif TC", serif';
+  var SANS = '"Noto Sans TC", "Noto Sans SC", sans-serif', SERIF = '"Noto Serif TC", "Noto Serif SC", serif';
+  //  1.5 簡體補字:Google 字型照字切片,只下載用到的那幾個字;同一家族 → 繁簡混排粗細一致
+  (function () { try { if (document.getElementById('adTlSC')) return; var l = document.createElement('link'); l.id = 'adTlSC'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;500;700&display=swap';
+    document.head.appendChild(l); } catch (e) {} })();
   var INK = '#1a1a1c', WHITE = '#ffffff';
 
   // ── 排法清單(RA 11-13 定案 20 款)───────────────────────────────
@@ -404,7 +408,9 @@
     var W = ctx.canvas.width, H = ctx.canvas.height, u = Math.min(W, H) / 1088;
     var src = g('PR_BG_IMG') || '';
     try { await Promise.all([300, 400, 500, 700, 900].map(function (w) { return document.fonts.load(w + ' 40px "Noto Sans TC"', T.h + T.s + '()0123456789%'); })
-      .concat([400, 500, 700].map(function (w) { return document.fonts.load(w + ' 40px "Noto Serif TC"', T.h + T.s); }))); } catch (e) {}
+      .concat([400, 500, 700].map(function (w) { return document.fonts.load(w + ' 40px "Noto Serif TC"', T.h + T.s); }))
+      .concat([300, 400, 500, 700, 900].map(function (w) { return document.fonts.load(w + ' 40px "Noto Sans SC"', T.h + T.s); }))
+      .concat([400, 500, 700].map(function (w) { return document.fonts.load(w + ' 40px "Noto Serif SC"', T.h + T.s); }))); } catch (e) {}
     if (typeof setPrStatus === 'function') setPrStatus('✍️ 系統壓字中(找空位、避開主體)...', 'var(--t3)');
     var maskImg = await getMask(src);
     // 照片在畫布上的位置(renderGptPosterCanvas 是等比置中)
