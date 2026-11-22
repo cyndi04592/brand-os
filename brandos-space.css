@@ -2691,3 +2691,15 @@ html.sp .bt-pill,html.sp #bt-tour-pill-kol,html.sp #bt-tour-pill-lib,html.sp #bt
 html.sp #bos-lang-sw{left:12px!important;width:112px!important;box-sizing:border-box}
 html.sp #bos-lang-sw button.bos-lang-main{width:112px!important;min-height:44px;box-sizing:border-box!important;justify-content:flex-start!important;padding:0 12px!important;margin:0!important}
 html.sp #bos-lang-sw button.bos-lang-main::before{margin:0 2px 0 -4px}
+/* 18:55 RA 截圖:電腦版「廣告監控」前面那個小記號 = 手機漢堡鈕在電腦版沒藏好(三條線縮成一點)→ 電腦版藏掉 */
+@media (min-width:769px){ html.sp .nav-hamburger,html.sp #navHamburger{display:none!important} }
+/* 18:55 RA 截圖:電腦版右上(訂閱方案／Bits／帳號)也換成 PiAPI 圖示,跟手機一致 */
+@media (min-width:769px){
+  html.sp #subMenuBtn>svg,html.sp #bitsShopBtn>svg,html.sp .nav-email-chip>svg{display:none!important}
+  html.sp #subMenuBtn::before,html.sp #bitsShopBtn::before,html.sp .nav-email-chip::before{content:"";display:inline-block;flex:0 0 22px;width:22px;height:22px;background:center/contain no-repeat;mix-blend-mode:screen;pointer-events:none;filter:brightness(1.25)}
+  html.sp #subMenuBtn{gap:6px!important}
+  html.sp #subMenuBtn::before{background-image:url(/raby/ic/plan.jpg?v=2)}
+  html.sp #bitsShopBtn::before{background-image:url(/raby/bits/icon.jpg?v=20261122g)}
+  html.sp .nav-email-chip{display:inline-flex;align-items:center;gap:6px}
+  html.sp .nav-email-chip::before{background-image:url(/raby/ic/account.jpg?v=1)}
+}
