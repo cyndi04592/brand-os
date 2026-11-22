@@ -127,7 +127,7 @@
       if (again) cur.el = el = again;
     }
     if (el && visible(el)) {
-      var r = el.getBoundingClientRect(), pad = 6;
+      var stp = cur.steps[cur.i], r = (stp.rect && stp.rect(el)) || el.getBoundingClientRect(), pad = 6;
       ui.ring.style.display = 'block';
       ui.ring.style.left = (r.left - pad) + 'px'; ui.ring.style.top = (r.top - pad) + 'px';
       ui.ring.style.width = (r.width + pad * 2) + 'px'; ui.ring.style.height = (r.height + pad * 2) + 'px';
@@ -266,6 +266,22 @@
     if (!S.subId && b.subs && b.subs.length && typeof window.clickSub === 'function') window.clickSub(b.id, b.subs[0].id);
   }
 
+  //  v2.2(11-22 19:05 RA):第 2 步的框只框「系列和商品」那一段,不要連品牌名稱一起框
+  function seriesRect(root) {
+    var n = root.querySelectorAll('.sub-brand-row,.prod-stack,.btm-chips.wrap,.btm-list');
+    var L = 1e9, T = 1e9, R = -1e9, B = -1e9, k = 0;
+    for (var i = 0; i < n.length; i++) {
+      var q = n[i].getBoundingClientRect();
+      if (!q.width || !q.height) continue;
+      L = Math.min(L, q.left); T = Math.min(T, q.top); R = Math.max(R, q.right); B = Math.max(B, q.bottom); k++;
+    }
+    if (!k) return null;
+    var lbl = root.querySelectorAll('.btm-lbl');                  // 手機:把「② 系列」那行標題也框進來
+    if (lbl.length > 1) { var t2 = lbl[1].getBoundingClientRect().top; if (t2 && t2 < T) T = t2; }
+    var vb = Math.min(B, window.innerHeight - 8);                // 系列很多時,框到畫面底就好
+    return { left: L, top: T, right: R, bottom: vb, width: R - L, height: vb - T };
+  }
+
   // ── 品牌投放實驗室(首頁)────────────────────────────────────
   register('lab', function () { return [
     { m: '#btmBrands', d: '#brandTree',
@@ -273,7 +289,7 @@
       body: T('這裡是你的<b>品牌</b>。點一下要做廣告的那個品牌,下面就會出現它的系列和商品。',
               'ここが<b>ブランド</b>一覧です。広告を作るブランドをタップすると、下にシリーズと商品が出てきます。',
               'These are your <b>brands</b>. Tap the one you want to advertise and its series and products appear below.') },
-    { t: '#brandTree', pre: openDemoBrand,
+    { t: '#brandTree', pre: openDemoBrand, rect: seriesRect,
       title: T('再選系列和商品', 'シリーズと商品を選ぶ', 'Pick a series and product'),
       body: T('點<b>系列</b>,再點<b>要推的那個商品</b>。<br>選好的會打勾,最上面那行會顯示你選到哪裡。',
               '<b>シリーズ</b>→<b>宣伝する商品</b>の順にタップ。選ぶとチェックが付きます。',
