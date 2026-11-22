@@ -2568,3 +2568,8 @@ html.sp.sp-monitor .mo-kpi{min-width:0;overflow:visible}
   html.sp .nav-right .nav-btn-monitor,html.sp .nav-right .nav-btn-kol,html.sp .nav-right .nav-btn-admin{min-width:112px;align-items:flex-start;text-align:left}
   html.sp .nav-right .monitor-live-dot,html.sp .nav-right .kol-pulse-dots,html.sp .nav-right .nav-btn-monitor>svg,html.sp .nav-right .nav-btn-kol>svg{display:none!important}
 }
+/* 15:40 再修:「廣告監控」前面那個小記號 → 導覽按鈕裡除了中文字那一段，其他子元素一律不顯示 */
+@media (min-width:769px){
+  html.sp .nav-right .nav-btn-monitor>*:not(span:first-of-type),html.sp .nav-right .nav-btn-kol>*:not(span:first-of-type){display:none!important}
+  html.sp .nav-right .nav-btn-monitor>span:first-of-type,html.sp .nav-right .nav-btn-kol>span:first-of-type{display:block;margin:0;padding:0;text-indent:0}
+}
