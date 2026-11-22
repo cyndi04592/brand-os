@@ -1853,15 +1853,15 @@ html.sp.sp-plans .bos-plans .bos-card::before{content:'';display:block;height:18
 html.sp.sp-plans .bos-plans .bos-card:nth-child(3n+1)::before{background-image:url(/raby/bos/moon.jpg)}
 html.sp.sp-plans .bos-plans .bos-card:nth-child(3n+2)::before{background-image:url(/raby/bos/saturn.jpg)}
 html.sp.sp-plans .bos-plans .bos-card:nth-child(3n)::before{background-image:url(/raby/bos/star.jpg)}
-html.sp.sp-plans .bos-plans .bos-card.bos-custom::before{background-image:url(/raby/bos/galaxy.jpg);background-size:auto 100%}
-html.sp.sp-plans .bos-plans .bos-card[data-plan="trial"]::before{background-image:url(/raby/bos/asteroid.jpg);background-size:auto 62%}
+html.sp.sp-plans .bos-plans .bos-card.bos-custom::before{background-image:url(/raby/bos/galaxy.jpg?v=2);background-size:auto 100%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="trial"]::before{background-image:url(/raby/bos/asteroid.jpg?v=2);background-size:auto 62%}
 html.sp.sp-plans .bos-plans .bos-card[data-plan="light"]::before{background-image:url(/raby/bos/moon.jpg);background-size:auto 76%}
-html.sp.sp-plans .bos-plans .bos-card[data-plan="entry"]::before{background-image:url(/raby/bos/mars.jpg);background-size:auto 80%}
-html.sp.sp-plans .bos-plans .bos-card[data-plan="growth"]::before{background-image:url(/raby/bos/earth.jpg);background-size:auto 90%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="entry"]::before{background-image:url(/raby/bos/mars.jpg?v=2);background-size:auto 80%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="growth"]::before{background-image:url(/raby/bos/earth.jpg?v=2);background-size:auto 90%}
 html.sp.sp-plans .bos-plans .bos-card[data-plan="pro"]::before{background-image:url(/raby/bos/saturn.jpg);background-size:auto 104%}
-html.sp.sp-plans .bos-plans .bos-card[data-plan="ent"]::before{background-image:url(/raby/bos/jupiter.jpg);background-size:auto 100%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="ent"]::before{background-image:url(/raby/bos/jupiter.jpg?v=2);background-size:auto 100%}
 html.sp.sp-plans .bos-plans .bos-card[data-plan="flag"]::before{background-image:url(/raby/bos/star.jpg);background-size:auto 150%}
-html.sp.sp-plans .bos-plans .bos-card[data-plan="custom"]::before{background-image:url(/raby/bos/galaxy.jpg);background-size:auto 100%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="custom"]::before{background-image:url(/raby/bos/galaxy.jpg?v=2);background-size:auto 100%}
 /* 結帳畫面、提示橫幅等寫死在 style="" 的舊顏色 */
 html.sp.sp-plans #planRoot [style*="border-radius"]{border-radius:0!important}
 html.sp.sp-plans #planRoot [style*="124,108,255"],html.sp.sp-plans #planRoot [style*="124, 108, 255"]{border-color:rgba(156,200,255,.5)!important;background:rgba(90,160,255,.08)!important;box-shadow:none!important}
@@ -2505,19 +2505,19 @@ html.sp .psz .ed{color:#9CC8FF}
    主圖 /raby/bits/<key>.jpg（黑底，用 screen 混色融進面板）；視窗外殼在 45-plans.css B 段。
    數字、價格、文字內容、onclick 都不動。 */
 /* 標題 💎 → 能量晶體小圖示 */
-html.sp.sp-index #bitsShopModal>div>div:first-child>div>span:first-child{font-size:0!important;width:26px;height:26px;display:inline-block;flex:0 0 26px;background:url(/raby/bits/icon.jpg) center/contain no-repeat;mix-blend-mode:screen;color:transparent!important}
+html.sp.sp-index #bitsShopModal>div>div:first-child>div>span:first-child{font-size:0!important;width:26px;height:26px;display:inline-block;flex:0 0 26px;background:url(/raby/bits/icon.jpg?v=2) center/contain no-repeat;mix-blend-mode:screen;color:transparent!important}
 
 /* 卡片：錶盤格紋＋金屬斜邊（排除「載入中／沒訂閱」那種整列訊息） */
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"]){background-color:#06080b!important;background-image:var(--sp-tap)!important;background-size:8px 8px,8px 8px,8px 8px,100% 100%!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:0!important;box-shadow:var(--sp-bezel)!important;padding:14px 12px 14px!important;isolation:isolate}
 /* 主圖 */
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"])::before{content:"";display:block;width:100%;max-width:170px;aspect-ratio:1/1;margin:4px auto 6px;background:center/contain no-repeat;mix-blend-mode:screen;pointer-events:none}
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'test30'"]::before,
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'entry'"]::before{background-image:url(/raby/bits/entry.jpg)}
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'advance'"]::before{background-image:url(/raby/bits/advance.jpg)}
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'pro'"]::before{background-image:url(/raby/bits/pro.jpg)}
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'max'"]::before{background-image:url(/raby/bits/max.jpg)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'entry'"]::before{background-image:url(/raby/bits/entry.jpg?v=2)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'advance'"]::before{background-image:url(/raby/bits/advance.jpg?v=2)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'pro'"]::before{background-image:url(/raby/bits/pro.jpg?v=2)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'max'"]::before{background-image:url(/raby/bits/max.jpg?v=2)}
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'holiday'"]::before,
-html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="grid-column"])::before{background-image:url(/raby/bits/holiday.jpg)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="grid-column"])::before{background-image:url(/raby/bits/holiday.jpg?v=2)}
 
 /* 最熱賣那張：藍框發光 */
 html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'pro'"]{border-color:rgba(156,200,255,.75)!important;box-shadow:var(--sp-bezel),0 0 0 1px rgba(156,200,255,.55),0 0 26px rgba(90,160,255,.35)!important}
