@@ -177,6 +177,7 @@
 
   function show() {
     var st = cur.steps[cur.i];
+    if (st.pre) { try { st.pre(); } catch (e) {} }   // v2.2:步驟開始前先把畫面準備好(例:展開品牌)
     var el = findTarget(st);
     cur.el = el; cur.adj = 0; cur.t0 = Date.now(); cur.still = 0; cur.lastTop = null;
     //  v1.2:手機卡片很高 → 首頁的框捲到畫面上方(卡片在下面);產生器視窗裡維持置中
@@ -230,6 +231,22 @@
 
   function register(name, steps) { TOURS[name] = steps; }
 
+  //  v2.2(11-22 RA):第 2 步「選系列和商品」→ 還沒展開品牌時,自動展開一個品牌和它的第一個系列,讓客人看到商品長怎樣
+  function openDemoBrand() {
+    var S = window.S, B = window.BRANDS;
+    if (!S || !B || !B.length) return;
+    if (S.subId && S.openBrand) return;                       // 已經展開了,不動
+    var b = null;
+    for (var i = 0; i < B.length; i++) if (B[i].id === S.brandId) b = B[i];
+    b = b || B[0];
+    var mob = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+    if (S.openBrand !== b.id || S.brandId !== b.id) {
+      if (mob && typeof window.clickBrandM === 'function') window.clickBrandM(b.id);
+      else if (typeof window.clickBrand === 'function') window.clickBrand(b.id);
+    }
+    if (!S.subId && b.subs && b.subs.length && typeof window.clickSub === 'function') window.clickSub(b.id, b.subs[0].id);
+  }
+
   // ── 品牌投放實驗室(首頁)────────────────────────────────────
   register('lab', function () { return [
     { m: '#btmBrands', d: '#brandTree',
@@ -237,7 +254,7 @@
       body: T('這裡是你的<b>品牌</b>。點一下要做廣告的那個品牌,下面就會出現它的系列和商品。',
               'ここが<b>ブランド</b>一覧です。広告を作るブランドをタップすると、下にシリーズと商品が出てきます。',
               'These are your <b>brands</b>. Tap the one you want to advertise and its series and products appear below.') },
-    { t: '#brandTree',
+    { t: '#brandTree', pre: openDemoBrand,
       title: T('再選系列和商品', 'シリーズと商品を選ぶ', 'Pick a series and product'),
       body: T('點<b>系列</b>,再點<b>要推的那個商品</b>。<br>選好的會打勾,最上面那行會顯示你選到哪裡。',
               '<b>シリーズ</b>→<b>宣伝する商品</b>の順にタップ。選ぶとチェックが付きます。',
