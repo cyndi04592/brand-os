@@ -2686,3 +2686,8 @@ html.sp.sp-plans a[href="privacy.html"],html.sp.sp-plans a[href="terms.html"],ht
   html.sp .nav-right .nav-btn-monitor>*:not(span:first-of-type),html.sp .nav-right .nav-btn-kol>*:not(span:first-of-type){display:none!important}
   html.sp .nav-right .nav-btn-monitor>span:first-of-type,html.sp .nav-right .nav-btn-kol>span:first-of-type{display:block;margin:0;padding:0;text-indent:0}
 }
+/* 18:52 RA 截圖:左下「教學」和「中文」兩顆左右沒對齊 → 同寬、同左緣、內容靠左、同高 */
+html.sp .bt-pill,html.sp #bt-tour-pill-kol,html.sp #bt-tour-pill-lib,html.sp #bt-tour-pill-onb{left:12px!important;width:112px!important;min-height:44px;box-sizing:border-box!important;display:inline-flex!important;align-items:center;justify-content:flex-start!important;padding:0 12px!important;margin:0!important}
+html.sp #bos-lang-sw{left:12px!important;width:112px!important;box-sizing:border-box}
+html.sp #bos-lang-sw button.bos-lang-main{width:112px!important;min-height:44px;box-sizing:border-box!important;justify-content:flex-start!important;padding:0 12px!important;margin:0!important}
+html.sp #bos-lang-sw button.bos-lang-main::before{margin:0 2px 0 -4px}
