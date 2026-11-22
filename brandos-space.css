@@ -2809,3 +2809,19 @@ html.sp .nav-more-btn::before,.nav-more-btn::before,.nav-more[open]>.nav-more-bt
   html.sp .nav-right{gap:14px!important}
   html.sp .nav-right .nav-btn-monitor>span:first-of-type,html.sp .nav-right .nav-btn-kol>span:first-of-type,html.sp .nav-right .nav-btn-admin,html.sp .nav-right .nav-more-btn{font-size:13px!important}
 }
+/* 03:00 RA:平板寬(769–1279)改用三條槓。導覽連結收進右上下拉面板,帳號圖示列照舊顯示 */
+@media (min-width:769px) and (max-width:1279px){
+  html.sp .nav-brand-text{display:inline!important}
+  html.sp #navHamburger{display:flex!important;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:44px;height:44px;margin:0 12px 0 0;padding:0;background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:0;cursor:pointer;flex-shrink:0}
+  html.sp #navHamburger span{display:block;width:20px;height:2px;background:#fff;transition:transform .2s,opacity .2s}
+  html.sp body.nav-open #navHamburger{border-color:#9CC8FF;background:rgba(90,160,255,.12)}
+  html.sp body.nav-open #navHamburger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  html.sp body.nav-open #navHamburger span:nth-child(2){opacity:0}
+  html.sp body.nav-open #navHamburger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  html.sp .nav-right{display:none!important}
+  html.sp body.nav-open .nav-right{display:flex!important;position:absolute;top:100%;right:16px;width:300px;flex-direction:column;align-items:stretch;gap:0!important;padding:6px;background:#000;border:1px solid rgba(255,255,255,.2);box-shadow:0 18px 40px rgba(0,0,0,.6);z-index:10040}
+  html.sp body.nav-open .nav-right>a,html.sp body.nav-open .nav-right>button,html.sp body.nav-open .nav-right>.nav-more{width:100%!important;min-width:0!important;flex:none!important;box-sizing:border-box}
+  html.sp body.nav-open .nav-right>a,html.sp body.nav-open .nav-right>button,html.sp body.nav-open .nav-right .nav-more>.nav-more-btn{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;min-height:52px;padding:0 16px!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.08)!important;font-size:15px!important;color:#fff!important;text-align:left;background:none!important}
+  html.sp body.nav-open .nav-right>a>span:first-of-type,html.sp body.nav-open .nav-right>button{font-size:15px!important}
+  html.sp body.nav-open .nav-right .nav-more-menu{position:static;min-width:0;box-shadow:none;border:0;border-left:2px solid rgba(90,160,255,.4);margin:0 0 6px 16px}
+}
