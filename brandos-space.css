@@ -2796,3 +2796,16 @@ html.sp .nav-more-btn::before,.nav-more-btn::before,.nav-more[open]>.nav-more-bt
   html.sp .nav-right,html.sp .nav-right .nav-more{overflow:visible!important}
   html.sp .nav-more-menu{z-index:10060}
 }
+/* 02:52 RA(iPad):平板寬導覽「都超擠」→ 拿掉 BRAND OS 字樣與 Bits 餘額小框(商城裡看得到),騰出空間;連結間距拉開 */
+@media (min-width:769px) and (max-width:1279px){
+  html.sp .nav-brand-text{display:none!important}
+  html.sp .nav-logo-wrap{gap:0!important;margin-right:20px!important;flex-shrink:0}
+  html.sp #bitsChip{display:none!important}
+  html.sp .nav-right{gap:22px!important}
+  html.sp .nav-right .nav-btn-monitor>span:first-of-type,html.sp .nav-right .nav-btn-kol>span:first-of-type,html.sp .nav-right .nav-btn-admin,html.sp .nav-right .nav-more-btn{font-size:14px!important}
+  html.sp .nav-account-row{gap:10px!important;margin-left:8px}
+}
+@media (min-width:769px) and (max-width:1023px){
+  html.sp .nav-right{gap:14px!important}
+  html.sp .nav-right .nav-btn-monitor>span:first-of-type,html.sp .nav-right .nav-btn-kol>span:first-of-type,html.sp .nav-right .nav-btn-admin,html.sp .nav-right .nav-more-btn{font-size:13px!important}
+}
