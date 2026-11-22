@@ -42,6 +42,8 @@
     + '.md-why{font-size:9.5px;color:var(--t3,#8a8aa0);margin-top:3px;white-space:normal;max-width:170px;margin-left:auto;line-height:1.45}'
     + '.md-alert{display:flex;flex-direction:column;gap:6px}'
     + '.md-alert div{font-size:11px;color:var(--t2,#c8c8d8);padding:8px 10px;border-radius:9px;background:rgba(250,109,155,0.07);border-left:3px solid var(--pink,#FA6D9B)}'
+    + '.md-tbl tr.md-hl td{background:rgba(255,196,90,0.10)}.md-tbl tr.md-hl td:first-child{box-shadow:inset 4px 0 0 #FFC45A}'
+    + '.md-tbl tr.md-hl{outline:2px solid #FFC45A;outline-offset:-2px}'
     + '.md-more{margin-top:10px;text-align:center}'
     + '.md-more button{padding:6px 16px;border-radius:8px;border:1px solid var(--line,rgba(255,255,255,0.15));background:transparent;color:var(--t2,#c8c8d8);cursor:pointer;font-size:11px}';
   function injectCss() {
@@ -73,7 +75,8 @@
   }
 
   // ── 狀態 ────────────────────────────────────────────────
-  var view = { filter: 'all', sort: 'spend', dir: -1, q: '', limit: 30 };
+  var view = { filter: 'all', sort: 'spend', dir: -1, q: '', limit: 30, hl: [] };   // hl = 加框標亮的廣告(素材疲勞卡按鈕帶過來,monitor-fatigue.js)
+  function keyOf(r) { return String(r.id || r.name || ''); }
   var rows = [], G = null;   // G = 訊息 / 名單品牌的字詞(購物品牌是 null)
 
   function prep(d) {
@@ -138,7 +141,7 @@
       var fatTxt = r.fat == null ? '—' : (r.fat >= 60 ? '換 ' : r.fat >= 35 ? '注意 ' : '') + r.fat;
       var learn = r.learning === 'FAIL' ? ' · <span class="mo-down">學習受限</span>' : r.learning === 'LEARNING' ? ' · 學習中' : '';
       var fmtIcon = r.format === 'video' ? '' : '';
-      return '<tr>'
+      return '<tr' + (view.hl.indexOf(keyOf(r)) >= 0 ? ' class="md-hl"' : '') + '>'
         + '<td><div class="md-ad">' + (r.thumb ? '<img loading="lazy" src="' + esc(r.thumb) + '" alt="">' : '<div class="ph"></div>')
         + '<div style="min-width:0"><div class="nm" title="' + esc(r.name) + '">' + fmtIcon + ' ' + esc(r.name) + '</div><div class="cp" title="' + esc(r.campaign + ' › ' + r.adset) + '">' + esc(r.campaign) + learn + '</div></div></div></td>'
         + '<td>' + F.money(r.spend) + '</td>'
@@ -227,8 +230,24 @@
   injectCss();
   M.on('loading', skeleton);
   M.on('data', render);
-  M.on('brand', function () { view.filter = 'all'; view.q = ''; view.limit = 30; });
+  M.on('brand', function () { view.filter = 'all'; view.q = ''; view.limit = 30; view.hl = []; });
   if (M.state.data) render(M.state.data);
 
-  window.MON_ADS = { version: 'monitor-ads v1.2', render: render };
+  //  v1.3(2026-11-23 交代 0110):素材疲勞卡／⑤ 的「看每支素材疲乏度」用這裡的疲乏數字(不另算)
+  function top(n, d) {
+    d = d || M.state.data; if (!d) return [];
+    if (!rows.length || rows._d !== d) { prep(d); rows._d = d; }
+    return rows.filter(function (r) { return r.fat != null && r.fat > 0; })
+      .sort(function (a, b) { return b.fat - a.fat || b.spend - a.spend; }).slice(0, n || 3)
+      .map(function (r) { return { key: keyOf(r), name: r.name, fat: r.fat, frequency: r.frequency, ctrDrop: r.ctrDrop, why: r.why, spend: r.spend }; });
+  }
+  function focus(n) {
+    var d = M.state.data; if (!d) return [];
+    var t = top(n || 3, d);
+    view.filter = 'all'; view.q = ''; view.sort = 'fat'; view.dir = -1; view.limit = Math.max(30, view.limit);
+    view.hl = t.map(function (r) { return r.key; });
+    render(d);
+    return t;
+  }
+  window.MON_ADS = { version: 'monitor-ads v1.3', render: render, top: top, focus: focus };
 })();

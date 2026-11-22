@@ -134,7 +134,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="mn-err" id="mnErr"></div>
   <div class="mn-smr" id="mnSmr">這個品牌有接 SMR:Meta 回報的營收會灌水(像素重複算),<b>真實成交、口袋錢以 SMR 為準</b> → <a href="https://smr.raby.com.tw/" target="_blank" rel="noopener">打開 SMR 真實成交</a></div>
   <section class="mn-sec"><h2 id="sec-overview">總覽</h2><div id="mon-overview"></div></section>
-  <section class="mn-sec" id="mon-overlap-sec" style="display:none"><h2 id="sec-overlap">帳號互搶</h2><div id="mon-overlap"></div></section><!-- 2026-11-22 同品牌跨帳號互搶偵測(monitor-overlap.js;沒資料時整段不顯示) -->
+  <section class="mn-sec" id="mon-fatigue-sec" style="display:none"><h2 id="sec-fatigue">素材疲勞</h2><div id="mon-fatigue"></div></section><!-- 2026-11-23 交代 0110 互搶配方 kind=fatigue 黃燈卡+「看每支素材疲乏度」(monitor-fatigue.js) -->
+<section class="mn-sec" id="mon-overlap-sec" style="display:none"><h2 id="sec-overlap">帳號互搶</h2><div id="mon-overlap"></div></section><!-- 2026-11-22 同品牌跨帳號互搶偵測(monitor-overlap.js;沒資料時整段不顯示) -->
   <section class="mn-sec" id="mon-recon-sec" style="display:none"><h2 id="sec-recon">跟真實訂單對帳</h2><div id="mon-recon"></div></section><!-- 2026-11-22 Meta 報的購買 vs 真實訂單(monitor-recon.js;目標不是購買或 Worker 沒有這個動作時整段不顯示) -->
   <section class="mn-sec" id="mon-index-sec" style="display:none"><h2 id="sec-index">芮比大盤</h2><div id="mon-index"></div></section><!-- 2026-11-22 芮比大盤指數:這個品牌對大盤(monitor-index.js;只畫指數;Worker 沒有這個動作時整段不顯示) -->
   <section class="mn-sec"><h2 id="sec-pool">魚池地圖</h2><div id="mon-pool"></div></section>
@@ -145,18 +146,20 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="mn-foot" id="mnFoot"></div>
 </div>
 
-<script src="monitor-data.js?v=1.7"></script>
+<script src="monitor-data.js?v=fg-1.8"></script>
 <script src="monitor-overview.js?v=1.7"></script>
 <script src="monitor-diagnose.js?v=1.3"></script>
 <script src="monitor-asc.js?v=1.4"></script>
-<script src="monitor-ads.js?v=1.2"></script>
+<script src="monitor-ads.js?v=1.3"></script>
 <script src="monitor-pool.js?v=1.4"></script>
 <script src="monitor-overlap.js?v=1.1"></script>
+<script src="monitor-ownscan.js?v=1.0"></script><!-- 2026-11-23 交代 0104 互搶主判讀:掃看得到的所有帳號 -->
 <script src="monitor-ovmark.js?v=1.0"></script><!-- 2026-11-22 交代 2106 互搶「老闆手動標記」 -->
 <script src="monitor-recon.js?v=1.0"></script>
 <script src="monitor-index.js?v=1.0"></script>
-<script src="monitor-intl.js?v=1.1"></script>
-<script src="monitor-fold.js?v=1.0"></script><!-- 2026-11-22 每一區可折疊(收起只留標題+狀態+一句白話;紅燈預設打開;最上面一排燈號) -->
+<script src="monitor-intl.js?v=1.2"></script>
+<script src="monitor-fatigue.js?v=1.0"></script><!-- 2026-11-23 交代 0110 素材疲勞黃燈 -->
+<script src="monitor-fold.js?v=1.1"></script><!-- 2026-11-22 每一區可折疊(收起只留標題+狀態+一句白話;紅燈預設打開;最上面一排燈號) -->
 <script>
 (function () {
   var M = window.MON;

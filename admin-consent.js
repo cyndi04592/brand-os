@@ -126,3 +126,8 @@
   if (window.__admMonRoleLoader) return; window.__admMonRoleLoader = true;
   try { var s = document.createElement('script'); s.src = 'admin-monrole.js?v=20261122'; s.defer = true; document.body.appendChild(s); } catch (e) {}
 })();
+/* 2026-11-23 後台「產生 RADAR 唯讀鑰匙」(admin-radarkey.js,交代 0132)同樣搭車載入。 */
+(function () {
+  if (window.__admRadarKeyLoader) return; window.__admRadarKeyLoader = true;
+  try { var s = document.createElement('script'); s.src = 'admin-radarkey.js?v=20261123'; s.defer = true; document.body.appendChild(s); } catch (e) {}
+})();

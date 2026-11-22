@@ -80,6 +80,7 @@
     'sec-overlap': { lamp: true, say: '.ov-say', card: '.ov-card', map: { red: 'bad', yellow: 'warn', green: 'good' }, word: { bad: '兩邊在互搶', warn: '留意', good: '沒有互搶' } },
     'sec-recon': { lamp: true, say: '.rc-say', card: '.rc-card', map: { red: 'bad', yellow: 'warn', green: 'good' }, word: { bad: 'Meta 多算了', warn: '留意', good: '對得上' }, none: '要填訂單數' },
     'sec-index': { lamp: true, say: '.ix-say', card: '.ix-card', map: { self: 'bad', mixed: 'warn', market: 'warn', calm: 'good', hold: 'good' }, wordBy: { self: '問題在自己', mixed: '掉得比大盤多', market: '大環境', calm: '平穩', hold: '撐住了' } },
+    'sec-fatigue': { lamp: true, open: true, say: '.fg-say', card: '.fg-card', map: { yellow: 'warn' }, word: { warn: '素材疲勞' } },   // 2026-11-23 交代 0110:素材疲勞黃燈(monitor-fatigue.js),預設打開讓按鈕看得到
     'sec-pool': { text: '預算撒在哪一種網子(出價方式)、各撈回多少。' },
     'sec-diag': { text: '成本變貴時點開:拆成曝光變貴、點的人變少、還是成交的人變少。' },
     'sec-asc': { text: '預算有沒有卡住、學習期過了沒、素材夠不夠。' },

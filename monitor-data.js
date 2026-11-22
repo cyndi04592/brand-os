@@ -70,7 +70,7 @@
   }
   //  v1.6 晚到的區塊各自顯示自己的細能量條(不擋主畫面):哪個動作在抓 → 那一區加 mon-busy
   var BUSY_SEC = { overlap: 'mon-overlap-sec', meta_signals: 'mon-overlap-sec', ov_mark: 'mon-overlap-sec', recon: 'mon-recon-sec',
-    raby_index: 'mon-index-sec', intl: 'sec-intl', diagnose: 'sec-diag' };
+    raby_index: 'mon-index-sec', intl: 'sec-intl', diagnose: 'sec-diag', cpm_recipe: 'mon-fatigue-sec' };
   var busyN = {};
   function secBusy(action, d) {
     var id = BUSY_SEC[action]; if (!id) return;
@@ -321,6 +321,15 @@
       return j;
     });
   }
+  //  互搶「我們操作的帳號」(2026-11-23 交代 0104;Worker 'ov_ours' 讀、'ov_ours_set' 寫,只有管理員能寫)
+  function ovOurs() { return post({ action: 'ov_ours', brand: state.brand }, 20000).then(function (j) { return j && j.ok ? j : null; }, function () { return null; }); }
+  function ovOursSet(m) {
+    var b = state.brand;
+    return post(Object.assign({ action: 'ov_ours_set', brand: b }, m || {}), 20000).then(function (j) {
+      if (j && j.ok) Object.keys(ovMem).forEach(function (k) { if (k.indexOf(b + '|') === 0) delete ovMem[k]; });
+      return j;
+    });
+  }
   //  Meta 自己的拍賣重疊訊號(2026-11-22 交代 2109;Worker action 'meta_signals',只讀):30 分鐘記一次;舊版 Worker 沒這個動作就回 null
   var msMem = {};
   function metaSignals() {
@@ -343,6 +352,10 @@
     });
   }
   //  跟真實訂單對帳(2026-11-22;Worker action 'recon' 只讀 Meta、'orders_set' 存客戶後台的訂單數):每次都問 Worker(它自己記 30 分鐘)
+  //  2026-11-23 交代 0110:互搶成本異常配方(cpmrecipe.js v2.1,只讀;kind=fatigue → 素材疲勞黃燈)
+  function cpmRecipe(since, until) {
+    return post({ action: 'cpm_recipe', brand: state.brand, since: since || '', until: until || '' }, 45000).then(function (j) { return j && j.ok ? j : null; }, function () { return null; });
+  }
   function recon(cut) {
     return post({ action: 'recon', brand: state.brand, range: state.range, cut: cut || '' }, 60000);
   }
@@ -446,7 +459,7 @@
     refresh: function () { return load(true); },                                          // 使用者按「重抓最新」
     softRefresh: function () { delete mem[state.brand + '|' + rangeKey(state.range)]; return load(false); },   // 自動更新:讓 Worker 決定要不要敲 Meta
     setBrand: setBrand, setRange: setRange, setCfg: setCfg,
-    brandInfo: brandInfo, state: state, fmt: fmt, diag: diag, market: market, overlap: overlap, ovMark: ovMark, ovMarkSet: ovMarkSet, metaSignals: metaSignals, intl: intl, recon: recon, ordersSet: ordersSet, rabyIndex: rabyIndex,
+    brandInfo: brandInfo, state: state, fmt: fmt, diag: diag, market: market, overlap: overlap, ovMark: ovMark, ovMarkSet: ovMarkSet, ovOurs: ovOurs, ovOursSet: ovOursSet, metaSignals: metaSignals, intl: intl, recon: recon, cpmRecipe: cpmRecipe, ordersSet: ordersSet, rabyIndex: rabyIndex,
     campaignGroup: campaignGroup, GROUP_LABEL: GROUP_LABEL,
     CFG_DEFAULT: CFG_DEFAULT
   };

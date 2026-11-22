@@ -351,6 +351,8 @@
             + (bad ? '<br><span class="in-b">越播越多次、越來越少人點 → 該換了</span>' : '') + '</div></div>';
         }).join('') + '</div>';
     } else body += '<div style="margin-top:12px">' + wait('每支素材近 14 天的走勢圖') + '</div>';
+    //  2026-11-23 交代 0110:跟素材疲勞黃燈同一顆按鈕(monitor-fatigue.js 接 data-fatgo;疲乏度用「進行中廣告」那一欄)
+    body += '<div style="margin-top:12px"><button type="button" class="fg-btn" data-fatgo="intl">看每支素材疲乏度 →</button></div>';
     var says = [], k = 'good', tag = tagOf('good', '節奏正常');
     if (ads.length < 4) { says.push('在花錢的素材只有 <b>' + ads.length + ' 支</b>,太少,系統沒得挑 → 至少補到 4–6 支不同角度的'); k = 'bad'; }
     if (newest != null && newest > 14) { says.push('已經 <b>' + newest + ' 天</b>沒上新素材 → 這週該補新的了'); k = 'bad'; }
