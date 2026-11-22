@@ -206,13 +206,32 @@
       cur.timer = setTimeout(function () { closeC2(true); }, C2_MAX_MS);
     }
     var pending = [];
+    //  2026-11-22 14:45 RA「點開動畫要改一下,不要開門的」:容器裡的讀取(打開商城、切分頁…)不再蓋全螢幕艙門,
+    //  改成容器內一條太空版能量條;艙門只留給真正的整頁等待。
+    function ilCss() {
+      if (document.getElementById('rabyILcss')) return;
+      var st = document.createElement('style'); st.id = 'rabyILcss';
+      st.textContent = '.rabyIL{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:48px 16px;min-height:120px}'
+        + '.rabyIL-t{font:12px "Barlow","Noto Sans TC",sans-serif;letter-spacing:.24em;color:rgba(255,255,255,.65);text-align:center}'
+        + '.rabyIL-bar{position:relative;width:min(220px,60vw);height:8px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}'
+        + '.rabyIL-bar>b{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#5AA0FF,#CFE3FF);box-shadow:0 0 12px rgba(90,160,255,.7);animation:rabyILf 1.8s cubic-bezier(.55,0,.35,1) infinite}'
+        + '.rabyIL-bar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 9px,#000 9px 12px)}'
+        + '@keyframes rabyILf{0%{width:0}85%,100%{width:100%}}'
+        + '@media (prefers-reduced-motion:reduce){.rabyIL-bar>b{animation:none;width:60%}}';
+      (document.head || document.documentElement).appendChild(st);
+    }
     window.showSpaceLoader = function (target, text) {
       var el = (typeof target === 'string') ? document.getElementById(target) : target;
       if (!el) return;
       text = text || '載入中';
-      if (state === -1) { if (oldShow) oldShow(el, text); return; }
-      marker(el, text);
-      if (state === 1) openC2(el, text); else pending.push([el, text]);
+      ilCss();
+      var d = document.createElement('div');
+      d.className = 'bsSpaceLoader rabySL rabyIL';
+      d.setAttribute('role', 'status');
+      var t = document.createElement('div'); t.className = 'rabyIL-t'; t.textContent = text;
+      var b = document.createElement('div'); b.className = 'rabyIL-bar'; b.innerHTML = '<b></b>';
+      d.appendChild(t); d.appendChild(b);
+      el.innerHTML = ''; el.appendChild(d);
     };
 
     var s = document.createElement('script');
