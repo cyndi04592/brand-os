@@ -240,6 +240,30 @@
       el.innerHTML = ''; el.appendChild(d);
     };
 
+    // 🚪 16:10 RA「登入進去讀取什麼都沒做」→ 開機「初始化 Brand OS」也用 c2 艙門(原本只剩舊轉圈)
+    function initHook() {
+      var ov = document.getElementById('initOverlay');
+      if (!ov) return;
+      var on = false, t0 = 0, safe = null;
+      function vis() { return ov.style.display === 'flex'; }
+      function off() {
+        on = false; clearTimeout(safe);
+        var w = Math.max(0, MIN_MS - (Date.now() - t0));
+        setTimeout(function () { if (!on && !cur && mode === 'c2') { mode = null; try { window.RabyLoader.hide(); } catch (e) {} } }, w);
+      }
+      function sync() {
+        var v = vis();
+        if (v && !on) {
+          if (mode === 'c3' || cur) return;
+          on = true; t0 = Date.now(); mode = 'c2';
+          window.RabyLoader.show('c2');
+          label('初始化 BRAND OS');
+          safe = setTimeout(off, C2_MAX_MS);
+        } else if (!v && on) off();
+      }
+      try { new MutationObserver(sync).observe(ov, { attributes: true, attributeFilter: ['style'] }); } catch (e) {}
+      sync();
+    }
     var s = document.createElement('script');
     s.src = '/raby/raby-loader.js?v=1';
     s.setAttribute('data-assets', '/raby/');
@@ -251,6 +275,7 @@
       pending = [];
       if (last) openC2(last[0], last[1]);
       hookGen();
+      initHook();
     };
     s.onerror = function () {
       state = -1;
