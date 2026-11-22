@@ -53,6 +53,15 @@ body{
 .mn-loading{display:none;position:fixed;left:0;right:0;top:150px;bottom:0;z-index:40;background:rgba(8,8,14,0.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding-top:8vh}
 .mn-loading.on{display:flex}
 .mn-loading>div{width:min(420px,90vw)}
+/* 2026-11-22 讀取加速:切換品牌/日期只在內容區上方跑一條細能量條,晚到的區塊各自有自己的條(不再整頁蓋艙門) */
+.mn-ebar{position:fixed;left:0;right:0;top:150px;z-index:41;height:3px;overflow:hidden;opacity:0;transition:opacity .2s;pointer-events:none}
+.mn-ebar.on{opacity:1}
+.mn-ebar::before,.mon-busy::before{content:"";position:absolute;left:0;top:0;height:3px;width:40%;background:linear-gradient(90deg,transparent,#6db8ff,#e9f4ff,#6db8ff,transparent);box-shadow:0 0 8px rgba(109,184,255,.8);animation:mnEbar 1.1s linear infinite}
+.mon-busy{position:relative}
+.mon-busy::before{z-index:5;border-radius:2px}
+@keyframes mnEbar{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+#mnUpd.busy::after{content:" · 更新中…";color:#8fc8ff}
+@media (prefers-reduced-motion:reduce){.mn-ebar::before,.mon-busy::before{animation:none;width:100%;opacity:.6}}
 .mn-foot{text-align:center;font-size:10px;color:var(--t3);padding:10px}
 @media(max-width:640px){.mn-meta{margin-left:0;width:100%}.mn-sep{display:none}.mn-nav .tt{display:none}}
 /* 2026-11-13 RWD:body 是 flex,沒有 min-width:0 時寬表格會把整頁撐到 1000px+ → 手機整頁縮小、魚池也誤判成電腦版 */
@@ -120,6 +129,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 </div>
 
 <div class="mn-loading" id="mnLoading"><div id="mnLoadingBox"></div></div>
+<div class="mn-ebar" id="mnEbar" aria-hidden="true"></div>
 <div class="mn-wrap">
   <div class="mn-err" id="mnErr"></div>
   <div class="mn-smr" id="mnSmr">這個品牌有接 SMR:Meta 回報的營收會灌水(像素重複算),<b>真實成交、口袋錢以 SMR 為準</b> → <a href="https://smr.raby.com.tw/" target="_blank" rel="noopener">打開 SMR 真實成交</a></div>
@@ -135,13 +145,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="mn-foot" id="mnFoot"></div>
 </div>
 
-<script src="monitor-data.js?v=1.6"></script>
+<script src="monitor-data.js?v=1.7"></script>
 <script src="monitor-overview.js?v=1.7"></script>
 <script src="monitor-diagnose.js?v=1.3"></script>
 <script src="monitor-asc.js?v=1.4"></script>
 <script src="monitor-ads.js?v=1.2"></script>
 <script src="monitor-pool.js?v=1.4"></script>
-<script src="monitor-overlap.js?v=1.0"></script>
+<script src="monitor-overlap.js?v=1.1"></script>
+<script src="monitor-ovmark.js?v=1.0"></script><!-- 2026-11-22 交代 2106 互搶「老闆手動標記」 -->
 <script src="monitor-recon.js?v=1.0"></script>
 <script src="monitor-index.js?v=1.0"></script>
 <script src="monitor-intl.js?v=1.1"></script>
@@ -215,7 +226,21 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     $('mnLoading').classList.add('on');
   }
   function hideLoading() { $('mnLoading').classList.remove('on'); }
-  M.on('loading', function () { $('mnUpd').textContent = '讀取中…'; $('mnErr').style.display = 'none'; showLoading(); });
+  //  2026-11-22 艙門只在第一次進監控頁時開;之後切換品牌/日期只跑細能量條,舊畫面留著
+  M.on('loading', function (info) {
+    $('mnUpd').textContent = '讀取中…'; $('mnErr').style.display = 'none';
+    if (!info || info.first !== false) showLoading();
+  });
+  M.on('busy', function (on) {
+    var tb = document.querySelector('.mn-tab'), bar = tb && tb.parentElement && tb.parentElement.getBoundingClientRect();
+    if (on) $('mnEbar').style.top = (bar && bar.bottom > 0 ? Math.round(bar.bottom) : 0) + 'px';   // 貼在分頁列下緣(頁首高度電腦/手機不同)
+    $('mnEbar').classList.toggle('on', !!on); $('mnUpd').classList.toggle('busy', !!on); });
+  //  頁尾:這次「第一次有數字」花幾秒(給老闆看)
+  function timingText() {
+    var t = M.state.timing; if (!t || t.first == null) return '';
+    var s = function (ms) { return (ms / 1000).toFixed(ms < 10000 ? 2 : 1) + ' 秒'; };
+    return ' · 這次第一次有數字 ' + s(t.first) + '(' + t.via + ')' + (t.fresh != null && t.via === '舊資料' ? '、最新數據 ' + s(t.fresh) : '');
+  }
   //  主要目標是訊息 / 名單的品牌:兩個區塊的標題跟著換
   function drawTitles(d) {
     var w = M.W ? M.W(d) : null, g = w ? w.key : 'purchase';
@@ -228,7 +253,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     if (!d.warn) $('mnErr').style.display = 'none';
     var t = new Date(d.fetchedAt);
     $('mnUpd').textContent = (d.stale ? '上次的 ' : d.cached ? '暫存 ' : '最新 ') + t.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) + (d.loadMs != null && d.loadMs > 50 ? ' · ' + (d.loadMs / 1000).toFixed(1) + ' 秒' : '');
-    $('mnFoot').textContent = M.version + ' · ' + (window.MON_OVERVIEW || {}).version + ' · ' + (window.MON_DIAG || {}).version + ' · ' + (window.MON_ASC || {}).version + ' · ' + (window.MON_ADS || {}).version + ' · ' + (window.MON_POOL || {}).version + ' · 資料每 5 分鐘自動更新';
+    $('mnFoot').textContent = M.version + ' · ' + (window.MON_OVERVIEW || {}).version + ' · ' + (window.MON_DIAG || {}).version + ' · ' + (window.MON_ASC || {}).version + ' · ' + (window.MON_ADS || {}).version + ' · ' + (window.MON_POOL || {}).version + ' · 資料每 5 分鐘自動更新' + timingText();
     drawBrands(); drawRange();
   });
   M.on('warn', function (msg) { $('mnErr').style.display = 'block'; $('mnErr').textContent = '' + msg; });

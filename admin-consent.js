@@ -120,3 +120,9 @@
   if (window.__admAdBindLoader) return; window.__admAdBindLoader = true;
   try { var s = document.createElement('script'); s.src = 'admin-adbind.js?v=20261113'; s.defer = true; document.body.appendChild(s); } catch (e) {}
 })();
+
+/* 2026-11-22 後台「開監控客戶帳號」(admin-monrole.js)也搭這支的車載入,理由同上。失敗不影響授權書分頁。 */
+(function () {
+  if (window.__admMonRoleLoader) return; window.__admMonRoleLoader = true;
+  try { var s = document.createElement('script'); s.src = 'admin-monrole.js?v=20261122'; s.defer = true; document.body.appendChild(s); } catch (e) {}
+})();

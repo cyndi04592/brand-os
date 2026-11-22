@@ -68,9 +68,20 @@
       return post1(body, timeoutMs);
     });
   }
+  //  v1.6 晚到的區塊各自顯示自己的細能量條(不擋主畫面):哪個動作在抓 → 那一區加 mon-busy
+  var BUSY_SEC = { overlap: 'mon-overlap-sec', meta_signals: 'mon-overlap-sec', ov_mark: 'mon-overlap-sec', recon: 'mon-recon-sec',
+    raby_index: 'mon-index-sec', intl: 'sec-intl', diagnose: 'sec-diag' };
+  var busyN = {};
+  function secBusy(action, d) {
+    var id = BUSY_SEC[action]; if (!id) return;
+    busyN[id] = Math.max(0, (busyN[id] || 0) + d);
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('mon-busy', busyN[id] > 0);
+  }
   function post1(body, timeoutMs) {
     var ctl = new AbortController();
     var tm = setTimeout(function () { ctl.abort(); }, timeoutMs || 30000);
+    var act = String(body.action || ''); secBusy(act, 1);
     body.token = token();
     return fetch(API, {
       method: 'POST',
@@ -81,7 +92,7 @@
       return r.json().catch(function () { return { ok: false, error: '伺服器回傳格式不對(' + r.status + ')' }; });
     }).catch(function (e) {
       return { ok: false, error: e && e.name === 'AbortError' ? '等太久了,Meta 沒回應,請按重新整理' : '網路連不上,請檢查網路' };
-    }).finally(function () { clearTimeout(tm); });
+    }).finally(function () { clearTimeout(tm); secBusy(act, -1); });
   }
 
   // ── 狀態 ────────────────────────────────────────────────
@@ -151,16 +162,46 @@
   }
 
   //  主流程:載目前品牌 + 區間
+  //  v1.6 舊資料(不管多舊):這次開頁抓過的 → 這台電腦存的上次數據
+  function staleGet(k) {
+    var x = mem[k]; if (x && x.data) return { data: x.data, at: x.at };
+    var s = snapRead(); var h = s && s.dash && s.dash[k];
+    return h && h.data ? { data: h.data, at: h.at } : null;
+  }
+  var everShown = false;   // 這次開頁已經秀過任何數字(之後切換就不再蓋艙門)
+  var T_PAGE = (window.performance && performance.timeOrigin) ? performance.timeOrigin : Date.now();
+  state.timing = null;     // { first: 第一次有數字幾毫秒, via: '暫存'|'舊資料'|'Meta', fresh: 新資料幾毫秒 }
   function load(fresh) {
     if (!state.brand) return Promise.resolve(null);
     var my = ++seq;
-    var cachedNow = !fresh && memGet(state.brand + '|' + rangeKey(state.range));
-    if (!cachedNow && !snapShown[state.brand + '|' + rangeKey(state.range)]) emit('loading', { brand: state.brand, range: state.range });
-    var t0 = Date.now();
+    var k = state.brand + '|' + rangeKey(state.range);
+    var t0 = everShown ? Date.now() : T_PAGE;   // 開頁第一次:從打開網頁算起
+    var cachedNow = !fresh && memGet(k);
+    var tim = { first: null, via: '', fresh: null };
+    if (!cachedNow) {
+      //  ① 有暫存(就算是舊的)先秀,右上標「更新中…」,背景再換新的
+      var old = !fresh && !snapShown[k] && staleGet(k);
+      if (old && !(state.data && state.data === old.data)) {
+        state.data = Object.assign({}, old.data, { stale: true, cached: true, fetchedAt: old.data.fetchedAt, loadMs: null });
+        tim.first = Date.now() - t0; tim.via = '舊資料'; state.timing = tim;
+        snapShown[k] = true; everShown = true;
+        emit('data', state.data);
+        emit('busy', true);
+      } else if (snapShown[k] || fresh) {
+        emit('busy', true);
+      } else {
+        //  ② 完全沒有資料:第一次進頁才開艙門,之後只在內容區顯示細能量條
+        emit('loading', { brand: state.brand, range: state.range, first: !everShown });
+        emit('busy', true);
+      }
+    }
     return fetchDash(state.brand, state.range, fresh).then(function (j) {
       if (my !== seq) return null;           // 中途又切了品牌,這包作廢
+      emit('busy', false);
       if (!j || !j.ok) { handleFail(j); return null; }
       j.loadMs = Date.now() - t0;
+      if (tim.first == null) { tim.first = j.loadMs; tim.via = cachedNow ? '暫存' : (j.cached ? '暫存' : 'Meta'); }
+      tim.fresh = j.loadMs; state.timing = tim; everShown = true; snapShown[k] = true;
       state.data = j;
       emit('data', j);
       if (j.warn) emit('warn', j.warn);
@@ -204,12 +245,13 @@
     var snap = snapRead(), k0 = state.brand + '|' + rangeKey(state.range);
     var hit = snap && snap.me && state.brand && snap.dash && snap.dash[k0];
     if (hit) {
-      state.me = snap.me; snapShown[k0] = true;
+      state.me = snap.me; snapShown[k0] = true; everShown = true;
+      state.timing = { first: Date.now() - T_PAGE, via: '舊資料', fresh: null };
       emit('me', snap.me);
       state.data = Object.assign({}, hit.data, { stale: true, cached: true, fetchedAt: hit.data.fetchedAt });
       emit('data', state.data);
     } else {
-      emit('loading', { brand: state.brand, range: state.range });
+      emit('loading', { brand: state.brand, range: state.range, first: true });
     }
     if (state.brand) fetchDash(state.brand, state.range, false);   // 先跑,身分查完直接接上(沒權限的品牌 Worker 會擋,結果丟掉)
     return post({ action: 'me' }, 15000).then(function (j) {
@@ -269,6 +311,25 @@
       if (j && j.ok) ovMem[k] = { at: Date.now(), data: j };
       return j;
     });
+  }
+  //  互搶「老闆手動標記」(2026-11-22 交代 2106;Worker action 'ov_mark' 讀、'ov_mark_set' 寫/撤,只有管理員能寫)
+  function ovMark() { return post({ action: 'ov_mark', brand: state.brand }, 20000).then(function (j) { return j && j.ok ? j : null; }, function () { return null; }); }
+  function ovMarkSet(m) {
+    var b = state.brand;
+    return post(Object.assign({ action: 'ov_mark_set', brand: b }, m || {}), 20000).then(function (j) {
+      if (j && j.ok) Object.keys(ovMem).forEach(function (k) { if (k.indexOf(b + '|') === 0) delete ovMem[k]; });
+      return j;
+    });
+  }
+  //  Meta 自己的拍賣重疊訊號(2026-11-22 交代 2109;Worker action 'meta_signals',只讀):30 分鐘記一次;舊版 Worker 沒這個動作就回 null
+  var msMem = {};
+  function metaSignals() {
+    var brand = state.brand, x = msMem[brand];
+    if (x && Date.now() - x.at < 30 * 60 * 1000) return Promise.resolve(x.data);
+    return post({ action: 'meta_signals', brand: brand }, 60000).then(function (j) {
+      if (j && j.ok) msMem[brand] = { at: Date.now(), data: j };
+      return j && j.ok ? j : null;
+    }, function () { return null; });
   }
   //  國際對標資料包(2026-11-22;Worker v2.9 action 'intl',只讀):年齡×性別、國家、平台×裝置、歸因窗口、每支廣告 14 天走勢;10 分鐘記一次
   var inMem = {};
@@ -379,13 +440,13 @@
   var GROUP_LABEL = { asc: 'ASC 高效推廣', cibs: 'CIBS 超額預算', rt: '再行銷', other: '其他' };
 
   window.MON = {
-    version: 'monitor-data v1.5',
+    version: 'monitor-data v1.6',
     goal: goal, W: W, T: T, cap: cap, WORDS: WORDS,
     on: on, init: init,
     refresh: function () { return load(true); },                                          // 使用者按「重抓最新」
     softRefresh: function () { delete mem[state.brand + '|' + rangeKey(state.range)]; return load(false); },   // 自動更新:讓 Worker 決定要不要敲 Meta
     setBrand: setBrand, setRange: setRange, setCfg: setCfg,
-    brandInfo: brandInfo, state: state, fmt: fmt, diag: diag, market: market, overlap: overlap, intl: intl, recon: recon, ordersSet: ordersSet, rabyIndex: rabyIndex,
+    brandInfo: brandInfo, state: state, fmt: fmt, diag: diag, market: market, overlap: overlap, ovMark: ovMark, ovMarkSet: ovMarkSet, metaSignals: metaSignals, intl: intl, recon: recon, ordersSet: ordersSet, rabyIndex: rabyIndex,
     campaignGroup: campaignGroup, GROUP_LABEL: GROUP_LABEL,
     CFG_DEFAULT: CFG_DEFAULT
   };
