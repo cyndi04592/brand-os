@@ -2474,3 +2474,10 @@ html.sp.sp-onboard #loginOverlay .login-footer::after{display:none}
 html.sp.sp-monitor .mo-kpi .v,html.sp.sp-monitor .dg-part .v,html.sp.sp-monitor .ma-box .v{font-family:'Barlow',var(--sp-aero),sans-serif!important;font-weight:600!important;font-variant-numeric:tabular-nums;letter-spacing:0!important;font-size:clamp(16px,1.55vw,24px)!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
 html.sp.sp-monitor .mo-kpi{min-width:0;overflow:visible}
 @media (max-width:640px){html.sp.sp-monitor .mo-kpi .v,html.sp.sp-monitor .dg-part .v,html.sp.sp-monitor .ma-box .v{font-size:20px!important}}
+
+/* 2026-11-22 14:55 修(RA 截圖):上方導覽 ① 四個項目等寬、左緣整齊 ② 「廣告監控」前面多出的小點(LIVE 燈被程式打開)藏掉 */
+@media (min-width:769px){
+  html.sp .nav-right{gap:22px}
+  html.sp .nav-right .nav-btn-monitor,html.sp .nav-right .nav-btn-kol,html.sp .nav-right .nav-btn-admin{min-width:112px;align-items:flex-start;text-align:left}
+  html.sp .nav-right .monitor-live-dot,html.sp .nav-right .kol-pulse-dots,html.sp .nav-right .nav-btn-monitor>svg,html.sp .nav-right .nav-btn-kol>svg{display:none!important}
+}

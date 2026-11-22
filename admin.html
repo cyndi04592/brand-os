@@ -1487,7 +1487,7 @@ tr:hover td { background: rgba(124,109,250,0.04); }
   input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea,select{font-size:16px!important}
 }
 </style>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="brandos-space.css?v=20261122b"><script>(function(){try{if(/[?&]space=off/.test(location.search))return;}catch(e){}document.documentElement.classList.add("sp","sp-admin");})();</script><!-- 🚀 2026-11-22 太空版外觀(只換外觀;網址加 ?space=off 回舊外觀) -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="brandos-space.css?v=20261122c"><script>(function(){try{if(/[?&]space=off/.test(location.search))return;}catch(e){}document.documentElement.classList.add("sp","sp-admin");})();</script><!-- 🚀 2026-11-22 太空版外觀(只換外觀;網址加 ?space=off 回舊外觀) -->
 </head>
 <body>
 
@@ -4364,7 +4364,7 @@ function setStatus(msg,type) {
 /* 🚪 2026-11-22 讀取畫面換成太空版 c2 艙門(/raby/raby-loader.js);讀不到或網址加 ?raby=off 就照舊轉圈圈 */
 function showLoading(msg) {
   document.getElementById('loadingMsg').textContent=msg;
-  if (false && window.RabyLoader) {   /* 2026-11-22 14:45 RA:點按鈕不要開艙門 → 後台讀取回到原本的小轉圈(已套太空版外觀) */
+  if (window.RabyLoader && !/[?&]raby=off\b/.test(location.search)) {   /* 14:52 RA 更正:艙門照用 */
     try {
       RabyLoader.show('c2'); window.__rlT = Date.now(); window.__rlN = (window.__rlN || 0) + 1;
       var _b = document.querySelector('.rl .rl-box');

@@ -206,8 +206,7 @@
       cur.timer = setTimeout(function () { closeC2(true); }, C2_MAX_MS);
     }
     var pending = [];
-    //  2026-11-22 14:45 RA「點開動畫要改一下,不要開門的」:容器裡的讀取(打開商城、切分頁…)不再蓋全螢幕艙門,
-    //  改成容器內一條太空版能量條;艙門只留給真正的整頁等待。
+    //  2026-11-22 14:45 RA「點開動畫要改一下,不要開門的」→ 14:52 更正:只有 Bits 補給包商城不要艙門(容器內一條能量條)。
     function ilCss() {
       if (document.getElementById('rabyILcss')) return;
       var st = document.createElement('style'); st.id = 'rabyILcss';
@@ -224,6 +223,13 @@
       var el = (typeof target === 'string') ? document.getElementById(target) : target;
       if (!el) return;
       text = text || '載入中';
+      //  14:55 RA 更正:「我都要艙門開啟那個!只有鑽石 Bits 包不要」→ 只有 Bits 補給包商城用容器內能量條,其他照舊開艙門
+      if (!(el.closest && el.closest('#bitsShopModal'))) {
+        if (state === -1) { if (oldShow) oldShow(el, text); return; }
+        marker(el, text);
+        if (state === 1) openC2(el, text); else pending.push([el, text]);
+        return;
+      }
       ilCss();
       var d = document.createElement('div');
       d.className = 'bsSpaceLoader rabySL rabyIL';
