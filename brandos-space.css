@@ -2767,3 +2767,14 @@ html.sp .nav-right .nav-more{flex-shrink:0;min-width:84px}
 html.sp .nav-more-btn,html.sp .nav-more-btn::before{white-space:nowrap!important;writing-mode:horizontal-tb!important}
 @media (max-width:768px){ html.sp .nav-right .nav-more{min-width:0} }
 html.sp .nav-more-btn::before,.nav-more-btn::before,.nav-more[open]>.nav-more-btn::before{transform:none!important;transition:none!important}
+/* 20:04 RA:「其他 MORE」跟其他四個沒對齊 → 完全照導覽項目的樣式(字級、顏色、上下位置),五格等寬 */
+@media (min-width:769px){
+  html.sp .nav-right .nav-more{display:flex;align-items:stretch}
+  html.sp .nav-right .nav-more>.nav-more-btn{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:3px;padding:0 0 6px!important;border-bottom:2px solid transparent;color:rgba(255,255,255,.6);font-family:var(--sp-font);font-size:11px;font-weight:400;letter-spacing:.12em;line-height:normal}
+  html.sp .nav-right .nav-more>.nav-more-btn:hover,html.sp .nav-right .nav-more[open]>.nav-more-btn{color:#fff;border-bottom-color:var(--sp-blue2)}
+  html.sp .nav-right .nav-more>.nav-more-btn::before{content:'MORE';font-family:var(--sp-aero);font-size:12px;font-weight:400;letter-spacing:.24em;color:inherit;-webkit-text-fill-color:currentColor;margin:0}
+  html.sp .nav-right .nav-more>.nav-more-btn span::after{content:' ▾';font-size:9px;opacity:.7}
+}
+@media (min-width:1440px){
+  html.sp .nav-right .nav-btn-monitor,html.sp .nav-right .nav-btn-kol,html.sp .nav-right .nav-btn-admin,html.sp .nav-right .nav-more{width:104px!important;min-width:104px!important;flex:0 0 104px}
+}
