@@ -39,9 +39,9 @@
     return (l === 'ja' || l === 'en') ? l : 'zh';
   }
   var UI = {
-    zh: { step: function (i, n) { return '第 ' + i + ' 步,共 ' + n + ' 步'; }, prev: '← 上一步', next: '下一步 →', done: '知道了 ✓', close: '關閉', pill: '? 教學', tip: '建議', pit: '注意' },
-    ja: { step: function (i, n) { return 'ステップ ' + i + ' / ' + n; }, prev: '← 戻る', next: '次へ →', done: 'わかった ✓', close: '閉じる', pill: '? 使い方', tip: 'ヒント', pit: '注意' },
-    en: { step: function (i, n) { return 'Step ' + i + ' of ' + n; }, prev: '← Back', next: 'Next →', done: 'Got it ✓', close: 'Close', pill: '? Guide', tip: 'Tip', pit: 'Heads-up' }
+    zh: { step: function (i, n) { return '第 ' + i + ' 步,共 ' + n + ' 步'; }, prev: '← 上一步', next: '下一步 →', done: '知道了 ✓', close: '關閉', pill: '教學', tip: '建議', pit: '注意' },
+    ja: { step: function (i, n) { return 'ステップ ' + i + ' / ' + n; }, prev: '← 戻る', next: '次へ →', done: 'わかった ✓', close: '閉じる', pill: '使い方', tip: 'ヒント', pit: '注意' },
+    en: { step: function (i, n) { return 'Step ' + i + ' of ' + n; }, prev: '← Back', next: 'Next →', done: 'Got it ✓', close: 'Close', pill: 'Guide', tip: 'Tip', pit: 'Heads-up' }
   };
   function U() { return UI[lang()]; }
   function T(zh, ja, en) { var l = lang(); return l === 'ja' ? (ja || zh) : l === 'en' ? (en || zh) : zh; }
