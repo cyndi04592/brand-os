@@ -179,6 +179,7 @@
     var st = cur.steps[cur.i];
     if (st.pre) { try { st.pre(); } catch (e) {} }   // v2.2:步驟開始前先把畫面準備好(例:展開品牌)
     var el = findTarget(st);
+    lit(el);
     cur.el = el; cur.adj = 0; cur.t0 = Date.now(); cur.still = 0; cur.lastTop = null;
     //  v1.2:手機卡片很高 → 首頁的框捲到畫面上方(卡片在下面);產生器視窗裡維持置中
     var top = el && isMobile() && !(el.closest && el.closest('#adMakerModal'));
@@ -220,9 +221,27 @@
     return true;
   }
 
+  //  v2.2(11-22 RA):框起來的那一格要「亮起來」—— 還沒選品牌時中間、右邊整塊是淡的,框住的那一塊暫時亮回來,按鈕也不要灰
+  function lit(el) {
+    var o = document.querySelectorAll('.bt-lit,.bt-lit-el');
+    for (var i = 0; i < o.length; i++) o[i].classList.remove('bt-lit', 'bt-lit-el');
+    if (!el) return;
+    el.classList.add('bt-lit-el');
+    var p = el.closest && el.closest('.mid,.right,.left');
+    if (p) p.classList.add('bt-lit');
+    if (!document.getElementById('bt-lit-css')) {
+      var st = document.createElement('style'); st.id = 'bt-lit-css';
+      st.textContent = 'body .mid.bt-lit,body .right.bt-lit,body .left.bt-lit{opacity:1!important;filter:none!important}'
+        + '.bt-lit-el,.bt-lit-el *{opacity:1!important;filter:none!important}'
+        + '.bt-lit-el{position:relative;z-index:2;box-shadow:0 0 0 1px rgba(255,255,255,.35),0 0 28px rgba(90,160,255,.45)!important}'
+        + 'button.bt-lit-el,.bt-lit-el button{color:#fff!important;border-color:rgba(255,255,255,.6)!important}';
+      (document.head || document.documentElement).appendChild(st);
+    }
+  }
+
   function stop(markDone) {
     if (cur && markDone) lsSet(doneKey(cur.name), '1');
-    cur = null;
+    cur = null; lit(null);
     document.body.style.paddingBottom = '';
     cancelAnimationFrame(raf);
     if (ui) { ui.ring.style.display = 'none'; ui.card.style.display = 'none'; }
