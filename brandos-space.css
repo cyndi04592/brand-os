@@ -2778,3 +2778,15 @@ html.sp .nav-more-btn::before,.nav-more-btn::before,.nav-more[open]>.nav-more-bt
 @media (min-width:1440px){
   html.sp .nav-right .nav-btn-monitor,html.sp .nav-right .nav-btn-kol,html.sp .nav-right .nav-btn-admin,html.sp .nav-right .nav-more{width:104px!important;min-width:104px!important;flex:0 0 104px}
 }
+/* 20:16 RA:右上「登出／訂閱方案／Bits／點數／帳號」高度不一、上緣沒對齊 → 全部同高 40、垂直置中 */
+@media (min-width:769px){
+  html.sp .nav{align-items:center}
+  html.sp .nav-right,html.sp .nav-account-row{align-items:center!important}
+  html.sp .nav-right .nav-btn-logout,html.sp #subMenuBtn,html.sp #bitsShopBtn,html.sp #bitsChip,html.sp .nav-email-chip{height:40px!important;min-height:40px!important;box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;justify-content:center;margin-top:0!important;margin-bottom:0!important;padding-top:0!important;padding-bottom:0!important;vertical-align:middle}
+  html.sp #bitsShopBtn,html.sp .nav-email-chip:not(.show-email){width:40px!important;min-width:40px!important;padding:0!important}
+  html.sp .nav-right .nav-btn-logout{padding:0 14px!important}
+  html.sp #subMenuBtn{padding:0 14px!important}
+  html.sp #bitsChip{padding:0 14px!important}
+  html.sp .nav-email-chip:not(.show-email) #userEmailNav{display:none}
+  html.sp .nav-email-chip::before{margin:0}
+}
