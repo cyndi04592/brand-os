@@ -2703,3 +2703,9 @@ html.sp #bos-lang-sw button.bos-lang-main::before{margin:0 2px 0 -4px}
   html.sp .nav-email-chip{display:inline-flex;align-items:center;gap:6px}
   html.sp .nav-email-chip::before{background-image:url(/raby/ic/account.jpg?v=1)}
 }
+/* 19:10 RA:導覽加芮字(字型站)、芮聲(音樂站)連結 —— 獨立免費網站 */
+html.sp .nav-right .nav-btn-kol[data-ext="ttf"]::before{content:'FONTS'}
+html.sp .nav-right .nav-btn-kol[data-ext="mp3"]::before{content:'MUSIC'}
+@media (max-width:768px){
+  html.sp body .nav-right .nav-ext::before{background-image:none!important}
+}
