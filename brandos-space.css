@@ -2741,3 +2741,25 @@ html.sp #subMenuBtn,html.sp .nav-btn-logout,html.sp #bitsChip{white-space:nowrap
   html.sp .nav-version-tag{display:none!important}
   html.sp .nav-right .nav-btn-monitor,html.sp .nav-right .nav-btn-kol,html.sp .nav-right .nav-btn-admin{min-width:0!important}
 }
+/* 20:00 RA:芮字/芮聲收進「其他服務」下拉 */
+.nav-more{position:relative;display:inline-block}
+.nav-more>summary{list-style:none;cursor:pointer;user-select:none}
+.nav-more>summary::-webkit-details-marker{display:none}
+.nav-more-btn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:6px 4px;color:rgba(255,255,255,.62);font-size:11px;letter-spacing:.12em;white-space:nowrap}
+.nav-more-btn::before{content:'SERVICES ▾';font-family:var(--sp-aero,'Barlow');font-size:13px;letter-spacing:.24em;color:#fff}
+.nav-more[open]>.nav-more-btn::before{content:'SERVICES ▴'}
+.nav-more-btn:hover{color:#fff}
+.nav-more-menu{position:absolute;top:calc(100% + 10px);left:0;min-width:220px;z-index:10050;background:rgba(6,8,12,.97);border:1px solid rgba(255,255,255,.22);box-shadow:0 18px 40px rgba(0,0,0,.6),0 0 0 1px rgba(90,160,255,.12);padding:6px;display:flex;flex-direction:column}
+.nav-more-menu a{display:flex;flex-direction:column;gap:3px;padding:11px 12px;color:#fff;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.06)}
+.nav-more-menu a:last-child{border-bottom:0}
+.nav-more-menu a:hover{background:rgba(90,160,255,.12)}
+.nav-more-menu b{font-size:14px;font-weight:600;letter-spacing:.12em}
+.nav-more-menu i{font-style:normal;font-size:11px;letter-spacing:.1em;color:rgba(255,255,255,.5)}
+@media (min-width:769px) and (max-width:1279px){ .nav-more-btn::before{display:none} .nav-more-btn{font-size:13px;letter-spacing:.08em} .nav-more-btn span::after{content:' ▾'} }
+@media (max-width:768px){
+  .nav-right .nav-more,.kol-menu .nav-more{display:block;width:100%}
+  .nav-more-btn{flex-direction:row;align-items:center;min-height:56px;padding:0 18px;border:1px solid rgba(255,255,255,.12);font-size:15px;color:#fff;letter-spacing:.1em}
+  .nav-more-btn::before{content:'';flex:0 0 24px;width:24px;height:24px;margin-right:14px;background:url(/raby/ic/tour.jpg?v=1) center/contain no-repeat;mix-blend-mode:screen}
+  .nav-more-btn span::after{content:' ▾'}
+  .nav-more-menu{position:static;min-width:0;border:1px solid rgba(255,255,255,.12);border-top:0;box-shadow:none}
+}
