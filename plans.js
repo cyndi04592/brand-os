@@ -267,7 +267,7 @@ function renderBrandosPlanCards(group, cycle, opts) {
   let html = '<div class="bos-grid' + (_list.length === 2 ? ' two' : '') + '">';
   _list.forEach(p => {
     if (p.custom) {
-      html += '<div class="bos-card bos-custom">'
+      html += '<div class="bos-card bos-custom" data-plan="custom">'
         + '<div class="bos-who">更大規模 / 專屬需求</div>'
         + '<div class="big">客製方案</div>'
         + '<p>多品牌中控、超量產能、地端混合運算與專屬導入。<br>依規模一對一報價。</p>'
@@ -289,7 +289,7 @@ function renderBrandosPlanCards(group, cycle, opts) {
     const yhint = once ? '<div class="bos-yhint">' + (p.note || '一次性 · 30 天內使用') + '</div>'
                 : pyr ? '<div class="bos-yhint">付 12 個月 · 開通 13 個月</div>' : '';
     const cta = ctaLabel ? ctaLabel(p) : ('選 ' + p.name + ' 方案');
-    html += '<div class="bos-card' + cls + '">'
+    html += '<div class="bos-card' + cls + '" data-plan="' + p.key + '">'
       + badge
       + '<div class="bos-who">' + p.who + '</div>'
       + '<div class="bos-pname">' + p.name + '</div>'

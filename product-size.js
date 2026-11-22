@@ -28,7 +28,7 @@
 (function () {
   'use strict';
   if (window.ProductSize) return;
-  var VERSION = 'v1.9';
+  var VERSION = 'v1.10';   // v1.10(2026-11-22)尺寸卡圖示換太空版實拍質感圖 /raby/size/<鍵名>.jpg,讀不到自動退回原本的 SVG
   var HAND = 18;   // 一個手掌 = 手腕到指尖約 18cm
 
   var PACK = [
@@ -133,7 +133,14 @@
     + 'C6.6 6.6 6.6 4 6.8 3C7 1.4 9.2 1.4 9.3 3L9.4 9.8C9.6 6.8 9.8 5 10 4.2C10.3 2.8 12.3 3 12.2 4.6L12 10.4'
     + 'C12.4 8.6 12.8 7.6 13.2 7.2C14.2 6.4 15.4 7.2 14.9 8.6C14.2 11 14 13.4 13.6 15.6C13.2 18 12 19.6 11.6 21.5Z';
   function f(n) { return (+n).toFixed(2); }
+  //  v1.10 先用圖 /raby/size/<k>.jpg(太空衣手套近拍 / 全身太空人+藍色光柱),圖讀不到 → onerror 換回下面程式畫的 SVG
+  var IMG_V = '20261122a';
   function icon(k) {
+    var svg = iconSvg(k);
+    if (!/^[a-z0-9]+$/.test(String(k || ''))) return svg;
+    return '<span class="icw"><img class="ic ph" src="/raby/size/' + k + '.jpg?v=' + IMG_V + '" alt="" loading="lazy" decoding="async" onerror="this.parentNode.className=\'icw err\'">' + svg + '</span>';
+  }
+  function iconSvg(k) {
     //  太空人:cx = 身體中線;arms = { l: 'down'|'up', r: 'down'|'up' }
     function astro(cx, arms) {
       arms = arms || {};
@@ -213,6 +220,7 @@
     + '.psz h4{margin:0 0 4px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}.psz .st{font-size:11.5px;margin:0 0 10px;opacity:.65;line-height:1.5}.psz .st.warn{color:#f5b041;opacity:1}'
     + '.psz .row{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.psz .lb{font-size:11.5px;opacity:.72;margin-top:12px;font-weight:600}'
     + '.psz .ic{width:68px;height:68px;overflow:visible}.psz .ic .su{fill:#eef1f7}.psz .ic .pk2{fill:#9aa3b5}.psz .ic .vz{fill:#141a2a}.psz .ic .shine{fill:none;stroke:#fff;stroke-width:.45;stroke-linecap:round;opacity:.7}.psz .ic .scr{fill:#3fd8ff}.psz .ic .arm{fill:none;stroke:#eef1f7;stroke-width:1.6;stroke-linecap:round}.psz .ic .gl{fill:#fff;stroke:#3fd8ff;stroke-width:.55;stroke-linejoin:round}.psz .ic .sp{fill:none;stroke:#3fd8ff;stroke-width:.6;stroke-linecap:round}.psz .ic .rg{fill:none;stroke:#3fd8ff;stroke-width:.75;stroke-linecap:round;filter:drop-shadow(0 0 1.2px #3fd8ff)}.psz .ic .halo{fill:#a46bd8;opacity:.22}.psz .ic .glow{fill:#3fd8ff;opacity:.45;filter:blur(.5px)}.psz .ic.zm{overflow:hidden;border-radius:10px}.psz .ic.sm{width:16px;height:16px}.psz .ic.sm .ink{fill:none;stroke:#1f2230;stroke-width:1.6;stroke-linecap:round}.psz .ic.sm .ac{fill:#3fd8ff;stroke:#1f2230;stroke-width:1.2}'
+    + '.psz .icw{display:inline-flex;line-height:0}.psz .icw svg{display:none}.psz .icw.err img{display:none}.psz .icw.err svg{display:block}.psz img.ic.ph{object-fit:cover;border-radius:10px;background:#000;padding:0}.psz .tiles .icw{width:100%}.psz .tiles .icw img.ic.ph{width:100%;height:auto;aspect-ratio:1/1}.psz .tiles .icw.err{justify-content:center}.psz .pk .icw img.ic.ph{width:22px;height:22px;border-radius:50%;padding:0}'
     + '.psz .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin:8px 0 6px}'
     + '.psz .tiles button.c{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px 10px;border:1px solid transparent;border-radius:16px;'
     + 'background:linear-gradient(165deg,#161d30,#0c1120) padding-box,linear-gradient(135deg,rgba(63,216,255,.55),rgba(200,107,255,.55)) border-box;'

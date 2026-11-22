@@ -1,4 +1,4 @@
-/* Brand OS 太空版 brandos-space.css  v20261122a（2026-11-22）
+/* Brand OS 太空版 brandos-space.css  v20261122c（2026-11-22）
  * 由 build_space.py 產生：A 自動換色段＋B 手寫段。只換外觀，不改任何 id／class／onclick。
  * 全部規則都在 html.sp 底下；網址加 ?space=off 回舊外觀。請不要直接改這個檔，改 parts 後重建。 */
 
@@ -1846,11 +1846,22 @@ html.sp.sp-plans .wrap>h1::before{content:'CHOOSE YOUR ORBIT';display:block;font
 html.sp.sp-plans .wrap>h1 .hl{background:none;color:#CFE3FF;-webkit-text-fill-color:#CFE3FF}
 html.sp.sp-plans .sub{color:rgba(255,255,255,.65);font-size:14px;letter-spacing:.04em}
 html.sp.sp-plans #planRoot{margin-top:40px}
-/* 卡片上方的星球（裝飾；黑底圖用濾色疊在面板上）：月球→土星環→恆星 照順序輪流，客製那張不放 */
-html.sp.sp-plans .bos-plans .bos-card:not(.bos-custom)::before{content:'';display:block;height:170px;margin:-6px 0 14px;background:center/contain no-repeat;mix-blend-mode:screen;pointer-events:none;flex-shrink:0}
-html.sp.sp-plans .bos-plans .bos-card:nth-child(3n+1):not(.bos-custom)::before{background-image:url(/raby/bos/moon.jpg)}
-html.sp.sp-plans .bos-plans .bos-card:nth-child(3n+2):not(.bos-custom)::before{background-image:url(/raby/bos/saturn.jpg)}
-html.sp.sp-plans .bos-plans .bos-card:nth-child(3n):not(.bos-custom)::before{background-image:url(/raby/bos/star.jpg)}
+/* 卡片上方的星體（裝飾；黑底圖用濾色疊在面板上）。2026-11-22 14:40 改：每個方案自己一顆、越高階越大越亮（交代 1326＋1440 第 2 點）：
+   首購 小行星｜輕量 月球｜入門 火星｜成長 地球｜專業 土星環｜企業 木星｜旗艦 恆星｜客製 螺旋星系。靠 plans.js 卡片上的 data-plan；
+   舊版 plans.js 還在快取（沒有 data-plan）時退回下面「照順序輪流」那三條，不會空白。 */
+html.sp.sp-plans .bos-plans .bos-card::before{content:'';display:block;height:180px;margin:-6px 0 14px;background:center/auto 80% no-repeat;mix-blend-mode:screen;pointer-events:none;flex-shrink:0;align-self:stretch}
+html.sp.sp-plans .bos-plans .bos-card:nth-child(3n+1)::before{background-image:url(/raby/bos/moon.jpg)}
+html.sp.sp-plans .bos-plans .bos-card:nth-child(3n+2)::before{background-image:url(/raby/bos/saturn.jpg)}
+html.sp.sp-plans .bos-plans .bos-card:nth-child(3n)::before{background-image:url(/raby/bos/star.jpg)}
+html.sp.sp-plans .bos-plans .bos-card.bos-custom::before{background-image:url(/raby/bos/galaxy.jpg);background-size:auto 100%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="trial"]::before{background-image:url(/raby/bos/asteroid.jpg);background-size:auto 62%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="light"]::before{background-image:url(/raby/bos/moon.jpg);background-size:auto 76%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="entry"]::before{background-image:url(/raby/bos/mars.jpg);background-size:auto 80%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="growth"]::before{background-image:url(/raby/bos/earth.jpg);background-size:auto 90%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="pro"]::before{background-image:url(/raby/bos/saturn.jpg);background-size:auto 104%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="ent"]::before{background-image:url(/raby/bos/jupiter.jpg);background-size:auto 100%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="flag"]::before{background-image:url(/raby/bos/star.jpg);background-size:auto 150%}
+html.sp.sp-plans .bos-plans .bos-card[data-plan="custom"]::before{background-image:url(/raby/bos/galaxy.jpg);background-size:auto 100%}
 /* 結帳畫面、提示橫幅等寫死在 style="" 的舊顏色 */
 html.sp.sp-plans #planRoot [style*="border-radius"]{border-radius:0!important}
 html.sp.sp-plans #planRoot [style*="124,108,255"],html.sp.sp-plans #planRoot [style*="124, 108, 255"]{border-color:rgba(156,200,255,.5)!important;background:rgba(90,160,255,.08)!important;box-shadow:none!important}
@@ -1864,7 +1875,7 @@ html.sp.sp-plans #planRoot input[type=radio]{accent-color:#9CC8FF!important}
 html.sp.sp-plans #planRoot input:not([type=radio]):not([type=checkbox]){background:#000!important;border-color:rgba(255,255,255,.25)!important;min-height:44px}
 html.sp.sp-plans #planRoot label[id^="invOpt_"]{min-height:44px}
 @media (max-width:1024px){
-  html.sp.sp-plans .bos-plans .bos-card:not(.bos-custom)::before{height:140px}
+  html.sp.sp-plans .bos-plans .bos-card::before{height:150px}
 }
 @media (max-width:720px){
   html.sp.sp-plans body{padding:20px 14px 70px}
@@ -1872,7 +1883,7 @@ html.sp.sp-plans #planRoot label[id^="invOpt_"]{min-height:44px}
   html.sp.sp-plans .wrap>h1::before{letter-spacing:.08em}
   html.sp.sp-plans .sub{font-size:13px}
   html.sp.sp-plans .sub br{display:none}
-  html.sp.sp-plans .bos-plans .bos-card:not(.bos-custom)::before{height:130px}
+  html.sp.sp-plans .bos-plans .bos-card::before{height:140px}
 }
 /* ── parts/50-monitor.css ── */
 /* 50-monitor：廣告監控 monitor.html（html.sp.sp-monitor）
@@ -2464,17 +2475,93 @@ html.sp #bos-lang-sw button[style*="226, 69, 107"],html.sp #bos-lang-sw button[s
   html.sp #bt-tour-pill-kol{transform:translateY(-8px)}
   html.sp .bt-pill,html.sp #bt-tour-pill-lib,html.sp #bt-tour-pill-onb{bottom:calc(62px + env(safe-area-inset-bottom,0px))!important}
 }
+/* ── parts/85-psz.css ── */
+/* 85-psz：商品尺寸選擇卡（product-size.js v1.10 畫的 .psz；KOL 工作室、廣告圖、入駐問卷共用）
+   2026-11-22 14:40 老闆：圖示換成跟 PiAPI 一樣的高質感 → 圖是 /raby/size/<鍵名>.jpg，這裡只換卡片外框。字照舊是程式字。 */
+html.sp .psz{--pa:#9CC8FF;border-radius:0;border:1px solid rgba(255,255,255,.12);background:#06080b}
+html.sp .psz h4{font-weight:500;letter-spacing:.1em}
+html.sp .psz .tiles{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+html.sp .psz .tiles button.c{border-radius:0;border:1px solid rgba(255,255,255,.14);background:#000;padding:0 0 10px;gap:8px;overflow:hidden;color:rgba(255,255,255,.78);font-family:var(--sp-font);font-weight:500;letter-spacing:.08em;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px #000;min-height:44px}
+html.sp .psz .tiles button.c:hover{transform:none;border-color:rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px #000}
+html.sp .psz .tiles button.c.on{border-width:1px;padding:0 0 10px;border-color:#9CC8FF;background:#070b12;color:#fff;box-shadow:inset 0 0 0 1px rgba(156,200,255,.45),0 0 22px rgba(90,160,255,.35)}
+html.sp .psz .tiles .icw img.ic.ph{border-radius:0;opacity:.92}
+html.sp .psz .tiles button.c.on .icw img.ic.ph,html.sp .psz .tiles button.c:hover .icw img.ic.ph{opacity:1}
+html.sp .psz .tiles .icw.err{padding-top:10px}
+html.sp .psz .mo{min-height:32px;letter-spacing:.08em}
+html.sp .psz .row button.c{border-radius:0;min-height:36px}
+html.sp .psz .row button.c.on{border-color:#9CC8FF;background:rgba(90,160,255,.12)}
+html.sp .psz input{border-radius:0}
+html.sp .psz .sv{border-radius:0;background:#fff;color:#000;font-weight:600;letter-spacing:.14em;min-height:40px}
+html.sp .psz .pk{border-radius:0}
+html.sp .psz .pk .icw img.ic.ph{border-radius:0}
+html.sp .psz .ed{color:#9CC8FF}
+@media (max-width:480px){html.sp .psz .tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}html.sp .psz .tiles button.c{font-size:11.5px;letter-spacing:.02em;white-space:normal}}
+/* ── parts/86-bits.css ── */
+/* 86-bits：首頁「Bits 補給包商城」卡片太空版（交代 20261122-1442，老闆 11/22 14:38）
+   只用 CSS、不改 index.html：卡片是 renderShopGrid() 用 style="" 畫的。
+   坑：手機寬度有程式會把 style="" 重寫成標準格式（#ffce6b → rgb(255, 206, 107)、"a:b" → "a: b"），
+   所以這裡只用「結構」和 onclick 認卡片，不比對 style 裡的顏色字串。
+   主圖 /raby/bits/<key>.jpg（黑底，用 screen 混色融進面板）；視窗外殼在 45-plans.css B 段。
+   數字、價格、文字內容、onclick 都不動。 */
+/* 標題 💎 → 能量晶體小圖示 */
+html.sp.sp-index #bitsShopModal>div>div:first-child>div>span:first-child{font-size:0!important;width:26px;height:26px;display:inline-block;flex:0 0 26px;background:url(/raby/bits/icon.jpg) center/contain no-repeat;mix-blend-mode:screen;color:transparent!important}
+
+/* 卡片：錶盤格紋＋金屬斜邊（排除「載入中／沒訂閱」那種整列訊息） */
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"]){background-color:#06080b!important;background-image:var(--sp-tap)!important;background-size:8px 8px,8px 8px,8px 8px,100% 100%!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:0!important;box-shadow:var(--sp-bezel)!important;padding:14px 12px 14px!important;isolation:isolate}
+/* 主圖 */
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"])::before{content:"";display:block;width:100%;max-width:170px;aspect-ratio:1/1;margin:4px auto 6px;background:center/contain no-repeat;mix-blend-mode:screen;pointer-events:none}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'test30'"]::before,
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'entry'"]::before{background-image:url(/raby/bits/entry.jpg)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'advance'"]::before{background-image:url(/raby/bits/advance.jpg)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'pro'"]::before{background-image:url(/raby/bits/pro.jpg)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'max'"]::before{background-image:url(/raby/bits/max.jpg)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'holiday'"]::before,
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="grid-column"])::before{background-image:url(/raby/bits/holiday.jpg)}
+
+/* 最熱賣那張：藍框發光 */
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'pro'"]{border-color:rgba(156,200,255,.75)!important;box-shadow:var(--sp-bezel),0 0 0 1px rgba(156,200,255,.55),0 0 26px rgba(90,160,255,.35)!important}
+/* 限時禮包：暖金框、暖金數字、庫存倒數改暖金 */
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'holiday'"]{border-color:rgba(255,217,168,.6)!important;box-shadow:var(--sp-bezel),0 0 0 1px rgba(255,217,168,.35),0 0 22px rgba(255,190,110,.22)!important}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'holiday'"]>div[style*="26px"]{color:#FFD9A8!important}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'holiday'"]>div[style*="11px"],
+html.sp.sp-index #bitsShopModal #bitsShopGrid #hcCountdown{color:#FFD9A8!important}
+
+/* 標籤（卡片裡 position:absolute 那個） */
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div>div[style*="absolute"]{border-radius:0!important;font-family:var(--sp-font)!important;font-weight:700!important;letter-spacing:.18em!important;padding:3px 10px!important;z-index:2;background:linear-gradient(180deg,#F4F7FB 0%,#B9C3D1 45%,#6E7786 55%,#D9E0EA 100%)!important;color:#000!important;border:1px solid rgba(255,255,255,.6)!important;box-shadow:none!important}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'pro'"]>div[style*="absolute"]{background:#0b1a33!important;color:#CFE3FF!important;border:1px solid #9CC8FF!important;box-shadow:0 0 12px rgba(90,160,255,.75),inset 0 0 8px rgba(90,160,255,.35)!important;text-shadow:0 0 6px rgba(156,200,255,.8)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div[onclick*="'holiday'"]>div[style*="absolute"],
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="grid-column"])>div[style*="absolute"]{background:linear-gradient(180deg,#FFE9C9,#E9B46A)!important;color:#1a1004!important;border:1px solid #FFD9A8!important;box-shadow:0 0 10px rgba(255,190,110,.45)!important}
+
+/* 文字：包名、數字等寬（字與數字內容不動） */
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"])>div[style*="13px"]{letter-spacing:.08em!important;color:rgba(255,255,255,.72)!important}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"])>div[style*="26px"],
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"])>div[style*="18px"]{font-variant-numeric:tabular-nums;font-family:var(--sp-font)!important;letter-spacing:.04em}
+
+/* 按鈕（卡片最後一個 div）：白色方形 */
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"])>div:last-child{background:#fff!important;color:#000!important;border:2px solid #fff!important;border-radius:0!important;font-family:var(--sp-font)!important;font-weight:600!important;letter-spacing:.2em!important;min-height:40px;display:flex;align-items:center;justify-content:center;padding:0!important}
+
+/* 已結束／售完：整張變暗、主圖灰階、按鈕變框線（不能按照舊；opacity .45 由 style="" 給） */
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="grid-column"]){border-color:rgba(255,255,255,.08)!important;box-shadow:var(--sp-bezel)!important}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="grid-column"])::before{filter:grayscale(1) brightness(.7)}
+html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([onclick]):not([style*="grid-column"])>div:last-child{background:transparent!important;color:rgba(255,255,255,.55)!important;border-color:rgba(255,255,255,.25)!important}
+
+@media (max-width:480px){
+  html.sp.sp-index #bitsShopModal #bitsShopGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+  html.sp.sp-index #bitsShopModal #bitsShopGrid>div:not([style*="grid-column"])>div:last-child{min-height:44px}
+}
 /* ── parts/90-fix.css ── */
 ﻿/* 90-fix：主線收尾修正 */
 /* 進駐頁的登入卡：大標是中文句子，不用航太字、可換行 */
 html.sp.sp-onboard #loginOverlay .login-footer{font-family:var(--sp-font);font-size:clamp(18px,2.6vw,28px);letter-spacing:.14em;text-transform:none;white-space:normal;line-height:1.5;filter:none}
 html.sp.sp-onboard #loginOverlay .login-footer::after{display:none}
-
-/* 2026-11-22 14:40 修：廣告監控大數字被「…」截掉（RA 截圖 NT$34,3…）→ 數字改窄字 Barlow、等寬數字、隨卡片寬度縮放，不截字 */
+/* ── parts/95-cloud-monitor.css ── */
+/* 2026-11-22 14:40 修（雲端 Claude，main 43e6b75；主機同步進 parts 免得重建時蓋掉）：廣告監控大數字被「…」截掉（RA 截圖 NT$34,3…）→ 數字改窄字 Barlow、等寬數字、隨卡片寬度縮放，不截字 */
 html.sp.sp-monitor .mo-kpi .v,html.sp.sp-monitor .dg-part .v,html.sp.sp-monitor .ma-box .v{font-family:'Barlow',var(--sp-aero),sans-serif!important;font-weight:600!important;font-variant-numeric:tabular-nums;letter-spacing:0!important;font-size:clamp(16px,1.55vw,24px)!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
 html.sp.sp-monitor .mo-kpi{min-width:0;overflow:visible}
 @media (max-width:640px){html.sp.sp-monitor .mo-kpi .v,html.sp.sp-monitor .dg-part .v,html.sp.sp-monitor .ma-box .v{font-size:20px!important}}
-
+/* 2026-11-22 15:00 主機補：百萬級金額（NT$1,348,200 共 12 個字）在 1440 寬的 160px 小卡還是會壓到隔壁卡 → 六大數字的字級改跟著「自己那張卡」的寬度縮（一般金額大小不變） */
+@media (min-width:641px){html.sp.sp-monitor .mo-kpi{container-type:inline-size}html.sp.sp-monitor .mo-kpi .v{font-size:clamp(14px,13.2cqw,24px)!important}}
 /* 2026-11-22 14:55 修(RA 截圖):上方導覽 ① 四個項目等寬、左緣整齊 ② 「廣告監控」前面多出的小點(LIVE 燈被程式打開)藏掉 */
 @media (min-width:769px){
   html.sp .nav-right{gap:22px}
