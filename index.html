@@ -195,6 +195,36 @@ document.addEventListener('click', function (e) {
   if (e.target.closest('#navHamburger,.nav-right')) return;
   document.body.classList.remove('nav-open');
 });
+/* 🔎 2026-11-23 19:40 三條槓手機實測除錯:網址加 ?navdebug=1 才會出現(一般客人看不到) */
+if (/[?&]navdebug=1/.test(location.search)) (function () {
+  var box = document.createElement('pre'), t0 = Date.now(), lines = [];
+  box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-height:45vh;overflow:auto;margin:0;padding:6px 8px;background:rgba(0,0,0,.92);color:#6DFAC2;font:11px/1.4 monospace;z-index:2147483647;white-space:pre-wrap;pointer-events:none';
+  function log(m) { lines.push(((Date.now() - t0) / 1000).toFixed(2) + ' ' + m); if (lines.length > 40) lines.shift(); box.textContent = lines.join('\n'); }
+  function who(el) { if (!el || !el.tagName) return '?'; return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : ''); }
+  document.addEventListener('DOMContentLoaded', function () { document.documentElement.appendChild(box); });
+  log('w=' + innerWidth + ' ua=' + navigator.userAgent.slice(0, 60));
+  ['touchstart', 'touchend', 'pointerdown', 'pointerup', 'click'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { log(ev + ' ' + who(e.target) + (e.isTrusted ? '' : ' (假的)')); }, true);
+  });
+  var T = DOMTokenList.prototype;
+  ['add', 'remove', 'toggle'].forEach(function (k) {
+    var o = T[k];
+    T[k] = function (c) {
+      if (c === 'nav-open') { var st = (new Error().stack || '').split('\n').slice(1, 4).join(' | ').replace(/https?:\/\/[^/]+\//g, ''); log(k + ' nav-open → ' + st); }
+      return o.apply(this, arguments);
+    };
+  });
+  var prevOn = null;
+  new MutationObserver(function () {
+    if (!document.body) return;
+    var on = document.body.classList.contains('nav-open');
+    if (on === prevOn) return; prevOn = on;
+    var nr = document.querySelector('.nav-right'), cs = nr && getComputedStyle(nr), r = nr && nr.getBoundingClientRect();
+    log('body nav-open=' + on + ' 選單 display=' + (cs && cs.display) + ' 高=' + (r && Math.round(r.height)) + ' top=' + (r && Math.round(r.top)));
+    if (on && r) setTimeout(function () { var el = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(30, r.height / 2)); log('  0.3秒後最上層=' + who(el) + (el && el.closest && el.closest('.nav-right') ? ' (選單有在最上面)' : ' (被蓋住!)')); }, 300);
+  }).observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ['class'] });
+  addEventListener('resize', function () { log('resize w=' + innerWidth + ' h=' + innerHeight); });
+})();
 /* 🆕 2026-08-08 手機選單:點了任何選項就自動收合(像 APP) */
 document.querySelector('.nav-right').addEventListener('click', function(e){
   if (Date.now() - (window.__bosNavT || 0) < 500) return;
