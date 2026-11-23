@@ -2828,3 +2828,6 @@ html.sp .nav-more-btn::before,.nav-more-btn::before,.nav-more[open]>.nav-more-bt
 /* 03:44 RA:語言選單展開後「日本語」被擠成直排 → 展開時框跟著變寬、字不換行 */
 html.sp #bos-lang-sw button{white-space:nowrap!important;writing-mode:horizontal-tb!important;flex:0 0 auto}
 html.sp #bos-lang-sw:not(:has(.bos-lang-main)){width:auto!important;min-width:112px}
+/* 13:25 onboard 登入框：「登入後資料將與您的 Email 綁定」被當成大標題、被切成「資料將與您的 EMAI」→ 改回小字提示，放在按鈕下面 */
+html.sp.sp-onboard #loginOverlay .login-card .login-footer{order:0!important;font-family:var(--sp-font)!important;font-size:12px!important;letter-spacing:.14em!important;text-transform:none!important;white-space:normal!important;line-height:1.6!important;margin:28px 0 0!important;filter:none!important;background:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important;color:rgba(255,255,255,.55)!important;-webkit-text-fill-color:rgba(255,255,255,.55)!important}
+html.sp.sp-onboard #loginOverlay .login-card .login-footer::after{display:none!important}
