@@ -2831,3 +2831,8 @@ html.sp #bos-lang-sw:not(:has(.bos-lang-main)){width:auto!important;min-width:11
 /* 13:25 onboard 登入框：「登入後資料將與您的 Email 綁定」被當成大標題、被切成「資料將與您的 EMAI」→ 改回小字提示，放在按鈕下面 */
 html.sp.sp-onboard #loginOverlay .login-card .login-footer{order:0!important;font-family:var(--sp-font)!important;font-size:12px!important;letter-spacing:.14em!important;text-transform:none!important;white-space:normal!important;line-height:1.6!important;margin:28px 0 0!important;filter:none!important;background:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important;color:rgba(255,255,255,.55)!important;-webkit-text-fill-color:rgba(255,255,255,.55)!important}
 html.sp.sp-onboard #loginOverlay .login-card .login-footer::after{display:none!important}
+/* 19:45 RA(iPad 實測除錯):三條槓其實有打開(nav-open=true、選單高 314),但看不到 →
+   Safari 把導覽列的 overflow-x:clip 當成上下也一起切,選單掉在導覽列下面就被切掉。打開選單時導覽列不切 */
+@media (min-width:769px) and (max-width:1279px){
+  html.sp body.nav-open .nav{overflow:visible!important;overflow-x:visible!important;overflow-y:visible!important}
+}
