@@ -356,6 +356,10 @@
   function cpmRecipe(since, until) {
     return post({ action: 'cpm_recipe', brand: state.brand, since: since || '', until: until || '' }, 45000).then(function (j) { return j && j.ok ? j : null; }, function () { return null; });
   }
+  //  2026-11-24 交代 0120:老闆確認「對方已停」(Worker v2.14 ov_end／ov_end_set;只存 KV,不碰 Meta)
+  function ovEnd() { return post({ action: 'ov_end', brand: state.brand }, 20000).then(function (j) { return j && j.ok ? j : null; }, function () { return null; }); }
+  function ovEndSet(m) { return post(Object.assign({ action: 'ov_end_set', brand: state.brand }, m || {}), 20000); }
+  function cpmRecipeFresh() { return post({ action: 'cpm_recipe', brand: state.brand, since: '', until: '', fresh: true }, 60000).then(function (j) { return j && j.ok ? j : null; }, function () { return null; }); }
   function recon(cut) {
     return post({ action: 'recon', brand: state.brand, range: state.range, cut: cut || '' }, 60000);
   }
@@ -459,7 +463,7 @@
     refresh: function () { return load(true); },                                          // 使用者按「重抓最新」
     softRefresh: function () { delete mem[state.brand + '|' + rangeKey(state.range)]; return load(false); },   // 自動更新:讓 Worker 決定要不要敲 Meta
     setBrand: setBrand, setRange: setRange, setCfg: setCfg,
-    brandInfo: brandInfo, state: state, fmt: fmt, diag: diag, market: market, overlap: overlap, ovMark: ovMark, ovMarkSet: ovMarkSet, ovOurs: ovOurs, ovOursSet: ovOursSet, metaSignals: metaSignals, intl: intl, recon: recon, cpmRecipe: cpmRecipe, ordersSet: ordersSet, rabyIndex: rabyIndex,
+    brandInfo: brandInfo, state: state, fmt: fmt, diag: diag, market: market, overlap: overlap, ovMark: ovMark, ovMarkSet: ovMarkSet, ovOurs: ovOurs, ovOursSet: ovOursSet, metaSignals: metaSignals, intl: intl, recon: recon, cpmRecipe: cpmRecipe, ovEnd: ovEnd, ovEndSet: ovEndSet, cpmRecipeFresh: cpmRecipeFresh, ordersSet: ordersSet, rabyIndex: rabyIndex,
     campaignGroup: campaignGroup, GROUP_LABEL: GROUP_LABEL,
     CFG_DEFAULT: CFG_DEFAULT
   };

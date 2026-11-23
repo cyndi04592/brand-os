@@ -1,4 +1,5 @@
-/* monitor-recipe.js v1.1(2026-11-23,交代 20261123-1525:對方關掉後卡片要會顯示「回穩中／已結束」;Worker v2.13 cpmrecipe v2.3 的 status、today)
+/* monitor-recipe.js v1.2(2026-11-24,交代 20261124-0120:老闆按「對方已停」→ 互搶收進過去紀錄、之後成本沒回來改藍色「互搶已結束，成本還沒回來」;每天一列多列單日實際值;Worker v2.14)
+   v1.1(2026-11-23,交代 20261123-1525:對方關掉後卡片要會顯示「回穩中／已結束」;Worker v2.13 cpmrecipe v2.3 的 status、today)
    v1.0(2026-11-23,交代 20261123-0210 第 3 件:「互搶區看不到配方結果」)
    資料:MON.cpmRecipe()(Worker action cpm_recipe,cpmrecipe.js;只讀 Meta、不改廣告)
    放在「帳號互搶」區、互搶卡下面一張「成本異常配方(跟大盤比)」卡:
@@ -26,12 +27,18 @@
     M.cpmRecipe._memo = true;
   }
 
-  var LC = { red: '#FA6D9B', yellow: '#FAC85A', green: '#6DFAC2', gray: '#8a8aa0' };
-  var LN = { red: '紅燈', yellow: '黃燈', green: '綠燈', gray: '數字不夠' };
+  var LC = { red: '#FA6D9B', yellow: '#FAC85A', green: '#6DFAC2', gray: '#8a8aa0', blue: '#6DB4FA' };
+  var LN = { red: '紅燈', yellow: '黃燈', green: '綠燈', gray: '數字不夠', blue: '互搶已結束' };
   var CSS = ''
     + '#mon-recipe{min-width:0;max-width:100%;margin-top:12px}'
     + '.rp-card{box-sizing:border-box;max-width:100%;overflow:hidden;border-radius:14px;padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.12)}'
     + '.rp-card.red{border-color:rgba(250,109,155,.55);background:rgba(250,109,155,.07)}.rp-card.yellow{border-color:rgba(250,200,90,.5);background:rgba(250,200,90,.06)}'
+    + '.rp-card.blue{border-color:rgba(109,180,250,.5);background:rgba(109,180,250,.06)}'
+    + '.rp-end{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px;color:var(--t2,#c8c8d8)}'
+    + '.rp-end input{min-height:44px;padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25);color:var(--t1,#fff);font-size:15px}'
+    + '.rp-end button{min-height:44px;padding:6px 14px;border-radius:9px;border:1px solid rgba(109,180,250,.6);background:rgba(109,180,250,.12);color:var(--t1,#fff);cursor:pointer;font-size:14px;font-weight:700}'
+    + '.rp-end .msg{width:100%;font-size:12px;color:var(--t3,#8a8aa0)}'
+    + '.rp-1d{grid-column:1 / -1;font-size:11.5px;color:var(--t2,#c8c8d8);line-height:1.5;overflow-wrap:anywhere}'
     + '.rp-h{font-weight:800;font-size:14px;color:var(--t1,#fff);display:flex;flex-wrap:wrap;gap:6px;align-items:center}'
     + '.rp-tag{padding:1px 8px;border-radius:6px;font-size:11px;font-weight:800;color:#111}'
     + '.rp-say{font-size:13.5px;line-height:1.6;color:var(--t1,#fff);margin:8px 0 6px}'
@@ -67,18 +74,45 @@
     if (d.light === 'red') return '疑似被搶';
     if (d.light === 'yellow') return d.kind === 'fatigue' ? '素材疲勞' : '疑似,還不到紅燈';
     if (d.light === 'gray') return '數字不夠';
+    if (d.light === 'blue') return '成本還沒回到大盤';
     return '正常';
   }
   function dayRow(j, d, prev) {   // prev＝前一天(較舊);說明跟前一天一樣就不重複寫
     var c = LC[d.light] || LC.gray, hk = d.hits ? hitText(j, d) : (d.light === 'gray' ? '' : '沒有一項比大盤差到門檻');
     return '<div class="rp-d" id="rp-' + esc(d.date) + '" style="border-left-color:' + c + '">'
       + '<span class="dt">' + md(d.date) + '</span><span class="lt" style="color:' + c + '">' + (LN[d.light] || '') + (d.hits ? ' · 中 ' + d.hits + ' 項' : '') + '</span>'
-      + '<span class="hk">' + hk + '</span>'
+      + '<span class="hk">' + (d.hits ? '近 3 天：' : '') + hk + '</span>' + oneLine(d)
       + (d.text && !(prev && prev.text === d.text) ? '<span class="tx">' + esc(d.text) + '</span>' : '')
       + ((d.self && d.self.length && d.text && d.text.indexOf('自己有動') < 0) ? '<span class="tx">開始那天前後我們自己有動:' + esc(d.self.join('、')) + '</span>' : '')
       + '</div>';
   }
 
+  //  v1.2 單日那一行:這個品牌那天的實際值＋比平常、大盤比平常(只有 %)
+  function sg(v) { return v == null ? '—' : (v >= 0 ? '+' : '−') + pct(v); }
+  function oneLine(d) {
+    var o = d.one; if (!o || !o.raw) return '';
+    var r = o.raw, c = o.chg || {}, k = o.mkt || {}, p = [];
+    if (r.cpm != null) p.push('CPM NT$' + Math.round(r.cpm) + '(比平常 ' + sg(c.cpm) + '／大盤 ' + sg(k.cpm) + ')');
+    if (r.reach) p.push('觸及 ' + Number(r.reach).toLocaleString());
+    if (r.freq != null) p.push('頻率 ' + r.freq + '(比平常 ' + sg(c.freq) + '／大盤 ' + sg(k.freq) + ')');
+    p.push(r.cpa != null ? 'CPA NT$' + r.cpa + '(比平常 ' + sg(c.cpa) + '／大盤 ' + sg(k.cpa) + ')' : '購買 ' + (r.pur == null ? '讀不到' : r.pur) + ' 筆');
+    return '<span class="rp-1d">單日：' + p.join('、') + ';單日' + (o.hits ? '中 ' + o.hits + ' 項' : '沒有一項比大盤差到門檻') + '</span>';
+  }
+  //  v1.2 老闆確認「對方已停」:canEdit(老闆、審核員)才出按鈕;一般帳號只看結果
+  function endBox(j) {
+    var e = last.end, c = j.confirmed;
+    if (c && c.end) {
+      return '<div class="rp-end">已確認對方 ' + md(c.end) + ' 底停了(' + esc(c.by || '老闆') + '確認' + (c.seed ? ',系統先替老闆寫進去' : '') + ')。'
+        + ((e && e.canEdit) || DEMO ? '<button type="button" data-rpend="edit">改日期</button><button type="button" data-rpend="clear">撤銷確認</button>' : '') + '<span class="msg" id="rp-end-msg"></span></div>';
+    }
+    if (!(e && e.canEdit) && !DEMO) return '';
+    return '<div class="rp-end"><button type="button" data-rpend="open">對方已停（填日期）</button><span class="msg" id="rp-end-msg"></span></div>';
+  }
+  function endForm(def) {
+    return '<div class="rp-end" id="rp-end-form">對方哪一天底停的?<input type="date" id="rp-end-d" value="' + esc(def) + '">'
+      + '<button type="button" data-rpend="save">確認</button><button type="button" data-rpend="cancel">取消</button>'
+      + '<span class="msg">按下後這段互搶收進過去紀錄,卡片不再寫疑似互搶;之後成本還沒回來改寫「互搶已結束，成本還沒回來」。只存在廣告監控,不改任何廣告。</span><span class="msg" id="rp-end-msg"></span></div>';
+  }
   function box() {
     var sec = document.getElementById('mon-overlap-sec'); if (!sec) return null;
     var b = document.getElementById('mon-recipe');
@@ -96,11 +130,12 @@
     days.forEach(function (x) { if (x.light === 'red') n++; });
     var c = LC[d.light] || LC.gray;
     //  v1.1:Worker 給 status(回穩中／已結束)就用它當大標,3 天窗燈號降成小字;沒給(舊 Worker)照 v1.0
-    var st = j.status && (j.status.state === 'recovering' || j.status.state === 'ended') ? j.status : null;
+    var st = j.status && (j.status.state === 'recovering' || j.status.state === 'ended' || j.status.state === 'post') ? j.status : null;
     var h;
     if (st) {
-      h = '<div class="rp-card green"><div class="rp-h">成本異常配方(跟大盤比)'
-        + '<span class="rp-tag" style="background:' + LC.green + '">' + (st.state === 'recovering' ? '✅ 回穩中' : '✅ 已結束') + '</span>'
+      var stC = st.state === 'post' ? 'blue' : 'green';
+      h = '<div class="rp-card ' + stC + '"><div class="rp-h">成本異常配方(跟大盤比)'
+        + '<span class="rp-tag" style="background:' + LC[stC] + '">' + (st.state === 'recovering' ? '✅ 回穩中' : st.state === 'post' ? '🔵 互搶已結束・成本還沒回來' : '✅ 已結束') + '</span>'
         + (j.demo ? '<span class="rp-demo">示範資料</span>' : '') + '</div>';
       h += '<div class="rp-say">' + esc(st.text) + '</div>';
       h += '<div class="rp-sub">最新完整一天 ' + md(d.date) + ' 的 3 天窗燈號還是' + (LN[d.light] || '') + (d.hits ? '(中 ' + d.hits + ' 項)' : '')
@@ -126,10 +161,13 @@
       + all.slice(SHOW).map(function (x, i) { return dayRow(j, x, all[SHOW + i + 1]); }).join('') + '</div>';
     if (j.selfLog && j.selfLog.length) h += '<div class="rp-sub" style="margin-top:8px">我們自己的變動紀錄共 ' + j.selfLog.length + ' 筆(預算改超過 30%、開關活動、同一天換素材 3 次以上才會讓紅燈降成黃燈)。</div>';
     if (j.activitiesRead === false) h += '<div class="rp-sub" style="margin-top:4px">這次讀不到廣告帳號的變動紀錄,沒辦法排除我們自己改設定造成的變化。</div>';
+    h += endBox(j);
     h += '<div class="rp-sub" style="margin-top:6px">這個配方只看數字像不像被搶;真的抓到別的帳號在投,看上面的帳號掃描。</div></div>';
     b.innerHTML = h;
   }
   document.addEventListener('click', function (e) {
+    var be = e.target.closest && e.target.closest('[data-rpend]');
+    if (be) { e.preventDefault(); endClick(be.getAttribute('data-rpend'), be); return; }
     var t = e.target.closest && e.target.closest('[data-rpday],[data-rpmore]'); if (!t) return;
     e.preventDefault();
     if (t.getAttribute('data-rpmore')) { var o = document.getElementById('rp-older'); if (o) o.style.display = ''; t.style.display = 'none'; return; }
@@ -143,11 +181,27 @@
     window.scrollTo({ top: Math.max(0, row.getBoundingClientRect().top + window.pageYOffset - off), behavior: 'smooth' });
   });
 
+  function endMsg(s) { var m = document.getElementById('rp-end-msg'); if (m) m.textContent = s; }
+  function endClick(k, btn) {
+    var wrap = btn.closest('.rp-end');
+    if (k === 'open' || k === 'edit') { var c = last.j && last.j.confirmed; wrap.outerHTML = endForm(c && c.end ? c.end : ''); return; }
+    if (k === 'cancel') { draw(); return; }
+    if (DEMO) { endMsg('示範資料:不會真的存。'); return; }
+    var body = k === 'clear' ? { clear: true } : { end: (document.getElementById('rp-end-d') || {}).value || '' };
+    if (k === 'clear' && !confirm('撤銷後這段互搶會回到系統自己判斷(可能又顯示疑似)。確定嗎?')) return;
+    btn.disabled = true; endMsg('存檔中…');
+    M.ovEndSet(body).then(function (r) {
+      if (!r || !r.ok) { btn.disabled = false; endMsg((r && r.error) || '存不進去,請稍後再試'); return; }
+      endMsg('已存,重新計算中(約 10–30 秒)…');
+      (M.cpmRecipeFresh ? M.cpmRecipeFresh() : M.cpmRecipe()).then(function (j) { if (j) last.j = j; draw(); });
+    }, function () { btn.disabled = false; endMsg('存不進去,請稍後再試'); });
+  }
   function fetchJ(d) {
     if (!d || d.demo || !M.cpmRecipe) return;
     var key = d.brand + '|' + new Date().toISOString().slice(0, 10);
     if (last.key === key) { draw(); return; }
     last.key = key; last.j = null; draw();
+    last.end = null; if (M.ovEnd) M.ovEnd().then(function (r) { if (last.key !== key) return; last.end = r; draw(); });
     M.cpmRecipe().then(function (j) { if (last.key !== key) return; last.j = j; draw(); });
   }
 
@@ -168,7 +222,7 @@
     var J = { ok: true, demo: true, metrics: metrics, activitiesRead: true, selfLog: [], me: { days: ds, firstRed: '2026-11-07' } };
     //  v1.1 示範:rpdemo=2 回穩中(最新完整日 11/23,3 天窗還黃)、rpdemo=3 已結束(到 11/24)
     var mode = DM ? +DM[1] : 1;
-    if (mode >= 2) {
+    if (mode >= 2 && mode <= 3) {
       var addDay = function (dt, light, hits) { ds.push({ date: dt, hits: hits, hitKeys: hits ? ['cpm', 'rpk', 'freq'] : [], ex: { cpm: 0.98, rpk: -0.78, freq: 0.19 }, self: [], light: light, kind: hits ? 'compete' : '', text: hits ? '從 11 月 7 日 起，中了 3 項；只中 3 項(紅燈要 4 項)' : '', one: { hits: 0, keys: [] } }); };
       addDay('2026-11-23', 'yellow', 3);
       if (mode === 2) {
@@ -180,6 +234,14 @@
         J.status = { state: 'ended', episode: ep, history: [ep], text: '✅ 已結束：11/7–11/22，共 16 天（疑似被搶）；從 11 月 23 日 起成本回到大盤水準。' };
         J.today = { date: '2026-11-25', partial: true, text: '今天到目前為止：CPM NT$148（比平常 −1%）／大盤 CPM 比平常 +0%；沒有一項比大盤差到門檻（還沒跑完的數字，不算燈號）' };
       }
+    }
+    if (mode === 4) {
+      ds.push({ date: '2026-11-23', hits: 3, hitKeys: ['cpm', 'rpk', 'freq'], ex: { cpm: 1.26, rpk: -0.7, freq: 0.18 }, self: [], light: 'blue', kind: 'post', start: '2026-11-07',
+        text: '互搶已結束（老闆確認對方 11 月 22 日 底已停），但成本還沒回到大盤水準（3 天窗還中 3 項）：可能是自家廣告在重新學習、預算有變動，或 3 天窗還含著對方在投的那幾天；不算互搶。',
+        one: { hits: 2, keys: ['cpm', 'rpk'], raw: { spend: 2600, imp: 12000, reach: 7400, cpm: 216.7, freq: 1.62, pur: 7, cpa: 371 }, chg: { cpm: 0.45, freq: 0.02, cpa: -0.1 }, mkt: { cpm: 0.03, freq: 0.01, cpa: 0.02 } } });
+      J.confirmed = { start: '2026-11-07', end: '2026-11-22', by: '老闆', seed: true };
+      J.status = { state: 'post', history: [{ text: '已結束：11/7–11/22（老闆確認）' }], text: '🔵 互搶已結束：11/7–11/22（老闆確認）。但到 11 月 23 日 成本還沒回到大盤水準（單日還中 2 項）：可能是自家廣告在重新學習、預算有變動；這不算互搶。' };
+      J.today = { date: '2026-11-24', partial: true, text: '今天到目前為止：CPM NT$190（比平常 +27%）／大盤 CPM 比平常 +2%；有 1 項比大盤差到門檻（還沒跑完的數字，不算燈號）' };
     }
     return J;
   }
