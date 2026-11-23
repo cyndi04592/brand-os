@@ -128,8 +128,8 @@
   <div style="flex:1;"></div>
 
   <!-- 🆕 2026-08-08 手機漢堡選單按鈕(桌機由 CSS 隱藏) -->
-  <button class="nav-hamburger" id="navHamburger" aria-label="開啟選單"
-          onclick="document.body.classList.toggle('nav-open')">
+  <button class="nav-hamburger" id="navHamburger" aria-label="開啟選單" type="button"
+          style="touch-action:manipulation" onclick="window.bosNavToggle(event)">
     <span></span><span></span><span></span>
   </button>
 
@@ -179,8 +179,25 @@
   </div>
 </nav>
 <script>
+/* 🩹 2026-11-23 19:30 RA(iPad/手機):點三條槓「瞬間縮回去」
+   病根:iOS 一次點擊可能送出兩次 click(觸控補發),toggle 兩次 = 打開又關掉。
+   改成:0.5 秒內重複的點擊不理;點選單外面才收合。 */
+window.bosNavToggle = function (e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  var now = Date.now();
+  if (now - (window.__bosNavT || 0) < 500) return;
+  window.__bosNavT = now;
+  document.body.classList.toggle('nav-open');
+};
+document.addEventListener('click', function (e) {
+  if (!document.body.classList.contains('nav-open')) return;
+  if (Date.now() - (window.__bosNavT || 0) < 500) return;
+  if (e.target.closest('#navHamburger,.nav-right')) return;
+  document.body.classList.remove('nav-open');
+});
 /* 🆕 2026-08-08 手機選單:點了任何選項就自動收合(像 APP) */
 document.querySelector('.nav-right').addEventListener('click', function(e){
+  if (Date.now() - (window.__bosNavT || 0) < 500) return;
   if (e.target.closest('a,button')) document.body.classList.remove('nav-open');
 });
 
