@@ -2836,3 +2836,26 @@ html.sp.sp-onboard #loginOverlay .login-card .login-footer::after{display:none!i
 @media (min-width:769px) and (max-width:1279px){
   html.sp body.nav-open .nav{overflow:visible!important;overflow-x:visible!important;overflow-y:visible!important}
 }
+/* 20:10 RA「手機版太靈敏、容易按錯」:主機全站量過(tasks\手機靈敏度檢查-20261123.md)。
+   只對手指操作的裝置(手機／平板)放大太小、靠太近的按鈕;電腦用滑鼠的畫面完全不變 */
+@media (pointer:coarse){
+  /* 首頁:申請開通帳號連結(原本 14px 高) */
+  html.sp #loginOverlay .login-apply{display:inline-block;padding:14px 8px!important;margin:4px 0}
+  /* 首頁:＋商品照／＋LOGO／重新抓取(原本 36 高、只隔 5px) */
+  html.sp .fetch-btn.fetch-sky{min-height:44px}
+  html.sp div:has(>.fetch-btn.fetch-sky){gap:10px!important}
+  /* 首頁:訂閱方案／Bits／帳號三顆、張數欄 */
+  html.sp .nav-account-row>a,html.sp .nav-account-row>button,html.sp .nav-account-row>span{min-height:44px;min-width:44px}
+  html.sp #selN{min-height:40px}
+  /* 首頁:底部連結 */
+  html.sp footer a{display:inline-block;padding:12px 4px}
+  /* admin:刪除品牌是危險按鈕,不能小 */
+  html.sp .btn-delete{min-height:44px;padding-left:16px!important;padding-right:16px!important}
+  html.sp.sp-admin summary{min-height:40px;display:flex;align-items:center}
+  /* KOL:三條槓、💎、小連結 */
+  html.sp.sp-kol .kol-hamburger{width:44px!important;height:44px!important}
+  html.sp.sp-kol .topbar a[href^="index.html?openBits"]{min-width:44px;min-height:44px}
+  /* monitor:日期區間鍵、起訖日期欄 */
+  html.sp .mn-rng{min-height:44px;padding-left:12px;padding-right:12px}
+  html.sp .mn-date{min-height:44px}
+}
