@@ -1,4 +1,5 @@
-/* monitor-recipe.js v1.2(2026-11-24,交代 20261124-0120:老闆按「對方已停」→ 互搶收進過去紀錄、之後成本沒回來改藍色「互搶已結束，成本還沒回來」;每天一列多列單日實際值;Worker v2.14)
+/* v1.3(2026-11-24 交代 0126／0215:燈號改單日、系統自動判斷疑似被搶開始／結束;3 天平均只當參考;?rpdemo=5 自動已結束、6 自動還在被搶)
+ monitor-recipe.js v1.2(2026-11-24,交代 20261124-0120:老闆按「對方已停」→ 互搶收進過去紀錄、之後成本沒回來改藍色「互搶已結束，成本還沒回來」;每天一列多列單日實際值;Worker v2.14)
    v1.1(2026-11-23,交代 20261123-1525:對方關掉後卡片要會顯示「回穩中／已結束」;Worker v2.13 cpmrecipe v2.3 的 status、today)
    v1.0(2026-11-23,交代 20261123-0210 第 3 件:「互搶區看不到配方結果」)
    資料:MON.cpmRecipe()(Worker action cpm_recipe,cpmrecipe.js;只讀 Meta、不改廣告)
@@ -72,7 +73,7 @@
   }
   function kindWord(d) {
     if (d.light === 'red') return '疑似被搶';
-    if (d.light === 'yellow') return d.kind === 'fatigue' ? '素材疲勞' : '疑似,還不到紅燈';
+    if (d.light === 'yellow') return d.kind === 'fatigue' ? '素材疲勞' : d.kind === 'cost' ? '成本異常・不像被搶' : d.kind === 'self' ? '我們自己有改' : (d.start ? '疑似被搶' : '單日異常');
     if (d.light === 'gray') return '數字不夠';
     if (d.light === 'blue') return '成本還沒回到大盤';
     return '正常';
@@ -81,7 +82,8 @@
     var c = LC[d.light] || LC.gray, hk = d.hits ? hitText(j, d) : (d.light === 'gray' ? '' : '沒有一項比大盤差到門檻');
     return '<div class="rp-d" id="rp-' + esc(d.date) + '" style="border-left-color:' + c + '">'
       + '<span class="dt">' + md(d.date) + '</span><span class="lt" style="color:' + c + '">' + (LN[d.light] || '') + (d.hits ? ' · 中 ' + d.hits + ' 項' : '') + '</span>'
-      + '<span class="hk">' + (d.hits ? '近 3 天：' : '') + hk + '</span>' + oneLine(d)
+      + '<span class="hk">' + (d.hits ? '單日：' : '') + hk + '</span>' + oneLine(d)
+      + (d.avg ? '<span class="rp-1d">3 天平均(只當參考、不決定燈號)：' + (d.avg.hits ? '中 ' + d.avg.hits + ' 項' : '沒有一項比大盤差到門檻') + '</span>' : '')
       + (d.text && !(prev && prev.text === d.text) ? '<span class="tx">' + esc(d.text) + '</span>' : '')
       + ((d.self && d.self.length && d.text && d.text.indexOf('自己有動') < 0) ? '<span class="tx">開始那天前後我們自己有動:' + esc(d.self.join('、')) + '</span>' : '')
       + '</div>';
@@ -130,16 +132,15 @@
     days.forEach(function (x) { if (x.light === 'red') n++; });
     var c = LC[d.light] || LC.gray;
     //  v1.1:Worker 給 status(回穩中／已結束)就用它當大標,3 天窗燈號降成小字;沒給(舊 Worker)照 v1.0
-    var st = j.status && (j.status.state === 'recovering' || j.status.state === 'ended' || j.status.state === 'post') ? j.status : null;
+    var st = j.status && (j.status.state === 'active' || j.status.state === 'recovering' || j.status.state === 'ended' || j.status.state === 'post') ? j.status : null;
     var h;
     if (st) {
-      var stC = st.state === 'post' ? 'blue' : 'green';
+      var stC = st.state === 'post' ? 'blue' : st.state === 'active' ? (d.light === 'red' ? 'red' : 'yellow') : 'green';
       h = '<div class="rp-card ' + stC + '"><div class="rp-h">成本異常配方(跟大盤比)'
-        + '<span class="rp-tag" style="background:' + LC[stC] + '">' + (st.state === 'recovering' ? '✅ 回穩中' : st.state === 'post' ? '🔵 互搶已結束・成本還沒回來' : '✅ 已結束') + '</span>'
+        + '<span class="rp-tag" style="background:' + LC[stC] + '">' + (st.state === 'active' ? '🟠 疑似被搶(系統自動判斷)' : st.state === 'recovering' ? '✅ 回穩中' : st.state === 'post' ? '🔵 互搶已結束・成本還沒回來' : '✅ 已結束') + '</span>'
         + (j.demo ? '<span class="rp-demo">示範資料</span>' : '') + '</div>';
       h += '<div class="rp-say">' + esc(st.text) + '</div>';
-      h += '<div class="rp-sub">最新完整一天 ' + md(d.date) + ' 的 3 天窗燈號還是' + (LN[d.light] || '') + (d.hits ? '(中 ' + d.hits + ' 項)' : '')
-        + ':3 天窗會把前兩天也算進去,要等異常那幾天滑出去才會變;回穩是看單日。</div>';
+      h += '<div class="rp-sub">最新完整一天 ' + md(d.date) + ' 單日燈號：' + (LN[d.light] || '') + (d.hits ? '(中 ' + d.hits + ' 項)' : '') + '。燈號只看單日;連 2 天單日異常自動算開始、連 2 天回到大盤自動算結束,看不到對方帳號也會判斷。</div>';
     } else {
       h = '<div class="rp-card ' + esc(d.light) + '"><div class="rp-h">成本異常配方(跟大盤比)'
         + '<span class="rp-tag" style="background:' + c + '">' + md(d.date) + ' ' + (LN[d.light] || '') + '・' + kindWord(d) + '</span>'
@@ -152,7 +153,7 @@
     if (hs.length && !(st && st.state === 'ended' && hs.length === 1)) h += '<div class="rp-sub">過去紀錄:' + hs.slice().reverse().map(function (e) { return esc(e.text); }).join(';') + '</div>';
     h += '<div class="rp-sub">' + md(days[0].date) + '～' + md(d.date) + ' 共 ' + days.length + ' 天:紅燈 ' + n + ' 天、黃燈 '
       + days.filter(function (x) { return x.light === 'yellow'; }).length + ' 天'
-      + (j.me.firstRed ? ',第一次紅燈 ' + md(j.me.firstRed) : '') + '。每天跟同一段時間的其他品牌比(近 3 天比前 28 天),「多變幾 %」＝這個品牌的變化減掉大盤的變化。</div>';
+      + (j.me.firstRed ? ',第一次紅燈 ' + md(j.me.firstRed) : '') + '。每天單日跟同一天的其他品牌比(那一天比前 28 天;3 天平均只當參考),「多變幾 %」＝這個品牌的變化減掉大盤的變化。</div>';
     h += '<div class="rp-strip" aria-label="每天燈號">' + days.slice(-30).map(function (x) {
       return '<a href="#rp-' + esc(x.date) + '" data-rpday="' + esc(x.date) + '" title="' + md(x.date) + ' ' + (LN[x.light] || '') + (x.hits ? ' 中 ' + x.hits + ' 項' : '') + '" style="background:' + (LC[x.light] || LC.gray) + '"></a>';
     }).join('') + '</div>';
@@ -234,6 +235,16 @@
         J.status = { state: 'ended', episode: ep, history: [ep], text: '✅ 已結束：11/7–11/22，共 16 天（疑似被搶）；從 11 月 23 日 起成本回到大盤水準。' };
         J.today = { date: '2026-11-25', partial: true, text: '今天到目前為止：CPM NT$148（比平常 −1%）／大盤 CPM 比平常 +0%；沒有一項比大盤差到門檻（還沒跑完的數字，不算燈號）' };
       }
+    }
+    if (mode === 5) {   // v1.3 系統自動判斷(沒有老闆確認):11/7 開始、11/22 結束
+      ds.forEach(function (x, i) { if (i >= 6) { x.start = '2026-11-07'; x.avg = { hits: 5 }; } });
+      ds.push({ date: '2026-11-23', hits: 0, hitKeys: [], ex: {}, self: [], light: 'green', kind: '', text: '單日回到大盤水準(中 0 項)；再 1 天正常就自動算結束。', avg: { hits: 4 } });
+      ds.push({ date: '2026-11-24', hits: 1, hitKeys: ['freq'], ex: { freq: 0.11 }, self: [], light: 'green', kind: '', text: '連 2 天單日回到大盤水準：已結束：11/7–11/22，共 16 天（疑似被搶，系統自動判斷）。', avg: { hits: 2 } });
+      var ep5 = { start: '2026-11-07', end: '2026-11-22', text: '已結束：11/7–11/22，共 16 天（疑似被搶，系統自動判斷）' };
+      J.status = { state: 'ended', episode: ep5, history: [ep5], text: '✅ 已結束：11/7–11/22，共 16 天（疑似被搶，系統自動判斷）；從 11 月 23 日 起單日回到大盤水準。' };
+    }
+    if (mode === 6) {   // v1.3 系統自動判斷:還在被搶
+      J.status = { state: 'active', history: [], text: '🟠 疑似被搶（客戶可能有別的帳號在投同一群人）：從 11 月 5 日 起單日連續異常，到 11 月 22 日 共 18 天。系統看不到對方帳號，是用我們自己的數字跟同一天大盤比的；連 2 天單日回到大盤水準會自動算結束。' };
     }
     if (mode === 4) {
       ds.push({ date: '2026-11-23', hits: 3, hitKeys: ['cpm', 'rpk', 'freq'], ex: { cpm: 1.26, rpk: -0.7, freq: 0.18 }, self: [], light: 'blue', kind: 'post', start: '2026-11-07',
