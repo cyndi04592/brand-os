@@ -2906,3 +2906,16 @@ html.sp #bos-lang-sw.bos-lang-away{transform:none!important;opacity:1!important;
   html.sp.sp-index .vdeck-dots{align-items:center;flex-wrap:wrap}
   html.sp.sp-index .vdeck-dots::after{content:attr(data-n) '　點卡片或左右滑，換下一張';flex-basis:100%;text-align:center;font-size:11px;letter-spacing:.14em;color:rgba(255,255,255,.5)}
 }
+/* 16:32 老闆「抽鬼牌」：三張像手上的牌攤成扇形，每張都露出來；點哪張，哪張就抽到最前面（往上浮、轉正）。點最前面那張＝換下一張 */
+@media (max-width:768px){
+  html.sp.sp-index .vision-card{padding:26px 8% 30px!important}
+  html.sp.sp-index .vision-card>.vision-col{transform-origin:50% 160%!important;pointer-events:auto!important}
+  html.sp.sp-index .vision-col[data-pos]:not([data-pos="0"]){opacity:1!important;filter:brightness(.55)!important;border-color:rgba(156,200,255,.4)!important}
+  html.sp.sp-index .vision-col[data-i="0"]:not([data-pos="0"]){transform:rotate(-7deg) translateX(-10px)!important}
+  html.sp.sp-index .vision-col[data-i="1"]:not([data-pos="0"]){transform:rotate(0deg) translateY(10px)!important}
+  html.sp.sp-index .vision-col[data-i="2"]:not([data-pos="0"]){transform:rotate(7deg) translateX(10px)!important}
+  html.sp.sp-index .vision-col[data-pos="0"]{transform:translateY(-14px)!important;filter:none!important}
+  html.sp.sp-index .vision-col[data-pos="1"]{z-index:2}
+  html.sp.sp-index .vision-col[data-pos="2"]{z-index:1}
+  html.sp.sp-index .vdeck-dots::after{content:attr(data-n) '　點任一張抽出來，左右滑也可以'}
+}
