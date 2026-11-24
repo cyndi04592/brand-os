@@ -2968,3 +2968,7 @@ body.nav-open #bos-fab,body.kol-nav-open #bos-fab,body:has(.rs-actionbar.show) #
   html.sp.sp-kol .kol-menu > a::before,html.sp.sp-kol .kol-menu > button::before{grid-column:2;grid-row:1;margin:0!important;font-family:var(--sp-aero);font-size:13px!important;letter-spacing:.24em;color:#fff}
   html.sp.sp-kol .kol-menu > a>svg,html.sp.sp-kol .kol-menu > button>svg{display:none!important}
 }
+/* 16:52 老闆：手機「其他」變三排（MORE／其他／箭頭）→ 箭頭拿掉 */
+@media (max-width:768px){
+  html.sp .nav-more-btn span::after,html.sp .nav-more[open]>.nav-more-btn span::after{content:none!important;display:none!important}
+}
