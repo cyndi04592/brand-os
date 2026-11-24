@@ -2921,3 +2921,7 @@ html.sp #bos-lang-sw.bos-lang-away{transform:none!important;opacity:1!important;
 }
 /* 16:35 老闆：「3/3 點任一張抽出來…」那行字全刪 */
 html.sp.sp-index .vdeck-dots::after{content:none!important;display:none!important}
+/* 16:42 老闆：卡片是讓客人知道有什麼功能 → 抽到前面那張，說明整段顯示，不再被「…」切掉 */
+@media (max-width:768px){
+  html.sp.sp-index .vision-col[data-pos="0"] .vision-desc{-webkit-line-clamp:unset!important;display:block!important;overflow:visible!important;max-width:100%!important}
+}
