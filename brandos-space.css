@@ -2571,7 +2571,7 @@ html.sp .bt-pill::before,html.sp #bt-tour-pill-kol::before,html.sp #bt-tour-pill
   html.sp #subMenuBtn::before,html.sp #bitsShopBtn::before,html.sp .nav-email-chip::before{content:"";display:block;flex:0 0 26px;width:26px;height:26px;background:center/contain no-repeat;mix-blend-mode:screen;pointer-events:none}
   html.sp #subMenuBtn::before{background-image:url(/raby/ic/plan.jpg?v=2)}
   html.sp #bitsShopBtn::before{background-image:url(/raby/bits/icon.jpg?v=20261122g)}
-  html.sp .nav-email-chip::before{background-image:url(/raby/ic/account.jpg?v=1)}
+  html.sp .nav-email-chip::before{background-image:url(/raby/ic/account.jpg?v=2)}
   html.sp .nav-email-chip.show-email{gap:6px}
 
   /* ── 首頁：漢堡選單每一列，圖示在文字左邊 ── */
@@ -2594,7 +2594,7 @@ html.sp .bt-pill::before,html.sp #bt-tour-pill-kol::before,html.sp #bt-tour-pill
   html.sp.sp-kol .topbar > a[href^="index.html?openBits"]{font-size:0!important}
   html.sp.sp-kol .topbar > a[href^="index.html?openBits"]::before{content:"";width:26px;height:26px;background:url(/raby/bits/icon.jpg?v=20261122g) center/contain no-repeat;mix-blend-mode:screen}
   html.sp.sp-kol #navUserEmail>svg{display:none!important}
-  html.sp.sp-kol #navUserEmail::before{content:"";flex:0 0 26px;width:26px;height:26px;background:url(/raby/ic/account.jpg?v=1) center/contain no-repeat;mix-blend-mode:screen}
+  html.sp.sp-kol #navUserEmail::before{content:"";flex:0 0 26px;width:26px;height:26px;background:url(/raby/ic/account.jpg?v=2) center/contain no-repeat;mix-blend-mode:screen}
 }
 /* 小尺寸看得清楚：圖示整體提亮一點 */
 html.sp #bos-lang-sw button.bos-lang-main::before,html.sp .bt-pill::before,html.sp #bt-tour-pill-kol::before,html.sp #bt-tour-pill-lib::before,html.sp #bt-tour-pill-onb::before,html.sp #subMenuBtn::before,html.sp .nav-email-chip::before,html.sp body .nav-right>a::before,html.sp body .nav-right>button::before,html.sp.sp-kol .kol-menu>a::after,html.sp.sp-kol .kol-menu>button::after,html.sp.sp-kol #navUserEmail::before{filter:brightness(1.45) contrast(1.08)}
@@ -2701,7 +2701,7 @@ html.sp #bos-lang-sw button.bos-lang-main::before{margin:0 2px 0 -4px}
   html.sp #subMenuBtn::before{background-image:url(/raby/ic/plan.jpg?v=2)}
   html.sp #bitsShopBtn::before{background-image:url(/raby/bits/icon.jpg?v=20261122g)}
   html.sp .nav-email-chip{display:inline-flex;align-items:center;gap:6px}
-  html.sp .nav-email-chip::before{background-image:url(/raby/ic/account.jpg?v=1)}
+  html.sp .nav-email-chip::before{background-image:url(/raby/ic/account.jpg?v=2)}
 }
 /* 19:10 RA:導覽加芮字(字型站)、芮聲(音樂站)連結 —— 獨立免費網站 */
 html.sp .nav-right .nav-btn-kol[data-ext="ttf"]::before{content:'FONTS'}
