@@ -2919,3 +2919,5 @@ html.sp #bos-lang-sw.bos-lang-away{transform:none!important;opacity:1!important;
   html.sp.sp-index .vision-col[data-pos="2"]{z-index:1}
   html.sp.sp-index .vdeck-dots::after{content:attr(data-n) '　點任一張抽出來，左右滑也可以'}
 }
+/* 16:35 老闆：「3/3 點任一張抽出來…」那行字全刪 */
+html.sp.sp-index .vdeck-dots::after{content:none!important;display:none!important}
