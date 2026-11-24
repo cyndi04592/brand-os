@@ -480,7 +480,11 @@
     b.addEventListener('click', function(e){ e.stopPropagation(); document.body.classList.toggle('bos-fab-open'); });
     document.addEventListener('click', function(e){
       if (!document.body.classList.contains('bos-fab-open')) return;
-      if (e.target.closest && e.target.closest('#bos-lang-sw')) return;   // 語言選單本身會再展開,點裡面不收
+      // 2026-11-24 20:05 老闆:點「日本語」選單會先被收起來,要再開一次才看得到三個語言
+      // 原因:語言鈕點下去會重畫自己,點到的那顆被拿掉 → closest 找不到 → 誤判成點外面。改看事件當下的路徑
+      var path = e.composedPath ? e.composedPath() : [];
+      for (var i = 0; i < path.length; i++) { if (path[i] && path[i].id === 'bos-lang-sw') return; }
+      if (e.target.closest && e.target.closest('#bos-lang-sw')) return;
       document.body.classList.remove('bos-fab-open');
     });
     document.body.appendChild(b);
