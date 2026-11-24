@@ -2972,3 +2972,9 @@ body.nav-open #bos-fab,body.kol-nav-open #bos-fab,body:has(.rs-actionbar.show) #
 @media (max-width:768px){
   html.sp .nav-more-btn span::after,html.sp .nav-more[open]>.nav-more-btn span::after{content:none!important;display:none!important}
 }
+/* 16:52 老闆：「其他」的箭頭電腦、平板、手機全部拿掉 */
+html.sp .nav-more-btn span::after,html.sp .nav-more[open]>.nav-more-btn span::after,.nav-more-btn span::after{content:none!important;display:none!important}
+@media (min-width:769px){
+  html.sp .nav-more>.nav-more-btn::before,html.sp .nav-more[open]>.nav-more-btn::before{content:'MORE'}
+  html.sp body.nav-open .nav-right .nav-more>.nav-more-btn::before,html.sp body.kol-nav-open .kol-menu .nav-more>.nav-more-btn::before{content:''}
+}
