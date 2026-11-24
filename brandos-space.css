@@ -2939,3 +2939,32 @@ body.bos-fab-open #bos-lang-sw{bottom:calc(64px + env(safe-area-inset-bottom,0px
 body.bos-fab-open .bt-pill,body.bos-fab-open #bt-tour-pill-kol,body.bos-fab-open #bt-tour-pill-lib,body.bos-fab-open #bt-tour-pill-onb{bottom:calc(116px + env(safe-area-inset-bottom,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;transform:none!important}
 /* 選單開著、廣告圖底部動作列出現時，連小圓鈕一起藏 */
 body.nav-open #bos-fab,body.kol-nav-open #bos-fab,body:has(.rs-actionbar.show) #bos-fab{display:none!important}
+
+/* 2026-11-24 16:49 老闆：手機選單要照電腦版設計 → 每一列：左邊圖示，右邊上排英文大標（MONITOR／KOL／LIBRARY／MORE／ADMIN／EXIT）、下排中文小字 */
+@media (max-width:768px){
+  /* 首頁漢堡選單 */
+  html.sp body .nav-right .nav-btn-monitor,html.sp body .nav-right .nav-btn-kol,html.sp body .nav-right .nav-btn-admin,html.sp body .nav-right .nav-btn-logout{
+    display:grid!important;grid-template-columns:24px 1fr;grid-template-rows:auto auto;column-gap:14px;row-gap:3px;align-content:center;justify-items:start;
+    font-size:11px!important;font-weight:400!important;letter-spacing:.12em!important;color:rgba(255,255,255,.6)!important;min-height:60px!important}
+  html.sp body .nav-right .nav-btn-monitor::before,html.sp body .nav-right .nav-btn-kol::before,html.sp body .nav-right .nav-btn-admin::before,html.sp body .nav-right .nav-btn-logout::before{grid-column:1;grid-row:1/3;margin:0!important;align-self:center}
+  html.sp body .nav-right .nav-btn-monitor::after,html.sp body .nav-right .nav-btn-kol::after,html.sp body .nav-right .nav-btn-admin::after,html.sp body .nav-right .nav-btn-logout::after{
+    content:'MONITOR';display:block!important;position:static!important;grid-column:2;grid-row:1;width:auto!important;height:auto!important;background:none!important;opacity:1!important;transform:none!important;animation:none!important;
+    font-family:var(--sp-aero);font-size:13px;font-weight:400;letter-spacing:.24em;color:#fff;-webkit-text-fill-color:#fff;line-height:1.2}
+  html.sp body .nav-right .nav-btn-kol::after{content:'KOL'}
+  html.sp body .nav-right .nav-btn-kol[href*="library"]::after{content:'LIBRARY'}
+  html.sp body .nav-right .nav-btn-admin::after{content:'ADMIN'}
+  html.sp body .nav-right .nav-btn-logout::after{content:'EXIT'}
+  html.sp body .nav-right .nav-btn-monitor>span,html.sp body .nav-right .nav-btn-kol>span{grid-column:2;grid-row:2}
+  html.sp body .nav-right .monitor-live-dot,html.sp body .nav-right .kol-pulse-dots{display:none!important}
+  /* 其他（首頁、KOL 都是同一顆）：「其他」上面加 MORE */
+  html.sp .nav-more-btn span{display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-size:11px!important;letter-spacing:.12em;color:rgba(255,255,255,.6)}
+  html.sp .nav-more-btn span::before{content:'MORE';font-family:var(--sp-aero);font-size:13px;letter-spacing:.24em;color:#fff;-webkit-text-fill-color:#fff;line-height:1.2}
+  html.sp .nav-more-btn{min-height:60px!important}
+  /* KOL 工作室選單：::before 是英文、::after 是圖示 → 排成同樣兩排 */
+  html.sp.sp-kol .kol-menu > a,html.sp.sp-kol .kol-menu > button{
+    display:grid!important;grid-template-columns:24px 1fr;grid-template-rows:auto auto;column-gap:14px;row-gap:3px;align-content:center;justify-items:start;text-align:left;
+    font-size:11px!important;letter-spacing:.12em;color:rgba(255,255,255,.6)!important;min-height:60px}
+  html.sp.sp-kol .kol-menu > a::after,html.sp.sp-kol .kol-menu > button::after{grid-column:1;grid-row:1/3;margin:0!important;align-self:center}
+  html.sp.sp-kol .kol-menu > a::before,html.sp.sp-kol .kol-menu > button::before{grid-column:2;grid-row:1;margin:0!important;font-family:var(--sp-aero);font-size:13px!important;letter-spacing:.24em;color:#fff}
+  html.sp.sp-kol .kol-menu > a>svg,html.sp.sp-kol .kol-menu > button>svg{display:none!important}
+}
