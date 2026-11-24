@@ -270,7 +270,13 @@
     const sec = document.getElementById('prGptPosterSection'); if (!sec) return;
     let c = document.getElementById('ppl-chip');
     const p = curProd();
-    if (!p) { if (c) c.remove(); return; }
+    //  2026-11-24 20:06 老闆:「為何商品現在沒有選擇一隻手指頭、到腰等尺寸?」→ 沒選商品(只點照片)時尺寸卡不會出來,客人不知道 → 改成顯示提示
+    if (!p) {
+      css();
+      if (!c) { c = document.createElement('div'); c.id = 'ppl-chip'; c.className = 'ppl-chip'; sec.insertBefore(c, sec.firstChild); }
+      c.innerHTML = '📦 還沒選商品:先在左邊「品牌 → 系列 → 商品」點一個商品,才會出現擺放方式和商品大小(一根手指、手掌、到腰…)';
+      return;
+    }
     css();
     if (!c) { c = document.createElement('div'); c.id = 'ppl-chip'; c.className = 'ppl-chip'; sec.insertBefore(c, sec.firstChild); }
     const o = OPTS.find(x => x.key === keyOf(p));
