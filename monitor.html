@@ -226,7 +226,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   //  太空人 Loading:讀取時蓋住內容區,資料到了 / 出錯就收起來
   function showLoading() {
     var bi = M.brandInfo();
-    if (window.showSpaceLoader) showSpaceLoader('mnLoadingBox', '正在讀取' + (bi ? ' ' + bi.name + ' ' : '') + '的廣告數據');
+    if (window.showSpaceLoader) showSpaceLoader('mnLoadingBox', '正在讀取' + (bi ? ' ' + bi.name + ' ' : '') + '的廣告數據 ・ Meta 資料量較大，約需 10–30 秒，請耐心稍等');  /* 2026-11-24 16:33 老闆：讀很慢要先跟客人說 */
     $('mnLoading').classList.add('on');
   }
   function hideLoading() { $('mnLoading').classList.remove('on'); }
