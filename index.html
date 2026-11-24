@@ -1161,6 +1161,16 @@ function openAdMakerDirect() {
   if (!window.S.brandId) { alert('請先選擇品牌'); return; }
   /* 🆕 2026-08-09 沒選素材就不開編輯器(不然進去是黑畫面,
      第一次用的客戶會以為壞掉)。改成:提示 + 自動捲到素材庫 + 發光引導。 */
+  /* 🆕 2026-11-24 20:16 老闆:員工 Nicole 做完洳意禪舞文案,按「做廣告圖」進不去(只跳 3 秒提示,沒注意到)
+     → 有照片但還沒點 → 自動幫他選一張(這個商品的照片優先)直接打開;真的一張照片都沒有才引導去上傳 */
+  if ((window.S.selPhoto === null || window.S.selPhoto === undefined) && window.S.photos && window.S.photos.length) {
+    var _pick = 0;
+    try {
+      var _pk = (typeof _curProdKey === 'function') ? _curProdKey() : '';
+      if (_pk && typeof _photoIsProd === 'function') { for (var _i = 0; _i < window.S.photos.length; _i++) { if (_photoIsProd(window.S.photos[_i], _pk)) { _pick = _i; break; } } }
+    } catch (e) {}
+    if (typeof selectAsset === 'function') selectAsset('photo', _pick); else window.S.selPhoto = _pick;
+  }
   if (window.S.selPhoto === null || window.S.selPhoto === undefined ||
       !window.S.photos || !window.S.photos.length) {
     _guideToAssets();
