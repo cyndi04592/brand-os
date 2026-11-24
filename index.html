@@ -283,10 +283,7 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
     if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)){moved=true;next(dx<0?1:-1);}});
   card.addEventListener('click',function(e){if(!mq.matches||moved){moved=false;return;}var c=e.target.closest('.vision-col');if(!c)return;if(c===order[0])next(1);else front(c);});
   dots.addEventListener('click',function(e){var i=[].indexOf.call(dots.children,e.target);if(i>=0)front(cols[i]);});
-  /* 下面工作區切到哪一步(STEP 燈換卡),那張自動翻到最上面 */
-  var lastAct=card.querySelector('.vision-col.active');
-  new MutationObserver(function(){if(!mq.matches)return;var a=card.querySelector('.vision-col.active');if(a&&a!==lastAct){lastAct=a;front(a);}})
-    .observe(card,{subtree:true,attributes:true,attributeFilter:['class']});
+  /* 16:34 老闆:在下面做事時卡片自動換,手機滑到下面根本看不到 → 拿掉自動換卡,只在點卡片/滑動時換 */
   paint();
 })();
 </script>
