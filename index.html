@@ -68,7 +68,7 @@
   #selCopyLang,#selCopyLength{width:auto!important;min-width:118px}
 }
 </style>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="brandos-space.css?v=20261124b"><script>(function(){try{if(/[?&]space=off/.test(location.search))return;}catch(e){}document.documentElement.classList.add("sp","sp-index");})();</script><!-- 🚀 2026-11-22 太空版外觀(只換外觀;網址加 ?space=off 回舊外觀) -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="brandos-space.css?v=20261124c"><script>(function(){try{if(/[?&]space=off/.test(location.search))return;}catch(e){}document.documentElement.classList.add("sp","sp-index");})();</script><!-- 🚀 2026-11-22 太空版外觀(只換外觀;網址加 ?space=off 回舊外觀) -->
 </head>
 <body>
 
@@ -268,7 +268,8 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
   cols.forEach(function(){dots.appendChild(document.createElement('i'));});
   card.parentNode.insertBefore(dots,card.nextSibling);
   function paint(){order.forEach(function(el,i){el.setAttribute('data-pos',i);});
-    [].forEach.call(dots.children,function(d,i){d.classList.toggle('on',cols[i]===order[0]);});}
+    [].forEach.call(dots.children,function(d,i){d.classList.toggle('on',cols[i]===order[0]);});
+    dots.setAttribute('data-n',(cols.indexOf(order[0])+1)+' / '+cols.length);}
   function next(dir){if(busy||!mq.matches)return;busy=true;var top=order[0];
     top.classList.add(dir<0?'vfly-r':'vfly-l');
     setTimeout(function(){top.classList.remove('vfly-l','vfly-r');
@@ -282,7 +283,8 @@ document.querySelector('.nav-right').addEventListener('click', function(e){
   card.addEventListener('click',function(e){if(!mq.matches||moved){moved=false;return;}if(e.target.closest('.vision-col')===order[0])next(1);});
   dots.addEventListener('click',function(e){var i=[].indexOf.call(dots.children,e.target);if(i>=0)front(cols[i]);});
   /* 下面工作區切到哪一步(STEP 燈換卡),那張自動翻到最上面 */
-  new MutationObserver(function(){if(!mq.matches)return;var a=card.querySelector('.vision-col.active');if(a)front(a);})
+  var lastAct=card.querySelector('.vision-col.active');
+  new MutationObserver(function(){if(!mq.matches)return;var a=card.querySelector('.vision-col.active');if(a&&a!==lastAct){lastAct=a;front(a);}})
     .observe(card,{subtree:true,attributes:true,attributeFilter:['class']});
   paint();
 })();
