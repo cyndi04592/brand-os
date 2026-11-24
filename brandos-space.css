@@ -2925,3 +2925,17 @@ html.sp.sp-index .vdeck-dots::after{content:none!important;display:none!importan
 @media (max-width:768px){
   html.sp.sp-index .vision-col[data-pos="0"] .vision-desc{-webkit-line-clamp:unset!important;display:block!important;overflow:visible!important;max-width:100%!important}
 }
+
+/* 2026-11-24 16:44 老闆：教學、語言兩顆浮動鈕收成一顆小圓鈕（loader.js 的 #bos-fab），點了才展開；電腦、手機都一樣 */
+#bos-fab{position:fixed;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.3);background:#06080b;cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 0 1px #000,0 0 0 2px rgba(205,214,228,.26),0 10px 24px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+#bos-fab span{display:block;width:26px;height:26px;background:url(/raby/ic/tour.jpg?v=1) center/contain no-repeat;mix-blend-mode:screen;transition:transform .25s ease}
+#bos-fab:hover{border-color:#9CC8FF}
+body.bos-fab-open #bos-fab{border-color:#9CC8FF;background:#0b1220}
+body.bos-fab-open #bos-fab span{transform:rotate(90deg)}
+/* 收起來時藏兩顆；展開時疊在小圓鈕上方 */
+body:not(.bos-fab-open) #bos-lang-sw,body:not(.bos-fab-open) .bt-pill,body:not(.bos-fab-open) #bt-tour-pill-kol,body:not(.bos-fab-open) #bt-tour-pill-lib,body:not(.bos-fab-open) #bt-tour-pill-onb{display:none!important}
+body.bos-fab-open #bos-lang-sw{bottom:calc(64px + env(safe-area-inset-bottom,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important}
+body.bos-fab-open .bt-pill,body.bos-fab-open #bt-tour-pill-kol,body.bos-fab-open #bt-tour-pill-lib,body.bos-fab-open #bt-tour-pill-onb{bottom:calc(116px + env(safe-area-inset-bottom,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;transform:none!important}
+/* 選單開著、廣告圖底部動作列出現時，連小圓鈕一起藏 */
+body.nav-open #bos-fab,body.kol-nav-open #bos-fab,body:has(.rs-actionbar.show) #bos-fab{display:none!important}

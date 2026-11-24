@@ -466,3 +466,24 @@
     }
   } catch (e) {}
 })();
+
+/* 2026-11-24 16:44 老闆:左下「教學」「語言」兩顆浮動鈕太佔位置(小螢幕電腦、手機都是)
+   → 收成一顆小圓鈕,點了才展開那兩顆;點別的地方自動收回。樣式在 brandos-space.css「bos-fab」那段。 */
+(function(){
+  if (window.__bosFab) return; window.__bosFab = true;
+  function init(){
+    if (!document.body || document.getElementById('bos-fab')) return;
+    var b = document.createElement('button');
+    b.id = 'bos-fab'; b.type = 'button';
+    b.setAttribute('aria-label', '教學與語言'); b.title = '教學・語言';
+    b.innerHTML = '<span></span>';
+    b.addEventListener('click', function(e){ e.stopPropagation(); document.body.classList.toggle('bos-fab-open'); });
+    document.addEventListener('click', function(e){
+      if (!document.body.classList.contains('bos-fab-open')) return;
+      if (e.target.closest && e.target.closest('#bos-lang-sw')) return;   // 語言選單本身會再展開,點裡面不收
+      document.body.classList.remove('bos-fab-open');
+    });
+    document.body.appendChild(b);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
