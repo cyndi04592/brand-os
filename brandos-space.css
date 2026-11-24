@@ -2879,3 +2879,21 @@ html.sp body.nav-open #bt-tour-pill-lib,html.sp body.kol-nav-open #bt-tour-pill-
 html.sp body.nav-open #bt-tour-pill-onb,html.sp body.kol-nav-open #bt-tour-pill-onb{display:none!important}
 html.sp #bos-lang-sw .bos-lang-name{display:inline!important;font-size:12px!important;letter-spacing:.1em}
 html.sp #bos-lang-sw.bos-lang-away{transform:none!important;opacity:1!important;pointer-events:auto!important}
+
+/* 2026-11-24 16:26 老闆：首頁手機版三張 STEP 卡疊成一疊（JS 在 index.html 主標題前面），點一下／左右滑換下一張；桌機不變 */
+.vdeck-dots{display:none}
+@media (max-width:768px){
+  html.sp.sp-index .vision-card{display:grid!important;grid-template-columns:1fr!important;gap:0!important;padding:3px 22px 22px 3px!important;position:relative}
+  html.sp.sp-index .vision-card>.vision-col{grid-area:1/1;cursor:pointer;-webkit-tap-highlight-color:transparent;transform-origin:50% 100%;
+    transition:transform .42s cubic-bezier(.2,.8,.2,1),opacity .42s ease,filter .42s ease}
+  html.sp.sp-index .vision-col[data-pos="0"]{z-index:3;transform:none;opacity:1;filter:none}
+  html.sp.sp-index .vision-col[data-pos="1"]{z-index:2;transform:translate(10px,10px) scale(.97);opacity:.75;filter:brightness(.55);pointer-events:none}
+  html.sp.sp-index .vision-col[data-pos="2"]{z-index:1;transform:translate(20px,20px) scale(.94);opacity:.5;filter:brightness(.35);pointer-events:none}
+  html.sp.sp-index .vision-col.vfly-l{transform:translateX(-115%) rotate(-9deg)!important;opacity:0!important;transition:transform .32s ease-in,opacity .32s ease-in}
+  html.sp.sp-index .vision-col.vfly-r{transform:translateX(115%) rotate(9deg)!important;opacity:0!important;transition:transform .32s ease-in,opacity .32s ease-in}
+  html.sp.sp-index .vision-col[data-pos="0"] .vision-desc{max-width:92%}
+  html.sp.sp-index .vdeck-dots{display:flex;justify-content:center;gap:10px;padding:4px 0 2px}
+  html.sp.sp-index .vdeck-dots i{display:block;width:22px;height:3px;background:rgba(255,255,255,.22);cursor:pointer;padding:0;border:10px solid transparent;background-clip:content-box}
+  html.sp.sp-index .vdeck-dots i.on{background-color:#9CC8FF;box-shadow:0 0 8px rgba(90,160,255,.6)}
+}
+@media (prefers-reduced-motion:reduce){html.sp.sp-index .vision-card>.vision-col{transition:none!important}}
