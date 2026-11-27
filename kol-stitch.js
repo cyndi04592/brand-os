@@ -1021,7 +1021,7 @@ window.KolStitch = (function () {
       const grade = window.KOL_NIGHT_GRADE ? String(window.KOL_NIGHT_GRADE) : '';
       if (!grade) return u;
       const url = new URL(u);
-      if (url.hostname !== 'cdn.raby.com.tw') return u;
+      if (!/^cdn\.raby(ai\.com|\.com\.tw)$/.test(url.hostname)) return u;
       const m = url.pathname.match(/^\/cdn-cgi\/image\/([^/]+)(\/.*)$/);
       if (m) {
         if (/brightness=|saturation=/.test(m[1])) return u;          // 已經調過 → 不重複
