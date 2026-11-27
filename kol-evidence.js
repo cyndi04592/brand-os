@@ -29,8 +29,8 @@
   }
   function _esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function _thumb(u) {
-    return /^https:\/\/cdn\.raby\.com\.tw\//.test(u) && !/\/cdn-cgi\//.test(u)
-      ? u.replace(/^(https:\/\/cdn\.raby\.com\.tw)(\/.*)$/, '$1/cdn-cgi/image/width=200,quality=75,format=auto$2') : u;
+    return /^https:\/\/cdn\.raby(?:ai\.com|\.com\.tw)\//.test(u) && !/\/cdn-cgi\//.test(u)
+      ? u.replace(/^(https:\/\/cdn\.raby(?:ai\.com|\.com\.tw))(\/.*)$/, '$1/cdn-cgi/image/width=200,quality=75,format=auto$2') : u;
   }
 
   //  張數 → 片長(取最短的、裝得下的那個長度)
