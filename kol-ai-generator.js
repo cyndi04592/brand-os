@@ -71,7 +71,7 @@ function _kaiKey(url) {
   return 'aikol_' + (h >>> 0).toString(36) + '_' + Date.now().toString(36);
 }
 async function _kaiToR2(url) {
-  if (!url || /cdn\.raby\.com\.tw/.test(url)) return url;   // 已經是自家的就不動
+  if (!url || /cdn\.raby(?:ai\.com|\.com\.tw)/.test(url)) return url;   // 已經是自家的就不動
   try {
     const r = await fetch(WORKER_URL, {
       method: 'POST',
