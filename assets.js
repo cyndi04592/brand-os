@@ -249,8 +249,8 @@ async function fetchFromLibrary(brandId, reqId, force) {
       if (!it.url) return;
       if (window.S.photos.find(function (x) { return x.libUrl === it.url; })) return;
       // 縮圖走同網域的即時轉換:列表小圖、生圖用原檔(鐵律:縮圖絕不餵引擎)
-      const thumb = /cdn\.raby\.com\.tw/.test(it.url)
-        ? it.url.replace(/^(https:\/\/cdn\.raby\.com\.tw)(\/.*)$/, '$1/cdn-cgi/image/width=400,quality=80,format=auto$2')
+      const thumb = /cdn\.raby(?:ai\.com|\.com\.tw)/.test(it.url)
+        ? it.url.replace(/^(https:\/\/cdn\.raby(?:ai\.com|\.com\.tw))(\/.*)$/, '$1/cdn-cgi/image/width=400,quality=80,format=auto$2')
         : it.url;
       const _row = {
         driveId: it.drive_id || null,
