@@ -406,7 +406,7 @@ const CDN_HOST = 'cdn.raby.com.tw';
 function thumbUrl(u, w){
   try{
     const url = new URL(u);
-    if(url.hostname !== CDN_HOST) return u;              // 非自家來源 → 原樣
+    if(!/^cdn\.raby(ai\.com|\.com\.tw)$/.test(url.hostname)) return u;              // 非自家來源 → 原樣
     if(url.pathname.indexOf('/cdn-cgi/') === 0) return u; // 已經是轉換過的 → 不重複包
     return url.origin + '/cdn-cgi/image/width=' + (w||400) + ',quality=80,format=auto' + url.pathname;
   }catch(e){ return u; }
