@@ -272,7 +272,7 @@ const LOCATIONS = {
     return 'scene1_' + (h >>> 0).toString(36);
   }
   async function _evToR2(ctx, url, tag) {
-    if (!url || /cdn\.raby\.com\.tw/.test(url)) return url;
+    if (!url || /cdn\.raby(?:ai\.com|\.com\.tw)/.test(url)) return url;
     try {
       const st = await evCallWorker('scene_grid', {
         brandId: (ctx && ctx.brandId) || 'b',
