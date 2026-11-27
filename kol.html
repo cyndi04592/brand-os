@@ -6566,7 +6566,7 @@ function showGenError(rawMsg, r2Refs) {
 function _shrinkRefUrl(u, w) {
   try {
     const url = new URL(u);
-    if (url.hostname !== 'cdn.raby.com.tw') return '';            // 不是自家的 → 不能轉
+    if (!/^cdn\.raby(ai\.com|\.com\.tw)$/.test(url.hostname)) return '';            // 不是自家的 → 不能轉
     if (url.pathname.indexOf('/cdn-cgi/') === 0) return '';        // 已經轉過 → 不重複包
     return url.origin + '/cdn-cgi/image/width=' + (w || 2048) + ',quality=88,format=auto' + url.pathname;
   } catch (e) { return ''; }
@@ -6843,7 +6843,7 @@ window.scnPick = scnPick;
 function _thumb(u, w) {
   try {
     const url = new URL(u);
-    if (url.hostname !== 'cdn.raby.com.tw') return u;          // 非自家來源 → 原樣
+    if (!/^cdn\.raby(ai\.com|\.com\.tw)$/.test(url.hostname)) return u;          // 非自家來源 → 原樣
     if (url.pathname.indexOf('/cdn-cgi/') === 0) return u;      // 已轉換過 → 不重複包
     return url.origin + '/cdn-cgi/image/width=' + (w || 400) + ',quality=80,format=auto' + url.pathname;
   } catch (e) { return u; }
@@ -6852,7 +6852,7 @@ function _thumb(u, w) {
 function _scnThumb(u) {
   try {
     const url = new URL(u);
-    if (url.hostname !== 'cdn.raby.com.tw') return u;          // 非自家來源 → 原樣
+    if (!/^cdn\.raby(ai\.com|\.com\.tw)$/.test(url.hostname)) return u;          // 非自家來源 → 原樣
     if (url.pathname.indexOf('/cdn-cgi/') === 0) return u;      // 已轉換過 → 不重複包
     return url.origin + '/cdn-cgi/image/width=400,quality=80,format=auto' + url.pathname;
   } catch (e) { return u; }
@@ -8180,7 +8180,7 @@ async function resolveKolImageUrl(personaName, fallbackUrl, angle) {
     //   備援圖是 HeyGen 的 WEBP 縮圖:髒、有壓縮雜訊,餵引擎會放大成烤肉架紋路。
     //   ★ 素材庫的 url 本來就已經是自家倉庫的乾淨原圖,直接用,不必再搬一次。
     const _libUrl = _front?.url || p?.photos?.[0]?.url || '';
-    if (_libUrl && /cdn\.raby\.com\.tw/.test(_libUrl)) {
+    if (_libUrl && /cdn\.raby(ai\.com|\.com\.tw)/.test(_libUrl)) {
       console.log('[臉乾淨圖] ✅ 直接用素材庫原圖:', _libUrl);
       window._kolCleanCache[lsKey] = _libUrl;
       try { localStorage.setItem(lsKey, _libUrl); } catch (e) {}
