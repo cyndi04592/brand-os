@@ -150,7 +150,7 @@
     return 'csheet_' + (h >>> 0).toString(36) + '_' + Date.now().toString(36);
   }
   function _csToR2(url) {
-    if (!url || /cdn\.raby\.com\.tw/.test(url)) return Promise.resolve(url);
+    if (!url || /cdn\.raby(?:ai\.com|\.com\.tw)/.test(url)) return Promise.resolve(url);
     var kai = K();
     return fetch(kai.WORKER_URL, {
       method: 'POST',
@@ -646,7 +646,7 @@
         if (!items.length) [].slice.call(document.querySelectorAll('.kai-panel img')).forEach(function (i) {
           if (i.closest('#cs-box')) return;
           var s = i.src || '';
-          if (s.indexOf('cdn.raby.com.tw') > -1 || s.indexOf('fal.media') > -1 || s.indexOf('r2.dev') > -1) push(s, null, '');
+          if (s.indexOf('cdn.raby.com.tw') > -1 || s.indexOf('cdn.rabyai.com') > -1 || s.indexOf('fal.media') > -1 || s.indexOf('r2.dev') > -1) push(s, null, '');
         });
 
         // ══════════════════════════════════════════════════════════════
