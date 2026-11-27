@@ -30,7 +30,7 @@
   const LS_KEY = 'kolAnimMode';
   const IMG_DIR = 'anim-styles/';
   //  v1.4:新 4 種的卡片圖直接用自家 CDN 上那張角色設計圖(裁成 480 正方),不用另外傳 GitHub
-  const CDN_CARD = 'https://cdn.raby.com.tw/cdn-cgi/image/width=480,height=480,fit=cover,gravity=0.5x0.3,quality=85,format=auto/ra/toon/';
+  const CDN_CARD = 'https://cdn.rabyai.com/cdn-cgi/image/width=480,height=480,fit=cover,gravity=0.5x0.3,quality=85,format=auto/ra/toon/';
   const CARD_SRC = {
     retro90s: CDN_CARD + 'retro90s-3dd83e4e14bef2fc0c8df2520aab92ae2bc00375.jpg',
     anime3d: CDN_CARD + 'anime3d-8c3bf0c04dd0a06f35d5d053be1df1668a3643ea.jpg',
@@ -39,8 +39,8 @@
     poster: CDN_CARD + 'poster-db02efb979d7b6ad9ff3bbc6d5c7cb5107603b48.jpg',
     pastelwc: CDN_CARD + 'pastelwc-98dc6b866377a066a2db1511c946061ab518a617.jpg',
     //  v2.1 國風兩種:用米禾轉出來的全身版,只取上面那張臉
-    xianxia: 'https://cdn.raby.com.tw/cdn-cgi/image/trim=0;0;840;0,width=480,height=480,fit=cover,quality=85,format=auto/ly/toon/xianxia-e9a0c87b4f056876cf79a0012bb6dfa3f6035cf7.jpg',
-    zen: 'https://cdn.raby.com.tw/cdn-cgi/image/trim=0;0;840;0,width=480,height=480,fit=cover,quality=85,format=auto/ly/toon/zen-cebcfbefc1c24f0b955d3adcc917b0818b8cf585.jpg',
+    xianxia: 'https://cdn.rabyai.com/cdn-cgi/image/trim=0;0;840;0,width=480,height=480,fit=cover,quality=85,format=auto/ly/toon/xianxia-e9a0c87b4f056876cf79a0012bb6dfa3f6035cf7.jpg',
+    zen: 'https://cdn.rabyai.com/cdn-cgi/image/trim=0;0;840;0,width=480,height=480,fit=cover,quality=85,format=auto/ly/toon/zen-cebcfbefc1c24f0b955d3adcc917b0818b8cf585.jpg',
   };
   function _card(k) { return CARD_SRC[k] || (IMG_DIR + k + '.jpg'); }
 
