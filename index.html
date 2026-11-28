@@ -1156,8 +1156,33 @@ function setVisionStage(n) { _visionStage = n; paintVision(n); }
   }
 })();
 
+/* 🩹 2026-11-28 員工 Nicole 按「做廣告圖」完全沒反應(沒提示、沒編輯器、沒錯誤框):
+   onclick 裡丟了例外就整個靜默。重現到一條路:S.selPhoto 殘留一個已超出照片清單的舊索引 →
+   openAdMaker→renderAmPhotoRow 讀 photos[selPhoto].name 噴 TypeError。
+   修法:① 先驗索引,指到不存在的照片就當沒選(走自動選圖);② 整支包 try/catch,
+   任何錯都在畫面底部顯示原因(以後不再靜默),同時 console.error 留紀錄。 */
+function _adOpenFail(msg) {
+  var tip = document.getElementById('adOpenFailTip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'adOpenFailTip';
+    tip.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:26px;z-index:1300;max-width:88vw;' +
+      'background:linear-gradient(135deg,#ff4d6d,#fa6d9b);color:#fff;font-size:13px;font-weight:900;' +
+      'padding:12px 20px;border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,0.55);line-height:1.5;pointer-events:none;';
+    document.body.appendChild(tip);
+  }
+  tip.textContent = '⚠ 廣告圖編輯器開啟失敗:' + msg + '(請截圖給 RA)';
+  tip.style.display = 'block';
+  clearTimeout(tip._t);
+  tip._t = setTimeout(function () { tip.style.display = 'none'; }, 9000);
+}
 function openAdMakerDirect() {
+  try { _openAdMakerDirect(); }
+  catch (e) { console.error('[openAdMakerDirect]', e); _adOpenFail((e && e.message) || String(e)); }
+}
+function _openAdMakerDirect() {
   if (!window.S) { alert('請先選擇品牌和商品'); return; }
+  if (window.S.selPhoto !== null && window.S.selPhoto !== undefined && !(window.S.photos && window.S.photos[window.S.selPhoto])) window.S.selPhoto = null;
   if (!window.S.brandId) { alert('請先選擇品牌'); return; }
   /* 🆕 2026-08-09 沒選素材就不開編輯器(不然進去是黑畫面,
      第一次用的客戶會以為壞掉)。改成:提示 + 自動捲到素材庫 + 發光引導。 */
