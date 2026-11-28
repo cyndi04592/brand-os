@@ -69,7 +69,7 @@
   function vlen(s) { var n = 0; for (var i = 0; i < s.length; i++) n += /[，、。,]/.test(s[i]) ? 0.35 : (s[i] === ' ' ? 0.5 : 1); return n; }
   // 把標題拆成幾行:先照標點拆,沒有標點就從中間拆
   function split(h, n) {
-    var parts = h.split(/(?<=[，,、。！!？?\s])/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var parts = h.replace(/([，,、。！!？?\s])/g, '$1\u0001').split('\u0001').map(function (x) { return x.trim(); }).filter(Boolean);
     if (parts.length >= 2) return parts.slice(0, n - 1).concat(parts.length >= n ? [parts.slice(n - 1).join('')] : []);
     if (n === 2 && h.length >= 4) { var m = Math.ceil(h.length / 2); return [h.slice(0, m), h.slice(m)]; }
     if (n >= 3 && h.length >= 6) { var a = Math.ceil(h.length / 3); return [h.slice(0, a), h.slice(a, a * 2), h.slice(a * 2)]; }
