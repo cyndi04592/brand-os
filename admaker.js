@@ -4100,7 +4100,7 @@ function _dropTalk(text, re) {
       const kept = _clauses(rest);
       return kept ? bullet[1] + (head ? head + ' ' : '') + kept : null;
     }
-    return line.split(/(?<=[.;])\s+/).map(function (sent) {
+    return line.replace(/([.;])\s+/g, '$1\u0001').split('\u0001').map(function (sent) {
       if (!re.test(sent)) return sent;
       const kept = _clauses(sent);
       return kept ? kept + '.' : '';
@@ -4304,7 +4304,7 @@ function buildPosterPrompt() {
   let _layoutComp = _dropPriceTalk(_dropLogoTalk(layout.composition || layout.prompt || ''));   // 🩹 2026-09-27 Logo + 價格濾網
   if (_noText) {
     _layoutComp = _layoutComp
-      .split(/(?<=[.;])\s+/)
+      .replace(/([.;])\s+/g, '$1\u0001').split('\u0001')
       .filter(function (sent) { return !/\b(headline|sub-?title|subhead|caption|typograph|display title|lettering|text)\b/i.test(sent); })
       .join(' ')
       .trim();

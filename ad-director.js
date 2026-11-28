@@ -275,7 +275,7 @@
   function styleType() {
     try {
       var f = (typeof REGIONAL_FLAVORS !== 'undefined' && typeof SELECTED_FLAVOR !== 'undefined') ? (REGIONAL_FLAVORS[SELECTED_FLAVOR] || {}) : {};
-      return String(f.flavor || '').split(/(?<=[.;])\s+|,\s+/).filter(function (x) { return TYPE_WORDS.test(x) && !NO_BRUSH.test(x); })
+      return String(f.flavor || '').replace(/([.;])\s+/g, '$1\u0001').replace(/,\s+/g, '\u0001').split('\u0001').filter(function (x) { return TYPE_WORDS.test(x) && !NO_BRUSH.test(x); })
         .map(function (x) { return x.replace(/^Add [^:]*:\s*/i, '').replace(/[.;]\s*$/, '').trim(); }).join(', ');
     } catch (e) { return ''; }
   }
