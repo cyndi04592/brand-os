@@ -2680,7 +2680,7 @@ html.sp.sp-library .thumb .exp.soon{color:#2a1800 !important;font-weight:700}
 /* 1 方案名英文兩行時上下黏在一起 */
 html.sp.sp-plans .bos-pname{line-height:1.25}
 /* 2 頁尾與登入那行的連結不要從中間斷行 */
-html.sp.sp-plans a[href="privacy.html"],html.sp.sp-plans a[href="terms.html"],html.sp.sp-plans a[href*="aio.raby.com.tw"],html.sp.sp-plans a[href^="mailto:"],html.sp.sp-plans a[href="onboard.html"],html.sp.sp-plans a[href="index.html"]{white-space:nowrap;display:inline-block}
+html.sp.sp-plans a[href="privacy.html"],html.sp.sp-plans a[href="terms.html"],html.sp.sp-plans a[href*="aio.raby.com.tw"],html.sp.sp-plans a[href*="aio.rabyai.com"],html.sp.sp-plans a[href^="mailto:"],html.sp.sp-plans a[href="onboard.html"],html.sp.sp-plans a[href="index.html"]{white-space:nowrap;display:inline-block}
 /* 15:40 再修:「廣告監控」前面那個小記號 → 導覽按鈕裡除了中文字那一段，其他子元素一律不顯示 */
 @media (min-width:769px){
   html.sp .nav-right .nav-btn-monitor>*:not(span:first-of-type),html.sp .nav-right .nav-btn-kol>*:not(span:first-of-type){display:none!important}
